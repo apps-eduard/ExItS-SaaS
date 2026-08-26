@@ -98,6 +98,73 @@ internal static class AdminEndpoints
                 : Results.Ok(MapCommercialSummary(summary));
         });
 
+        admin.MapGet("/billing/summary", async (
+            BillingOperationsQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageManualPayments,
+                PlatformAuditActions.PlatformAccessChecked,
+                "BillingOperations",
+                "summary",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var summary = await queries.GetSummaryAsync(ct).ConfigureAwait(false);
+            return Results.Ok(summary);
+        });
+
+        admin.MapGet("/billing/issues", async (
+            string? issueType,
+            int? page,
+            int? pageSize,
+            BillingOperationsQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageManualPayments,
+                PlatformAuditActions.PlatformAccessChecked,
+                "BillingOperations",
+                issueType ?? "all",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await queries.ListIssuesAsync(issueType, page, pageSize, ct).ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        admin.MapGet("/action-center", async (
+            ActionCenterQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            // Gate: actor must hold ViewPortfolio to open Action Center.
+            // Category composition is permission-aware — missing a category never 403s the whole call.
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewPortfolio,
+                PlatformAuditActions.PlatformAccessChecked,
+                "ActionCenter",
+                "summary",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var permissions = await authz.ResolvePermissionsAsync(ct).ConfigureAwait(false);
+            var access = ActionCenterAccessScope.FromPermissions(permissions);
+            var result = await queries.GetAsync(access, ct).ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
         admin.MapGet("/entitlements/latest", async (
             int? page,
             int? pageSize,

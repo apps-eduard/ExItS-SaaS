@@ -1,4 +1,5 @@
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Commercial;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
@@ -6,6 +7,7 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 using Microsoft.Extensions.Hosting;
 
 namespace ExItS.Platform.Api.Organizations;
@@ -28,7 +30,9 @@ internal static class OrganizationEndpoints
             string? search,
             string? sortBy,
             bool? sortDesc,
+            string? productCode,
             OrganizationQueryService queries,
+            CatalogQueryService catalog,
             PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
@@ -66,8 +70,32 @@ internal static class OrganizationEndpoints
                 parsedSort = sortValue;
             }
 
+            ProductCode? parsedProduct = null;
+            if (!string.IsNullOrWhiteSpace(productCode))
+            {
+                try
+                {
+                    parsedProduct = ProductCode.Create(productCode);
+                }
+                catch (DomainException ex)
+                {
+                    return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+                }
+
+                var catalogProduct = await catalog
+                    .GetProductByCodeAsync(parsedProduct.Value, ct)
+                    .ConfigureAwait(false);
+                if (catalogProduct is null)
+                {
+                    return PlatformApiResults.Problem(
+                        ApplicationErrorCodes.ProductNotFound,
+                        "Unrecognized productCode.",
+                        StatusCodes.Status400BadRequest);
+                }
+            }
+
             var result = await queries
-                .ListAsync(page, pageSize, parsedStatus, search, parsedSort, sortDesc, ct)
+                .ListAsync(page, pageSize, parsedStatus, search, parsedSort, sortDesc, parsedProduct, ct)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });

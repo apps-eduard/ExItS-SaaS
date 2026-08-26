@@ -10,6 +10,7 @@ using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Personal;
 using ExItS.Platform.Infrastructure.Persistence.PrivacyCompliance;
+using ExItS.Platform.Infrastructure.Persistence.Settings;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,6 +113,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
+    internal DbSet<PlatformSettingsRecord> PlatformSettings => Set<PlatformSettingsRecord>();
     internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
     internal DbSet<PersonalConnectionRequestRecord> PersonalConnectionRequests => Set<PersonalConnectionRequestRecord>();
     internal DbSet<PersonalDebtRelationshipRecord> PersonalDebtRelationships => Set<PersonalDebtRelationshipRecord>();
@@ -1648,6 +1650,43 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserIdentityId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformSettingsRecord>(entity =>
+        {
+            entity.ToTable("platform_settings", tb => tb.HasCheckConstraint("ck_platform_settings_singleton", "id = 1"));
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlatformDisplayName).HasColumnName("platform_display_name").HasMaxLength(200);
+            entity.Property(e => e.SupportEmail).HasColumnName("support_email").HasMaxLength(320);
+            entity.Property(e => e.BrandingLogoUrl).HasColumnName("branding_logo_url").HasMaxLength(2048);
+            entity.Property(e => e.BrandingPrimaryColor).HasColumnName("branding_primary_color").HasMaxLength(7);
+            entity.Property(e => e.BrandingAccentColor).HasColumnName("branding_accent_color").HasMaxLength(7);
+            entity.Property(e => e.EmailProviderMode).HasColumnName("email_provider_mode").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SmtpHost).HasColumnName("smtp_host").HasMaxLength(255);
+            entity.Property(e => e.SmtpPort).HasColumnName("smtp_port");
+            entity.Property(e => e.SmtpUsername).HasColumnName("smtp_username").HasMaxLength(255);
+            entity.Property(e => e.ProtectedSmtpPassword).HasColumnName("protected_smtp_password").HasMaxLength(4096);
+            entity.Property(e => e.SmtpPasswordConfigured).HasColumnName("smtp_password_configured");
+            entity.Property(e => e.FromDisplayName).HasColumnName("from_display_name").HasMaxLength(200);
+            entity.Property(e => e.FromAddress).HasColumnName("from_address").HasMaxLength(320);
+            entity.Property(e => e.SmtpSecurityMode).HasColumnName("smtp_security_mode").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.AdminPublicBaseUrl).HasColumnName("admin_public_base_url").HasMaxLength(2048);
+            entity.Property(e => e.DefaultTimeZoneId).HasColumnName("default_time_zone_id").HasMaxLength(128);
+            entity.Property(e => e.DefaultLocale).HasColumnName("default_locale").HasMaxLength(32);
+            entity.Property(e => e.DefaultCurrencyCode).HasColumnName("default_currency_code").HasMaxLength(3);
+            entity.Property(e => e.DefaultCountryCode).HasColumnName("default_country_code").HasMaxLength(2);
+            entity.Property(e => e.DateFormat).HasColumnName("date_format").HasMaxLength(64);
+            entity.Property(e => e.TimeFormat).HasColumnName("time_format").HasMaxLength(64);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorId).HasColumnName("updated_by_actor_id").HasMaxLength(320);
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
         });
 
         modelBuilder.Entity<PersonalContactRecord>(entity =>

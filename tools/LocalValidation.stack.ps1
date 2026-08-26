@@ -12,10 +12,11 @@ $script:LocalValidationStack = [pscustomobject]@{
     PlatformApiContainer   = 'exits-local-validation-platform-api'
     PosApiContainer        = 'exits-local-validation-pos-api'
     AdminWebContainer      = 'exits-local-validation-admin-web'
+    AdminWebReactContainer = 'exits-local-validation-admin-web-react'
     OrgWebContainer        = 'exits-local-validation-org-web'
     PersonalWebContainer   = 'exits-local-validation-personal-web'
     ReactPosContainer      = 'exits-local-validation-react-pos'
-    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web', 'react-pos')
+    AppComposeServices     = @('platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web', 'react-pos', 'admin-web-react')
     InfraComposeServices   = @('platform-db', 'pos-db', 'mailpit')
     AppMarkers             = @(
         'ExItS.Platform.Api',
@@ -38,6 +39,7 @@ $script:LocalValidationStack = [pscustomobject]@{
     DefaultReactPosPort    = 5177
     # React Platform Admin (Vite) — owns Mailpit activation/reset pages (/admin/activate-account, etc.)
     DefaultReactAdminPort  = 8095
+    DefaultAdminWebReactPort    = 8095
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
 }
 
@@ -341,7 +343,7 @@ function Get-LocalValidationAllowedHostsList {
     )
 
     $hosts = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'org-web', 'personal-web', 'react-pos')) {
+    foreach ($hostName in @('localhost', '127.0.0.1', '10.0.2.2', 'platform-api', 'pos-api', 'admin-web', 'admin-web-react', 'org-web', 'personal-web', 'react-pos')) {
         if (-not $hosts.Contains($hostName)) { $hosts.Add($hostName) }
     }
     if (-not [string]::IsNullOrWhiteSpace($PublicHostValue) -and -not $hosts.Contains($PublicHostValue)) {
@@ -551,7 +553,8 @@ function Get-LocalValidationDockerAppContainers {
         $LocalValidationStack.AdminWebContainer,
         $LocalValidationStack.OrgWebContainer,
         $LocalValidationStack.PersonalWebContainer,
-        $LocalValidationStack.ReactPosContainer
+        $LocalValidationStack.ReactPosContainer,
+        $LocalValidationStack.AdminWebReactContainer
     )
     $results = @()
     foreach ($name in $names) {
@@ -825,3 +828,59 @@ function Report-LocalValidationPortConflictsWithProvenance {
     }
     return $blocked
 }
+
+function Get-LocalValidationGitSha {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    try {
+        $sha = (& git -C $RepoRoot rev-parse --short HEAD 2>$null)
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$sha)) {
+            return ([string]$sha).Trim()
+        }
+    }
+    catch { }
+    return 'unknown'
+}
+
+function Write-LocalValidationReactAdminBanner {
+    param(
+        [Parameter(Mandatory)][int]$Port,
+        [string]$PublicHost = '',
+        [Parameter(Mandatory)][string]$ApiDescription,
+        [string]$GitSha = 'unknown'
+    )
+    Write-Host ''
+    Write-Host 'Platform Admin React:' -ForegroundColor Green
+    Write-Host ("  Local:     http://localhost:{0}/admin/login" -f $Port)
+    if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+        Write-Host ("  Tailscale: http://{0}:{1}/admin/login" -f $PublicHost, $Port)
+    }
+    else {
+        Write-Host '  Tailscale: (unavailable — no PublicHost / Tailscale IPv4 detected)'
+    }
+    Write-Host ("  API:       {0}" -f $ApiDescription)
+    Write-Host '  Local Validation tools: Enabled'
+    if (-not [string]::IsNullOrWhiteSpace($GitSha) -and $GitSha -ne 'unknown') {
+        Write-Host ("  Build:     {0}" -f $GitSha)
+    }
+}
+
+function Write-LocalValidationMailpitBanner {
+    param(
+        [Parameter(Mandatory)][int]$UiPort,
+        [string]$PublicHost = '',
+        [Parameter(Mandatory)][string]$EmailLinkBaseUrl
+    )
+    Write-Host ''
+    Write-Host 'Mailpit:' -ForegroundColor Green
+    Write-Host ("  Local:     http://localhost:{0}" -f $UiPort)
+    if (-not [string]::IsNullOrWhiteSpace($PublicHost)) {
+        Write-Host ("  Tailscale: http://{0}:{1}" -f $PublicHost, $UiPort)
+    }
+    else {
+        Write-Host '  Tailscale: (unavailable — no PublicHost / Tailscale IPv4 detected)'
+    }
+    Write-Host ''
+    Write-Host 'Email links:' -ForegroundColor Green
+    Write-Host ("  {0}" -f $EmailLinkBaseUrl.TrimEnd('/'))
+}
+

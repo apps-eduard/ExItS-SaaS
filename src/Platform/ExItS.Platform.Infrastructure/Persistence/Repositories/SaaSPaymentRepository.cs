@@ -149,6 +149,27 @@ internal sealed class SaaSPaymentRepository : ISaaSPaymentRepository
         return (records.Select(SaaSPaymentEntityMapper.ToDomain).ToList(), totalCount);
     }
 
+    public async Task<IReadOnlyList<SaaSPayment>> FindByNormalizedReferenceAsync(
+        string normalizedReference,
+        SaaSPaymentMethod? method,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.SaaSPayments.AsNoTracking()
+            .Where(p => p.NormalizedReference == normalizedReference);
+        if (method is not null)
+        {
+            query = query.Where(p => p.Method == method.Value.ToString());
+        }
+
+        var records = await query
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .Take(10)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(SaaSPaymentEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(SaaSPayment payment, CancellationToken cancellationToken = default)
     {
         _db.SaaSPayments.Add(SaaSPaymentEntityMapper.ToRecord(payment));

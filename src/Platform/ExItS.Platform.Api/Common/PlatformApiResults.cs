@@ -167,6 +167,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalConnectionBlocked
             or ApplicationErrorCodes.OwnershipTransferConflict
             or ApplicationErrorCodes.PersonalContactEmailConflict
+            or ApplicationErrorCodes.PersonalContactLinkConflict
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict
             or DomainErrorCodes.CustomerLinkRequestExpired
@@ -186,6 +187,9 @@ internal static class PlatformApiResults
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid
+            or ApplicationErrorCodes.PaymentAmountMismatch
+            or ApplicationErrorCodes.PaymentCurrencyMismatch
+            or ApplicationErrorCodes.PaymentPeriodMismatch
             or ApplicationErrorCodes.EntitlementSnapshotInvalid
             or ApplicationErrorCodes.EntitlementSchemaUnsupported
             or ApplicationErrorCodes.EntitlementRefreshPolicyMissing

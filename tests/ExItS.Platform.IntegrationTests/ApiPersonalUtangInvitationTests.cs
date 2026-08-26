@@ -252,6 +252,120 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
     }
 
     [Fact]
+    public async Task Add_contact_by_exits_id_does_not_notify_or_auto_invite()
+    {
+        var (ownerToken, _, _) = await SeedPersonalUserAsync("ownr");
+        var (otherToken, otherUserId, _) = await SeedPersonalUserAsync("othr");
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", otherToken);
+        var identityResponse = await _client.SendAsync(identityRequest);
+        Assert.Equal(HttpStatusCode.OK, identityResponse.StatusCode);
+        var publicUserId = (await identityResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("publicUserId")
+            .GetString()!;
+
+        using var createContact = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new
+            {
+                displayName = "Other Person",
+                phone = (string?)null,
+                email = (string?)null,
+                publicUserId,
+                linkedUserIdentityId = otherUserId
+            });
+        var createResponse = await _client.SendAsync(createContact);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var contact = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(otherUserId, contact.GetProperty("linkedUserIdentityId").GetGuid());
+        Assert.Equal(publicUserId, contact.GetProperty("publicUserId").GetString());
+
+        using var invitationsRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/invitations", otherToken);
+        var invitationsResponse = await _client.SendAsync(invitationsRequest);
+        Assert.Equal(HttpStatusCode.OK, invitationsResponse.StatusCode);
+        var invitations = await invitationsResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, invitations.GetArrayLength());
+
+        using var notificationsRequest = Authed(HttpMethod.Get, "/api/v1/personal/notifications", otherToken);
+        var notificationsResponse = await _client.SendAsync(notificationsRequest);
+        Assert.Equal(HttpStatusCode.OK, notificationsResponse.StatusCode);
+        var notifications = await notificationsResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, notifications.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Invitation_accept_by_id_connects_exits_linked_contact()
+    {
+        var (lenderToken, lenderId, _) = await SeedPersonalUserAsync("alend");
+        var (borrowerToken, borrowerId, _) = await SeedPersonalUserAsync("aborr");
+
+        using var identityRequest = Authed(HttpMethod.Get, "/api/v1/me/public-identity", borrowerToken);
+        var publicUserId = (await (await _client.SendAsync(identityRequest)).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("publicUserId")
+            .GetString()!;
+
+        using var contactRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            lenderToken,
+            new
+            {
+                displayName = "Borrower",
+                publicUserId,
+                linkedUserIdentityId = borrowerId
+            });
+        var contactId = (await (await _client.SendAsync(contactRequest)).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        using var relationshipRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            lenderToken,
+            new
+            {
+                creditorUserIdentityId = lenderId,
+                debtorContactId = contactId,
+                currencyCode = "PHP"
+            });
+        var relationshipId = (await (await _client.SendAsync(relationshipRequest)).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        using var inviteRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/invitations",
+            lenderToken,
+            new { inviteeContactId = contactId });
+        var inviteResponse = await _client.SendAsync(inviteRequest);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var invitationId = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var inboxRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/invitations", borrowerToken);
+        var inbox = await (await _client.SendAsync(inboxRequest)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains(inbox.EnumerateArray(), i => i.GetProperty("id").GetGuid() == invitationId);
+
+        using var acceptRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/invitations/accept-by-id",
+            borrowerToken,
+            new { invitationId });
+        var acceptResponse = await _client.SendAsync(acceptRequest);
+        Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
+
+        using var lenderInvites = Authed(HttpMethod.Get, "/api/v1/personal/utang/invitations", lenderToken);
+        var after = await (await _client.SendAsync(lenderInvites)).Content.ReadFromJsonAsync<JsonElement>();
+        var accepted = after.EnumerateArray().First(i => i.GetProperty("id").GetGuid() == invitationId);
+        Assert.Equal("Accepted", accepted.GetProperty("status").GetString());
+
+        using var borrowed = Authed(HttpMethod.Get, "/api/v1/personal/utang/relationships/borrowed", borrowerToken);
+        var borrowedList = await (await _client.SendAsync(borrowed)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains(borrowedList.EnumerateArray(), r => r.GetProperty("id").GetGuid() == relationshipId);
+    }
+
+    [Fact]
     public async Task Invitation_revoke_and_invalid_token_are_anti_enumeration_safe()
     {
         var (lenderToken, lenderId, _) = await SeedPersonalUserAsync("vlend");

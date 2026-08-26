@@ -82,12 +82,24 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("LocalPort 8092", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8093", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8094", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8095", startScript, StringComparison.Ordinal);
+        Assert.Contains("Profile Private", startScript, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_SAME_ORIGIN", startScript, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_PROXY_TARGET", startScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationReactAdminBanner", startScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationMailpitBanner", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__AdminPublicBaseUrl = $publicAdminWebReactUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("Email links:", stackScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8025", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15534", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("down -v", dockerStartScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("down -v", dockerStopScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Mode = 'DockerApps'", dockerStartScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationReactAdminBanner", dockerStartScript, StringComparison.Ordinal);
+        Assert.Contains("Write-LocalValidationMailpitBanner", dockerStartScript, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_SAME_ORIGIN", dockerStartScript, StringComparison.Ordinal);
         Assert.Contains("Stop-LocalValidationDockerAppServices", dockerStopScript, StringComparison.Ordinal);
 
         var platformLaunch = File.ReadAllText(Path.Combine(
@@ -124,6 +136,16 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_ORG_WEB_HOST_PORT:-8093}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT:-8094}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT:-8095}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_SAME_ORIGIN", live, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_PROXY_TARGET", live, StringComparison.Ordinal);
+        Assert.Contains("http://localhost:8095", live, StringComparison.Ordinal);
+        Assert.Contains("http://127.0.0.1:8095", live, StringComparison.Ordinal);
+        Assert.Contains(
+            "PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}",
+            live,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("100.120.79.81", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432", live, StringComparison.Ordinal);
         Assert.DoesNotContain("PLATFORM_API_HOST_PORT:-8081", live, StringComparison.Ordinal);
@@ -150,6 +172,36 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("8090", text, StringComparison.Ordinal);
         Assert.DoesNotContain("exits_platform_dev_only", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PLATFORM_API_HOST_PORT=8081", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Platform_api_keeps_production_secure_cookies_and_allows_http_only_for_local_validation()
+    {
+        var root = FindRepoRoot();
+        var policyPath = Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformAuthCookiePolicy.cs");
+        var authPath = Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Identity", "AuthEndpoints.cs");
+        var antiforgeryPath = Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryExtensions.cs");
+        Assert.True(File.Exists(policyPath));
+        var policy = File.ReadAllText(policyPath);
+        var auth = File.ReadAllText(authPath);
+        var antiforgery = File.ReadAllText(antiforgeryPath);
+        Assert.Contains("LocalValidation:Enabled", policy, StringComparison.Ordinal);
+        Assert.Contains("!environment.IsProduction()", policy, StringComparison.Ordinal);
+        Assert.Contains("CookieSecurePolicy.Always", policy, StringComparison.Ordinal);
+        Assert.Contains("HttpOnly = true", auth, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthCookiePolicy.SessionCookieSecure", auth, StringComparison.Ordinal);
+        Assert.Contains("PlatformAuthCookiePolicy.SecurePolicy", antiforgery, StringComparison.Ordinal);
+        Assert.Contains("HttpOnly = true", antiforgery, StringComparison.Ordinal);
+        var browserAntiforgeryPath = Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryMiddleware.cs");
+        var browserAntiforgery = File.ReadAllText(browserAntiforgeryPath);
+        Assert.Contains("/api/v1/platform/auth/activate-account", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/reset-password", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/register", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/forgot-password", browserAntiforgery, StringComparison.Ordinal);
     }
 
     [Fact]

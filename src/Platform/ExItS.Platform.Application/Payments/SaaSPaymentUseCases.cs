@@ -237,17 +237,23 @@ public sealed class ConfirmPaymentAndActivateSubscription
 {
     private readonly ISaaSPaymentRepository _payments;
     private readonly ISubscriptionRepository _subscriptions;
+    private readonly IPlanRepository _plans;
+    private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ConfirmPaymentAndActivateSubscription(
         ISaaSPaymentRepository payments,
         ISubscriptionRepository subscriptions,
+        IPlanRepository plans,
+        GenerateEntitlementSnapshot generateSnapshot,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _payments = payments;
         _subscriptions = subscriptions;
+        _plans = plans;
+        _generateSnapshot = generateSnapshot;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -258,6 +264,7 @@ public sealed class ConfirmPaymentAndActivateSubscription
         SubscriptionId subscriptionId,
         DateTimeOffset periodStartUtc,
         DateTimeOffset periodEndUtc,
+        BillingCycle billingCycle,
         CancellationToken cancellationToken = default)
     {
         var payment = await _payments.GetByIdAsync(paymentId, cancellationToken).ConfigureAwait(false);
@@ -290,6 +297,13 @@ public sealed class ConfirmPaymentAndActivateSubscription
                 "Payment and subscription are for different products.");
         }
 
+        if (payment.SubscriptionId is not null)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentAlreadyUsed,
+                "Payment has already been used to activate a subscription.");
+        }
+
         if (payment.Status is SaaSPaymentStatus.Rejected or SaaSPaymentStatus.Voided)
         {
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(
@@ -297,11 +311,30 @@ public sealed class ConfirmPaymentAndActivateSubscription
                 "Payment cannot be confirmed because it is in a terminal state.");
         }
 
-        if (payment.SubscriptionId is not null)
+        if (subscription.Status == SubscriptionStatus.Active)
         {
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(
-                ApplicationErrorCodes.PaymentAlreadyUsed,
-                "Payment has already been used to activate a subscription.");
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Active subscriptions require the manual paid upgrade flow.");
+        }
+
+        var plan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        if (plan is null || !plan.AcceptsNewSubscriptions)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                "Subscription plan was not found or is not active.");
+        }
+
+        var periodValidation = SaaSPaymentFundingValidation.ValidatePaidPeriod(
+            billingCycle,
+            periodStartUtc,
+            periodEndUtc);
+        if (!periodValidation.IsSuccess)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                periodValidation.ErrorCode!,
+                periodValidation.ErrorMessage!);
         }
 
         try
@@ -312,9 +345,17 @@ public sealed class ConfirmPaymentAndActivateSubscription
                 payment.Confirm(confirmedBy, utcNow);
             }
 
+            var fundingValidation = SaaSPaymentFundingValidation.ValidatePlanFunding(payment, plan, billingCycle);
+            if (!fundingValidation.IsSuccess)
+            {
+                return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                    fundingValidation.ErrorCode!,
+                    fundingValidation.ErrorMessage!);
+            }
+
             if (subscription.Status == SubscriptionStatus.Trialing)
             {
-                subscription.ActivateFromTrial(periodStartUtc, periodEndUtc, utcNow);
+                subscription.ActivateFromTrial(periodStartUtc, periodEndUtc, billingCycle, plan, utcNow);
             }
             else
             {
@@ -326,6 +367,10 @@ public sealed class ConfirmPaymentAndActivateSubscription
             await _payments.UpdateAsync(payment, cancellationToken).ConfigureAwait(false);
             await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _generateSnapshot
+                .ExecuteAsync(subscription.OrganizationId, subscription.ProductCode, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
 
             return ApplicationResult<ConfirmedPaymentActivation>.Success(
                 new ConfirmedPaymentActivation(payment, subscription));
@@ -348,6 +393,7 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
 {
     private readonly ISaaSPaymentRepository _payments;
     private readonly ISubscriptionRepository _subscriptions;
+    private readonly IPlanRepository _plans;
     private readonly ActivatePaidSubscription _activatePaid;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -356,6 +402,7 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
     public ActivatePaidSubscriptionFromConfirmedPayment(
         ISaaSPaymentRepository payments,
         ISubscriptionRepository subscriptions,
+        IPlanRepository plans,
         ActivatePaidSubscription activatePaid,
         GenerateEntitlementSnapshot generateSnapshot,
         IPlatformUnitOfWork unitOfWork,
@@ -363,6 +410,7 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
     {
         _payments = payments;
         _subscriptions = subscriptions;
+        _plans = plans;
         _activatePaid = activatePaid;
         _generateSnapshot = generateSnapshot;
         _unitOfWork = unitOfWork;
@@ -394,18 +442,46 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
                 "Payment and organization do not match.");
         }
 
-        if (payment.Status != SaaSPaymentStatus.Confirmed)
+        var fundingCheck = SaaSPaymentFundingValidation.ValidateConfirmedUnused(payment);
+        if (!fundingCheck.IsSuccess)
         {
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(
-                ApplicationErrorCodes.PaymentNotConfirmed,
-                "Payment must be confirmed before paid subscription activation.");
+                fundingCheck.ErrorCode!,
+                fundingCheck.ErrorMessage!);
         }
 
-        if (payment.SubscriptionId is not null)
+        var plan = await _plans.GetByIdAsync(planId, cancellationToken).ConfigureAwait(false);
+        if (plan is null || !plan.AcceptsNewSubscriptions)
         {
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(
-                ApplicationErrorCodes.PaymentAlreadyUsed,
-                "Payment has already been used to activate a subscription.");
+                ApplicationErrorCodes.PlanNotFound,
+                "Plan was not found or is not active for new subscriptions.");
+        }
+
+        if (payment.ProductCode != plan.ProductCode)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentProductMismatch,
+                "Payment and plan are for different products.");
+        }
+
+        var planFunding = SaaSPaymentFundingValidation.ValidatePlanFunding(payment, plan, billingCycle);
+        if (!planFunding.IsSuccess)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                planFunding.ErrorCode!,
+                planFunding.ErrorMessage!);
+        }
+
+        var periodValidation = SaaSPaymentFundingValidation.ValidatePaidPeriod(
+            billingCycle,
+            periodStartUtc,
+            periodEndUtc);
+        if (!periodValidation.IsSuccess)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                periodValidation.ErrorCode!,
+                periodValidation.ErrorMessage!);
         }
 
         var activated = await _activatePaid
@@ -416,16 +492,6 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(
                 activated.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
                 activated.ErrorMessage ?? "Paid subscription activation failed.");
-        }
-
-        if (payment.ProductCode != activated.Value.ProductCode)
-        {
-            activated.Value.Cancel(_clock.UtcNow);
-            await _subscriptions.UpdateAsync(activated.Value, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
-                ApplicationErrorCodes.PaymentProductMismatch,
-                "Payment and subscription are for different products.");
         }
 
         try
@@ -443,11 +509,184 @@ public sealed class ActivatePaidSubscriptionFromConfirmedPayment
         }
         catch (DomainException ex)
         {
+            activated.Value.Cancel(_clock.UtcNow);
+            await _subscriptions.UpdateAsync(activated.Value, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
             return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Applies an immediate paid plan upgrade to an active subscription using a confirmed manual SaaS payment.
+/// Does not invoke <see cref="IPaymentProvider"/>.
+/// </summary>
+public sealed class UpgradeSubscriptionFromConfirmedPayment
+{
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IPlanRepository _plans;
+    private readonly ISaaSPaymentRepository _payments;
+    private readonly ISubscriptionRepository _subscriptions;
+    private readonly GenerateEntitlementSnapshot _generateSnapshot;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpgradeSubscriptionFromConfirmedPayment(
+        IPlatformOrganizationRepository organizations,
+        IPlanRepository plans,
+        ISaaSPaymentRepository payments,
+        ISubscriptionRepository subscriptions,
+        GenerateEntitlementSnapshot generateSnapshot,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _organizations = organizations;
+        _plans = plans;
+        _payments = payments;
+        _subscriptions = subscriptions;
+        _generateSnapshot = generateSnapshot;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<ConfirmedPaymentActivation>> ExecuteAsync(
+        SaaSPaymentId paymentId,
+        PlatformOrganizationId organizationId,
+        SubscriptionId subscriptionId,
+        PlanId targetPlanId,
+        BillingCycle billingCycle,
+        CancellationToken cancellationToken = default)
+    {
+        var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (organization is null || organization.Status != OrganizationStatus.Active)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.OrganizationNotEligible,
+                "Organization must be active.");
+        }
+
+        var payment = await _payments.GetByIdAsync(paymentId, cancellationToken).ConfigureAwait(false);
+        if (payment is null)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentNotFound,
+                "Payment was not found.");
+        }
+
+        if (payment.OrganizationId != organizationId)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentOrganizationMismatch,
+                "Payment and organization do not match.");
+        }
+
+        var fundingCheck = SaaSPaymentFundingValidation.ValidateConfirmedUnused(payment);
+        if (!fundingCheck.IsSuccess)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                fundingCheck.ErrorCode!,
+                fundingCheck.ErrorMessage!);
+        }
+
+        var subscription = await _subscriptions.GetByIdAsync(subscriptionId, cancellationToken).ConfigureAwait(false);
+        if (subscription is null || subscription.OrganizationId != organizationId)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.SubscriptionNotFound,
+                "Subscription was not found for this organization.");
+        }
+
+        if (subscription.Status != SubscriptionStatus.Active)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Manual paid upgrade requires an active subscription.");
+        }
+
+        if (subscription.PlanId == targetPlanId)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Subscription is already on the requested plan.");
+        }
+
+        var currentPlan = await _plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
+        var targetPlan = await _plans.GetByIdAsync(targetPlanId, cancellationToken).ConfigureAwait(false);
+        if (currentPlan is null || targetPlan is null
+            || targetPlan.ProductCode != subscription.ProductCode
+            || !targetPlan.AcceptsNewSubscriptions)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                "Target plan was not found or is not active for this product.");
+        }
+
+        if (payment.ProductCode != targetPlan.ProductCode)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.PaymentProductMismatch,
+                "Payment and target plan are for different products.");
+        }
+
+        if (targetPlan.PriceForCycle(billingCycle) <= currentPlan.PriceForCycle(billingCycle))
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Manual paid upgrade requires a higher-tier target plan.");
+        }
+
+        var planFunding = SaaSPaymentFundingValidation.ValidatePlanFunding(payment, targetPlan, billingCycle);
+        if (!planFunding.IsSuccess)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(
+                planFunding.ErrorCode!,
+                planFunding.ErrorMessage!);
+        }
+
+        var version = await RequirePublishedVersionAsync(targetPlan, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            var utcNow = _clock.UtcNow;
+            subscription.ApplyImmediatePlanUpgrade(targetPlan, version, billingCycle, utcNow);
+            payment.LinkSubscription(subscription.Id, utcNow);
+
+            await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
+            await _payments.UpdateAsync(payment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _generateSnapshot
+                .ExecuteAsync(organizationId, subscription.ProductCode, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return ApplicationResult<ConfirmedPaymentActivation>.Success(
+                new ConfirmedPaymentActivation(payment, subscription));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<ConfirmedPaymentActivation>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private async Task<PlanVersion> RequirePublishedVersionAsync(Plan plan, CancellationToken cancellationToken)
+    {
+        var versions = await _plans.ListVersionsAsync(plan.Id, cancellationToken).ConfigureAwait(false);
+        var published = versions.FirstOrDefault(v => v.Status == PlanVersionStatus.Published);
+        if (published is null)
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.PlanVersionNotFound,
+                "Published plan version is required for paid upgrade.");
+        }
+
+        return published;
     }
 }

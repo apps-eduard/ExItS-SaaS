@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Application.Organizations;
 
@@ -33,6 +34,7 @@ public interface IPlatformOrganizationRepository
         bool sortDescending,
         int skip,
         int take,
+        ProductCode? productCode = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(PlatformOrganization organization, CancellationToken cancellationToken = default);

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-theme="system" data-density="balanced">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExItS Platform Admin Web</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("exits.platform-admin-web.ui-preferences.v1");
+          var parsed = raw ? JSON.parse(raw) : {};
+          var theme =
+            parsed.theme === "light" || parsed.theme === "dark" || parsed.theme === "system"
+              ? parsed.theme
+              : "system";
+          var density =
+            parsed.density === "comfortable" ||
+            parsed.density === "balanced" ||
+            parsed.density === "compact"
+              ? parsed.density
+              : "balanced";
+          var language = parsed.language === "fil-PH" ? "fil-PH" : "en";
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.setAttribute("data-density", density);
+          document.documentElement.lang = language;
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "system");
+          document.documentElement.setAttribute("data-density", "balanced");
+          document.documentElement.lang = "en";
+        }
+      })();
+    </script>
+    <script src="/config.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

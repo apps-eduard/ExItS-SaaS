@@ -23,10 +23,11 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode includes `store-suppliers-view` / `store-suppliers-manage`)
-src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation)
-src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
+src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; operations system-health DTOs)
+src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, Magick.NET shared GlobalProduct WebP pipeline + local/dev filesystem object store, migrations through **`20260817220000_AddGlobalProductImages`**; `Health/PlatformDatabaseReadyHealthCheck`; operations system-health host/POS probes)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + `GET /api/v1/platform/operations/system-health` + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens + Platform/merchant GlobalProduct image endpoints; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; GlobalProduct image preview/upload/replace/remove; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
+src/Platform/ExItS.Platform.Admin.Web/ (React + TypeScript + Vite Platform Admin Web; parallel to Blazor Admin; Login + shell + dashboard + organizations workspace + product/plan catalog; PA-COM-01 commercial mutation foundation + PA-COM-04 organization subscription lifecycle UI; no paid activation / PA-COM-06; consumes Platform API; no cutover)
 src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
 src/Shared/ExItS.Web.UI/ (shared AntDesign browser conventions: theme, culture, page header, pager, host options, handoff helpers; AntDesign 1.6.2)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
@@ -36,7 +37,7 @@ tools/ExItS.BackupRestore.Cli/ (non-interactive backup/verify/restore/encrypt/re
 tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-catalog CLI)
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
-deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation default = DBs only)
+deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation apps include Blazor Admin 8090 and React Admin 8095)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; connected PO lifecycle + receiving discrepancies; FIFO aging helpers)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + `ConnectedPoDisplayStatus` + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260818223000_AddSaleBranchId`**; Magick.NET WebP merchant-override pipeline + local/dev filesystem object store; `Health/PosDatabaseReadyHealthCheck`)
@@ -348,6 +349,16 @@ docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md
 docs/reports/phase-01-architecture-approval.md
 docs/risks-and-issues.md
+docs/Platform-Admin-Web/README.md
+docs/Platform-Admin-Web/documentation-status.md
+docs/Platform-Admin-Web/implementation-status.md
+docs/Platform-Admin-Web/commercial-subscription-implementation-plan.md
+docs/Platform-Admin-Web/commercial-platform-pos-contract.md
+docs/Platform-Admin-Web/commercial-e2e-validation-matrix.md
+docs/Platform-Admin-Web/Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md
+docs/Platform-Admin-Web/Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md
+docs/Platform-Admin-Web/Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md
+docs/Platform-Admin-Web/Reports/PLATFORM-HEALTH-01-system-health-v1.md
 
 ## Not tracked
 

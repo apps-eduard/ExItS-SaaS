@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Personal;
 using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
@@ -165,11 +166,29 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
     public Task<PersonalProfileDto?> GetProfileAsync(CancellationToken ct = default) =>
         GetAsync<PersonalProfileDto>("/api/v1/personal/profile", ct);
 
+    public Task<(bool Ok, PersonalProfileDto? Data, string? Error)> UpdateProfileAsync(
+        string displayName,
+        CancellationToken ct = default) =>
+        PutAsync<PersonalProfileDto>("/api/v1/personal/profile", new UpdatePersonalProfileRequest(displayName), ct);
+
     public Task<PersonalAccountSettingsDto?> GetSettingsAsync(CancellationToken ct = default) =>
         GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
 
     public Task<IReadOnlyList<PersonalContactDto>?> GetContactsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalContactDto>>("/api/v1/personal/utang/contacts", ct);
+
+    public Task<(bool Ok, PersonalContactDto? Data, string? Error)> CreateContactAsync(
+        CreatePersonalContactRequest request,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalContactDto>("/api/v1/personal/utang/contacts", request, ct);
+
+    public Task<(bool Ok, ResolvedPublicUserDto? Data, string? Error)> ResolvePublicUserIdAsync(
+        string publicUserIdOrQrPayload,
+        CancellationToken ct = default) =>
+        PostAsync<ResolvedPublicUserDto>(
+            "/api/v1/users/resolve-public-id",
+            new ResolvePublicUserIdRequest(publicUserIdOrQrPayload, "utang-people"),
+            ct);
 
     public Task<IReadOnlyList<PersonalDebtRelationshipSummaryDto>?> GetLentAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/lent", ct);
@@ -177,8 +196,54 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
     public Task<IReadOnlyList<PersonalDebtRelationshipSummaryDto>?> GetBorrowedAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalDebtRelationshipSummaryDto>>("/api/v1/personal/utang/relationships/borrowed", ct);
 
+    public Task<(bool Ok, PersonalDebtRelationshipSummaryDto? Data, string? Error)> CreateRelationshipAsync(
+        CreatePersonalDebtRelationshipRequest request,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalDebtRelationshipSummaryDto>("/api/v1/personal/utang/relationships", request, ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> CreateInvitationAsync(
+        Guid relationshipId,
+        Guid inviteeContactId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/relationships/{relationshipId:D}/invitations",
+            new CreatePersonalUtangInvitationRequest(inviteeContactId),
+            ct);
+
     public Task<IReadOnlyList<PersonalUtangInvitationDto>?> GetInvitationsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalUtangInvitationDto>>("/api/v1/personal/utang/invitations", ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationAcceptResultDto? Data, string? Error)> AcceptInvitationByIdAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationAcceptResultDto>(
+            "/api/v1/personal/utang/invitations/accept-by-id",
+            new AcceptPersonalUtangInvitationByIdRequest(invitationId),
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> DeclineInvitationByIdAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            "/api/v1/personal/utang/invitations/decline-by-id",
+            new DeclinePersonalUtangInvitationByIdRequest(invitationId),
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> ResendInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/invitations/{invitationId:D}/resend",
+            new { },
+            ct);
+
+    public Task<(bool Ok, PersonalUtangInvitationDto? Data, string? Error)> RevokeInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        PostAsync<PersonalUtangInvitationDto>(
+            $"/api/v1/personal/utang/invitations/{invitationId:D}/revoke",
+            new { },
+            ct);
 
     public Task<IReadOnlyList<PersonalInAppNotificationDto>?> GetNotificationsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalInAppNotificationDto>>("/api/v1/personal/notifications", ct);
@@ -194,10 +259,20 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
         CancellationToken ct = default) =>
         PostAsync<StartBusinessResultDto>("/api/v1/personal/start-business", request, ct);
 
-    private async Task<(bool Ok, T? Data, string? Error)> PostAsync<T>(string path, object body, CancellationToken ct)
+    private async Task<(bool Ok, T? Data, string? Error)> PostAsync<T>(string path, object body, CancellationToken ct) =>
+        await SendJsonAsync<T>(HttpMethod.Post, path, body, ct).ConfigureAwait(false);
+
+    private async Task<(bool Ok, T? Data, string? Error)> PutAsync<T>(string path, object body, CancellationToken ct) =>
+        await SendJsonAsync<T>(HttpMethod.Put, path, body, ct).ConfigureAwait(false);
+
+    private async Task<(bool Ok, T? Data, string? Error)> SendJsonAsync<T>(
+        HttpMethod method,
+        string path,
+        object body,
+        CancellationToken ct)
     {
         var client = httpClientFactory.CreateClient("PlatformApi");
-        using var request = new HttpRequestMessage(HttpMethod.Post, path)
+        using var request = new HttpRequestMessage(method, path)
         {
             Content = JsonContent.Create(body)
         };
@@ -230,6 +305,11 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
             if (doc.RootElement.TryGetProperty("title", out var title))
             {
                 return title.GetString();
+            }
+
+            if (doc.RootElement.TryGetProperty("errorCode", out var errorCode))
+            {
+                return errorCode.GetString();
             }
         }
         catch

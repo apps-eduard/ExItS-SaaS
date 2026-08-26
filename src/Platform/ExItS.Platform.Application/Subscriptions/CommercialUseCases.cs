@@ -123,6 +123,13 @@ public sealed class StartTrialSubscription
                 "Trial definition was not found.");
         }
 
+        if (trial.PlanId is not null && trial.PlanId != plan.Id)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Trial definition does not belong to the selected plan.");
+        }
+
         var hasActiveLike = await _subscriptions
             .ExistsActiveLikeAsync(organizationId, plan.ProductCode, cancellationToken)
             .ConfigureAwait(false);

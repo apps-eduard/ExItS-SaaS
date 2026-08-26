@@ -9,7 +9,6 @@ internal static class PlatformBrowserAntiforgeryExtensions
         IHostEnvironment environment,
         IConfiguration configuration)
     {
-        var localValidationEnabled = configuration.GetValue<bool>("LocalValidation:Enabled");
         services.AddAntiforgery(options =>
         {
             options.HeaderName = PlatformAntiforgeryDefaults.HeaderName;
@@ -17,12 +16,8 @@ internal static class PlatformBrowserAntiforgeryExtensions
             options.Cookie.HttpOnly = true;
             options.Cookie.Path = "/";
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy =
-                environment.IsDevelopment()
-                || environment.IsEnvironment("Testing")
-                || localValidationEnabled
-                    ? CookieSecurePolicy.SameAsRequest
-                    : CookieSecurePolicy.Always;
+            // Shared LocalValidation/HTTP-safe policy (React Admin + React POS).
+            options.Cookie.SecurePolicy = PlatformAuthCookiePolicy.SecurePolicy(environment, configuration);
         });
     }
 

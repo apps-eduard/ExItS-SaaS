@@ -32,4 +32,15 @@ boundaries, and records a dedicated planning worktree (`docs/platform-admin-web-
 - `migration-testing-and-implementation-gates.md` — migration plan, testing strategy, implementation gates, visual DoD, release policy (DOC-10 + AMEND-01)
 - `Reports/PLATFORM-WEB-DOC-10-final-closeout.md` — final closeout report (DOC-10)
 - `Reports/PLATFORM-WEB-DOC-FINAL-AMEND-01.md` — UX/release amendment report (AMEND-01)
+- `implementation-status.md` — implementation gates and package status
+- `pweb-21-30-continuation-plan.md` — authoritative continuation plan for PWEB-IMPL-21..30 (planning only)
+- `Packages/PWEB-IMPL-21-*.md` … `Packages/PWEB-IMPL-30-*.md` — per-package specifications (not implemented)
+- `Reports/PWEB-IMPL-04C-parallel-react-local-validation-container.md` — parallel React local-validation container
+- `commercial-subscription-implementation-plan.md` — PA-COM-01…08 commercial/subscription implementation plan (PA-COM-01 and PA-COM-04 complete; PA-COM-06 not authorized)
+- `commercial-platform-pos-contract.md` — Platform → POS commercial runtime contract
+- `commercial-e2e-validation-matrix.md` — commercial E2E spine and device-limit matrix
+- `Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md` — commercial readiness audit (HEAD `525bae36`)
+- `Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md` — PA-COM-01 typed clients + hooks foundation
+- `Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md` — PA-COM-04 Organization → Subscription lifecycle UI
+- `Reports/PLATFORM-HEALTH-01-system-health-v1.md` — Platform Operations System Health V1
 

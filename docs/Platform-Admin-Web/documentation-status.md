@@ -6,13 +6,13 @@ Target worktree branch: `docs/platform-admin-web-v2`
 
 Baseline origin/main SHA: `7f576f70665d78b319f31fc1cfa12a7e9c14482f`
 
-Implementation status: `Not Authorized`
+Implementation status: `Authorized through first visual foundation checkpoint`
 
 Existing Admin status: `Retained / Unmodified`
 
-Future Admin status: `Documentation Only` (future frontend only)
+Future Admin status: `Scaffold in progress` (`src/Platform/ExItS.Platform.Admin.Web`)
 
-React implementation: `Absent`
+React implementation: `Scaffold only` (PWEB-IMPL-01)
 
 Backend implementation from this series: `Absent`
 
@@ -20,7 +20,30 @@ API gaps: `Documented, not implemented`
 
 Platform Admin Web documentation: `100% Final` (approved planning baseline + AMEND-01)
 
-Queue state: `STOPPED FOR PRODUCT OWNER + CHATGPT REVIEW`
+Queue state: `STOPPED AFTER PWEB-IMPL-01`
+
+## Commercial readiness overlay (2026-08-22)
+
+The header fields above are the **historical DOC-01…10 planning snapshot**. They are retained for audit trail and must not be read as current React capability.
+
+| Overlay field | Value |
+|---|---|
+| Commercial audit branch | `docs/platform-admin-commercial-readiness` |
+| Audit baseline HEAD | `525bae3633fb7fde1bbc9b855435a05f5f616c09` (`feat/platform-admin-web-v2`) |
+| Current React commercial UI | Catalog + organization workspace + Organization → Subscription lifecycle (PA-COM-04) |
+| Commercial mutations | PA-COM-01 foundation COMPLETE; PA-COM-04 lifecycle UI COMPLETE |
+| Authoritative commercial plan | [commercial-subscription-implementation-plan.md](./commercial-subscription-implementation-plan.md) |
+| Platform→POS contract | [commercial-platform-pos-contract.md](./commercial-platform-pos-contract.md) |
+| E2E matrix | [commercial-e2e-validation-matrix.md](./commercial-e2e-validation-matrix.md) |
+| Audit report | [Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md](./Reports/PLATFORM-WEB-COMMERCIAL-READINESS-AUDIT-01.md) |
+| PA-COM-01 report | [Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md](./Reports/PLATFORM-WEB-PA-COM-01-commercial-mutation-foundation.md) |
+| PA-COM-04 report | [Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md](./Reports/PLATFORM-WEB-PA-COM-04-subscription-lifecycle-ui.md) |
+| PA-COM-01 | COMPLETE (approved for PA-COM-04 follow-on) |
+| PA-COM-04 | COMPLETE (awaiting Product Owner / ChatGPT review) |
+| PA-COM-06 authorized | **NO** |
+| Production cutover | **NO** |
+
+DOC-01…10 and AMEND-01 remain Complete as planning artifacts. Do not rewrite them.
 
 ## DOC queue
 

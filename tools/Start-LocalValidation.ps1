@@ -329,13 +329,16 @@ function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
 }
 
 function Show-LocalValidationFirewallGuidance {
-    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094/8095/5177 for Tailscale/LAN (Blazor Admin, APIs, Org/Personal Web, React Admin, React POS). Do not open 15533/15534 (DB).'
+    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094/8095/5177 for Tailscale/LAN (Blazor Admin, APIs, Org/Personal Web, React Admin, React POS). Mailpit UI 8025 is optional. Prefer the Private profile. Do not open 15533/15534 (DB). This launcher does not create firewall rules.'
     Write-Host @'
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
-  New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Private
+  New-NetFirewallRule -DisplayName "ExItS Local Validation React Admin 8095" -Direction Inbound -Protocol TCP -LocalPort 8095 -Action Allow -Profile Private
+  # Optional (Mailpit UI for Tailscale devices). Prefer Private. Do not use Profile Any.
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Mailpit 8025" -Direction Inbound -Protocol TCP -LocalPort 8025 -Action Allow -Profile Private
 '@
 }
 
@@ -406,6 +409,7 @@ $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [in
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosApiPort }
 $orgWebPort = if ($envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultOrgWebPort }
 $personalWebPort = if ($envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPersonalWebPort }
+$adminWebReactPort = if ($envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 
@@ -431,9 +435,9 @@ $null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
 
 $conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
 if ($conflicts.Count -gt 0) {
-    throw 'Ports 8090/8091/8092/8093/8094 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
+    throw 'Ports 8090/8091/8092/8093/8094/8095 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
 }
-Write-Ok 'App ports 8090/8091/8092/8093/8094 are free'
+Write-Ok 'App ports 8090/8091/8092/8093/8094/8095 are free'
 
 Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved)...'
 Start-LocalValidationInfrastructure -ComposeFile $composeFile -EnvFile $envFile
@@ -462,12 +466,14 @@ $loopbackPlatformApiUrl = "http://127.0.0.1:$platformApiPort"
 $loopbackPosApiUrl = "http://127.0.0.1:$posApiPort"
 $loopbackOrgWebUrl = "http://127.0.0.1:$orgWebPort"
 $loopbackPersonalWebUrl = "http://127.0.0.1:$personalWebPort"
+$loopbackAdminWebReactUrl = "http://127.0.0.1:$adminWebReactPort"
 if ($resolvedPublicHost) {
     $publicAdminUrl = "http://${resolvedPublicHost}:$adminPort"
     $publicPlatformApiUrl = "http://${resolvedPublicHost}:$platformApiPort"
     $publicPosApiUrl = "http://${resolvedPublicHost}:$posApiPort"
     $publicOrgWebUrl = "http://${resolvedPublicHost}:$orgWebPort"
     $publicPersonalWebUrl = "http://${resolvedPublicHost}:$personalWebPort"
+    $publicAdminWebReactUrl = "http://${resolvedPublicHost}:$adminWebReactPort"
 }
 else {
     $publicAdminUrl = "http://localhost:$adminPort"
@@ -475,6 +481,7 @@ else {
     $publicPosApiUrl = "http://localhost:$posApiPort"
     $publicOrgWebUrl = "http://localhost:$orgWebPort"
     $publicPersonalWebUrl = "http://localhost:$personalWebPort"
+    $publicAdminWebReactUrl = "http://localhost:$adminWebReactPort"
 }
 
 $allowedHosts = Get-LocalValidationAllowedHosts -PublicHostValue $resolvedPublicHost -EnvMap $envMap
@@ -484,12 +491,15 @@ $corsOrigins = @(
     "http://localhost:$orgWebPort",
     "http://127.0.0.1:$orgWebPort",
     "http://localhost:$personalWebPort",
-    "http://127.0.0.1:$personalWebPort"
+    "http://127.0.0.1:$personalWebPort",
+    "http://localhost:$adminWebReactPort",
+    "http://127.0.0.1:$adminWebReactPort"
 )
 if ($resolvedPublicHost) {
     $corsOrigins += "http://${resolvedPublicHost}:$adminPort"
     $corsOrigins += "http://${resolvedPublicHost}:$orgWebPort"
     $corsOrigins += "http://${resolvedPublicHost}:$personalWebPort"
+    $corsOrigins += "http://${resolvedPublicHost}:$adminWebReactPort"
 }
 
 $reactAdminPort = if ($envMap['LOCAL_VALIDATION_REACT_ADMIN_HOST_PORT']) {
@@ -571,6 +581,7 @@ $platformEnv = @{
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
     # Local Validation only: allow weak passwords (e.g. 123) for registration/activation testing.
     PlatformAuthentication__Password__MinimumLength = '1'
+    PlatformAuthentication__Password__MaximumLength = '128'
     PlatformAuthentication__Password__RequireUppercase = 'false'
     PlatformAuthentication__Password__RequireLowercase = 'false'
     PlatformAuthentication__Password__RequireDigit = 'false'
@@ -666,6 +677,23 @@ $personalWebEnv = @{
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Personal Web' -RepoRoot $repoRoot -Project $personalWebProject -EnvMap $personalWebEnv
 Wait-TcpPort -Label 'Personal Web' -HostName '127.0.0.1' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
 
+Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
+$gitSha = Get-LocalValidationGitSha -RepoRoot $repoRoot
+$reactApiProxyTarget = "http://host.docker.internal:$platformApiPort"
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
+Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
+Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
+$reactUpArgs = @(
+    'compose', '-p', $LocalValidationStack.ComposeProjectName,
+    '-f', $composeFile, '--env-file', $envFile,
+    '--profile', 'apps', 'up', '-d', 'admin-web-react'
+)
+$reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
+if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
+Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
+
 $state = @{
     Mode = 'HostApps'
     RepoRoot = $repoRoot
@@ -686,6 +714,7 @@ $state = @{
         PosApi = $posApiPort
         OrgWeb = $orgWebPort
         PersonalWeb = $personalWebPort
+        AdminWebReact = $adminWebReactPort
         PlatformDb = $platformDbPort
         PosDb = $posDbPort
     }
@@ -714,6 +743,8 @@ $healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$loopbackPosApiUrl/
 $healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$loopbackAdminUrl/admin/login") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'Organization Web /health' -Url "$loopbackOrgWebUrl/health") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPersonalWebUrl/health") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'React Admin /health' -Url "$loopbackAdminWebReactUrl/health") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'React Admin /admin' -Url "$loopbackAdminWebReactUrl/admin") -and $healthOk
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
@@ -724,7 +755,10 @@ Write-Host "  Platform API: $publicPlatformApiUrl"
 Write-Host "  POS API:      $publicPosApiUrl"
 Write-Host "  Org Web:      $publicOrgWebUrl"
 Write-Host "  Personal Web: $publicPersonalWebUrl"
-Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort"
+Write-Host "  React Admin:  $publicAdminWebReactUrl"
+Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription "same-origin /api (proxy $reactApiProxyTarget)" -GitSha $gitSha
+Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $publicAdminWebReactUrl
+Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort / 0.0.0.0:$adminWebReactPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"

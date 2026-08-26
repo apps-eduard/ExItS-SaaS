@@ -93,6 +93,15 @@ if (Test-Path -LiteralPath $stateFile) {
 
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
 
+if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $envFile) -and (Test-Path -LiteralPath $composeFile)) {
+    Write-Step 'Stopping React Platform Admin container (volumes preserved)...'
+    $null = Invoke-LocalValidationDocker -DockerArgs @(
+        'compose', '-p', $LocalValidationStack.ComposeProjectName,
+        '-f', $composeFile, '--env-file', $envFile,
+        'stop', 'admin-web-react'
+    )
+}
+
 if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $stateFile)) {
     Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
 }

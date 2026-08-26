@@ -41,11 +41,40 @@ public sealed class PersonalWebHostTests
         var combined = string.Join('\n', Directory.GetFiles(FindPages(), "*.razor", SearchOption.AllDirectories).Select(File.ReadAllText));
         Assert.Contains("@page \"/home\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/utang/people\"", combined, StringComparison.Ordinal);
+        Assert.Contains("@page \"/utang/people/add\"", combined, StringComparison.Ordinal);
+        Assert.Contains("@page \"/utang/people/{ContactId:guid}\"", combined, StringComparison.Ordinal);
+        Assert.Contains("Not connected", combined, StringComparison.Ordinal);
+        Assert.Contains("Request pending", combined, StringComparison.Ordinal);
+        Assert.Contains("Add person", combined, StringComparison.Ordinal);
+        Assert.Contains("Find person", combined, StringComparison.Ordinal);
+        Assert.Contains("ConfirmAddAsync", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("Block person", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("Unlink", combined, StringComparison.Ordinal);
+        Assert.Contains("AcceptInvitationByIdAsync", combined, StringComparison.Ordinal);
+        Assert.Contains("Received", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/utang/lent\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/utang/borrowed\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/utang/invitations\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/notifications\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/profile\"", combined, StringComparison.Ordinal);
+        Assert.Contains("Edit profile", combined, StringComparison.Ordinal);
+        Assert.Contains("Save changes", combined, StringComparison.Ordinal);
+        Assert.Contains("BeginEditProfile", combined, StringComparison.Ordinal);
+        Assert.Contains("CancelEditProfile", combined, StringComparison.Ordinal);
+        Assert.Contains("_profileSaving", combined, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(FindPages(), "Layout", "MainLayout.razor"));
+        Assert.Contains("Edit profile", layout, StringComparison.Ordinal);
+        Assert.Contains("NavigateTo(\"/profile\")", layout, StringComparison.Ordinal);
+
+        var apiClient = File.ReadAllText(Path.Combine(
+            FindRepo(), "src", "Platform", "ExItS.Personal.Web", "Services", "PersonalWebSession.cs"));
+        Assert.Contains("UpdateProfileAsync", apiClient, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/profile", apiClient, StringComparison.Ordinal);
+        Assert.Contains("CreateContactAsync", apiClient, StringComparison.Ordinal);
+        Assert.Contains("ResolvePublicUserIdAsync", apiClient, StringComparison.Ordinal);
+        Assert.Contains("AcceptInvitationByIdAsync", apiClient, StringComparison.Ordinal);
+        Assert.Contains("DeclineInvitationByIdAsync", apiClient, StringComparison.Ordinal);
         Assert.Contains("@page \"/settings\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/start-business\"", combined, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", combined, StringComparison.Ordinal);

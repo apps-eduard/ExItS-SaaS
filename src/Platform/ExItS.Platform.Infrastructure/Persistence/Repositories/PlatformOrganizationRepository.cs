@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,7 +52,7 @@ internal sealed class PlatformOrganizationRepository : IPlatformOrganizationRepo
         int skip,
         int take,
         CancellationToken cancellationToken = default) =>
-        ListAsync(null, null, OrganizationListSortBy.DisplayName, false, skip, take, cancellationToken);
+        ListAsync(null, null, OrganizationListSortBy.DisplayName, false, skip, take, productCode: null, cancellationToken);
 
     public async Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         OrganizationStatus? status,
@@ -60,6 +61,7 @@ internal sealed class PlatformOrganizationRepository : IPlatformOrganizationRepo
         bool sortDescending,
         int skip,
         int take,
+        ProductCode? productCode = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Organizations.AsNoTracking();
@@ -78,6 +80,13 @@ internal sealed class PlatformOrganizationRepository : IPlatformOrganizationRepo
                 || o.Slug.ToLower().Contains(term)
                 || (o.LegalName != null && o.LegalName.ToLower().Contains(term))
                 || (o.ContactEmail != null && o.ContactEmail.ToLower().Contains(term)));
+        }
+
+        if (productCode is not null)
+        {
+            var code = productCode.Value;
+            query = query.Where(o =>
+                _db.Subscriptions.Any(s => s.OrganizationId == o.Id && s.ProductCode == code));
         }
 
         query = ApplySort(query, sortBy, sortDescending);

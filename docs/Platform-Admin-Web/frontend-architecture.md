@@ -49,6 +49,7 @@ Admin host also configures anti-forgery middleware (`app.UseAntiforgery()`).
 `src/Platform/ExItS.Platform.Api/Common/PlatformSecurityPipeline.cs` configures CORS:
 
 - Allowed origins come from `Cors:AllowedOrigins`
+- Local Validation includes Blazor Admin (`8090`), Organization Web (`8093`), Personal Web (`8094`), and React Admin (`8095`) as explicit origins; credentials remain required (`AllowCredentials()`). Origins are not wildcards.
 - Policy uses:
   - `.WithOrigins(origins)`
   - `.AllowAnyHeader()`

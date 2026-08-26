@@ -1,0 +1,667 @@
+@page "/utang/people"
+@page "/utang/people/add"
+@page "/utang/people/{ContactId:guid}"
+@attribute [Authorize]
+@inject PersonalApiClient Api
+@inject NavigationManager Nav
+@inject IMessageService Message
+
+<PageTitle>@_title</PageTitle>
+<ExitsPageHeader Title="@_title" Subtitle="@_subtitle" />
+
+@if (_loading)
+{
+    <Spin />
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+}
+else if (_mode == "list")
+{
+    <div class="people-toolbar">
+        <Input Placeholder="Search people..."
+               @bind-Value="_search"
+               @bind-Value:after="RebuildVisible"
+               AllowClear
+               Style="flex:1;min-width:0;" />
+        <Button Type="@ButtonType.Primary"
+                OnClick='() => Nav.NavigateTo("/utang/people/add")'
+                Style="min-width:88px;min-height:40px;">
+            + Add
+        </Button>
+    </div>
+
+    <Space Wrap Style="margin-bottom:12px;">
+        @foreach (var option in new[] { "All", "Connected", "Pending", "Local" })
+        {
+            <Button Type="@(_filter == option ? ButtonType.Primary : ButtonType.Default)"
+                    OnClick="() => SetFilter(option)">
+                @option
+            </Button>
+        }
+    </Space>
+
+    @if (_visiblePeople.Count == 0)
+    {
+        <Empty Description="@(_contacts.Count == 0 ? "No people yet" : "No matching people")">
+            <ChildContent>
+                @if (_contacts.Count == 0)
+                {
+                    <p style="color:var(--ant-color-text-secondary);margin:8px 0 16px;">
+                        Add someone you lend to, borrow from, or want to keep track of.
+                    </p>
+                    <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/utang/people/add")'>
+                        Add person
+                    </Button>
+                }
+            </ChildContent>
+        </Empty>
+    }
+    else
+    {
+        <div class="people-list" role="list">
+            @foreach (var row in _visiblePeople)
+            {
+                <button type="button"
+                        class="people-row"
+                        role="listitem"
+                        @onclick="() => OpenPerson(row.Contact.Id)">
+                    <div class="people-avatar" aria-hidden="true">@Initials(row.Contact.DisplayName)</div>
+                    <div class="people-row-body">
+                        <div class="people-name">@row.Contact.DisplayName</div>
+                        <div class="people-meta">@row.IdLabel</div>
+                        <div class="people-status">@row.StatusLabel</div>
+                        @if (!string.IsNullOrWhiteSpace(row.BalanceHint))
+                        {
+                            <div class="people-hint">@row.BalanceHint</div>
+                        }
+                    </div>
+                    <span class="people-chevron" aria-hidden="true">›</span>
+                </button>
+            }
+        </div>
+    }
+}
+else if (_mode == "add")
+{
+    <div class="people-panel">
+        @if (_resolved is null)
+        {
+            <div style="margin-bottom:12px;">
+                <div style="font-weight:600;margin-bottom:4px;">ExItS ID</div>
+                <Input @bind-Value="_exitsIdInput"
+                       Placeholder="EX-____-____ or QR payload"
+                       Disabled="_busy"
+                       MaxLength="128"
+                       OnPressEnter="FindPersonAsync" />
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_formError))
+            {
+                <Alert Type="@AlertType.Error" Message="@_formError" ShowIcon="true" Style="margin-bottom:12px;" />
+            }
+            <Space Wrap>
+                <Button Disabled="_busy" OnClick='() => Nav.NavigateTo("/utang/people")'>Cancel</Button>
+                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="FindPersonAsync">Find person</Button>
+            </Space>
+            <p style="margin-top:16px;color:var(--ant-color-text-secondary);font-size:13px;">
+                Scan QR support uses the same ExItS ID field (paste payload). Exact match only — no search by name.
+            </p>
+        }
+        else
+        {
+            <Alert Type="@AlertType.Info" Message="Identity found" ShowIcon="true" Style="margin-bottom:12px;" />
+            <div class="people-confirm">
+                <div class="people-avatar people-avatar-lg" aria-hidden="true">@Initials(_resolved.DisplayName)</div>
+                <div>
+                    <div class="people-name">@_resolved.DisplayName</div>
+                    <div class="people-meta">@_resolved.PublicUserId</div>
+                    @if (!string.IsNullOrWhiteSpace(_resolved.MaskedEmail))
+                    {
+                        <div class="people-hint">@_resolved.MaskedEmail</div>
+                    }
+                </div>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_formError))
+            {
+                <Alert Type="@AlertType.Error" Message="@_formError" ShowIcon="true" Style="margin-bottom:12px;" />
+            }
+            <Space Wrap>
+                <Button Disabled="_busy" OnClick="ClearResolved">Cancel</Button>
+                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="ConfirmAddAsync">Add person</Button>
+            </Space>
+        }
+    </div>
+}
+else if (_mode == "detail" && _selected is not null)
+{
+    var status = ResolveStatus(_selected);
+    <div class="people-panel">
+        <div class="people-confirm" style="margin-bottom:16px;">
+            <div class="people-avatar people-avatar-lg" aria-hidden="true">@Initials(_selected.DisplayName)</div>
+            <div>
+                <div class="people-name">@_selected.DisplayName</div>
+                <div class="people-meta">@IdLabel(_selected)</div>
+                <Tag Color="@StatusColor(status)" Style="margin-top:6px;">@StatusLabel(status)</Tag>
+            </div>
+        </div>
+
+        @if (status == PeopleStatus.Pending)
+        {
+            <Alert Type="@AlertType.Info"
+                   Message="@($"Waiting for {_selected.DisplayName} to respond.")"
+                   ShowIcon="true"
+                   Style="margin-bottom:12px;" />
+            @if (_pendingOutgoing is not null)
+            {
+                <p class="people-hint">Sent @_pendingOutgoing.CreatedAtUtc.ToLocalTime().ToString("MMM d")</p>
+                <Space Wrap Style="margin-bottom:16px;">
+                    <Button Danger Loading="_busy" OnClick="CancelRequestAsync">Cancel request</Button>
+                    <Button Loading="_busy" OnClick="ResendRequestAsync">Send again</Button>
+                </Space>
+            }
+        }
+        else if (status == PeopleStatus.Connected)
+        {
+            var rel = PrimaryRelationship(_selected);
+            <div class="people-section">
+                <div class="people-section-title">Utang</div>
+                @if (rel is not null)
+                {
+                    <div>Balance @FormatMoney(rel.CurrentBalance, rel.CurrencyCode)</div>
+                    <div class="people-hint">@rel.Perspective</div>
+                }
+                else
+                {
+                    <div class="people-hint">Shared Utang relationship is active.</div>
+                }
+            </div>
+            <Space Wrap Style="margin-bottom:16px;" Direction="SpaceDirection.Vertical" Size="@("middle")">
+                <Button Block Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/utang/lent")'>I lent money</Button>
+                <Button Block OnClick='() => Nav.NavigateTo("/utang/borrowed")'>I borrowed money</Button>
+            </Space>
+            <div class="people-section">
+                <div class="people-section-title">Relationship</div>
+                <p class="people-hint">Connected means shared Personal Utang access — not a social friendship.</p>
+            </div>
+        }
+        else
+        {
+            <Alert Type="@AlertType.Info"
+                   Message="@($"You can keep {_selected.DisplayName} in People without sharing Utang activity.")"
+                   ShowIcon="true"
+                   Style="margin-bottom:12px;" />
+            <Space Wrap Direction="SpaceDirection.Vertical" Size="@("middle")" Style="width:100%;margin-bottom:16px;">
+                <Button Block Type="@ButtonType.Primary" Loading="_busy" OnClick="() => StartUtangAsync(lend: true)">
+                    I lent money
+                </Button>
+                <Button Block Loading="_busy" OnClick="() => StartUtangAsync(lend: false)">
+                    I borrowed money
+                </Button>
+            </Space>
+            @if (!string.IsNullOrWhiteSpace(_formError))
+            {
+                <Alert Type="@AlertType.Error" Message="@_formError" ShowIcon="true" />
+            }
+        }
+
+        <Button Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/utang/people")'>Back to People</Button>
+    </div>
+}
+
+<style>
+    .people-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    .people-list { display:flex; flex-direction:column; gap:8px; max-width:560px; }
+    .people-row {
+        display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+        padding:12px; border:1px solid var(--ant-color-border); border-radius:8px;
+        background:var(--ant-color-bg-container); cursor:pointer; min-height:64px;
+    }
+    .people-row:hover { border-color:var(--ant-color-primary); }
+    .people-avatar {
+        width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+        background:var(--ant-color-fill-secondary); font-weight:600; flex-shrink:0;
+    }
+    .people-avatar-lg { width:56px; height:56px; font-size:18px; }
+    .people-row-body { flex:1; min-width:0; }
+    .people-name { font-weight:600; }
+    .people-meta, .people-hint, .people-status { font-size:13px; color:var(--ant-color-text-secondary); }
+    .people-status { margin-top:2px; }
+    .people-chevron { font-size:22px; color:var(--ant-color-text-tertiary); }
+    .people-panel { max-width:480px; width:100%; }
+    .people-confirm { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+    .people-section { margin-bottom:16px; }
+    .people-section-title { font-weight:600; margin-bottom:6px; }
+    @@media (max-width: 430px) {
+        .people-toolbar { flex-wrap:wrap; }
+        .people-toolbar .ant-btn { flex:1; }
+    }
+</style>
+
+@code {
+    [Parameter] public Guid ContactId { get; set; }
+
+    private enum PeopleStatus { Local, NotConnected, Pending, Connected }
+
+    private sealed record PeopleRow(
+        PersonalContactDto Contact,
+        string IdLabel,
+        string StatusLabel,
+        string? BalanceHint);
+
+    private bool _loading = true;
+    private bool _busy;
+    private string _mode = "list";
+    private string _title = "People";
+    private string _subtitle = "Saved people and Personal Utang relationship state.";
+    private string? _error;
+    private string? _formError;
+    private string _search = "";
+    private string _filter = "All";
+    private string _exitsIdInput = "";
+    private ResolvedPublicUserDto? _resolved;
+    private PersonalContactDto? _selected;
+    private PersonalUtangInvitationDto? _pendingOutgoing;
+    private Guid? _viewerUserId;
+    private IReadOnlyList<PersonalContactDto> _contacts = [];
+    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _relationships = [];
+    private IReadOnlyList<PersonalUtangInvitationDto> _invitations = [];
+    private IReadOnlyList<PeopleRow> _visiblePeople = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        if (path.Equals("/utang/people/add", StringComparison.OrdinalIgnoreCase))
+        {
+            _mode = "add";
+            _title = "Add person";
+            _subtitle = "Resolve an ExItS ID, confirm identity, then save to People.";
+        }
+        else if (ContactId != Guid.Empty)
+        {
+            _mode = "detail";
+            _title = "Person";
+            _subtitle = "Relationship and Utang actions for this person.";
+        }
+        else
+        {
+            _mode = "list";
+            _title = "People";
+            _subtitle = "Saved people and Personal Utang relationship state.";
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var profile = await Api.GetProfileAsync();
+            _viewerUserId = profile?.UserIdentityId;
+            _contacts = await Api.GetContactsAsync() ?? [];
+            var lent = await Api.GetLentAsync() ?? [];
+            var borrowed = await Api.GetBorrowedAsync() ?? [];
+            _relationships = lent.Concat(borrowed)
+                .GroupBy(r => r.Id)
+                .Select(g => g.First())
+                .ToList();
+            _invitations = await Api.GetInvitationsAsync() ?? [];
+
+            if (_mode == "detail")
+            {
+                _selected = _contacts.FirstOrDefault(c => c.Id == ContactId);
+                if (_selected is null)
+                {
+                    _error = "Person was not found.";
+                }
+                else
+                {
+                    _title = _selected.DisplayName;
+                    _pendingOutgoing = _invitations.FirstOrDefault(i =>
+                        i.InviteeContactId == _selected.Id
+                        && string.Equals(i.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            RebuildVisible();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void SetFilter(string filter)
+    {
+        _filter = filter;
+        RebuildVisible();
+    }
+
+    private void OpenPerson(Guid contactId) =>
+        Nav.NavigateTo($"/utang/people/{contactId:D}");
+
+    private void RebuildVisible()
+    {
+        var q = _search.Trim();
+        var rows = _contacts
+            .Select(c =>
+            {
+                var status = ResolveStatus(c);
+                var rel = PrimaryRelationship(c);
+                string? hint = null;
+                if (rel is not null)
+                {
+                    hint = $"{rel.Perspective} {FormatMoney(rel.CurrentBalance, rel.CurrencyCode)}";
+                }
+
+                return new PeopleRow(c, IdLabel(c), StatusLabel(status), hint);
+            })
+            .Where(r =>
+            {
+                if (!string.IsNullOrWhiteSpace(q)
+                    && r.Contact.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) == false
+                    && (r.Contact.PublicUserId?.Contains(q, StringComparison.OrdinalIgnoreCase) != true))
+                {
+                    return false;
+                }
+
+                var status = ResolveStatus(r.Contact);
+                return _filter switch
+                {
+                    "Connected" => status == PeopleStatus.Connected,
+                    "Pending" => status == PeopleStatus.Pending,
+                    "Local" => status == PeopleStatus.Local || status == PeopleStatus.NotConnected,
+                    _ => true
+                };
+            })
+            .OrderBy(r => r.Contact.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _visiblePeople = rows;
+    }
+
+    private async Task FindPersonAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formError = null;
+        _resolved = null;
+        try
+        {
+            var (ok, data, error) = await Api.ResolvePublicUserIdAsync(_exitsIdInput);
+            if (!ok || data is null)
+            {
+                _formError = error ?? "No active user matched that ExItS ID.";
+                return;
+            }
+
+            if (data.IsSelf)
+            {
+                _formError = "Cannot add yourself.";
+                return;
+            }
+
+            _resolved = data;
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ClearResolved()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _resolved = null;
+        _formError = null;
+    }
+
+    private async Task ConfirmAddAsync()
+    {
+        if (_busy || _resolved is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formError = null;
+        try
+        {
+            var (ok, data, error) = await Api.CreateContactAsync(new CreatePersonalContactRequest(
+                _resolved.DisplayName,
+                Phone: null,
+                Email: null,
+                PublicUserId: _resolved.PublicUserId,
+                LinkedUserIdentityId: _resolved.UserIdentityId));
+            if (!ok || data is null)
+            {
+                _formError = error ?? "Could not add person.";
+                return;
+            }
+
+            await Message.SuccessAsync("Person added. Not connected until they accept a Utang invitation.");
+            Nav.NavigateTo($"/utang/people/{data.Id:D}");
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StartUtangAsync(bool lend)
+    {
+        if (_busy || _selected is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formError = null;
+        try
+        {
+            Guid? me = _viewerUserId ?? (await Api.GetProfileAsync())?.UserIdentityId;
+            if (me is null)
+            {
+                _formError = "Could not resolve your account for Utang.";
+                return;
+            }
+
+            _viewerUserId = me;
+            CreatePersonalDebtRelationshipRequest body = lend
+                ? new(me, null, null, _selected.Id, "PHP", null, null, null)
+                : new(null, _selected.Id, me, null, "PHP", null, null, null);
+
+            var (okRel, rel, relError) = await Api.CreateRelationshipAsync(body);
+            if (!okRel || rel is null)
+            {
+                _formError = relError ?? "Could not create Utang relationship.";
+                return;
+            }
+
+            var (okInv, inv, invError) = await Api.CreateInvitationAsync(rel.Id, _selected.Id);
+            if (!okInv)
+            {
+                await LoadAsync();
+                await Message.WarningAsync(invError ?? "Utang started, but invitation was not created.");
+                return;
+            }
+
+            _ = inv;
+            await Message.SuccessAsync("Request sent. Status is pending until they respond.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CancelRequestAsync()
+    {
+        if (_busy || _pendingOutgoing is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var (ok, _, error) = await Api.RevokeInvitationAsync(_pendingOutgoing.Id);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not cancel request.");
+                return;
+            }
+
+            await Message.SuccessAsync("Request cancelled.");
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResendRequestAsync()
+    {
+        if (_busy || _pendingOutgoing is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var (ok, _, error) = await Api.ResendInvitationAsync(_pendingOutgoing.Id);
+            if (!ok)
+            {
+                await Message.ErrorAsync(error ?? "Could not resend request.");
+                return;
+            }
+
+            await Message.SuccessAsync("Request sent again.");
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private PeopleStatus ResolveStatus(PersonalContactDto contact)
+    {
+        if (_invitations.Any(i =>
+                i.InviteeContactId == contact.Id
+                && string.Equals(i.Status, "Pending", StringComparison.OrdinalIgnoreCase)))
+        {
+            return PeopleStatus.Pending;
+        }
+
+        if (IsConnected(contact))
+        {
+            return PeopleStatus.Connected;
+        }
+
+        if (!string.IsNullOrWhiteSpace(contact.PublicUserId) || contact.LinkedUserIdentityId is not null)
+        {
+            return PeopleStatus.NotConnected;
+        }
+
+        return PeopleStatus.Local;
+    }
+
+    private bool IsConnected(PersonalContactDto contact)
+    {
+        foreach (var r in _relationships)
+        {
+            if (r.CreditorContactId == contact.Id || r.DebtorContactId == contact.Id)
+            {
+                // Contact still on relationship => not fully authorized to user yet.
+                continue;
+            }
+
+            if (contact.LinkedUserIdentityId is Guid linked
+                && (r.CreditorUserIdentityId == linked || r.DebtorUserIdentityId == linked))
+            {
+                return true;
+            }
+        }
+
+        return _invitations.Any(i =>
+            i.InviteeContactId == contact.Id
+            && string.Equals(i.Status, "Accepted", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private PersonalDebtRelationshipSummaryDto? PrimaryRelationship(PersonalContactDto contact)
+    {
+        return _relationships.FirstOrDefault(r =>
+            r.CreditorContactId == contact.Id
+            || r.DebtorContactId == contact.Id
+            || (contact.LinkedUserIdentityId is Guid linked
+                && (r.CreditorUserIdentityId == linked || r.DebtorUserIdentityId == linked)));
+    }
+
+    private static string IdLabel(PersonalContactDto contact) =>
+        string.IsNullOrWhiteSpace(contact.PublicUserId) ? "Local contact" : contact.PublicUserId!;
+
+    private static string StatusLabel(PeopleStatus status) => status switch
+    {
+        PeopleStatus.Connected => "Connected",
+        PeopleStatus.Pending => "Request pending",
+        PeopleStatus.NotConnected => "Not connected",
+        _ => "Local contact"
+    };
+
+    private static string StatusColor(PeopleStatus status) => status switch
+    {
+        PeopleStatus.Connected => "success",
+        PeopleStatus.Pending => "processing",
+        PeopleStatus.NotConnected => "default",
+        _ => "default"
+    };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return "?";
+        }
+
+        if (parts.Length == 1)
+        {
+            return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
+        }
+
+        return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
+    }
+
+    private static string FormatMoney(decimal amount, string currency) =>
+        $"{currency} {amount:N2}";
+}

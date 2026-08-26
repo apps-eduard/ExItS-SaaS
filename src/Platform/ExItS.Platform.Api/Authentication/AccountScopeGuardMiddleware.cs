@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Identity;
@@ -63,6 +64,14 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             || path.Equals("/api/v1/platform/auth/login", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/platform/auth/logout", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/platform/auth/me", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // CSRF bootstrap must work for any authenticated account class (e.g. Personal/Organization
+        // clearing a Platform Admin React session via logout, which still requires antiforgery).
+        if (path.Equals(PlatformAntiforgeryDefaults.TokenRoute, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/api/v1/platform/antiforgery/", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

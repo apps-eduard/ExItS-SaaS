@@ -103,7 +103,8 @@ builder.Services.AddHttpClient("PlatformApiUnauthenticated", (services, client) 
     var options = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ExItS.PinoyBusinessPOS.Application.Options.PosApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
     client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-});
+})
+.ConfigurePrimaryHttpMessageHandler(ExItS.PinoyBusinessPOS.ApiClient.DependencyInjection.CreatePlatformHttpMessageHandler);
 
 builder.Services.AddPosApiClient(builder.Configuration);
 builder.Services.AddTransient<OrgWebCircuitSessionHeaderHandler>();
@@ -116,6 +117,7 @@ builder.Services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =
         client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
         client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
     })
+    .ConfigurePrimaryHttpMessageHandler(ExItS.PinoyBusinessPOS.ApiClient.DependencyInjection.CreatePlatformHttpMessageHandler)
     .AddHttpMessageHandler<OrgWebCircuitSessionHeaderHandler>()
     .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
     .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()

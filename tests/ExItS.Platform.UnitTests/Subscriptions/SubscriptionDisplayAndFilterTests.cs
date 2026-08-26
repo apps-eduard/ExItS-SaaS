@@ -285,7 +285,7 @@ public sealed class SubscriptionDisplayAndFilterTests
             starterPlan.Activate(T0);
             await plans.AddAsync(starterPlan);
 
-            var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), businessPlan.Id);
+            var trial = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), planId: null);
             await trials.AddAsync(trial);
 
             var queries = new SubscriptionQueryService(subscriptions, orgs, products, plans);

@@ -234,7 +234,15 @@ public static class PlatformAuditActions
     /// <summary>Generic action code recorded when a permission-gated read is denied (e.g. audit or role-assignment views).</summary>
     public const string PlatformAccessChecked = "platform.access.checked";
 
+    public const string PlatformSupportLookup = "platform.support.lookup";
+
     public const string PersonalAccountSettingsUpdated = "platform.personal.account_settings.updated";
+
+    public const string PlatformSettingsGeneralUpdated = "platform.settings.general.updated";
+    public const string PlatformSettingsEmailUpdated = "platform.settings.email.updated";
+    public const string PlatformSettingsEmailTestSent = "platform.settings.email.test_sent";
+    public const string PlatformSettingsRegionalUpdated = "platform.settings.regional.updated";
+
     public const string PersonalContactCreated = "platform.personal.contact.created";
     public const string PersonalContactUpdated = "platform.personal.contact.updated";
     public const string PersonalContactLinked = "platform.personal.contact.linked";

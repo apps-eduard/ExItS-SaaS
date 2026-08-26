@@ -31,6 +31,16 @@ internal sealed class PosDeviceRepository : IPosDeviceRepository
             .Select(OrganizationBranchDeviceEntityMapper.ToDomain).ToList();
     public Task<int> CountActiveAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         _db.PosDevices.AsNoTracking().CountAsync(x => x.OrganizationId == organizationId.Value && x.Status == nameof(PosDeviceStatus.Active), cancellationToken);
+
+    public async Task<PosDevice?> FindByInstallationDeviceIdAsync(string installationDeviceId, CancellationToken cancellationToken = default)
+    {
+        var value = PosDevice.NormalizeInstallationDeviceId(installationDeviceId);
+        var record = await _db.PosDevices.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.InstallationDeviceId == value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : OrganizationBranchDeviceEntityMapper.ToDomain(record);
+    }
+
     public Task AddAsync(PosDevice device, CancellationToken cancellationToken = default) { _db.PosDevices.Add(OrganizationBranchDeviceEntityMapper.ToRecord(device)); return Task.CompletedTask; }
     public async Task UpdateAsync(PosDevice device, CancellationToken cancellationToken = default)
     {

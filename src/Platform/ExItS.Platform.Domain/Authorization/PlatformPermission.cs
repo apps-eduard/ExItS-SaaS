@@ -28,6 +28,9 @@ public static class PlatformPermission
     public const string ViewPrivacyCompliance = "platform.permission.view_privacy_compliance";
     public const string ManagePrivacyCompliance = "platform.permission.manage_privacy_compliance";
 
+    public const string ViewPlatformSettings = "platform.permission.view_platform_settings";
+    public const string ManagePlatformSettings = "platform.permission.manage_platform_settings";
+
     public static readonly IReadOnlyList<string> All =
     [
         ViewPortfolio,
@@ -47,6 +50,8 @@ public static class PlatformPermission
         ManageCatalogTemplates,
         PublishCatalogTemplates,
         ViewPrivacyCompliance,
-        ManagePrivacyCompliance
+        ManagePrivacyCompliance,
+        ViewPlatformSettings,
+        ManagePlatformSettings
     ];
 }

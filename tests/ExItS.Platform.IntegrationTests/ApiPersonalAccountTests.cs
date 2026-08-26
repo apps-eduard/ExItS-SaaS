@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -107,5 +108,79 @@ public sealed class ApiPersonalAccountTests(PostgreSqlFixture fixture) : IAsyncL
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(ApplicationErrorCodes.AccountScopeDenied, body.GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
+    public async Task Personal_profile_update_persists_display_name_for_self_only()
+    {
+        var token = await LoginPersonalAsync();
+
+        using var getBefore = Authed(HttpMethod.Get, "/api/v1/personal/profile", token);
+        var beforeResponse = await _client.SendAsync(getBefore);
+        Assert.Equal(HttpStatusCode.OK, beforeResponse.StatusCode);
+        var before = await beforeResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var originalName = before.GetProperty("displayName").GetString()!;
+        var username = before.GetProperty("username").GetString()!;
+        var email = before.GetProperty("email").GetString()!;
+        var accountClass = before.GetProperty("accountClass").GetString()!;
+        var userId = before.GetProperty("userIdentityId").GetGuid();
+        Assert.False(string.IsNullOrWhiteSpace(originalName));
+
+        using var blank = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        blank.Content = JsonContent.Create(new { displayName = "   " });
+        var blankResponse = await _client.SendAsync(blank);
+        Assert.Equal(HttpStatusCode.BadRequest, blankResponse.StatusCode);
+        var blankBody = await blankResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(DomainErrorCodes.InvalidDisplayName, blankBody.GetProperty("errorCode").GetString());
+
+        using var tooShort = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        tooShort.Content = JsonContent.Create(new { displayName = "A" });
+        var tooShortResponse = await _client.SendAsync(tooShort);
+        Assert.Equal(HttpStatusCode.BadRequest, tooShortResponse.StatusCode);
+
+        var nextName = $"Renamed {Unique("n")}";
+        using var update = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        update.Content = JsonContent.Create(new { displayName = $"  {nextName}  " });
+        var updateResponse = await _client.SendAsync(update);
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(nextName, updated.GetProperty("displayName").GetString());
+        Assert.Equal(username, updated.GetProperty("username").GetString());
+        Assert.Equal(email, updated.GetProperty("email").GetString());
+        Assert.Equal(accountClass, updated.GetProperty("accountClass").GetString());
+        Assert.Equal(userId, updated.GetProperty("userIdentityId").GetGuid());
+
+        using var getAfter = Authed(HttpMethod.Get, "/api/v1/personal/profile", token);
+        var afterResponse = await _client.SendAsync(getAfter);
+        Assert.Equal(HttpStatusCode.OK, afterResponse.StatusCode);
+        var after = await afterResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(nextName, after.GetProperty("displayName").GetString());
+
+        using var same = Authed(HttpMethod.Put, "/api/v1/personal/profile", token);
+        same.Content = JsonContent.Create(new { displayName = nextName });
+        var sameResponse = await _client.SendAsync(same);
+        Assert.Equal(HttpStatusCode.OK, sameResponse.StatusCode);
+
+        var otherToken = await LoginPersonalAsync();
+        using var otherUpdate = Authed(HttpMethod.Put, "/api/v1/personal/profile", otherToken);
+        otherUpdate.Content = JsonContent.Create(new { displayName = $"Other {Unique("o")}" });
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(otherUpdate)).StatusCode);
+
+        using var firstAgain = Authed(HttpMethod.Get, "/api/v1/personal/profile", token);
+        var firstBody = await (await _client.SendAsync(firstAgain)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(nextName, firstBody.GetProperty("displayName").GetString());
+    }
+
+    [Fact]
+    public async Task Unauthenticated_profile_update_is_rejected()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, "/api/v1/personal/profile")
+        {
+            Content = JsonContent.Create(new { displayName = "No Session" })
+        };
+        var response = await _client.SendAsync(request);
+        Assert.True(
+            response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden,
+            $"Expected 401/403, got {(int)response.StatusCode}");
     }
 }

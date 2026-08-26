@@ -89,6 +89,46 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     }
 
     [Fact]
+    public async Task Personal_and_organization_sessions_can_bootstrap_antiforgery_and_logout()
+    {
+        // React Admin Sign out POSTs /auth/logout (scope-exempt) but first GETs antiforgery/token.
+        // Non-Platform sessions must not be blocked by account_scope_denied on that bootstrap.
+        var (_, personalEmail, personalPassword) = await SeedPersonalUserAsync("afpers");
+        var personalLogin = await LoginAsync(personalEmail, personalPassword);
+        Assert.Equal("Personal", personalLogin.GetProperty("accountClass").GetString());
+        var personalToken = personalLogin.GetProperty("sessionToken").GetString()!;
+
+        using (var antiforgery = Authed(HttpMethod.Get, "/api/v1/platform/antiforgery/token", personalToken))
+        {
+            var response = await _client.SendAsync(antiforgery);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        using (var logout = Authed(HttpMethod.Post, "/api/v1/platform/auth/logout", personalToken))
+        {
+            var response = await _client.SendAsync(logout);
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        var (_, orgStaffLogin, orgPassword, _) = await SeedOrgMemberAsync("aforg");
+        var orgLogin = await LoginAsync(orgStaffLogin, orgPassword);
+        Assert.Equal("Organization", orgLogin.GetProperty("accountClass").GetString());
+        var orgToken = orgLogin.GetProperty("sessionToken").GetString()!;
+
+        using (var antiforgery = Authed(HttpMethod.Get, "/api/v1/platform/antiforgery/token", orgToken))
+        {
+            var response = await _client.SendAsync(antiforgery);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        using (var logout = Authed(HttpMethod.Post, "/api/v1/platform/auth/logout", orgToken))
+        {
+            var response = await _client.SendAsync(logout);
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Platform_session_cannot_call_personal_apis()
     {
         var (userId, username, password) = await SeedUserAsync("plat");

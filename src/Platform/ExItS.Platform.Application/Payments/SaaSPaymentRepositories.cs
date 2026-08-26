@@ -45,6 +45,11 @@ public interface ISaaSPaymentRepository
         PlatformOrganizationId orgId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SaaSPayment>> FindByNormalizedReferenceAsync(
+        string normalizedReference,
+        SaaSPaymentMethod? method,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<SaaSPayment> Items, int TotalCount)> ListBySubscriptionAsync(
         SubscriptionId subscriptionId,
         int skip,

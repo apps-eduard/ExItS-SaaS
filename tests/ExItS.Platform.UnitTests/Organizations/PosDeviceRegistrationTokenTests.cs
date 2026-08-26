@@ -400,6 +400,14 @@ public sealed class PosDeviceRegistrationTokenTests
                 x.OrganizationId == organizationId && x.InstallationDeviceId == value));
         }
 
+        public Task<PosDevice?> FindByInstallationDeviceIdAsync(
+            string installationDeviceId,
+            CancellationToken cancellationToken = default)
+        {
+            var value = PosDevice.NormalizeInstallationDeviceId(installationDeviceId);
+            return Task.FromResult(_items.FirstOrDefault(x => x.InstallationDeviceId == value));
+        }
+
         public Task<IReadOnlyList<PosDevice>> ListByOrganizationAsync(
             PlatformOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>

@@ -115,6 +115,13 @@ public sealed class Subscription
                 "Trial definition must be active.");
         }
 
+        if (trialDefinition.PlanId is not null && trialDefinition.PlanId != plan.Id)
+        {
+            throw new DomainException(
+                DomainErrorCodes.ProductMismatch,
+                "Trial definition does not belong to the plan.");
+        }
+
         var trialEnd = utcNow.Add(trialDefinition.Duration);
         var subscription = new Subscription(
             id ?? SubscriptionId.New(),

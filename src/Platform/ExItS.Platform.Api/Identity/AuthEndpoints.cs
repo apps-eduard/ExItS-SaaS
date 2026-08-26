@@ -9,6 +9,7 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Identity;
@@ -790,7 +791,7 @@ internal static class AuthEndpoints
         IHostEnvironment env)
     {
         var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
-        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
+        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,
@@ -808,7 +809,7 @@ internal static class AuthEndpoints
     internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options, IHostEnvironment env)
     {
         var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
-        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
+        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
         http.Response.Cookies.Delete(
             options.CookieName,
             new CookieOptions

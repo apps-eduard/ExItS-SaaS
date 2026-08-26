@@ -261,6 +261,12 @@ internal static class EntitlementEndpoints
                 return denied;
             }
 
+            var actorDenied = RequirePlatformUserId(authz, out var createdByUserId);
+            if (actorDenied is not null)
+            {
+                return actorDenied;
+            }
+
             try
             {
                 var result = await useCase.ExecuteAsync(
@@ -269,7 +275,7 @@ internal static class EntitlementEndpoints
                     FeatureCode.Create(body.FeatureCode),
                     body.Enabled,
                     body.Reason,
-                    PlatformUserId.From(body.CreatedByUserId),
+                    createdByUserId,
                     body.NumericLimit,
                     body.ExpiresAtUtc,
                     ct).ConfigureAwait(false);
@@ -370,10 +376,16 @@ internal static class EntitlementEndpoints
                 return denied;
             }
 
+            var actorDenied = RequirePlatformUserId(authz, out var revokedByUserId);
+            if (actorDenied is not null)
+            {
+                return actorDenied;
+            }
+
             var result = await useCase.ExecuteAsync(
                 FeatureOverrideId.From(overrideId),
                 body.Reason,
-                PlatformUserId.From(body.RevokedByUserId),
+                revokedByUserId,
                 ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -419,6 +431,22 @@ internal static class EntitlementEndpoints
         })
     };
 
+    private static IResult? RequirePlatformUserId(PlatformAuthz authz, out PlatformUserId actorUserId)
+    {
+        var actor = authz.CurrentActor.PlatformUserId;
+        if (actor is null)
+        {
+            actorUserId = default!;
+            return PlatformApiResults.Problem(
+                ApplicationErrorCodes.SessionInvalid,
+                "Authenticated Platform user is required.",
+                StatusCodes.Status401Unauthorized);
+        }
+
+        actorUserId = actor;
+        return null;
+    }
+
     private static object MapOverride(FeatureOverride featureOverride) => new
     {
         id = featureOverride.Id.Value,
@@ -448,8 +476,7 @@ internal sealed record CreateFeatureOverrideRequest(
     string FeatureCode,
     bool Enabled,
     string Reason,
-    Guid CreatedByUserId,
     int? NumericLimit,
     DateTimeOffset? ExpiresAtUtc);
 
-internal sealed record RevokeFeatureOverrideRequest(string Reason, Guid RevokedByUserId);
+internal sealed record RevokeFeatureOverrideRequest(string Reason);

@@ -30,6 +30,10 @@ public sealed record CreatePersonalUtangInvitationRequest(Guid InviteeContactId)
 
 public sealed record AcceptPersonalUtangInvitationRequest(string Token);
 
+public sealed record AcceptPersonalUtangInvitationByIdRequest(Guid InvitationId);
+
+public sealed record DeclinePersonalUtangInvitationByIdRequest(Guid InvitationId);
+
 public sealed record PersonalUtangInvitationAcceptResultDto(
     Guid InvitationId,
     Guid DebtRelationshipId,
@@ -43,6 +47,7 @@ public sealed class CreatePersonalUtangInvitation
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -51,6 +56,7 @@ public sealed class CreatePersonalUtangInvitation
         IPersonalDebtRelationshipRepository relationships,
         IPersonalContactRepository contacts,
         IPersonalUtangInvitationRepository invitations,
+        IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -58,6 +64,7 @@ public sealed class CreatePersonalUtangInvitation
         _relationships = relationships;
         _contacts = contacts;
         _invitations = invitations;
+        _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -100,11 +107,29 @@ public sealed class CreatePersonalUtangInvitation
         }
 
         var contact = contactResult.Value!;
+        string? inviteTargetEmail = contact.Email;
         if (contact.IsLinked)
         {
-            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
-                ApplicationErrorCodes.PersonalUtangInvitationConflict,
-                "Contact is already linked to a user.");
+            // Identity association from People add is not Utang consent.
+            // Still allow a relationship-scoped invitation; acceptance authorizes the shared ledger.
+            if (contact.LinkedUserIdentityId is null)
+            {
+                return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                    ApplicationErrorCodes.PersonalUtangInvitationConflict,
+                    "Contact link state is invalid.");
+            }
+
+            var linkedInvitee = await _users
+                .GetByIdAsync(contact.LinkedUserIdentityId, cancellationToken)
+                .ConfigureAwait(false);
+            if (linkedInvitee is null || linkedInvitee.Status is not AccountStatus.Active)
+            {
+                return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                    ApplicationErrorCodes.UserNotFound,
+                    "Linked ExItS user was not found.");
+            }
+
+            inviteTargetEmail = linkedInvitee.NormalizedEmail;
         }
 
         var isParticipantContact =
@@ -138,13 +163,13 @@ public sealed class CreatePersonalUtangInvitation
 
         try
         {
-            // Anti-enumeration: never look up Platform Users by contact email/phone.
+            // Anti-enumeration: never look up Platform Users by contact email/phone for unlinked contacts.
             var (invitation, acceptToken) = PersonalUtangInvitation.Create(
                 relationship.Id,
                 contact.Id,
                 actingUserIdentityId,
                 _clock.UtcNow,
-                inviteTargetEmail: contact.Email,
+                inviteTargetEmail: inviteTargetEmail,
                 inviteTargetPhone: contact.Phone);
 
             await _invitations.AddAsync(invitation, cancellationToken).ConfigureAwait(false);
@@ -613,8 +638,19 @@ public sealed class AcceptPersonalUtangInvitation
                     "Invitation has expired.");
             }
 
+            if (contact.IsLinked && contact.LinkedUserIdentityId != acceptingUserIdentityId)
+            {
+                return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                    ApplicationErrorCodes.PersonalContactLinkConflict,
+                    "Contact is linked to a different ExItS identity.");
+            }
+
             invitation.Accept(acceptingUserIdentityId, user.NormalizedEmail, _clock.UtcNow);
-            contact.LinkUser(acceptingUserIdentityId, _clock.UtcNow);
+            if (!contact.IsLinked)
+            {
+                contact.LinkUser(acceptingUserIdentityId, _clock.UtcNow);
+            }
+
             relationship.AuthorizeLinkedParticipant(
                 contact.Id,
                 acceptingUserIdentityId,
@@ -671,6 +707,255 @@ public sealed class AcceptPersonalUtangInvitation
         catch (DomainException ex)
         {
             return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class AcceptPersonalUtangInvitationById
+{
+    private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPlatformUserRepository _users;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public AcceptPersonalUtangInvitationById(
+        IPersonalUtangInvitationRepository invitations,
+        IPersonalContactRepository contacts,
+        IPersonalDebtRelationshipRepository relationships,
+        IPlatformUserRepository users,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _invitations = invitations;
+        _contacts = contacts;
+        _relationships = relationships;
+        _users = users;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangInvitationAcceptResultDto>> ExecuteAsync(
+        PlatformUserId acceptingUserIdentityId,
+        AcceptPersonalUtangInvitationByIdRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.InvitationId == Guid.Empty)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        var invitation = await _invitations
+            .GetByIdAsync(PersonalUtangInvitationId.From(request.InvitationId), cancellationToken)
+            .ConfigureAwait(false);
+        if (invitation is null || invitation.Status != PersonalUtangInvitationStatus.Pending)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        var user = await _users.GetByIdAsync(acceptingUserIdentityId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "User was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(invitation.InviteTargetNormalizedEmail)
+            || !string.Equals(user.NormalizedEmail, invitation.InviteTargetNormalizedEmail, StringComparison.Ordinal))
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        var contact = await _contacts.GetByIdAsync(invitation.InviteeContactId, cancellationToken)
+            .ConfigureAwait(false);
+        if (contact is null)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.PersonalContactNotFound,
+                "Personal contact was not found.");
+        }
+
+        var relationship = await _relationships.GetByIdAsync(invitation.DebtRelationshipId, cancellationToken)
+            .ConfigureAwait(false);
+        if (relationship is null)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangRelationshipNotFound,
+                "Personal debt relationship was not found.");
+        }
+
+        try
+        {
+            if (invitation.IsExpired(_clock.UtcNow))
+            {
+                invitation.MarkExpired(_clock.UtcNow);
+                await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                    DomainErrorCodes.PersonalUtangInvitationExpired,
+                    "Invitation has expired.");
+            }
+
+            if (contact.IsLinked && contact.LinkedUserIdentityId != acceptingUserIdentityId)
+            {
+                return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(
+                    ApplicationErrorCodes.PersonalContactLinkConflict,
+                    "Contact is linked to a different ExItS identity.");
+            }
+
+            invitation.Accept(acceptingUserIdentityId, user.NormalizedEmail, _clock.UtcNow);
+            if (!contact.IsLinked)
+            {
+                contact.LinkUser(acceptingUserIdentityId, _clock.UtcNow);
+            }
+
+            relationship.AuthorizeLinkedParticipant(
+                contact.Id,
+                acceptingUserIdentityId,
+                _clock.UtcNow);
+
+            await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+            await _contacts.UpdateAsync(contact, cancellationToken).ConfigureAwait(false);
+            await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                $"platform-user:{acceptingUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalUtangInvitationAccepted,
+                nameof(PersonalUtangInvitation),
+                invitation.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: "Personal Utang invitation accepted by invitation id; participant linked.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Success(
+                new PersonalUtangInvitationAcceptResultDto(
+                    invitation.Id.Value,
+                    relationship.Id.Value,
+                    contact.Id.Value,
+                    acceptingUserIdentityId.Value,
+                    CreatedOrganizationMembership: false,
+                    GrantedProductRole: false));
+        }
+        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.PersonalUtangInvitationExpired)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalUtangInvitationAcceptResultDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class DeclinePersonalUtangInvitationById
+{
+    private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPlatformUserRepository _users;
+    private readonly IAuditWriter _auditWriter;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DeclinePersonalUtangInvitationById(
+        IPersonalUtangInvitationRepository invitations,
+        IPlatformUserRepository users,
+        IAuditWriter auditWriter,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _invitations = invitations;
+        _users = users;
+        _auditWriter = auditWriter;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangInvitationDto>> ExecuteAsync(
+        PlatformUserId decliningUserIdentityId,
+        DeclinePersonalUtangInvitationByIdRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.InvitationId == Guid.Empty)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        var invitation = await _invitations
+            .GetByIdAsync(PersonalUtangInvitationId.From(request.InvitationId), cancellationToken)
+            .ConfigureAwait(false);
+        if (invitation is null || invitation.Status != PersonalUtangInvitationStatus.Pending)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        var user = await _users.GetByIdAsync(decliningUserIdentityId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "User was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(invitation.InviteTargetNormalizedEmail)
+            || !string.Equals(user.NormalizedEmail, invitation.InviteTargetNormalizedEmail, StringComparison.Ordinal))
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangInvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        try
+        {
+            if (invitation.IsExpired(_clock.UtcNow))
+            {
+                invitation.MarkExpired(_clock.UtcNow);
+                await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PersonalUtangInvitationDto>.Failure(
+                    DomainErrorCodes.PersonalUtangInvitationExpired,
+                    "Invitation has expired.");
+            }
+
+            invitation.Decline(_clock.UtcNow);
+            await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await _auditWriter.WriteAsync(
+                $"platform-user:{decliningUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalUtangInvitationDeclined,
+                nameof(PersonalUtangInvitation),
+                invitation.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: "Personal Utang invitation declined by invitation id.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult<PersonalUtangInvitationDto>.Success(
+                CreatePersonalUtangInvitation.ToDto(invitation));
+        }
+        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.PersonalUtangInvitationExpired)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PersonalUtangInvitationDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 }

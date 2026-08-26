@@ -1,7 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Subscriptions;
+using ExItS.Platform.Infrastructure.Authorization;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +37,8 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
     }
 
     private static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
+
+    private const decimal CloseoutPlanMonthlyPrice = 499m;
 
     [Fact]
     public async Task Full_phase3_commercial_lifecycle_scenario()
@@ -73,7 +79,13 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
 
         var plan = await _client.PostAsJsonAsync(
             $"/api/v1/platform/catalog/products/{productCode}/plans",
-            new { code = "utang", displayName = "Utang" });
+            new
+            {
+                code = "utang",
+                displayName = "Utang",
+                monthlyPrice = CloseoutPlanMonthlyPrice,
+                currencyCode = "PHP"
+            });
         plan.EnsureSuccessStatusCode();
         var planId = (await plan.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
         (await _client.PostAsync(
@@ -156,7 +168,7 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
             {
                 organizationId,
                 productCode,
-                amount = 499.00m,
+                amount = CloseoutPlanMonthlyPrice,
                 currencyCode = "PHP",
                 method = "GCash",
                 externalReference = $"CLOSEOUT-{Guid.NewGuid():N}",
@@ -168,7 +180,7 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
         Assert.Equal("PendingConfirmation", paymentBody.GetProperty("status").GetString());
 
         var periodStart = DateTimeOffset.UtcNow;
-        var periodEnd = periodStart.AddDays(30);
+        var (_, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(periodStart, BillingCycle.Monthly);
         var activate = await _client.PostAsJsonAsync(
             $"/api/v1/platform/payments/{paymentId}/activate-subscription",
             new
@@ -191,7 +203,7 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
                 confirmedBy = "closeout-operator",
                 subscriptionId,
                 periodStartUtc = periodEnd,
-                periodEndUtc = periodEnd.AddDays(30)
+                periodEndUtc = SubscriptionBillingPeriods.ComputePaidPeriod(periodEnd, BillingCycle.Monthly).End
             });
         Assert.Equal(HttpStatusCode.Conflict, reuse.StatusCode);
 
@@ -201,19 +213,29 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
             new { });
         Assert.Equal(HttpStatusCode.Created, activeSnap.StatusCode);
         var activeSnapBody = await activeSnap.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(2, activeSnapBody.GetProperty("snapshotVersion").GetInt32());
+        Assert.Equal(3, activeSnapBody.GetProperty("snapshotVersion").GetInt32());
         Assert.Equal("Active", activeSnapBody.GetProperty("subscriptionStatus").GetString());
 
         // 10–11. Override + next snapshot precedence
-        var overrideResponse = await _client.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/feature-overrides",
-            new
+        var (overrideOperatorUserId, _, _) = await PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(
+            _client,
+            "closeout-override",
+            "PlatformAdministrator");
+        using var overrideRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/feature-overrides")
+        {
+            Content = JsonContent.Create(new
             {
                 featureCode = FeatureCode.CustomerCreditCreate,
                 enabled = false,
                 reason = "Closeout hold",
-                createdByUserId = Guid.NewGuid()
-            });
+            })
+        };
+        overrideRequest.Headers.Add(
+            DevelopmentPlatformActorAccessor.DevPlatformUserIdHeader,
+            overrideOperatorUserId.ToString("D"));
+        var overrideResponse = await _client.SendAsync(overrideRequest);
         Assert.Equal(HttpStatusCode.Created, overrideResponse.StatusCode);
         var overrideId = (await overrideResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 

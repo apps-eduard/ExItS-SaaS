@@ -5,7 +5,7 @@
     <AssemblyName>ExItS.Platform.Api</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup>
+    <ItemGroup>
     <InternalsVisibleTo Include="ExItS.Platform.IntegrationTests" />
     <InternalsVisibleTo Include="ExItS.Platform.UnitTests" />
   </ItemGroup>

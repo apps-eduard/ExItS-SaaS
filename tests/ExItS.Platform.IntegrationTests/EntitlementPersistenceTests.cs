@@ -331,7 +331,17 @@ public sealed class EntitlementPersistenceTests(PostgreSqlFixture fixture)
         await overridesB.UpdateAsync(overrideB, default);
 
         await uowA.SaveChangesAsync();
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => uowB.SaveChangesAsync());
+
+        var ex = await Assert.ThrowsAsync<PersistenceConflictException>(() => uowB.SaveChangesAsync());
+        Assert.Equal(ApplicationErrorCodes.ConcurrencyConflict, ex.ErrorCode);
+
+        await using var verifyScope = provider.CreateAsyncScope();
+        var reloaded = await verifyScope.ServiceProvider
+            .GetRequiredService<IFeatureOverrideRepository>()
+            .GetByIdAsync(created.Id, default);
+        Assert.NotNull(reloaded);
+        Assert.Equal(FeatureOverrideStatus.Revoked, reloaded!.Status);
+        Assert.Equal("Reason A", reloaded.RevocationReason);
     }
 
     [Fact]

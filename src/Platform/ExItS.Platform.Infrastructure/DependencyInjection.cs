@@ -6,6 +6,8 @@ using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Settings;
+using ExItS.Platform.Infrastructure.Settings;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
@@ -121,6 +123,10 @@ public static class DependencyInjection
         services.AddScoped<IProcessingSystemRepository, ProcessingSystemRepository>();
         services.AddScoped<IPrivacyCompliancePdfExporter, PrivacyCompliancePdfExporter>();
         services.AddScoped<IPersonalAccountSettingsRepository, PersonalAccountSettingsRepository>();
+        services.AddScoped<IPlatformSettingsRepository, PlatformSettingsRepository>();
+        services.AddScoped<IPlatformSettingsSecretProtector, PlatformSettingsSecretProtector>();
+        services.AddScoped<IPlatformEmailDeliveryResolver, PlatformEmailDeliveryResolver>();
+        services.AddScoped<IPlatformEmailTestSender, PlatformEmailTestSender>();
         services.AddScoped<IPersonalContactRepository, PersonalContactRepository>();
         services.AddScoped<IPersonalConnectionRequestRepository, PersonalConnectionRequestRepository>();
         services.AddScoped<IPersonalDebtRelationshipRepository, PersonalDebtRelationshipRepository>();
@@ -171,16 +177,7 @@ public static class DependencyInjection
         services.Configure<PlatformExternalAuthOptions>(config.GetSection(PlatformExternalAuthOptions.SectionName));
         services.AddSingleton<IPlatformMfaFactorStore, NullPlatformMfaFactorStore>();
         services.AddScoped<IPlatformMfaReadinessService, PlatformMfaReadinessService>();
-        services.AddSingleton<IPlatformAuthOutboundMessageSink>(sp =>
-        {
-            var email = sp.GetRequiredService<IOptions<PlatformEmailDeliveryOptions>>().Value;
-            if (email.IsConfigured)
-            {
-                return ActivatorUtilities.CreateInstance<SmtpPlatformAuthOutboundMessageSink>(sp);
-            }
-
-            return ActivatorUtilities.CreateInstance<NullPlatformAuthOutboundMessageSink>(sp);
-        });
+        services.AddScoped<IPlatformAuthOutboundMessageSink, SmtpPlatformAuthOutboundMessageSink>();
 
         return services;
     }

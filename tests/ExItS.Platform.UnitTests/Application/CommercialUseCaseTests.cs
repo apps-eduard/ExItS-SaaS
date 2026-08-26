@@ -342,6 +342,97 @@ public sealed class CommercialUseCaseTests
     }
 
     [Fact]
+    public async Task StartTrial_rejects_trial_definition_for_a_different_plan()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var features = new InMemoryFeatureDefinitionRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Acme Group", "acme-cross-plan")).Value!;
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+        var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await features.AddAsync(FeatureDefinition.Create(
+            pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, T0));
+
+        var planA = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "starter-a", "Starter A")).Value!;
+        planA.Activate(T0);
+        var planB = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "growth-b", "Growth B")).Value!;
+        planB.Activate(T0);
+
+        var versionA = (await new PublishPlanVersion(plans, features, uow, clock)
+            .ExecuteAsync(planA.Id, 1, BillingPeriod.Monthly, true,
+                new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
+            .Value!;
+        var trialB = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), planB.Id);
+        await trials.AddAsync(trialB);
+
+        var start = await new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock)
+            .ExecuteAsync(org.Id, planA.Id, versionA.Id, trialB.Id);
+        Assert.False(start.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.SubscriptionIneligible, start.ErrorCode);
+        Assert.Equal(0, subscriptions.AddCount);
+    }
+
+    [Fact]
+    public async Task StartTrial_accepts_matching_plan_trial_and_product_wide_trial()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var products = new InMemoryProductRepository();
+        var features = new InMemoryFeatureDefinitionRepository();
+        var plans = new InMemoryPlanRepository();
+        var trials = new InMemoryTrialDefinitionRepository();
+        var subscriptions = new InMemorySubscriptionRepository();
+
+        var orgA = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Acme Match", "acme-match")).Value!;
+        var orgB = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Acme Wide", "acme-wide")).Value!;
+        await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
+        var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
+        await features.AddAsync(FeatureDefinition.Create(
+            pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, T0));
+
+        var plan = (await new CreatePlan(products, plans, uow, clock)
+            .ExecuteAsync(ProductCode.PinoyBusinessPos, "growth-bind", "Growth Bind")).Value!;
+        plan.Activate(T0);
+        var version = (await new PublishPlanVersion(plans, features, uow, clock)
+            .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, true,
+                new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) }))
+            .Value!;
+        var matching = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), plan.Id);
+        var productWide = UtangTrialTestFactory.CreateConfigured(T0, TimeSpan.FromDays(14), planId: null);
+        await trials.AddAsync(matching);
+        await trials.AddAsync(productWide);
+
+        var startTrial = new StartTrialSubscription(orgs, products, plans, trials, subscriptions, uow, clock);
+        var matched = await startTrial.ExecuteAsync(orgA.Id, plan.Id, version.Id, matching.Id);
+        Assert.True(matched.IsSuccess);
+        Assert.Equal(matching.Id, matched.Value!.TrialDefinitionId);
+
+        var wide = await startTrial.ExecuteAsync(orgB.Id, plan.Id, version.Id, productWide.Id);
+        Assert.True(wide.IsSuccess);
+        Assert.Equal(productWide.Id, wide.Value!.TrialDefinitionId);
+        Assert.Equal(2, subscriptions.AddCount);
+
+        var duplicate = await startTrial.ExecuteAsync(orgA.Id, plan.Id, version.Id, matching.Id);
+        Assert.True(
+            duplicate.ErrorCode is ApplicationErrorCodes.ActiveSubscriptionConflict
+                or ApplicationErrorCodes.TrialAlreadyConsumed,
+            $"Expected active-conflict or trial-consumed, got {duplicate.ErrorCode}");
+        Assert.Equal(2, subscriptions.AddCount);
+    }
+
+    [Fact]
     public async Task Create_and_revoke_feature_override()
     {
         var clock = new FixedClock(T0);

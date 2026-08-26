@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
@@ -28,6 +29,20 @@ public sealed class SaaSPaymentUseCaseTests
         public InMemoryTrialDefinitionRepository Trials { get; } = new();
         public InMemorySubscriptionRepository Subscriptions { get; } = new();
         public InMemorySaaSPaymentRepository Payments { get; } = new();
+        public InMemoryFeatureOverrideRepository Overrides { get; } = new();
+        public InMemoryEntitlementSnapshotRepository Snapshots { get; } = new();
+        public ProvisionalEntitlementRefreshPolicy RefreshPolicy { get; } = new();
+
+        public GenerateEntitlementSnapshot BuildGenerateSnapshot() =>
+            new(Subscriptions, Plans, Trials, Overrides, Snapshots, RefreshPolicy, UnitOfWork, Clock);
+
+        public ConfirmPaymentAndActivateSubscription BuildActivateFromPayment() =>
+            new(Payments, Subscriptions, Plans, BuildGenerateSnapshot(), UnitOfWork, Clock);
+
+        public (DateTimeOffset Start, DateTimeOffset End) MonthlyPeriod() =>
+            SubscriptionBillingPeriods.ComputePaidPeriod(T0, BillingCycle.Monthly);
+
+        public const decimal DefaultPlanMonthlyPrice = 999m;
 
         public async Task<PlatformOrganization> CreateOrganizationAsync(string name = "Acme", string slug = "acme") =>
             (await new CreatePlatformOrganization(Organizations, new FakePublicOrganizationIdGenerator(), UnitOfWork, Clock).ExecuteAsync(name, slug)).Value!;
@@ -51,7 +66,24 @@ public sealed class SaaSPaymentUseCaseTests
 
             var planCode = $"utang-{++_planSequence}";
             var plan = (await new CreatePlan(Products, Plans, UnitOfWork, Clock)
-                .ExecuteAsync(productCode.Value, planCode, "Utang")).Value!;
+                .ExecuteAsync(
+                    productCode.Value,
+                    planCode,
+                    "Utang",
+                    description: null,
+                    maxBranches: 1,
+                    maxActiveStaff: 3,
+                    maxActivePosDevices: 1,
+                    maxActiveBusinessTypes: 1,
+                    customerCreditEnabled: false,
+                    advancedReportsEnabled: false,
+                    exportEnabled: false,
+                    trialAllowed: true,
+                    defaultTrialDays: 14,
+                    sortOrder: 100,
+                    monthlyPrice: DefaultPlanMonthlyPrice,
+                    annualPrice: DefaultPlanMonthlyPrice * 10,
+                    currencyCode: "PHP")).Value!;
             plan.Activate(T0);
 
             var version = (await new PublishPlanVersion(Plans, Features, UnitOfWork, Clock)
@@ -244,11 +276,13 @@ public sealed class SaaSPaymentUseCaseTests
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ACT-1", T0, T0);
+            org.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ACT-1", T0, T0);
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var result = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var result = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(SaaSPaymentStatus.Confirmed, result.Value!.Payment.Status);
@@ -268,12 +302,14 @@ public sealed class SaaSPaymentUseCaseTests
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ACT-2", T0, T0);
+            org.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ACT-2", T0, T0);
         payment.Confirm("staff-0", T0.AddMinutes(1));
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var result = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var result = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("staff-0", result.Value!.Payment.ConfirmedBy);
@@ -288,12 +324,14 @@ public sealed class SaaSPaymentUseCaseTests
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-REJECTED", T0, T0);
+            org.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-REJECTED", T0, T0);
         payment.Reject("staff-1", "bad ref", T0.AddMinutes(1));
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var result = await activate.ExecuteAsync(payment.Id, "staff-2", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var result = await activate.ExecuteAsync(
+            payment.Id, "staff-2", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentNotConfirmed, result.ErrorCode);
@@ -309,15 +347,18 @@ public sealed class SaaSPaymentUseCaseTests
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-REUSE", T0, T0);
+            org.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-REUSE", T0, T0);
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var first = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var first = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
         Assert.True(first.IsSuccess);
 
         // Reusing the same confirmed payment against any subscription must fail (already linked).
-        var second = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var second = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentAlreadyUsed, second.ErrorCode);
@@ -333,11 +374,13 @@ public sealed class SaaSPaymentUseCaseTests
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
         var payment = SaaSPayment.CreateManual(
-            otherOrg.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ORG-MISMATCH", T0, T0);
+            otherOrg.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-ORG-MISMATCH", T0, T0);
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var result = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var result = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentOrganizationMismatch, result.ErrorCode);
@@ -355,11 +398,13 @@ public sealed class SaaSPaymentUseCaseTests
         var otherProductCode = ProductCode.Create("other-product");
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, otherProductCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-PRODUCT-MISMATCH", T0, T0);
+            org.Id, otherProductCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-PRODUCT-MISMATCH", T0, T0);
         await fx.Payments.AddAsync(payment);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
-        var result = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var period = fx.MonthlyPeriod();
+        var activate = fx.BuildActivateFromPayment();
+        var result = await activate.ExecuteAsync(
+            payment.Id, "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentProductMismatch, result.ErrorCode);
@@ -373,16 +418,19 @@ public sealed class SaaSPaymentUseCaseTests
         var productCode = await fx.CreateProductAsync();
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
-        var activate = new ConfirmPaymentAndActivateSubscription(fx.Payments, fx.Subscriptions, fx.UnitOfWork, fx.Clock);
+        var activate = fx.BuildActivateFromPayment();
+        var period = fx.MonthlyPeriod();
 
-        var missingPayment = await activate.ExecuteAsync(SaaSPaymentId.New(), "staff-1", subscription.Id, T0, T0.AddDays(30));
+        var missingPayment = await activate.ExecuteAsync(
+            SaaSPaymentId.New(), "staff-1", subscription.Id, period.Start, period.End, BillingCycle.Monthly);
         Assert.Equal(ApplicationErrorCodes.PaymentNotFound, missingPayment.ErrorCode);
 
         var payment = SaaSPayment.CreateManual(
-            org.Id, productCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-MISSING-SUB", T0, T0);
+            org.Id, productCode, Fixture.DefaultPlanMonthlyPrice, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-MISSING-SUB", T0, T0);
         await fx.Payments.AddAsync(payment);
 
-        var missingSubscription = await activate.ExecuteAsync(payment.Id, "staff-1", SubscriptionId.New(), T0, T0.AddDays(30));
+        var missingSubscription = await activate.ExecuteAsync(
+            payment.Id, "staff-1", SubscriptionId.New(), period.Start, period.End, BillingCycle.Monthly);
         Assert.Equal(ApplicationErrorCodes.SubscriptionNotFound, missingSubscription.ErrorCode);
     }
 }

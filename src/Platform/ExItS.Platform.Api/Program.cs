@@ -10,10 +10,12 @@ using ExItS.Platform.Api.Common;
 using ExItS.Platform.Api.Entitlements;
 using ExItS.Platform.Api.GlobalCatalog;
 using ExItS.Platform.Api.Identity;
+using ExItS.Platform.Api.Operations;
 using ExItS.Platform.Api.Organizations;
 using ExItS.Platform.Api.Payments;
 using ExItS.Platform.Api.Personal;
 using ExItS.Platform.Api.PrivacyCompliance;
+using ExItS.Platform.Api.Settings;
 using ExItS.Platform.Api.Subscriptions;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Access;
@@ -30,7 +32,9 @@ using ExItS.Platform.Application.Integration.Pos;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Application.Settings;
 using ExItS.Platform.Application.PrivacyCompliance;
+using ExItS.Platform.Application.Operations;
 using ExItS.Platform.Application.Qr;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
@@ -39,6 +43,7 @@ using ExItS.Platform.Infrastructure.Integration.Pos;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Health;
+using ExItS.Platform.Infrastructure.Operations;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -60,10 +65,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
             allowIntegerValues: true));
 });
 builder.Services.AddPlatformHealthChecks();
+builder.Services.AddPlatformOperationsHealth();
 builder.AddPlatformSecurity();
 builder.Services.AddPlatformBrowserAntiforgery(builder.Environment, builder.Configuration);
 builder.AddPlatformForwardedHeaders();
 builder.Services.AddPlatformPersistence(builder.Configuration);
+builder.Services.AddDataProtection();
 builder.Services.AddPlatformPaymentProvider(builder.Configuration, builder.Environment);
 
 var externalAuthOptions = builder.Configuration
@@ -80,9 +87,9 @@ var authenticationBuilder = builder.Services.AddAuthentication(PlatformSessionDe
         options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
-            ? CookieSecurePolicy.SameAsRequest
-            : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = PlatformAuthCookiePolicy.SecurePolicy(
+            builder.Environment,
+            builder.Configuration);
         options.SlidingExpiration = false;
     });
 
@@ -291,6 +298,14 @@ builder.Services.AddScoped<GetPersonalProfile>();
 builder.Services.AddScoped<UpdatePersonalProfile>();
 builder.Services.AddScoped<GetPersonalAccountSettings>();
 builder.Services.AddScoped<UpdatePersonalAccountSettings>();
+builder.Services.AddScoped<PlatformSettingsProvisioner>();
+builder.Services.AddScoped<GetPlatformGeneralSettings>();
+builder.Services.AddScoped<UpdatePlatformGeneralSettings>();
+builder.Services.AddScoped<GetPlatformEmailSettings>();
+builder.Services.AddScoped<UpdatePlatformEmailSettings>();
+builder.Services.AddScoped<SendPlatformEmailTest>();
+builder.Services.AddScoped<GetPlatformRegionalSettings>();
+builder.Services.AddScoped<UpdatePlatformRegionalSettings>();
 builder.Services.AddScoped<CreatePersonalContact>();
 builder.Services.AddScoped<LinkPersonalContact>();
 builder.Services.AddScoped<UpdatePersonalContact>();
@@ -318,11 +333,20 @@ builder.Services.AddScoped<ResendPersonalUtangInvitation>();
 builder.Services.AddScoped<RevokePersonalUtangInvitation>();
 builder.Services.AddScoped<DeclinePersonalUtangInvitation>();
 builder.Services.AddScoped<AcceptPersonalUtangInvitation>();
+builder.Services.AddScoped<AcceptPersonalUtangInvitationById>();
+builder.Services.AddScoped<DeclinePersonalUtangInvitationById>();
 builder.Services.AddScoped<CreatePersonalReminder>();
 builder.Services.AddScoped<ListPersonalReminders>();
 builder.Services.AddScoped<ListDuePersonalReminders>();
 builder.Services.AddScoped<DeliverPersonalReminder>();
 builder.Services.AddScoped<CancelPersonalReminder>();
+builder.Services.AddScoped<CreatePersonalTodo>();
+builder.Services.AddScoped<ListPersonalTodos>();
+builder.Services.AddScoped<GetPersonalTodo>();
+builder.Services.AddScoped<UpdatePersonalTodo>();
+builder.Services.AddScoped<CompletePersonalTodo>();
+builder.Services.AddScoped<ReopenPersonalTodo>();
+builder.Services.AddScoped<CancelPersonalTodo>();
 builder.Services.AddScoped<ListPersonalInAppNotifications>();
 builder.Services.AddScoped<MarkPersonalInAppNotificationRead>();
 builder.Services.AddScoped<ListPersonalNotificationDeliveries>();
@@ -480,6 +504,7 @@ builder.Services.AddScoped<RejectSaaSPayment>();
 builder.Services.AddScoped<VoidSaaSPayment>();
 builder.Services.AddScoped<ConfirmPaymentAndActivateSubscription>();
 builder.Services.AddScoped<ActivatePaidSubscriptionFromConfirmedPayment>();
+builder.Services.AddScoped<UpgradeSubscriptionFromConfirmedPayment>();
 builder.Services.AddScoped<RecordLinkedSuccessfulProviderPayment>();
 
 builder.Services.AddScoped<ProcessSubscriptionInitialPayment>();
@@ -499,6 +524,11 @@ builder.Services.AddScoped<GenerateEntitlementSnapshot>();
 builder.Services.AddScoped<ReconcileEntitlementSnapshot>();
 
 builder.Services.AddScoped<AdminPortfolioQueryService>();
+builder.Services.AddScoped<BillingOperationsQueryService>();
+builder.Services.AddScoped<ActionCenterQueryService>();
+builder.Services.AddScoped<PlatformUsageLimitsQueryService>();
+builder.Services.AddScoped<PlatformSupportLookupService>();
+builder.Services.AddScoped<PlatformBackgroundJobsQueryService>();
 
 builder.Services.AddScoped<ListPlatformRoles>();
 builder.Services.AddScoped<AssignPlatformRole>();
@@ -587,11 +617,21 @@ app.MapSubscriptionEndpoints();
 app.MapPaymentEndpoints();
 app.MapEntitlementEndpoints();
 app.MapAdminEndpoints();
+app.MapSystemHealthEndpoints();
+app.MapPlatformOperationsEndpoints();
 app.MapAuthorizationEndpoints();
 app.MapOrganizationRbacEndpoints();
 app.MapAuditEndpoints();
 app.MapPrivacyComplianceEndpoints();
+app.MapPlatformSettingsEndpoints();
 app.MapLocalValidationEndpoints();
+
+if (app.Environment.IsEnvironment("Testing"))
+{
+    app.MapGet(
+        "/api/v1/platform/__test__/unhandled",
+        static IResult () => throw new InvalidOperationException("SensitiveStackDetail"));
+}
 
 // Phase marker: P10-WP08-phase-10-closeout
 

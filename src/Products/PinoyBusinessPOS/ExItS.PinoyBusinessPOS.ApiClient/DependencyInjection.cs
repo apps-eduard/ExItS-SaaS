@@ -47,12 +47,16 @@ public static class DependencyInjection
         services.AddTransient<PosApiReachabilityHandler>();
         services.AddTransient<PlatformAccessTokenRecoveryHandler>();
 
+        // Platform auth uses X-ExItS-Session-Token / Bearer — never the browser session cookie.
+        // Disable the default cookie jar so a Set-Cookie from login cannot reappear on introspect/
+        // bind/revoke (those omit the session header) and trip PWEB-20 browser antiforgery.
         services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<PosApiOptions>>().Value;
                 client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             })
+            .ConfigurePrimaryHttpMessageHandler(CreatePlatformHttpMessageHandler)
             .AddHttpMessageHandler<PlatformAccessTokenRecoveryHandler>()
             .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
@@ -87,6 +91,17 @@ public static class DependencyInjection
 
         return services;
     }
+
+    /// <summary>
+    /// Platform-facing clients authenticate via headers/tokens, not cookies.
+    /// Shared by MAUI <see cref="AddPosApiClient"/> and Org Web Platform HttpClient registrations.
+    /// </summary>
+    public static HttpMessageHandler CreatePlatformHttpMessageHandler() =>
+        new SocketsHttpHandler
+        {
+            UseCookies = false,
+            AllowAutoRedirect = false
+        };
 
     private static bool IsHttpsAbsoluteUri(string? value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri)

@@ -58,7 +58,24 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
         await createFeature.ExecuteAsync(
             productCode, FeatureCode.CustomerCreditView, "View", FeatureValueType.Boolean).ConfigureAwait(false);
 
-        var plan = (await createPlan.ExecuteAsync(productCode, "utang", "Utang").ConfigureAwait(false)).Value!;
+        var plan = (await createPlan.ExecuteAsync(
+            productCode,
+            "utang",
+            "Utang",
+            description: null,
+            maxBranches: 1,
+            maxActiveStaff: 3,
+            maxActivePosDevices: 3,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled: false,
+            advancedReportsEnabled: false,
+            exportEnabled: false,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 100,
+            monthlyPrice: 999m,
+            annualPrice: 9990m,
+            currencyCode: "PHP").ConfigureAwait(false)).Value!;
         await activatePlan.ExecuteAsync(plan.Id).ConfigureAwait(false);
 
         var grants = new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) };
@@ -267,8 +284,9 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
             SaaSPaymentMethod.GCash, "REF-ACTIVATE", T0, default)).Value!;
 
         var activate = provider.GetRequiredService<ConfirmPaymentAndActivateSubscription>();
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(T0, BillingCycle.Monthly);
         var result = await activate.ExecuteAsync(
-            payment.Id, "staff-activate", subscription.Id, T0, T0.AddDays(30), default);
+            payment.Id, "staff-activate", subscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.True(result.IsSuccess);
         Assert.Equal(SubscriptionStatus.Active, result.Value!.Subscription.Status);
 
@@ -300,15 +318,16 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
             SaaSPaymentMethod.GCash, "REF-REUSE", T0, default)).Value!;
 
         var activate = provider.GetRequiredService<ConfirmPaymentAndActivateSubscription>();
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(T0, BillingCycle.Monthly);
         var first = await activate.ExecuteAsync(
-            payment.Id, "staff-activate", firstSubscription.Id, T0, T0.AddDays(30), default);
+            payment.Id, "staff-activate", firstSubscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.True(first.IsSuccess);
 
         await cancel.ExecuteAsync(firstSubscription.Id);
         var secondSubscription = (await startTrial.ExecuteAsync(organizationId, planId, versionId, trialId)).Value!;
 
         var second = await activate.ExecuteAsync(
-            payment.Id, "staff-activate", secondSubscription.Id, T0, T0.AddDays(30), default);
+            payment.Id, "staff-activate", secondSubscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentAlreadyUsed, second.ErrorCode);
     }
