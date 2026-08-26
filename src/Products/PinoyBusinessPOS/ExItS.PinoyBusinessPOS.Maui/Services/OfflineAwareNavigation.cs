@@ -32,7 +32,6 @@ public sealed class OfflineAwareNavigation(
         NavigateForActionAsync(
             PosOfflineActionKeys.SwitchOrganization,
             "/workspace-select",
-            "/organization-select",
             currentOrganizationDisplayName,
             replace,
             ct);

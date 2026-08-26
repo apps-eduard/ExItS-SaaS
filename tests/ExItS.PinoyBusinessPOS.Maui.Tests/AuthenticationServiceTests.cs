@@ -142,6 +142,110 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SelectWorkspace_first_bind_skips_operational_pos_and_does_not_ask_to_sign_in()
+    {
+        var org = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            AccountClass: "Organization");
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, main, "Main Branch", "MAIN", "Active", true))
+        };
+        var operational = new FakeOperationalBranch
+        {
+            Result = ApiResult<OperationalBranchContextDto>.Failure(
+                ApiCallStatus.Forbidden,
+                new ApiError("Denied", "commercial unknown", "pos.commercial.access_unknown", null, 403))
+        };
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            operationalBranch: operational);
+
+        var result = await sut.SelectWorkspaceAsync(org, main);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(main, current.Session?.SelectedBranchId);
+        Assert.Equal(0, operational.Calls);
+        Assert.NotEqual("Auth_SessionExpired", result.SafeMessageKey);
+    }
+
+    [Fact]
+    public async Task SelectBranch_with_device_does_not_map_pos_forbidden_to_session_expired()
+    {
+        var org = Guid.NewGuid();
+        var main = Guid.NewGuid();
+        var branchB = Guid.NewGuid();
+        var current = new CurrentUserContext();
+        var session = new AuthSession(
+            Guid.NewGuid(),
+            "Owner",
+            "owner",
+            "o@example.com",
+            org,
+            "Kizy Store",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            true,
+            "allowed",
+            AccessToken: "token",
+            BranchId: main,
+            PosDeviceId: Guid.NewGuid(),
+            SelectedBranchId: main);
+        current.Set(session);
+        var tokens = new MemorySecureTokenStore();
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var access = new FakeAccessClient
+        {
+            SelectBranchContextResult = ApiResult<OrganizationBranchContextDto>.Success(
+                new OrganizationBranchContextDto(org, branchB, "Branch B", "B", "Active", false))
+        };
+        var operational = new FakeOperationalBranch
+        {
+            Result = ApiResult<OperationalBranchContextDto>.Failure(
+                ApiCallStatus.Forbidden,
+                new ApiError("Denied", "commercial unknown", "pos.commercial.access_unknown", null, 403))
+        };
+        var sut = new AuthenticationService(
+            new StubAppInfo("Development"),
+            new SecureSessionStore(tokens),
+            current,
+            new MemoryOnboardingStore(),
+            access,
+            new LoggingAuthEventSink(NullLogger<LoggingAuthEventSink>.Instance),
+            operationalBranch: operational);
+
+        var denied = await sut.SelectBranchAsync(branchB);
+
+        Assert.False(denied.Succeeded);
+        Assert.Equal("BranchContext_Denied", denied.SafeMessageKey);
+        Assert.NotEqual("Auth_SessionExpired", denied.SafeMessageKey);
+        Assert.Equal(main, current.Session?.SelectedBranchId);
+        Assert.Equal(1, operational.Calls);
+    }
+
+    [Fact]
     public async Task SelectBranch_round_trips_main_branch_b_and_back()
     {
         var org = Guid.NewGuid();
@@ -648,6 +752,93 @@ public sealed class AuthenticationServiceTests
         Assert.True(refresh.Succeeded);
         Assert.Equal("platform-session", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
         Assert.NotNull(current.Session);
+    }
+
+    [Fact]
+    public async Task Ensure_platform_session_rehydrates_from_secure_store_when_memory_lost_token()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var clock = new FakeTimeProvider(DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+        var access = new FakeAccessClient();
+        var sessionStore = new SecureSessionStore(tokens);
+        var durable = new AuthSession(
+            userId,
+            "Personal",
+            "personal",
+            "p@example.com",
+            null,
+            null,
+            clock.GetUtcNow(),
+            clock.GetUtcNow().AddHours(8),
+            false,
+            null,
+            AccessToken: "access-token",
+            PlatformSessionToken: "platform-session",
+            AccountClass: "Personal");
+        await sessionStore.SaveAsync(durable, Guid.NewGuid().ToString("N"));
+
+        // In-memory shell lost PlatformSession (as Start Business saw) while storage still has it.
+        current.Set(durable with { PlatformSessionToken = null });
+
+        var sut = CreateSut(
+            "Development",
+            access,
+            tokens,
+            currentUser: current,
+            time: clock,
+            connectivity: new FakeConnectivity(online: true));
+
+        var ensured = await sut.EnsurePlatformSessionAvailableAsync();
+
+        Assert.True(ensured.Succeeded);
+        Assert.Equal("platform-session", current.Session!.PlatformSessionToken);
+        Assert.Equal("platform-session", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+    }
+
+    [Fact]
+    public async Task Secure_session_save_without_platform_token_does_not_wipe_stored_platform_session()
+    {
+        var tokens = new MemorySecureTokenStore();
+        var store = new SecureSessionStore(tokens);
+        var clock = new FakeTimeProvider(DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+        var userId = Guid.NewGuid();
+        await store.SaveAsync(
+            new AuthSession(
+                userId,
+                "Personal",
+                "personal",
+                "p@example.com",
+                null,
+                null,
+                clock.GetUtcNow(),
+                clock.GetUtcNow().AddHours(1),
+                false,
+                null,
+                AccessToken: "access",
+                PlatformSessionToken: "keep-me"),
+            Guid.NewGuid().ToString("N"));
+
+        await store.SaveAsync(
+            new AuthSession(
+                userId,
+                "Personal",
+                "personal",
+                "p@example.com",
+                null,
+                null,
+                clock.GetUtcNow(),
+                clock.GetUtcNow().AddHours(1),
+                false,
+                "offline_grant",
+                AccessToken: null,
+                PlatformSessionToken: null,
+                AccountClass: "Personal"),
+            Guid.NewGuid().ToString("N"));
+
+        Assert.Equal("keep-me", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+        Assert.Null(await tokens.GetAsync(SecureTokenKeys.AccessToken));
     }
 
     [Fact]
@@ -2770,6 +2961,9 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<CredentialWorkflowAckDto>.Unavailable());
+
+        public Task<ApiResult<object>> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Unavailable());
 
         public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));

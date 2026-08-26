@@ -117,7 +117,11 @@ public sealed class AuthenticationService(
                     .ConfigureAwait(false);
                 if (selected.IsSuccess && selected.Data is not null)
                 {
-                    platformSessionToken = selected.Data.SessionToken;
+                    if (!string.IsNullOrWhiteSpace(selected.Data.SessionToken))
+                    {
+                        platformSessionToken = selected.Data.SessionToken.Trim();
+                    }
+
                     accountProfileId = selected.Data.AccountProfileId ?? profileId;
                     accountClass = selected.Data.AccountClass ?? accountClass;
 
@@ -848,6 +852,13 @@ public sealed class AuthenticationService(
 
         string? platformSession = leftoverSameUser?.PlatformSessionToken;
         var accessToken = leftoverSameUser?.AccessToken;
+
+        // Keep PlatformSession on the grant shell so SecureStorage / Personal writes stay usable.
+        // Do not carry AccessToken here — offline-unreachable PIN unlock must remain tokenless.
+        if (!string.IsNullOrWhiteSpace(platformSession))
+        {
+            local = local with { PlatformSessionToken = platformSession };
+        }
 
         marker ??= Guid.NewGuid().ToString("N");
         var applied = await ApplyLocalGrantSessionAsync(local, grant, marker, ct).ConfigureAwait(false);
@@ -1833,13 +1844,35 @@ public sealed class AuthenticationService(
         var session = currentUser.Session;
         if (session is not null)
         {
-            await EnrollRecoveryCredentialAsync(session, ct).ConfigureAwait(false);
+            // Best-effort remote work only. Never block local sign-out when Platform API is slow/unreachable
+            // (wrong Local Validation port, Tailscale down, etc.).
+            using var remoteCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            remoteCts.CancelAfter(TimeSpan.FromSeconds(5));
+            var remoteCt = remoteCts.Token;
+
+            try
+            {
+                await EnrollRecoveryCredentialAsync(session, remoteCt).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                events.Record("logout_remote_timeout", Dict(("operation", "recovery_enroll")));
+            }
+            catch
+            {
+                // Best-effort recovery enroll; local clear still proceeds.
+            }
+
             try
             {
                 if (!string.IsNullOrWhiteSpace(session.AccessToken))
                 {
-                    await accessClient.RevokeAccessTokenAsync(ct).ConfigureAwait(false);
+                    await accessClient.RevokeAccessTokenAsync(remoteCt).ConfigureAwait(false);
                 }
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                events.Record("logout_remote_timeout", Dict(("operation", "token_revoke")));
             }
             catch
             {
@@ -2050,6 +2083,56 @@ public sealed class AuthenticationService(
         await OpenPersonalLocalContextAsync(updated.UserId, ct).ConfigureAwait(false);
         events.Record("ensured_personal_profile", Dict(("userId", session.UserId.ToString("D"))));
         return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
+    public async Task<AuthResult> EnsurePlatformSessionAvailableAsync(CancellationToken ct = default)
+    {
+        if (!string.IsNullOrWhiteSpace(currentUser.Session?.PlatformSessionToken))
+        {
+            return new AuthResult(true, AuthFailureReason.None, currentUser.Session);
+        }
+
+        var live = currentUser.Session;
+        try
+        {
+            var (stored, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            if (stored is not null
+                && !string.IsNullOrWhiteSpace(stored.PlatformSessionToken)
+                && live is not null
+                && live.UserId == stored.UserId)
+            {
+                var merged = live with
+                {
+                    PlatformSessionToken = stored.PlatformSessionToken.Trim(),
+                    AccessToken = string.IsNullOrWhiteSpace(live.AccessToken)
+                        ? stored.AccessToken
+                        : live.AccessToken,
+                    AccountClass = live.AccountClass ?? stored.AccountClass,
+                    AccountProfileId = live.AccountProfileId ?? stored.AccountProfileId
+                };
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(merged, marker, ct).ConfigureAwait(false);
+                currentUser.Set(merged);
+                events.Record("platform_session_rehydrated", Dict(("userId", merged.UserId.ToString("D"))));
+                return new AuthResult(true, AuthFailureReason.None, merged);
+            }
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "ensure_platform_session_load")));
+        }
+
+        var restore = await RestoreSessionAsync(ct).ConfigureAwait(false);
+        if (restore.Succeeded && !string.IsNullOrWhiteSpace(currentUser.Session?.PlatformSessionToken))
+        {
+            return new AuthResult(true, AuthFailureReason.None, currentUser.Session);
+        }
+
+        return new AuthResult(
+            false,
+            AuthFailureReason.SessionExpired,
+            currentUser.Session ?? restore.Session,
+            SafeMessageKey: "StartBusiness_SessionRequired");
     }
 
     /// <summary>
@@ -2730,7 +2813,14 @@ public sealed class AuthenticationService(
                 return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
             }
 
-            if (_operationalBranch is not null)
+            // POS operational-branch is a shift/device guard for an already-registered POS.
+            // First workspace bind (Setup required / no device) only needs Platform branch
+            // validation. Staging Local Validation POS returns 403 when commercial headers
+            // are ignored; that must not look like "sign in again".
+            var requiresOperationalGuard = session.HasPosAccess
+                                           && session.PosDeviceId is Guid registeredDevice
+                                           && registeredDevice != Guid.Empty;
+            if (_operationalBranch is not null && requiresOperationalGuard)
             {
                 var operational = await _operationalBranch
                     .SelectAsync(
@@ -2760,11 +2850,8 @@ public sealed class AuthenticationService(
                         return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_NotFound");
                     }
 
-                    if (operational.Status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
-                    {
-                        return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Auth_SessionExpired");
-                    }
-
+                    // Platform already accepted this branch. POS 401/403 is commercial/device
+                    // authorization, not a Platform session expiry (403 must never login-loop).
                     return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "BranchContext_Denied");
                 }
             }

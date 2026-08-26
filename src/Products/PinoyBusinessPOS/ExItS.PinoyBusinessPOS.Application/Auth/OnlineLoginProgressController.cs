@@ -84,9 +84,13 @@ public sealed class OnlineLoginProgressController
         }
 
         var session = _session;
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_onlineCts.Token, externalCt);
+        // Capture per-attempt handles. ConfigureAwait(false) below allows overlapping attempts;
+        // CancelOnlineAttempt from a newer BeginOnlineAttempt must not null-ref the field mid-flight.
+        var onlineCts = _onlineCts;
+        var pinTcs = _pinChosen;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(onlineCts.Token, externalCt);
         var onlineTask = onlineWork(linked.Token);
-        var pinTask = _pinChosen.Task;
+        var pinTask = pinTcs.Task;
 
         var softDelayTask = Task.Delay(SoftPromptDelay <= TimeSpan.Zero
             ? DefaultSoftPromptDelay
@@ -119,6 +123,11 @@ public sealed class OnlineLoginProgressController
         try
         {
             var value = await onlineTask.ConfigureAwait(false);
+            if (session != _session)
+            {
+                return OnlineLoginProgressResult<T>.Discarded();
+            }
+
             // PIN may have been chosen in the narrow window after completion started.
             if (PinChosen || (pinTask.IsCompletedSuccessfully && pinTask.Result))
             {
@@ -128,7 +137,7 @@ public sealed class OnlineLoginProgressController
             // API clients often swallow OperationCanceledException into a Cancelled status
             // instead of rethrowing. When our hard-timeout CTS fired, treat that as unreachable
             // rather than a completed "request cancelled" payload.
-            if (_onlineCts.IsCancellationRequested)
+            if (onlineCts.IsCancellationRequested)
             {
                 SoftPromptVisible = false;
                 return OnlineLoginProgressResult<T>.HardTimedOut();

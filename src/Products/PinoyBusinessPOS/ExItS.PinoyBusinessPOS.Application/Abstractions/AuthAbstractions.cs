@@ -126,6 +126,13 @@ public interface IAuthenticationService
     Task<AuthResult> EnsurePersonalAccountProfileAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Ensures <see cref="AuthSession.PlatformSessionToken"/> is present for Personal writes
+    /// (Start Business, staff invite, etc.). Rehydrates from secure storage / restore when the
+    /// in-memory shell lost the token while remaining signed in.
+    /// </summary>
+    Task<AuthResult> EnsurePlatformSessionAvailableAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Applies a rotated Platform session after Start a Business and binds the new organization for POS when entitled.
     /// </summary>
     Task<AuthResult> ContinueAfterStartBusinessAsync(

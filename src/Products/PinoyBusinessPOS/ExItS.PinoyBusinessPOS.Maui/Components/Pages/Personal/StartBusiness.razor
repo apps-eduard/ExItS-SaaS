@@ -486,9 +486,11 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+        var sessionReady = await Auth.EnsurePlatformSessionAvailableAsync();
+        if (!sessionReady.Succeeded
+            || string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
         {
-            _errors.Add(L["StartBusiness_SessionRequired"]);
+            _errors.Add(L[sessionReady.SafeMessageKey ?? "StartBusiness_SessionRequired"]);
             return;
         }
 
@@ -496,6 +498,12 @@
         try
         {
             await Auth.EnsurePersonalAccountProfileAsync();
+            if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+            {
+                _errors.Add(L["StartBusiness_SessionRequired"]);
+                return;
+            }
+
             var created = await Platform.StartBusinessAsync(new StartBusinessRequest(
                 DisplayName: _displayName.Trim(),
                 Slug: _slug.Trim().ToLowerInvariant(),

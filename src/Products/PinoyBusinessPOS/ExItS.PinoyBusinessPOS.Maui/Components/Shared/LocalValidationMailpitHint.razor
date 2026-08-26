@@ -1,0 +1,34 @@
+@using ExItS.PinoyBusinessPOS.Application.Options
+@using Microsoft.Extensions.Options
+@inject IOptions<LocalValidationClientOptions> LocalValidationOptions
+
+#if DEBUG
+@if (LocalValidationOptions.Value.Enabled)
+{
+    <InlineMessage Tone="InlineMessageTone.Info">
+        MAUI Mailpit: @MailpitUiUrl (not React :8025).
+        Activation / reset links: @AdminUiUrl (Blazor — not React Admin :8095).
+        Prefer in-app Activate / Reset when a token is shown.
+    </InlineMessage>
+}
+#endif
+
+@code {
+    private string MailpitUiUrl => FormatUiUrl(LocalValidationOptions.Value.MailpitUiPort, 8125, preferLoopback: true);
+
+    private string AdminUiUrl => FormatUiUrl(LocalValidationOptions.Value.AdminUiPort, 8190, preferLoopback: false);
+
+    private string FormatUiUrl(int configuredPort, int fallbackPort, bool preferLoopback)
+    {
+        var opts = LocalValidationOptions.Value;
+        var port = configuredPort > 0 ? configuredPort : fallbackPort;
+        var host = string.IsNullOrWhiteSpace(opts.PublicHost) ? "127.0.0.1" : opts.PublicHost.Trim();
+        if (string.Equals(host, "10.0.2.2", StringComparison.Ordinal)
+            || (preferLoopback && string.IsNullOrWhiteSpace(opts.PublicHost)))
+        {
+            host = "127.0.0.1";
+        }
+
+        return $"http://{host}:{port}";
+    }
+}

@@ -92,6 +92,11 @@ public sealed class PlatformEmailDeliveryOptions
     /// <summary>Public Admin base URL used to build verification / reset links (e.g. http://127.0.0.1:8095 for React Admin).</summary>
     public string? AdminPublicBaseUrl { get; set; }
 
+    /// <summary>
+    /// Optional HTML footnote appended to auth emails (Local Validation stack isolation hints).
+    /// </summary>
+    public string? LinkGuidanceHtml { get; set; }
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(SmtpHost)
         && SmtpPort > 0
