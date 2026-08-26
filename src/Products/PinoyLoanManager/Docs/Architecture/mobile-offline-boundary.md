@@ -1,12 +1,10 @@
 # Pinoy Loan Manager — Mobile Offline Boundary
 
-**Status:** Planning / architecture baseline (documentation only)
+**Status:** Accepted architecture policy (PLM-DOC-09); not implemented
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
-MAUI is **online / server-authoritative initially** unless a later package explicitly enables offline financial operations.
-
-Related: [source-and-project-layout.md](source-and-project-layout.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../architecture.md](../architecture.md).
+Summary boundary for MAUI offline posture. Canonical detail: [mobile-and-offline-operating-model.md](mobile-and-offline-operating-model.md). Related: [source-and-project-layout.md](source-and-project-layout.md), [../Product/daily-operational-workflow.md](../Product/daily-operational-workflow.md), [../architecture.md](../architecture.md).
 
 ---
 
@@ -16,7 +14,9 @@ Server remains authoritative for final financial authorization / posting.
 
 Do **not** treat queued device activity as immediately authoritative.
 
-`ExItS.PinoyLoanManager.LocalStore` is **not** justified yet. Create it only if/when an authorized offline package requires local persistence.
+MVP allows **read-only cache** and **offline drafts** in planning only. **Offline final financial posting is not authorized.**
+
+`ExItS.PinoyLoanManager.LocalStore` is **not** justified yet. Create it only if/when an authorized offline posting package requires local persistence.
 
 ---
 
@@ -24,7 +24,7 @@ Do **not** treat queued device activity as immediately authoritative.
 
 Must explicitly handle:
 
-- secure device identity
+- secure device identity ([../Security/collector-device-security-policy.md](../Security/collector-device-security-policy.md))
 - local encrypted storage
 - queued commands
 - idempotency
@@ -35,12 +35,13 @@ Must explicitly handle:
 - offline receipt state
 - cash reconciliation
 
-Collector device security remains **OPEN**.
+Offline financial posting remains **deferred** beyond PLM-DOC-09.
 
 ---
 
 ## Explicit non-goals
 
-- Offline financial posting in this package
+- Offline final financial posting in MVP
 - SQLite schema
 - Choosing LocalStore by default
+- Claiming offline sync is implemented

@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Settings;
 using ExItS.Platform.Domain.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Infrastructure.Identity;
 
@@ -12,6 +13,7 @@ namespace ExItS.Platform.Infrastructure.Identity;
 /// </summary>
 internal sealed class SmtpPlatformAuthOutboundMessageSink(
     IPlatformEmailDeliveryResolver deliveryResolver,
+    IOptions<PlatformEmailDeliveryOptions> emailOptions,
     ILogger<SmtpPlatformAuthOutboundMessageSink> logger) : IPlatformAuthOutboundMessageSink
 {
     public async Task PublishAsync(PlatformAuthOutboundMessage message, CancellationToken cancellationToken = default)
@@ -29,7 +31,13 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
             return;
         }
 
-        var (subject, body) = PlatformAuthOutboundEmailComposer.Compose(message, delivery.AdminPublicBaseUrl!);
+        var opts = emailOptions.Value;
+        var (subject, body) = PlatformAuthOutboundEmailComposer.Compose(
+            message,
+            delivery.AdminPublicBaseUrl!,
+            opts.PinoyLoanManagerPublicBaseUrl,
+            opts.AllowHttpLoopbackPublicUrls,
+            opts.LinkGuidanceHtml);
         using var client = Settings.PlatformEmailTestSender.CreateClient(delivery);
         using var mail = new System.Net.Mail.MailMessage
         {

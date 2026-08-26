@@ -2,7 +2,11 @@
 
 [Home](../index.md) | [Readiness audit](production-readiness-audit.md) | [Pilot architecture (non-production)](../operations/pilot-and-deployment/deployment-architecture.md) | [Product Foundation](../Product-Foundation/exits-product-foundation-reference.md) | [Auth architecture](authentication-architecture.md) | [Phase 14](../phases/phase-14-production-deployment-and-operations.md) | [P14-WP01 report](../reports/P14-WP01-deployment-architecture-and-production-readiness-audit.md)
 
-**Status:** Authoritative **production** deployment direction (**P14-WP01**). Packaging baseline for local Compose testing delivered in **P14-WP02** (`deploy/docker/compose.yaml`). Reverse-proxy/TLS/network template delivered in **P14-WP03** (`compose.production.yaml` + `nginx/production.conf`) — **not** a Production cutover or readiness claim.
+**Status:** Authoritative **on-prem Production topology** (**D-P14-01**, P14-WP01). Packaging baseline for local Compose testing delivered in **P14-WP02** (`deploy/docker/compose.yaml`). Reverse-proxy/TLS/network template delivered in **P14-WP03** (`compose.production.yaml` + `nginx/production.conf`) — **not** a Production cutover or readiness claim.
+
+**Portfolio hosting default (EXITS-ARCH-01):** hosted multi-tenant SaaS (**D-HOST-01**) — [hosting-and-deployment-operating-model.md](../Product-Foundation/hosting-and-deployment-operating-model.md). That default is **architecture direction**. Hosted SaaS infrastructure is **not** implemented here.
+
+**This document** remains the established topology for **customer on-prem** (Mode C, **D-HOST-03**). **D-P14-01 is not deleted.** It is **no longer the universal default** for every ExItS customer.
 
 **Relationship to pilot:** [`docs/operations/pilot-and-deployment/`](../operations/pilot-and-deployment/) and `deploy/docker/docker-compose.pilot.yml` remain **non-production** (P9-WP05). Default `compose.yaml` is the P14-WP02 packaging baseline for local testing.
 
@@ -10,7 +14,7 @@
 
 ## 1. Purpose
 
-Define how ExItS is intended to run in **customer on-prem Production** so later Phase 14 work packages do not:
+Define how ExItS is intended to run in **customer on-prem Production** (supported special deployment mode) so later Phase 14 work packages do not:
 
 - collapse Platform and product databases
 - treat pilot Compose as Production-ready
@@ -20,7 +24,9 @@ Define how ExItS is intended to run in **customer on-prem Production** so later 
 
 ---
 
-## 2. Target topology (D-P14-01)
+## 2. Target topology (D-P14-01) — on-prem mode
+
+**Scope:** Mode C (customer on-prem). Not the portfolio-wide default after **D-HOST-01**.
 
 ```text
 Customer On-Prem Server
@@ -143,7 +149,7 @@ Later Phase 14 WPs may add monitoring agents/runbooks **when authorized** — no
 
 | ID | Decision | State |
 |---|---|---|
-| **D-P14-01** | Production topology = customer on-prem host with Platform + per-product apps/DBs + reverse-proxy HTTPS | **Closed** |
+| **D-P14-01** | Production **on-prem** topology = customer on-prem host with Platform + per-product apps/DBs + reverse-proxy HTTPS. **Closed** as the on-prem mode topology. **Not** the portfolio-wide default (**D-HOST-01** hosted SaaS is default; not implemented). | **Closed** (on-prem topology) |
 | **D-P14-02** | Secrets and Production connection strings are environment-owned; never committed | **Closed** |
 | **D-P14-03** | Production migrate path = backup-verify → migrate → validate; no silent startup `Migrate()` | **Closed** |
 | **D-P14-04** | P9 pilot Docker/Compose/nginx are non-production references; Production packaging is separate Phase 14 implementation work | **Closed** |

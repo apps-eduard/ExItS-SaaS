@@ -6,7 +6,7 @@
 
 Collection exceptions, penalty waivers, payment reversals vs cash refunds, remittance-after-correction, and cash variance.
 
-Related: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
+Related: [penalty-exception-and-waiver-model.md](penalty-exception-and-waiver-model.md), [penalty-assessment-and-cap-policy.md](penalty-assessment-and-cap-policy.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [payment-and-allocation-model.md](payment-and-allocation-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md), [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md).
 
 ---
 
@@ -36,7 +36,7 @@ Owner / Manager with required grant may declare an organization / branch / area 
 
 Record: date / time window; affected branch / area; affected collectors / customers according to scope; reason; approver; penalty treatment; schedule treatment according to applicable policy; audit history.
 
-Do **not** delete original due dates / history. Schedule-extension vs fixed-maturity remains **OPEN**. See [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md).
+Do **not** delete original due dates / history. Schedule treatment uses the Loan’s snapshotted exception policy: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md).
 
 ---
 
@@ -84,7 +84,7 @@ Loan balance recalculated from events
 
 Original payment remains visible. If corrected, a **separate** correct payment is posted.
 
-Exact payment reversal approval threshold remains **OPEN**.
+Payment reversal approval uses `plm.payments.reversal-approve` per [authorization-grant-catalog.md](../Security/authorization-grant-catalog.md).
 
 ---
 
@@ -103,7 +103,7 @@ If physical cash is refunded / returned: record a separate authorized **CASH MOV
 Loan Payment Reversal  ≠  Cash Refund / Cash Return
 ```
 
-They may be correlated but must remain distinguishable. Exact cash refund workflow remains **OPEN**.
+They may be correlated but must remain distinguishable. Canonical cash refund workflow: [reversal-refund-and-correction-policy.md](reversal-refund-and-correction-policy.md).
 
 ---
 
@@ -161,7 +161,7 @@ Possible operational state:
 - Reconciliation Complete
 - Variance Pending Resolution
 
-This is preferable to corrupting financial history. Exact closing policy remains configurable / **OPEN**.
+This is preferable to corrupting financial history. Canonical close-with-variance: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md).
 
 ---
 

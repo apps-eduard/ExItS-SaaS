@@ -11,6 +11,8 @@ public static class PlatformAuthOutboundEmailComposer
     public static (string Subject, string HtmlBody) Compose(
         PlatformAuthOutboundMessage message,
         string adminPublicBaseUrl,
+        string? pinoyLoanManagerPublicBaseUrl = null,
+        bool allowHttpLoopbackPublicUrls = false,
         string? linkGuidanceHtml = null)
     {
         var baseUrl = adminPublicBaseUrl.TrimEnd('/');
@@ -21,26 +23,29 @@ public static class PlatformAuthOutboundEmailComposer
         {
             PlatformAuthOutboundMessageKinds.EmailVerification => (
                 "Verify your ExItS account",
-                $"""
-                 <p>Welcome to ExItS.</p>
-                 <p>Confirm your email and create your password to activate your account.</p>
-                 <p><a href="{baseUrl}/admin/activate-account?token={encodedToken}">Activate your account</a></p>
-                 <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
-                 <p>If you did not expect this message, you can ignore it.</p>
-                 {guidance}
-                 """),
+                ComposeTokenLinkBody(
+                    message,
+                    adminPublicBaseUrl,
+                    pinoyLoanManagerPublicBaseUrl,
+                    allowHttpLoopbackPublicUrls,
+                    """
+                    <p>Welcome to ExItS.</p>
+                    <p>Confirm your email and create your password to activate your account.</p>
+                    """,
+                    "Activate your account") + guidance),
             PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation =>
                 ComposeStaffInvitation(message, baseUrl, encodedToken, guidance),
             PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted =>
                 ComposeStaffInvitationAccepted(message),
             PlatformAuthOutboundMessageKinds.PasswordReset => (
                 "Reset your ExItS password",
-                $"""
-                 <p>A password reset was requested for your ExItS account.</p>
-                 <p><a href="{baseUrl}/admin/reset-password?token={encodedToken}">Reset password</a></p>
-                 <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
-                 {guidance}
-                 """),
+                ComposeTokenLinkBody(
+                    message,
+                    adminPublicBaseUrl,
+                    pinoyLoanManagerPublicBaseUrl,
+                    allowHttpLoopbackPublicUrls,
+                    "<p>A password reset was requested for your ExItS account.</p>",
+                    "Reset password") + guidance),
             PlatformAuthOutboundMessageKinds.RecoveryEmailVerification => (
                 "Confirm your ExItS recovery email",
                 $"""
@@ -63,6 +68,38 @@ public static class PlatformAuthOutboundEmailComposer
         }
 
         return $"<p><em>{linkGuidanceHtml.Trim()}</em></p>";
+    }
+
+    private static string ComposeTokenLinkBody(
+        PlatformAuthOutboundMessage message,
+        string adminPublicBaseUrl,
+        string? pinoyLoanManagerPublicBaseUrl,
+        bool allowHttpLoopbackPublicUrls,
+        string introHtml,
+        string linkText)
+    {
+        if (!PlatformAuthCallbackResolver.TryCreateLink(
+                message,
+                adminPublicBaseUrl,
+                pinoyLoanManagerPublicBaseUrl,
+                allowHttpLoopbackPublicUrls,
+                out var href))
+        {
+            return $"""
+                    {introHtml}
+                    <p>This message could not include an activation or reset link because the public origin is not configured.</p>
+                    <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
+                    <p>If you did not expect this message, you can ignore it.</p>
+                    """;
+        }
+
+        var encodedHref = WebUtility.HtmlEncode(href);
+        return $"""
+                {introHtml}
+                <p><a href="{encodedHref}">{linkText}</a></p>
+                <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
+                <p>If you did not expect this message, you can ignore it.</p>
+                """;
     }
 
     private static (string Subject, string HtmlBody) ComposeStaffInvitation(

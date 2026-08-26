@@ -34,6 +34,7 @@ public sealed class PersonalRegistrationUseCaseTests
         Assert.Null(credential.EmailVerifiedAtUtc);
 
         Assert.Equal(PlatformAuthOutboundMessageKinds.EmailVerification, stack.Messages.Last!.Kind);
+        Assert.Null(stack.Messages.Last.PublicSurface);
     }
 
     [Fact]
@@ -117,6 +118,37 @@ public sealed class PersonalRegistrationUseCaseTests
     }
 
     [Fact]
+    public async Task Register_with_pinoy_loan_manager_surface_does_not_create_organization_access()
+    {
+        var stack = CreateStack(exposeDebugTokens: true);
+        var result = await stack.Register.ExecuteAsync(
+            "PLM User",
+            "plm.user@example.com",
+            PlatformAuthPublicSurfaces.PinoyLoanManager);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PlatformAuthPublicSurfaces.PinoyLoanManager, stack.Messages.Last!.PublicSurface);
+
+        var user = await stack.Users.GetByNormalizedEmailAsync("plm.user@example.com");
+        var profileList = await stack.Profiles.ListByUserAsync(user!.Id);
+        Assert.DoesNotContain(profileList, p => p.AccountClass is AccountClass.Platform or AccountClass.Organization);
+        Assert.Empty((await stack.Memberships.ListByUserAsync(user.Id, null, 0, 10)).Items);
+    }
+
+    [Fact]
+    public async Task Register_rejects_unknown_public_surface()
+    {
+        var stack = CreateStack(exposeDebugTokens: false);
+        var result = await stack.Register.ExecuteAsync(
+            "New User",
+            "new.user@example.com",
+            "https://evil.example/callback");
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.AuthPublicSurfaceInvalid, result.ErrorCode);
+        Assert.Null(await stack.Users.GetByNormalizedEmailAsync("new.user@example.com"));
+        Assert.Null(stack.Messages.Last);
+    }
+
+    [Fact]
     public async Task Activate_sets_password_verifies_email_and_activates()
     {
         var stack = CreateStack(exposeDebugTokens: true);
@@ -177,6 +209,7 @@ public sealed class PersonalRegistrationUseCaseTests
             credentials,
             tokens,
             profiles,
+            memberships,
             messages,
             register);
     }
@@ -207,6 +240,7 @@ public sealed class PersonalRegistrationUseCaseTests
         InMemoryPlatformUserCredentialRepository Credentials,
         InMemoryPlatformCredentialTokenRepository Tokens,
         InMemoryAccountProfileRepository Profiles,
+        InMemoryOrganizationMembershipRepository Memberships,
         CapturingAuthOutboundMessageSink Messages,
         RegisterPersonalAccount Register);
 

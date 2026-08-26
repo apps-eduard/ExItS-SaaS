@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyLoanManager.Infrastructure</RootNamespace>
+    <AssemblyName>ExItS.PinoyLoanManager.Infrastructure</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.Application\ExItS.PinoyLoanManager.Application.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.Domain\ExItS.PinoyLoanManager.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyLoanManager.UnitTests" />
+  </ItemGroup>
+
+</Project>

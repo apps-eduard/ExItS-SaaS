@@ -37,7 +37,8 @@ public sealed record PlatformAuthOutboundMessage(
     string? OrganizationName = null,
     string? RoleDisplay = null,
     string? ContactEmail = null,
-    string? StaffLogin = null);
+    string? StaffLogin = null,
+    string? PublicSurface = null);
 
 public sealed record CredentialWorkflowAckDto(
     string Message,

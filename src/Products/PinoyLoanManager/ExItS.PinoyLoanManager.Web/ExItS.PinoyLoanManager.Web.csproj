@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyLoanManager.Web</RootNamespace>
+    <AssemblyName>ExItS.PinoyLoanManager.Web</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\ExItS.DesignSystem\ExItS.DesignSystem.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.ApiClient\ExItS.PinoyLoanManager.ApiClient.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyLoanManager.Application\ExItS.PinoyLoanManager.Application.csproj" />
+  </ItemGroup>
+
+</Project>

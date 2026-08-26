@@ -5,21 +5,21 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Loan Manager |
-| Status | Draft — PLM-00 documentation complete; not product-owner approved; no implementation |
+| Status | PLM MVP Product planning documentation complete (PLM-DOC-01–11); **PLM-D-00-10 Closed / Product Owner Accepted**; no implementation |
 | Implementation present | No |
 
 ## Authentication boundary
 
 | Item | State |
 |---|---|
-| Trusted actor source | Platform identity. Production login/session **Open — R-091**. |
-| Production auth (JWT/MFA/SSO/…) | **Open — R-091** — do not invent fake production login |
-| Dev/Testing shortcuts | Document honestly; fail closed outside approved environments (D-P12-05). No PLM-specific Dev gate is designed in this package. |
+| Trusted actor source | Platform identity. **R-091 Closed for Phase 13 scope** — consume trusted Platform actor/context only. |
+| Production auth | **R-091 Closed for Phase 13 scope** — passwords, sessions, Bearer, external login delivered; residuals (MFA enforcement, step-up, enterprise SSO/AD, outbound auth email) are separate gates |
+| Dev/Testing shortcuts | Document honestly; fail closed outside approved environments (**D-P12-05 Closed / satisfied for authentication honesty**). No PLM-specific Dev gate is designed in this package. |
 
 ## Product authorization
 
 - Platform product access / commercial state / entitlements: **entry gate only**
-- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md), [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md)) — presets and grant **intent** recorded; identifiers **Open** (PLM-D-00-06)
+- Product-local roles and grants: **operational authority** ([authorization-matrix.md](authorization-matrix.md), [Security/authorization-grant-catalog.md](Security/authorization-grant-catalog.md)) — **PLM Authorization Policy v1**; **PLM-D-00-06 Closed for MVP**
 - No implicit role hierarchy; no client-only authorization
 - Resource / branch / assignment / session **scope** is a required layer
 - Both layers must allow the action; neither bypasses the other
@@ -33,10 +33,12 @@ Authenticated Actor
 + Platform Product Access
 + Allowed Commercial State
 + Required Entitlement
-+ Active PLM Product Role
++ Active PLM Role Assignment
 + Required PLM Grant
-+ Resource / Branch / Workflow Scope
-= Authorized Operational Action
++ Valid Resource Scope
++ Valid Workflow State
++ Domain Invariants
+= Authorized Action
 ```
 
 ## Organization isolation
@@ -54,39 +56,40 @@ Optional Personal-to-Borrower linking, if implemented later:
 - resolution alone never links
 - explicit Personal consent is required before activating a relationship
 - a borrower may exist without an ExItS Personal account
-- mechanism **Status: Open / Product Owner Decision Required** (PLM-D-00-05)
+- MVP: organization-initiated link request (Owner/Manager grants); Personal self-claim not MVP
+- product behavior and contract **Closed for PLM requirements** (**PLM-D-00-05**); Platform transport/persistence **PLM-D-00-04** external
 
-Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrower-linking.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
+Lifecycle and unlink: [Product/personal-linking-lifecycle-and-visibility.md](Product/personal-linking-lifecycle-and-visibility.md). Boundary: [Architecture/personal-integration-boundary.md](Architecture/personal-integration-boundary.md).
 
 ## Data classification
 
 | Class | In scope? | Handling |
 |---|---|---|
 | PHI | **No** (default) | Not authorized. Do not add unless explicitly designed later. |
-| PII | Expected later / not present | Handling, retention, and minimization **Status: Open / Product Owner Decision Required**. |
-| Operational financial | Intended later / not present | Remains in the Loan product database when defined (PLM-D-00-07). Loan ledger and collector cash are separate facts. Never in Platform SaaS billing. |
+| PII | Expected later / not present | Classification and retention **architecture accepted** (**ADR-016**); numeric legal retention periods remain **PLM-D-00-11** |
+| Operational financial | Intended later / not present | Remains in the Loan product database when implemented (**PLM-D-00-07 Closed for MVP policy**). Loan ledger and collector cash are separate facts. Never in Platform SaaS billing. |
 | Secrets / credentials | Never in git | No PLM secret store is implemented. |
 
 ## Secrets
 
 - [x] No secrets in source or docs (this package)
-- [ ] Config via environment / secret store: **Status: Open / Product Owner Decision Required**
+- [ ] Config via environment / secret store: **implementation/Production work** (Product Foundation direction documented)
 
 ## Logging and audit
 
 | Concern | Approach |
 |---|---|
-| Application logs | **Status: Open / Product Owner Decision Required** — no secrets/card/PHI dumps |
-| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md), [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Schema **Open**. |
+| Application logs | **Required by Product Foundation** — tenant/product/org/correlation-aware observability; exact tooling deferred to implementation; no secrets/card/PHI dumps |
+| Product audit / immutable history | Intended product-owned append-only operational history. Posted disbursement, payment, penalty, waiver, reversal, collector cash movement, remittance, and cash-variance records must not be silently edited or deleted. High-risk fields: [Security/role-and-grant-baseline.md](Security/role-and-grant-baseline.md), [Security/audit-and-history-baseline.md](Security/audit-and-history-baseline.md). Subledger principles: [Architecture/loan-ledger-and-balance-model.md](Architecture/loan-ledger-and-balance-model.md). Persistence schema is **implementation work**. |
 | Platform audit | Platform-owned; do not push operational payloads that violate boundary |
 
 ## Encryption
 
 | At rest / in transit | Approach |
 |---|---|
-| TLS | Production TLS remains a portfolio risk until closed. Product-specific TLS design **Status: Open / Product Owner Decision Required**. |
-| Data at rest | **Status: Open / Product Owner Decision Required** (no database yet) |
-| Local/offline stores | Possible later MAUI/SQLite capability. Crypto approach **Status: Open / Product Owner Decision Required**. Not authorized. See [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
+| TLS | Portfolio/hosted deployment requirement; product-specific TLS wiring **implementation work** |
+| Data at rest | **Implementation/Production work** (no database yet) |
+| Local/offline stores | MVP: read-only cache and offline drafts in planning only; LocalStore not authorized; offline final posting deferred. Future crypto/device requirements: [Security/collector-device-security-policy.md](Security/collector-device-security-policy.md). See [Architecture/mobile-and-offline-operating-model.md](Architecture/mobile-and-offline-operating-model.md), [Architecture/mobile-offline-boundary.md](Architecture/mobile-offline-boundary.md). |
 
 ## Input / output controls
 
@@ -105,19 +108,20 @@ Lifecycle intent: [Product/personal-borrower-linking.md](Product/personal-borrow
 
 - Product DB backup independent of Platform DB (when a database exists)
 - Independent of PinoyBusinessPOS backup
-- Procedure **Status: Open / Product Owner Decision Required**
+- Procedure remains **implementation/Production operations work** (Gate E)
 - Destructive restore guards required for operator tools
 
 ## Production security risks (register)
 
 | ID | Risk | Status |
 |---|---|---|
-| R-091 | Production authentication | Open |
+| R-091 | Production authentication | **Closed for Phase 13 scope** — residuals (MFA, step-up, SSO/email) do not reopen |
 | D-P12-03 | Commercial-state transport; risk of inventing Platform table reads or copying POS Dev headers as production design | Open |
-| D-P12-05 | Dishonest Dev/Testing vs Production language | Open |
-| PLM-D-00-06 | Missing product-local grant identifiers (presets and intent recorded) | Open |
-| PLM-D-00-05 | Undesigned consent/linking mechanism | Open |
+| D-P12-05 | Dishonest Dev/Testing vs Production language | **Closed / satisfied for authentication honesty** |
+| PLM-D-00-06 | Product-local grant catalog | **Closed for MVP** — PLM Authorization Policy v1 |
+| PLM-D-00-05 | Personal linking Platform implementation | **Closed for PLM contract** — Platform transport external |
 | PLM-D-00-11 | Legal/compliance validation not performed | Open |
-| PLM-D-00-12 | Exact money rounding mode unset | Open |
+| PLM-D-00-12 | Money rounding | **Closed** — To Even; PHP 2 dp; ≥8 intermediate |
+| PLM-D-00-13 | High-risk maker/checker vs small-org Owner Override | **Closed** — distinct approver when another eligible user exists; controlled Owner Override for sole eligible Owner |
 
 Full register: [risks-and-decisions.md](risks-and-decisions.md).

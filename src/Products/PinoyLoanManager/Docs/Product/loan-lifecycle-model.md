@@ -6,7 +6,7 @@
 
 Origination status, Loan lifecycle, and delinquency / collection condition are **separate dimensions**. Not a status-enum specification.
 
-Related: [lending-operating-model.md](lending-operating-model.md), [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md).
+Related: [lending-operating-model.md](lending-operating-model.md), [financial-calculation-baseline.md](financial-calculation-baseline.md), [schedule-maturity-and-settlement.md](schedule-maturity-and-settlement.md), [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md), [disbursement-cancellation-and-reversal-policy.md](disbursement-cancellation-and-reversal-policy.md), [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md), [disbursement-and-payment-controls.md](disbursement-and-payment-controls.md), [../Architecture/application-surface-model.md](../Architecture/application-surface-model.md).
 
 ---
 
@@ -60,7 +60,7 @@ Approved
   → Active
 ```
 
-Not a finalized enum. Written-off and cancelled-before-disbursement rules remain partly **OPEN**.
+Not a finalized enum. Cancelled-before-disbursement: [disbursement-cancellation-and-reversal-policy.md](disbursement-cancellation-and-reversal-policy.md). Settled: [early-settlement-and-principal-prepayment-policy.md](early-settlement-and-principal-prepayment-policy.md). Written-off rules remain **OPEN**.
 
 ---
 
@@ -71,8 +71,9 @@ Separate **derived / operational** classification such as:
 - Current
 - Past Due
 - Matured Past Due
+- Settled
 
-Derived from schedule, payments, maturity, and policy — not a substitute for lifecycle.
+Derived from schedule, payments, maturity, and policy — not a substitute for lifecycle. Canonical: [delinquency-and-missed-payment-policy.md](delinquency-and-missed-payment-policy.md), [maturity-and-post-maturity-policy.md](maturity-and-post-maturity-policy.md).
 
 ---
 

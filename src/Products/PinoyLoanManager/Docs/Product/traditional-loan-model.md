@@ -19,6 +19,8 @@ Related: [loan-application-and-approval.md](loan-application-and-approval.md), [
 
 Do **not** design two independent financial engines. Snapshot, schedule, subledger, payments, penalties, collections, settlement, audit, and reports converge after disbursement.
 
+Traditional Loan MVP may use **Flat / Add-On** or **Reducing-Balance Equal-Installment**. Reducing-balance supports Added To Repayment only. Canonical: [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md). First due default and exception default: [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md).
+
 Exact Traditional assessment criteria, agreement artifacts, and approval **limits** remain **OPEN**.
 
 ---

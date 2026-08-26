@@ -63,8 +63,18 @@ public sealed class RegisterPersonalAccount
     public async Task<ApplicationResult<PersonalRegistrationAckDto>> ExecuteAsync(
         string displayName,
         string email,
+        string? publicSurface = null,
         CancellationToken cancellationToken = default)
     {
+        var surfaceResult = PlatformAuthPublicSurfaces.Normalize(publicSurface);
+        if (!surfaceResult.IsSuccess)
+        {
+            return ApplicationResult<PersonalRegistrationAckDto>.Failure(
+                surfaceResult.ErrorCode!,
+                surfaceResult.ErrorMessage!);
+        }
+
+        var normalizedPublicSurface = surfaceResult.Value;
         try
         {
             var utcNow = _clock.UtcNow;
@@ -86,7 +96,11 @@ public sealed class RegisterPersonalAccount
                 if (existing.Status == AccountStatus.PendingVerification
                     && !existing.IsOrganizationScopedStaff)
                 {
-                    var reissued = await IssueEmailVerificationAsync(existing, utcNow, cancellationToken)
+                    var reissued = await IssueEmailVerificationAsync(
+                            existing,
+                            utcNow,
+                            normalizedPublicSurface,
+                            cancellationToken)
                         .ConfigureAwait(false);
                     await _auditWriter.WriteAsync(
                         $"platform-user:{existing.Id.Value:D}",
@@ -121,7 +135,7 @@ public sealed class RegisterPersonalAccount
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            var issued = await IssueEmailVerificationAsync(user, utcNow, cancellationToken)
+            var issued = await IssueEmailVerificationAsync(user, utcNow, normalizedPublicSurface, cancellationToken)
                 .ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -145,6 +159,7 @@ public sealed class RegisterPersonalAccount
     private async Task<PersonalRegistrationAckDto> IssueEmailVerificationAsync(
         PlatformUser user,
         DateTimeOffset utcNow,
+        string? publicSurface,
         CancellationToken cancellationToken)
     {
         await _tokens.InvalidateActiveForUserAsync(
@@ -170,7 +185,8 @@ public sealed class RegisterPersonalAccount
                 user.Id.Value,
                 user.NormalizedEmail,
                 opaque,
-                token.ExpiresAtUtc),
+                token.ExpiresAtUtc,
+                PublicSurface: publicSurface),
             cancellationToken).ConfigureAwait(false);
 
         return PublicAck(opaque, token.ExpiresAtUtc);

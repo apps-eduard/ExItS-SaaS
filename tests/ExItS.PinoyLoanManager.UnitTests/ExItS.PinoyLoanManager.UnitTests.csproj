@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ExItS.PinoyLoanManager.UnitTests</RootNamespace>
+    <AssemblyName>ExItS.PinoyLoanManager.UnitTests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Products\PinoyLoanManager\ExItS.PinoyLoanManager.Api\ExItS.PinoyLoanManager.Api.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyLoanManager\ExItS.PinoyLoanManager.Application\ExItS.PinoyLoanManager.Application.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyLoanManager\ExItS.PinoyLoanManager.Domain\ExItS.PinoyLoanManager.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

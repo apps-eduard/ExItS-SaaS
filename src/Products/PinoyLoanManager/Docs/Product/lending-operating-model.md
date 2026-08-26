@@ -48,7 +48,7 @@ Borrower
   → Active Loan
 ```
 
-Exact traditional-loan workflow, assessment criteria, agreement artifacts, and approval limits remain **Open / Product Owner Decision Required**. Conceptual flow: [traditional-loan-model.md](traditional-loan-model.md). This path exists as a distinct origination flow.
+Traditional-loan application, assessment minimums, approval workflow, agreement artifacts, and disbursement readiness are **documented** (PLM-DOC-07). Per-user monetary approval limits remain deferred. Conceptual flow: [traditional-loan-model.md](traditional-loan-model.md), [loan-application-and-approval.md](loan-application-and-approval.md).
 
 ### B. Quick Loan
 
@@ -92,7 +92,7 @@ After approval/disbursement, Traditional Loan and Quick Loan use the **same** op
 
 Origination UX and template/application artifacts may differ. Posted loan financial facts must not.
 
-Planning for that core: [financial-calculation-baseline.md](financial-calculation-baseline.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md). Exact formulas, rates, rounding mode, and component allocation order remain open. See [../risks-and-decisions.md](../risks-and-decisions.md).
+Planning for that core: [financial-calculation-baseline.md](financial-calculation-baseline.md), [interest-and-finance-charge-policy.md](interest-and-finance-charge-policy.md), [payment-allocation-and-prepayment-policy.md](payment-allocation-and-prepayment-policy.md), [schedule-and-collection-calendar-policy.md](schedule-and-collection-calendar-policy.md), [loan-lifecycle-model.md](loan-lifecycle-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md). MVP methods, rounding, allocation, calendar, and penalty engine are accepted (PLM-DOC-02, PLM-DOC-03). Default rates remain undefined. See [../risks-and-decisions.md](../risks-and-decisions.md).
 
 ---
 
@@ -117,7 +117,7 @@ Separation-of-duty baseline (intent):
 - Cashier should not normally be the loan approver.
 - Owner/Manager may approve according to grants.
 
-Grant catalog **intent** and scope: [../Security/role-and-grant-baseline.md](../Security/role-and-grant-baseline.md). Planning matrix: [../authorization-matrix.md](../authorization-matrix.md). Identifiers remain **Open** (PLM-D-00-06).
+Grant catalog v1 and default presets: [../Security/authorization-grant-catalog.md](../Security/authorization-grant-catalog.md). Planning matrix: [../authorization-matrix.md](../authorization-matrix.md). (**PLM-D-00-06 Closed for MVP**)
 
 ---
 

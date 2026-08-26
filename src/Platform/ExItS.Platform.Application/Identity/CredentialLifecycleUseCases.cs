@@ -199,10 +199,19 @@ public sealed class RequestPasswordReset
 
     public async Task<ApplicationResult<CredentialWorkflowAckDto>> ExecuteAsync(
         string? usernameOrEmail,
+        string? publicSurface = null,
         CancellationToken cancellationToken = default)
     {
         const string generic = "If an eligible account exists, a password reset token was issued.";
         var ack = new CredentialWorkflowAckDto(generic, null, null);
+        var surfaceResult = PlatformAuthPublicSurfaces.Normalize(publicSurface);
+        if (!surfaceResult.IsSuccess)
+        {
+            return ApplicationResult<CredentialWorkflowAckDto>.Failure(
+                surfaceResult.ErrorCode!,
+                surfaceResult.ErrorMessage!);
+        }
+
         var identifier = (usernameOrEmail ?? string.Empty).Trim();
         if (identifier.Length == 0)
         {
@@ -257,7 +266,8 @@ public sealed class RequestPasswordReset
                 user.Id.Value,
                 deliveryEmail,
                 opaque,
-                token.ExpiresAtUtc),
+                token.ExpiresAtUtc,
+                PublicSurface: surfaceResult.Value),
             cancellationToken).ConfigureAwait(false);
 
         await _auditWriter.WriteAsync(

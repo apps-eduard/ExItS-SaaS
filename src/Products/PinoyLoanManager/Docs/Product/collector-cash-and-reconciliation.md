@@ -6,7 +6,7 @@
 
 This document records collector cash accountability as distinct from the loan financial ledger. It is not an accounting-journal or schema specification.
 
-Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md).
+Related: [lending-operating-model.md](lending-operating-model.md), [quick-loan-model.md](quick-loan-model.md), [cashier-and-collector-control-model.md](cashier-and-collector-control-model.md), [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md), [../Architecture/loan-ledger-and-balance-model.md](../Architecture/loan-ledger-and-balance-model.md), [../Architecture/operational-subledger-and-accounting-boundary.md](../Architecture/operational-subledger-and-accounting-boundary.md).
 
 ---
 
@@ -68,7 +68,7 @@ Variance must be:
 - authorized / resolved
 - auditable
 
-Unresolved variance must remain **visible**. Do **not** force a fake cash movement so a day can close at zero. Detail: [exception-reversal-and-variance-workflow.md](exception-reversal-and-variance-workflow.md).
+Unresolved variance must remain **visible**. Do **not** force a fake cash movement so a day can close at zero. Canonical: [cash-variance-and-session-close-policy.md](cash-variance-and-session-close-policy.md).
 
 No silent cash balance edits. Corrections follow the financial-history principle in [lending-operating-model.md](lending-operating-model.md) (reversal / adjustment / compensating transaction with actor, time, reason).
 

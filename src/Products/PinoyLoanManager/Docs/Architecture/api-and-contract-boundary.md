@@ -4,9 +4,9 @@
 **Implementation present:** No
 **Last updated:** 2026-08-19
 
-How future PLM APIs relate to Organization Web, MAUI, Personal, and Platform. Not an endpoint catalog.
+How future PLM APIs relate to Organization Web/PWA, Capacitor Android, Personal, and Platform. Not an endpoint catalog.
 
-Related: [source-and-project-layout.md](source-and-project-layout.md), [personal-integration-boundary.md](personal-integration-boundary.md), [platform-commercial-integration.md](platform-commercial-integration.md).
+Related: [source-and-project-layout.md](source-and-project-layout.md), [react-pwa-capacitor-client.md](react-pwa-capacitor-client.md), [personal-integration-boundary.md](personal-integration-boundary.md), [platform-commercial-integration.md](platform-commercial-integration.md).
 
 ---
 
@@ -22,8 +22,8 @@ API DTOs must not expose EF entities.
 
 | Consumer | Access |
 |---|---|
-| Organization Web | Full operational API surface as granted |
-| MAUI | Limited field operational API surface |
+| Organization Web / PWA | Full operational API surface as granted — via React Client through Web host/BFF |
+| Capacitor Android | Same React Client; limited field operational API surface as granted |
 | ExItS Personal | PLM-authoritative contracts only — never PLM database |
 | Platform | Commercial / identity contracts only — never PLM operational tables |
 
@@ -57,5 +57,5 @@ No endpoint implementation in this package.
 ## Explicit non-goals
 
 - OpenAPI / route design
-- Authentication scheme (R-091)
+- Authentication scheme (**R-091 Closed for Phase 13 scope**; consume trusted Platform actor only)
 - Inventing D-P12-03 transport
