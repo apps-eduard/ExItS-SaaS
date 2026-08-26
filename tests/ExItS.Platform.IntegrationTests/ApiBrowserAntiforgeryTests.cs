@@ -114,6 +114,33 @@ public sealed class ApiBrowserAntiforgeryTests(PostgreSqlFixture fixture) : IAsy
     }
 
     [Fact]
+    public async Task Bearer_token_mutation_does_not_require_antiforgery_even_with_session_cookie()
+    {
+        var (username, password) = await SeedPlatformStaffAsync();
+
+        // Issue Bearer first (token-only client), then establish a browser cookie session.
+        var tokenResponse = await _headerClient.PostAsJsonAsync(
+            "/api/v1/platform/auth/token",
+            new { grantType = "password", usernameOrEmail = username, password });
+        Assert.Equal(HttpStatusCode.OK, tokenResponse.StatusCode);
+        var accessToken = (await tokenResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("accessToken")
+            .GetString();
+        Assert.False(string.IsNullOrWhiteSpace(accessToken));
+
+        await LoginWithCookieAsync(username, password);
+
+        using var logout = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/logout");
+        logout.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var response = await _browser.SendAsync(logout);
+        // Must not be antiforgery BadRequest; cookie+Bearer skip CSRF for header/token callers.
+        Assert.NotEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(
+            response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.Unauthorized or HttpStatusCode.OK,
+            $"Unexpected status {response.StatusCode}");
+    }
+
+    [Fact]
     public async Task Get_requests_remain_unaffected_with_cookie_session()
     {
         var (username, password) = await SeedPlatformStaffAsync();
@@ -189,5 +216,38 @@ public sealed class ApiBrowserAntiforgeryTests(PostgreSqlFixture fixture) : IAsy
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("token").GetString()));
+    }
+
+    /// <summary>
+    /// Invitation accept is anonymous (token + password). A leftover Platform session cookie
+    /// must not force antiforgery rejection on this path.
+    /// </summary>
+    [Fact]
+    public async Task Invitation_accept_with_session_cookie_does_not_require_antiforgery()
+    {
+        var (username, password) = await SeedPlatformStaffAsync();
+        await LoginWithCookieAsync(username, password);
+
+        var org = await _headerClient.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "CSRF Invite Org", slug = PlatformIntegrationTestUsers.Unique("csrfinv") });
+        Assert.Equal(HttpStatusCode.Created, org.StatusCode);
+        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var contactEmail = $"{PlatformIntegrationTestUsers.Unique("invcsrf")}@example.com";
+        var invite = await _headerClient.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/invitations",
+            new { email = contactEmail, role = "OrganizationMember", requireEmailVerification = false });
+        Assert.Equal(HttpStatusCode.Created, invite.StatusCode);
+        var acceptToken = (await invite.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(acceptToken));
+
+        // Browser still has Platform staff session cookie from LoginWithCookieAsync.
+        var accept = await _browser.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
+        var acceptBody = await accept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString()!, StringComparison.OrdinalIgnoreCase);
     }
 }

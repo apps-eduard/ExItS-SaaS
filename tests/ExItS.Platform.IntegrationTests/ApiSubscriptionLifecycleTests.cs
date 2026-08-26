@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Subscriptions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -58,7 +60,14 @@ public sealed class ApiSubscriptionLifecycleTests(PostgreSqlFixture fixture) : I
 
         var plan = await _client.PostAsJsonAsync(
             $"/api/v1/platform/catalog/products/{productCode}/plans",
-            new { code = "utang", displayName = "Utang" });
+            new
+            {
+                code = "utang",
+                displayName = "Utang",
+                monthlyPrice = 999m,
+                annualPrice = 9990m,
+                currencyCode = "PHP"
+            });
         plan.EnsureSuccessStatusCode();
         var planId = (await plan.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
@@ -171,13 +180,14 @@ public sealed class ApiSubscriptionLifecycleTests(PostgreSqlFixture fixture) : I
         var subscriptionId = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var now = DateTimeOffset.UtcNow;
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(now, BillingCycle.Monthly);
         var payment = await _client.PostAsJsonAsync(
             "/api/v1/platform/payments/manual",
             new
             {
                 organizationId,
                 productCode,
-                amount = 100m,
+                amount = 999m,
                 currencyCode = "PHP",
                 method = "GCash",
                 externalReference = $"life-{Guid.NewGuid():N}",
@@ -192,8 +202,9 @@ public sealed class ApiSubscriptionLifecycleTests(PostgreSqlFixture fixture) : I
             {
                 confirmedBy = "lifecycle-operator",
                 subscriptionId,
-                periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodStartUtc = periodStart,
+                periodEndUtc = periodEnd,
+                billingCycle = nameof(BillingCycle.Monthly)
             });
         Assert.Equal(HttpStatusCode.OK, activate.StatusCode);
         var activated = (await activate.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("subscription");

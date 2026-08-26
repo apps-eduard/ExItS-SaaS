@@ -257,6 +257,10 @@ internal sealed class CredentialApiFactory : WebApplicationFactory<Program>
     private readonly string _bootstrapSharedSecret;
     private readonly string _environmentName;
     private readonly string? _allowedHosts;
+    private readonly string _dataProtectionKeysPath = Path.Combine(
+        Path.GetTempPath(),
+        "exits-platform-api-dp-credential",
+        Guid.NewGuid().ToString("N"));
 
     public CredentialApiFactory(
         string connectionString,
@@ -295,6 +299,11 @@ internal sealed class CredentialApiFactory : WebApplicationFactory<Program>
             builder.UseSetting("AllowedHosts", _allowedHosts);
         }
 
+        if (string.Equals(_environmentName, "Production", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.UseSetting("DataProtection:KeysPath", _dataProtectionKeysPath);
+        }
+
         builder.ConfigureAppConfiguration((_, config) =>
         {
             var values = new Dictionary<string, string?>
@@ -312,6 +321,11 @@ internal sealed class CredentialApiFactory : WebApplicationFactory<Program>
             if (_allowedHosts is not null)
             {
                 values["AllowedHosts"] = _allowedHosts;
+            }
+
+            if (string.Equals(_environmentName, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                values["DataProtection:KeysPath"] = _dataProtectionKeysPath;
             }
 
             config.AddInMemoryCollection(values);

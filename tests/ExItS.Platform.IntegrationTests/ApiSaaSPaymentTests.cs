@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Subscriptions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -68,7 +70,7 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         var plan = await _client.PostAsJsonAsync(
             $"/api/v1/platform/catalog/products/{productCode}/plans",
-            new { code = "utang", displayName = "Utang" });
+            new { code = "utang", displayName = "Utang", monthlyPrice = 500m, annualPrice = 5000m, currencyCode = "PHP" });
         plan.EnsureSuccessStatusCode();
         var planId = (await plan.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
@@ -234,10 +236,19 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         var paymentId = await CreateManualPaymentAsync(organizationId, productCode, "REF-API-ACTIVATE");
 
-        var now = DateTimeOffset.UtcNow;
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(
+            DateTimeOffset.UtcNow,
+            BillingCycle.Monthly);
         var activate = await _client.PostAsJsonAsync(
             $"/api/v1/platform/payments/{paymentId}/activate-subscription",
-            new { confirmedBy = "staff-1", subscriptionId, periodStartUtc = now, periodEndUtc = now.AddDays(30) });
+            new
+            {
+                confirmedBy = "staff-1",
+                subscriptionId,
+                periodStartUtc = periodStart,
+                periodEndUtc = periodEnd,
+                billingCycle = nameof(BillingCycle.Monthly)
+            });
         Assert.Equal(HttpStatusCode.OK, activate.StatusCode);
         var activated = await activate.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Confirmed", activated.GetProperty("payment").GetProperty("status").GetString());
@@ -249,8 +260,9 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
             {
                 confirmedBy = "staff-1",
                 subscriptionId,
-                periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
+                periodStartUtc = periodStart,
+                periodEndUtc = periodEnd,
+                billingCycle = nameof(BillingCycle.Monthly)
             });
         Assert.Equal(HttpStatusCode.Conflict, reuse.StatusCode);
     }
@@ -269,10 +281,19 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
 
         var paymentId = await CreateManualPaymentAsync(organizationId, productCode, "REF-INLINE-CONFIRM");
 
-        var now = DateTimeOffset.UtcNow;
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(
+            DateTimeOffset.UtcNow,
+            BillingCycle.Monthly);
         var activate = await _client.PostAsJsonAsync(
             $"/api/v1/platform/payments/{paymentId}/activate-subscription",
-            new { confirmedBy = "staff-1", subscriptionId, periodStartUtc = now, periodEndUtc = now.AddDays(30) });
+            new
+            {
+                confirmedBy = "staff-1",
+                subscriptionId,
+                periodStartUtc = periodStart,
+                periodEndUtc = periodEnd,
+                billingCycle = nameof(BillingCycle.Monthly)
+            });
         Assert.Equal(HttpStatusCode.OK, activate.StatusCode);
 
         var payment = await _client.GetAsync($"/api/v1/platform/payments/{paymentId}");
@@ -304,7 +325,7 @@ public sealed class ApiSaaSPaymentTests(PostgreSqlFixture fixture) : IAsyncLifet
         var now = DateTimeOffset.UtcNow;
         var activate = await _client.PostAsJsonAsync(
             $"/api/v1/platform/payments/{paymentId}/activate-subscription",
-            new { confirmedBy = "staff-1", subscriptionId, periodStartUtc = now, periodEndUtc = now.AddDays(30) });
+            new { confirmedBy = "staff-1", subscriptionId, periodStartUtc = now, periodEndUtc = now.AddMonths(1) });
         Assert.Equal(HttpStatusCode.Conflict, activate.StatusCode);
     }
 

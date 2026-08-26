@@ -2,8 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Infrastructure;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExItS.Platform.IntegrationTests;
 
@@ -31,7 +35,7 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
     }
 
     private static string Unique(string prefix) =>
-        $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
+        $"{prefix}-{Guid.NewGuid():N}"[..Math.Min(32, prefix.Length + 1 + 32)].ToLowerInvariant();
 
     private static HttpRequestMessage Authed(HttpMethod method, string url, string token, object? body = null)
     {
@@ -45,8 +49,38 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
         return request;
     }
 
+    private async Task EnsurePhilippineStarterCatalogAsync()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:PlatformDatabase"] = fixture.ConnectionString
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddPlatformPersistence(configuration);
+        services.AddLogging();
+        services.AddScoped<EnsurePhilippinePosStarterCatalog>();
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<EnsurePhilippinePosStarterCatalog>().ExecuteAsync();
+    }
+
+    private async Task<Guid> ResolvePrimaryBusinessTypeIdAsync(string personalToken)
+    {
+        using var businessTypesRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/onboarding/business-types",
+            personalToken);
+        var businessTypesResponse = await _client.SendAsync(businessTypesRequest);
+        businessTypesResponse.EnsureSuccessStatusCode();
+        var businessTypes = await businessTypesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        return businessTypes.EnumerateArray().First().GetProperty("id").GetGuid();
+    }
+
     private async Task<(string Token, Guid UserId, Guid OrgId)> StartBusinessAsync()
     {
+        await EnsurePhilippineStarterCatalogAsync();
         var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "nav");
 
         var login = await _client.PostAsJsonAsync(
@@ -54,6 +88,7 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
             new { usernameOrEmail = email, password });
         login.EnsureSuccessStatusCode();
         var personalToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString()!;
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(personalToken);
 
         using var start = Authed(
             HttpMethod.Post,
@@ -63,6 +98,7 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
             {
                 displayName = "Nav Store",
                 slug = Unique("navbiz"),
+                primaryBusinessTypeId,
                 activatePosEntitlement = true,
                 activateProductAccess = true,
                 assignPosOwnerRole = true
@@ -105,21 +141,14 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
     {
         var (token, ownerId, orgId) = await StartBusinessAsync();
 
-        // Create staff member with commercial access but no product-local role.
-        var (staffId, staffEmail, staffPassword) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "staff");
-        (await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{orgId}/members",
-            new { userId = staffId, role = "OrganizationMember" })).EnsureSuccessStatusCode();
+        // Staff via invite accept (org-scoped identity), commercial access, no product-local role.
+        var (staffId, _, _, _, _) =
+            await PlatformIntegrationTestUsers.SeedStaffViaInvitationToOrgAsync(
+                _admin, _client, orgId, "staff");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgId}/product-access",
             new { userId = staffId, productCode = "pinoy-business-pos", grantedByActor = "dev-admin", reason = "staff access" }))
             .EnsureSuccessStatusCode();
-
-        var staffLogin = await _client.PostAsJsonAsync(
-            "/api/v1/platform/auth/login",
-            new { usernameOrEmail = staffEmail, password = staffPassword });
-        // Staff may still be Personal until profile selection; force org context via owner authorization check.
-        _ = staffLogin;
 
         using var authz = Authed(
             HttpMethod.Get,

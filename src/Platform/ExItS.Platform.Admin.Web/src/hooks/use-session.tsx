@@ -10,7 +10,12 @@ import {
 } from "react";
 import { getAuthMe, login as loginRequest, logout as logoutRequest } from "@/api/auth/auth-client";
 import { isNetworkFailure, isSessionInvalidError } from "@/api/auth/auth-errors";
+import {
+  resetAuthenticationLostLatch,
+  setAuthenticationLostHandler,
+} from "@/api/auth/session-expiry";
 import type { AuthSession } from "@/api/auth/auth-types";
+import { clearPlatformAntiforgeryToken } from "@/api/platform-http";
 import { env } from "@/lib/env";
 import { isAbortError } from "@/lib/diagnostics/diagnostic-redaction";
 import { useDiagnostics } from "@/hooks/use-diagnostics";
@@ -34,8 +39,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
 
   const clearClientState = useCallback(() => {
+    clearPlatformAntiforgeryToken();
     queryClient.clear();
   }, [queryClient]);
+
+  const markExpired = useCallback(() => {
+    setSession(null);
+    setStatus("expired");
+    clearClientState();
+  }, [clearClientState]);
+
+  useEffect(() => {
+    setAuthenticationLostHandler(() => {
+      markExpired();
+    });
+    return () => setAuthenticationLostHandler(null);
+  }, [markExpired]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,6 +67,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         }
         setSession(next);
         setStatus("authenticated");
+        resetAuthenticationLostLatch();
       } catch (error) {
         if (controller.signal.aborted || isAbortError(error)) {
           return;
@@ -64,14 +84,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- session bootstrap once
   }, []);
 
-  const markExpired = useCallback(() => {
-    setSession(null);
-    setStatus("expired");
-    clearClientState();
-  }, [clearClientState]);
-
   const signIn = useCallback(async (usernameOrEmail: string, password: string) => {
     const next = await loginRequest(env.platformApiBaseUrl, { usernameOrEmail, password });
+    resetAuthenticationLostLatch();
     setSession(next);
     setStatus("authenticated");
     return next;
@@ -92,6 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setStatus("unauthenticated");
     clearClientState();
+    resetAuthenticationLostLatch();
   }, [clearClientState, report]);
 
   const value = useMemo<SessionContextValue>(

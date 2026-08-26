@@ -345,6 +345,25 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        personal.MapPut("/profile", async (
+            HttpContext http,
+            UpdatePersonalProfileRequest body,
+            UpdatePersonalProfile updateProfile,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out var accountProfileId, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await updateProfile.ExecuteAsync(
+                PlatformUserId.From(userId),
+                AccountProfileId.From(accountProfileId),
+                body,
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         personal.MapGet("/settings", async (
             HttpContext http,
             GetPersonalAccountSettings getSettings,
@@ -1036,6 +1055,22 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        utang.MapPost("/invitations/accept-by-id", async (
+            HttpContext http,
+            AcceptPersonalUtangInvitationByIdRequest body,
+            AcceptPersonalUtangInvitationById acceptById,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await acceptById.ExecuteAsync(PlatformUserId.From(userId), body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
         utang.MapPost("/invitations/decline", async (
             HttpContext http,
             AcceptPersonalUtangInvitationRequest body,
@@ -1048,6 +1083,22 @@ internal static class PersonalEndpoints
             }
 
             var result = await declineInvitation.ExecuteAsync(PlatformUserId.From(userId), body.Token, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        utang.MapPost("/invitations/decline-by-id", async (
+            HttpContext http,
+            DeclinePersonalUtangInvitationByIdRequest body,
+            DeclinePersonalUtangInvitationById declineById,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await declineById.ExecuteAsync(PlatformUserId.From(userId), body, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });

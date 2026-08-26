@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Authorization;
-using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -60,6 +59,7 @@ public sealed class ApiRbacAdminTests(PostgreSqlFixture fixture) : IAsyncLifetim
         Assert.Equal(HttpStatusCode.Conflict, retireBuiltIn.StatusCode);
 
         var userId = await CreatePlatformUserAsync("rbac");
+        await PlatformIntegrationTestUsers.RevokeAllActivePlatformRolesAsync(_client, userId);
         var assign = await _client.PostAsJsonAsync("/api/v1/platform/authorization/custom-assignments", new
         {
             platformUserId = userId,
@@ -103,19 +103,21 @@ public sealed class ApiRbacAdminTests(PostgreSqlFixture fixture) : IAsyncLifetim
     [Fact]
     public async Task User_directory_filters_and_last_platform_administrator_protected()
     {
-        var unassignedUser = await CreatePlatformUserAsync("unasg");
-        var directory = await _client.GetFromJsonAsync<JsonElement>(
+        // Staff create seeds Platform AccountProfile — appears under PlatformStaff, not Unassigned.
+        var staffSeed = await CreatePlatformUserAsync("unasg");
+        var staffDirectory = await _client.GetFromJsonAsync<JsonElement>(
+            "/api/v1/platform/users?directory=PlatformStaff&pageSize=100");
+        var staffSeedIds = staffDirectory.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).ToHashSet();
+        Assert.Contains(staffSeed, staffSeedIds);
+
+        var unassigned = await _client.GetFromJsonAsync<JsonElement>(
             "/api/v1/platform/users?directory=Unassigned&pageSize=100");
-        var ids = directory.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).ToHashSet();
-        Assert.Contains(unassignedUser, ids);
+        var unassignedIds = unassigned.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).ToHashSet();
+        Assert.DoesNotContain(staffSeed, unassignedIds);
 
         var staffUser = await CreatePlatformUserAsync("staff");
-        var assign = await _client.PostAsJsonAsync("/api/v1/platform/authorization/assignments", new
-        {
-            platformUserId = staffUser,
-            role = nameof(PlatformSystemRole.PlatformSupport)
-        });
-        Assert.Equal(HttpStatusCode.Created, assign.StatusCode);
+        await PlatformIntegrationTestUsers.EnsurePlatformRoleAsync(
+            _client, staffUser, nameof(PlatformSystemRole.PlatformSupport));
 
         var staff = await _client.GetFromJsonAsync<JsonElement>(
             "/api/v1/platform/users?directory=PlatformStaff&pageSize=100");
@@ -162,13 +164,8 @@ public sealed class ApiRbacAdminTests(PostgreSqlFixture fixture) : IAsyncLifetim
     {
         var orgA = await CreateOrganizationAsync("rbaca");
         var orgB = await CreateOrganizationAsync("rbacb");
-        var member = await CreatePlatformUserAsync("orgm");
-
-        (await _client.PostAsJsonAsync($"/api/v1/platform/organizations/{orgA}/members", new
-        {
-            userId = member,
-            role = nameof(OrganizationRole.OrganizationMember)
-        })).EnsureSuccessStatusCode();
+        var (member, _, _, _, _) = await PlatformIntegrationTestUsers.SeedStaffViaInvitationToOrgAsync(
+            _client, _client, orgA, "orgm");
 
         var create = await _client.PostAsJsonAsync($"/api/v1/platform/organizations/{orgA}/role-definitions", new
         {

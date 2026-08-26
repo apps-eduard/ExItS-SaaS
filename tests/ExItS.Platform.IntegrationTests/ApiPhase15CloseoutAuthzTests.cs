@@ -59,13 +59,14 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
         return userId;
     }
 
-    private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null)
-    {
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/platform/authorization/assignments",
-            new { platformUserId, role, organizationId });
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
+    private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null) =>
+        await PlatformIntegrationTestUsers.EnsurePlatformRoleAsync(_client, platformUserId, role, organizationId);
+
+    private async Task ReplacePlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null) =>
+        await PlatformIntegrationTestUsers.ReplaceWithPlatformRoleAsync(_client, platformUserId, role, organizationId);
+
+    private async Task RevokeAllPlatformRolesAsync(Guid platformUserId) =>
+        await PlatformIntegrationTestUsers.RevokeAllActivePlatformRolesAsync(_client, platformUserId);
 
     private async Task<Guid> CreateOrganizationAsync(string prefix)
     {
@@ -81,7 +82,7 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
     {
         var orgId = await CreateOrganizationAsync("payorg");
         var support = await CreatePlatformUserAsync("paysup");
-        await AssignPlatformRoleAsync(support, "PlatformSupport");
+        // Staff create already seeds PlatformSupport (lacks ManageManualPayments).
 
         var create = await _client.PostAsJsonAsync(
             "/api/v1/platform/payments/manual",
@@ -124,7 +125,8 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
         var orgId = await CreateOrganizationAsync("pacorg");
         var userId = await CreatePlatformUserAsync("pacuser");
         var billing = await CreatePlatformUserAsync("pacbill");
-        await AssignPlatformRoleAsync(billing, "BillingAdministrator");
+        // Exclusive BillingAdministrator — default PlatformSupport includes ManageProductAccess.
+        await ReplacePlatformRoleAsync(billing, "BillingAdministrator");
 
         var deniedUserList = await SendAsync(
             HttpMethod.Get,
@@ -144,12 +146,13 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
     {
         var orgId = await CreateOrganizationAsync("dirorg");
         var adminUser = await CreatePlatformUserAsync("diradmin");
+        await RevokeAllPlatformRolesAsync(adminUser);
         var memberAdd = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgId:D}/members",
             new { userId = adminUser, role = "OrganizationOwner" });
         memberAdd.EnsureSuccessStatusCode();
 
-        // Org owner without platform roles — no ManagePlatformUsers.
+        // Org owner without platform roles — no ManagePlatformUsers / ViewPortfolio.
         var deniedUsers = await SendAsync(HttpMethod.Get, "/api/v1/platform/users", actingUserId: adminUser);
         Assert.Equal(HttpStatusCode.Forbidden, deniedUsers.StatusCode);
 
@@ -193,7 +196,7 @@ public sealed class ApiPhase15CloseoutAuthzTests(PostgreSqlFixture fixture) : IA
     public async Task Denied_user_list_uses_access_checked_action()
     {
         var billing = await CreatePlatformUserAsync("denylist");
-        await AssignPlatformRoleAsync(billing, "BillingAdministrator");
+        await ReplacePlatformRoleAsync(billing, "BillingAdministrator");
 
         var denied = await SendAsync(HttpMethod.Get, "/api/v1/platform/users", actingUserId: billing);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);

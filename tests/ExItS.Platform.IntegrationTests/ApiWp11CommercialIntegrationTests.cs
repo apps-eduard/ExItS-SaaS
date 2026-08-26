@@ -1,10 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Infrastructure;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExItS.Platform.IntegrationTests;
 
@@ -46,10 +50,41 @@ public sealed class ApiWp11CommercialIntegrationTests(PostgreSqlFixture fixture)
         return request;
     }
 
+    private async Task EnsurePhilippineStarterCatalogAsync()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:PlatformDatabase"] = fixture.ConnectionString
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddPlatformPersistence(configuration);
+        services.AddLogging();
+        services.AddScoped<EnsurePhilippinePosStarterCatalog>();
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<EnsurePhilippinePosStarterCatalog>().ExecuteAsync();
+    }
+
+    private async Task<Guid> ResolvePrimaryBusinessTypeIdAsync(string personalToken)
+    {
+        using var businessTypesRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/onboarding/business-types",
+            personalToken);
+        var businessTypesResponse = await _client.SendAsync(businessTypesRequest);
+        businessTypesResponse.EnsureSuccessStatusCode();
+        var businessTypes = await businessTypesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        return businessTypes.EnumerateArray().First().GetProperty("id").GetGuid();
+    }
+
     [Fact]
     public async Task Start_business_creates_org_subscription_with_commercial_flow()
     {
+        await EnsurePhilippineStarterCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("wp11");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("wp11");
         using var request = Authed(
             HttpMethod.Post,
@@ -59,6 +94,7 @@ public sealed class ApiWp11CommercialIntegrationTests(PostgreSqlFixture fixture)
             {
                 displayName = "Ana Sari-Sari",
                 slug,
+                primaryBusinessTypeId,
                 activatePosEntitlement = true,
                 activateProductAccess = true,
                 assignPosOwnerRole = true

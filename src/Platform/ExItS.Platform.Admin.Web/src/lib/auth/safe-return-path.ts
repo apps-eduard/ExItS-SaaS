@@ -37,7 +37,14 @@ export function sanitizeReturnPath(raw: string | null | undefined): string | nul
   }
 
   const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  if (path.startsWith("/admin/login")) {
+  if (
+    path === "/admin/login" ||
+    path.startsWith("/admin/login?") ||
+    path.startsWith("/admin/register") ||
+    path.startsWith("/admin/activate-account") ||
+    path.startsWith("/admin/forgot-password") ||
+    path.startsWith("/admin/reset-password")
+  ) {
     return null;
   }
 

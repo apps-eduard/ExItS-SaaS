@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
@@ -53,16 +54,31 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         return request;
     }
 
+    private async Task<Guid> ResolvePrimaryBusinessTypeIdAsync(string personalToken, HttpClient? client = null)
+    {
+        client ??= _client;
+        using var businessTypesRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/onboarding/business-types",
+            personalToken);
+        var businessTypesResponse = await client.SendAsync(businessTypesRequest);
+        businessTypesResponse.EnsureSuccessStatusCode();
+        var businessTypes = await businessTypesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        return businessTypes.EnumerateArray().First().GetProperty("id").GetGuid();
+    }
+
     [Fact]
     public async Task Start_business_business_monthly_gets_14_day_trial_with_commercial_snapshot()
     {
         await EnsureMvpCatalogAsync();
         var (token, userId, email, password) = await SeedPersonalUserAsync("sb14");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sb14");
         var startBody = new
         {
             displayName = "Ana Sari-Sari",
             slug,
+            primaryBusinessTypeId,
             productCode = ProductCode.PinoyBusinessPos,
             planKey = MvpPosPlanCodes.Growth,
             billingCycle = BillingCycle.Monthly,
@@ -83,7 +99,8 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         var started = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
         var organizationId = started.GetProperty("organizationId").GetGuid();
         var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
-        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        // MVP: entitlement activation grants first POS Owner even when AssignPosOwnerRole=false.
+        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
         Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
 
         var subscription = await _admin.GetAsync(
@@ -130,6 +147,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbstr");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sbstr");
         using var start = Authed(
             HttpMethod.Post,
@@ -139,6 +157,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "String Cycle Store",
                 slug,
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Growth,
                 billingCycle = "Monthly",
@@ -161,6 +180,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbinv");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         using var request = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
@@ -169,6 +189,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Invalid Plan Store",
                 slug = Unique("sbinv"),
+                primaryBusinessTypeId,
                 planKey = "does-not-exist",
                 productCode = ProductCode.PinoyBusinessPos
             });
@@ -185,6 +206,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbstr");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sbstr");
         using var request = Authed(
             HttpMethod.Post,
@@ -194,6 +216,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Starter Trial Store",
                 slug,
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Starter,
                 billingCycle = "Monthly",
@@ -209,7 +232,9 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         }
 
         var started = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        // MVP: POS entitlement activation always grants the first POS Owner role
+        // (AssignPosOwnerRole=false is not sufficient to suppress it).
+        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
         Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
         Assert.Equal("Organization", started.GetProperty("accountClass").GetString());
         Assert.False(string.IsNullOrWhiteSpace(started.GetProperty("sessionToken").GetString()));
@@ -238,6 +263,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbpay");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sbpay");
         using var request = Authed(
             HttpMethod.Post,
@@ -247,6 +273,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Starter Paid Store",
                 slug,
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Starter,
                 billingCycle = "Monthly",
@@ -263,7 +290,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
 
         var started = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
-        Assert.False(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
         var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
         var subscription = await _admin.GetAsync($"/api/v1/platform/subscriptions/{subscriptionId}");
         subscription.EnsureSuccessStatusCode();
@@ -277,6 +304,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbpro");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         using var request = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
@@ -285,6 +313,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Pro Trial Store",
                 slug = Unique("sbpro"),
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Pro,
                 startAsTrial = true,
@@ -307,11 +336,13 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, email, password) = await SeedPersonalUserAsync("sbid");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sbid");
         var payload = new
         {
             displayName = "Idempotent Store",
             slug,
+            primaryBusinessTypeId,
             productCode = ProductCode.PinoyBusinessPos,
             planKey = MvpPosPlanCodes.Growth,
             billingCycle = BillingCycle.Monthly,
@@ -339,6 +370,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
     {
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sb2t");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
         var slug = Unique("sb2t");
         using var start = Authed(
             HttpMethod.Post,
@@ -348,6 +380,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Trial Once Store",
                 slug,
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Growth,
                 startAsTrial = true,
@@ -404,6 +437,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
 
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbpay", lvClient);
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token, lvClient);
         var slug = Unique("sbpay");
         using var start = Authed(
             HttpMethod.Post,
@@ -413,6 +447,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Pay Convert Store",
                 slug,
+                primaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Growth,
                 billingCycle = BillingCycle.Monthly,
@@ -493,6 +528,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         using var declinedClient = declinedFactory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         await EnsureMvpCatalogAsync();
         var (declinedToken, _, _, _) = await SeedPersonalUserAsync("sbdec", declinedClient);
+        var declinedPrimaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(declinedToken, declinedClient);
         var declinedSlug = Unique("sbdec");
         using var declinedStart = Authed(
             HttpMethod.Post,
@@ -502,6 +538,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             {
                 displayName = "Declined Store",
                 slug = declinedSlug,
+                primaryBusinessTypeId = declinedPrimaryBusinessTypeId,
                 productCode = ProductCode.PinoyBusinessPos,
                 planKey = MvpPosPlanCodes.Growth,
                 startAsTrial = true,
@@ -586,6 +623,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         services.AddScoped<CreateTrialDefinition>();
         services.AddScoped<RetirePlan>();
         services.AddScoped<EnsureMvpPosPlans>();
+        services.AddScoped<EnsurePhilippinePosStarterCatalog>();
 
         await using var provider = services.BuildServiceProvider();
         var createProduct = provider.GetRequiredService<CreateProduct>();
@@ -598,6 +636,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
 
         var ensure = provider.GetRequiredService<EnsureMvpPosPlans>();
         await ensure.ExecuteAsync();
+        await provider.GetRequiredService<EnsurePhilippinePosStarterCatalog>().ExecuteAsync();
     }
 
     private async Task<(string Token, Guid UserId, string Email, string Password)> SeedPersonalUserAsync(

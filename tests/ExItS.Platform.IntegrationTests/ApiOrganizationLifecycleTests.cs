@@ -41,12 +41,6 @@ public sealed class ApiOrganizationLifecycleTests(PostgreSqlFixture fixture) : I
         return (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
     }
 
-    private async Task<(Guid UserId, string Username, string Password)> SeedUserWithPasswordAsync(string prefix)
-    {
-        var (userId, email, password) = await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
-        return (userId, email, password);
-    }
-
     private async Task<string> LoginAsync(string username, string password)
     {
         var login = await _client.PostAsJsonAsync(
@@ -198,13 +192,14 @@ public sealed class ApiOrganizationLifecycleTests(PostgreSqlFixture fixture) : I
     {
         var organizationId = await CreateOrganizationAsync("oa");
         var foreignOrgId = await CreateOrganizationAsync("fx");
-        var (userId, username, password) = await SeedUserWithPasswordAsync("oaadm");
-
+        // Owner seat may attach to Personal via POST /members; staff Member/Admin cannot.
+        var (userId, email, password) =
+            await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, "oaadm");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
 
-        var token = await LoginAsync(username, password);
+        var token = await LoginAsync(email, password);
         using (var select = Authed(
                    HttpMethod.Put,
                    "/api/v1/platform/auth/organization-context",

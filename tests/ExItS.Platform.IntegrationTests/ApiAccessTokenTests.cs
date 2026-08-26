@@ -22,7 +22,7 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
     public Task InitializeAsync()
     {
         _factory = new SessionApiFactory(fixture.ConnectionString);
-        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
+        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         _admin = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
         return Task.CompletedTask;
     }

@@ -279,7 +279,9 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
         var createResponse = await _client.SendAsync(createContact);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var contact = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(otherUserId, contact.GetProperty("linkedUserIdentityId").GetGuid());
+        // People add resolves ExItS identity without Utang link/consent.
+        Assert.True(contact.TryGetProperty("linkedUserIdentityId", out var linked) && linked.ValueKind == JsonValueKind.Null);
+        Assert.Equal(otherUserId, contact.GetProperty("resolvedUserIdentityId").GetGuid());
         Assert.Equal(publicUserId, contact.GetProperty("publicUserId").GetString());
 
         using var invitationsRequest = Authed(HttpMethod.Get, "/api/v1/personal/utang/invitations", otherToken);

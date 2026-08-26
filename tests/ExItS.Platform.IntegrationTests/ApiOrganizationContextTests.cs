@@ -92,16 +92,13 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
     [Fact]
     public async Task Login_with_one_active_membership_auto_selects_organization()
     {
-        var (userId, username, password) = await SeedUserWithPasswordAsync();
-        var organizationId = await CreateOrganizationAsync("one");
-        var add = await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
-        Assert.Equal(HttpStatusCode.Created, add.StatusCode);
+        // Org staff: single HomeOrganization — invite accept, not POST /members onto Personal.
+        var (_, _, staffLogin, password, organizationId) =
+            await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, "one");
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = username, password });
+            new { usernameOrEmail = staffLogin, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var body = await login.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(organizationId, body.GetProperty("selectedOrganizationId").GetGuid());
@@ -112,15 +109,16 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
     [Fact]
     public async Task Multiple_memberships_require_selection_and_support_switch()
     {
+        // Multi-org selection applies to Personal owners (Start Business / Owner seats), not org staff.
         var (userId, username, password) = await SeedUserWithPasswordAsync();
         var orgA = await CreateOrganizationAsync("a");
         var orgB = await CreateOrganizationAsync("b");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationOwner", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
@@ -178,10 +176,10 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var orgB = await CreateOrganizationAsync("lb");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
 
         var token = await LoginAsync(username, password);
         using (var selectB = Authed(
@@ -213,10 +211,10 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
         var orgB = await CreateOrganizationAsync("xb");
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgA}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{orgB}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
 
         var token = await LoginAsync(username, password);
         using (var selectA = Authed(
@@ -248,22 +246,19 @@ public sealed class ApiOrganizationContextTests(PostgreSqlFixture fixture) : IAs
     [Fact]
     public async Task Suspend_membership_clears_stale_organization_context()
     {
-        var (userId, username, password) = await SeedUserWithPasswordAsync();
         var organizationId = await CreateOrganizationAsync("sus");
-        var add = await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
-        add.EnsureSuccessStatusCode();
-        var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (_, _, staffLogin, password, membershipId) =
+            await PlatformIntegrationTestUsers.SeedStaffViaInvitationToOrgAsync(
+                _admin, _client, organizationId, "sus");
 
-        var token = await LoginAsync(username, password);
+        var token = await LoginAsync(staffLogin, password);
         using var meBefore = Authed(HttpMethod.Get, "/api/v1/platform/auth/me", token);
         var before = await _client.SendAsync(meBefore);
         Assert.Equal(organizationId, (await before.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("selectedOrganizationId").GetGuid());
 
         var suspend = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/memberships/{membershipId}/suspend",
-            new { reason = "hold", actorReference = "dev-admin" });
+            new { reason = "temporary hold", actorReference = "dev-admin" });
         Assert.Equal(HttpStatusCode.OK, suspend.StatusCode);
 
         using var meAfter = Authed(HttpMethod.Get, "/api/v1/platform/auth/me", token);

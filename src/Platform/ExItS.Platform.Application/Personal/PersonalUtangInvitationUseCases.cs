@@ -131,6 +131,18 @@ public sealed class CreatePersonalUtangInvitation
 
             inviteTargetEmail = linkedInvitee.NormalizedEmail;
         }
+        else if (contact.HasResolvedIdentity && contact.ResolvedUserIdentityId is not null)
+        {
+            // Resolved ExItS identity (People add) is not yet Utang-linked; still route the invite
+            // inbox via that user's login email so accept-by-id can complete consent.
+            var resolvedInvitee = await _users
+                .GetByIdAsync(contact.ResolvedUserIdentityId, cancellationToken)
+                .ConfigureAwait(false);
+            if (resolvedInvitee is not null && resolvedInvitee.Status is AccountStatus.Active)
+            {
+                inviteTargetEmail = resolvedInvitee.NormalizedEmail;
+            }
+        }
 
         var isParticipantContact =
             relationship.CreditorContactId == contact.Id || relationship.DebtorContactId == contact.Id;

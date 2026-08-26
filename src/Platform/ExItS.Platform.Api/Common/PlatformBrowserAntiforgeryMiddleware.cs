@@ -22,7 +22,13 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
         "/api/v1/platform/auth/activate-account",
         "/api/v1/platform/auth/forgot-password",
         "/api/v1/platform/auth/reset-password",
+        // Token confirmations are anonymous deep-links; leftover session cookies must not require CSRF.
+        "/api/v1/platform/auth/email-verification/confirm",
+        "/api/v1/platform/auth/recovery-email/confirm",
         "/api/v1/platform/auth/bootstrap",
+        // Token+password invite accept: leftover session cookies must not require browser CSRF.
+        "/api/v1/platform/invitations/accept",
+        "/api/v1/platform/invitations/accept-as-personal",
         PlatformAntiforgeryDefaults.TokenRoute,
         "/api/v1/platform/auth/external/google/callback",
         "/api/v1/platform/auth/external/facebook/callback",
@@ -48,8 +54,12 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
         var hasSessionCookie = context.Request.Cookies.ContainsKey(session.CookieName);
         var hasSessionHeader = context.Request.Headers.TryGetValue(session.SessionTokenHeaderName, out var headerValues)
             && !string.IsNullOrWhiteSpace(headerValues.ToString());
+        var authorization = context.Request.Headers.Authorization.ToString();
+        var hasBearer = authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            && authorization.Length > "Bearer ".Length;
 
-        if (!hasSessionCookie || hasSessionHeader)
+        // Cookie+browser callers need CSRF. Header session tokens and Bearer access tokens skip it.
+        if (!hasSessionCookie || hasSessionHeader || hasBearer)
         {
             await next(context).ConfigureAwait(false);
             return;

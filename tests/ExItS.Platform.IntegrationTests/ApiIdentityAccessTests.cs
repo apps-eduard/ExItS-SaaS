@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -106,8 +107,22 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         var email = $"{emailLocal}@example.com";
         var createInvite = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/invitations",
-            new { email, role = "OrganizationMember" });
+            new { email, role = "OrganizationMember", requireEmailVerification = false });
         Assert.Equal(HttpStatusCode.Created, createInvite.StatusCode);
+        var acceptToken = (await createInvite.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("acceptToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(acceptToken));
+
+        // Invite must not provision a user before accept (P19).
+        var preAccept = await _client.GetAsync($"/api/v1/platform/users?search={emailLocal}&page=1&pageSize=10");
+        Assert.Equal(HttpStatusCode.OK, preAccept.StatusCode);
+        Assert.Equal(0, (await preAccept.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items").GetArrayLength());
+
+        var accept = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
+        var acceptBody = await accept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString()!, StringComparison.OrdinalIgnoreCase);
 
         var list = await _client.GetAsync($"/api/v1/platform/users?search={emailLocal}&page=1&pageSize=10");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
@@ -249,26 +264,9 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
     public async Task Membership_and_product_access_flow_with_effective_evaluation()
     {
         var seeded = await SeedCommercialContextAsync("access");
-        var username = UniqueToken("mem");
-        var createUser = await _client.PostAsJsonAsync(
-            "/api/v1/platform/users",
-            new
-            {
-                username,
-                firstName = "Member",
-                lastName = "User",
-                displayName = "Member User",
-                email = $"{username}@example.com",
-                platformRole = "PlatformSupport"
-            });
-        createUser.EnsureSuccessStatusCode();
-        var userId = (await createUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
-        var add = await _client.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{seeded.OrganizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" });
-        Assert.Equal(HttpStatusCode.Created, add.StatusCode);
-        var membershipId = (await add.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (userId, _, _, _, membershipId) =
+            await PlatformIntegrationTestUsers.SeedStaffViaInvitationToOrgAsync(
+                _client, _client, seeded.OrganizationId, "mem");
 
         var duplicateMembership = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{seeded.OrganizationId}/members",
@@ -290,7 +288,7 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
 
         var suspendMembership = await _client.PostAsJsonAsync(
             $"/api/v1/platform/memberships/{membershipId}/suspend",
-            new { reason = "temp", actorReference = "dev-admin" });
+            new { reason = "temporary hold", actorReference = "dev-admin" });
         Assert.Equal(HttpStatusCode.OK, suspendMembership.StatusCode);
 
         var denied = await _client.GetAsync(
@@ -500,32 +498,6 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
             $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials",
             new { planId, planVersionId = versionId, trialDefinitionId = trialId });
         start.EnsureSuccessStatusCode();
-        var subscriptionId = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
-        var now = DateTimeOffset.UtcNow;
-        var payment = await _client.PostAsJsonAsync(
-            "/api/v1/platform/payments/manual",
-            new
-            {
-                organizationId,
-                productCode,
-                amount = 100m,
-                currencyCode = "PHP",
-                method = "GCash",
-                externalReference = $"id-act-{Guid.NewGuid():N}",
-                paidAtUtc = now
-            });
-        payment.EnsureSuccessStatusCode();
-        var paymentId = (await payment.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        (await _client.PostAsJsonAsync(
-            $"/api/v1/platform/payments/{paymentId}/activate-subscription",
-            new
-            {
-                confirmedBy = "identity-operator",
-                subscriptionId,
-                periodStartUtc = now,
-                periodEndUtc = now.AddDays(30)
-            })).EnsureSuccessStatusCode();
 
         var snapshot = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/entitlements/snapshots",

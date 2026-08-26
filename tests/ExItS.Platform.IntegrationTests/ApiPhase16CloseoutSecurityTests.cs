@@ -2,10 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Infrastructure;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExItS.Platform.IntegrationTests;
 
@@ -37,7 +41,7 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
     }
 
     private static string Unique(string prefix) =>
-        $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
+        $"{prefix}-{Guid.NewGuid():N}"[..Math.Min(32, prefix.Length + 1 + 32)].ToLowerInvariant();
 
     private static HttpRequestMessage Authed(HttpMethod method, string url, string token, object? body = null)
     {
@@ -49,6 +53,35 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
         }
 
         return request;
+    }
+
+    private async Task EnsurePhilippineStarterCatalogAsync()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:PlatformDatabase"] = fixture.ConnectionString
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddPlatformPersistence(configuration);
+        services.AddLogging();
+        services.AddScoped<EnsurePhilippinePosStarterCatalog>();
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<EnsurePhilippinePosStarterCatalog>().ExecuteAsync();
+    }
+
+    private async Task<Guid> ResolvePrimaryBusinessTypeIdAsync(string personalToken)
+    {
+        using var businessTypesRequest = Authed(
+            HttpMethod.Get,
+            "/api/v1/personal/onboarding/business-types",
+            personalToken);
+        var businessTypesResponse = await _client.SendAsync(businessTypesRequest);
+        businessTypesResponse.EnsureSuccessStatusCode();
+        var businessTypes = await businessTypesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        return businessTypes.EnumerateArray().First().GetProperty("id").GetGuid();
     }
 
     private async Task<(Guid UserId, string Username, string Password, string Email, string Token)> SeedPersonalAsync(
@@ -449,7 +482,9 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
     [Fact]
     public async Task Key_phase16_actions_emit_audit_records()
     {
+        await EnsurePhilippineStarterCatalogAsync();
         var (userId, username, password, _, personalToken) = await SeedPersonalAsync("aud");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(personalToken);
         using var start = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
@@ -458,6 +493,7 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
             {
                 displayName = "Audit Biz",
                 slug = Unique("abiz"),
+                primaryBusinessTypeId,
                 activatePosEntitlement = true,
                 activateProductAccess = true,
                 assignPosOwnerRole = true
@@ -517,6 +553,7 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
     [Fact]
     public async Task Migration_replay_with_same_idempotency_key_is_safe()
     {
+        await EnsurePhilippineStarterCatalogAsync();
         var (personalToken, userId, _, _) = await SeedPersonalMigrationUserAsync("mr");
 
         using var contactRequest = Authed(
@@ -540,11 +577,12 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
         var relationshipId = (await (await _client.SendAsync(relRequest)).Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("id").GetGuid();
 
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(personalToken);
         using var start = Authed(
             HttpMethod.Post,
             "/api/v1/personal/start-business",
             personalToken,
-            new { displayName = "Mig Org", slug = Unique("morg") });
+            new { displayName = "Mig Org", slug = Unique("morg"), primaryBusinessTypeId });
         var startBody = await (await _client.SendAsync(start)).Content.ReadFromJsonAsync<JsonElement>();
         var orgId = startBody.GetProperty("organizationId").GetGuid();
         var orgToken = startBody.GetProperty("sessionToken").GetString()!;

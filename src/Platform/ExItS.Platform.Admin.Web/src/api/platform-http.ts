@@ -1,4 +1,5 @@
 import { PlatformAntiforgeryDefaults } from "@/api/platform-antiforgery";
+import { maybeNotifyAuthenticationLost } from "@/api/auth/session-expiry";
 
 import { createCorrelationId } from "@/lib/create-correlation-id";
 import { sanitizeApiPath } from "@/lib/diagnostics/diagnostic-redaction";
@@ -222,6 +223,9 @@ export type PlatformRequestOptions = {
   signal?: AbortSignal;
 
   skipAntiforgery?: boolean;
+
+  /** When true, 401 responses do not trigger the central session-expiry transition. */
+  skipSessionExpiry?: boolean;
 
 };
 
@@ -552,6 +556,13 @@ export async function platformRequest<T>(
       requestCorrelationId,
 
     );
+
+    maybeNotifyAuthenticationLost({
+      status: response.status,
+      errorCode: problem.errorCode,
+      path: sanitizedPath,
+      skipSessionExpiry: options.skipSessionExpiry,
+    });
 
     throw new PlatformApiError(response.status, problem, {
 

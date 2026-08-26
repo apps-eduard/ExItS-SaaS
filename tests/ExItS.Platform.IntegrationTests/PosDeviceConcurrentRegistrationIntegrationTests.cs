@@ -36,7 +36,7 @@ public sealed class PosDeviceConcurrentRegistrationIntegrationTests(PostgreSqlFi
         var devices = provider.GetRequiredService<IPosDeviceRepository>();
 
         var productCode = ProductCode.PinoyBusinessPos;
-        await createProduct.ExecuteAsync(productCode, "POS Device Concurrency");
+        await createProduct.ExecuteAsync(productCode, "Pinoy Business POS");
         var plan = (await createPlan.ExecuteAsync(
             productCode,
             "single-device",
@@ -108,7 +108,7 @@ public sealed class PosDeviceConcurrentRegistrationIntegrationTests(PostgreSqlFi
         var register = provider.GetRequiredService<RegisterCurrentDevice>();
 
         var productCode = ProductCode.PinoyBusinessPos;
-        await createProduct.ExecuteAsync(productCode, "POS Device Growth Limit");
+        await createProduct.ExecuteAsync(productCode, "Pinoy Business POS");
         var plan = (await createPlan.ExecuteAsync(
             productCode,
             "growth-devices",

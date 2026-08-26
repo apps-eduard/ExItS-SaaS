@@ -35,6 +35,76 @@ internal static class PlatformIntegrationTestUsers
         return (userId, username, password);
     }
 
+    /// <summary>
+    /// Revokes every active platform role assignment. Staff create always seeds a role; use this
+    /// when a test needs an unprivileged actor or an exclusive replacement role.
+    /// </summary>
+    internal static async Task RevokeAllActivePlatformRolesAsync(
+        HttpClient admin,
+        Guid platformUserId,
+        string reason = "test isolation")
+    {
+        var assignments = await admin.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/platform/authorization/assignments?platformUserId={platformUserId:D}&status=Active&pageSize=50");
+        foreach (var item in assignments.GetProperty("items").EnumerateArray())
+        {
+            var id = item.GetProperty("id").GetGuid();
+            (await admin.PostAsJsonAsync(
+                $"/api/v1/platform/authorization/assignments/{id}/revoke",
+                new { reason })).EnsureSuccessStatusCode();
+        }
+    }
+
+    /// <summary>
+    /// Ensures <paramref name="role"/> is active at the given organization scope (null = global).
+    /// No-ops when already assigned; creates when missing. Use instead of blind assign after staff create.
+    /// </summary>
+    internal static async Task EnsurePlatformRoleAsync(
+        HttpClient admin,
+        Guid platformUserId,
+        string role,
+        Guid? organizationId = null)
+    {
+        var assignments = await admin.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/platform/authorization/assignments?platformUserId={platformUserId:D}&status=Active&pageSize=50");
+        foreach (var item in assignments.GetProperty("items").EnumerateArray())
+        {
+            if (!string.Equals(item.GetProperty("role").GetString(), role, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Guid? existingOrg = item.TryGetProperty("organizationId", out var orgEl) && orgEl.ValueKind != JsonValueKind.Null
+                ? orgEl.GetGuid()
+                : null;
+            if (existingOrg == organizationId)
+            {
+                return;
+            }
+        }
+
+        var response = await admin.PostAsJsonAsync(
+            "/api/v1/platform/authorization/assignments",
+            new { platformUserId, role, organizationId });
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
+    /// Replaces all active platform roles with exactly <paramref name="role"/> (global unless scoped).
+    /// </summary>
+    internal static async Task ReplaceWithPlatformRoleAsync(
+        HttpClient admin,
+        Guid platformUserId,
+        string role,
+        Guid? organizationId = null)
+    {
+        await RevokeAllActivePlatformRolesAsync(admin, platformUserId).ConfigureAwait(false);
+        var response = await admin.PostAsJsonAsync(
+            "/api/v1/platform/authorization/assignments",
+            new { platformUserId, role, organizationId });
+        response.EnsureSuccessStatusCode();
+    }
+
     internal static async Task<(Guid UserId, string Email, string Password)> RegisterPersonalWithPasswordAsync(
         HttpClient client,
         string prefix)
@@ -65,22 +135,16 @@ internal static class PlatformIntegrationTestUsers
     }
 
     /// <summary>
-    /// Creates an organization and accepts a staff invite via token + password,
+    /// Accepts a staff invite into an existing organization via token + password,
     /// yielding a distinct org-scoped staff identity (never attaches to a Personal user).
     /// </summary>
-    internal static async Task<(Guid UserId, string ContactEmail, string StaffLogin, string Password, Guid OrganizationId)> SeedOrgMemberViaInvitationAsync(
+    internal static async Task<(Guid UserId, string ContactEmail, string StaffLogin, string Password, Guid MembershipId)> SeedStaffViaInvitationToOrgAsync(
         HttpClient admin,
         HttpClient client,
+        Guid organizationId,
         string prefix,
         string role = "OrganizationMember")
     {
-        var slug = Unique(prefix);
-        var org = await admin.PostAsJsonAsync(
-            "/api/v1/platform/organizations",
-            new { displayName = "Test Org", slug });
-        org.EnsureSuccessStatusCode();
-        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-
         var emailLocal = Unique(prefix);
         var contactEmail = $"{emailLocal}@example.com";
         var invite = await admin.PostAsJsonAsync(
@@ -108,6 +172,38 @@ internal static class PlatformIntegrationTestUsers
         Xunit.Assert.False(string.IsNullOrWhiteSpace(staffLogin));
         Xunit.Assert.Contains("@ORG", staffLogin, StringComparison.OrdinalIgnoreCase);
 
-        return (userId, contactEmail, staffLogin!, password, organizationId);
+        var members = await admin.GetAsync(
+            $"/api/v1/platform/organizations/{organizationId}/members?status=Active&pageSize=50");
+        members.EnsureSuccessStatusCode();
+        var membershipId = (await members.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items")
+            .EnumerateArray()
+            .First(m => m.GetProperty("userId").GetGuid() == userId)
+            .GetProperty("id")
+            .GetGuid();
+
+        return (userId, contactEmail, staffLogin!, password, membershipId);
+    }
+
+    /// <summary>
+    /// Creates an organization and accepts a staff invite via token + password,
+    /// yielding a distinct org-scoped staff identity (never attaches to a Personal user).
+    /// </summary>
+    internal static async Task<(Guid UserId, string ContactEmail, string StaffLogin, string Password, Guid OrganizationId)> SeedOrgMemberViaInvitationAsync(
+        HttpClient admin,
+        HttpClient client,
+        string prefix,
+        string role = "OrganizationMember")
+    {
+        var slug = Unique(prefix);
+        var org = await admin.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "Test Org", slug });
+        org.EnsureSuccessStatusCode();
+        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var (userId, contactEmail, staffLogin, password, _) =
+            await SeedStaffViaInvitationToOrgAsync(admin, client, organizationId, prefix, role);
+        return (userId, contactEmail, staffLogin, password, organizationId);
     }
 }

@@ -104,6 +104,18 @@ export function isSessionInvalidError(error: unknown): boolean {
     return false;
   }
   const code = error.problem.errorCode;
+  if (code?.toLowerCase().includes("antiforgery") || error.status === 419) {
+    return false;
+  }
+  if (
+    code === AUTH_ERROR_CODES.loginFailed ||
+    code === AUTH_ERROR_CODES.credentialTokenInvalid ||
+    code === AUTH_ERROR_CODES.credentialTokenExpired ||
+    code === AUTH_ERROR_CODES.credentialLockedOut ||
+    code === AUTH_ERROR_CODES.accountNotEligible
+  ) {
+    return false;
+  }
   return (
     code === AUTH_ERROR_CODES.sessionInvalid ||
     code === AUTH_ERROR_CODES.sessionExpired ||

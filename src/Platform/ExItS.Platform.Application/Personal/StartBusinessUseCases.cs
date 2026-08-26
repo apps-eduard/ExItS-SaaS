@@ -812,7 +812,70 @@ public sealed class StartBusinessForPersonalUser
             return await ResolveMvpPlanCatalogAsync(productCode, planKey.Trim(), cancellationToken).ConfigureAwait(false);
         }
 
+        // Default trial path uses MVP Starter. Provisional `start-business-pos` is remapped/retired by
+        // EnsureMvpPosPlans; resolving it after retirement yields SubscriptionIneligible (HTTP 409).
+        var productReady = await EnsurePosProductActiveAsync(productCode, cancellationToken).ConfigureAwait(false);
+        if (!productReady.IsSuccess)
+        {
+            return ApplicationResult<CatalogSelection>.Failure(
+                productReady.ErrorCode ?? ApplicationErrorCodes.ProductNotFound,
+                productReady.ErrorMessage ?? "POS product is not available.");
+        }
+
+        await _ensureMvpPosPlans.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        var starter = await ResolveMvpPlanCatalogAsync(productCode, MvpPosPlanCodes.Starter, cancellationToken)
+            .ConfigureAwait(false);
+        if (starter.IsSuccess && starter.Value is not null)
+        {
+            return starter;
+        }
+
         return await EnsureProvisionalCatalogAsync(productCode, null, null, null, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<ApplicationResult> EnsurePosProductActiveAsync(
+        string productCode,
+        CancellationToken cancellationToken)
+    {
+        var code = ProductCode.Create(productCode);
+        var product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+        if (product is null)
+        {
+            var created = await _createProduct
+                .ExecuteAsync(productCode, "Pinoy Business POS", cancellationToken)
+                .ConfigureAwait(false);
+            if (!created.IsSuccess && created.ErrorCode != ApplicationErrorCodes.DuplicateProductCode)
+            {
+                return ApplicationResult.Failure(
+                    created.ErrorCode ?? ApplicationErrorCodes.ProductNotFound,
+                    created.ErrorMessage ?? "Product create failed.");
+            }
+
+            product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+            if (product is null)
+            {
+                return ApplicationResult.Failure(
+                    ApplicationErrorCodes.ProductNotFound,
+                    "Product was not found after provisional create.");
+            }
+        }
+
+        if (product.Status != ProductStatus.Active)
+        {
+            var activated = await _activateProduct.ExecuteAsync(product.Id, cancellationToken).ConfigureAwait(false);
+            if (!activated.IsSuccess)
+            {
+                product = await _products.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
+                if (product is null || product.Status != ProductStatus.Active)
+                {
+                    return ApplicationResult.Failure(
+                        activated.ErrorCode ?? ApplicationErrorCodes.ProductNotActive,
+                        activated.ErrorMessage ?? "Product could not be activated.");
+                }
+            }
+        }
+
+        return ApplicationResult.Success();
     }
 
     private async Task<ApplicationResult<CatalogSelection>> ResolveMvpPlanCatalogAsync(
@@ -957,6 +1020,14 @@ public sealed class StartBusinessForPersonalUser
 
         var planCode = PlanCode.Create(ProvisionalPlanCode);
         var plan = await _plans.GetByProductAndCodeAsync(code, planCode, cancellationToken).ConfigureAwait(false);
+        if (plan is not null && plan.Status == PlanStatus.Retired)
+        {
+            // Retired plans cannot be reactivated; MVP Starter is the supported default path.
+            return ApplicationResult<CatalogSelection>.Failure(
+                ApplicationErrorCodes.SubscriptionIneligible,
+                "Legacy Start a Business plan is retired. Use an MVP plan (e.g. Starter).");
+        }
+
         if (plan is null)
         {
             var createdPlan = await _createPlan
@@ -965,7 +1036,7 @@ public sealed class StartBusinessForPersonalUser
             if (!createdPlan.IsSuccess || createdPlan.Value is null)
             {
                 plan = await _plans.GetByProductAndCodeAsync(code, planCode, cancellationToken).ConfigureAwait(false);
-                if (plan is null)
+                if (plan is null || plan.Status == PlanStatus.Retired)
                 {
                     return ApplicationResult<CatalogSelection>.Failure(
                         createdPlan.ErrorCode ?? ApplicationErrorCodes.PlanNotFound,
@@ -984,6 +1055,12 @@ public sealed class StartBusinessForPersonalUser
             if (activate.IsSuccess && activate.Value is not null)
             {
                 plan = activate.Value;
+            }
+            else if (!plan.AcceptsNewSubscriptions)
+            {
+                return ApplicationResult<CatalogSelection>.Failure(
+                    activate.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
+                    activate.ErrorMessage ?? "Provisional Start a Business plan cannot accept new subscriptions.");
             }
         }
 

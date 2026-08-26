@@ -63,6 +63,8 @@ export function getAuthMe(baseUrl: string, signal?: AbortSignal): Promise<AuthSe
   return platformRequest<AuthSession>(baseUrl, {
     path: "/api/v1/platform/auth/me",
     signal,
+    // Bootstrap /me failures become unauthenticated (not the session-expired UX path).
+    skipSessionExpiry: true,
   });
 }
 

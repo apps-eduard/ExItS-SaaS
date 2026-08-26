@@ -31,7 +31,7 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
     }
 
     private static string Unique(string prefix) =>
-        $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
+        $"{prefix}-{Guid.NewGuid():N}"[..Math.Min(32, prefix.Length + 1 + 32)].ToLowerInvariant();
 
     private async Task<(string Token, Guid UserId, string Email, string Password)> SeedPersonalUserAsync(string prefix)
     {

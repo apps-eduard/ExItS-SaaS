@@ -10,7 +10,6 @@ using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.IntegrationTests.Support;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -309,7 +308,6 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
             await SeedTrialEligibleOrganizationAsync(provider, "reuse-payment");
 
         var startTrial = provider.GetRequiredService<StartTrialSubscription>();
-        var cancel = provider.GetRequiredService<CancelSubscription>();
         var firstSubscription = (await startTrial.ExecuteAsync(organizationId, planId, versionId, trialId)).Value!;
 
         var create = provider.GetRequiredService<CreateManualSaaSPayment>();
@@ -323,11 +321,10 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
             payment.Id, "staff-activate", firstSubscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.True(first.IsSuccess);
 
-        await cancel.ExecuteAsync(firstSubscription.Id);
-        var secondSubscription = (await startTrial.ExecuteAsync(organizationId, planId, versionId, trialId)).Value!;
-
+        // Payment is already linked; a second activation must fail with PaymentAlreadyUsed.
+        // (A second trial on the same org is TrialAlreadyConsumed and previously NREd on .Value!.)
         var second = await activate.ExecuteAsync(
-            payment.Id, "staff-activate", secondSubscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
+            payment.Id, "staff-activate", firstSubscription.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentAlreadyUsed, second.ErrorCode);
     }
@@ -363,6 +360,7 @@ public sealed class SaaSPaymentPersistenceTests(PostgreSqlFixture fixture)
         await paymentsB.UpdateAsync(paymentB, default);
 
         await uowA.SaveChangesAsync();
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => uowB.SaveChangesAsync());
+        var ex = await Assert.ThrowsAsync<PersistenceConflictException>(() => uowB.SaveChangesAsync());
+        Assert.Equal(ApplicationErrorCodes.ConcurrencyConflict, ex.ErrorCode);
     }
 }

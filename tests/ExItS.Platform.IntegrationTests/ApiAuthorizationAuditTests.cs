@@ -62,13 +62,14 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
         return userId;
     }
 
-    private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null)
-    {
-        var response = await _client.PostAsJsonAsync(
-            "/api/v1/platform/authorization/assignments",
-            new { platformUserId, role, organizationId });
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
+    private async Task AssignPlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null) =>
+        await PlatformIntegrationTestUsers.EnsurePlatformRoleAsync(_client, platformUserId, role, organizationId);
+
+    private async Task ReplacePlatformRoleAsync(Guid platformUserId, string role, Guid? organizationId = null) =>
+        await PlatformIntegrationTestUsers.ReplaceWithPlatformRoleAsync(_client, platformUserId, role, organizationId);
+
+    private async Task RevokeAllPlatformRolesAsync(Guid platformUserId) =>
+        await PlatformIntegrationTestUsers.RevokeAllActivePlatformRolesAsync(_client, platformUserId);
 
     private async Task<Guid> CreateOrganizationAsync(string prefix)
     {
@@ -149,7 +150,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task PlatformUser_without_permission_is_denied_and_denial_is_audited()
     {
         var userA = await CreatePlatformUserAsync("permA");
-        await AssignPlatformRoleAsync(userA, "BillingAdministrator");
+        await ReplacePlatformRoleAsync(userA, "BillingAdministrator");
 
         var blockedUsername = UniqueToken("blocked");
         var response = await SendAsync(
@@ -183,7 +184,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task PlatformUser_with_billing_role_can_manage_subscriptions_and_success_is_audited()
     {
         var userA = await CreatePlatformUserAsync("billing");
-        await AssignPlatformRoleAsync(userA, "BillingAdministrator");
+        await ReplacePlatformRoleAsync(userA, "BillingAdministrator");
 
         var seeded = await SeedTrialingSubscriptionAsync("billingsub");
 
@@ -209,21 +210,21 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
         var userB = await CreatePlatformUserAsync("scoped");
         var org1 = await CreateOrganizationAsync("scoped1");
         var org2 = await CreateOrganizationAsync("scoped2");
-        await AssignPlatformRoleAsync(userB, "PlatformSupport", org1);
 
-        var memberCandidate = await CreatePlatformUserAsync("member");
+        await ReplacePlatformRoleAsync(userB, "PlatformSupport", org1);
 
+        // Deny invite create on foreign org (authz), allow invite create on scoped org (P19 staff path).
         var deniedOnOrg2 = await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/platform/organizations/{org2}/members",
-            new { userId = memberCandidate, role = "OrganizationMember" },
+            $"/api/v1/platform/organizations/{org2}/invitations",
+            new { email = $"{UniqueToken("deny")}@example.com", role = "OrganizationMember", requireEmailVerification = false },
             actingUserId: userB);
         Assert.Equal(HttpStatusCode.Forbidden, deniedOnOrg2.StatusCode);
 
         var allowedOnOrg1 = await SendAsync(
             HttpMethod.Post,
-            $"/api/v1/platform/organizations/{org1}/members",
-            new { userId = memberCandidate, role = "OrganizationMember" },
+            $"/api/v1/platform/organizations/{org1}/invitations",
+            new { email = $"{UniqueToken("allow")}@example.com", role = "OrganizationMember", requireEmailVerification = false },
             actingUserId: userB);
         Assert.Equal(HttpStatusCode.Created, allowedOnOrg1.StatusCode);
     }
@@ -232,7 +233,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task Audit_reason_and_summary_text_never_leak_secret_or_phi_like_fields()
     {
         var userA = await CreatePlatformUserAsync("phicheck");
-        await AssignPlatformRoleAsync(userA, "PlatformSupport");
+        // Staff create already seeds PlatformSupport (lacks ManageOrganizations).
 
         // Trigger a denied audit record (PlatformSupport lacks ManageOrganizations).
         await SendAsync(
@@ -270,7 +271,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task Resolve_current_permissions_reflects_actor_role_assignments()
     {
         var userA = await CreatePlatformUserAsync("me");
-        await AssignPlatformRoleAsync(userA, "BillingAdministrator");
+        await ReplacePlatformRoleAsync(userA, "BillingAdministrator");
 
         var response = await SendAsync(HttpMethod.Get, "/api/v1/platform/authorization/me", actingUserId: userA);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -298,7 +299,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task List_assignments_requires_manage_platform_users_permission()
     {
         var userA = await CreatePlatformUserAsync("listassign");
-        await AssignPlatformRoleAsync(userA, "BillingAdministrator");
+        await ReplacePlatformRoleAsync(userA, "BillingAdministrator");
 
         var denied = await SendAsync(HttpMethod.Get, "/api/v1/platform/authorization/assignments", actingUserId: userA);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
@@ -311,11 +312,12 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task Revoke_role_assignment_succeeds_and_is_reflected_in_permissions()
     {
         var userA = await CreatePlatformUserAsync("revoke");
-        var assign = await _client.PostAsJsonAsync(
-            "/api/v1/platform/authorization/assignments",
-            new { platformUserId = userA, role = "PlatformSupport", organizationId = (Guid?)null });
-        Assert.Equal(HttpStatusCode.Created, assign.StatusCode);
-        var assignmentId = (await assign.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        // Staff create already seeded PlatformSupport — use that assignment.
+        var assignments = await _client.GetFromJsonAsync<JsonElement>(
+            $"/api/v1/platform/authorization/assignments?platformUserId={userA:D}&status=Active&pageSize=50");
+        var assignmentId = assignments.GetProperty("items").EnumerateArray()
+            .First(a => a.GetProperty("role").GetString() == "PlatformSupport")
+            .GetProperty("id").GetGuid();
 
         var beforeRevoke = await SendAsync(HttpMethod.Get, "/api/v1/platform/authorization/me", actingUserId: userA);
         var beforePermissions = (await beforeRevoke.Content.ReadFromJsonAsync<JsonElement>())
@@ -338,6 +340,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task Audit_query_requires_view_audit_records_permission()
     {
         var unprivileged = await CreatePlatformUserAsync("noaudit");
+        await RevokeAllPlatformRolesAsync(unprivileged);
 
         var denied = await SendAsync(HttpMethod.Get, "/api/v1/platform/audit", actingUserId: unprivileged);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
@@ -360,7 +363,7 @@ public sealed class ApiAuthorizationAuditTests(PostgreSqlFixture fixture) : IAsy
     public async Task Assign_conflicting_active_role_returns_conflict()
     {
         var userA = await CreatePlatformUserAsync("conflict");
-        await AssignPlatformRoleAsync(userA, "PlatformSupport");
+        // Staff create already seeded PlatformSupport — second assign must conflict.
 
         var duplicate = await _client.PostAsJsonAsync(
             "/api/v1/platform/authorization/assignments",

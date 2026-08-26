@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.IntegrationTests.Support;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -280,7 +281,7 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
                 Name: name,
                 Unit: "Piece",
                 Sku: $"SKU-{Guid.NewGuid():N}"[..20],
-                Barcode: $"BC-{Guid.NewGuid():N}"[..20],
+                Barcode: NewTestBarcode(),
                 Brand: "TestBrand",
                 GlobalCategoryId: category.Value!.Id,
                 CostPrice: 10.00m,
@@ -327,5 +328,19 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
             .GetByIdAsync(templateId);
         Assert.NotNull(template);
         return template!;
+    }
+
+    /// <summary>EAN-13 digits with a valid GS1 check digit (SKU remains the flexible code).</summary>
+    private static string NewTestBarcode()
+    {
+        var n = Guid.NewGuid().ToString("N");
+        var payload = new char[12];
+        for (var i = 0; i < 12; i++)
+        {
+            var c = n[i];
+            payload[i] = char.IsAsciiDigit(c) ? c : (char)('0' + (c % 10));
+        }
+
+        return GlobalCatalogBarcodeChecksum.WithCheckDigit(new string(payload));
     }
 }

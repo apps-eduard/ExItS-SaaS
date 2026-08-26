@@ -4,7 +4,16 @@ import {
   type PlatformProblemDetails,
 } from "@/api/platform-http";
 import { PlatformAntiforgeryDefaults } from "@/api/platform-antiforgery";
+import { maybeNotifyAuthenticationLost } from "@/api/auth/session-expiry";
 import { platformRequest, type PlatformRequestOptions } from "@/api/platform-http";
+
+function notifyAuthLostFromMultipart(
+  status: number,
+  errorCode: string | undefined,
+  path: string,
+): void {
+  maybeNotifyAuthenticationLost({ status, errorCode, path });
+}
 
 const inFlightMutations = new Map<string, Promise<unknown>>();
 
@@ -101,7 +110,12 @@ export async function globalCatalogMultipartRequest<T>(
     } catch {
       // Non-JSON error bodies still surface as a status-only problem.
     }
-    throw new PlatformApiError(response.status, problem, requestCorrelationId);
+    notifyAuthLostFromMultipart(response.status, problem.errorCode, options.path);
+    throw new PlatformApiError(response.status, problem, {
+      requestCorrelationId,
+      method: options.method,
+      path: options.path,
+    });
   }
 
   if (response.status === 204) {
@@ -144,7 +158,12 @@ export async function globalCatalogImportUploadRequest<T>(
     } catch {
       // Non-JSON error bodies still surface as a status-only problem.
     }
-    throw new PlatformApiError(response.status, problem, requestCorrelationId);
+    notifyAuthLostFromMultipart(response.status, problem.errorCode, options.path);
+    throw new PlatformApiError(response.status, problem, {
+      requestCorrelationId,
+      method: "POST",
+      path: options.path,
+    });
   }
 
   if (response.status === 204) {

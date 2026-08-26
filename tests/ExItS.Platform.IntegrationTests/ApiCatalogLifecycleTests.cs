@@ -32,9 +32,6 @@ public sealed class ApiCatalogLifecycleTests(PostgreSqlFixture fixture) : IAsync
     private static string Unique(string prefix) =>
         $"{prefix}{Guid.NewGuid():N}"[..Math.Min(20, prefix.Length + 32)].ToLowerInvariant();
 
-    private Task<(Guid UserId, string Username, string Password)> SeedUserAsync(string prefix) =>
-        PlatformIntegrationTestUsers.CreatePlatformStaffWithPasswordAsync(_admin, prefix);
-
     private async Task<string> LoginAsync(string username, string password)
     {
         var login = await _client.PostAsJsonAsync(
@@ -148,26 +145,10 @@ public sealed class ApiCatalogLifecycleTests(PostgreSqlFixture fixture) : IAsync
             "/api/v1/platform/catalog/products",
             new { code = productCode, displayName = "Deny Product" })).EnsureSuccessStatusCode();
 
-        var org = await _admin.PostAsJsonAsync(
-            "/api/v1/platform/organizations",
-            new { displayName = "Catalog Deny Org", slug = Unique("cdo") });
-        org.EnsureSuccessStatusCode();
-        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var (_, _, staffLogin, password, _) =
+            await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, "cata");
 
-        var (userId, username, password) = await SeedUserAsync("cata");
-        (await _admin.PostAsJsonAsync(
-            $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
-
-        var token = await LoginAsync(username, password);
-        using (var select = Authed(
-                   HttpMethod.Put,
-                   "/api/v1/platform/auth/organization-context",
-                   token,
-                   new { organizationId }))
-        {
-            (await _client.SendAsync(select)).EnsureSuccessStatusCode();
-        }
+        var token = await LoginAsync(staffLogin, password);
 
         using (var create = Authed(
                    HttpMethod.Post,
@@ -184,5 +165,7 @@ public sealed class ApiCatalogLifecycleTests(PostgreSqlFixture fixture) : IAsync
             var response = await _client.SendAsync(list);
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
+
+        _ = productCode;
     }
 }

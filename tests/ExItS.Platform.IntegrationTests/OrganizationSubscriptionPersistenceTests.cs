@@ -1,13 +1,15 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.IntegrationTests.Support;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ExItS.Platform.IntegrationTests;
@@ -36,7 +38,24 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
         await createFeature.ExecuteAsync(
             productCode, FeatureCode.CustomerCreditView, "View", FeatureValueType.Boolean).ConfigureAwait(false);
 
-        var plan = (await createPlan.ExecuteAsync(productCode, "utang", "Utang").ConfigureAwait(false)).Value!;
+        var plan = (await createPlan.ExecuteAsync(
+            productCode,
+            "utang",
+            "Utang",
+            description: null,
+            maxBranches: 1,
+            maxActiveStaff: 3,
+            maxActivePosDevices: 3,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled: false,
+            advancedReportsEnabled: false,
+            exportEnabled: false,
+            trialAllowed: true,
+            defaultTrialDays: 14,
+            sortOrder: 100,
+            monthlyPrice: 999m,
+            annualPrice: 9990m,
+            currencyCode: "PHP").ConfigureAwait(false)).Value!;
         await activatePlan.ExecuteAsync(plan.Id).ConfigureAwait(false);
 
         var grants = new[] { FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), true) };
@@ -113,11 +132,12 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
 
         var second = await startTrial.ExecuteAsync(org.Id, planId, versionId, trialId);
         Assert.False(second.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ActiveSubscriptionConflict, second.ErrorCode);
+        // Trial consumption is checked before active-like conflict.
+        Assert.Equal(ApplicationErrorCodes.TrialAlreadyConsumed, second.ErrorCode);
     }
 
     [Fact]
-    public async Task Cancelled_subscription_does_not_block_a_brand_new_trial_for_the_same_org_product()
+    public async Task Cancelled_trial_still_counts_as_consumed_for_org_product()
     {
         await using var provider = CommercialTestServices.Build(fixture.ConnectionString, T0);
         var (_, planId, versionId, trialId) = await SeedTrialEligibleCatalogAsync(provider, "trial-history");
@@ -132,22 +152,24 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
         Assert.True(first.IsSuccess);
         Assert.True((await cancel.ExecuteAsync(first.Value!.Id)).IsSuccess);
 
+        // One trial per org/product — cancellation does not reset consumption.
         var second = await startTrial.ExecuteAsync(org.Id, planId, versionId, trialId);
-        Assert.True(second.IsSuccess);
-        Assert.NotEqual(first.Value.Id, second.Value!.Id);
+        Assert.False(second.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TrialAlreadyConsumed, second.ErrorCode);
     }
 
     [Fact]
     public async Task Subscription_full_lifecycle_grace_pastdue_suspend_reactivate_persists_each_step()
     {
         await using var provider = CommercialTestServices.Build(fixture.ConnectionString, T0);
-        var (_, planId, versionId, trialId) = await SeedTrialEligibleCatalogAsync(provider, "lifecycle");
+        var (productCode, planId, versionId, trialId) = await SeedTrialEligibleCatalogAsync(provider, "lifecycle");
 
         var createOrg = provider.GetRequiredService<CreatePlatformOrganization>();
         var org = (await createOrg.ExecuteAsync("Lifecycle Org", Unique("lifecycle-org"))).Value!;
 
         var startTrial = provider.GetRequiredService<StartTrialSubscription>();
-        var activate = provider.GetRequiredService<ActivateSubscription>();
+        var createPayment = provider.GetRequiredService<CreateManualSaaSPayment>();
+        var activateFromPayment = provider.GetRequiredService<ConfirmPaymentAndActivateSubscription>();
         var enterGrace = provider.GetRequiredService<EnterSubscriptionGracePeriod>();
         var markPastDue = provider.GetRequiredService<MarkSubscriptionPastDue>();
         var suspend = provider.GetRequiredService<SuspendSubscription>();
@@ -157,7 +179,18 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
 
         var sub = (await startTrial.ExecuteAsync(org.Id, planId, versionId, trialId)).Value!;
 
-        var activated = await activate.ExecuteAsync(sub.Id, T0, T0.AddDays(30));
+        var payment = (await createPayment.ExecuteAsync(
+            org.Id,
+            ProductCode.Create(productCode),
+            999m,
+            CurrencyCode.Create(CurrencyCode.PHP),
+            SaaSPaymentMethod.GCash,
+            Unique("life-pay"),
+            T0,
+            default)).Value!;
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(T0, BillingCycle.Monthly);
+        var activated = await activateFromPayment.ExecuteAsync(
+            payment.Id, "lifecycle-operator", sub.Id, periodStart, periodEnd, BillingCycle.Monthly, default);
         Assert.True(activated.IsSuccess);
         Assert.Equal(SubscriptionStatus.Active, (await subscriptions.GetByIdAsync(sub.Id))!.Status);
 
@@ -229,12 +262,16 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
 
         var startTrial = provider.GetRequiredService<StartTrialSubscription>();
         var cancel = provider.GetRequiredService<CancelSubscription>();
+        var activatePaid = provider.GetRequiredService<ActivatePaidSubscription>();
         var subscriptions = provider.GetRequiredService<ISubscriptionRepository>();
 
         var historical = (await startTrial.ExecuteAsync(org.Id, planId, versionId, trialId)).Value!;
         await cancel.ExecuteAsync(historical.Id);
 
-        var current = (await startTrial.ExecuteAsync(org.Id, planId, versionId, trialId)).Value!;
+        // Second trial is blocked (trial consumed); start a paid subscription as the current active-like.
+        var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(T0, BillingCycle.Monthly);
+        var current = (await activatePaid.ExecuteAsync(
+            org.Id, planId, versionId, periodStart, periodEnd, BillingCycle.Monthly)).Value!;
 
         var resolved = await subscriptions.GetCurrentForOrganizationProductAsync(org.Id, ProductCode.Create(productCode));
         Assert.NotNull(resolved);
@@ -275,6 +312,7 @@ public sealed class OrganizationSubscriptionPersistenceTests(PostgreSqlFixture f
         await subsB.UpdateAsync(subB);
 
         await uowA.SaveChangesAsync();
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => uowB.SaveChangesAsync());
+        var ex = await Assert.ThrowsAsync<PersistenceConflictException>(() => uowB.SaveChangesAsync());
+        Assert.Equal(ApplicationErrorCodes.ConcurrencyConflict, ex.ErrorCode);
     }
 }
