@@ -82,6 +82,7 @@ public static class ApplicationErrorCodes
     public const string SensitiveMigrationDataDetected = "application.migration.sensitive_data";
 
     public const string PaymentNotFound = "application.payment.not_found";
+    public const string OperationsRequestInvalid = "application.operations.request_invalid";
     public const string PaymentReferenceConflict = "application.payment.reference_conflict";
     public const string PaymentAlreadyConfirmed = "application.payment.already_confirmed";
     public const string PaymentNotConfirmed = "application.payment.not_confirmed";
@@ -90,6 +91,9 @@ public static class ApplicationErrorCodes
     public const string PaymentInvalidTransition = "application.payment.invalid_transition";
     public const string PaymentAmountInvalid = "application.payment.amount_invalid";
     public const string PaymentCurrencyInvalid = "application.payment.currency_invalid";
+    public const string PaymentAmountMismatch = "application.payment.amount_mismatch";
+    public const string PaymentCurrencyMismatch = "application.payment.currency_mismatch";
+    public const string PaymentPeriodMismatch = "application.payment.period_mismatch";
     public const string PaymentProductMismatch = "application.payment.product_mismatch";
     public const string PaymentOrganizationMismatch = "application.payment.organization_mismatch";
     public const string PaymentSubscriptionConflict = "application.payment.subscription_conflict";
@@ -306,4 +310,8 @@ public static class ApplicationErrorCodes
         "application.personal.ads.ad_free_active";
     public const string PersonalAdsNotEligible =
         "application.personal.ads.not_eligible";
+
+    public const string InvalidPlatformSettings = "application.platform_settings.invalid";
+    public const string PlatformEmailNotConfigured = "application.platform_settings.email.not_configured";
+    public const string PlatformEmailTestFailed = "application.platform_settings.email.test_failed";
 }
