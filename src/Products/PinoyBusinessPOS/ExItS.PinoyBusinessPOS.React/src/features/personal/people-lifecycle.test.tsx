@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/session/SessionProvider", () => ({
   useSession: () => ({
@@ -10,6 +10,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
+import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
@@ -67,6 +68,17 @@ function jsonResponse(status: number, body: unknown) {
   };
 }
 
+function withAntiforgery(
+  handler: (input: RequestInfo | URL, init?: RequestInit) => ReturnType<typeof jsonResponse> | Promise<ReturnType<typeof jsonResponse>>,
+) {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).includes("/api/v1/platform/antiforgery/token")) {
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "test-csrf-token" });
+    }
+    return handler(input, init);
+  };
+}
+
 function TestPersonalShell() {
   return <Outlet />;
 }
@@ -104,8 +116,20 @@ function renderPeopleApp(path: string) {
 describe("people status derivation", () => {
   it("marks resolved unlinked contacts as Not connected and pending requests as Request pending", () => {
     expect(deriveConnectionStatus(contactA, []).status).toBe("not_connected");
-    expect(deriveConnectionStatus(contactA, [pendingConnection]).status).toBe("request_pending");
+    expect(deriveConnectionStatus(contactA, [pendingConnection]).status).toBe("request_sent");
     expect(deriveConnectionStatus(contactConnected, []).status).toBe("connected");
+  });
+
+  it("marks incoming pending requests as Request received for the peer contact", () => {
+    const incoming: PersonalConnectionRequestDto = {
+      ...pendingConnection,
+      id: "req-in",
+      direction: "Received",
+      requesterUserIdentityId: "user-b",
+      targetUserIdentityId: "me",
+      requesterContactId: "other-side-contact",
+    };
+    expect(deriveConnectionStatus(contactA, [incoming]).status).toBe("request_received");
   });
 
   it("does not put unlink or block actions into list row models", () => {
@@ -121,26 +145,33 @@ describe("people status derivation", () => {
 });
 
 describe("People lifecycle UX", () => {
+  beforeEach(() => {
+    clearPlatformAntiforgeryToken();
+  });
+
   afterEach(() => {
+    clearPlatformAntiforgeryToken();
     vi.unstubAllGlobals();
   });
 
   it("renders How to add and empty people list", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, []);
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, []);
-        }
-        if (url.includes("/relationships/")) {
-          return jsonResponse(200, []);
-        }
-        return jsonResponse(404, {});
-      }),
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     renderPeopleApp("/personal/people");
@@ -148,24 +179,27 @@ describe("People lifecycle UX", () => {
     expect(screen.getByText("Without ExItS ID")).toBeInTheDocument();
     expect(screen.getByText("With ExItS Personal ID")).toBeInTheDocument();
     expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Connection requests/i })).toBeInTheDocument();
   });
 
   it("opens people info dialog from info button", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, []);
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, []);
-        }
-        if (url.includes("/relationships/")) {
-          return jsonResponse(200, []);
-        }
-        return jsonResponse(404, {});
-      }),
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     const user = userEvent.setup();
@@ -176,30 +210,32 @@ describe("People lifecycle UX", () => {
   });
 
   it("submits local contact form without connection request", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/utang/contacts") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body)) as { displayName: string };
-        expect(body.displayName).toBe("Pedro Cruz");
-        return jsonResponse(201, {
-          id: "c-local",
-          displayName: "Pedro Cruz",
-          linkedUserIdentityId: null,
-          status: "Active",
-          createdAtUtc: "2026-08-25T00:00:00.000Z",
-        });
-      }
-      if (url.includes("/utang/contacts")) {
-        return jsonResponse(200, []);
-      }
-      if (url.includes("/personal/connections")) {
-        return jsonResponse(200, []);
-      }
-      if (url.includes("/relationships/")) {
-        return jsonResponse(200, []);
-      }
-      return jsonResponse(404, {});
-    });
+    const fetchMock = vi.fn(
+      withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/utang/contacts") && init?.method === "POST") {
+          const body = JSON.parse(String(init.body)) as { displayName: string };
+          expect(body.displayName).toBe("Pedro Cruz");
+          return jsonResponse(201, {
+            id: "c-local",
+            displayName: "Pedro Cruz",
+            linkedUserIdentityId: null,
+            status: "Active",
+            createdAtUtc: "2026-08-25T00:00:00.000Z",
+          });
+        }
+        if (url.includes("/utang/contacts")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/relationships/")) {
+          return jsonResponse(200, []);
+        }
+        return jsonResponse(404, {});
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const user = userEvent.setup();
@@ -221,24 +257,26 @@ describe("People lifecycle UX", () => {
   it("renders people rows without destructive list actions", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input);
-        if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, [contactA, contactConnected]);
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, [pendingConnection]);
-        }
-        if (url.includes("/relationships/")) {
-          return jsonResponse(200, []);
-        }
-        return jsonResponse(404, {});
-      }),
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [contactA, contactConnected]);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, [pendingConnection]);
+          }
+          if (url.includes("/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     renderPeopleApp("/personal/people");
     expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
-    expect(screen.getByText("Request pending")).toBeInTheDocument();
+    expect(screen.getByText("Request sent")).toBeInTheDocument();
     expect(screen.getByText("Ana Cruz")).toBeInTheDocument();
     expect(screen.getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /unlink/i })).not.toBeInTheDocument();
@@ -246,51 +284,55 @@ describe("People lifecycle UX", () => {
   });
 
   it("persists resolved identity on add without auto connection request", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/resolve-public-id") && init?.method === "POST") {
-        return jsonResponse(200, {
-          publicUserId: "EX-1234-5678",
-          userIdentityId: "user-b",
-          displayName: "Maria Santos",
-          maskedEmail: "m****@exits.local",
-          status: "Active",
-          isSelf: false,
-        });
-      }
-      if (url.includes("/utang/contacts") && init?.method === "POST") {
-        const body = JSON.parse(String(init.body)) as {
-          displayName: string;
-          resolvedUserIdentityId: string;
-          resolvedPublicUserId: string;
-        };
-        expect(body.displayName).toBe("Maria Santos");
-        expect(body.resolvedUserIdentityId).toBe("user-b");
-        expect(body.resolvedPublicUserId).toBe("EX-1234-5678");
-        return jsonResponse(201, {
-          id: "c-new",
-          displayName: "Maria Santos",
-          resolvedUserIdentityId: "user-b",
-          resolvedPublicUserId: "EX-1234-5678",
-          linkedUserIdentityId: null,
-          status: "Active",
-          createdAtUtc: "2026-08-25T00:00:00.000Z",
-        });
-      }
-      if (url.includes("/utang/contacts")) {
-        return jsonResponse(200, []);
-      }
-      if (url.includes("/personal/connections")) {
-        return jsonResponse(200, []);
-      }
-      if (url.includes("/relationships/")) {
-        return jsonResponse(200, []);
-      }
-      if (url.includes("/notifications")) {
-        return jsonResponse(200, []);
-      }
-      return jsonResponse(404, {});
-    });
+    const fetchMock = vi.fn(
+      withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/resolve-public-id") && init?.method === "POST") {
+          const headers = init.headers as Headers;
+          expect(headers.get("X-XSRF-TOKEN")).toBe("test-csrf-token");
+          return jsonResponse(200, {
+            publicUserId: "EX-1234-5678",
+            userIdentityId: "user-b",
+            displayName: "Maria Santos",
+            maskedEmail: "m****@exits.local",
+            status: "Active",
+            isSelf: false,
+          });
+        }
+        if (url.includes("/utang/contacts") && init?.method === "POST") {
+          const body = JSON.parse(String(init.body)) as {
+            displayName: string;
+            resolvedUserIdentityId: string;
+            resolvedPublicUserId: string;
+          };
+          expect(body.displayName).toBe("Maria Santos");
+          expect(body.resolvedUserIdentityId).toBe("user-b");
+          expect(body.resolvedPublicUserId).toBe("EX-1234-5678");
+          return jsonResponse(201, {
+            id: "c-new",
+            displayName: "Maria Santos",
+            resolvedUserIdentityId: "user-b",
+            resolvedPublicUserId: "EX-1234-5678",
+            linkedUserIdentityId: null,
+            status: "Active",
+            createdAtUtc: "2026-08-25T00:00:00.000Z",
+          });
+        }
+        if (url.includes("/utang/contacts")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/relationships/")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/notifications")) {
+          return jsonResponse(200, []);
+        }
+        return jsonResponse(404, {});
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const user = userEvent.setup();
@@ -318,27 +360,79 @@ describe("People lifecycle UX", () => {
     });
   });
 
-  it("shows Request connection on not connected detail and creates pending request", async () => {
-    let connections: PersonalConnectionRequestDto[] = [];
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  it("shows already-added message when ExItS ID matches an existing person", async () => {
+    const fetchMock = vi.fn(
+      withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
-        if (url.includes("/connection-request") && init?.method === "POST") {
-          connections = [{ ...pendingConnection, id: "req-new" }];
-          return jsonResponse(201, connections[0]);
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, connections);
+        if (url.includes("/resolve-public-id") && init?.method === "POST") {
+          return jsonResponse(200, {
+            publicUserId: "EX-1234-5678",
+            userIdentityId: "user-b",
+            displayName: "Maria Santos",
+            maskedEmail: "m****@exits.local",
+            status: "Active",
+            isSelf: false,
+          });
         }
         if (url.includes("/utang/contacts")) {
           return jsonResponse(200, [contactA]);
+        }
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, []);
         }
         if (url.includes("/relationships/")) {
           return jsonResponse(200, []);
         }
         return jsonResponse(404, {});
       }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    renderPeopleApp("/personal/people/add");
+
+    await user.type(screen.getByLabelText("ExItS ID"), "EX-1234-5678");
+    await user.click(screen.getByRole("button", { name: "Find person" }));
+
+    expect(await screen.findByTestId("people-add-error")).toHaveTextContent(
+      "Juan Dela Cruz is already in your People list.",
+    );
+    expect(await screen.findByTestId("identity-confirmation")).toHaveTextContent("Already added");
+    expect(screen.getByTestId("people-add-open-existing")).toHaveAttribute(
+      "href",
+      "/personal/people/c1",
+    );
+    expect(screen.queryByRole("button", { name: "Add person" })).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(
+        (call) => String(call[0]).includes("/utang/contacts") && call[1]?.method === "POST",
+      ),
+    ).toBe(false);
+  });
+
+  it("shows Request connection on not connected detail and creates pending request", async () => {
+    let connections: PersonalConnectionRequestDto[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input);
+          if (url.includes("/connection-request") && init?.method === "POST") {
+            connections = [{ ...pendingConnection, id: "req-new" }];
+            return jsonResponse(201, connections[0]);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, connections);
+          }
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [contactA]);
+          }
+          if (url.includes("/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     const user = userEvent.setup();
@@ -362,26 +456,28 @@ describe("People lifecycle UX", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input);
-        if (url.includes("/connections/req-in/accept") && init?.method === "POST") {
-          linked = true;
-          connections = [];
-          return jsonResponse(200, { ...pendingConnection, id: "req-in", status: "Accepted" });
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, connections);
-        }
-        if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, [
-            {
-              ...contactA,
-              linkedUserIdentityId: linked ? "user-b" : null,
-            },
-          ]);
-        }
-        return jsonResponse(404, {});
-      }),
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input);
+          if (url.includes("/connections/req-in/accept") && init?.method === "POST") {
+            linked = true;
+            connections = [];
+            return jsonResponse(200, { ...pendingConnection, id: "req-in", status: "Accepted" });
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, connections);
+          }
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [
+              {
+                ...contactA,
+                linkedUserIdentityId: linked ? "user-b" : null,
+              },
+            ]);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     const user = userEvent.setup();
@@ -396,8 +492,8 @@ describe("People lifecycle UX", () => {
     const notifications: PersonalInAppNotificationDto[] = [
       {
         id: "n1",
-        title: "Eduard sent you a connection request",
-        preview: "Open invitations to respond.",
+        title: "Connection request",
+        preview: "Eduard sent you a connection request.",
         relatedType: "PersonalConnectionRequest",
         relatedId: "req-in",
         isRead: false,
@@ -415,32 +511,64 @@ describe("People lifecycle UX", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = String(input);
-        if (url.includes("/notifications/") && url.includes("/read") && init?.method === "POST") {
-          notifications[0] = { ...notifications[0]!, isRead: true };
-          return jsonResponse(200, notifications[0]);
-        }
-        if (url.includes("/notifications")) {
-          return jsonResponse(200, notifications);
-        }
-        if (url.includes("/personal/connections")) {
-          return jsonResponse(200, connections);
-        }
-        if (url.includes("/utang/contacts")) {
-          return jsonResponse(200, []);
-        }
-        return jsonResponse(404, {});
-      }),
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input);
+          if (url.includes("/notifications/") && url.includes("/read") && init?.method === "POST") {
+            notifications[0] = { ...notifications[0]!, isRead: true };
+            return jsonResponse(200, notifications[0]);
+          }
+          if (url.includes("/notifications")) {
+            return jsonResponse(200, notifications);
+          }
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, connections);
+          }
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, []);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
     );
 
     const user = userEvent.setup();
     renderPeopleApp("/personal/notifications");
-    await user.click(
-      await screen.findByRole("button", { name: /Eduard sent you a connection request/i }),
-    );
-    expect(await screen.findByRole("heading", { name: "Invitations" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: /Connection\. Unread/i }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Connection requests" })).toBeInTheDocument();
+    expect(screen.getByText("Eduard")).toBeInTheDocument();
     expect(screen.getByText("wants to connect with you")).toBeInTheDocument();
     expect(connections[0]?.status).toBe("Pending");
+    expect(notifications[0]?.isRead).toBe(true);
+  });
+
+  it("People row shows Request sent after outgoing pending request without treating it as Utang invitation", async () => {
+    const connections: PersonalConnectionRequestDto[] = [pendingConnection];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withAntiforgery(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.includes("/personal/connections")) {
+            return jsonResponse(200, connections);
+          }
+          if (url.includes("/utang/contacts")) {
+            return jsonResponse(200, [contactA]);
+          }
+          if (url.includes("/utang/relationships/")) {
+            return jsonResponse(200, []);
+          }
+          if (url.includes("/utang/invitations")) {
+            return jsonResponse(200, [{ id: "utang-only", status: "Pending" }]);
+          }
+          return jsonResponse(404, {});
+        }),
+      ),
+    );
+
+    renderPeopleApp("/personal/people");
+    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(screen.getByText("Request sent")).toBeInTheDocument();
+    expect(screen.queryByText(/Utang invitation/i)).not.toBeInTheDocument();
   });
 });

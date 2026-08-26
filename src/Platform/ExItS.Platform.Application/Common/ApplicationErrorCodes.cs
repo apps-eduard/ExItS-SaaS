@@ -171,6 +171,7 @@ public static class ApplicationErrorCodes
 
     public const string PersonalContactNotFound = "application.personal.contact.not_found";
     public const string PersonalContactEmailConflict = "application.personal.contact.email.conflict";
+    public const string PersonalContactIdentityConflict = "application.personal.contact.identity.conflict";
     public const string PersonalContactLinkConflict = "application.personal.contact.link.conflict";
     public const string PersonalContactLinkInvalid = "application.personal.contact.link.invalid";
     public const string PersonalContactIdentityMismatch = "application.personal.contact.identity_mismatch";
@@ -178,12 +179,16 @@ public static class ApplicationErrorCodes
     public const string PersonalConnectionRequestNotFound = "application.personal.connection_request.not_found";
     public const string PersonalConnectionRequestConflict = "application.personal.connection_request.conflict";
     public const string PersonalConnectionBlocked = "application.personal.connection.blocked";
+    public const string PersonalConnectionUnauthorized = "application.personal.connection.unauthorized";
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";
     public const string PersonalUtangUnauthorized = "application.personal.utang.unauthorized";
     public const string PersonalUtangEntryInvalid = "application.personal.utang_entry.invalid";
     public const string PersonalUtangInvitationNotFound = "application.personal.utang_invitation.not_found";
     public const string PersonalUtangInvitationConflict = "application.personal.utang_invitation.conflict";
     public const string PersonalUtangInvitationRateLimited = "application.personal.utang_invitation.rate_limited";
+    public const string PersonalUtangPendingLimitReached = "application.personal.utang.pending_limit_reached";
+    public const string PersonalUtangDailyLimitReached = "application.personal.utang.daily_limit_reached";
+    public const string PersonalUtangDuplicateSubmission = "application.personal.utang.duplicate_submission";
     public const string PersonalReminderNotFound = "application.personal.reminder.not_found";
     public const string PersonalReminderRateLimited = "application.personal.reminder.rate_limited";
     public const string PersonalNotificationNotFound = "application.personal.notification.not_found";

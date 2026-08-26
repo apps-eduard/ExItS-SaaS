@@ -15,6 +15,7 @@ public sealed class ConfirmPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
@@ -25,6 +26,7 @@ public sealed class ConfirmPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
@@ -34,6 +36,7 @@ public sealed class ConfirmPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _users = users;
         _settings = settings;
         _notifications = notifications;
         _auditWriter = auditWriter;
@@ -85,6 +88,17 @@ public sealed class ConfirmPersonalUtangEntry
 
             if (priorStatus is PersonalUtangEntryStatus.Pending)
             {
+                await PersonalUtangProposalAntiSpam.RefreshAggregatedNotificationAfterResolveAsync(
+                    relationship,
+                    entry.CreatedByUserIdentityId,
+                    _users,
+                    _settings,
+                    _notifications,
+                    _entries,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
                 await _auditWriter.WriteAsync(
                     $"platform-user:{actingUserIdentityId.Value:D}",
                     AuditActorType.PlatformUser,
@@ -117,6 +131,7 @@ public sealed class DisputePersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
@@ -127,6 +142,7 @@ public sealed class DisputePersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
@@ -136,6 +152,7 @@ public sealed class DisputePersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _users = users;
         _settings = settings;
         _notifications = notifications;
         _auditWriter = auditWriter;
@@ -192,6 +209,17 @@ public sealed class DisputePersonalUtangEntry
 
             if (priorStatus is PersonalUtangEntryStatus.Pending)
             {
+                await PersonalUtangProposalAntiSpam.RefreshAggregatedNotificationAfterResolveAsync(
+                    relationship,
+                    entry.CreatedByUserIdentityId,
+                    _users,
+                    _settings,
+                    _notifications,
+                    _entries,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
                 await _auditWriter.WriteAsync(
                     $"platform-user:{actingUserIdentityId.Value:D}",
                     AuditActorType.PlatformUser,
@@ -224,6 +252,7 @@ public sealed class CancelPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
@@ -234,6 +263,7 @@ public sealed class CancelPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
@@ -243,6 +273,7 @@ public sealed class CancelPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _users = users;
         _settings = settings;
         _notifications = notifications;
         _auditWriter = auditWriter;
@@ -294,6 +325,17 @@ public sealed class CancelPersonalUtangEntry
 
             if (priorStatus is PersonalUtangEntryStatus.Pending)
             {
+                await PersonalUtangProposalAntiSpam.RefreshAggregatedNotificationAfterResolveAsync(
+                    relationship,
+                    entry.CreatedByUserIdentityId,
+                    _users,
+                    _settings,
+                    _notifications,
+                    _entries,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
                 await _auditWriter.WriteAsync(
                     $"platform-user:{actingUserIdentityId.Value:D}",
                     AuditActorType.PlatformUser,
@@ -378,32 +420,6 @@ internal static class PersonalUtangEntryAccess
 
 internal static class PersonalUtangEntryNotifications
 {
-    public static async Task NotifyCounterpartyPendingAsync(
-        PersonalDebtRelationship relationship,
-        PersonalUtangEntry entry,
-        PlatformUserId proposerUserIdentityId,
-        IPersonalAccountSettingsRepository settings,
-        IPersonalInAppNotificationRepository notifications,
-        IClock clock,
-        CancellationToken cancellationToken)
-    {
-        var counterparty = relationship.GetCounterpartyUserIdentityId(proposerUserIdentityId);
-        if (counterparty is null)
-        {
-            return;
-        }
-
-        await TryNotifyAsync(
-            counterparty,
-            title: "Personal Utang entry proposed",
-            preview: "A counterparty proposed a Personal Utang entry for your review.",
-            entry,
-            settings,
-            notifications,
-            clock,
-            cancellationToken).ConfigureAwait(false);
-    }
-
     public static async Task NotifyProposerResolvedAsync(
         PersonalUtangEntry entry,
         string title,
@@ -416,7 +432,8 @@ internal static class PersonalUtangEntryNotifications
             entry.CreatedByUserIdentityId,
             title,
             preview,
-            entry,
+            relatedType: "PersonalDebtRelationship",
+            relatedId: entry.RelationshipId.Value.ToString("D"),
             settings,
             notifications,
             clock,
@@ -441,7 +458,8 @@ internal static class PersonalUtangEntryNotifications
             counterparty,
             title: "Personal Utang entry cancelled",
             preview: "A pending Personal Utang entry was cancelled.",
-            entry,
+            relatedType: "PersonalDebtRelationship",
+            relatedId: relationship.Id.Value.ToString("D"),
             settings,
             notifications,
             clock,
@@ -452,7 +470,8 @@ internal static class PersonalUtangEntryNotifications
         PlatformUserId recipient,
         string title,
         string preview,
-        PersonalUtangEntry entry,
+        string relatedType,
+        string relatedId,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IClock clock,
@@ -469,9 +488,9 @@ internal static class PersonalUtangEntryNotifications
             recipient,
             title,
             preview,
-            relatedType: "PersonalUtangEntry",
+            relatedType,
             clock.UtcNow,
-            relatedId: entry.Id.Value.ToString("D"));
+            relatedId);
         await notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
     }
 }

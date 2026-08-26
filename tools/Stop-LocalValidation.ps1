@@ -5,7 +5,8 @@
 
 .DESCRIPTION
   - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
-    ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web and launcher PowerShell windows recorded in launcher-state.json.
+    ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web, launcher PowerShell windows recorded in launcher-state.json,
+    and React POS Vite listeners on :5177.
   - Leaves PostgreSQL containers running by default.
   - -StopDatabases stops DB containers without deleting volumes (never compose down with -v).
   - Not Production.
@@ -92,6 +93,9 @@ if (Test-Path -LiteralPath $stateFile) {
 }
 
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
+
+Write-Step 'Stopping React POS Vite listeners on :5177 (if any)...'
+$null = Stop-LocalValidationPortListeners -Port ([int]$LocalValidationStack.DefaultReactPosPort) -Label 'React POS'
 
 if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $envFile) -and (Test-Path -LiteralPath $composeFile)) {
     Write-Step 'Stopping React Platform Admin container (volumes preserved)...'

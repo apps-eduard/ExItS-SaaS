@@ -700,6 +700,46 @@ public sealed class CustomerLinkCompletenessTests
                     .Take(take)
                     .ToList());
 
+        public Task<(IReadOnlyList<PersonalInAppNotification> Items, int TotalCount)> ListForUserPagedAsync(
+            PlatformUserId recipientUserIdentityId,
+            DateTimeOffset? createdOnOrAfterUtc,
+            DateTimeOffset? createdBeforeUtc,
+            bool unreadOnly,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            IEnumerable<PersonalInAppNotification> query = _items
+                .Where(n => n.RecipientUserIdentityId == recipientUserIdentityId);
+            if (createdOnOrAfterUtc is not null)
+            {
+                query = query.Where(n => n.CreatedAtUtc >= createdOnOrAfterUtc.Value);
+            }
+
+            if (createdBeforeUtc is not null)
+            {
+                query = query.Where(n => n.CreatedAtUtc < createdBeforeUtc.Value);
+            }
+
+            if (unreadOnly)
+            {
+                query = query.Where(n => !n.IsRead);
+            }
+
+            var filtered = query
+                .OrderByDescending(n => n.CreatedAtUtc)
+                .ThenByDescending(n => n.Id.Value)
+                .ToList();
+            var page = filtered.Skip(skip).Take(take).ToList();
+            return Task.FromResult<(IReadOnlyList<PersonalInAppNotification>, int)>((page, filtered.Count));
+        }
+
+        public Task<int> CountUnreadForUserAsync(
+            PlatformUserId recipientUserIdentityId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.Count(n =>
+                n.RecipientUserIdentityId == recipientUserIdentityId && !n.IsRead));
+
         public Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
             PlatformUserId recipientUserIdentityId,
             string relatedType,

@@ -245,6 +245,32 @@ function Get-LocalValidationListeningOwner {
     }
 }
 
+function Stop-LocalValidationPortListeners {
+    param(
+        [Parameter(Mandatory)][int]$Port,
+        [string]$Label = ''
+    )
+
+    $labelText = if ([string]::IsNullOrWhiteSpace($Label)) { '' } else { "$Label " }
+    $connections = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    $pids = @($connections | ForEach-Object { [int]$_.OwningProcess } | Where-Object { $_ -gt 0 } | Sort-Object -Unique)
+    foreach ($processId in $pids) {
+        $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+        $name = if ($proc) { $proc.ProcessName } else { '?' }
+        Write-Host ("[local-validation] Stopping {0}PID {1} ({2}) on port {3}" -f $labelText, $processId, $name, $Port) -ForegroundColor Cyan
+        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+    }
+    if ($pids.Count -eq 0) { return 0 }
+
+    $deadline = (Get-Date).AddSeconds(8)
+    while ((Get-Date) -lt $deadline) {
+        $remaining = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+        if ($remaining.Count -eq 0) { return $pids.Count }
+        Start-Sleep -Milliseconds 250
+    }
+    return $pids.Count
+}
+
 function Get-LocalValidationRepoScopedAppProcesses {
     param([Parameter(Mandatory)][string]$RepoRoot)
 

@@ -29,6 +29,9 @@ export function isNotificationsReturnPath(path: string | null | undefined): path
   if (path === "/personal/notifications" || path.startsWith("/personal/notifications?")) {
     return false;
   }
+  if (path === "/personal/notifications/archived" || path.startsWith("/personal/notifications/archived?")) {
+    return false;
+  }
   return true;
 }
 

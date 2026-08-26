@@ -9,6 +9,7 @@
   - Stops stale ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
     ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web processes that belong to this repository only.
   - Starts apps with dotnet watch in separate PowerShell windows, in order.
+  - Starts canonical React POS Vite on :5177 (ExItS.PinoyBusinessPOS.React) via npm run dev.
   - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
   - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
   - Platform API DataProtection keys: same directory (shared path, distinct application name)
@@ -375,6 +376,37 @@ dotnet watch --project '$Project' run --no-launch-profile --non-interactive
     return $proc.Id
 }
 
+function Start-NpmDevWindow {
+    param(
+        [string]$Title,
+        [string]$WorkingDirectory,
+        [hashtable]$EnvMap,
+        [string]$NpmScript = 'dev',
+        [string]$ExtraNpmArgs = ''
+    )
+    $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
+    $extra = if ([string]::IsNullOrWhiteSpace($ExtraNpmArgs)) { '' } else { " -- $ExtraNpmArgs" }
+    $run = @"
+`$Host.UI.RawUI.WindowTitle = '$Title';
+$prefix
+Set-Location '$WorkingDirectory';
+Write-Host ('=== {0} ===' -f '$Title') -ForegroundColor Cyan;
+if (-not (Test-Path -LiteralPath 'node_modules')) {
+    Write-Host 'node_modules missing - running npm ci...' -ForegroundColor Yellow;
+    npm ci;
+    if (`$LASTEXITCODE -ne 0) { throw 'npm ci failed for $Title' }
+}
+npm run $NpmScript$extra
+"@
+    $proc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList @(
+        '-NoExit',
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command', $run
+    )
+    return $proc.Id
+}
+
 # --- main ---
 $repoRoot = Get-LocalValidationRepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
@@ -411,6 +443,7 @@ $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap[
 $orgWebPort = if ($envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultOrgWebPort }
 $personalWebPort = if ($envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPersonalWebPort }
 $adminWebReactPort = if ($envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ADMIN_WEB_REACT_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultAdminWebReactPort }
+$reactPosPortEarly = if ($envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_REACT_POS_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultReactPosPort }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 
@@ -418,11 +451,13 @@ New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
 Write-Ok "DataProtection keys directory: $dpKeys"
 
 $appPortLabels = @{
-    $adminPort        = 'Platform Admin'
+    $adminPort         = 'Platform Admin'
     $platformApiPort   = 'Platform API'
     $posApiPort        = 'POS API'
     $orgWebPort        = 'Organization Web'
     $personalWebPort   = 'Personal Web'
+    $adminWebReactPort = 'React Platform Admin'
+    $reactPosPortEarly = 'React POS'
 }
 
 Write-Step 'Inspecting Local Validation port/runtime provenance (all ExItS worktrees)...'
@@ -434,11 +469,15 @@ $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile
 Write-Step 'Stopping stale cross-worktree ExItS host apps (DBs untouched)...'
 $null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
 
+# React POS is Vite/node (not dotnet AppMarkers). Free :5177 so restart is reliable.
+Write-Step "Freeing React POS port $reactPosPortEarly if still held by Vite/node..."
+$null = Stop-LocalValidationPortListeners -Port $reactPosPortEarly -Label 'React POS'
+
 $conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
 if ($conflicts.Count -gt 0) {
-    throw 'Ports 8090/8091/8092/8093/8094/8095 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
+    throw 'Ports 8090/8091/8092/8093/8094/8095/5177 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
 }
-Write-Ok 'App ports 8090/8091/8092/8093/8094/8095 are free'
+Write-Ok 'App ports 8090/8091/8092/8093/8094/8095/5177 are free'
 
 Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved)...'
 Start-LocalValidationInfrastructure -ComposeFile $composeFile -EnvFile $envFile
@@ -696,6 +735,29 @@ $reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
 if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
 Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
+$reactPosClientDir = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.React'
+if (-not (Test-Path -LiteralPath (Join-Path $reactPosClientDir 'package.json'))) {
+    throw "Missing canonical React POS client: $reactPosClientDir"
+}
+Write-Step "Starting React POS Vite on :$reactPosPort (canonical ExItS.PinoyBusinessPOS.React)..."
+$reactPosEnv = @{
+    VITE_POS_BUILD_SHA = $gitSha
+    EXITS_PLATFORM_API_PROXY_TARGET = $loopbackPlatformApiUrl
+    EXITS_POS_API_PROXY_TARGET = $loopbackPosApiUrl
+    # DEV-only: Offline PIN on Tailscale/LAN HTTP (crypto.subtle unavailable). Never for production builds.
+    VITE_ALLOW_INSECURE_OFFLINE_PIN = 'true'
+}
+if ($resolvedPublicHost) {
+    $reactPosEnv['POS_DEV_HOST'] = '0.0.0.0'
+    $reactPosEnv['POS_DEV_PUBLIC_HOST'] = $resolvedPublicHost
+}
+$windowPids += Start-NpmDevWindow `
+    -Title 'ExItS LocalValidation - React POS' `
+    -WorkingDirectory $reactPosClientDir `
+    -EnvMap $reactPosEnv `
+    -NpmScript 'dev'
+Wait-TcpPort -Label 'React POS' -HostName '127.0.0.1' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
+
 $state = @{
     Mode = 'HostApps'
     RepoRoot = $repoRoot
@@ -717,6 +779,7 @@ $state = @{
         OrgWeb = $orgWebPort
         PersonalWeb = $personalWebPort
         AdminWebReact = $adminWebReactPort
+        ReactPos = $reactPosPort
         PlatformDb = $platformDbPort
         PosDb = $posDbPort
     }
@@ -747,11 +810,13 @@ $healthOk = (Invoke-HttpCheck -Label 'Organization Web /health' -Url "$loopbackO
 $healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPersonalWebUrl/health") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'React Admin /health' -Url "$loopbackAdminWebReactUrl/health") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'React Admin /admin' -Url "$loopbackAdminWebReactUrl/admin") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'React POS /' -Url "http://127.0.0.1:$reactPosPort/") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'React POS /sign-in' -Url "http://127.0.0.1:$reactPosPort/sign-in") -and $healthOk
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
 Write-Host "  Blazor Admin: $publicAdminUrl"
-Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset - start Vite separately if needed)"
+Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset)"
 Write-Host "  React POS:    http://127.0.0.1:$reactPosPort"
 Write-Host "  Platform API: $publicPlatformApiUrl"
 Write-Host "  POS API:      $publicPosApiUrl"
@@ -760,7 +825,7 @@ Write-Host "  Personal Web: $publicPersonalWebUrl"
 Write-Host "  React Admin:  $publicAdminWebReactUrl"
 Write-LocalValidationReactAdminBanner -Port $adminWebReactPort -PublicHost $resolvedPublicHost -ApiDescription "same-origin /api (proxy $reactApiProxyTarget)" -GitSha $gitSha
 Write-LocalValidationMailpitBanner -UiPort $mailpitUiPort -PublicHost $resolvedPublicHost -EmailLinkBaseUrl $publicAdminWebReactUrl
-Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort / 0.0.0.0:$adminWebReactPort"
+Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort / 0.0.0.0:$adminWebReactPort / React POS :$reactPosPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"

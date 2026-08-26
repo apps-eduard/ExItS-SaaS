@@ -46,6 +46,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PosDeviceRegistrationRequired
             or ApplicationErrorCodes.PosDeviceRevoked
             or ApplicationErrorCodes.PersonalUtangUnauthorized
+            or ApplicationErrorCodes.PersonalConnectionUnauthorized
             or ApplicationErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.PersonalTodoUnauthorized
@@ -167,7 +168,12 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PersonalConnectionBlocked
             or ApplicationErrorCodes.OwnershipTransferConflict
             or ApplicationErrorCodes.PersonalContactEmailConflict
+            or ApplicationErrorCodes.PersonalContactIdentityConflict
             or ApplicationErrorCodes.PersonalContactLinkConflict
+            or ApplicationErrorCodes.PersonalUtangPendingLimitReached
+            or ApplicationErrorCodes.PersonalUtangDuplicateSubmission
+            or DomainErrorCodes.PersonalUtangPendingLimitReached
+            or DomainErrorCodes.PersonalUtangDuplicateSubmission
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict
             or DomainErrorCodes.CustomerLinkRequestExpired
@@ -183,7 +189,9 @@ internal static class PlatformApiResults
         ApplicationErrorCodes.PersonalReminderRateLimited
             or DomainErrorCodes.PersonalReminderRateLimited
             or ApplicationErrorCodes.PersonalUtangInvitationRateLimited
-            or DomainErrorCodes.PersonalUtangInvitationRateLimited => StatusCodes.Status429TooManyRequests,
+            or ApplicationErrorCodes.PersonalUtangDailyLimitReached
+            or DomainErrorCodes.PersonalUtangInvitationRateLimited
+            or DomainErrorCodes.PersonalUtangDailyLimitReached => StatusCodes.Status429TooManyRequests,
 
         ApplicationErrorCodes.PaymentAmountInvalid
             or ApplicationErrorCodes.PaymentCurrencyInvalid

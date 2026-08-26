@@ -62,6 +62,9 @@ import {
   enqueuePersonalUtangEntry,
 } from "@/offline/personal-utang-offline";
 
+const UTANG_NOTES_MAX_LENGTH = 512;
+const EM_DASH = "\u2014";
+
 function contactLabel(
   contacts: PersonalContactDto[],
   relationship: PersonalDebtRelationshipSummaryDto,
@@ -71,9 +74,25 @@ function contactLabel(
       ? relationship.creditorContactId
       : relationship.debtorContactId;
   if (contactId) {
-    return contacts.find((c) => c.id === contactId)?.displayName ?? "â€”";
+    return contacts.find((c) => c.id === contactId)?.displayName ?? EM_DASH;
   }
-  return "â€”";
+  return EM_DASH;
+}
+
+function loanActivityLabel(
+  perspective: string,
+  personName: string,
+  pendingIncoming: boolean,
+  t: (key: MessageKey) => string,
+): string {
+  if (pendingIncoming) {
+    return perspective === "Borrowed"
+      ? t("personal.utang.activityTheyLentYou").replace("{name}", personName)
+      : t("personal.utang.activityTheyBorrowed").replace("{name}", personName);
+  }
+  return perspective === "Borrowed"
+    ? t("personal.utang.activityYouBorrowed").replace("{name}", personName)
+    : t("personal.utang.activityYouLent").replace("{name}", personName);
 }
 
 function entryTypeLabelKey(entryType: string): MessageKey {
@@ -109,6 +128,143 @@ function contactLooksLinked(
 ): boolean {
   const contact = contacts.find((c) => c.id === contactId);
   return Boolean(contact?.linkedUserIdentityId);
+}
+
+/** Backend shared-loan proposal pending cap (sender → counterparty). */
+export const PERSONAL_UTANG_MAX_PENDING_OUTGOING = 3;
+
+export const PERSONAL_UTANG_PROPOSAL_ERROR_CODES = {
+  pendingLimit: "application.personal.utang.pending_limit_reached",
+  dailyLimit: "application.personal.utang.daily_limit_reached",
+  duplicate: "application.personal.utang.duplicate_submission",
+} as const;
+
+type PendingOutgoingEntryLike = {
+  status?: string;
+  entryType?: string;
+  canCancel?: boolean;
+  canConfirm?: boolean;
+};
+
+/** Outgoing Loan proposals waiting for the counterparty (matches anti-spam gate). */
+export function countPendingOutgoingLoanProposals(
+  history: ReadonlyArray<PendingOutgoingEntryLike>,
+): number {
+  return history.reduce((count, entry) => {
+    const pendingOutgoing =
+      entry.status === "Pending" &&
+      entry.entryType === "Loan" &&
+      Boolean(entry.canCancel) &&
+      !entry.canConfirm;
+    return count + (pendingOutgoing ? 1 : 0);
+  }, 0);
+}
+
+/** Map create/record API errors by errorCode (not English detail strings). */
+export function mapPersonalUtangMutationError(
+  error: unknown,
+  counterpartyName: string,
+  t: (key: MessageKey) => string,
+): string {
+  if (!(error instanceof PlatformApiError)) {
+    return t("personal.utang.genericError");
+  }
+  const code = error.errorCode ?? "";
+  const name = counterpartyName.trim() || t("personal.utang.person");
+  if (code === PERSONAL_UTANG_PROPOSAL_ERROR_CODES.pendingLimit) {
+    return t("personal.utang.pendingLimitReached").replace("{name}", name);
+  }
+  if (code === PERSONAL_UTANG_PROPOSAL_ERROR_CODES.dailyLimit) {
+    return t("personal.utang.dailyLimitReached").replace("{name}", name);
+  }
+  if (code === PERSONAL_UTANG_PROPOSAL_ERROR_CODES.duplicate) {
+    return t("personal.utang.duplicateSubmission");
+  }
+  return error.message || t("personal.utang.genericError");
+}
+
+function findSharedRelationshipForContact(
+  rows: ReadonlyArray<
+    Pick<
+      PersonalDebtRelationshipSummaryDto,
+      | "id"
+      | "isSharedLedger"
+      | "isPrivate"
+      | "debtorContactId"
+      | "creditorContactId"
+      | "debtorUserIdentityId"
+      | "creditorUserIdentityId"
+    >
+  >,
+  contacts: ReadonlyArray<PersonalContactDto | CachedPersonalContact>,
+  contactId: string,
+  mode: "lent" | "owe",
+): { id: string } | null {
+  if (!contactId) {
+    return null;
+  }
+  const linkedId =
+    contacts.find((c) => c.id === contactId)?.linkedUserIdentityId?.trim() || null;
+  const match = rows.find((row) => {
+    if (!isSharedRelationship(row)) {
+      return false;
+    }
+    if (mode === "lent") {
+      return (
+        row.debtorContactId === contactId ||
+        (linkedId != null && row.debtorUserIdentityId === linkedId)
+      );
+    }
+    return (
+      row.creditorContactId === contactId ||
+      (linkedId != null && row.creditorUserIdentityId === linkedId)
+    );
+  });
+  return match ? { id: match.id } : null;
+}
+
+function PendingOutgoingHint({
+  count,
+  name,
+  atLimit,
+  viewPendingTo,
+}: {
+  count: number;
+  name: string;
+  atLimit: boolean;
+  viewPendingTo: string;
+}) {
+  const { t } = useI18n();
+  if (count < 1) {
+    return null;
+  }
+  if (atLimit) {
+    return (
+      <div className="flex min-w-0 flex-col gap-2" data-testid="utang-pending-limit-hint">
+        <p
+          role="alert"
+          className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+        >
+          {t("personal.utang.pendingLimitReached").replace("{name}", name)}
+        </p>
+        <Button asChild variant="ghost" className="min-h-11 w-fit px-0">
+          <Link to={viewPendingTo} data-testid="utang-view-pending">
+            {t("personal.utang.viewPending")}
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <p
+      className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+      data-testid="utang-pending-waiting-hint"
+    >
+      {t("personal.utang.pendingWaitingCount")
+        .replace("{count}", String(count))
+        .replace("{name}", name)}
+    </p>
+  );
 }
 
 function DueChip({ dueDateUtc }: { dueDateUtc: string | null | undefined }) {
@@ -267,12 +423,43 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const usingCache = !online || listQuery.isError || contactsQuery.isError;
   const ownerUserIdentityId = meQuery.data?.userIdentityId ?? cachedOwnerId;
 
+  const contacts: CachedPersonalContact[] | PersonalContactDto[] = usingCache
+    ? cachedContacts
+    : (contactsQuery.data ?? []);
+  const rows: CachedPersonalRelationship[] | PersonalDebtRelationshipSummaryDto[] = usingCache
+    ? cachedRows
+    : (listQuery.data ?? []);
+  const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
+  const existingSharedForContact =
+    selectedLinked && contactId
+      ? findSharedRelationshipForContact(rows, contacts, contactId, mode)
+      : null;
+
+  const sharedHistoryQuery = useQuery({
+    queryKey: ["personal", "utang", "history", existingSharedForContact?.id ?? ""],
+    enabled: Boolean(existingSharedForContact?.id) && online && selectedLinked,
+    queryFn: ({ signal }) => listPersonalUtangHistory(existingSharedForContact!.id, signal),
+  });
+
+  const pendingOutgoingCount = useMemo(
+    () =>
+      selectedLinked && existingSharedForContact
+        ? countPendingOutgoingLoanProposals(sharedHistoryQuery.data ?? [])
+        : 0,
+    [existingSharedForContact, selectedLinked, sharedHistoryQuery.data],
+  );
+  const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
+
   const saveOffline = async () => {
     if (!offline) {
       throw new Error("offline-unavailable");
     }
     if (!ownerUserIdentityId) {
       throw new Error("owner-unknown");
+    }
+    const purpose = notes.trim();
+    if (!purpose) {
+      throw new Error("purpose");
     }
     const id = createSecureMutationId();
     if (!id.ok) {
@@ -293,7 +480,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       ownerUserIdentityId,
       dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
       initialLoanAmount: Number(amount),
-      initialLoanNotes: notes.trim() || null,
+      initialLoanNotes: purpose,
     });
     await refreshOfflineSync();
     setCacheEpoch((epoch) => epoch + 1);
@@ -310,6 +497,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       if (!contactId) throw new Error("missing contact");
       const initial = Number(amount);
       if (!(initial > 0)) throw new Error("amount");
+      const purpose = notes.trim();
+      if (!purpose) throw new Error("purpose");
       const body =
         mode === "lent"
           ? {
@@ -320,7 +509,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               currencyCode: "PHP",
               dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
               initialLoanAmount: initial,
-              initialLoanNotes: notes.trim() || null,
+              initialLoanNotes: purpose,
             }
           : {
               creditorUserIdentityId: null,
@@ -330,7 +519,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               currencyCode: "PHP",
               dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
               initialLoanAmount: initial,
-              initialLoanNotes: notes.trim() || null,
+              initialLoanNotes: purpose,
             };
       return createPersonalDebtRelationship(body);
     },
@@ -346,6 +535,10 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
     },
     onError: (error) => {
       if (!online) {
+        if (error instanceof Error && error.message === "purpose") {
+          setFormError(t("personal.utang.purposeRequired"));
+          return;
+        }
         setFormError(
           error instanceof Error && error.message === "owner-unknown"
             ? t("offline.personalOwnerUnknown")
@@ -353,9 +546,13 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         );
         return;
       }
-      setFormError(
-        error instanceof PlatformApiError ? error.message : t("personal.utang.genericError"),
-      );
+      if (error instanceof Error && error.message === "purpose") {
+        setFormError(t("personal.utang.purposeRequired"));
+        return;
+      }
+      const name =
+        contacts.find((c) => c.id === contactId)?.displayName ?? t("personal.utang.person");
+      setFormError(mapPersonalUtangMutationError(error, name, t));
     },
   });
 
@@ -373,18 +570,16 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
   const title = mode === "lent" ? t("personal.utang.lent") : t("personal.utang.owe");
   const lede = mode === "lent" ? t("personal.utang.lentLede") : t("personal.utang.oweLede");
-  const contacts: CachedPersonalContact[] | PersonalContactDto[] = usingCache
-    ? cachedContacts
-    : (contactsQuery.data ?? []);
-  const rows: CachedPersonalRelationship[] | PersonalDebtRelationshipSummaryDto[] = usingCache
-    ? cachedRows
-    : (listQuery.data ?? []);
-  const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
   const submitLabel = selectedLinked
     ? t("personal.utang.sendForConfirmation")
-    : mode === "lent"
-      ? t("personal.utang.recordLent")
-      : t("personal.utang.recordOwe");
+    : t("personal.utang.saveUtang");
+  const selectedContactName =
+    contactId
+      ? (contacts.find((c) => c.id === contactId)?.displayName ?? t("personal.utang.person"))
+      : "";
+  const viewPendingTo = existingSharedForContact
+    ? `/personal/utang/relationships/${existingSharedForContact.id}`
+    : "/personal/utang";
 
   return (
     <div
@@ -413,12 +608,26 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             setFormError(t("personal.utang.amountRequired"));
             return;
           }
+          if (!notes.trim()) {
+            setFormError(t("personal.utang.purposeRequired"));
+            return;
+          }
+          if (pendingAtLimit) {
+            setFormError(
+              t("personal.utang.pendingLimitReached").replace(
+                "{name}",
+                selectedContactName || t("personal.utang.person"),
+              ),
+            );
+            return;
+          }
           createMutation.mutate();
         }}
       >
-        <h2 className="catalog-form-section__title">
-          {mode === "lent" ? t("personal.utang.recordLent") : t("personal.utang.recordOwe")}
-        </h2>
+        <h2 className="catalog-form-section__title">{t("personal.utang.recordUtang")}</h2>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {mode === "lent" ? t("personal.utang.whatHappenedLent") : t("personal.utang.whatHappenedBorrowed")}
+        </p>
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("personal.utang.person")}
           <select
@@ -448,6 +657,20 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           />
         </label>
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          {t("personal.utang.purpose")}
+          <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+            {t("personal.utang.purposeHelp")}
+          </span>
+          <textarea
+            data-testid="utang-rel-notes"
+            className="min-h-20 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            value={notes}
+            maxLength={UTANG_NOTES_MAX_LENGTH}
+            aria-required="true"
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </label>
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("personal.utang.dueDate")}
           <input
             data-testid="utang-rel-due"
@@ -457,23 +680,45 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             onChange={(e) => setDueDate(e.target.value)}
           />
         </label>
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.note")}
-          <input
-            data-testid="utang-rel-notes"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </label>
+        {contactId && Number(amount) > 0 && notes.trim() ? (
+          <div
+            className="rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface)_92%,var(--exits-muted)_8%)] p-3 text-[length:var(--exits-text-sm)]"
+            data-testid="utang-rel-review"
+          >
+            <p className="m-0 font-semibold">
+              {mode === "lent"
+                ? t("personal.utang.reviewLent")
+                    .replace("{name}", selectedContactName)
+                    .replace("{amount}", amount)
+                : t("personal.utang.reviewBorrowed")
+                    .replace("{name}", selectedContactName)
+                    .replace("{amount}", amount)}
+            </p>
+            <p className="m-0 mt-1 text-muted">
+              {t("personal.utang.purpose")}: {notes.trim()}
+            </p>
+          </div>
+        ) : null}
         {!online ? <OfflineNotice message={t("offline.personalUtangWillQueue")} /> : null}
         {selectedLinked ? (
           <p
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
             data-testid="utang-rel-confirm-hint"
           >
-            {t("personal.utang.sendForConfirmationHint")}
+            {t("personal.utang.sendForConfirmationHint").replace("{name}", selectedContactName)}
           </p>
+        ) : contactId ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="utang-rel-private-hint">
+            {t("personal.utang.privateSaveHint")}
+          </p>
+        ) : null}
+        {selectedLinked && existingSharedForContact && pendingOutgoingCount > 0 ? (
+          <PendingOutgoingHint
+            count={pendingOutgoingCount}
+            name={selectedContactName}
+            atLimit={pendingAtLimit}
+            viewPendingTo={viewPendingTo}
+          />
         ) : null}
         {formError ? (
           <p
@@ -489,6 +734,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           disabled={
             createMutation.isPending ||
             contacts.length === 0 ||
+            pendingAtLimit ||
             (!online && (!offline || !ownerUserIdentityId))
           }
           data-testid="utang-rel-submit"
@@ -538,7 +784,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
                     <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
                     <p className="m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
                       {perspectiveLabel}
-                      {" Â· "}
+                      {" · "}
                       <span data-testid={`utang-rel-ledger-${row.id}`}>{ledgerLabel}</span>
                     </p>
                     <DueChip dueDateUtc={row.dueDateUtc} />
@@ -649,6 +895,14 @@ export function PersonalRelationshipDetailPage() {
     ? cachedHistory
     : (historyQuery.data ?? []);
   const relationshipIsLocal = cachedDetail?.origin === "Local";
+  const pendingOutgoingCount = useMemo(
+    () =>
+      detail && isSharedRelationship(detail)
+        ? countPendingOutgoingLoanProposals(history)
+        : 0,
+    [detail, history],
+  );
+  const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
 
   const invalidateUtang = async () => {
     await queryClient.invalidateQueries({ queryKey: ["personal", "utang"] });
@@ -692,6 +946,10 @@ export function PersonalRelationshipDetailPage() {
     mutationFn: async () => {
       const amt = Number(amount);
       if (!(amt > 0)) throw new Error("amount");
+      const purpose = notes.trim();
+      if ((entryType === "Loan" || entryType === "Adjustment") && !purpose) {
+        throw new Error("purpose");
+      }
       if (!online) {
         await queueEntryOffline();
         return;
@@ -704,13 +962,13 @@ export function PersonalRelationshipDetailPage() {
               amount: amt,
               adjustmentDelta: Number(adjustmentDelta),
               expectedVersion: version ?? null,
-              notes: notes.trim() || null,
+              notes: purpose,
             }
           : {
               entryType,
               amount: amt,
               expectedVersion: version ?? null,
-              notes: notes.trim() || null,
+              notes: entryType === "Loan" ? purpose : purpose || null,
             };
       await recordPersonalUtangEntry(relationshipId, body);
     },
@@ -726,7 +984,17 @@ export function PersonalRelationshipDetailPage() {
         setFormError(
           error instanceof Error && error.message === "adjustment-online-only"
             ? t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangAdjustment))
-            : t("offline.personalEnqueueFailed"),
+            : error instanceof Error && error.message === "purpose"
+              ? t("personal.utang.purposeRequired")
+              : t("offline.personalEnqueueFailed"),
+        );
+        return;
+      }
+      if (error instanceof Error && error.message === "purpose") {
+        setFormError(
+          entryType === "Adjustment"
+            ? t("personal.utang.adjustmentReasonRequired")
+            : t("personal.utang.purposeRequired"),
         );
         return;
       }
@@ -737,9 +1005,12 @@ export function PersonalRelationshipDetailPage() {
         void historyQuery.refetch();
         return;
       }
-      setFormError(
-        error instanceof PlatformApiError ? error.message : t("personal.utang.genericError"),
-      );
+      const labelContacts = usingCache ? cachedContacts : (contactsQuery.data ?? []);
+      const name =
+        detail && labelContacts.length > 0
+          ? contactLabel(labelContacts, detail)
+          : t("personal.utang.person");
+      setFormError(mapPersonalUtangMutationError(error, name === EM_DASH ? "" : name, t));
     },
   });
 
@@ -791,7 +1062,7 @@ export function PersonalRelationshipDetailPage() {
   );
 
   const personName = useMemo(() => {
-    if (!detail || contactsForLabel.length === 0) return "â€”";
+    if (!detail || contactsForLabel.length === 0) return EM_DASH;
     return contactLabel(contactsForLabel, detail);
   }, [contactsForLabel, detail]);
 
@@ -819,9 +1090,11 @@ export function PersonalRelationshipDetailPage() {
     detail.perspective === "Borrowed" ? personalPageBackNav.utangOwe : personalPageBackNav.utangLent;
   // An Adjustment rewrites a balance against a version this device may no longer be showing.
   const adjustmentBlocked = !online && entryType === "Adjustment";
+  const loanBlockedByPendingLimit = shared && pendingAtLimit && entryType === "Loan";
   const submitLabel = shared
     ? t("personal.utang.sendForConfirmation")
     : t("personal.utang.saveEntry");
+  const viewPendingTo = `/personal/utang/relationships/${relationshipId}`;
 
   const disputeReasonText = (): string | null => {
     if (disputeReasonKey === "amount") return t("personal.utang.disputeReasonAmount");
@@ -860,6 +1133,27 @@ export function PersonalRelationshipDetailPage() {
         className="catalog-form-section exits-animate-panel personal-section flex min-w-0 flex-col gap-2 overflow-hidden"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!(Number(amount) > 0)) {
+            setFormError(t("personal.utang.amountRequired"));
+            return;
+          }
+          if ((entryType === "Loan" || entryType === "Adjustment") && !notes.trim()) {
+            setFormError(
+              entryType === "Adjustment"
+                ? t("personal.utang.adjustmentReasonRequired")
+                : t("personal.utang.purposeRequired"),
+            );
+            return;
+          }
+          if (loanBlockedByPendingLimit) {
+            setFormError(
+              t("personal.utang.pendingLimitReached").replace(
+                "{name}",
+                personName === EM_DASH ? t("personal.utang.person") : personName,
+              ),
+            );
+            return;
+          }
           recordMutation.mutate();
         }}
       >
@@ -901,11 +1195,24 @@ export function PersonalRelationshipDetailPage() {
           </label>
         ) : null}
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.utang.note")}
-          <input
+          {entryType === "Payment"
+            ? t("personal.utang.noteOptional")
+            : entryType === "Adjustment"
+              ? t("personal.utang.adjustmentReason")
+              : t("personal.utang.purpose")}
+          {entryType !== "Payment" ? (
+            <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+              {entryType === "Adjustment"
+                ? t("personal.utang.adjustmentReasonHelp")
+                : t("personal.utang.purposeHelp")}
+            </span>
+          ) : null}
+          <textarea
             data-testid="utang-entry-notes"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="min-h-16 w-full min-w-0 resize-y rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
             value={notes}
+            maxLength={UTANG_NOTES_MAX_LENGTH}
+            aria-required={entryType !== "Payment"}
             onChange={(e) => setNotes(e.target.value)}
           />
         </label>
@@ -922,8 +1229,16 @@ export function PersonalRelationshipDetailPage() {
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
             data-testid="utang-entry-confirm-hint"
           >
-            {t("personal.utang.sendForConfirmationHint")}
+            {t("personal.utang.sendForConfirmationHint").replace("{name}", personName)}
           </p>
+        ) : null}
+        {shared && pendingOutgoingCount > 0 ? (
+          <PendingOutgoingHint
+            count={pendingOutgoingCount}
+            name={personName === EM_DASH ? t("personal.utang.person") : personName}
+            atLimit={pendingAtLimit}
+            viewPendingTo={viewPendingTo}
+          />
         ) : null}
         {formError ? (
           <p
@@ -936,7 +1251,12 @@ export function PersonalRelationshipDetailPage() {
         <Button
           type="submit"
           className="min-h-11"
-          disabled={recordMutation.isPending || adjustmentBlocked || (!online && !offline)}
+          disabled={
+            recordMutation.isPending ||
+            adjustmentBlocked ||
+            loanBlockedByPendingLimit ||
+            (!online && !offline)
+          }
           data-testid="utang-entry-submit"
         >
           {submitLabel}
@@ -1004,22 +1324,49 @@ export function PersonalRelationshipDetailPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="exits-list__name m-0 font-medium">
-                          {t(entryTypeLabelKey(entry.entryType))}
-                        </p>
-                        <p
-                          className="m-0 text-[length:var(--exits-text-sm)]"
-                          data-testid={`utang-entry-status-${entry.id}`}
-                        >
-                          {t(entryStatusLabelKey(status))}
+                          {entry.entryType === "Loan"
+                            ? loanActivityLabel(
+                                detail.perspective,
+                                personName,
+                                pendingIncoming,
+                                t,
+                              )
+                            : t(entryTypeLabelKey(entry.entryType))}
                         </p>
                         {pendingIncoming ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"
                             data-testid={`utang-waiting-you-${entry.id}`}
                           >
+                            {t("personal.utang.recordedForReview").replace("{name}", personName)}
+                          </p>
+                        ) : null}
+                        {pendingIncoming ? (
+                          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                             {t("personal.utang.waitingForYou")}
                           </p>
                         ) : null}
+                        {entry.notes ? (
+                          <p
+                            className="m-0 text-[length:var(--exits-text-sm)]"
+                            data-testid={`utang-entry-purpose-${entry.id}`}
+                          >
+                            <span className="text-muted">{t("personal.utang.purpose")}: </span>
+                            {entry.notes}
+                          </p>
+                        ) : null}
+                        {"dueDateUtc" in entry && entry.dueDateUtc ? (
+                          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                            {t("personal.utang.dueDate")}:{" "}
+                            {new Date(String(entry.dueDateUtc)).toLocaleDateString()}
+                          </p>
+                        ) : null}
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)]"
+                          data-testid={`utang-entry-status-${entry.id}`}
+                        >
+                          {t(entryStatusLabelKey(status))}
+                        </p>
                         {pendingOutgoing ? (
                           <p
                             className="m-0 text-[length:var(--exits-text-sm)] font-medium"
@@ -1030,7 +1377,6 @@ export function PersonalRelationshipDetailPage() {
                         ) : null}
                         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                           {new Date(entry.createdAtUtc).toLocaleString()}
-                          {entry.notes ? ` Â· ${entry.notes}` : ""}
                         </p>
                         {disputeReason ? (
                           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
@@ -1122,7 +1468,7 @@ export function PersonalRelationshipDetailPage() {
                               )
                             }
                           >
-                            <option value="">â€”</option>
+                            <option value="">{EM_DASH}</option>
                             <option value="amount">
                               {t("personal.utang.disputeReasonAmount")}
                             </option>

@@ -8,7 +8,16 @@ import {
   PersonalContactsPage,
   PersonalLentPage,
   PersonalRelationshipDetailPage,
+  countPendingOutgoingLoanProposals,
+  mapPersonalUtangMutationError,
+  PERSONAL_UTANG_PROPOSAL_ERROR_CODES,
 } from "@/features/personal/utang/PersonalUtangPages";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import {
+  listPersonalUtangHistory,
+  recordPersonalUtangEntry,
+} from "@/api/platform/personal-utang-client";
+import { en } from "@/i18n/locales/en";
 
 const {
   contactId,
@@ -38,30 +47,35 @@ const {
     otherId,
     confirmMock: vi.fn(
       async (
-        _relationshipId: string,
-        _entryId: string,
+        _relationshipId?: string,
+        _entryId?: string,
         _body?: { expectedVersion?: number | null },
-      ) => ({
-        id: pendingIncomingId,
-        relationshipId: sharedRelationshipId,
-        entryType: "Payment",
-        amount: 50,
-        signedDelta: -50,
-        balanceAfter: 50,
-        notes: null,
-        dueDateUtc: null,
-        createdByUserIdentityId: otherId,
-        createdAtUtc: "2026-08-21T00:00:00Z",
-        status: "Confirmed",
-        resolvedByUserIdentityId: meId,
-        resolvedAtUtc: "2026-08-21T01:00:00Z",
-        disputeReason: null,
-        canConfirm: false,
-        canDispute: false,
-        canCancel: false,
-        affectsBalance: true,
-        isSharedLedger: true,
-      }),
+      ) => {
+        void _relationshipId;
+        void _entryId;
+        void _body;
+        return {
+          id: pendingIncomingId,
+          relationshipId: sharedRelationshipId,
+          entryType: "Payment",
+          amount: 50,
+          signedDelta: -50,
+          balanceAfter: 50,
+          notes: null,
+          dueDateUtc: null,
+          createdByUserIdentityId: otherId,
+          createdAtUtc: "2026-08-21T00:00:00Z",
+          status: "Confirmed",
+          resolvedByUserIdentityId: meId,
+          resolvedAtUtc: "2026-08-21T01:00:00Z",
+          disputeReason: null,
+          canConfirm: false,
+          canDispute: false,
+          canCancel: false,
+          affectsBalance: true,
+          isSharedLedger: true,
+        };
+      },
     ),
   };
 });
@@ -271,12 +285,80 @@ function renderPath(path: string) {
 describe("Personal Utang shared-ledger UI", () => {
   beforeEach(() => {
     confirmMock.mockClear();
+    vi.mocked(recordPersonalUtangEntry).mockReset();
+    vi.mocked(listPersonalUtangHistory).mockReset();
+    vi.mocked(listPersonalUtangHistory).mockImplementation(async () => [
+      {
+        id: pendingIncomingId,
+        relationshipId: sharedRelationshipId,
+        entryType: "Payment",
+        amount: 50,
+        signedDelta: -50,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: otherId,
+        createdAtUtc: "2026-08-21T00:00:00Z",
+        status: "Pending",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: true,
+        canDispute: true,
+        canCancel: false,
+        affectsBalance: false,
+        isSharedLedger: true,
+      },
+      {
+        id: pendingOutgoingId,
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 25,
+        signedDelta: 25,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-21T00:10:00Z",
+        status: "Pending",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: true,
+        affectsBalance: false,
+        isSharedLedger: true,
+      },
+      {
+        id: confirmedId,
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 100,
+        signedDelta: 100,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-20T00:00:00Z",
+        status: "Confirmed",
+        resolvedByUserIdentityId: otherId,
+        resolvedAtUtc: "2026-08-20T01:00:00Z",
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: false,
+        affectsBalance: true,
+        isSharedLedger: true,
+      },
+    ]);
   });
 
   it("shows hub owed/i-owe totals, pending confirmation, and active accounts", async () => {
     renderPath("/personal/utang");
     expect(await screen.findByTestId("utang-hub-owed-to-me")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record Utang");
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
     expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
     expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
@@ -335,6 +417,25 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("utang-rel-confirm-hint")).toBeInTheDocument();
   });
 
+  it("requires Purpose / Note before recording a private Utang", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang/lent");
+    await screen.findByTestId("utang-rel-contact");
+    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    await user.type(screen.getByTestId("utang-rel-amount"), "100");
+    await user.click(screen.getByTestId("utang-rel-submit"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/purpose \/ note/i);
+    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save Utang");
+  });
+
+  it("shows private save hint for unlinked contacts", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang/lent");
+    await screen.findByTestId("utang-rel-contact");
+    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    expect(screen.getByTestId("utang-rel-private-hint")).toBeInTheDocument();
+  });
+
   it("shows shared ledger detail with pending incoming and outgoing actions", async () => {
     const user = userEvent.setup();
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
@@ -345,7 +446,7 @@ describe("Personal Utang shared-ledger UI", () => {
 
     const incoming = await screen.findByTestId(`utang-history-entry-${pendingIncomingId}`);
     expect(within(incoming).getByTestId(`utang-waiting-you-${pendingIncomingId}`)).toHaveTextContent(
-      "Waiting for you",
+      "Linked Ben recorded an Utang entry",
     );
     expect(within(incoming).getByTestId(`utang-entry-status-${pendingIncomingId}`)).toHaveTextContent(
       "Pending",
@@ -362,6 +463,9 @@ describe("Personal Utang shared-ledger UI", () => {
     );
     expect(within(outgoing).getByTestId(`utang-cancel-${pendingOutgoingId}`)).toBeInTheDocument();
     expect(within(outgoing).queryByTestId(`utang-confirm-${pendingOutgoingId}`)).toBeNull();
+    expect(screen.getByTestId("utang-pending-waiting-hint")).toHaveTextContent(
+      "1 entries are waiting for Linked Ben's review.",
+    );
 
     const confirmed = screen.getByTestId(`utang-history-entry-${confirmedId}`);
     expect(within(confirmed).getByTestId(`utang-entry-status-${confirmedId}`)).toHaveTextContent(
@@ -375,5 +479,154 @@ describe("Personal Utang shared-ledger UI", () => {
 
     await user.click(screen.getByTestId(`utang-confirm-${pendingIncomingId}`));
     await waitFor(() => expect(confirmMock).toHaveBeenCalled());
+  });
+
+  it("maps pending-limit errorCode to friendly copy on record", async () => {
+    const user = userEvent.setup();
+    vi.mocked(recordPersonalUtangEntry).mockRejectedValueOnce(
+      new PlatformApiError(429, {
+        errorCode: PERSONAL_UTANG_PROPOSAL_ERROR_CODES.pendingLimit,
+        detail: "server English detail must not be shown",
+      }),
+    );
+
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    await screen.findByTestId("utang-entry-type");
+    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
+    await user.type(screen.getByTestId("utang-entry-amount"), "10");
+    await user.click(screen.getByTestId("utang-entry-submit"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /You already have 3 entries waiting for Linked Ben's review/i,
+    );
+  });
+
+  it("disables Loan submit and shows limit message when 3 outgoing proposals are pending", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listPersonalUtangHistory).mockResolvedValueOnce([
+      {
+        id: "dddddddd-dddd-dddd-dddd-ddddddddddd1",
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 10,
+        signedDelta: 10,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-21T00:01:00Z",
+        status: "Pending",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: true,
+        affectsBalance: false,
+        isSharedLedger: true,
+      },
+      {
+        id: "dddddddd-dddd-dddd-dddd-ddddddddddd2",
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 20,
+        signedDelta: 20,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-21T00:02:00Z",
+        status: "Pending",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: true,
+        affectsBalance: false,
+        isSharedLedger: true,
+      },
+      {
+        id: "dddddddd-dddd-dddd-dddd-ddddddddddd3",
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 30,
+        signedDelta: 30,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-21T00:03:00Z",
+        status: "Pending",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: true,
+        affectsBalance: false,
+        isSharedLedger: true,
+      },
+    ]);
+
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    expect(await screen.findByTestId("utang-pending-limit-hint")).toHaveTextContent(
+      /You already have 3 entries waiting for Linked Ben's review/i,
+    );
+    expect(screen.getByTestId("utang-view-pending")).toHaveTextContent("View pending entries");
+
+    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Loan");
+    expect(screen.getByTestId("utang-entry-submit")).toBeDisabled();
+
+    await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
+    expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();
+  });
+});
+
+describe("Personal Utang anti-spam helpers", () => {
+  const t = (key: keyof typeof en) => en[key];
+
+  it("counts only pending outgoing Loan proposals", () => {
+    expect(
+      countPendingOutgoingLoanProposals([
+        { status: "Pending", entryType: "Loan", canCancel: true, canConfirm: false },
+        { status: "Pending", entryType: "Payment", canCancel: true, canConfirm: false },
+        { status: "Pending", entryType: "Loan", canCancel: false, canConfirm: true },
+        { status: "Confirmed", entryType: "Loan", canCancel: false, canConfirm: false },
+      ]),
+    ).toBe(1);
+  });
+
+  it("maps proposal anti-spam error codes with counterparty name", () => {
+    expect(
+      mapPersonalUtangMutationError(
+        new PlatformApiError(429, {
+          errorCode: PERSONAL_UTANG_PROPOSAL_ERROR_CODES.pendingLimit,
+          detail: "ignore",
+        }),
+        "Ana",
+        t,
+      ),
+    ).toContain("Ana");
+    expect(
+      mapPersonalUtangMutationError(
+        new PlatformApiError(429, {
+          errorCode: PERSONAL_UTANG_PROPOSAL_ERROR_CODES.dailyLimit,
+          detail: "ignore",
+        }),
+        "Ben",
+        t,
+      ),
+    ).toMatch(/today's limit.*Ben/i);
+    expect(
+      mapPersonalUtangMutationError(
+        new PlatformApiError(409, {
+          errorCode: PERSONAL_UTANG_PROPOSAL_ERROR_CODES.duplicate,
+          detail: "ignore",
+        }),
+        "Ben",
+        t,
+      ),
+    ).toBe(en["personal.utang.duplicateSubmission"]);
   });
 });

@@ -2,13 +2,23 @@ import type { PersonalInAppNotificationDto } from "@/api/platform/personal-socia
 import type { MessageKey } from "@/i18n/messages";
 
 export const PERSONAL_NOTIFICATIONS_QUERY_KEY = ["personal", "notifications"] as const;
+export const PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY = [
+  "personal",
+  "notifications",
+  "unread-count",
+] as const;
+export const PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY = [
+  "personal",
+  "notifications",
+  "archived",
+] as const;
 
 /** Canonical English suffix written by Platform when creating customer-link notifications. */
 const CUSTOMER_LINK_PREVIEW_EN_SUFFIX =
   " added you as a customer and wants to link your ExItS account.";
 
 export function countUnreadPersonalNotifications(
-  items: PersonalInAppNotificationDto[] | null | undefined,
+  items: ReadonlyArray<{ isRead: boolean }> | null | undefined,
 ): number {
   if (!items?.length) {
     return 0;
@@ -110,5 +120,97 @@ export function localizePersonalNotification(
     };
   }
 
+  if (relatedTypeEquals(item.relatedType, "PersonalConnectionRequest")) {
+    return localizeNamedPreview(item, t, {
+      titleKey: "notifications.connectionTitle",
+      requestPreviewKey: "notifications.connectionRequestPreview",
+      acceptedPreviewKey: "notifications.connectionAcceptedPreview",
+    });
+  }
+
+  if (relatedTypeEquals(item.relatedType, "PersonalUtangInvitation")) {
+    return localizeNamedPreview(item, t, {
+      titleKey: "notifications.utangInviteTitle",
+      requestPreviewKey: "notifications.utangInvitePreview",
+      acceptedPreviewKey: "notifications.utangInviteAcceptedPreview",
+      declinedPreviewKey: "notifications.utangInviteDeclinedPreview",
+    });
+  }
+
   return { title: item.title, preview: item.preview };
+}
+
+function localizeNamedPreview(
+  item: Pick<PersonalInAppNotificationDto, "title" | "preview">,
+  t: (key: MessageKey) => string,
+  keys: {
+    titleKey: MessageKey;
+    requestPreviewKey: MessageKey;
+    acceptedPreviewKey: MessageKey;
+    declinedPreviewKey?: MessageKey;
+  },
+): { title: string; preview: string } {
+  const name = extractLeadingName(item.preview);
+  const lower = item.preview.toLowerCase();
+  if (name && lower.includes("accepted")) {
+    return {
+      title: t(keys.titleKey),
+      preview: t(keys.acceptedPreviewKey).replace("{name}", name),
+    };
+  }
+  if (name && keys.declinedPreviewKey && lower.includes("declined")) {
+    return {
+      title: t(keys.titleKey),
+      preview: t(keys.declinedPreviewKey).replace("{name}", name),
+    };
+  }
+  if (name) {
+    return {
+      title: t(keys.titleKey),
+      preview: t(keys.requestPreviewKey).replace("{name}", name),
+    };
+  }
+  return { title: t(keys.titleKey), preview: item.preview };
+}
+
+function extractLeadingName(preview: string): string | null {
+  const trimmed = preview.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const match = /^(.*?)\s+(sent you|accepted|declined|invited you|wants to connect)/i.exec(trimmed);
+  const name = match?.[1]?.trim();
+  return name && name.length > 0 ? name : null;
+}
+
+/** Route for notification tap — keep connection vs Utang invitation separate. */
+export function resolveNotificationDeepLink(
+  relatedType: string,
+  relatedId?: string | null,
+): string {
+  const type = relatedType.trim().toLowerCase();
+  const id = relatedId?.trim() || "";
+  if (type === "personalutanginvitation" || type.includes("utanginvitation")) {
+    return "/personal/utang/invitations";
+  }
+  // Aggregated pending proposals inbox — always Utang hub (relatedId is sender key, not a relationship).
+  if (
+    type === "personalutangpendingproposals" ||
+    type.includes("utangpendingproposal")
+  ) {
+    return "/personal/utang";
+  }
+  if (type === "customerlinkrequest" || type.includes("customerlink")) {
+    return "/personal/customer-links";
+  }
+  if (type === "personaltodo" || type.includes("todo")) {
+    return id ? `/personal/todo/${id}` : "/personal/todo";
+  }
+  if (type === "personaldebtrelationship" || type.includes("debtrelationship") || type.includes("utangentry")) {
+    return id ? `/personal/utang/relationships/${id}` : "/personal/utang";
+  }
+  if (type === "personalconnectionrequest" || type.includes("connection")) {
+    return "/personal/invitations";
+  }
+  return "/personal/notifications";
 }

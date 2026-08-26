@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 
 import { EmptyState } from "@/components/exits/EmptyState";
 
@@ -119,7 +119,7 @@ export function InvitationsPage() {
 
       <ErrorState
         title={t("error.title")}
-        detail={err instanceof ApiClientError ? err.message : t("error.body")}
+        detail={err instanceof PlatformApiError ? err.message : t("error.body")}
         error={err}
       />
 
@@ -135,13 +135,18 @@ export function InvitationsPage() {
 
       <PageHeader title={t("invitations.title")} />
 
-
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+        {t("invitations.utangSeparateHint")}{" "}
+        <Link className="font-semibold text-primary no-underline" to="/personal/utang/invitations">
+          {t("invitations.openUtangInvites")}
+        </Link>
+      </p>
 
       <div className="flex flex-col gap-3">
 
         <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
 
-          {t("invitations.connectionRequests")}
+          {t("invitations.received")}
 
         </h2>
 
@@ -165,7 +170,7 @@ export function InvitationsPage() {
 
               <p className="m-0 text-muted">{t("invitations.connectionRequestBody")}</p>
 
-              <StatusChip tone="warning">{t("people.status.requestPending")}</StatusChip>
+              <StatusChip tone="warning">{t("people.status.requestSent")}</StatusChip>
 
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
 

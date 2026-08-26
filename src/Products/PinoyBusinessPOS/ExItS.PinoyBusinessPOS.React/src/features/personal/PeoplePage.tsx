@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronRight, IdCard, Info, Link2, Search, UserRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiClientError } from "@/api/http";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,7 +28,7 @@ function statusTone(
   if (status === "connected") {
     return "success";
   }
-  if (status === "request_pending" || status === "blocked") {
+  if (status === "request_sent" || status === "request_received" || status === "blocked") {
     return "warning";
   }
   return "neutral";
@@ -69,8 +69,10 @@ export function PeoplePage() {
     switch (status) {
       case "connected":
         return t("people.status.connected");
-      case "request_pending":
-        return t("people.status.requestPending");
+      case "request_sent":
+        return t("people.status.requestSent");
+      case "request_received":
+        return t("people.status.requestReceived");
       case "blocked":
         return t("people.status.blocked");
       case "local":
@@ -86,7 +88,7 @@ export function PeoplePage() {
 
   if (error) {
     const detail =
-      error instanceof ApiClientError
+      error instanceof PlatformApiError
         ? (error.problem.detail ?? error.message)
         : t("people.loadError");
     return (
@@ -161,6 +163,35 @@ export function PeoplePage() {
             </span>
           </Link>
         </div>
+      </Card>
+
+      <Card className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("people.connectionInbox")}
+            </h2>
+            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {t("people.connectionInboxHelp")}
+            </p>
+          </div>
+          {(() => {
+            const pendingCount = (connectionsQuery.data ?? []).filter(
+              (item) => item.status.toLowerCase() === "pending",
+            ).length;
+            return pendingCount > 0 ? (
+              <StatusChip tone="warning">
+                {t("people.connectionInboxBadge").replace("{count}", String(pendingCount))}
+              </StatusChip>
+            ) : null;
+          })()}
+        </div>
+        <Button asChild variant="outline" className="min-h-[var(--exits-touch-target-min)] justify-between">
+          <Link to="/personal/invitations">
+            <span>{t("people.connectionInbox")}</span>
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </Button>
       </Card>
 
       <Card className="flex flex-col gap-3">

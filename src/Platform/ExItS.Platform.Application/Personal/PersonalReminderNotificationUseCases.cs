@@ -520,21 +520,119 @@ public sealed class CancelPersonalReminder
     }
 }
 
+/// <summary>Logical archive boundary for Personal in-app notifications (no physical row moves).</summary>
+public static class PersonalNotificationArchiveRules
+{
+    public const int RecentWindowDays = 30;
+    public const int DefaultArchivedPageSize = 30;
+    public const int RecentListCap = 200;
+
+    public const string ScopeRecent = "recent";
+    public const string ScopeArchived = "archived";
+
+    public static DateTimeOffset RecentCutoffUtc(DateTimeOffset utcNow) =>
+        utcNow.AddDays(-RecentWindowDays);
+}
+
+public sealed record PersonalNotificationUnreadCountDto(int UnreadCount);
+
 public sealed class ListPersonalInAppNotifications
 {
     private readonly IPersonalInAppNotificationRepository _notifications;
+    private readonly IClock _clock;
 
-    public ListPersonalInAppNotifications(IPersonalInAppNotificationRepository notifications) =>
+    public ListPersonalInAppNotifications(
+        IPersonalInAppNotificationRepository notifications,
+        IClock clock)
+    {
         _notifications = notifications;
+        _clock = clock;
+    }
 
+    /// <summary>Recent inbox (CreatedAt &gt;= now-30d). Returns a plain list for existing clients.</summary>
     public async Task<IReadOnlyList<PersonalInAppNotificationDto>> ExecuteAsync(
         PlatformUserId recipientUserIdentityId,
+        CancellationToken cancellationToken = default) =>
+        (await ExecutePagedAsync(
+                recipientUserIdentityId,
+                PersonalNotificationArchiveRules.ScopeRecent,
+                page: 1,
+                pageSize: PersonalNotificationArchiveRules.RecentListCap,
+                unreadOnly: false,
+                cancellationToken)
+            .ConfigureAwait(false)).Items;
+
+    public async Task<PagedResult<PersonalInAppNotificationDto>> ExecutePagedAsync(
+        PlatformUserId recipientUserIdentityId,
+        string? scopeRaw,
+        int? page,
+        int? pageSize,
+        bool unreadOnly,
         CancellationToken cancellationToken = default)
     {
-        var list = await _notifications.ListForUserAsync(recipientUserIdentityId, take: 50, cancellationToken)
+        var scope = NormalizeScope(scopeRaw);
+        var cutoff = PersonalNotificationArchiveRules.RecentCutoffUtc(_clock.UtcNow);
+        DateTimeOffset? onOrAfter = scope == PersonalNotificationArchiveRules.ScopeRecent ? cutoff : null;
+        DateTimeOffset? before = scope == PersonalNotificationArchiveRules.ScopeArchived ? cutoff : null;
+
+        var effectivePageSize = scope == PersonalNotificationArchiveRules.ScopeArchived
+            ? pageSize ?? PersonalNotificationArchiveRules.DefaultArchivedPageSize
+            : pageSize ?? PersonalNotificationArchiveRules.RecentListCap;
+        var (skip, take) = CatalogPagination.Normalize(page, effectivePageSize);
+
+        var (items, total) = await _notifications
+            .ListForUserPagedAsync(
+                recipientUserIdentityId,
+                onOrAfter,
+                before,
+                unreadOnly,
+                skip,
+                take,
+                cancellationToken)
             .ConfigureAwait(false);
-        return list.Select(ToDto).ToList();
+
+        var pageNumber = Math.Max(page ?? 1, 1);
+        return new PagedResult<PersonalInAppNotificationDto>(
+            items.Select(ToDto).ToList(),
+            total,
+            pageNumber,
+            take);
     }
+
+    public static bool TryNormalizeScope(string? scopeRaw, out string scope, out string? errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(scopeRaw))
+        {
+            scope = PersonalNotificationArchiveRules.ScopeRecent;
+            errorMessage = null;
+            return true;
+        }
+
+        var normalized = scopeRaw.Trim();
+        if (normalized.Equals(PersonalNotificationArchiveRules.ScopeArchived, StringComparison.OrdinalIgnoreCase))
+        {
+            scope = PersonalNotificationArchiveRules.ScopeArchived;
+            errorMessage = null;
+            return true;
+        }
+
+        if (normalized.Equals(PersonalNotificationArchiveRules.ScopeRecent, StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("inbox", StringComparison.OrdinalIgnoreCase))
+        {
+            scope = PersonalNotificationArchiveRules.ScopeRecent;
+            errorMessage = null;
+            return true;
+        }
+
+        scope = PersonalNotificationArchiveRules.ScopeRecent;
+        errorMessage = "Notification scope must be 'recent' or 'archived'.";
+        return false;
+    }
+
+    public static string NormalizeScope(string? scopeRaw) =>
+        TryNormalizeScope(scopeRaw, out var scope, out var error)
+            ? scope
+            : throw new ArgumentOutOfRangeException(nameof(scopeRaw), error);
 
     internal static PersonalInAppNotificationDto ToDto(PersonalInAppNotification notification) =>
         new(
@@ -546,6 +644,24 @@ public sealed class ListPersonalInAppNotifications
             notification.IsRead,
             notification.CreatedAtUtc,
             notification.ReadAtUtc);
+}
+
+public sealed class CountPersonalInAppNotificationUnread
+{
+    private readonly IPersonalInAppNotificationRepository _notifications;
+
+    public CountPersonalInAppNotificationUnread(IPersonalInAppNotificationRepository notifications) =>
+        _notifications = notifications;
+
+    public async Task<PersonalNotificationUnreadCountDto> ExecuteAsync(
+        PlatformUserId recipientUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = await _notifications
+            .CountUnreadForUserAsync(recipientUserIdentityId, cancellationToken)
+            .ConfigureAwait(false);
+        return new PersonalNotificationUnreadCountDto(count);
+    }
 }
 
 public sealed class MarkPersonalInAppNotificationRead

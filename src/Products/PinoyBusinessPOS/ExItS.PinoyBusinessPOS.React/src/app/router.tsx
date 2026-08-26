@@ -19,6 +19,7 @@ import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
+import { ArchivedNotificationsPage } from "@/features/personal/ArchivedNotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
 import {
@@ -271,6 +272,7 @@ export const appRoutes = [
               },
               { path: "utang/invitations", element: <PersonalInvitationsPage /> },
               { path: "notifications", element: <NotificationsPage /> },
+              { path: "notifications/archived", element: <ArchivedNotificationsPage /> },
               { path: "my-qr", element: <PersonalMyQrPage /> },
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },

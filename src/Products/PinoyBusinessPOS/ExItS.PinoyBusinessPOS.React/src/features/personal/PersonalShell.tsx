@@ -1,16 +1,11 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
-import { listPersonalNotifications } from "@/api/platform/personal-social-client";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
-import {
-  PERSONAL_NOTIFICATIONS_QUERY_KEY,
-  countUnreadPersonalNotifications,
-  formatUnreadNotificationBadge,
-} from "@/features/personal/personal-notifications";
+import { formatUnreadNotificationBadge } from "@/features/personal/personal-notifications";
+import { usePersonalNotificationUnreadCountQuery } from "@/features/personal/people-queries";
 import {
   rememberNotificationsReturnTo,
   type NotificationsLocationState,
@@ -27,11 +22,8 @@ export function PersonalShell() {
   const { clearBoundWorkspace } = useWorkspace();
   const [signingOut, setSigningOut] = useState(false);
 
-  const notificationsQuery = useQuery({
-    queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
-    queryFn: ({ signal }) => listPersonalNotifications(signal),
-  });
-  const unreadCount = countUnreadPersonalNotifications(notificationsQuery.data);
+  const unreadQuery = usePersonalNotificationUnreadCountQuery();
+  const unreadCount = unreadQuery.data ?? 0;
   const badge = formatUnreadNotificationBadge(unreadCount);
   const onNotificationsPage = location.pathname.startsWith("/personal/notifications");
   const returnTo = onNotificationsPage

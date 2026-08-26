@@ -1237,6 +1237,10 @@ internal static class PersonalEndpoints
     {
         personal.MapGet("/notifications", async (
             HttpContext http,
+            string? scope,
+            int? page,
+            int? pageSize,
+            bool? unreadOnly,
             ListPersonalInAppNotifications listNotifications,
             CancellationToken ct) =>
         {
@@ -1245,8 +1249,48 @@ internal static class PersonalEndpoints
                 return unauthorized!;
             }
 
-            var list = await listNotifications.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            if (!ListPersonalInAppNotifications.TryNormalizeScope(scope, out var normalizedScope, out var scopeError))
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.InvalidPersonalNotificationId,
+                    scopeError ?? "Notification scope must be 'recent' or 'archived'.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var user = PlatformUserId.From(userId);
+            if (normalizedScope == PersonalNotificationArchiveRules.ScopeArchived)
+            {
+                var paged = await listNotifications
+                    .ExecutePagedAsync(user, normalizedScope, page, pageSize, unreadOnly ?? false, ct)
+                    .ConfigureAwait(false);
+                return Results.Ok(paged);
+            }
+
+            // Recent inbox stays a plain array for existing MAUI / Blazor / Admin clients.
+            if (unreadOnly == true || page is not null || pageSize is not null)
+            {
+                var pagedRecent = await listNotifications
+                    .ExecutePagedAsync(user, normalizedScope, page, pageSize, unreadOnly ?? false, ct)
+                    .ConfigureAwait(false);
+                return Results.Ok(pagedRecent);
+            }
+
+            var list = await listNotifications.ExecuteAsync(user, ct).ConfigureAwait(false);
             return Results.Ok(list);
+        });
+
+        personal.MapGet("/notifications/unread-count", async (
+            HttpContext http,
+            CountPersonalInAppNotificationUnread countUnread,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var dto = await countUnread.ExecuteAsync(PlatformUserId.From(userId), ct).ConfigureAwait(false);
+            return Results.Ok(dto);
         });
 
         personal.MapPost("/notifications/{notificationId:guid}/read", async (

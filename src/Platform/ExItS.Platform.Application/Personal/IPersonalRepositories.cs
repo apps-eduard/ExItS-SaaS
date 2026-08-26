@@ -113,6 +113,35 @@ public interface IPersonalUtangEntryRepository
         PlatformUserId userIdentityId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Counts Pending Loan proposals created by <paramref name="senderUserIdentityId"/>
+    /// toward <paramref name="counterpartyUserIdentityId"/> on shared relationships.
+    /// </summary>
+    Task<int> CountPendingProposalsBySenderTowardAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts Loan proposals created by sender toward counterparty since <paramref name="createdOnOrAfterUtc"/> (any status).
+    /// </summary>
+    Task<int> CountLoanProposalsCreatedBySenderTowardSinceAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        DateTimeOffset createdOnOrAfterUtc,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds a recent Loan by sender toward counterparty with matching amount and normalized notes.
+    /// </summary>
+    Task<PersonalUtangEntry?> FindRecentDuplicateLoanAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        decimal amount,
+        string? normalizedNotes,
+        DateTimeOffset createdOnOrAfterUtc,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default);
@@ -197,6 +226,23 @@ public interface IPersonalInAppNotificationRepository
     Task<IReadOnlyList<PersonalInAppNotification>> ListForUserAsync(
         PlatformUserId recipientUserIdentityId,
         int take,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists notifications for a recipient with optional created-at window and unread filter.
+    /// <paramref name="createdOnOrAfterUtc"/> inclusive; <paramref name="createdBeforeUtc"/> exclusive.
+    /// </summary>
+    Task<(IReadOnlyList<PersonalInAppNotification> Items, int TotalCount)> ListForUserPagedAsync(
+        PlatformUserId recipientUserIdentityId,
+        DateTimeOffset? createdOnOrAfterUtc,
+        DateTimeOffset? createdBeforeUtc,
+        bool unreadOnly,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountUnreadForUserAsync(
+        PlatformUserId recipientUserIdentityId,
         CancellationToken cancellationToken = default);
 
     Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(

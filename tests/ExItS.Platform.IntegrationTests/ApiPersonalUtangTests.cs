@@ -128,7 +128,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = lenderId,
                 debtorUserIdentityId = borrowerId,
-                initialLoanAmount = 250m
+                initialLoanAmount = 250m,
+                initialLoanNotes = "Test purpose"
             });
         var linkedResponse = await _client.SendAsync(linkedRelationshipRequest);
         Assert.Equal(HttpStatusCode.Created, linkedResponse.StatusCode);
@@ -141,6 +142,102 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         var borrowedList = await _client.SendAsync(borrowedRequest);
         Assert.Equal(HttpStatusCode.OK, borrowedList.StatusCode);
         Assert.Equal(1, (await borrowedList.Content.ReadFromJsonAsync<JsonElement>()).GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Initial_loan_and_adjustment_require_purpose_note_payment_does_not()
+    {
+        var (token, userId) = await SeedPersonalUserAsync("note");
+
+        using var contactRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { displayName = "Local Friend", phone = "+639170000099" });
+        var contactResponse = await _client.SendAsync(contactRequest);
+        Assert.Equal(HttpStatusCode.Created, contactResponse.StatusCode);
+        var contactId = (await contactResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var missingNotesRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            token,
+            new
+            {
+                creditorUserIdentityId = userId,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 100m,
+                initialLoanNotes = "   "
+            });
+        var missingNotesResponse = await _client.SendAsync(missingNotesRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, missingNotesResponse.StatusCode);
+        var missingBody = await missingNotesResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            "platform.personal.utang.notes.required",
+            missingBody.GetProperty("errorCode").GetString());
+
+        using var createRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            token,
+            new
+            {
+                creditorUserIdentityId = userId,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 100m,
+                initialLoanNotes = "School allowance"
+            });
+        var createResponse = await _client.SendAsync(createRequest);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var relationship = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var relationshipId = relationship.GetProperty("id").GetGuid();
+        var version = relationship.GetProperty("version").GetInt32();
+
+        using var paymentRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            token,
+            new { entryType = "Payment", amount = 10m, expectedVersion = version, notes = (string?)null });
+        var paymentResponse = await _client.SendAsync(paymentRequest);
+        Assert.Equal(HttpStatusCode.Created, paymentResponse.StatusCode);
+
+        version = await AuthedBalanceVersionAsync(token, relationshipId);
+
+        using var loanMissingRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            token,
+            new { entryType = "Loan", amount = 25m, expectedVersion = version, notes = "" });
+        var loanMissingResponse = await _client.SendAsync(loanMissingRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, loanMissingResponse.StatusCode);
+        Assert.Equal(
+            "platform.personal.utang.notes.required",
+            (await loanMissingResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
+
+        using var historyRequest = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/history",
+            token);
+        var historyResponse = await _client.SendAsync(historyRequest);
+        Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
+        var history = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains(
+            history.EnumerateArray(),
+            e => e.GetProperty("entryType").GetString() == "Loan"
+                 && e.GetProperty("notes").GetString() == "School allowance");
+    }
+
+    private async Task<int> AuthedBalanceVersionAsync(string token, Guid relationshipId)
+    {
+        using var balanceRequest = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/balance",
+            token);
+        var balanceResponse = await _client.SendAsync(balanceRequest);
+        balanceResponse.EnsureSuccessStatusCode();
+        return (await balanceResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("version").GetInt32();
     }
 
     [Fact]
@@ -249,7 +346,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
             lenderToken,
-            new { entryType = "Loan", amount = 500m });
+            new { entryType = "Loan", amount = 500m, notes = "Test purpose" });
         var disputedLoan = await contactResponse(await _client.SendAsync(disputedLoanRequest));
         var disputedId = disputedLoan.GetProperty("id").GetGuid();
 
@@ -291,7 +388,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = ownerId,
                 debtorContactId = contactId,
-                initialLoanAmount = 2000m
+                initialLoanAmount = 2000m,
+                initialLoanNotes = "Test purpose"
             });
         var relationship = await contactResponse(await _client.SendAsync(relationshipRequest));
         var relationshipId = relationship.GetProperty("id").GetGuid();
@@ -348,8 +446,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             ownerToken,
             new
             {
-                entryType = "Loan",
-                amount = 400m,
+                entryType = "Loan", amount = 400m, notes = "Test purpose",
                 expectedVersion = detail.GetProperty("version").GetInt32()
             });
         var pendingLoan = await contactResponse(await _client.SendAsync(postLinkLoan));
@@ -418,6 +515,23 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             notifications.EnumerateArray(),
             n => n.GetProperty("relatedType").GetString() == "personal_contact"
                  && n.GetProperty("title").GetString() == "Added to People");
+
+        using var duplicateRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new
+            {
+                displayName = "Duplicate",
+                resolvedUserIdentityId = resolved.GetProperty("userIdentityId").GetGuid(),
+                resolvedPublicUserId = resolved.GetProperty("publicUserId").GetString()
+            });
+        var duplicateResponse = await _client.SendAsync(duplicateRequest);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+        var duplicateBody = await duplicateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            ApplicationErrorCodes.PersonalContactIdentityConflict,
+            duplicateBody.GetProperty("errorCode").GetString());
     }
 
     private async Task<(string Token, Guid UserId, string Email)> SeedPersonalUserWithEmailAsync(string prefix)
@@ -454,7 +568,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = ownerId,
                 debtorContactId = contactId,
-                initialLoanAmount = 100m
+                initialLoanAmount = 100m,
+                initialLoanNotes = "Test purpose"
             });
         var relationshipId = (await contactResponse(await _client.SendAsync(relationshipRequest)))
             .GetProperty("id").GetGuid();
@@ -490,7 +605,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = userId,
                 debtorContactId = contactId,
-                initialLoanAmount = 50m
+                initialLoanAmount = 50m,
+                initialLoanNotes = "Test purpose"
             });
         var relationship = await contactResponse(await _client.SendAsync(relationshipRequest));
         var relationshipId = relationship.GetProperty("id").GetGuid();
@@ -569,7 +685,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = ownerId,
                 debtorContactId = contactId,
-                initialLoanAmount = 1000m
+                initialLoanAmount = 1000m,
+                initialLoanNotes = "Test purpose"
             });
         var rel = await contactResponse(await _client.SendAsync(createRel));
         Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
@@ -625,7 +742,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorContactId = contactId,
                 debtorUserIdentityId = ownerId,
-                initialLoanAmount = 600m
+                initialLoanAmount = 600m,
+                initialLoanNotes = "Test purpose"
             });
         var rel = await contactResponse(await _client.SendAsync(createRel));
         Assert.True(rel.GetProperty("isSharedLedger").GetBoolean());
@@ -657,7 +775,8 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             {
                 creditorUserIdentityId = ownerId,
                 debtorContactId = contactId,
-                initialLoanAmount = 2000m
+                initialLoanAmount = 2000m,
+                initialLoanNotes = "Test purpose"
             });
         var relBefore = await contactResponse(await _client.SendAsync(createRel));
         var relationshipId = relBefore.GetProperty("id").GetGuid();
@@ -710,7 +829,7 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             HttpMethod.Post,
             $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
             ownerToken,
-            new { entryType = "Loan", amount = 400m, expectedVersion = relAfter.GetProperty("version").GetInt32() });
+            new { entryType = "Loan", amount = 400m, notes = "Test purpose", expectedVersion = relAfter.GetProperty("version").GetInt32() });
         var pending = await contactResponse(await _client.SendAsync(newLoan));
         Assert.Equal("Pending", pending.GetProperty("status").GetString());
 

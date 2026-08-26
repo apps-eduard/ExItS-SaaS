@@ -5,6 +5,8 @@ import {
   createPersonalContact,
   createPersonalDebtRelationship,
   declinePersonalConnectionRequest,
+  getPersonalNotificationUnreadCount,
+  listArchivedPersonalNotifications,
   listBorrowedRelationships,
   listLentRelationships,
   listPersonalConnectionRequests,
@@ -19,6 +21,11 @@ import {
   unblockPersonalContact,
 } from "@/api/platform/personal-people-client";
 import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
+import {
+  PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY,
+  PERSONAL_NOTIFICATIONS_QUERY_KEY,
+  PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
+} from "@/features/personal/personal-notifications";
 
 export function usePersonalContactsQuery() {
   return useQuery({
@@ -36,8 +43,23 @@ export function usePersonalConnectionRequestsQuery() {
 
 export function usePersonalNotificationsQuery() {
   return useQuery({
-    queryKey: personalPeopleKeys.notifications(),
+    queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
+  });
+}
+
+export function usePersonalNotificationUnreadCountQuery() {
+  return useQuery({
+    queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
+    queryFn: ({ signal }) => getPersonalNotificationUnreadCount(signal),
+  });
+}
+
+export function useArchivedPersonalNotificationsQuery(unreadOnly: boolean) {
+  return useQuery({
+    queryKey: [...PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY, unreadOnly ? "unread" : "all"] as const,
+    queryFn: ({ signal }) =>
+      listArchivedPersonalNotifications(1, 30, { unreadOnly, signal }),
   });
 }
 
@@ -60,8 +82,11 @@ export function useInvalidatePersonalPeople() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.contacts() }),
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.connections() }),
-      queryClient.invalidateQueries({ queryKey: personalPeopleKeys.notifications() }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: [...personalPeopleKeys.all, "utang-summaries"] }),
+      queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] }),
     ]);
 }
 
@@ -82,10 +107,23 @@ export function useCreateContactMutation() {
 }
 
 export function useRequestConnectionMutation() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidatePersonalPeople();
   return useMutation({
     mutationFn: (contactId: string) => requestPersonalConnection(contactId),
-    onSuccess: async () => {
+    onSuccess: async (created) => {
+      queryClient.setQueryData(
+        personalPeopleKeys.connections(),
+        (previous: Awaited<ReturnType<typeof listPersonalConnectionRequests>> | undefined) => {
+          if (!previous) {
+            return [created];
+          }
+          if (previous.some((item) => item.id === created.id)) {
+            return previous.map((item) => (item.id === created.id ? created : item));
+          }
+          return [created, ...previous];
+        },
+      );
       await invalidate();
     },
   });
@@ -152,11 +190,15 @@ export function useUnblockContactMutation() {
 }
 
 export function useMarkNotificationReadMutation() {
-  const invalidate = useInvalidatePersonalPeople();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notificationId: string) => markPersonalNotificationRead(notificationId),
     onSuccess: async () => {
-      await invalidate();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY }),
+      ]);
     },
   });
 }

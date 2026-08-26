@@ -21,6 +21,9 @@ public sealed class PersonalUtangEntry
     public DateTimeOffset? ResolvedAtUtc { get; private set; }
     public string? DisputeReason { get; private set; }
 
+    /// <summary>Max stored length for Purpose / Note (and optional payment notes).</summary>
+    public const int NotesMaxLength = 512;
+
     private PersonalUtangEntry(
         PersonalUtangEntryId id,
         PersonalDebtRelationshipId relationshipId,
@@ -70,7 +73,7 @@ public sealed class PersonalUtangEntry
         ArgumentNullException.ThrowIfNull(createdByUserIdentityId);
         EnsureUtc(utcNow);
 
-        notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim()[..Math.Min(notes.Trim().Length, 512)];
+        notes = NormalizeNotes(notes, entryType);
         if (dueDateUtc is not null)
         {
             EnsureUtc(dueDateUtc.Value);
@@ -91,6 +94,30 @@ public sealed class PersonalUtangEntry
             resolvedByUserIdentityId: null,
             resolvedAtUtc: null,
             disputeReason: null);
+    }
+
+    /// <summary>
+    /// Loan and Adjustment require a non-empty Purpose / Note (or reason). Payment notes stay optional.
+    /// </summary>
+    public static string? NormalizeNotes(string? notes, PersonalUtangEntryType entryType)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        if (trimmed is not null && trimmed.Length > NotesMaxLength)
+        {
+            trimmed = trimmed[..NotesMaxLength];
+        }
+
+        var required = entryType is PersonalUtangEntryType.Loan or PersonalUtangEntryType.Adjustment;
+        if (required && trimmed is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangNotesRequired,
+                entryType is PersonalUtangEntryType.Adjustment
+                    ? "A reason / note is required for adjustments."
+                    : "A purpose / note is required for this Utang entry.");
+        }
+
+        return trimmed;
     }
 
     public static PersonalUtangEntry Rehydrate(

@@ -101,6 +101,17 @@ export type PersonalInAppNotificationDto = {
   readAtUtc?: string | null;
 };
 
+export type PersonalNotificationPageDto = {
+  items: PersonalInAppNotificationDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+export type PersonalNotificationUnreadCountDto = {
+  unreadCount: number;
+};
+
 export type ResolvedPublicUserDto = {
   publicUserId: string;
   userIdentityId: string;

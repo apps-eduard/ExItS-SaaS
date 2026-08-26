@@ -290,8 +290,8 @@ public sealed class CreatePersonalContact
                 if (duplicate is not null)
                 {
                     return ApplicationResult<PersonalContactDto>.Failure(
-                        ApplicationErrorCodes.PersonalContactEmailConflict,
-                        "An active contact for this ExItS identity already exists.");
+                        ApplicationErrorCodes.PersonalContactIdentityConflict,
+                        "This person is already in your People list.");
                 }
 
                 contact.ResolveIdentity(
@@ -377,6 +377,9 @@ public sealed class CreatePersonalDebtRelationship
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -385,6 +388,9 @@ public sealed class CreatePersonalDebtRelationship
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
+        IPlatformUserRepository users,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -392,6 +398,9 @@ public sealed class CreatePersonalDebtRelationship
         _contacts = contacts;
         _relationships = relationships;
         _entries = entries;
+        _users = users;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -469,71 +478,155 @@ public sealed class CreatePersonalDebtRelationship
 
         try
         {
-            var relationship = PersonalDebtRelationship.Create(
+            var sharedInitialLoan = creditorUser is not null
+                && debtorUser is not null
+                && request.InitialLoanAmount is > 0;
+
+            if (sharedInitialLoan)
+            {
+                var counterparty = actingUserIdentityId == creditorUser ? debtorUser! : creditorUser!;
+                PersonalUtangProposalAntiSpam.GateFailure? gateFailure = null;
+                PersonalDebtRelationshipSummaryDto? summary = null;
+
+                await _unitOfWork.ExecuteWithAdvisoryLockAsync(
+                    actingUserIdentityId.Value,
+                    counterparty.Value,
+                    async ct =>
+                    {
+                        var gate = await PersonalUtangProposalAntiSpam.EnsureSharedLoanProposalAllowedAsync(
+                            actingUserIdentityId,
+                            counterparty,
+                            request.InitialLoanAmount!.Value,
+                            request.InitialLoanNotes,
+                            _entries,
+                            _contacts,
+                            _clock,
+                            ct).ConfigureAwait(false);
+                        if (gate is not null)
+                        {
+                            gateFailure = gate;
+                            return;
+                        }
+
+                        summary = await CreateRelationshipCoreAsync(
+                            actingUserIdentityId,
+                            creditorUser,
+                            creditorContact,
+                            debtorUser,
+                            debtorContact,
+                            request,
+                            ct).ConfigureAwait(false);
+                    },
+                    cancellationToken).ConfigureAwait(false);
+
+                if (gateFailure is not null)
+                {
+                    return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                        gateFailure.ErrorCode,
+                        gateFailure.ErrorMessage);
+                }
+
+                return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(summary!);
+            }
+
+            var created = await CreateRelationshipCoreAsync(
                 actingUserIdentityId,
                 creditorUser,
                 creditorContact,
                 debtorUser,
                 debtorContact,
-                request.CurrencyCode ?? "PHP",
-                _clock.UtcNow,
-                request.DueDateUtc);
-
-            PersonalUtangEntry? initialEntry = null;
-            if (request.InitialLoanAmount is > 0)
-            {
-                var signedDelta = PersonalDebtRelationship.ComputeSignedDelta(
-                    PersonalUtangEntryType.Loan,
-                    request.InitialLoanAmount.Value);
-                initialEntry = relationship.RecordEntry(
-                    actingUserIdentityId,
-                    PersonalUtangEntryType.Loan,
-                    request.InitialLoanAmount.Value,
-                    signedDelta,
-                    _clock.UtcNow,
-                    expectedVersion: null,
-                    request.InitialLoanNotes,
-                    request.DueDateUtc);
-            }
-
-            await _relationships.AddAsync(relationship, cancellationToken).ConfigureAwait(false);
-            if (initialEntry is not null)
-            {
-                await _entries.AddAsync(initialEntry, cancellationToken).ConfigureAwait(false);
-            }
-
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-            await _auditWriter.WriteAsync(
-                $"platform-user:{actingUserIdentityId.Value:D}",
-                AuditActorType.PlatformUser,
-                PlatformAuditActions.PersonalUtangRelationshipCreated,
-                nameof(PersonalDebtRelationship),
-                relationship.Id.Value.ToString("D"),
-                AuditOutcome.Succeeded,
-                summary: "Personal debt relationship created.",
-                cancellationToken: cancellationToken).ConfigureAwait(false);
-
-            if (initialEntry is not null)
-            {
-                await _auditWriter.WriteAsync(
-                    $"platform-user:{actingUserIdentityId.Value:D}",
-                    AuditActorType.PlatformUser,
-                    PlatformAuditActions.PersonalUtangEntryRecorded,
-                    nameof(PersonalUtangEntry),
-                    initialEntry.Id.Value.ToString("D"),
-                    AuditOutcome.Succeeded,
-                    summary: "Initial loan entry recorded.",
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
-
-            return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(
-                ToSummary(relationship, actingUserIdentityId));
+                request,
+                cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(created);
         }
         catch (DomainException ex)
         {
             return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task<PersonalDebtRelationshipSummaryDto> CreateRelationshipCoreAsync(
+        PlatformUserId actingUserIdentityId,
+        PlatformUserId? creditorUser,
+        PersonalContactId? creditorContact,
+        PlatformUserId? debtorUser,
+        PersonalContactId? debtorContact,
+        CreatePersonalDebtRelationshipRequest request,
+        CancellationToken cancellationToken)
+    {
+        var relationship = PersonalDebtRelationship.Create(
+            actingUserIdentityId,
+            creditorUser,
+            creditorContact,
+            debtorUser,
+            debtorContact,
+            request.CurrencyCode ?? "PHP",
+            _clock.UtcNow,
+            request.DueDateUtc);
+
+        PersonalUtangEntry? initialEntry = null;
+        if (request.InitialLoanAmount is > 0)
+        {
+            var signedDelta = PersonalDebtRelationship.ComputeSignedDelta(
+                PersonalUtangEntryType.Loan,
+                request.InitialLoanAmount.Value);
+            initialEntry = relationship.RecordEntry(
+                actingUserIdentityId,
+                PersonalUtangEntryType.Loan,
+                request.InitialLoanAmount.Value,
+                signedDelta,
+                _clock.UtcNow,
+                expectedVersion: null,
+                request.InitialLoanNotes,
+                request.DueDateUtc);
+        }
+
+        await _relationships.AddAsync(relationship, cancellationToken).ConfigureAwait(false);
+        if (initialEntry is not null)
+        {
+            await _entries.AddAsync(initialEntry, cancellationToken).ConfigureAwait(false);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (initialEntry is not null && initialEntry.Status is PersonalUtangEntryStatus.Pending)
+        {
+            await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                relationship,
+                actingUserIdentityId,
+                _users,
+                _settings,
+                _notifications,
+                _entries,
+                _clock,
+                cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await _auditWriter.WriteAsync(
+            $"platform-user:{actingUserIdentityId.Value:D}",
+            AuditActorType.PlatformUser,
+            PlatformAuditActions.PersonalUtangRelationshipCreated,
+            nameof(PersonalDebtRelationship),
+            relationship.Id.Value.ToString("D"),
+            AuditOutcome.Succeeded,
+            summary: "Personal debt relationship created.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (initialEntry is not null)
+        {
+            await _auditWriter.WriteAsync(
+                $"platform-user:{actingUserIdentityId.Value:D}",
+                AuditActorType.PlatformUser,
+                PlatformAuditActions.PersonalUtangEntryRecorded,
+                nameof(PersonalUtangEntry),
+                initialEntry.Id.Value.ToString("D"),
+                AuditOutcome.Succeeded,
+                summary: "Initial loan entry recorded.",
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        return ToSummary(relationship, actingUserIdentityId);
     }
 
     internal static PersonalDebtRelationshipSummaryDto ToSummary(
@@ -719,7 +812,12 @@ public sealed class ListPersonalUtangHistory
             .ConfigureAwait(false);
 
         return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(
-            list.Select(RecordPersonalUtangEntry.ToDto).ToList());
+            list.Select(entry =>
+                    RecordPersonalUtangEntry.ToDto(
+                        entry,
+                        userIdentityId,
+                        access.Value!.IsSharedLedger))
+                .ToList());
     }
 }
 
@@ -728,6 +826,9 @@ public sealed class RecordPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -736,6 +837,9 @@ public sealed class RecordPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -743,6 +847,9 @@ public sealed class RecordPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _users = users;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -781,7 +888,93 @@ public sealed class RecordPersonalUtangEntry
 
         try
         {
-            var signedDelta = PersonalDebtRelationship.ComputeSignedDelta(
+            if (entryType is PersonalUtangEntryType.Loan && relationship.IsSharedLinked)
+            {
+                var counterparty = relationship.GetCounterpartyUserIdentityId(actingUserIdentityId);
+                if (counterparty is null)
+                {
+                    return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                        ApplicationErrorCodes.PersonalUtangUnauthorized,
+                        "Personal debt relationship is not visible to this account.");
+                }
+
+                PersonalUtangProposalAntiSpam.GateFailure? gateFailure = null;
+                PersonalUtangEntry? createdEntry = null;
+
+                await _unitOfWork.ExecuteWithAdvisoryLockAsync(
+                    actingUserIdentityId.Value,
+                    counterparty.Value,
+                    async ct =>
+                    {
+                        var gate = await PersonalUtangProposalAntiSpam.EnsureSharedLoanProposalAllowedAsync(
+                            actingUserIdentityId,
+                            counterparty,
+                            request.Amount,
+                            request.Notes,
+                            _entries,
+                            _contacts,
+                            _clock,
+                            ct).ConfigureAwait(false);
+                        if (gate is not null)
+                        {
+                            gateFailure = gate;
+                            return;
+                        }
+
+                        var signedDelta = PersonalDebtRelationship.ComputeSignedDelta(
+                            entryType,
+                            request.Amount,
+                            request.AdjustmentDelta);
+                        createdEntry = relationship.RecordEntry(
+                            actingUserIdentityId,
+                            entryType,
+                            request.Amount,
+                            signedDelta,
+                            _clock.UtcNow,
+                            request.ExpectedVersion,
+                            request.Notes,
+                            request.DueDateUtc);
+
+                        await _relationships.UpdateAsync(relationship, ct).ConfigureAwait(false);
+                        await _entries.AddAsync(createdEntry, ct).ConfigureAwait(false);
+                        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+
+                        await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                            relationship,
+                            actingUserIdentityId,
+                            _users,
+                            _settings,
+                            _notifications,
+                            _entries,
+                            _clock,
+                            ct).ConfigureAwait(false);
+
+                        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    },
+                    cancellationToken).ConfigureAwait(false);
+
+                if (gateFailure is not null)
+                {
+                    return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                        gateFailure.ErrorCode,
+                        gateFailure.ErrorMessage);
+                }
+
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{actingUserIdentityId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.PersonalUtangEntryRecorded,
+                    nameof(PersonalUtangEntry),
+                    createdEntry!.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    summary: $"{entryType} entry recorded.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                return ApplicationResult<PersonalUtangEntryDto>.Success(
+                    ToDto(createdEntry, actingUserIdentityId, relationship.IsSharedLinked));
+            }
+
+            var nonSharedSignedDelta = PersonalDebtRelationship.ComputeSignedDelta(
                 entryType,
                 request.Amount,
                 request.AdjustmentDelta);
@@ -789,7 +982,7 @@ public sealed class RecordPersonalUtangEntry
                 actingUserIdentityId,
                 entryType,
                 request.Amount,
-                signedDelta,
+                nonSharedSignedDelta,
                 _clock.UtcNow,
                 request.ExpectedVersion,
                 request.Notes,
@@ -798,6 +991,20 @@ public sealed class RecordPersonalUtangEntry
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
             await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            if (entry.Status is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangProposalAntiSpam.NotifyOrAggregatePendingAsync(
+                    relationship,
+                    actingUserIdentityId,
+                    _users,
+                    _settings,
+                    _notifications,
+                    _entries,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
 
             await _auditWriter.WriteAsync(
                 $"platform-user:{actingUserIdentityId.Value:D}",
