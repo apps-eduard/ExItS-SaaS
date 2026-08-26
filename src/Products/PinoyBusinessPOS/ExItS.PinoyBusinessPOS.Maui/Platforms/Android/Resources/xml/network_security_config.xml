@@ -2,12 +2,14 @@
 <!--
   DEBUG Local Validation network security (P5-WP01; reviewed P9-WP01).
 
+  Cleartext HTTP only for approved development/Local Validation hosts.
+  Remove or replace cleartext allowances before any production release.
+  Release builds replace this file with network_security_config.Release.xml (HTTPS-only).
+
   Cleartext HTTP only for:
   - Android emulator host-loopback (10.0.2.2)
   - localhost / 127.0.0.1 (emulator or adb reverse)
   - Tailscale/LAN Local Validation PublicHost (physical-device Debug profile)
-
-  Release builds replace this file with network_security_config.Release.xml (HTTPS-only).
 -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">

@@ -79,22 +79,36 @@ public sealed class SecurityHardeningArchitectureTests
     [Fact]
     public void Android_network_security_config_documents_cleartext_as_development_only()
     {
-        var path = Path.Combine(FindRepositoryRoot(),
+        var root = FindRepositoryRoot();
+        var debugPath = Path.Combine(root,
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
             "Platforms", "Android", "Resources", "xml", "network_security_config.xml");
-        var xml = File.ReadAllText(path);
+        var releasePath = Path.Combine(root,
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
+            "Platforms", "Android", "Resources", "xml", "network_security_config.Release.xml");
+        var xml = File.ReadAllText(debugPath);
         Assert.Contains("before any production release", xml, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("10.0.2.2", xml, StringComparison.Ordinal);
-        Assert.DoesNotContain("cleartextTrafficPermitted=\"true\"", xml.Replace(
+        Assert.Contains("localhost", xml, StringComparison.Ordinal);
+        Assert.Contains("127.0.0.1", xml, StringComparison.Ordinal);
+        Assert.Contains("Release builds replace this file with network_security_config.Release.xml", xml, StringComparison.Ordinal);
+
+        // Approved Debug/Local Validation cleartext block only (loopback + optional PublicHost).
+        var withoutApprovedCleartext = System.Text.RegularExpressions.Regex.Replace(
+            xml,
             """
-            <domain-config cleartextTrafficPermitted="true">
-                    <domain includeSubdomains="false">10.0.2.2</domain>
-                    <domain includeSubdomains="false">localhost</domain>
-                    <domain includeSubdomains="false">127.0.0.1</domain>
-                </domain-config>
+            <domain-config cleartextTrafficPermitted="true">[\s\S]*?</domain-config>
             """,
             string.Empty,
-            StringComparison.Ordinal), StringComparison.Ordinal);
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Assert.DoesNotContain(
+            "cleartextTrafficPermitted=\"true\"",
+            withoutApprovedCleartext,
+            StringComparison.Ordinal);
+
+        Assert.True(File.Exists(releasePath), "Release network security config must exist.");
+        var releaseXml = File.ReadAllText(releasePath);
+        Assert.DoesNotContain("cleartextTrafficPermitted=\"true\"", releaseXml, StringComparison.Ordinal);
     }
 
     [Fact]

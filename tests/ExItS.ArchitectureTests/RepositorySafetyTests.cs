@@ -63,8 +63,10 @@ public sealed class RepositorySafetyTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
+            var gitPath = Path.Combine(dir.FullName, ".git");
+            // Worktrees use a .git file (gitdir:) instead of a .git directory.
             if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx"))
-                && Directory.Exists(Path.Combine(dir.FullName, ".git")))
+                && (Directory.Exists(gitPath) || File.Exists(gitPath)))
             {
                 return dir.FullName;
             }

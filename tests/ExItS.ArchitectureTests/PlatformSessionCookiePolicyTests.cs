@@ -120,18 +120,28 @@ public sealed class MobileReactBrowserAuthArchitectureTests
         var root = FindRepositoryRoot();
         var client = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Client");
         var http = File.ReadAllText(Path.Combine(client, "src", "api", "http.ts"));
-        var proxy = File.ReadAllText(Path.Combine(client, "src", "pwa", "platform-api-proxy.ts"));
+        var platformHttp = File.ReadAllText(Path.Combine(client, "src", "api", "platform", "platform-http.ts"));
+        var proxyHelpers = File.ReadAllText(Path.Combine(client, "src", "pwa", "platform-api-proxy.ts"));
+        var viteProxy = File.ReadAllText(Path.Combine(client, "vite.platform-api-proxy.ts"));
         var vite = File.ReadAllText(Path.Combine(client, "vite.config.ts"));
-        var session = File.ReadAllText(Path.Combine(client, "src", "auth", "session-fields.ts"));
+        var browserSession = File.ReadAllText(Path.Combine(client, "src", "api", "platform", "browser-session.ts"));
 
         Assert.Contains("\"/platform-api\"", http, StringComparison.Ordinal);
-        Assert.Contains("resolvePlatformProxyTarget", vite, StringComparison.Ordinal);
-        Assert.Contains("PLATFORM_API_PROXY_PREFIX", vite, StringComparison.Ordinal);
-        Assert.Contains("127.0.0.1", proxy, StringComparison.Ordinal);
-        Assert.Contains("localhost", proxy, StringComparison.Ordinal);
-        Assert.DoesNotContain("10.0.2.2:8091", proxy, StringComparison.Ordinal);
-        Assert.Contains("omitSessionToken", session, StringComparison.Ordinal);
-        Assert.Contains("sessionToken", session, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_BASE_PATH = \"/platform-api\"", platformHttp, StringComparison.Ordinal);
+        Assert.Contains("must stay on the relative /platform-api origin", platformHttp, StringComparison.Ordinal);
+        Assert.Contains("createPlatformApiProxy", vite, StringComparison.Ordinal);
+        Assert.Contains("PLATFORM_API_PROXY_PREFIX", viteProxy, StringComparison.Ordinal);
+        Assert.Contains("resolvePlatformApiProxyTarget", viteProxy, StringComparison.Ordinal);
+        Assert.Contains("127.0.0.1", viteProxy, StringComparison.Ordinal);
+        Assert.Contains("localhost", viteProxy, StringComparison.Ordinal);
+        Assert.Contains("127.0.0.1", proxyHelpers, StringComparison.Ordinal);
+        Assert.Contains("localhost", proxyHelpers, StringComparison.Ordinal);
+        Assert.DoesNotContain("10.0.2.2:8091", viteProxy, StringComparison.Ordinal);
+        Assert.DoesNotContain("10.0.2.2:8091", proxyHelpers, StringComparison.Ordinal);
+        Assert.Contains("toBrowserSessionSnapshot", browserSession, StringComparison.Ordinal);
+        Assert.Contains("sessionToken", browserSession, StringComparison.Ordinal);
+        Assert.Contains("delete safe.sessionToken", browserSession, StringComparison.Ordinal);
+        Assert.Contains("assertBrowserStorageHasNoSessionToken", browserSession, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryRoot()
