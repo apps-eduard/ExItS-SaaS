@@ -1,8 +1,8 @@
 # Pinoy Loan Manager — File Manifest
 
-**Status:** Foundation / planning only
-**Implementation present:** No
-**Current work package:** PLM-DOC-11 — Final Documentation Closeout (complete)
+**Status:** PLM-DOC-11 complete; PLM-01 scaffold; Gates B–D3 complete; PLM-02A server access boundary complete
+**Implementation present:** Product shell + React Client + online-first PWA + cookie Sign In + Personal account lifecycle + organization/product-access gate + fail-closed server access boundary; Platform `pinoy-loan-manager` catalog + current-session access API
+**Current work package:** PLM-02 — lending domain (not started)
 
 This file is the navigation map for future Cursor work. Load this product’s `Docs/` after the shared Product Foundation reference. Do not scan PinoyBusinessPOS implementation by default.
 
@@ -133,13 +133,29 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `Docs/Architecture/source-and-project-layout.md` | Future project tree; not created | Planning target / not a spec | No |
+| `Docs/Architecture/source-and-project-layout.md` | Physical layout; Client Gate B scaffold | PLM-01 + Gate B | Product shell + React Client |
+| `Docs/Architecture/react-pwa-capacitor-client.md` | Shared React + PWA + Capacitor architecture | Accepted (PLM-D-00-09); Gate B scaffold | React foundation |
 | `Docs/Architecture/api-and-contract-boundary.md` | API consumers; Personal contracts | Planning target / not a spec | No |
 | `Docs/Architecture/persistence-and-database-boundary.md` | Separate DB isolation | Planning target / not a spec | No |
-| `Docs/Architecture/mobile-offline-boundary.md` | Online-first MAUI; offline posting deferred | Accepted architecture policy (PLM-DOC-09) | No |
-| `Docs/Architecture/mobile-and-offline-operating-model.md` | MAUI purpose; MVP authority; cache/drafts; deferred posting | Accepted architecture policy (PLM-DOC-09) | No |
+| `Docs/Architecture/mobile-offline-boundary.md` | Online-first; LocalStore not authorized | Planning target / not a spec | Online-first PWA |
+| `Docs/Architecture/mobile-and-offline-operating-model.md` | MVP authority; cache/drafts; deferred posting | Accepted architecture policy (PLM-DOC-09) | No |
 | `Docs/Architecture/web-maui-component-sharing-policy.md` | Web/MAUI sharing; **PLM-D-00-09 Closed** | Accepted architecture policy (PLM-DOC-09) | No |
-| `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | No |
+| `Docs/Architecture/platform-commercial-integration.md` | Platform contracts; D-P12-03 open | Planning target / not a spec | Platform access API |
+| `Docs/Decisions/PLM-D-00-09-react-pwa-capacitor-client-strategy.md` | ADR: one React + PWA + Capacitor client | Accepted / Product Owner Approved | React Client |
+| `Docs/Reports/PLM-01A-react-pwa-capacitor-architecture-decision.md` | PLM-01A evidence | Architecture decision complete | No |
+| `Docs/Reports/PLM-CLIENT-GATE-B-react-client-scaffold.md` | Gate B React Client scaffold | Complete after validation | React foundation |
+| `Docs/Reports/PLM-CLIENT-GATE-C-browser-pwa-foundation.md` | Gate C Browser + PWA foundation | Complete after validation | Online-first PWA |
+| `Docs/Reports/PLM-CLIENT-GATE-D0-browser-auth-transport.md` | Gate D0 browser session auth transport | Complete after validation | Same-origin `/platform-api` + cookie policy |
+| `Docs/Reports/PLM-CLIENT-GATE-D1-mobile-sign-in-session.md` | Gate D1 Sign In + session UI | Complete after validation | Cookie Sign In |
+| `Docs/Reports/impl-gate-d2-account-lifecycle/` | Gate D2 screenshots | Complete after validation | Account lifecycle |
+| `Docs/Reports/PLM-CLIENT-GATE-D3-organization-product-access.md` | Gate D3 org discovery + product access gate | Complete after validation | Fail-closed workspace gate |
+| `Docs/Reports/impl-gate-d3-organization-product-access/` | Gate D3 screenshots | Complete after validation | Org/product-access gate |
+| `Docs/Reports/PLM-PWA-H1-cache-storage-security.md` | PWA cache/storage security proof | Complete after validation | NetworkOnly APIs |
+| `Docs/Reports/PLM-PWA-H2-install-update-lifecycle.md` | PWA install/update lifecycle | Complete after validation | User-triggered refresh |
+| `Docs/Reports/PLM-PWA-H3-connectivity-fail-closed.md` | Fail-closed connectivity UX | Complete after validation | No financial offline |
+| `Docs/Reports/PLM-PWA-H4-production-preview-reliability.md` | Production-preview PWA reliability | Complete after validation | Evidence before lending |
+| `Docs/Reports/PLM-PWA-H5-csrf-compatibility.md` | CSRF compatibility with Platform auth | Complete after validation | Antiforgery transport |
+| `Docs/Reports/PLM-02A-server-access-boundary-foundation.md` | Server fail-closed access boundary | PLM-02A complete | No lending/persistence |
 
 ## Foundation closeout (PLM-00-WP10)
 
@@ -162,32 +178,26 @@ Shared contracts to load with this product:
 
 | Path | Purpose | Status | Implementation present |
 |---|---|---|---|
-| `src/Products/PinoyLoanManager/` | Product workspace root | Foundation / Planning Only | No |
-| `src/Products/PinoyLoanManager/Docs/` | Authoritative product documentation root (D-P12-02) | Foundation / Planning Only | No |
-| `Docs/README.md` | Index to canonical documents | Foundation / Planning Only | No |
-| `Docs/FILE-MANIFEST.md` | This navigation map | Foundation / Planning Only | No |
-| `Docs/Product/README.md` | Index for product-policy docs | Foundation / Planning Only | No |
-| `Docs/Architecture/README.md` | Index for architecture docs | Foundation / Planning Only | No |
-| `Docs/Security/README.md` | Index for security docs | Foundation / Planning Only | No |
-| `Docs/Decisions/README.md` | Index for ADRs | Foundation / Planning Only | No |
-| `Docs/Decisions/ADR-001-product-identity-and-database-name.md` | Product code and logical database name | Accepted (PLM-DOC-01) | No |
-| `Docs/Decisions/ADR-002-borrower-personal-cardinality-and-consent.md` | Borrower/Personal cardinality and consent | Accepted product behavior (PLM-DOC-01) | No |
-| `Docs/Decisions/ADR-003-supported-interest-and-schedule-methods.md` | MVP interest/schedule methods | Accepted product policy (PLM-DOC-02) | No |
-| `Docs/Decisions/ADR-004-rounding-fees-and-payment-allocation.md` | Rounding, fees, allocation | Accepted; PLM-D-00-12 Closed | No |
-| `Docs/Decisions/ADR-005-schedule-calendar-and-exception-treatment.md` | Calendar, frequencies, exception defaults | Accepted product policy (PLM-DOC-03) | No |
-| `Docs/Decisions/ADR-006-delinquency-penalty-and-maturity-policy.md` | DPD, penalties, maturity | Accepted product policy (PLM-DOC-03) | No |
-| `Docs/Decisions/ADR-007-early-settlement-and-prepayment-policy.md` | Early settlement and principal prepayment | Accepted product policy (PLM-DOC-04) | No |
-| `Docs/Decisions/ADR-008-reversals-refunds-variance-and-accounting-boundary.md` | Reversals, refunds, variance, GL boundary | Accepted; **PLM-D-00-13 Closed** | No |
-| `Docs/Decisions/ADR-009-role-codes-grant-catalog-and-default-presets.md` | Role codes, grant catalog v1, default presets | Accepted; **PLM-D-00-06 Closed for MVP** | No |
-| `Docs/Decisions/ADR-010-resource-scope-workflow-security-and-owner-recovery.md` | Scope, workflow security, Owner recovery | Accepted product policy (PLM-DOC-05) | No |
-| `Docs/Decisions/ADR-017-mobile-offline-route-and-device-policy.md` | Mobile, offline, route, device | Accepted (PLM-DOC-09) | No |
-| `Docs/Decisions/ADR-018-branch-treasury-float-and-ui-sharing-policy.md` | Treasury, float ack, UI sharing; **PLM-D-00-09 Closed** | Accepted (PLM-DOC-09) | No |
-| `Docs/Decisions/ADR-019-platform-personal-contract-requirements.md` | Platform/Personal contract requirements; **PLM-D-00-05 Closed** | Accepted (PLM-DOC-10) | No |
-| `Docs/Decisions/ADR-020-usage-metering-and-tenant-placement-contracts.md` | Usage metering and tenant placement | Accepted (PLM-DOC-10) | No |
-| `Docs/Phases/README.md` | Index for phase sequencing | Foundation / Planning Only | No |
-| `Docs/Reports/README.md` | Index for WP evidence | Foundation / Planning Only | No |
-| `Docs/Validation/README.md` | Index for validation evidence | Foundation / Planning Only | No |
-| `Docs/Operations/README.md` | Index for operations docs | Foundation / Planning Only | No |
+| `src/Products/PinoyLoanManager/` | Product workspace root | PLM-01 + Client Gates + PLM-02A | Product shell + React Client |
+| `src/Products/PinoyLoanManager/Docs/` | Authoritative product documentation root (D-P12-02) | PLM-DOC-11 complete | Documentation |
+| `Docs/Reports/PLM-01-product-scaffold-and-isolation.md` | PLM-01 scaffold evidence | Scaffold complete | Product shell |
+| `Docs/Reports/PLM-D3-PRE-product-registration-self-access.md` | Product code + access API prerequisite | PLM-D3-PRE complete | Platform prerequisite |
+
+---
+
+## Implemented projects (PLM-01 shell + Client Gates + PLM-02A)
+
+| Item | Status |
+|---|---|
+| `ExItS.PinoyLoanManager.Domain` | Created — access types; no lending entities |
+| `ExItS.PinoyLoanManager.Application` | Created — operational access guard; no lending use cases |
+| `ExItS.PinoyLoanManager.Infrastructure` | Created — no EF/Npgsql/DbContext |
+| `ExItS.PinoyLoanManager.Api` | Created — health + fail-closed access boundary |
+| `ExItS.PinoyLoanManager.ApiClient` | Created — marker only |
+| `ExItS.PinoyLoanManager.Web` | Created — identity shell only |
+| `ExItS.PinoyLoanManager.Client` | Created — Gates B–D3 React + PWA + auth + org/product-access gate |
+| `tests/ExItS.PinoyLoanManager.UnitTests` | Created — scaffold + access boundary tests |
+| `ExItS.slnx` PLM entries | Registered |
 
 ---
 
@@ -195,16 +205,9 @@ Shared contracts to load with this product:
 
 | Item | Reason |
 |---|---|
-| `ExItS.PinoyLoanManager.Domain` (and other .NET projects) | Code projects not authorized |
-| Test projects | Not authorized |
-| Database / migration folders | Persistence not authorized |
+| `ExItS.PinoyLoanManager.Maui` | Superseded by React + PWA + Capacitor (PLM-D-00-09) |
+| `ExItS.PinoyLoanManager.LocalStore` | Not justified until offline lending is authorized |
+| Database / migration folders | Persistence not authorized (PLM-D-00-02 remains open) |
 | Docker / deploy implementation | Not authorized |
-| `ExItS.slnx` entries | Not authorized |
+| Lending domain entities/use cases | PLM-02 not started |
 | `Docs/deployment-notes.md` | Optional until packaging |
-| `Docs/Reports/<WP-id>.md` | In-tree WP report not required except PLM-00 closeout |
-| Exact grant identifiers / custom roles | **Closed for MVP** (PLM-D-00-06); custom roles deferred |
-| Small-org vs two-person high-risk approval | **Closed** (PLM-D-00-13) — maker/checker + controlled Owner Override |
-| Default interest rates / fee amounts / penalty amounts | Not defined; never invent |
-| Penalty rates/amounts, grace `N`, caps as numbers | Engine accepted; no defaults (PLM-DOC-03) |
-| Write-off/recovery accounting, restructuring, journal/export | Open (PLM-D-00-07 / PLM-D-00-08 remainder) |
-| Legal/compliance validation | Open (PLM-D-00-11) |
