@@ -44,9 +44,12 @@ public sealed record PersonalUtangInvitationAcceptResultDto(
 
 public sealed class CreatePersonalUtangInvitation
 {
+    internal const string NotificationRelatedType = "PersonalUtangInvitation";
+
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -56,6 +59,7 @@ public sealed class CreatePersonalUtangInvitation
         IPersonalDebtRelationshipRepository relationships,
         IPersonalContactRepository contacts,
         IPersonalUtangInvitationRepository invitations,
+        IPersonalInAppNotificationRepository notifications,
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -64,6 +68,7 @@ public sealed class CreatePersonalUtangInvitation
         _relationships = relationships;
         _contacts = contacts;
         _invitations = invitations;
+        _notifications = notifications;
         _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -185,6 +190,23 @@ public sealed class CreatePersonalUtangInvitation
                 inviteTargetPhone: contact.Phone);
 
             await _invitations.AddAsync(invitation, cancellationToken).ConfigureAwait(false);
+
+            var inviteeUserId = ResolveInviteeUserIdentityId(contact);
+            if (inviteeUserId is not null && inviteeUserId != actingUserIdentityId)
+            {
+                var inviter = await _users.GetByIdAsync(actingUserIdentityId, cancellationToken).ConfigureAwait(false);
+                var inviterName = inviter?.DisplayName ?? "Someone";
+                await _notifications.AddAsync(
+                    PersonalInAppNotification.Create(
+                        inviteeUserId,
+                        "Utang invitation",
+                        $"{inviterName} invited you to share an Utang record.",
+                        NotificationRelatedType,
+                        _clock.UtcNow,
+                        invitation.Id.Value.ToString("D")),
+                    cancellationToken).ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -203,6 +225,51 @@ public sealed class CreatePersonalUtangInvitation
         {
             return ApplicationResult<PersonalUtangInvitationDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    internal static PlatformUserId? ResolveInviteeUserIdentityId(PersonalContact contact)
+    {
+        if (contact.LinkedUserIdentityId is not null)
+        {
+            return contact.LinkedUserIdentityId;
+        }
+
+        if (contact.HasResolvedIdentity && contact.ResolvedUserIdentityId is not null)
+        {
+            return contact.ResolvedUserIdentityId;
+        }
+
+        return null;
+    }
+
+    internal static async Task NotifyInviterAsync(
+        IPersonalInAppNotificationRepository notifications,
+        IPlatformUserRepository users,
+        PlatformUserId inviterUserIdentityId,
+        PlatformUserId actorUserIdentityId,
+        string title,
+        string previewWithActorNamePlaceholder,
+        Guid invitationId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (inviterUserIdentityId == actorUserIdentityId)
+        {
+            return;
+        }
+
+        var actor = await users.GetByIdAsync(actorUserIdentityId, cancellationToken).ConfigureAwait(false);
+        var actorName = actor?.DisplayName ?? "Someone";
+        var preview = previewWithActorNamePlaceholder.Replace("{name}", actorName, StringComparison.Ordinal);
+        await notifications.AddAsync(
+            PersonalInAppNotification.Create(
+                inviterUserIdentityId,
+                title,
+                preview,
+                NotificationRelatedType,
+                utcNow,
+                invitationId.ToString("D")),
+            cancellationToken).ConfigureAwait(false);
     }
 
     internal static PersonalUtangInvitationDto ToDto(PersonalUtangInvitation invitation, string? acceptToken = null) =>
@@ -431,6 +498,7 @@ public sealed class RevokePersonalUtangInvitation
 public sealed class DeclinePersonalUtangInvitation
 {
     private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -438,12 +506,14 @@ public sealed class DeclinePersonalUtangInvitation
 
     public DeclinePersonalUtangInvitation(
         IPersonalUtangInvitationRepository invitations,
+        IPersonalInAppNotificationRepository notifications,
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _invitations = invitations;
+        _notifications = notifications;
         _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -516,6 +586,16 @@ public sealed class DeclinePersonalUtangInvitation
 
             invitation.Decline(_clock.UtcNow);
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+            await CreatePersonalUtangInvitation.NotifyInviterAsync(
+                _notifications,
+                _users,
+                invitation.InvitedByUserIdentityId,
+                actingUserIdentityId,
+                "Utang invitation declined",
+                "{name} declined your Utang invitation.",
+                invitation.Id.Value,
+                _clock.UtcNow,
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -547,6 +627,7 @@ public sealed class AcceptPersonalUtangInvitation
     private readonly IPersonalUtangInvitationRepository _invitations;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -556,6 +637,7 @@ public sealed class AcceptPersonalUtangInvitation
         IPersonalUtangInvitationRepository invitations,
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
+        IPersonalInAppNotificationRepository notifications,
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -564,6 +646,7 @@ public sealed class AcceptPersonalUtangInvitation
         _invitations = invitations;
         _contacts = contacts;
         _relationships = relationships;
+        _notifications = notifications;
         _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -671,6 +754,16 @@ public sealed class AcceptPersonalUtangInvitation
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _contacts.UpdateAsync(contact, cancellationToken).ConfigureAwait(false);
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await CreatePersonalUtangInvitation.NotifyInviterAsync(
+                _notifications,
+                _users,
+                invitation.InvitedByUserIdentityId,
+                acceptingUserIdentityId,
+                "Utang invitation accepted",
+                "{name} accepted your Utang invitation.",
+                invitation.Id.Value,
+                _clock.UtcNow,
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -728,6 +821,7 @@ public sealed class AcceptPersonalUtangInvitationById
     private readonly IPersonalUtangInvitationRepository _invitations;
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -737,6 +831,7 @@ public sealed class AcceptPersonalUtangInvitationById
         IPersonalUtangInvitationRepository invitations,
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
+        IPersonalInAppNotificationRepository notifications,
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -745,6 +840,7 @@ public sealed class AcceptPersonalUtangInvitationById
         _invitations = invitations;
         _contacts = contacts;
         _relationships = relationships;
+        _notifications = notifications;
         _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -840,6 +936,16 @@ public sealed class AcceptPersonalUtangInvitationById
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _contacts.UpdateAsync(contact, cancellationToken).ConfigureAwait(false);
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
+            await CreatePersonalUtangInvitation.NotifyInviterAsync(
+                _notifications,
+                _users,
+                invitation.InvitedByUserIdentityId,
+                acceptingUserIdentityId,
+                "Utang invitation accepted",
+                "{name} accepted your Utang invitation.",
+                invitation.Id.Value,
+                _clock.UtcNow,
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(
@@ -875,6 +981,7 @@ public sealed class AcceptPersonalUtangInvitationById
 public sealed class DeclinePersonalUtangInvitationById
 {
     private readonly IPersonalUtangInvitationRepository _invitations;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -882,12 +989,14 @@ public sealed class DeclinePersonalUtangInvitationById
 
     public DeclinePersonalUtangInvitationById(
         IPersonalUtangInvitationRepository invitations,
+        IPersonalInAppNotificationRepository notifications,
         IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _invitations = invitations;
+        _notifications = notifications;
         _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -946,6 +1055,16 @@ public sealed class DeclinePersonalUtangInvitationById
 
             invitation.Decline(_clock.UtcNow);
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
+            await CreatePersonalUtangInvitation.NotifyInviterAsync(
+                _notifications,
+                _users,
+                invitation.InvitedByUserIdentityId,
+                decliningUserIdentityId,
+                "Utang invitation declined",
+                "{name} declined your Utang invitation.",
+                invitation.Id.Value,
+                _clock.UtcNow,
+                cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(

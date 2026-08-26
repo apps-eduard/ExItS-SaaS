@@ -163,6 +163,35 @@ export function PeoplePage() {
         </div>
       </Card>
 
+      <Card className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("people.connectionInbox")}
+            </h2>
+            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {t("people.connectionInboxHelp")}
+            </p>
+          </div>
+          {(() => {
+            const pendingCount = (connectionsQuery.data ?? []).filter(
+              (item) => item.status.toLowerCase() === "pending",
+            ).length;
+            return pendingCount > 0 ? (
+              <StatusChip tone="warning">
+                {t("people.connectionInboxBadge").replace("{count}", String(pendingCount))}
+              </StatusChip>
+            ) : null;
+          })()}
+        </div>
+        <Button asChild variant="outline" className="min-h-[var(--exits-touch-target-min)] justify-between">
+          <Link to="/personal/invitations">
+            <span>{t("people.connectionInbox")}</span>
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </Button>
+      </Card>
+
       <Card className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

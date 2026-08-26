@@ -5,6 +5,7 @@ import {
   formatUnreadNotificationBadge,
   localizePersonalNotification,
   resolveCustomerLinkNotificationState,
+  resolveNotificationDeepLink,
 } from "@/features/personal/personal-notifications";
 import type { PersonalInAppNotificationDto } from "@/api/platform/personal-social-client";
 import type { MessageKey } from "@/i18n/messages";
@@ -107,6 +108,41 @@ describe("localizePersonalNotification", () => {
         tFil,
       ),
     ).toEqual({ title: "Other", preview: "Body" });
+  });
+
+  it("localizes connection and Utang invitation previews without debt amounts", () => {
+    const tEn = (key: MessageKey) => catalogs.en[key];
+    expect(
+      localizePersonalNotification(
+        note({
+          title: "Connection",
+          preview: "Maria sent you a connection request.",
+          relatedType: "PersonalConnectionRequest",
+        }),
+        tEn,
+      ),
+    ).toEqual({
+      title: "Connection",
+      preview: "Maria sent you a connection request.",
+    });
+    expect(
+      localizePersonalNotification(
+        note({
+          title: "Utang invitation",
+          preview: "Maria invited you to share an Utang record.",
+          relatedType: "PersonalUtangInvitation",
+        }),
+        tEn,
+      ).preview,
+    ).not.toMatch(/₱|P\s*\d|owe/i);
+  });
+});
+
+describe("resolveNotificationDeepLink", () => {
+  it("keeps connection and Utang invitation destinations separate", () => {
+    expect(resolveNotificationDeepLink("PersonalConnectionRequest")).toBe("/personal/invitations");
+    expect(resolveNotificationDeepLink("PersonalUtangInvitation")).toBe("/personal/utang/invitations");
+    expect(resolveNotificationDeepLink("CustomerLinkRequest")).toBe("/personal/customer-links");
   });
 });
 

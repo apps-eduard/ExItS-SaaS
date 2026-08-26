@@ -167,6 +167,7 @@ describe("People lifecycle UX", () => {
     expect(screen.getByText("Without ExItS ID")).toBeInTheDocument();
     expect(screen.getByText("With ExItS Personal ID")).toBeInTheDocument();
     expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Connection requests/i })).toBeInTheDocument();
   });
 
   it("opens people info dialog from info button", async () => {
@@ -429,8 +430,8 @@ describe("People lifecycle UX", () => {
     const notifications: PersonalInAppNotificationDto[] = [
       {
         id: "n1",
-        title: "Eduard sent you a connection request",
-        preview: "Open invitations to respond.",
+        title: "Connection request",
+        preview: "Eduard sent you a connection request.",
         relatedType: "PersonalConnectionRequest",
         relatedId: "req-in",
         isRead: false,
@@ -471,10 +472,9 @@ describe("People lifecycle UX", () => {
 
     const user = userEvent.setup();
     renderPeopleApp("/personal/notifications");
-    await user.click(
-      await screen.findByRole("button", { name: /Eduard sent you a connection request/i }),
-    );
-    expect(await screen.findByRole("heading", { name: "Invitations" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: /Connection\. Unread/i }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Connection requests" })).toBeInTheDocument();
+    expect(screen.getByText("Eduard")).toBeInTheDocument();
     expect(screen.getByText("wants to connect with you")).toBeInTheDocument();
     expect(connections[0]?.status).toBe("Pending");
   });

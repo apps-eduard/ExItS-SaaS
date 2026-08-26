@@ -416,4 +416,69 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
             ApplicationErrorCodes.PersonalUtangInvitationNotFound,
             body.GetProperty("errorCode").GetString());
     }
+
+    [Fact]
+    public async Task Invitation_create_notifies_resolved_invitee_without_debt_amounts()
+    {
+        var (lenderToken, lenderId, _) = await SeedPersonalUserAsync("nlend");
+        var (borrowerToken, borrowerId, borrowerEmail) = await SeedPersonalUserAsync("nborr");
+
+        // Borrower gets a public ExItS ID first.
+        using var borrowerIdentity = Authed(HttpMethod.Get, "/api/v1/me/public-identity", borrowerToken);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(borrowerIdentity)).StatusCode);
+        using var borrowerMe = Authed(HttpMethod.Get, "/api/v1/me/public-identity", borrowerToken);
+        var publicId = (await (await _client.SendAsync(borrowerMe)).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("publicUserId").GetString()!;
+
+        using var resolveRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/users/resolve-public-id",
+            lenderToken,
+            new { publicUserIdOrQrPayload = publicId, purpose = "utang-people" });
+        var resolved = await (await _client.SendAsync(resolveRequest)).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(borrowerId, resolved.GetProperty("userIdentityId").GetGuid());
+
+        using var contactRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            lenderToken,
+            new
+            {
+                displayName = resolved.GetProperty("displayName").GetString(),
+                email = (string?)null,
+                phone = (string?)null,
+                resolvedUserIdentityId = borrowerId,
+                resolvedPublicUserId = publicId
+            });
+        var contactId = (await (await _client.SendAsync(contactRequest)).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+
+        using var relationshipRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            lenderToken,
+            new { creditorUserIdentityId = lenderId, debtorContactId = contactId, currencyCode = "PHP" });
+        var relationshipId = (await (await _client.SendAsync(relationshipRequest)).Content
+            .ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var inviteRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/invitations",
+            lenderToken,
+            new { inviteeContactId = contactId });
+        var inviteResponse = await _client.SendAsync(inviteRequest);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var invitationId = (await inviteResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var notificationsRequest = Authed(HttpMethod.Get, "/api/v1/personal/notifications", borrowerToken);
+        var notifications = await (await _client.SendAsync(notificationsRequest)).Content.ReadFromJsonAsync<JsonElement>();
+        var inviteNotification = notifications.EnumerateArray().First(n =>
+            string.Equals(n.GetProperty("relatedType").GetString(), "PersonalUtangInvitation", StringComparison.Ordinal)
+            && string.Equals(n.GetProperty("relatedId").GetString(), invitationId.ToString("D"), StringComparison.OrdinalIgnoreCase));
+        Assert.False(inviteNotification.GetProperty("isRead").GetBoolean());
+        var preview = inviteNotification.GetProperty("preview").GetString()!;
+        Assert.Contains("invited you to share an Utang record", preview, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("₱", preview, StringComparison.Ordinal);
+        Assert.DoesNotContain("owe", preview, StringComparison.OrdinalIgnoreCase);
+    }
 }

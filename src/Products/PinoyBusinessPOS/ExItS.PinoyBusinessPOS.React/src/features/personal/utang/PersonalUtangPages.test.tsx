@@ -38,30 +38,35 @@ const {
     otherId,
     confirmMock: vi.fn(
       async (
-        _relationshipId: string,
-        _entryId: string,
+        _relationshipId?: string,
+        _entryId?: string,
         _body?: { expectedVersion?: number | null },
-      ) => ({
-        id: pendingIncomingId,
-        relationshipId: sharedRelationshipId,
-        entryType: "Payment",
-        amount: 50,
-        signedDelta: -50,
-        balanceAfter: 50,
-        notes: null,
-        dueDateUtc: null,
-        createdByUserIdentityId: otherId,
-        createdAtUtc: "2026-08-21T00:00:00Z",
-        status: "Confirmed",
-        resolvedByUserIdentityId: meId,
-        resolvedAtUtc: "2026-08-21T01:00:00Z",
-        disputeReason: null,
-        canConfirm: false,
-        canDispute: false,
-        canCancel: false,
-        affectsBalance: true,
-        isSharedLedger: true,
-      }),
+      ) => {
+        void _relationshipId;
+        void _entryId;
+        void _body;
+        return {
+          id: pendingIncomingId,
+          relationshipId: sharedRelationshipId,
+          entryType: "Payment",
+          amount: 50,
+          signedDelta: -50,
+          balanceAfter: 50,
+          notes: null,
+          dueDateUtc: null,
+          createdByUserIdentityId: otherId,
+          createdAtUtc: "2026-08-21T00:00:00Z",
+          status: "Confirmed",
+          resolvedByUserIdentityId: meId,
+          resolvedAtUtc: "2026-08-21T01:00:00Z",
+          disputeReason: null,
+          canConfirm: false,
+          canDispute: false,
+          canCancel: false,
+          affectsBalance: true,
+          isSharedLedger: true,
+        };
+      },
     ),
   };
 });

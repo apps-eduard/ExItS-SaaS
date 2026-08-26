@@ -178,6 +178,7 @@ public static class ApplicationErrorCodes
     public const string PersonalConnectionRequestNotFound = "application.personal.connection_request.not_found";
     public const string PersonalConnectionRequestConflict = "application.personal.connection_request.conflict";
     public const string PersonalConnectionBlocked = "application.personal.connection.blocked";
+    public const string PersonalConnectionUnauthorized = "application.personal.connection.unauthorized";
     public const string PersonalUtangRelationshipNotFound = "application.personal.utang_relationship.not_found";
     public const string PersonalUtangUnauthorized = "application.personal.utang.unauthorized";
     public const string PersonalUtangEntryInvalid = "application.personal.utang_entry.invalid";

@@ -10,21 +10,13 @@ import {
   useMarkNotificationReadMutation,
   usePersonalNotificationsQuery,
 } from "@/features/personal/people-queries";
+import {
+  localizePersonalNotification,
+  resolveNotificationDeepLink,
+} from "@/features/personal/personal-notifications";
 import { formatShortDate } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
-
-function invitationDeepLink(relatedType: string): string {
-  const type = relatedType.toLowerCase();
-  if (
-    type.includes("connection") ||
-    type.includes("invitation") ||
-    type.includes("utang")
-  ) {
-    return "/personal/invitations";
-  }
-  return "/personal/invitations";
-}
 
 export function NotificationsPage() {
   const { t } = useI18n();
@@ -50,48 +42,68 @@ export function NotificationsPage() {
   const items = notificationsQuery.data ?? [];
 
   return (
-    <section className="flex flex-col gap-4">
-      <PageHeader title={t("notifications.title")} />
+    <section className="mx-auto flex w-full max-w-lg flex-col gap-4">
+      <PageHeader title={t("notifications.title")} subtitle={t("notifications.lede")} />
       {items.length === 0 ? (
         <EmptyState title={t("notifications.emptyTitle")} detail={t("notifications.emptyBody")} />
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Card
-                className={cn(
-                  "flex flex-col gap-2",
-                  !item.isRead && "border-[var(--exits-info)]",
-                )}
-              >
-                <button
-                  type="button"
-                  className="flex flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit"
-                  onClick={() => {
-                    void markRead.mutateAsync(item.id).finally(() => {
-                      void navigate(invitationDeepLink(item.relatedType));
-                    });
-                  }}
+          {items.map((item) => {
+            const localized = localizePersonalNotification(item, t);
+            const unread = !item.isRead;
+            return (
+              <li key={item.id}>
+                <Card
+                  className={cn(
+                    "flex flex-col gap-2",
+                    unread && "border-[var(--exits-info)] bg-[color-mix(in_srgb,var(--exits-info)_6%,transparent)]",
+                  )}
                 >
-                  <span className="font-semibold">{item.title}</span>
-                  <span className="text-muted">{item.preview}</span>
-                  <span className="text-[length:var(--exits-text-sm)] text-muted">
-                    {formatShortDate(item.createdAtUtc)}
-                    {!item.isRead ? ` · ${t("notifications.unread")}` : ""}
-                  </span>
-                </button>
-                {!item.isRead ? (
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    onClick={() => void markRead.mutateAsync(item.id)}
+                    className="flex min-h-[var(--exits-touch-target-min)] flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit"
+                    aria-label={
+                      unread
+                        ? `${localized.title}. ${t("notifications.unread")}`
+                        : localized.title
+                    }
+                    onClick={() => {
+                      const destination = resolveNotificationDeepLink(item.relatedType);
+                      if (!item.isRead) {
+                        markRead.mutate(item.id);
+                      }
+                      navigate(destination);
+                    }}
                   >
-                    {t("notifications.markRead")}
-                  </Button>
-                ) : null}
-              </Card>
-            </li>
-          ))}
+                    <span className={cn("font-semibold", unread && "font-bold")}>{localized.title}</span>
+                    <span className="text-muted">{localized.preview}</span>
+                    <span className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
+                      {formatShortDate(item.createdAtUtc)}
+                      {unread ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-[var(--exits-info)]">
+                          <span
+                            className="size-1.5 rounded-full bg-[var(--exits-info)]"
+                            aria-hidden="true"
+                          />
+                          {t("notifications.unread")}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                  {unread ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={markRead.isPending}
+                      onClick={() => void markRead.mutateAsync(item.id)}
+                    >
+                      {t("notifications.markRead")}
+                    </Button>
+                  ) : null}
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

@@ -135,13 +135,18 @@ export function InvitationsPage() {
 
       <PageHeader title={t("invitations.title")} />
 
-
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+        {t("invitations.utangSeparateHint")}{" "}
+        <Link className="font-semibold text-primary no-underline" to="/personal/utang/invitations">
+          {t("invitations.openUtangInvites")}
+        </Link>
+      </p>
 
       <div className="flex flex-col gap-3">
 
         <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
 
-          {t("invitations.connectionRequests")}
+          {t("invitations.received")}
 
         </h2>
 

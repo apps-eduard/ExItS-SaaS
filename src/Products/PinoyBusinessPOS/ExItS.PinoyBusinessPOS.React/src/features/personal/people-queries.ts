@@ -19,6 +19,7 @@ import {
   unblockPersonalContact,
 } from "@/api/platform/personal-people-client";
 import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
+import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
 
 export function usePersonalContactsQuery() {
   return useQuery({
@@ -36,7 +37,7 @@ export function usePersonalConnectionRequestsQuery() {
 
 export function usePersonalNotificationsQuery() {
   return useQuery({
-    queryKey: personalPeopleKeys.notifications(),
+    queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
   });
 }
@@ -60,8 +61,9 @@ export function useInvalidatePersonalPeople() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.contacts() }),
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.connections() }),
-      queryClient.invalidateQueries({ queryKey: personalPeopleKeys.notifications() }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: [...personalPeopleKeys.all, "utang-summaries"] }),
+      queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] }),
     ]);
 }
 
@@ -152,11 +154,11 @@ export function useUnblockContactMutation() {
 }
 
 export function useMarkNotificationReadMutation() {
-  const invalidate = useInvalidatePersonalPeople();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notificationId: string) => markPersonalNotificationRead(notificationId),
     onSuccess: async () => {
-      await invalidate();
+      await queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY });
     },
   });
 }

@@ -409,7 +409,7 @@ public sealed class AcceptPersonalConnectionRequest
         if (request.TargetUserIdentityId != acceptingUserIdentityId)
         {
             return ApplicationResult<PersonalConnectionRequestDto>.Failure(
-                ApplicationErrorCodes.PersonalUtangUnauthorized,
+                ApplicationErrorCodes.PersonalConnectionUnauthorized,
                 "Not authorized for this connection request.");
         }
 

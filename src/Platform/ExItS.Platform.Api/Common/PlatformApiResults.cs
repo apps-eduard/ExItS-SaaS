@@ -46,6 +46,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.PosDeviceRegistrationRequired
             or ApplicationErrorCodes.PosDeviceRevoked
             or ApplicationErrorCodes.PersonalUtangUnauthorized
+            or ApplicationErrorCodes.PersonalConnectionUnauthorized
             or ApplicationErrorCodes.PersonalTodoUnauthorized
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.PersonalTodoUnauthorized
