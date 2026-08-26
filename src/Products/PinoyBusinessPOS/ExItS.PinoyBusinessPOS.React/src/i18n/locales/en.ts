@@ -460,6 +460,9 @@ export const en = {
   "people.add.requiredId": "Enter an exact ExItS ID.",
   "people.add.notFound": "No matching ExItS identity was found.",
   "people.add.cannotAddSelf": "You cannot add yourself.",
+  "people.add.alreadyAdded": "{name} is already in your People list.",
+  "people.add.alreadyAddedTitle": "Already added",
+  "people.add.openExisting": "Open person",
   "people.add.identityFound": "Identity found",
   "people.add.cancel": "Cancel",
   "people.add.confirm": "Add person",
@@ -722,6 +725,13 @@ export const en = {
   "personal.utang.sendForConfirmation": "Send for confirmation",
   "personal.utang.sendForConfirmationHint":
     "This will be sent to {name} for confirmation.",
+  "personal.utang.pendingLimitReached":
+    "You already have 3 entries waiting for {name}'s review. Wait for one to be confirmed or disputed before adding another.",
+  "personal.utang.dailyLimitReached":
+    "You've reached today's limit for new Utang entries with {name}. Try again later.",
+  "personal.utang.duplicateSubmission": "This Utang entry was already submitted.",
+  "personal.utang.pendingWaitingCount": "{count} entries are waiting for {name}'s review.",
+  "personal.utang.viewPending": "View pending entries",
   "personal.utang.balanceAfter": "Balance after",
   "personal.utang.noBalanceChange": "No balance change yet",
   "personal.utang.disputeReason": "Reason (optional)",

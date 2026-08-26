@@ -46,6 +46,18 @@ internal sealed class PlatformUnitOfWork : IPlatformUnitOfWork
             return;
         }
 
+        await ExecuteWithAdvisoryLockAsync(organizationId, Guid.Empty, action, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task ExecuteWithAdvisoryLockAsync(
+        Guid lockKeyA,
+        Guid lockKeyB,
+        Func<CancellationToken, Task> action,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
         var provider = _db.Database.ProviderName ?? string.Empty;
         if (!provider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
         {
@@ -60,10 +72,11 @@ internal sealed class PlatformUnitOfWork : IPlatformUnitOfWork
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            // Two-key advisory lock derived from organization Guid (transaction-scoped).
-            var bytes = organizationId.ToByteArray();
-            var key1 = BitConverter.ToInt32(bytes, 0);
-            var key2 = BitConverter.ToInt32(bytes, 4);
+            var bytesA = lockKeyA.ToByteArray();
+            var key1 = BitConverter.ToInt32(bytesA, 0);
+            var key2 = lockKeyB == Guid.Empty
+                ? BitConverter.ToInt32(bytesA, 4)
+                : BitConverter.ToInt32(lockKeyB.ToByteArray(), 0);
             await _db.Database
                 .ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key1}, {key2})", cancellationToken)
                 .ConfigureAwait(false);

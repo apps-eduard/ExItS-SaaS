@@ -360,6 +360,56 @@ describe("People lifecycle UX", () => {
     });
   });
 
+  it("shows already-added message when ExItS ID matches an existing person", async () => {
+    const fetchMock = vi.fn(
+      withAntiforgery(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/resolve-public-id") && init?.method === "POST") {
+          return jsonResponse(200, {
+            publicUserId: "EX-1234-5678",
+            userIdentityId: "user-b",
+            displayName: "Maria Santos",
+            maskedEmail: "m****@exits.local",
+            status: "Active",
+            isSelf: false,
+          });
+        }
+        if (url.includes("/utang/contacts")) {
+          return jsonResponse(200, [contactA]);
+        }
+        if (url.includes("/personal/connections")) {
+          return jsonResponse(200, []);
+        }
+        if (url.includes("/relationships/")) {
+          return jsonResponse(200, []);
+        }
+        return jsonResponse(404, {});
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    renderPeopleApp("/personal/people/add");
+
+    await user.type(screen.getByLabelText("ExItS ID"), "EX-1234-5678");
+    await user.click(screen.getByRole("button", { name: "Find person" }));
+
+    expect(await screen.findByTestId("people-add-error")).toHaveTextContent(
+      "Juan Dela Cruz is already in your People list.",
+    );
+    expect(await screen.findByTestId("identity-confirmation")).toHaveTextContent("Already added");
+    expect(screen.getByTestId("people-add-open-existing")).toHaveAttribute(
+      "href",
+      "/personal/people/c1",
+    );
+    expect(screen.queryByRole("button", { name: "Add person" })).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(
+        (call) => String(call[0]).includes("/utang/contacts") && call[1]?.method === "POST",
+      ),
+    ).toBe(false);
+  });
+
   it("shows Request connection on not connected detail and creates pending request", async () => {
     let connections: PersonalConnectionRequestDto[] = [];
     vi.stubGlobal(

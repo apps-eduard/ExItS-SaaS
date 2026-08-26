@@ -515,6 +515,23 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             notifications.EnumerateArray(),
             n => n.GetProperty("relatedType").GetString() == "personal_contact"
                  && n.GetProperty("title").GetString() == "Added to People");
+
+        using var duplicateRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            ownerToken,
+            new
+            {
+                displayName = "Duplicate",
+                resolvedUserIdentityId = resolved.GetProperty("userIdentityId").GetGuid(),
+                resolvedPublicUserId = resolved.GetProperty("publicUserId").GetString()
+            });
+        var duplicateResponse = await _client.SendAsync(duplicateRequest);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+        var duplicateBody = await duplicateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            ApplicationErrorCodes.PersonalContactIdentityConflict,
+            duplicateBody.GetProperty("errorCode").GetString());
     }
 
     private async Task<(string Token, Guid UserId, string Email)> SeedPersonalUserWithEmailAsync(string prefix)

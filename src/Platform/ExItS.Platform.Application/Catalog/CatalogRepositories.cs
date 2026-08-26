@@ -91,4 +91,14 @@ public interface IPlatformUnitOfWork
         Func<CancellationToken, Task> action,
         CancellationToken cancellationToken = default) =>
         action(cancellationToken);
+
+    /// <summary>
+    /// Runs <paramref name="action"/> under a two-key PostgreSQL advisory lock. Default runs without locking.
+    /// </summary>
+    Task ExecuteWithAdvisoryLockAsync(
+        Guid lockKeyA,
+        Guid lockKeyB,
+        Func<CancellationToken, Task> action,
+        CancellationToken cancellationToken = default) =>
+        action(cancellationToken);
 }

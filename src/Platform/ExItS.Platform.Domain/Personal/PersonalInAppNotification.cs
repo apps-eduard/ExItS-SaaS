@@ -8,10 +8,10 @@ public sealed class PersonalInAppNotification
 {
     public PersonalInAppNotificationId Id { get; }
     public PlatformUserId RecipientUserIdentityId { get; }
-    public string Title { get; }
-    public string Preview { get; }
+    public string Title { get; private set; }
+    public string Preview { get; private set; }
     public string RelatedType { get; }
-    public string? RelatedId { get; }
+    public string? RelatedId { get; private set; }
     public bool IsRead { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset? ReadAtUtc { get; private set; }
@@ -87,6 +87,28 @@ public sealed class PersonalInAppNotification
 
         IsRead = true;
         ReadAtUtc = utcNow;
+    }
+
+    public void MarkUnread()
+    {
+        IsRead = false;
+        ReadAtUtc = null;
+    }
+
+    public void UpdateContent(string title, string preview)
+    {
+        Title = NormalizeRequired(title, 120, "title");
+        Preview = NormalizeRequired(preview, 200, "preview");
+    }
+
+    public void RetargetRelatedId(string relatedId)
+    {
+        if (string.IsNullOrWhiteSpace(relatedId))
+        {
+            throw new DomainException(DomainErrorCodes.InvalidPersonalNotificationId, "relatedId is required.");
+        }
+
+        RelatedId = relatedId.Trim();
     }
 
     private static string NormalizeRequired(string value, int maxLength, string fieldName)

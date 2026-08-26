@@ -1334,6 +1334,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "people.add": "Add",
   "people.add.cancel": "Cancel",
   "people.add.cannotAddSelf": "You cannot add yourself.",
+  "people.add.alreadyAdded": "{name} is already in your People list.",
+  "people.add.alreadyAddedTitle": "Already added",
+  "people.add.openExisting": "Open person",
   "people.add.confirm": "Add person",
   "people.add.exitsId": "ExItS ID",
   "people.add.exitsIdPlaceholder": "EX-____-____",
@@ -1881,6 +1884,13 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.utang.sectionComing": "Susunod ang seksyong Utang na ito. Gamitin ang Bahay para sa summary.",
   "personal.utang.sendForConfirmation": "Ipadala para kumpirmahin",
   "personal.utang.sendForConfirmationHint": "This will be sent to {name} for confirmation.",
+  "personal.utang.pendingLimitReached":
+    "You already have 3 entries waiting for {name}'s review. Wait for one to be confirmed or disputed before adding another.",
+  "personal.utang.dailyLimitReached":
+    "You've reached today's limit for new Utang entries with {name}. Try again later.",
+  "personal.utang.duplicateSubmission": "This Utang entry was already submitted.",
+  "personal.utang.pendingWaitingCount": "{count} entries are waiting for {name}'s review.",
+  "personal.utang.viewPending": "View pending entries",
   "personal.utang.sharedLedger": "Shared ledger",
   "personal.utang.statusCancelled": "Nakansela",
   "personal.utang.statusConfirmed": "Kumpirmado",

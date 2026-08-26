@@ -187,6 +187,9 @@ public static class DomainErrorCodes
     public const string PersonalUtangEntryInvalid = "platform.personal.utang_entry.invalid";
     public const string PersonalUtangAmountInvalid = "platform.personal.utang.amount.invalid";
     public const string PersonalUtangNotesRequired = "platform.personal.utang.notes.required";
+    public const string PersonalUtangPendingLimitReached = "platform.personal.utang.pending_limit_reached";
+    public const string PersonalUtangDailyLimitReached = "platform.personal.utang.daily_limit_reached";
+    public const string PersonalUtangDuplicateSubmission = "platform.personal.utang.duplicate_submission";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
 

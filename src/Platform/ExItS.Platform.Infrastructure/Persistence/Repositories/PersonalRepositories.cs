@@ -509,6 +509,91 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             .ConfigureAwait(false);
     }
 
+    public async Task<int> CountPendingProposalsBySenderTowardAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var senderId = senderUserIdentityId.Value;
+        var counterpartyId = counterpartyUserIdentityId.Value;
+        var pending = PersonalUtangEntryStatus.Pending.ToString();
+        var loan = PersonalUtangEntryType.Loan.ToString();
+        return await (
+                from entry in db.PersonalUtangEntries.AsNoTracking()
+                join rel in db.PersonalDebtRelationships.AsNoTracking()
+                    on entry.RelationshipId equals rel.Id
+                where entry.Status == pending
+                      && entry.EntryType == loan
+                      && entry.CreatedByUserIdentityId == senderId
+                      && rel.CreditorUserIdentityId != null
+                      && rel.DebtorUserIdentityId != null
+                      && ((rel.CreditorUserIdentityId == senderId && rel.DebtorUserIdentityId == counterpartyId)
+                          || (rel.DebtorUserIdentityId == senderId && rel.CreditorUserIdentityId == counterpartyId))
+                select entry.Id)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<int> CountLoanProposalsCreatedBySenderTowardSinceAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        DateTimeOffset createdOnOrAfterUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var senderId = senderUserIdentityId.Value;
+        var counterpartyId = counterpartyUserIdentityId.Value;
+        var loan = PersonalUtangEntryType.Loan.ToString();
+        return await (
+                from entry in db.PersonalUtangEntries.AsNoTracking()
+                join rel in db.PersonalDebtRelationships.AsNoTracking()
+                    on entry.RelationshipId equals rel.Id
+                where entry.EntryType == loan
+                      && entry.CreatedByUserIdentityId == senderId
+                      && entry.CreatedAtUtc >= createdOnOrAfterUtc
+                      && rel.CreditorUserIdentityId != null
+                      && rel.DebtorUserIdentityId != null
+                      && ((rel.CreditorUserIdentityId == senderId && rel.DebtorUserIdentityId == counterpartyId)
+                          || (rel.DebtorUserIdentityId == senderId && rel.CreditorUserIdentityId == counterpartyId))
+                select entry.Id)
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<PersonalUtangEntry?> FindRecentDuplicateLoanAsync(
+        PlatformUserId senderUserIdentityId,
+        PlatformUserId counterpartyUserIdentityId,
+        decimal amount,
+        string? normalizedNotes,
+        DateTimeOffset createdOnOrAfterUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var senderId = senderUserIdentityId.Value;
+        var counterpartyId = counterpartyUserIdentityId.Value;
+        var loan = PersonalUtangEntryType.Loan.ToString();
+        var query =
+            from entry in db.PersonalUtangEntries.AsNoTracking()
+            join rel in db.PersonalDebtRelationships.AsNoTracking()
+                on entry.RelationshipId equals rel.Id
+            where entry.EntryType == loan
+                  && entry.CreatedByUserIdentityId == senderId
+                  && entry.Amount == amount
+                  && entry.CreatedAtUtc >= createdOnOrAfterUtc
+                  && rel.CreditorUserIdentityId != null
+                  && rel.DebtorUserIdentityId != null
+                  && ((rel.CreditorUserIdentityId == senderId && rel.DebtorUserIdentityId == counterpartyId)
+                      || (rel.DebtorUserIdentityId == senderId && rel.CreditorUserIdentityId == counterpartyId))
+            select entry;
+        query = normalizedNotes is null
+            ? query.Where(x => x.Notes == null)
+            : query.Where(x => x.Notes == normalizedNotes);
+
+        var record = await query
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public Task AddAsync(PersonalUtangEntry entry, CancellationToken cancellationToken = default)
     {
         db.PersonalUtangEntries.Add(ToRecord(entry));
@@ -904,11 +989,11 @@ internal sealed class PersonalInAppNotificationRepository(PlatformDbContext db) 
         CancellationToken cancellationToken = default)
     {
         var record = await db.PersonalInAppNotifications.AsNoTracking()
-            .FirstOrDefaultAsync(
-                x => x.RecipientUserIdentityId == recipientUserIdentityId.Value
-                     && x.RelatedType == relatedType
-                     && x.RelatedId == relatedId,
-                cancellationToken)
+            .Where(x => x.RecipientUserIdentityId == recipientUserIdentityId.Value
+                        && x.RelatedType == relatedType
+                        && x.RelatedId == relatedId)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : ToDomain(record);
     }
@@ -929,6 +1014,9 @@ internal sealed class PersonalInAppNotificationRepository(PlatformDbContext db) 
             return;
         }
 
+        record.Title = notification.Title;
+        record.Preview = notification.Preview;
+        record.RelatedId = notification.RelatedId;
         record.IsRead = notification.IsRead;
         record.ReadAtUtc = notification.ReadAtUtc;
     }

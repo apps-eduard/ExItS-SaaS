@@ -1335,6 +1335,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "people.add": "[HIL] Add",
   "people.add.cancel": "[HIL] Cancel",
   "people.add.cannotAddSelf": "[HIL] You cannot add yourself.",
+  "people.add.alreadyAdded": "{name} is already in your People list.",
+  "people.add.alreadyAddedTitle": "Already added",
+  "people.add.openExisting": "Open person",
   "people.add.confirm": "[HIL] Add person",
   "people.add.exitsId": "[HIL] ExItS ID",
   "people.add.exitsIdPlaceholder": "[HIL] EX-____-____",
@@ -1882,6 +1885,13 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.utang.sectionComing": "Ini nga bahin sang Utang sunod pa. Gamita ang Balay para sa kabilugan.",
   "personal.utang.sendForConfirmation": "Ipadala para kumpirmahon",
   "personal.utang.sendForConfirmationHint": "This will be sent to {name} for confirmation.",
+  "personal.utang.pendingLimitReached":
+    "You already have 3 entries waiting for {name}'s review. Wait for one to be confirmed or disputed before adding another.",
+  "personal.utang.dailyLimitReached":
+    "You've reached today's limit for new Utang entries with {name}. Try again later.",
+  "personal.utang.duplicateSubmission": "This Utang entry was already submitted.",
+  "personal.utang.pendingWaitingCount": "{count} entries are waiting for {name}'s review.",
+  "personal.utang.viewPending": "View pending entries",
   "personal.utang.sharedLedger": "Shared ledger",
   "personal.utang.statusCancelled": "Gin-cancel",
   "personal.utang.statusConfirmed": "Nakumpirma",

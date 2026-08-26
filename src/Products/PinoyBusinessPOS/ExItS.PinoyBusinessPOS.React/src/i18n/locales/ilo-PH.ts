@@ -1335,6 +1335,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "people.add": "[ILO] Add",
   "people.add.cancel": "[ILO] Cancel",
   "people.add.cannotAddSelf": "[ILO] You cannot add yourself.",
+  "people.add.alreadyAdded": "{name} is already in your People list.",
+  "people.add.alreadyAddedTitle": "Already added",
+  "people.add.openExisting": "Open person",
   "people.add.confirm": "[ILO] Add person",
   "people.add.exitsId": "[ILO] ExItS ID",
   "people.add.exitsIdPlaceholder": "[ILO] EX-____-____",
@@ -1882,6 +1885,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.utang.sectionComing": "Sumaruno pay daytoy a bahin ti Utang. Usaren ti Balay para iti summary.",
   "personal.utang.sendForConfirmation": "Ipatulod para kumpirmaen",
   "personal.utang.sendForConfirmationHint": "This will be sent to {name} for confirmation.",
+  "personal.utang.pendingLimitReached":
+    "You already have 3 entries waiting for {name}'s review. Wait for one to be confirmed or disputed before adding another.",
+  "personal.utang.dailyLimitReached":
+    "You've reached today's limit for new Utang entries with {name}. Try again later.",
+  "personal.utang.duplicateSubmission": "This Utang entry was already submitted.",
+  "personal.utang.pendingWaitingCount": "{count} entries are waiting for {name}'s review.",
+  "personal.utang.viewPending": "View pending entries",
   "personal.utang.sharedLedger": "Shared ledger",
   "personal.utang.statusCancelled": "Nakansela",
   "personal.utang.statusConfirmed": "Nakumpirma",

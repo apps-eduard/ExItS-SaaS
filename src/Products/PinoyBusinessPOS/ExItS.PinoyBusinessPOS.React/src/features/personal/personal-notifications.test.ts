@@ -154,6 +154,16 @@ describe("resolveNotificationDeepLink", () => {
     ).toBe("/personal/utang/relationships/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     expect(resolveNotificationDeepLink("PersonalDebtRelationship")).toBe("/personal/utang");
   });
+
+  it("opens Utang hub for aggregated pending proposals (with or without relatedId)", () => {
+    expect(resolveNotificationDeepLink("PersonalUtangPendingProposals")).toBe("/personal/utang");
+    expect(
+      resolveNotificationDeepLink(
+        "PersonalUtangPendingProposals",
+        "from:11111111-1111-1111-1111-111111111111",
+      ),
+    ).toBe("/personal/utang");
+  });
 });
 
 describe("resolveCustomerLinkNotificationState", () => {

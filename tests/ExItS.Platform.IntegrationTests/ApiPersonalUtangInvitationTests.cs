@@ -80,7 +80,8 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
                 creditorUserIdentityId = lenderId,
                 debtorContactId = contactId,
                 currencyCode = "PHP",
-                initialLoanAmount = 250m
+                initialLoanAmount = 250m,
+                initialLoanNotes = "Invitation seed loan"
             });
         var relationshipResponse = await _client.SendAsync(relationshipRequest);
         Assert.Equal(HttpStatusCode.Created, relationshipResponse.StatusCode);
@@ -158,7 +159,8 @@ public sealed class ApiPersonalUtangInvitationTests(PostgreSqlFixture fixture) :
                 creditorUserIdentityId = lenderId,
                 debtorContactId = contactId,
                 currencyCode = "PHP",
-                initialLoanAmount = 9999m
+                initialLoanAmount = 9999m,
+                initialLoanNotes = "Reminder seed loan"
             });
         var relationshipId = (await (await _client.SendAsync(relationshipRequest)).Content
             .ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();

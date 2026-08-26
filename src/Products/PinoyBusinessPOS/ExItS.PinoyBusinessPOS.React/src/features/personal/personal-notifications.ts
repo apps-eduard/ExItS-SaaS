@@ -193,6 +193,13 @@ export function resolveNotificationDeepLink(
   if (type === "personalutanginvitation" || type.includes("utanginvitation")) {
     return "/personal/utang/invitations";
   }
+  // Aggregated pending proposals inbox — always Utang hub (relatedId is sender key, not a relationship).
+  if (
+    type === "personalutangpendingproposals" ||
+    type.includes("utangpendingproposal")
+  ) {
+    return "/personal/utang";
+  }
   if (type === "customerlinkrequest" || type.includes("customerlink")) {
     return "/personal/customer-links";
   }
