@@ -282,6 +282,7 @@ describe("Personal Utang shared-ledger UI", () => {
     renderPath("/personal/utang");
     expect(await screen.findByTestId("utang-hub-owed-to-me")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record Utang");
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
     expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
     expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
@@ -340,6 +341,25 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("utang-rel-confirm-hint")).toBeInTheDocument();
   });
 
+  it("requires Purpose / Note before recording a private Utang", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang/lent");
+    await screen.findByTestId("utang-rel-contact");
+    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    await user.type(screen.getByTestId("utang-rel-amount"), "100");
+    await user.click(screen.getByTestId("utang-rel-submit"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/purpose \/ note/i);
+    expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Save Utang");
+  });
+
+  it("shows private save hint for unlinked contacts", async () => {
+    const user = userEvent.setup();
+    renderPath("/personal/utang/lent");
+    await screen.findByTestId("utang-rel-contact");
+    await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
+    expect(screen.getByTestId("utang-rel-private-hint")).toBeInTheDocument();
+  });
+
   it("shows shared ledger detail with pending incoming and outgoing actions", async () => {
     const user = userEvent.setup();
     renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
@@ -350,7 +370,7 @@ describe("Personal Utang shared-ledger UI", () => {
 
     const incoming = await screen.findByTestId(`utang-history-entry-${pendingIncomingId}`);
     expect(within(incoming).getByTestId(`utang-waiting-you-${pendingIncomingId}`)).toHaveTextContent(
-      "Waiting for you",
+      "Linked Ben recorded an Utang entry",
     );
     expect(within(incoming).getByTestId(`utang-entry-status-${pendingIncomingId}`)).toHaveTextContent(
       "Pending",

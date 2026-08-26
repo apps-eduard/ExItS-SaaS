@@ -184,8 +184,12 @@ function extractLeadingName(preview: string): string | null {
 }
 
 /** Route for notification tap — keep connection vs Utang invitation separate. */
-export function resolveNotificationDeepLink(relatedType: string): string {
+export function resolveNotificationDeepLink(
+  relatedType: string,
+  relatedId?: string | null,
+): string {
   const type = relatedType.trim().toLowerCase();
+  const id = relatedId?.trim() || "";
   if (type === "personalutanginvitation" || type.includes("utanginvitation")) {
     return "/personal/utang/invitations";
   }
@@ -193,10 +197,10 @@ export function resolveNotificationDeepLink(relatedType: string): string {
     return "/personal/customer-links";
   }
   if (type === "personaltodo" || type.includes("todo")) {
-    return "/personal/todo";
+    return id ? `/personal/todo/${id}` : "/personal/todo";
   }
-  if (type === "personaldebtrelationship" || type.includes("debtrelationship")) {
-    return "/personal/utang";
+  if (type === "personaldebtrelationship" || type.includes("debtrelationship") || type.includes("utangentry")) {
+    return id ? `/personal/utang/relationships/${id}` : "/personal/utang";
   }
   if (type === "personalconnectionrequest" || type.includes("connection")) {
     return "/personal/invitations";

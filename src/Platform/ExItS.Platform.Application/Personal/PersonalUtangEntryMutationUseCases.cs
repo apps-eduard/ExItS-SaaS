@@ -382,6 +382,7 @@ internal static class PersonalUtangEntryNotifications
         PersonalDebtRelationship relationship,
         PersonalUtangEntry entry,
         PlatformUserId proposerUserIdentityId,
+        IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IClock clock,
@@ -393,11 +394,17 @@ internal static class PersonalUtangEntryNotifications
             return;
         }
 
+        var proposer = await users.GetByIdAsync(proposerUserIdentityId, cancellationToken).ConfigureAwait(false);
+        var proposerName = string.IsNullOrWhiteSpace(proposer?.DisplayName)
+            ? "Someone"
+            : proposer!.DisplayName.Trim();
+
         await TryNotifyAsync(
             counterparty,
-            title: "Personal Utang entry proposed",
-            preview: "A counterparty proposed a Personal Utang entry for your review.",
-            entry,
+            title: "Utang entry to review",
+            preview: $"{proposerName} recorded an Utang entry for your review.",
+            relatedType: "PersonalDebtRelationship",
+            relatedId: relationship.Id.Value.ToString("D"),
             settings,
             notifications,
             clock,
@@ -416,7 +423,8 @@ internal static class PersonalUtangEntryNotifications
             entry.CreatedByUserIdentityId,
             title,
             preview,
-            entry,
+            relatedType: "PersonalDebtRelationship",
+            relatedId: entry.RelationshipId.Value.ToString("D"),
             settings,
             notifications,
             clock,
@@ -441,7 +449,8 @@ internal static class PersonalUtangEntryNotifications
             counterparty,
             title: "Personal Utang entry cancelled",
             preview: "A pending Personal Utang entry was cancelled.",
-            entry,
+            relatedType: "PersonalDebtRelationship",
+            relatedId: relationship.Id.Value.ToString("D"),
             settings,
             notifications,
             clock,
@@ -452,7 +461,8 @@ internal static class PersonalUtangEntryNotifications
         PlatformUserId recipient,
         string title,
         string preview,
-        PersonalUtangEntry entry,
+        string relatedType,
+        string relatedId,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
         IClock clock,
@@ -469,9 +479,9 @@ internal static class PersonalUtangEntryNotifications
             recipient,
             title,
             preview,
-            relatedType: "PersonalUtangEntry",
+            relatedType,
             clock.UtcNow,
-            relatedId: entry.Id.Value.ToString("D"));
+            relatedId);
         await notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
     }
 }

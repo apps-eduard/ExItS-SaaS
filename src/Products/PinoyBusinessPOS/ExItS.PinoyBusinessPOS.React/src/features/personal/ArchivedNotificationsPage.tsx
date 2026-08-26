@@ -150,7 +150,7 @@ export function ArchivedNotificationsPage() {
                     item,
                     item.relatedId ? connectionStatusById.get(item.relatedId) : null,
                   );
-                  const destination = resolveNotificationDeepLink(item.relatedType);
+                  const destination = resolveNotificationDeepLink(item.relatedType, item.relatedId);
                   const canNavigate = destination !== "/personal/notifications";
                   return (
                     <li key={item.id}>

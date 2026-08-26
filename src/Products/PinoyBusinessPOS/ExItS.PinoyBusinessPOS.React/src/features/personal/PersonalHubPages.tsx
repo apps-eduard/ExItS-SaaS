@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Button } from "@/components/ui/button";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
@@ -168,6 +169,15 @@ export function PersonalUtangHubPage() {
           ) : null}
         </section>
       ) : null}
+
+      <div className="exits-animate-panel">
+        <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="utang-hub-record">
+          <Link to="/personal/utang/lent">
+            <HandCoins className="size-4 shrink-0" aria-hidden />
+            {t("personal.utang.recordUtang")}
+          </Link>
+        </Button>
+      </div>
 
       {pendingCount > 0 ? (
         <section

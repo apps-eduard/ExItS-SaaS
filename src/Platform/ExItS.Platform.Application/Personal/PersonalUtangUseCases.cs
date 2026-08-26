@@ -377,6 +377,9 @@ public sealed class CreatePersonalDebtRelationship
     private readonly IPersonalContactRepository _contacts;
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -385,6 +388,9 @@ public sealed class CreatePersonalDebtRelationship
         IPersonalContactRepository contacts,
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
+        IPlatformUserRepository users,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -392,6 +398,9 @@ public sealed class CreatePersonalDebtRelationship
         _contacts = contacts;
         _relationships = relationships;
         _entries = entries;
+        _users = users;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -500,6 +509,18 @@ public sealed class CreatePersonalDebtRelationship
             if (initialEntry is not null)
             {
                 await _entries.AddAsync(initialEntry, cancellationToken).ConfigureAwait(false);
+                if (initialEntry.Status is PersonalUtangEntryStatus.Pending)
+                {
+                    await PersonalUtangEntryNotifications.NotifyCounterpartyPendingAsync(
+                        relationship,
+                        initialEntry,
+                        actingUserIdentityId,
+                        _users,
+                        _settings,
+                        _notifications,
+                        _clock,
+                        cancellationToken).ConfigureAwait(false);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -719,7 +740,12 @@ public sealed class ListPersonalUtangHistory
             .ConfigureAwait(false);
 
         return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(
-            list.Select(RecordPersonalUtangEntry.ToDto).ToList());
+            list.Select(entry =>
+                    RecordPersonalUtangEntry.ToDto(
+                        entry,
+                        userIdentityId,
+                        access.Value!.IsSharedLedger))
+                .ToList());
     }
 }
 
@@ -728,6 +754,9 @@ public sealed class RecordPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPersonalAccountSettingsRepository _settings;
+    private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -736,6 +765,9 @@ public sealed class RecordPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPlatformUserRepository users,
+        IPersonalAccountSettingsRepository settings,
+        IPersonalInAppNotificationRepository notifications,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -743,6 +775,9 @@ public sealed class RecordPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _users = users;
+        _settings = settings;
+        _notifications = notifications;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -797,6 +832,19 @@ public sealed class RecordPersonalUtangEntry
 
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
             await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
+            if (entry.Status is PersonalUtangEntryStatus.Pending)
+            {
+                await PersonalUtangEntryNotifications.NotifyCounterpartyPendingAsync(
+                    relationship,
+                    entry,
+                    actingUserIdentityId,
+                    _users,
+                    _settings,
+                    _notifications,
+                    _clock,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _auditWriter.WriteAsync(

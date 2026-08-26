@@ -95,7 +95,7 @@ export function NotificationsPage() {
                 {group.items.map((item) => {
                   const localized = localizePersonalNotification(item, t);
                   const unread = !item.isRead;
-                  const destination = resolveNotificationDeepLink(item.relatedType);
+                  const destination = resolveNotificationDeepLink(item.relatedType, item.relatedId);
                   const hasActionDestination = destination !== "/personal/notifications";
                   return (
                     <li key={item.id}>

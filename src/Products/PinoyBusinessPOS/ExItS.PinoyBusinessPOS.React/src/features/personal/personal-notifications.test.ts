@@ -144,6 +144,16 @@ describe("resolveNotificationDeepLink", () => {
     expect(resolveNotificationDeepLink("PersonalUtangInvitation")).toBe("/personal/utang/invitations");
     expect(resolveNotificationDeepLink("CustomerLinkRequest")).toBe("/personal/customer-links");
   });
+
+  it("opens the related Utang relationship for pending review", () => {
+    expect(
+      resolveNotificationDeepLink(
+        "PersonalDebtRelationship",
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      ),
+    ).toBe("/personal/utang/relationships/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    expect(resolveNotificationDeepLink("PersonalDebtRelationship")).toBe("/personal/utang");
+  });
 });
 
 describe("resolveCustomerLinkNotificationState", () => {
