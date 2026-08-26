@@ -349,6 +349,7 @@ builder.Services.AddScoped<CompletePersonalTodo>();
 builder.Services.AddScoped<ReopenPersonalTodo>();
 builder.Services.AddScoped<CancelPersonalTodo>();
 builder.Services.AddScoped<ListPersonalInAppNotifications>();
+builder.Services.AddScoped<CountPersonalInAppNotificationUnread>();
 builder.Services.AddScoped<MarkPersonalInAppNotificationRead>();
 builder.Services.AddScoped<ListPersonalNotificationDeliveries>();
 builder.Services.AddScoped<CreatePersonalTodo>();

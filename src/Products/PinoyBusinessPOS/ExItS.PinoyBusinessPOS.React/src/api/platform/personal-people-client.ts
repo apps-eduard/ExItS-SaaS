@@ -6,6 +6,8 @@ import type {
   PersonalContactDto,
   PersonalDebtRelationshipSummaryDto,
   PersonalInAppNotificationDto,
+  PersonalNotificationPageDto,
+  PersonalNotificationUnreadCountDto,
   PersonalUtangInvitationAcceptResultDto,
   PersonalUtangInvitationDto,
   ResolvedPublicUserDto,
@@ -196,11 +198,55 @@ export async function revokePersonalInvitation(
 
 export async function listPersonalNotifications(
   signal?: AbortSignal,
+  options?: { unreadOnly?: boolean },
 ): Promise<PersonalInAppNotificationDto[]> {
-  return platformRequest<PersonalInAppNotificationDto[]>({
-    path: "/api/v1/personal/notifications",
+  const params = new URLSearchParams({ scope: "recent" });
+  if (options?.unreadOnly) {
+    params.set("unreadOnly", "true");
+  }
+  const raw = await platformRequest<PersonalInAppNotificationDto[] | PersonalNotificationPageDto>({
+    path: `/api/v1/personal/notifications?${params.toString()}`,
     signal,
   });
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+  return raw?.items ?? [];
+}
+
+export async function listArchivedPersonalNotifications(
+  page: number,
+  pageSize = 30,
+  options?: { unreadOnly?: boolean; signal?: AbortSignal },
+): Promise<PersonalNotificationPageDto> {
+  const params = new URLSearchParams({
+    scope: "archived",
+    page: String(Math.max(page, 1)),
+    pageSize: String(pageSize),
+  });
+  if (options?.unreadOnly) {
+    params.set("unreadOnly", "true");
+  }
+  const raw = await platformRequest<PersonalNotificationPageDto>({
+    path: `/api/v1/personal/notifications?${params.toString()}`,
+    signal: options?.signal,
+  });
+  return {
+    items: raw.items ?? [],
+    totalCount: raw.totalCount ?? 0,
+    page: raw.page ?? page,
+    pageSize: raw.pageSize ?? pageSize,
+  };
+}
+
+export async function getPersonalNotificationUnreadCount(
+  signal?: AbortSignal,
+): Promise<number> {
+  const raw = await platformRequest<PersonalNotificationUnreadCountDto>({
+    path: "/api/v1/personal/notifications/unread-count",
+    signal,
+  });
+  return raw.unreadCount ?? 0;
 }
 
 export async function markPersonalNotificationRead(

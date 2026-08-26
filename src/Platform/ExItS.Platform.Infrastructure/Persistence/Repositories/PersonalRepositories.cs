@@ -837,14 +837,65 @@ internal sealed class PersonalInAppNotificationRepository(PlatformDbContext db) 
         int take,
         CancellationToken cancellationToken = default)
     {
-        var records = await db.PersonalInAppNotifications.AsNoTracking()
-            .Where(x => x.RecipientUserIdentityId == recipientUserIdentityId.Value)
+        var (items, _) = await ListForUserPagedAsync(
+                recipientUserIdentityId,
+                createdOnOrAfterUtc: null,
+                createdBeforeUtc: null,
+                unreadOnly: false,
+                skip: 0,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return items;
+    }
+
+    public async Task<(IReadOnlyList<PersonalInAppNotification> Items, int TotalCount)> ListForUserPagedAsync(
+        PlatformUserId recipientUserIdentityId,
+        DateTimeOffset? createdOnOrAfterUtc,
+        DateTimeOffset? createdBeforeUtc,
+        bool unreadOnly,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.PersonalInAppNotifications.AsNoTracking()
+            .Where(x => x.RecipientUserIdentityId == recipientUserIdentityId.Value);
+
+        if (createdOnOrAfterUtc is not null)
+        {
+            var onOrAfter = createdOnOrAfterUtc.Value;
+            query = query.Where(x => x.CreatedAtUtc >= onOrAfter);
+        }
+
+        if (createdBeforeUtc is not null)
+        {
+            var before = createdBeforeUtc.Value;
+            query = query.Where(x => x.CreatedAtUtc < before);
+        }
+
+        if (unreadOnly)
+        {
+            query = query.Where(x => !x.IsRead);
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
             .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.Id)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        return records.Select(ToDomain).ToList();
+        return (records.Select(ToDomain).ToList(), total);
     }
+
+    public Task<int> CountUnreadForUserAsync(
+        PlatformUserId recipientUserIdentityId,
+        CancellationToken cancellationToken = default) =>
+        db.PersonalInAppNotifications.AsNoTracking()
+            .CountAsync(
+                x => x.RecipientUserIdentityId == recipientUserIdentityId.Value && !x.IsRead,
+                cancellationToken);
 
     public async Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
         PlatformUserId recipientUserIdentityId,

@@ -5,6 +5,8 @@ import {
   createPersonalContact,
   createPersonalDebtRelationship,
   declinePersonalConnectionRequest,
+  getPersonalNotificationUnreadCount,
+  listArchivedPersonalNotifications,
   listBorrowedRelationships,
   listLentRelationships,
   listPersonalConnectionRequests,
@@ -19,7 +21,11 @@ import {
   unblockPersonalContact,
 } from "@/api/platform/personal-people-client";
 import type { CreatePersonalContactRequest, CreatePersonalDebtRelationshipRequest } from "@/api/platform/personal-types";
-import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
+import {
+  PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY,
+  PERSONAL_NOTIFICATIONS_QUERY_KEY,
+  PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
+} from "@/features/personal/personal-notifications";
 
 export function usePersonalContactsQuery() {
   return useQuery({
@@ -39,6 +45,21 @@ export function usePersonalNotificationsQuery() {
   return useQuery({
     queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY,
     queryFn: ({ signal }) => listPersonalNotifications(signal),
+  });
+}
+
+export function usePersonalNotificationUnreadCountQuery() {
+  return useQuery({
+    queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY,
+    queryFn: ({ signal }) => getPersonalNotificationUnreadCount(signal),
+  });
+}
+
+export function useArchivedPersonalNotificationsQuery(unreadOnly: boolean) {
+  return useQuery({
+    queryKey: [...PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY, unreadOnly ? "unread" : "all"] as const,
+    queryFn: ({ signal }) =>
+      listArchivedPersonalNotifications(1, 30, { unreadOnly, signal }),
   });
 }
 
@@ -62,6 +83,8 @@ export function useInvalidatePersonalPeople() {
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.contacts() }),
       queryClient.invalidateQueries({ queryKey: personalPeopleKeys.connections() }),
       queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: [...personalPeopleKeys.all, "utang-summaries"] }),
       queryClient.invalidateQueries({ queryKey: ["personal", "utang", "invitations"] }),
     ]);
@@ -171,7 +194,11 @@ export function useMarkNotificationReadMutation() {
   return useMutation({
     mutationFn: (notificationId: string) => markPersonalNotificationRead(notificationId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY }),
+      ]);
     },
   });
 }

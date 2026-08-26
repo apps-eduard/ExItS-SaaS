@@ -233,10 +233,16 @@ export async function cancelPersonalReminder(
 export async function listPersonalNotifications(
   signal?: AbortSignal,
 ): Promise<PersonalInAppNotificationDto[]> {
-  const raw = await platformRequest<unknown>({ path: "/api/v1/personal/notifications", signal });
-  return (Array.isArray(raw) ? raw : []).map((item) =>
-    personalInAppNotificationSchema.parse(normalizeNotification(item)),
-  );
+  const raw = await platformRequest<unknown>({
+    path: "/api/v1/personal/notifications?scope=recent",
+    signal,
+  });
+  const items = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as { items?: unknown })?.items)
+      ? ((raw as { items: unknown[] }).items)
+      : [];
+  return items.map((item) => personalInAppNotificationSchema.parse(normalizeNotification(item)));
 }
 
 export async function markPersonalNotificationRead(

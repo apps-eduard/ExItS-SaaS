@@ -2,6 +2,16 @@ import type { PersonalInAppNotificationDto } from "@/api/platform/personal-socia
 import type { MessageKey } from "@/i18n/messages";
 
 export const PERSONAL_NOTIFICATIONS_QUERY_KEY = ["personal", "notifications"] as const;
+export const PERSONAL_NOTIFICATIONS_UNREAD_COUNT_QUERY_KEY = [
+  "personal",
+  "notifications",
+  "unread-count",
+] as const;
+export const PERSONAL_NOTIFICATIONS_ARCHIVED_QUERY_KEY = [
+  "personal",
+  "notifications",
+  "archived",
+] as const;
 
 /** Canonical English suffix written by Platform when creating customer-link notifications. */
 const CUSTOMER_LINK_PREVIEW_EN_SUFFIX =

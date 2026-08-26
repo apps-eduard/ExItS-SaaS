@@ -199,6 +199,23 @@ public interface IPersonalInAppNotificationRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Lists notifications for a recipient with optional created-at window and unread filter.
+    /// <paramref name="createdOnOrAfterUtc"/> inclusive; <paramref name="createdBeforeUtc"/> exclusive.
+    /// </summary>
+    Task<(IReadOnlyList<PersonalInAppNotification> Items, int TotalCount)> ListForUserPagedAsync(
+        PlatformUserId recipientUserIdentityId,
+        DateTimeOffset? createdOnOrAfterUtc,
+        DateTimeOffset? createdBeforeUtc,
+        bool unreadOnly,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountUnreadForUserAsync(
+        PlatformUserId recipientUserIdentityId,
+        CancellationToken cancellationToken = default);
+
     Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
         PlatformUserId recipientUserIdentityId,
         string relatedType,
