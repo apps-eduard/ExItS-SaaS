@@ -2,7 +2,7 @@
 
 **Package:** POS-REACT-IMPL-03  
 **Worktree:** `ExItS-SaaS-pos-react-client` (`feat/pos-react-client`)  
-**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`  
+**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`  
 **Status:** Complete on `feat/pos-react-client`  
 **Commit:** `d1c35bdcbae88c5bcde1c3302f4e7986abb7b82c`  
 **Expected commit message:** `feat(pos-react): add browser session and workspace resolver`

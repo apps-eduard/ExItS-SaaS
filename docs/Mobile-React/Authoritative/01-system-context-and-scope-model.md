@@ -50,7 +50,7 @@ Evidence: `src/Platform/ExItS.Platform.Api` middleware + ADR-017 (`docs/decision
 |--------|------|--------|
 | MAUI Blazor Hybrid (`ExItS.PinoyBusinessPOS.Maui`) | Full Personal + Org Owner + POS operations host | `PROVEN_CURRENT` |
 | Organization Web / Personal Web (Blazor) | Parallel web surfaces for org/personal | `PROVEN_CURRENT` (out of React scope except contracts) |
-| React PWA (`ExItS.PinoyBusinessPOS.Client`) | Browser session + workspace + sell-floor shell | `PROVEN_PARTIAL` |
+| React PWA (`ExItS.PinoyBusinessPOS.React`) | Browser session + workspace + sell-floor shell | `PROVEN_PARTIAL` |
 | Platform Admin | Platform control plane UI | `PROVEN_CURRENT` |
 
 ## Authority map (selected)

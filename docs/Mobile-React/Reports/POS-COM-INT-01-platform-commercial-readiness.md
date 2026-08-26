@@ -34,7 +34,7 @@ Platform login / session
 | Bearer middleware | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Common/PosPlatformBearerMiddleware.cs` |
 | Commercial accessor | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Common/PosCommercialAccess.cs` |
 | Capability policy | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/Commercial/UtangCapabilityPolicy.cs` |
-| React capability hints | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/src/access/pos-capabilities.ts` |
+| React capability hints | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/access/pos-capabilities.ts` |
 | React HTTP | Bearer token only — **no** `X-Pos-Subscription-Status` / `X-Pos-Feature-Grants` in production paths |
 
 ### Introspection fields verified
@@ -205,7 +205,7 @@ COM-INT-02 closed advanced-reports enforcement and strict-mode ordering bypass (
 - `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Common/PosPlatformBearerMiddleware.cs`
 - `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/Common/PosCommercialAccess.cs`
 - `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/appsettings.Development.json`
-- `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/src/features/checkout/checkout-sale-errors.ts`
+- `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/checkout/checkout-sale-errors.ts`
 - `tests/ExItS.PinoyBusinessPOS.UnitTests/Api/PosCommercialValidationTests.cs` (new)
 - `tests/ExItS.PinoyBusinessPOS.IntegrationTests/PosCommercialIntegrationReadinessTests.cs` (new)
 - `tests/ExItS.Platform.IntegrationTests/PosDeviceConcurrentRegistrationIntegrationTests.cs`

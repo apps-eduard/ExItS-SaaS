@@ -238,7 +238,7 @@ If testing over plain Tailscale HTTP and browser blocks camera → record **SECU
 Run before push:
 
 ```powershell
-cd src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client
+cd src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React
 npm test
 npm run typecheck
 npm run lint

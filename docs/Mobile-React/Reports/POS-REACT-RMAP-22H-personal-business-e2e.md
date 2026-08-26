@@ -61,7 +61,7 @@ Native-speaker certification: **PENDING**
 
 ## Files
 
-- `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/e2e/rmap-22h-personal-business-e2e.spec.ts`
+- `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/e2e/rmap-22h-personal-business-e2e.spec.ts`
 - Prettier hygiene on Personal RMAP-22 client files (format gate)
 
 ## Next

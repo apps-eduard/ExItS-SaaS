@@ -1,6 +1,6 @@
 # React Current State
 
-**Client:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client`
+**Client:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`
 **Package:** `@exits/pinoy-business-pos-client`
 **Baseline SHA:** (see branch HEAD after RMAP-01)
 

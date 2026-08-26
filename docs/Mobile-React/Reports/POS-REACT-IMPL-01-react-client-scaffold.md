@@ -8,7 +8,7 @@
 
 ## Created project
 
-`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 
 Private package name: `@exits/pinoy-business-pos-client` (ESM).
 
@@ -80,7 +80,7 @@ No fabricated revenue, sales, products, customers, store names, user names, or c
 
 ## Tests
 
-Local validation inside `ExItS.PinoyBusinessPOS.Client` (initial `npm install` generated `package-lock.json`; later packages use `npm ci`):
+Local validation inside `ExItS.PinoyBusinessPOS.React` (initial `npm install` generated `package-lock.json`; later packages use `npm ci`):
 
 | Command | Result |
 |---|---|

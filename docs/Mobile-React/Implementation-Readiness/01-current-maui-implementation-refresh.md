@@ -515,7 +515,7 @@ Approved file evidence baseline was `5a9be941â€¦`. This refresh uses `5979a9ceâ€
 | LocalStore encrypted outbox consumed by MAUI | **VERIFIED** | |
 | Auth is Platform-authoritative Bearer in SecureStorage | **VERIFIED** | |
 | CURRENT_IMPLEMENTATION_REQUIREMENT (native CSS / Razor on MAUI) | **VERIFIED** | Unchanged for the current host |
-| PROPOSED React path `ExItS.PinoyBusinessPOS.Client/` | **VERIFIED** | Still **not created** |
+| PROPOSED React path `ExItS.PinoyBusinessPOS.React/` | **VERIFIED** | Still **not created** |
 | Representative route lists in DOC-01 | **DELTA (inventory, not architecture)** | DOC-01 listed examples. Current main has **171** `@page` templates including connected-supplier, expenses, permissions-assignment, catalog import jobs, local sale receipt. Architecture groups still match. |
 | Min SDK / RIDs / display version | **DELTA** | Now recorded: API 24, `android-arm64;android-x64`, `0.5.0` |
 | OAuth callback activity | **DELTA** | `exitspos://auth/callback` present |
@@ -532,7 +532,7 @@ No accepted MOBILE-D decision is changed by these deltas.
 | Item | Status |
 |---|---|
 | React implementation | **NOT AUTHORIZED** |
-| Create `ExItS.PinoyBusinessPOS.Client` | **NOT AUTHORIZED** |
+| Create `ExItS.PinoyBusinessPOS.React` | **NOT AUTHORIZED** |
 | Modify MAUI | **NOT AUTHORIZED** (this package did not) |
 | PWA production | **NOT AUTHORIZED** |
 | Capacitor production | **NOT AUTHORIZED** |

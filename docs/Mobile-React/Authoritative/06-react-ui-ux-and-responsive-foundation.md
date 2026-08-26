@@ -72,7 +72,7 @@ Standardize **interaction patterns**, not genericize unrelated business-domain l
 
 ## Current shared inventory (baseline React client)
 
-Client: `ExItS.PinoyBusinessPOS.Client`
+Client: `ExItS.PinoyBusinessPOS.React`
 
 **RMAP-00 foundation:** IMPLEMENTED for the shared primitives listed under EXISTS below. Sell floor is the first reuse proof (`SellFloorPage` / `SellCartPanel` consume `SearchField`, `MoneyDisplay`, `QuantityStepper`, `LoadingSkeleton`, `StickyActionBar`).
 

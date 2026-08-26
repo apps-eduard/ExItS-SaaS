@@ -17,7 +17,7 @@ Gate A (planning baseline) is already approved. This readiness queue is Gate B m
 
 Create sibling:
 
-`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 
 Only after Product Owner authorization. No MAUI deletion. No overwrite of `.Web`.
 
@@ -63,7 +63,7 @@ Separate authorization. Browser/PWA on iPhone is reachability, not Gate K.
 
 ## 2. Master package map (proposed future queue — DO NOT EXECUTE)
 
-Allowed projects, unless a row says otherwise: `ExItS.PinoyBusinessPOS.Client` only (once created at Gate C).
+Allowed projects, unless a row says otherwise: `ExItS.PinoyBusinessPOS.React` only (once created at Gate C).
 
 Forbidden in every row unless explicitly listed: `ExItS.PinoyBusinessPOS.Maui` source changes, `.Web` rewrite, Platform/PLM business code, database migrations, deleting MAUI.
 
@@ -72,7 +72,7 @@ Forbidden in every row unless explicitly listed: `ExItS.PinoyBusinessPOS.Maui` s
 | Field | Value |
 |---|---|
 | Gate | **C** |
-| Objective | Create `ExItS.PinoyBusinessPOS.Client` (React + TypeScript + Vite per MOBILE-D-010). App shell only. CI typecheck/lint/Vitest smoke. |
+| Objective | Create `ExItS.PinoyBusinessPOS.React` (React + TypeScript + Vite per MOBILE-D-010). App shell only. CI typecheck/lint/Vitest smoke. |
 | Allowed projects | New `.Client` project + solution wiring docs/CI as needed |
 | Forbidden projects | MAUI, POS API, Platform, PLM, `.Web`, LocalStore replacement |
 | API dependencies | None (stubs only) |

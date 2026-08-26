@@ -2,7 +2,7 @@
 
 **Package:** POS-REACT-IMPL-05  
 **Worktree:** `ExItS-SaaS-pos-react-client` (`feat/pos-react-client`)  
-**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`  
+**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`  
 **Status:** Complete on `feat/pos-react-client`  
 **Commit:** `c4589181f69005b5089d7406e143d523bc55d1a8`  
 **Base commit:** `e953839099d6382cf59d136d8a3872865830bef7` (WP04 clean tip)  

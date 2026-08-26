@@ -118,7 +118,7 @@ public sealed class MobileReactBrowserAuthArchitectureTests
     public void React_client_uses_same_origin_platform_proxy()
     {
         var root = FindRepositoryRoot();
-        var client = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Client");
+        var client = Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.React");
         var http = File.ReadAllText(Path.Combine(client, "src", "api", "http.ts"));
         var platformHttp = File.ReadAllText(Path.Combine(client, "src", "api", "platform", "platform-http.ts"));
         var proxyHelpers = File.ReadAllText(Path.Combine(client, "src", "pwa", "platform-api-proxy.ts"));

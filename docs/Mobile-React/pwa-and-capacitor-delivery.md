@@ -4,7 +4,7 @@
 **Package:** MOBILE-REACT-DOC-04  
 **Depends on:** [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md), [product-surfaces-and-ux.md](product-surfaces-and-ux.md)
 
-One React client (`ExItS.PinoyBusinessPOS.Client`, not created) can be delivered as browser, PWA, and Capacitor packages.
+One React client (`ExItS.PinoyBusinessPOS.React`, not created) can be delivered as browser, PWA, and Capacitor packages.
 **PWA capability is not Capacitor capability.** Do not claim identical device APIs, background behavior, or hardware support.
 
 PWA production rollout and Capacitor production rollout remain **NOT AUTHORIZED**. This file defines how they would work when separately approved.

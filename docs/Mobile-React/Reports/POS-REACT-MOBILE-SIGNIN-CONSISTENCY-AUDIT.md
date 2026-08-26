@@ -8,7 +8,7 @@
 
 ### A (canonical — live)
 
-- **Path:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/src/features/auth/SignInPage.tsx`
+- **Path:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/src/features/auth/SignInPage.tsx`
 - **Route:** `/sign-in` (only route entry in `src/app/router.tsx`)
 - **Used by:** `GuestOnly` guest tree; all desktop + mobile browsers loading this app
 - **Helpers:** `TestUserSelector.tsx` (conditional Development Tools)

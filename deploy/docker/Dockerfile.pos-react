@@ -5,11 +5,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/package.json \
-     src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/package-lock.json ./
+COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/package.json \
+     src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/package-lock.json ./
 RUN npm ci
 
-COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/ ./
+COPY src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ ./
 
 # Public verification key (NOT a secret). Overridable at build time for Local Validation.
 ARG VITE_OFFLINE_OPERATING_GRANT_PUBLIC_KEY_PEM="-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkld6WGOTRLooj2ArP2UV2S+nTVtA\nyfFYSN1+JNozH4BKAVf5/c1MwCGTLCel38wB0fnM9/1cYKEGKrh9xldC7Q==\n-----END PUBLIC KEY-----"

@@ -26,7 +26,7 @@ Open items: [06-open-decisions-and-blockers.md](../Implementation-Readiness/06-o
 
 ## React migration recommendation
 
-**Yes:** one React + TypeScript codebase as the **future candidate** host (`ExItS.PinoyBusinessPOS.Client/`, not created). Coexist with MAUI until Gate J. Do not overwrite `.Maui` or `.Web`.
+**Yes:** one React + TypeScript codebase as the **future candidate** host (`ExItS.PinoyBusinessPOS.React/`, not created). Coexist with MAUI until Gate J. Do not overwrite `.Maui` or `.Web`.
 
 ## Why PWA first
 

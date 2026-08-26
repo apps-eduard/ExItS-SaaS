@@ -2,7 +2,7 @@
 
 Future Pinoy Business POS React host. Sibling of MAUI and Organization Web, not a replacement until later authorized packages.
 
-- Path: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+- Path: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 - Package: `@exits/pinoy-business-pos-client` (private, ESM)
 - Stack: React, TypeScript strict, Vite, Tailwind, React Router, TanStack Query, React Hook Form, Zod, Lucide
 - Locale: English (`en`) default; `fil-PH` secondary

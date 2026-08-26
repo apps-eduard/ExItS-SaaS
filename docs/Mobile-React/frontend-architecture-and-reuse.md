@@ -87,7 +87,7 @@ Tailwind/shadcn here do **not** rewrite the MAUI requirement. They apply only af
 **Recommended path (not created):**
 
 ```text
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/
 ```
 
 **Do not create this project in this documentation package.**
@@ -118,7 +118,7 @@ The current Mobile Client already lives under PinoyBusinessPOS (`*.Maui`) while 
 Expected internal layout (documentation only):
 
 ```text
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/
   src/
     app/           # routes, providers
     features/      # personal, owner, selling, catalog, customers, inventory, …
@@ -457,7 +457,7 @@ Copy Diagnostics MUST NEVER include:
 
 ## 11. Explicit non-goals
 
-- Creating `ExItS.PinoyBusinessPOS.Client`
+- Creating `ExItS.PinoyBusinessPOS.React`
 - Adding Capacitor/PWA to the solution
 - Replacing LocalStore or MAUI
 - Sharing Admin billing/governance UI

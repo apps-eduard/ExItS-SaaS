@@ -113,7 +113,7 @@ function Resolve-PublicHost([string]$Value) {
 
 function Resolve-DefaultPosClientPath {
     $here = Split-Path -Parent $PSCommandPath
-    $candidate = Join-Path $here '..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Client'
+    $candidate = Join-Path $here '..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.React'
     return [System.IO.Path]::GetFullPath($candidate)
 }
 

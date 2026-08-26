@@ -21,7 +21,7 @@ It does **not** authorize a React scaffold, PWA production, Capacitor packaging,
 | Client boundaries (MVP, still in force) | Platform Admin = Web only; Personal = Mobile; Owner essentials = Mobile; full org admin = Web; POS operations = Mobile |
 | Organization Web | Not a checkout client; Cashier is denied that host and uses MAUI |
 | Personal Web | Additional browser Personal host; not the Mobile Client |
-| Future project path | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/` — **not created** |
+| Future project path | `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/` — **not created** |
 | Backends | Platform API + POS API + PostgreSQL remain the system of record (MOBILE-D-004) |
 | Offline | LocalStore + encrypted outbox consumed by MAUI (DOC-05). Replacement of LocalStore is a later authorized package, not implied by a UI rewrite |
 | Native today | Android MAUI. Current csproj: iOS/Windows/MacCatalyst not required for the existing MAUI foundation |
@@ -314,7 +314,7 @@ Every gate below requires **explicit Product Owner approval** where the table sa
 |---|---|---|---|---|
 | **A** | Documentation approved | Permission to treat this doc set as the planning baseline | DOC-01…DOC-08 plus AMEND-01…AMEND-03 reviewed; contradictions recorded | Yes — **planning baseline approved 2026-08-19**. Does **not** unlock C–K or merge. |
 | **B** | Backend / client gap plan | Known API/auth/offline gaps scheduled | Written gaps vs current Platform/POS APIs; no silent new endpoints as “frontend work” | Yes |
-| **C** | React scaffold authorization | Stage 1 — create `ExItS.PinoyBusinessPOS.Client` | Gate A; must not touch MAUI retirement; CI typecheck/lint/Vitest smoke | Yes |
+| **C** | React scaffold authorization | Stage 1 — create `ExItS.PinoyBusinessPOS.React` | Gate A; must not touch MAUI retirement; CI typecheck/lint/Vitest smoke | Yes |
 | **D** | PWA foundation | Stage 2 — browser/PWA shell | Gate C; DOC-04 cache vs LocalStore; **production PWA still separate** unless PO says ship | Yes |
 | **E** | First visual checkpoint | Stage 3 slice of sell-floor UX | Gate D or an agreed browser-only slice; screenshot matrix; **human visual sign-off** | Yes |
 | **F** | Offline / sync parity | Stage 4 | Gate E (or PO-approved overlap); DOC-05 tests; cash-only until evidence changes | Yes |

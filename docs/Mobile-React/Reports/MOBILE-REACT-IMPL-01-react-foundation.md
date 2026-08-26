@@ -13,7 +13,7 @@ Does **not** rewrite DOC-08, AMEND-01/02/03, APPROVAL, or MERGE-01 reports.
 
 Gate C scaffold at:
 
-`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 
 - React + TypeScript strict + Vite + Tailwind
 - React Router, TanStack Query, Lucide

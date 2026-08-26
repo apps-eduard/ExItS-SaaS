@@ -47,7 +47,7 @@ This package is a consistency audit and documentation closeout. It does not add 
 | [migration-testing-and-implementation-gates.md](../migration-testing-and-implementation-gates.md) | DOC-07 |
 | This report | DOC-08 |
 
-Recommended future project path (not created): `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+Recommended future project path (not created): `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 
 ---
 
@@ -206,7 +206,7 @@ These are **gaps for later authorized packages**, not work started here.
 
 | Item | Status |
 |---|---|
-| React scaffold / `ExItS.PinoyBusinessPOS.Client` | **NOT AUTHORIZED** |
+| React scaffold / `ExItS.PinoyBusinessPOS.React` | **NOT AUTHORIZED** |
 | PWA implementation / production | **NOT AUTHORIZED** |
 | Capacitor implementation / production | **NOT AUTHORIZED** |
 | MAUI retirement | **NOT AUTHORIZED** |

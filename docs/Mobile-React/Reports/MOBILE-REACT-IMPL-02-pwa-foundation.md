@@ -28,7 +28,7 @@ Does **not** rewrite DOC-08, AMEND-01/02/03, APPROVAL, MERGE-01, or IMPL-01 repo
 
 Installable PWA static shell on the existing React client:
 
-`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`
+`src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`
 
 - Web app manifest (`ExItS Mobile` / `ExItS Mobile`, `display: standalone`, `start_url: /`)
 - Restrained ExItS theme/background (`#166534` / `#eef3f0`)

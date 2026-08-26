@@ -2,7 +2,7 @@
 
 **Package:** POS-REACT-IMPL-04  
 **Worktree:** `ExItS-SaaS-pos-react-client` (`feat/pos-react-client`)  
-**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Client/`  
+**Client root:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/`  
 **Status:** Complete in worktree (not committed)  
 **Base commit:** `d1c35bdcbae88c5bcde1c3302f4e7986abb7b82c` (WP03 clean tip)  
 **Expected commit message:** `feat(pos-react): add pos sell-floor shell`
