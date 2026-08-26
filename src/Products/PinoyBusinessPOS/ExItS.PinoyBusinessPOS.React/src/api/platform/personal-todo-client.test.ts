@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   classifyTodoDue,
+  filterAndSortTodosForTab,
+  filterTodosBySearch,
   filterTodosByTab,
   isTodoConcurrencyConflict,
   listPersonalTodos,
   parseTodoAgendaTab,
+  quickDueLocalDateTime,
+  sortPersonalTodos,
   summarizeTodoCounts,
   todoAgendaTabHref,
   type PersonalTodoDto,
@@ -146,5 +150,72 @@ describe("todo agenda tab routing", () => {
   it("builds todo hub hrefs", () => {
     expect(todoAgendaTabHref("today")).toBe("/personal/todo?tab=today");
     expect(todoAgendaTabHref("upcoming")).toBe("/personal/todo?tab=upcoming");
+  });
+});
+
+describe("todo enterprise helpers", () => {
+  it("sorts due-first then updated descending", () => {
+    const sorted = sortPersonalTodos([
+      todo({
+        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        title: "No due older",
+        dueAtUtc: null,
+        updatedAtUtc: "2026-08-20T00:00:00Z",
+      }),
+      todo({
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        title: "Due soon",
+        dueAtUtc: "2026-08-21T10:00:00Z",
+        updatedAtUtc: "2026-08-19T00:00:00Z",
+      }),
+      todo({
+        id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        title: "Due later",
+        dueAtUtc: "2026-08-22T10:00:00Z",
+        updatedAtUtc: "2026-08-21T00:00:00Z",
+      }),
+    ]);
+
+    expect(sorted.map((item) => item.title)).toEqual(["Due soon", "Due later", "No due older"]);
+  });
+
+  it("filters by search query", () => {
+    const items = [
+      todo({ id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", title: "Pay rent", notes: "Landlord" }),
+      todo({ id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", title: "Buy milk" }),
+    ];
+    expect(filterTodosBySearch(items, "rent").map((item) => item.title)).toEqual(["Pay rent"]);
+    expect(filterTodosBySearch(items, "landlord").map((item) => item.title)).toEqual(["Pay rent"]);
+  });
+
+  it("combines tab filter, search, and sort", () => {
+    const now = new Date("2026-08-21T12:00:00");
+    const items = [
+      todo({
+        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        title: "Alpha today",
+        dueAtUtc: "2026-08-21T15:00:00Z",
+      }),
+      todo({
+        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        title: "Beta today",
+        dueAtUtc: "2026-08-21T09:00:00Z",
+      }),
+      todo({
+        id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        title: "Gamma tomorrow",
+        dueAtUtc: "2026-08-22T09:00:00Z",
+      }),
+    ];
+    expect(
+      filterAndSortTodosForTab(items, "today", { now, search: "beta" }).map((item) => item.title),
+    ).toEqual(["Beta today"]);
+  });
+
+  it("builds quick due presets in local time", () => {
+    const now = new Date("2026-08-21T12:00:00");
+    expect(quickDueLocalDateTime("today", now)).toMatch(/2026-08-21T17:00/);
+    expect(quickDueLocalDateTime("tomorrow", now)).toMatch(/2026-08-22T09:00/);
+    expect(quickDueLocalDateTime("none", now)).toBe("");
   });
 });

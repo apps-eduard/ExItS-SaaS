@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Ban,
   CalendarClock,
   Check,
   Hourglass,
@@ -24,7 +25,14 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import {
+  cascadeResolveSiblingRequests,
+  groupByKey,
+  siblingRequestIds,
+  sortByNewestUtc,
+} from "@/features/personal/consent-request-groups";
 import { PERSONAL_NOTIFICATIONS_QUERY_KEY } from "@/features/personal/personal-notifications";
+import { useConsentActionGuard } from "@/features/personal/useConsentActionGuard";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -89,6 +97,22 @@ export function PersonalCustomerLinksPage() {
       ),
   });
 
+  const busy = accept.isPending || decline.isPending || blockBusiness.isPending;
+  const { actionsDisabled, cooledDown, noteActionError, noteActionSuccess } =
+    useConsentActionGuard(busy);
+  const acceptingId = accept.isPending ? accept.variables : null;
+  const decliningId = decline.isPending ? decline.variables : null;
+  const blockingId = blockBusiness.isPending ? blockBusiness.variables : null;
+
+  const groupedItems = useMemo(() => {
+    const items = query.data ?? [];
+    return groupByKey(
+      items,
+      (request) => request.organizationId,
+      sortByNewestUtc((request) => request.createdAtUtc),
+    );
+  }, [query.data]);
+
   if (query.isPending) {
     return (
       <div className="personal-page customer-links-page exits-page flex min-w-0 flex-col gap-3">
@@ -137,11 +161,66 @@ export function PersonalCustomerLinksPage() {
     );
   }
 
-  const busy = accept.isPending || decline.isPending || blockBusiness.isPending;
-  const acceptingId = accept.isPending ? accept.variables : null;
-  const decliningId = decline.isPending ? decline.variables : null;
-  const blockingId = blockBusiness.isPending ? blockBusiness.variables : null;
-  const items = query.data;
+  async function onAcceptGroup(group: (typeof groupedItems)[number]) {
+    setActionError(null);
+    const primaryId = group.primary.id;
+    const siblings = siblingRequestIds(primaryId, group.items);
+
+    try {
+      await accept.mutateAsync(primaryId);
+      await cascadeResolveSiblingRequests(siblings, (requestId) =>
+        decline.mutateAsync(requestId),
+      );
+      noteActionSuccess();
+    } catch (error) {
+      noteActionError(error);
+      setActionError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("personal.customerLinks.acceptFailed"),
+      );
+    }
+  }
+
+  async function onDeclineGroup(group: (typeof groupedItems)[number]) {
+    setActionError(null);
+
+    try {
+      for (const request of group.items) {
+        await decline.mutateAsync(request.id);
+      }
+      noteActionSuccess();
+    } catch (error) {
+      noteActionError(error);
+      setActionError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("personal.customerLinks.declineFailed"),
+      );
+    }
+  }
+
+  async function onBlockGroup(group: (typeof groupedItems)[number]) {
+    setActionError(null);
+    const primaryId = group.primary.id;
+    const siblings = siblingRequestIds(primaryId, group.items);
+
+    try {
+      await blockBusiness.mutateAsync(primaryId);
+      await cascadeResolveSiblingRequests(siblings, (requestId) =>
+        decline.mutateAsync(requestId),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["personal", "blocked-businesses"] });
+      noteActionSuccess();
+    } catch (error) {
+      noteActionError(error);
+      setActionError(
+        error instanceof PlatformApiError
+          ? error.message
+          : t("personal.customerLinks.blockFailed"),
+      );
+    }
+  }
 
   return (
     <div
@@ -167,7 +246,13 @@ export function PersonalCustomerLinksPage() {
         </p>
       ) : null}
 
-      {items.length === 0 ? (
+      {!cooledDown ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="status">
+          {t("personal.consentAction.waitCooldown")}
+        </p>
+      ) : null}
+
+      {groupedItems.length === 0 ? (
         <div className="exits-animate-panel flex flex-col gap-3">
           <EmptyState
             title={t("personal.customerLinks.emptyTitle")}
@@ -198,12 +283,13 @@ export function PersonalCustomerLinksPage() {
             {t("personal.customerLinks.acceptHint")}
           </p>
           <ul className="exits-list m-0 grid list-none gap-2 p-0">
-            {items.map((request) => {
-              const isAccepting = acceptingId === request.id;
-              const isDeclining = decliningId === request.id;
-              const isBlocking = blockingId === request.id;
+            {groupedItems.map((group) => {
+              const request = group.primary;
+              const isAccepting = group.items.some((item) => acceptingId === item.id);
+              const isDeclining = group.items.some((item) => decliningId === item.id);
+              const isBlocking = group.items.some((item) => blockingId === item.id);
               return (
-                <li key={request.id}>
+                <li key={group.key}>
                   <article
                     className="exits-list__card customer-link-card"
                     data-testid={`customer-link-request-${request.id}`}
@@ -218,9 +304,19 @@ export function PersonalCustomerLinksPage() {
                           <p className="exits-list__name m-0 min-w-0 flex-1 truncate font-semibold">
                             {request.organizationDisplayName}
                           </p>
-                          <StatusChip tone="warning">
-                            {t("personal.customerLinks.statusPending")}
-                          </StatusChip>
+                          <div className="flex flex-wrap items-center gap-1">
+                            <StatusChip tone="warning">
+                              {t("personal.customerLinks.statusPending")}
+                            </StatusChip>
+                            {group.duplicateCount > 1 ? (
+                              <StatusChip tone="info">
+                                {t("personal.customerLinks.duplicateCount").replace(
+                                  "{count}",
+                                  String(group.duplicateCount),
+                                )}
+                              </StatusChip>
+                            ) : null}
+                          </div>
                         </div>
                         <p className="customer-link-card__prompt m-0">
                           {t("personal.customerLinks.cardPrompt")}
@@ -245,51 +341,55 @@ export function PersonalCustomerLinksPage() {
                       </span>
                     </div>
 
-                    <div className="customer-link-card__actions">
-                      <Button
-                        type="button"
-                        className="min-h-11"
-                        disabled={busy}
-                        data-testid={`customer-link-accept-${request.id}`}
-                        onClick={() => accept.mutate(request.id)}
-                      >
-                        {isAccepting ? (
-                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                        ) : (
-                          <Check className="size-4 shrink-0" aria-hidden />
-                        )}
-                        {t("personal.customerLinks.accept")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="min-h-11"
-                        disabled={busy}
-                        data-testid={`customer-link-decline-${request.id}`}
-                        onClick={() => decline.mutate(request.id)}
-                      >
-                        {isDeclining ? (
-                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                        ) : (
-                          <X className="size-4 shrink-0" aria-hidden />
-                        )}
-                        {t("personal.customerLinks.decline")}
-                      </Button>
+                    <div className="customer-link-card__actions flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                        <Button
+                          type="button"
+                          className="min-h-11 w-full sm:w-auto"
+                          disabled={actionsDisabled}
+                          data-testid={`customer-link-accept-${request.id}`}
+                          onClick={() => void onAcceptGroup(group)}
+                        >
+                          {isAccepting ? (
+                            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                          ) : (
+                            <Check className="size-4 shrink-0" aria-hidden />
+                          )}
+                          {t("personal.customerLinks.accept")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-11 w-full sm:w-auto"
+                          disabled={actionsDisabled}
+                          data-testid={`customer-link-decline-${request.id}`}
+                          onClick={() => void onDeclineGroup(group)}
+                        >
+                          {isDeclining ? (
+                            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                          ) : (
+                            <X className="size-4 shrink-0" aria-hidden />
+                          )}
+                          {t("personal.customerLinks.decline")}
+                        </Button>
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11 text-destructive"
-                        disabled={busy}
+                        className="min-h-11 w-full text-destructive sm:w-auto"
+                        disabled={actionsDisabled}
                         data-testid={`customer-link-block-${request.id}`}
                         onClick={() => {
                           if (window.confirm(t("personal.customerLinks.blockConfirm"))) {
-                            blockBusiness.mutate(request.id);
+                            void onBlockGroup(group);
                           }
                         }}
                       >
                         {isBlocking ? (
                           <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                        ) : null}
+                        ) : (
+                          <Ban className="size-4 shrink-0" aria-hidden />
+                        )}
                         {t("personal.customerLinks.blockBusiness")}
                       </Button>
                     </div>

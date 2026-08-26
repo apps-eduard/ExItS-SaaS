@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
-import { useSwitchToBusiness } from "@/workspace/use-switch-to-business";
+import { ACCOUNT_CONTEXT_SWITCH_PATH, useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import {
   isOrganizationAdministratorMembership,
@@ -93,9 +93,11 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
   const switchToPersonal = async () => {
     if (switchingPersonal) return;
     setSwitchingPersonal(true);
+    navigate(ACCOUNT_CONTEXT_SWITCH_PATH, { replace: true });
     try {
       const result = await ensurePersonalSessionProfile({ session, refreshSession });
       if (!result.ok) {
+        navigate("/workspace", { replace: true });
         return;
       }
       clearBoundWorkspace();

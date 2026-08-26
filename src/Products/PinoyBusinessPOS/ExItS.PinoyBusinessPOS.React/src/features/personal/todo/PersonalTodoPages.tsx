@@ -11,25 +11,38 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
+  Search,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
   createPersonalTodo,
-  filterTodosByTab,
+  filterAndSortTodosForTab,
   getPersonalTodo,
   isTodoConcurrencyConflict,
   listPersonalTodos,
-  localDateTimeToUtcIso,
   parseTodoAgendaTab,
+  priorityToneClass,
   reopenPersonalTodo,
   summarizeTodoCounts,
+  todoEmptyStateKeys,
   updatePersonalTodo,
-  utcIsoToLocalDateTimeInput,
   type PersonalTodoDto,
   type TodoAgendaTab,
 } from "@/api/platform/personal-todo-client";
+import {
+  TodoFormFields,
+  TodoRelatedEntityLink,
+} from "@/features/personal/todo/TodoFormFields";
+import {
+  applyTodoDeepLinkPrefill,
+  emptyTodoForm,
+  todoFormFromDto,
+  todoFormToRequestBody,
+  type TodoFormState,
+} from "@/features/personal/todo/personal-todo-form";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -66,15 +79,6 @@ const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
   { id: "open", labelKey: "personal.todo.filterOpen" },
   { id: "completed", labelKey: "personal.todo.filterCompleted" },
   { id: "cancelled", labelKey: "personal.todo.filterCancelled" },
-];
-
-const PRIORITIES = ["None", "Low", "Normal", "High"] as const;
-const RELATED_TYPES = [
-  { value: "", labelKey: "personal.todo.relatedNone" as MessageKey },
-  { value: "PersonalUtangRelationship", labelKey: "personal.todo.relatedUtang" as MessageKey },
-  { value: "PersonalContact", labelKey: "personal.todo.relatedContact" as MessageKey },
-  { value: "CustomerOrder", labelKey: "personal.todo.relatedOrder" as MessageKey },
-  { value: "Organization", labelKey: "personal.todo.relatedOrg" as MessageKey },
 ];
 
 function priorityLabelKey(priority: string): MessageKey {
@@ -115,6 +119,7 @@ function todoStatusTone(status: string): "open" | "completed" | "cancelled" {
 function TodoMetaLine({ todo }: { todo: PersonalTodoDto }) {
   const { t } = useI18n();
   const tone = todoStatusTone(todo.status);
+  const priorityClass = priorityToneClass(todo.priority);
   return (
     <p className="personal-todo-meta m-0 truncate text-[length:var(--exits-text-sm)] text-muted">
       <span className={cn("personal-todo-meta__chip", `personal-todo-meta__chip--${tone}`)}>
@@ -123,7 +128,14 @@ function TodoMetaLine({ todo }: { todo: PersonalTodoDto }) {
       <span className="personal-todo-meta__sep" aria-hidden>
         ·
       </span>
-      <span>{t(priorityLabelKey(todo.priority))}</span>
+      <span
+        className={cn(
+          "personal-todo-meta__chip",
+          priorityClass,
+        )}
+      >
+        {t(priorityLabelKey(todo.priority))}
+      </span>
       <span className="personal-todo-meta__sep" aria-hidden>
         ·
       </span>
@@ -133,6 +145,27 @@ function TodoMetaLine({ todo }: { todo: PersonalTodoDto }) {
           : t("personal.todo.noDue")}
       </span>
     </p>
+  );
+}
+
+function TodoConflictBanner({
+  onReload,
+}: {
+  onReload: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div
+      className="personal-todo-conflict-banner exits-animate-toolbar flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
+      role="alert"
+      data-testid="todo-conflict-banner"
+    >
+      <p className="m-0 text-[length:var(--exits-text-sm)]">{t("personal.todo.concurrencyConflictDetail")}</p>
+      <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={onReload}>
+        <RefreshCw className="size-4 shrink-0" aria-hidden />
+        {t("personal.todo.reloadAndRetry")}
+      </Button>
+    </div>
   );
 }
 
@@ -188,167 +221,6 @@ function OfflineNotice({ message }: { message: string }) {
   );
 }
 
-type TodoFormState = {
-  title: string;
-  notes: string;
-  dueAtLocal: string;
-  reminderAtLocal: string;
-  priority: string;
-  relatedEntityType: string;
-  relatedEntityId: string;
-};
-
-const emptyForm = (): TodoFormState => ({
-  title: "",
-  notes: "",
-  dueAtLocal: "",
-  reminderAtLocal: "",
-  priority: "Normal",
-  relatedEntityType: "",
-  relatedEntityId: "",
-});
-
-function formFromTodo(todo: PersonalTodoDto): TodoFormState {
-  return {
-    title: todo.title,
-    notes: todo.notes ?? "",
-    dueAtLocal: utcIsoToLocalDateTimeInput(todo.dueAtUtc),
-    reminderAtLocal: utcIsoToLocalDateTimeInput(todo.reminderAtUtc),
-    priority: todo.priority || "None",
-    relatedEntityType: todo.relatedEntityType ?? "",
-    relatedEntityId: todo.relatedEntityId ?? "",
-  };
-}
-
-function toRequestBody(form: TodoFormState) {
-  const relatedType = form.relatedEntityType.trim() || null;
-  const relatedId = form.relatedEntityId.trim() || null;
-  return {
-    title: form.title.trim(),
-    notes: form.notes.trim() || null,
-    dueAtUtc: localDateTimeToUtcIso(form.dueAtLocal),
-    reminderAtUtc: localDateTimeToUtcIso(form.reminderAtLocal),
-    priority: form.priority || "None",
-    relatedEntityType: relatedType,
-    relatedEntityId: relatedType ? relatedId : null,
-  };
-}
-
-function TodoFormFields({
-  form,
-  setForm,
-  idPrefix,
-  titleAutoFocus = false,
-}: {
-  form: TodoFormState;
-  setForm: (next: TodoFormState) => void;
-  idPrefix: string;
-  titleAutoFocus?: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <>
-      <label
-        className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-        htmlFor={`${idPrefix}-title`}
-      >
-        {t("personal.todo.titleField")}
-        <input
-          id={`${idPrefix}-title`}
-          data-testid={`${idPrefix}-title`}
-          autoFocus={titleAutoFocus}
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.notes")}
-        <textarea
-          data-testid={`${idPrefix}-notes`}
-          className="min-h-20 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-          value={form.notes}
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.dueAt")}
-        <input
-          data-testid={`${idPrefix}-due`}
-          type="datetime-local"
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-          value={form.dueAtLocal}
-          onChange={(e) => setForm({ ...form, dueAtLocal: e.target.value })}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.reminderAt")}
-        <input
-          data-testid={`${idPrefix}-reminder`}
-          type="datetime-local"
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-          value={form.reminderAtLocal}
-          onChange={(e) => setForm({ ...form, reminderAtLocal: e.target.value })}
-        />
-        {form.reminderAtLocal ? (
-          <span className="text-[length:var(--exits-text-xs)] text-muted">
-            {t("personal.todo.reminderServerHint")}
-          </span>
-        ) : null}
-      </label>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.priority")}
-        <select
-          data-testid={`${idPrefix}-priority`}
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-          value={form.priority}
-          onChange={(e) => setForm({ ...form, priority: e.target.value })}
-        >
-          {PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {t(priorityLabelKey(p))}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("personal.todo.relatedType")}
-        <select
-          data-testid={`${idPrefix}-related-type`}
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-          value={form.relatedEntityType}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              relatedEntityType: e.target.value,
-              relatedEntityId: e.target.value ? form.relatedEntityId : "",
-            })
-          }
-        >
-          {RELATED_TYPES.map((opt) => (
-            <option key={opt.value || "none"} value={opt.value}>
-              {t(opt.labelKey)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {form.relatedEntityType ? (
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("personal.todo.relatedId")}
-          <input
-            data-testid={`${idPrefix}-related-id`}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={form.relatedEntityId}
-            onChange={(e) => setForm({ ...form, relatedEntityId: e.target.value })}
-            placeholder="00000000-0000-0000-0000-000000000000"
-          />
-        </label>
-      ) : null}
-    </>
-  );
-}
-
 export function PersonalTodoHubPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -358,6 +230,15 @@ export function PersonalTodoHubPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TodoAgendaTab>(() => parseTodoAgendaTab(searchParams.get("tab")));
   const [createFormOpen, setCreateFormOpen] = useState(() => searchParams.get("add") === "1");
+  const [createAdvancedOpen, setCreateAdvancedOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [conflictBanner, setConflictBanner] = useState(false);
+  const [form, setForm] = useState<TodoFormState>(emptyTodoForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
+  const [cacheEpoch, setCacheEpoch] = useState(0);
+  const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
   useEffect(() => {
     setTab(parseTodoAgendaTab(searchParams.get("tab")));
@@ -378,6 +259,26 @@ export function PersonalTodoHubPage() {
     );
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    const relatedType = searchParams.get("relatedType");
+    const relatedId = searchParams.get("relatedId");
+    if (!relatedType || !relatedId) {
+      return;
+    }
+    setCreateFormOpen(true);
+    setCreateAdvancedOpen(true);
+    setForm((current) => applyTodoDeepLinkPrefill(current, relatedType, relatedId));
+    setSearchParams(
+      (prev) => {
+        const nextParams = new URLSearchParams(prev);
+        nextParams.delete("relatedType");
+        nextParams.delete("relatedId");
+        return nextParams;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
   function changeTab(next: TodoAgendaTab) {
     setTab(next);
     setSearchParams(
@@ -389,12 +290,6 @@ export function PersonalTodoHubPage() {
       { replace: true },
     );
   }
-  const [form, setForm] = useState<TodoFormState>(emptyForm);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
-  const [cacheEpoch, setCacheEpoch] = useState(0);
-  const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
-  const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
   const todosQuery = useQuery({
     queryKey: ["personal", "todos"],
@@ -440,7 +335,7 @@ export function PersonalTodoHubPage() {
       scopeBinding: offline.scopeBinding,
       userId: offline.userId,
       todoId: id.id,
-      todo: toRequestBody(form),
+      todo: todoFormToRequestBody(form),
       ownerUserIdentityId: offline.userId,
     });
     await refreshCounts();
@@ -453,16 +348,22 @@ export function PersonalTodoHubPage() {
         await createOffline();
         return;
       }
-      await createPersonalTodo(toRequestBody(form));
+      await createPersonalTodo(todoFormToRequestBody(form));
     },
     onSuccess: async () => {
-      setForm(emptyForm());
+      setForm(emptyTodoForm());
       setFormError(null);
       setCreateFormOpen(false);
+      setCreateAdvancedOpen(false);
+      setConflictBanner(false);
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     },
-    onError: (error) =>
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
+    onError: (error) => {
+      if (isTodoConcurrencyConflict(error)) {
+        setConflictBanner(true);
+      }
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+    },
   });
 
   const actionMutation = useMutation({
@@ -543,15 +444,23 @@ export function PersonalTodoHubPage() {
         }, 320);
       }
     },
-    onError: (error) =>
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
+    onError: (error) => {
+      if (isTodoConcurrencyConflict(error)) {
+        setConflictBanner(true);
+      }
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+    },
   });
 
   const todos: CachedPersonalTodo[] | PersonalTodoDto[] = usingCache
     ? cachedTodos
     : (todosQuery.data ?? []);
 
-  const filtered = useMemo(() => filterTodosByTab([...todos], tab), [todos, tab]);
+  const filtered = useMemo(
+    () => filterAndSortTodosForTab([...todos], tab, { search: searchQuery }),
+    [todos, tab, searchQuery],
+  );
+  const emptyState = todoEmptyStateKeys(tab, searchQuery.trim().length > 0);
   const counts = useMemo(() => summarizeTodoCounts([...todos]), [todos]);
   const pendingById = useMemo(
     () => new Set(cachedTodos.filter((row) => row.pendingLocalChange).map((row) => row.id)),
@@ -610,6 +519,15 @@ export function PersonalTodoHubPage() {
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
 
+      {conflictBanner ? (
+        <TodoConflictBanner
+          onReload={() => {
+            setConflictBanner(false);
+            void queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
+          }}
+        />
+      ) : null}
+
       <div className="exits-animate-toolbar">
         <UnderlineTabBar
           items={TABS.map((item) => {
@@ -639,6 +557,21 @@ export function PersonalTodoHubPage() {
           testId="personal-todo-filters"
         />
       </div>
+
+      <label className="personal-todo-search exits-animate-toolbar flex flex-col gap-1">
+        <span className="sr-only">{t("personal.todo.searchLabel")}</span>
+        <span className="personal-todo-search__field">
+          <Search className="personal-todo-search__icon size-4 shrink-0" aria-hidden />
+          <input
+            type="search"
+            className="personal-todo-search__input"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("personal.todo.searchPlaceholder")}
+            data-testid="todo-search"
+          />
+        </span>
+      </label>
 
       <section
         className="personal-todo-create-shell catalog-form-section exits-animate-panel personal-section"
@@ -692,7 +625,57 @@ export function PersonalTodoHubPage() {
                 createMutation.mutate();
               }}
             >
-              <TodoFormFields form={form} setForm={setForm} idPrefix="todo-create" />
+              <div className="personal-todo-quick-add flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label
+                  className="flex min-w-0 flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                  htmlFor="todo-create-title"
+                >
+                  {t("personal.todo.titleField")}
+                  <input
+                    id="todo-create-title"
+                    data-testid="todo-create-title"
+                    className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    value={form.title}
+                    onChange={(event) => setForm({ ...form, title: event.target.value })}
+                    required
+                  />
+                </label>
+                <Button
+                  type="submit"
+                  className="personal-todo-submit min-h-11 w-full sm:w-auto"
+                  disabled={createMutation.isPending || offlineBlocked}
+                  data-testid="todo-create-submit"
+                  tabIndex={createFormOpen ? undefined : -1}
+                >
+                  <TodoActionIcon pending={createMutation.isPending}>
+                    <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
+                  </TodoActionIcon>
+                  {t("personal.todo.add")}
+                </Button>
+              </div>
+
+              <button
+                type="button"
+                className="personal-todo-advanced-toggle"
+                data-testid="todo-create-advanced-toggle"
+                aria-expanded={createAdvancedOpen}
+                onClick={() => setCreateAdvancedOpen((open) => !open)}
+              >
+                <SlidersHorizontal className="size-4 shrink-0" aria-hidden />
+                {createAdvancedOpen
+                  ? t("personal.todo.hideMoreOptions")
+                  : t("personal.todo.moreOptions")}
+              </button>
+
+              {createAdvancedOpen ? (
+                <TodoFormFields
+                  form={form}
+                  setForm={setForm}
+                  idPrefix="todo-create-advanced"
+                  includeTitle={false}
+                />
+              ) : null}
+
               {!online ? (
                 <>
                   <OfflineNotice message={t("offline.todoWillQueue")} />
@@ -709,25 +692,13 @@ export function PersonalTodoHubPage() {
                   {formError}
                 </p>
               ) : null}
-              <Button
-                type="submit"
-                className="personal-todo-submit min-h-11"
-                disabled={createMutation.isPending || offlineBlocked}
-                data-testid="todo-create-submit"
-                tabIndex={createFormOpen ? undefined : -1}
-              >
-                <TodoActionIcon pending={createMutation.isPending}>
-                  <ListPlus className="personal-todo-btn-icon size-4 shrink-0" aria-hidden />
-                </TodoActionIcon>
-                {t("personal.todo.add")}
-              </Button>
             </form>
           </div>
         </div>
       </section>
 
       {filtered.length === 0 ? (
-        <EmptyState title={t("personal.todo.emptyTitle")} detail={t("personal.todo.emptyDetail")} />
+        <EmptyState title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
       ) : (
         <section
           className="personal-todo-list-section catalog-form-section exits-animate-panel personal-section gap-2"
@@ -750,23 +721,52 @@ export function PersonalTodoHubPage() {
                   <div
                     className={cn(
                       "exits-list__card personal-todo-row",
+                      item.priority === "High" && "personal-todo-row--priority-high",
                       isExiting && "personal-todo-row--exit",
                     )}
                     data-testid={`todo-item-${item.id}`}
                   >
                     <div className="personal-todo-row__body">
-                      <Link
-                        to={`/personal/todo/${item.id}`}
-                        className="personal-todo-row__content min-w-0 text-foreground no-underline"
-                      >
-                        <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
-                        <TodoMetaLine todo={item} />
-                        {item.notes ? (
-                          <p className="m-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
-                            {item.notes}
-                          </p>
-                        ) : null}
-                      </Link>
+                      <div className="personal-todo-row__lead">
+                        {item.status === "Open" ? (
+                          <button
+                            type="button"
+                            className="personal-todo-row__check"
+                            data-testid={`todo-check-${item.id}`}
+                            aria-label={t("personal.todo.complete")}
+                            disabled={actionMutation.isPending || offlineBlocked}
+                            onClick={() =>
+                              actionMutation.mutate({ action: "complete", todo: item })
+                            }
+                          >
+                            {isActing ? (
+                              <Loader2 className="size-4 animate-spin" aria-hidden />
+                            ) : (
+                              <span className="personal-todo-row__check-box" aria-hidden />
+                            )}
+                          </button>
+                        ) : (
+                          <span
+                            className={cn(
+                              "personal-todo-row__check personal-todo-row__check--done",
+                              item.status === "Completed" && "personal-todo-row__check--completed",
+                            )}
+                            aria-hidden
+                          />
+                        )}
+                        <Link
+                          to={`/personal/todo/${item.id}`}
+                          className="personal-todo-row__content min-w-0 flex-1 text-foreground no-underline"
+                        >
+                          <p className="exits-list__name m-0 truncate font-semibold">{item.title}</p>
+                          <TodoMetaLine todo={item} />
+                          {item.notes ? (
+                            <p className="m-0 mt-1 line-clamp-2 text-[length:var(--exits-text-sm)] text-muted">
+                              {item.notes}
+                            </p>
+                          ) : null}
+                        </Link>
+                      </div>
                       <WaitingChip pending={pendingById.has(item.id)} />
                       {hasActions ? (
                         <div
@@ -899,6 +899,7 @@ export function PersonalTodoDetailPage() {
   const editFormRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<TodoFormState | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [conflictBanner, setConflictBanner] = useState(false);
   const [editing, setEditing] = useState(false);
   const [cachedTodo, setCachedTodo] = useState<CachedPersonalTodo | null>(null);
   const [cacheEpoch, setCacheEpoch] = useState(0);
@@ -949,7 +950,7 @@ export function PersonalTodoDetailPage() {
     if (!todo || todo.status !== "Open") {
       return;
     }
-    setForm(formFromTodo(todo));
+    setForm(todoFormFromDto(todo));
     setEditing(true);
   }, [cachedTodo, editing, todoQuery.data, usingCache, wantsEdit]);
 
@@ -982,7 +983,7 @@ export function PersonalTodoDetailPage() {
           todoId: current.id,
           todoIsLocal: isLocal,
           dependsOnTodoOperationId: isLocal ? current.id : null,
-          todo: toRequestBody(next),
+          todo: todoFormToRequestBody(next),
           // The server still owns the version, so a stale offline edit is still rejectable.
           expectedVersion: cachedTodo?.version ?? null,
         });
@@ -991,7 +992,7 @@ export function PersonalTodoDetailPage() {
         return;
       }
       await updatePersonalTodo(current.id, {
-        ...toRequestBody(next),
+        ...todoFormToRequestBody(next),
         expectedVersion: current.version,
       });
     },
@@ -999,10 +1000,15 @@ export function PersonalTodoDetailPage() {
       setEditing(false);
       setForm(null);
       setFormError(null);
+      setConflictBanner(false);
       await invalidate();
     },
-    onError: (error) =>
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
+    onError: (error) => {
+      if (isTodoConcurrencyConflict(error)) {
+        setConflictBanner(true);
+      }
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+    },
   });
 
   const actionMutation = useMutation({
@@ -1044,8 +1050,12 @@ export function PersonalTodoDetailPage() {
     onSuccess: async () => {
       await invalidate();
     },
-    onError: (error) =>
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t)),
+    onError: (error) => {
+      if (isTodoConcurrencyConflict(error)) {
+        setConflictBanner(true);
+      }
+      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+    },
   });
 
   if (online && todoQuery.isPending) return <LoadingSkeleton label={t("personal.todo.loading")} />;
@@ -1074,7 +1084,7 @@ export function PersonalTodoDetailPage() {
     );
   }
 
-  const activeForm = form ?? formFromTodo(todo);
+  const activeForm = form ?? todoFormFromDto(todo);
   const offlineBlocked = !online && !offline;
 
   return (
@@ -1089,6 +1099,15 @@ export function PersonalTodoDetailPage() {
       />
 
       {usingCache ? <OfflineNotice message={t("offline.todoCachedNotice")} /> : null}
+
+      {conflictBanner ? (
+        <TodoConflictBanner
+          onReload={() => {
+            setConflictBanner(false);
+            void invalidate();
+          }}
+        />
+      ) : null}
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("personal.todo.status")}: {t(statusLabelKey(todo.status))} ·{" "}
@@ -1186,11 +1205,12 @@ export function PersonalTodoDetailPage() {
               )}
             </>
           ) : null}
-          {todo.relatedEntityType ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {todo.relatedEntityType}
-              {todo.relatedEntityId ? ` · ${todo.relatedEntityId}` : ""}
-            </p>
+          {todo.relatedEntityType && todo.relatedEntityId ? (
+            <TodoRelatedEntityLink
+              relatedEntityType={todo.relatedEntityType}
+              relatedEntityId={todo.relatedEntityId}
+              label={todo.relatedEntityId}
+            />
           ) : null}
           {formError ? (
             <p
@@ -1228,7 +1248,7 @@ export function PersonalTodoDetailPage() {
                   className="personal-todo-row__action min-h-11"
                   data-testid="todo-detail-edit"
                   onClick={() => {
-                    setForm(formFromTodo(todo));
+                    setForm(todoFormFromDto(todo));
                     setEditing(true);
                   }}
                 >

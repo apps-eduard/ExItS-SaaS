@@ -34,6 +34,7 @@ import { canAccessClassicReport } from "@/features/reports/report-access";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -50,8 +51,9 @@ export function SessionLoading() {
 export function RequireSession({ children }: { children: ReactNode }) {
   const { status } = useSession();
   const location = useLocation();
+  const isContextSwitch = isAccountContextSwitchPath(location.pathname);
 
-  if (status === "loading") {
+  if (status === "loading" && !isContextSwitch) {
     return <SessionLoading />;
   }
   if (status === "expired") {
@@ -143,7 +145,7 @@ export function RequireAccountClass({
         title={t("accountClass.deniedTitle")}
         description={t("accountClass.deniedLede")}
       />
-      <ErrorState title={t("accountClass.deniedTitle")} detail={t("accountClass.deniedDetail")} />
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("accountClass.deniedDetail")}</p>
     </div>
   );
 }
@@ -177,10 +179,9 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
             title={t("accountClass.deniedTitle")}
             description={t("accountClass.deniedLede")}
           />
-          <ErrorState
-            title={t("accountClass.deniedTitle")}
-            detail={t("accountClass.deniedDetail")}
-          />
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("accountClass.deniedDetail")}
+          </p>
         </div>
       );
     }
@@ -232,6 +233,12 @@ export function RequireOrganizationBound({ children }: { children: ReactNode }) 
 export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   const { status: sessionStatus } = useSession();
   const { status } = useWorkspace();
+  const location = useLocation();
+  const isContextSwitch = isAccountContextSwitchPath(location.pathname);
+
+  if (isContextSwitch) {
+    return children;
+  }
 
   if (sessionStatus === "loading") {
     return <SessionLoading />;
