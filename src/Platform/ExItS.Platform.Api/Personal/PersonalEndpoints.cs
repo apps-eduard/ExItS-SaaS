@@ -5,8 +5,10 @@ using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Api.Personal;
 
@@ -421,8 +423,196 @@ internal static class PersonalEndpoints
         MapPersonalUtangEndpoints(personal);
         MapPersonalConnectionEndpoints(personal);
         MapPersonalNotificationEndpoints(personal);
+        MapPersonalTodoEndpoints(personal);
 
         return app;
+    }
+
+    private static void MapPersonalTodoEndpoints(RouteGroupBuilder personal)
+    {
+        var todos = personal.MapGroup("/todos");
+
+        todos.MapGet("/", async (
+            HttpContext http,
+            string? status,
+            ListPersonalTodos listTodos,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            if (!TryParsePersonalTodoListStatus(status, out var statusFilter, out var invalidStatus))
+            {
+                return invalidStatus!;
+            }
+
+            var result = await listTodos
+                .ExecuteAsync(PlatformUserId.From(userId), statusFilter, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        todos.MapGet("/{todoId:guid}", async (
+            HttpContext http,
+            Guid todoId,
+            GetPersonalTodo getTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await getTodo.ExecuteAsync(PlatformUserId.From(userId), todoId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapPost("/", async (
+            HttpContext http,
+            CreatePersonalTodoRequest body,
+            CreatePersonalTodo createTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await createTodo.ExecuteAsync(PlatformUserId.From(userId), body, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Created($"/api/v1/personal/todos/{dto.Id}", dto));
+        });
+
+        todos.MapPut("/{todoId:guid}", async (
+            HttpContext http,
+            Guid todoId,
+            UpdatePersonalTodoRequest body,
+            UpdatePersonalTodo updateTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await updateTodo.ExecuteAsync(PlatformUserId.From(userId), todoId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapMethods("/{todoId:guid}", new[] { "PATCH" }, async (
+            HttpContext http,
+            Guid todoId,
+            UpdatePersonalTodoRequest body,
+            UpdatePersonalTodo updateTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await updateTodo.ExecuteAsync(PlatformUserId.From(userId), todoId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapPost("/{todoId:guid}/complete", async (
+            HttpContext http,
+            Guid todoId,
+            PersonalTodoVersionRequest? body,
+            CompletePersonalTodo completeTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await completeTodo
+                .ExecuteAsync(PlatformUserId.From(userId), todoId, body?.ExpectedVersion, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapPost("/{todoId:guid}/reopen", async (
+            HttpContext http,
+            Guid todoId,
+            PersonalTodoVersionRequest? body,
+            ReopenPersonalTodo reopenTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await reopenTodo
+                .ExecuteAsync(PlatformUserId.From(userId), todoId, body?.ExpectedVersion, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        todos.MapPost("/{todoId:guid}/cancel", async (
+            HttpContext http,
+            Guid todoId,
+            PersonalTodoVersionRequest? body,
+            CancelPersonalTodo cancelTodo,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await cancelTodo
+                .ExecuteAsync(PlatformUserId.From(userId), todoId, body?.ExpectedVersion, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
     }
 
     private static void MapPersonalConnectionEndpoints(RouteGroupBuilder personal)
@@ -1023,6 +1213,46 @@ internal static class PersonalEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
+    }
+
+    private static bool TryParsePersonalTodoListStatus(
+        string? statusRaw,
+        out PersonalTodoStatus? statusFilter,
+        out IResult? invalid)
+    {
+        statusFilter = null;
+        invalid = null;
+
+        if (string.IsNullOrWhiteSpace(statusRaw))
+        {
+            return true;
+        }
+
+        var normalized = statusRaw.Trim();
+        if (normalized.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (normalized.Equals("active", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("open", StringComparison.OrdinalIgnoreCase))
+        {
+            statusFilter = PersonalTodoStatus.Open;
+            return true;
+        }
+
+        if (Enum.TryParse<PersonalTodoStatus>(normalized, ignoreCase: true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            statusFilter = parsed;
+            return true;
+        }
+
+        invalid = PlatformApiResults.Problem(
+            DomainErrorCodes.InvalidPersonalTodo,
+            "To-do list status filter is invalid.",
+            StatusCodes.Status400BadRequest);
+        return false;
     }
 
     private static bool TryRequirePersonalAccountClass(

@@ -17,6 +17,9 @@ internal sealed class PlatformBrowserAntiforgeryMiddleware(
     {
         "/api/v1/platform/auth/login",
         "/api/v1/platform/auth/register",
+        // Anonymous credential workflows: Admin React skips antiforgery headers; a leftover
+        // Platform session cookie must not block Mailpit activation / password reset.
+        "/api/v1/platform/auth/activate-account",
         "/api/v1/platform/auth/forgot-password",
         "/api/v1/platform/auth/reset-password",
         "/api/v1/platform/auth/bootstrap",

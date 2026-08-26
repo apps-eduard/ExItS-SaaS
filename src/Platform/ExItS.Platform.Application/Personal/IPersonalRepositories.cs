@@ -148,6 +148,7 @@ public interface IPersonalTodoRepository
 
     Task<IReadOnlyList<PersonalTodo>> ListByOwnerAsync(
         PlatformUserId ownerUserIdentityId,
+        PersonalTodoStatus? status = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(PersonalTodo todo, CancellationToken cancellationToken = default);

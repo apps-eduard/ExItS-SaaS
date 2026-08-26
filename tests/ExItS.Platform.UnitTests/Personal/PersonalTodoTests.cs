@@ -72,7 +72,7 @@ public sealed class PersonalTodoTests
     }
 
     [Fact]
-    public void Cancel_from_open_is_terminal()
+    public void Cancel_from_open_rejects_complete_but_allows_reopen()
     {
         var todo = PersonalTodo.Create(OwnerId, "Skip this", T0);
         todo.Cancel(T0.AddMinutes(1), expectedVersion: 1);
@@ -82,6 +82,10 @@ public sealed class PersonalTodoTests
 
         var ex = Assert.Throws<DomainException>(() => todo.Complete(T0.AddMinutes(2), expectedVersion: 2));
         Assert.Equal(DomainErrorCodes.InvalidPersonalTodoStatusTransition, ex.ErrorCode);
+
+        todo.Reopen(T0.AddMinutes(3), expectedVersion: 2);
+        Assert.Equal(PersonalTodoStatus.Open, todo.Status);
+        Assert.Equal(3, todo.Version);
     }
 
     [Fact]

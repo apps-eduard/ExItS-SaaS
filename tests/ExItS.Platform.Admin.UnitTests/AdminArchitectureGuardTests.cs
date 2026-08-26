@@ -452,6 +452,11 @@ public sealed class AdminArchitectureGuardTests
         var antiforgery = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryExtensions.cs"));
         Assert.Contains("LocalValidation:Enabled", antiforgery, StringComparison.Ordinal);
         Assert.Contains("CookieSecurePolicy.SameAsRequest", antiforgery, StringComparison.Ordinal);
+
+        var browserAntiforgery = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryMiddleware.cs"));
+        Assert.Contains("/api/v1/platform/auth/activate-account", browserAntiforgery, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/auth/reset-password", browserAntiforgery, StringComparison.Ordinal);
     }
 
     [Fact]

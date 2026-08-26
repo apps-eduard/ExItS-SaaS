@@ -147,6 +147,32 @@ public sealed class ApiBrowserAntiforgeryTests(PostgreSqlFixture fixture) : IAsy
         Assert.False(string.IsNullOrWhiteSpace(token.GetString()));
     }
 
+    /// <summary>
+    /// Admin React activate-account skips CSRF headers. A leftover Platform session cookie
+    /// (common in Local Validation) must not force antiforgery on this anonymous path.
+    /// </summary>
+    [Fact]
+    public async Task Activate_account_with_session_cookie_does_not_require_antiforgery()
+    {
+        var (username, password) = await SeedPlatformStaffAsync();
+        await LoginWithCookieAsync(username, password);
+
+        var emailLocal = PlatformIntegrationTestUsers.Unique("actcsrf");
+        var email = $"{emailLocal}@example.com";
+        var register = await _browser.PostAsJsonAsync(
+            "/api/v1/platform/auth/register",
+            new { displayName = "Activate CSRF User", email });
+        Assert.Equal(HttpStatusCode.OK, register.StatusCode);
+        var registerBody = await register.Content.ReadFromJsonAsync<JsonElement>();
+        var activationToken = registerBody.GetProperty("debugToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(activationToken));
+
+        var activate = await _browser.PostAsJsonAsync(
+            "/api/v1/platform/auth/activate-account",
+            new { token = activationToken, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.OK, activate.StatusCode);
+    }
+
     [Fact]
     public async Task Organization_cookie_session_can_bootstrap_antiforgery_token_without_scope_denial()
     {
