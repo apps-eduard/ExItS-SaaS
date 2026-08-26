@@ -81,5 +81,17 @@ export function actionCenterItemHref(item: ActionCenterItem): string {
   if (item.category === "health") {
     return "/admin/system-health";
   }
+  if (item.category === "organization") {
+    if (
+      item.id.includes("suspended") ||
+      item.title.toLowerCase().includes("suspended")
+    ) {
+      return "/admin/organizations?status=Suspended";
+    }
+    if (item.organizationId) {
+      return `/admin/organizations/${item.organizationId}`;
+    }
+    return "/admin/organizations";
+  }
   return "/admin";
 }

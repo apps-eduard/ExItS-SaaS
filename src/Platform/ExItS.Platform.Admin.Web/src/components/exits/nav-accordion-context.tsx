@@ -24,6 +24,7 @@ const DEFAULT_OPEN_SECTIONS = [
   "products",
   "billing",
   "catalog",
+  "support",
   "governance",
   "operations",
   "settings",

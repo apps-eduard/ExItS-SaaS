@@ -1508,6 +1508,19 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
     if (url.includes("/api/v1/platform/audit")) {
       return jsonResponse(200, pagedJson([], 0, 8));
     }
+    if (url.includes("/api/v1/platform/admin/action-center")) {
+      const suspended = (options.organizationItems ?? []).filter((item) => item.status === "Suspended");
+      const items = suspended.map((org) => ({
+        id: `org-suspended-${org.id}`,
+        category: "organization",
+        severity: "warning",
+        title: "Suspended organizations",
+        reason: `${org.displayName} requires follow-up.`,
+        organizationId: org.id,
+        organizationDisplayName: org.displayName,
+      }));
+      return jsonResponse(200, { items, totalCount: items.length });
+    }
     return jsonResponse(404, { title: "Not Found", status: 404 });
   });
   vi.stubGlobal("fetch", fetchMock);

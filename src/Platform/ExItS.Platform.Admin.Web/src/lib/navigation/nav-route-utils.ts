@@ -8,11 +8,14 @@ export function pathMatches(href: string | undefined, pathname: string, search: 
   const isSettingsWorkspace =
     url.pathname === "/admin/settings" &&
     (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/"));
-  if (!isSettingsWorkspace && url.pathname !== pathname) {
+  const isPaymentsWorkspace =
+    url.pathname === "/admin/payments" &&
+    (pathname === "/admin/payments" || pathname.startsWith("/admin/payments/"));
+  if (!isSettingsWorkspace && !isPaymentsWorkspace && url.pathname !== pathname) {
     return false;
   }
   if (!url.search) {
-    return search.length === 0 || search === "?" || isSettingsWorkspace;
+    return search.length === 0 || search === "?" || isSettingsWorkspace || isPaymentsWorkspace;
   }
   return url.search === search;
 }

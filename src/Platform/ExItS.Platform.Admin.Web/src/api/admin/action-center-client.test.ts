@@ -84,5 +84,15 @@ describe("action-center-client", () => {
         reason: "Unhealthy",
       }),
     ).toBe("/admin/system-health");
+
+    expect(
+      actionCenterItemHref({
+        id: "org-suspended-1",
+        category: "organization",
+        severity: "warning",
+        title: "Suspended organizations",
+        reason: "1",
+      }),
+    ).toBe("/admin/organizations?status=Suspended");
   });
 });

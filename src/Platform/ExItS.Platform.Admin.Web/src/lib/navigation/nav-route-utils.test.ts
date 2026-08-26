@@ -25,10 +25,16 @@ describe("nav-route-utils", () => {
     expect(pathMatches("/admin/payments", "/admin", "")).toBe(false);
   });
 
+  it("matches payments workspace child routes against the portfolio nav href", () => {
+    expect(pathMatches("/admin/payments", "/admin/payments/overview", "")).toBe(true);
+    expect(pathMatches("/admin/payments", "/admin/payments/list", "")).toBe(true);
+    expect(pathMatches("/admin/payments", "/admin/payments/issues", "")).toBe(true);
+  });
+
   it("collects section and group ancestors for the active route", () => {
-    const { sectionIds, groupIds } = collectOpenStateForPath(sections, "/admin/payments", "");
+    const { sectionIds, groupIds } = collectOpenStateForPath(sections, "/admin/payments/overview", "");
     expect(sectionIds).toEqual(["billing"]);
     expect(groupIds).toEqual([]);
-    expect(itemIsActive(sections[0]!.items[0]!, "/admin/payments", "")).toBe(true);
+    expect(itemIsActive(sections[0]!.items[0]!, "/admin/payments/overview", "")).toBe(true);
   });
 });

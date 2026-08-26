@@ -257,7 +257,7 @@ describe("TestPaymentsPage", () => {
     );
     expect(screen.getByRole("link", { name: "Open payments" })).toHaveAttribute(
       "href",
-      "/admin/payments",
+      "/admin/payments/list",
     );
   });
 });

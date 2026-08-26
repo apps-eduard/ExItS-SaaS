@@ -139,11 +139,13 @@ export function SettingsField({
 }) {
   const hintId = htmlFor && hint ? `${htmlFor}-hint` : undefined;
   return (
-    <label className={cn("grid min-w-0 gap-1 self-start", className)} htmlFor={htmlFor}>
-      <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
-        {label}
-      </span>
-      {children}
+    <div className={cn("grid min-w-0 gap-1 self-start", className)}>
+      <label className="grid min-w-0 gap-1" htmlFor={htmlFor}>
+        <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+          {label}
+        </span>
+        {children}
+      </label>
       <span className="block min-h-[2.5rem]">
         {hint ? (
           <span className="text-[length:var(--exits-text-xs)] text-muted" id={hintId}>
@@ -151,6 +153,6 @@ export function SettingsField({
           </span>
         ) : null}
       </span>
-    </label>
+    </div>
   );
 }

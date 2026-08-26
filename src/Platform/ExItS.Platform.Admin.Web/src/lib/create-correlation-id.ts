@@ -6,7 +6,11 @@ export function createCorrelationId(): string {
   const webCrypto = globalThis.crypto;
 
   if (webCrypto && typeof webCrypto.randomUUID === "function") {
-    return webCrypto.randomUUID();
+    try {
+      return webCrypto.randomUUID();
+    } catch {
+      // Some browsers expose randomUUID but reject it outside secure contexts (HTTP LAN).
+    }
   }
 
   if (webCrypto && typeof webCrypto.getRandomValues === "function") {

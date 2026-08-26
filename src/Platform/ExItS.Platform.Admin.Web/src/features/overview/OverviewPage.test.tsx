@@ -58,7 +58,7 @@ describe("Overview dashboard", () => {
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Organizations" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Subscriptions" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Needs attention" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Action center" })).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Recent Platform activity" }),
     ).not.toBeInTheDocument();
@@ -96,7 +96,7 @@ describe("Overview dashboard", () => {
     mockAuthenticatedFetch({ organizationTotalCount: 0 });
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Organizations" })).toBeInTheDocument();
-    expect(await screen.findByText("Nothing needs attention right now.")).toBeInTheDocument();
+    expect(await screen.findByText("No actions need attention.")).toBeInTheDocument();
     expect(screen.getByText("No audit records yet.")).toBeInTheDocument();
     expect(screen.queryByText("Unable to load this summary.")).not.toBeInTheDocument();
     expect(screen.getAllByText("0").length).toBeGreaterThan(0);
@@ -166,7 +166,7 @@ describe("Overview dashboard", () => {
       organizationTotalCount: 1,
     });
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Needs attention" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Action center" })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /Suspended organizations/i })).toHaveAttribute(
       "href",
       "/admin/organizations?status=Suspended",
@@ -191,7 +191,7 @@ describe("Overview dashboard", () => {
     await user.click(await screen.findByRole("menuitem", { name: /Filipino/i }));
     expect(await screen.findByRole("heading", { name: "Mga Organisasyon" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Mga Subskripsyon" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Kailangan ng pansin" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Action center" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Mga account na kailangan ng pansin" }),
     ).toBeInTheDocument();

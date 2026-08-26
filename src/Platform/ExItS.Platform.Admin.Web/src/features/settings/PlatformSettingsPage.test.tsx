@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/app/App";
 import { SETTINGS_BACKEND_API_GAPS } from "@/features/settings/settings-sections";
-import { mockAuthenticatedFetch } from "@/test/auth-fixtures";
+import { jsonResponse, mockAuthenticatedFetch } from "@/test/auth-fixtures";
 
 const sampleGeneral = {
   platformDisplayName: "ExItS",
@@ -64,63 +64,52 @@ function mockSettingsFetch(options?: { forbiddenGeneral?: boolean }) {
     const url = String(input);
     const method = init?.method ?? "GET";
     if (url.includes("/api/v1/platform/auth/me")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          sessionId: "11111111-1111-1111-1111-111111111111",
-          userId: "22222222-2222-2222-2222-222222222222",
-          username: "olivia",
-          displayName: "Olivia Mendoza",
-          email: "olivia@example.test",
-          expiresAtUtc: "2026-08-19T12:00:00Z",
-          absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
-          lastActivityAtUtc: "2026-08-19T11:00:00Z",
-          selectedOrganizationId: null,
-          selectedOrganizationDisplayName: null,
-          organizationSelectionState: "None",
-          activeOrganizationCount: 0,
-          accountClass: "Platform",
-          allowedScope: "Platform",
-        }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, {
+        sessionId: "11111111-1111-1111-1111-111111111111",
+        userId: "22222222-2222-2222-2222-222222222222",
+        username: "olivia",
+        displayName: "Olivia Mendoza",
+        email: "olivia@example.test",
+        expiresAtUtc: "2026-08-19T12:00:00Z",
+        absoluteExpiresAtUtc: "2026-08-20T12:00:00Z",
+        lastActivityAtUtc: "2026-08-19T11:00:00Z",
+        selectedOrganizationId: null,
+        selectedOrganizationDisplayName: null,
+        organizationSelectionState: "None",
+        activeOrganizationCount: 0,
+        accountClass: "Platform",
+        allowedScope: "Platform",
+      });
     }
     if (url.includes("/api/v1/platform/authorization/me")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          actorIdentifier: "olivia@example.test",
-          actorType: "PlatformUser",
-          platformUserId: "22222222-2222-2222-2222-222222222222",
-          organizationId: null,
-          permissions: ["platform.permission.view_portfolio"],
-        }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, {
+        actorIdentifier: "olivia@example.test",
+        actorType: "PlatformUser",
+        platformUserId: "22222222-2222-2222-2222-222222222222",
+        organizationId: null,
+        permissions: ["platform.permission.view_portfolio"],
+      });
     }
     if (url.includes("/api/v1/platform/settings/general") && method === "GET") {
       if (options?.forbiddenGeneral) {
-        return {
-          ok: false,
+        return jsonResponse(403, {
+          title: "Forbidden",
           status: 403,
-          json: async () => ({ title: "Forbidden", status: 403, detail: "settings-secret" }),
-          text: async () => "settings-secret",
-        } as Response;
+          detail: "settings-secret",
+        });
       }
-      return { ok: true, status: 200, json: async () => sampleGeneral, text: async () => "" } as Response;
+      return jsonResponse(200, sampleGeneral);
     }
     if (url.includes("/api/v1/platform/settings/email") && method === "GET") {
-      return { ok: true, status: 200, json: async () => sampleEmail, text: async () => "" } as Response;
+      return jsonResponse(200, sampleEmail);
     }
     if (url.includes("/api/v1/platform/settings/regional") && method === "GET") {
-      return { ok: true, status: 200, json: async () => sampleRegional, text: async () => "" } as Response;
+      return jsonResponse(200, sampleRegional);
     }
     if (url.includes("/health")) {
-      return { ok: true, status: 200, json: async () => "Healthy", text: async () => "Healthy" } as Response;
+      return jsonResponse(200, "Healthy");
     }
-    return { ok: true, status: 200, json: async () => ({}), text: async () => "" } as Response;
+    return jsonResponse(200, {});
   });
 }
 
