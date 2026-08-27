@@ -338,15 +338,22 @@ public sealed class OrganizationBusinessNotificationTests
     }
 
     [Fact]
-    public async Task Personal_customer_order_status_publish_is_idempotent()
+    public async Task Personal_customer_order_status_publish_requires_active_link_and_is_idempotent()
     {
         var source = PlatformOrganizationId.From(Guid.NewGuid());
         var recipient = PlatformUserId.From(Guid.NewGuid());
         var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            recipient,
+            CustomerLinkRequestId.New(),
+            now));
         var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
         var settings = new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository();
         var useCase = new PublishPersonalBusinessNotification(
-            notifications, settings, new FakeUow(), new FixedClock(now));
+            links, notifications, settings, new FakeUow(), new FixedClock(now));
         var orderId = Guid.NewGuid().ToString("D");
         var request = new PublishPersonalBusinessNotificationRequest(
             recipient.Value,
@@ -367,5 +374,146 @@ public sealed class OrganizationBusinessNotificationTests
         Assert.Equal(recipient, notifications.Items[0].RecipientUserIdentityId);
         Assert.Equal(CustomerOrderNotificationTypes.Accepted, notifications.Items[0].RelatedType);
         Assert.Equal(orderId, notifications.Items[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_unrelated_personal_user_in_same_source_org_context()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var linkedBuyer = PlatformUserId.From(Guid.NewGuid());
+        var unrelated = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            linkedBuyer,
+            CustomerLinkRequestId.New(),
+            now));
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository(),
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                unrelated.Value,
+                CustomerOrderNotificationTypes.Ready,
+                Guid.NewGuid().ToString("D"),
+                "Ready",
+                "CO-1 · Ready"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_recipient_linked_only_to_other_organization()
+    {
+        var orgA = PlatformOrganizationId.From(Guid.NewGuid());
+        var orgB = PlatformOrganizationId.From(Guid.NewGuid());
+        var buyerOfB = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            orgB,
+            BusinessCustomerId.New(),
+            buyerOfB,
+            CustomerLinkRequestId.New(),
+            now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            notifications,
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            orgA,
+            new PublishPersonalBusinessNotificationRequest(
+                buyerOfB.Value,
+                CustomerOrderNotificationTypes.Delivered,
+                Guid.NewGuid().ToString("D"),
+                "Delivered",
+                "CO-2 · Delivered"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, result.ErrorCode);
+        Assert.Empty(notifications.Items);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_unapproved_related_type()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var recipient = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            recipient,
+            CustomerLinkRequestId.New(),
+            now));
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository(),
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                recipient.Value,
+                "MarketingBlast",
+                Guid.NewGuid().ToString("D"),
+                "Promo",
+                "Buy more"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.DomainViolation, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Personal_publish_allows_legitimate_linked_buyer()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var buyer = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            buyer,
+            CustomerLinkRequestId.New(),
+            now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            notifications,
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                buyer.Value,
+                CustomerOrderNotificationTypes.OutForDelivery,
+                orderId,
+                "Out for delivery",
+                "CO-3 · Out for delivery"));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.Created);
+        Assert.Single(notifications.Items);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+        Assert.Equal(CustomerOrderNotificationTypes.OutForDelivery, notifications.Items[0].RelatedType);
     }
 }

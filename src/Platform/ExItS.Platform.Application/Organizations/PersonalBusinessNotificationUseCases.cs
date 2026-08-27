@@ -25,22 +25,26 @@ public sealed record PublishPersonalBusinessNotificationResult(
 
 /// <summary>
 /// Product publish into a Personal in-app notification inbox (customer-order lifecycle).
-/// Authenticated Organization members may publish only allowlisted CustomerOrder* types.
+/// Authenticated Organization members may publish only allowlisted CustomerOrder* types,
+/// and only to a Personal user with an active LinkedCustomerAppUser for the source organization.
 /// Dedupes by (recipient, relatedType, relatedId).
 /// </summary>
 public sealed class PublishPersonalBusinessNotification
 {
+    private readonly ILinkedCustomerAppUserRepository _links;
     private readonly IPersonalInAppNotificationRepository _notifications;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public PublishPersonalBusinessNotification(
+        ILinkedCustomerAppUserRepository links,
         IPersonalInAppNotificationRepository notifications,
         IPersonalAccountSettingsRepository settings,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
+        _links = links;
         _notifications = notifications;
         _settings = settings;
         _unitOfWork = unitOfWork;
@@ -52,7 +56,7 @@ public sealed class PublishPersonalBusinessNotification
         PublishPersonalBusinessNotificationRequest request,
         CancellationToken cancellationToken = default)
     {
-        _ = sourceOrganizationId;
+        ArgumentNullException.ThrowIfNull(sourceOrganizationId);
 
         if (!CustomerOrderNotificationTypes.IsKnown(request.RelatedType))
         {
@@ -78,6 +82,18 @@ public sealed class PublishPersonalBusinessNotification
         catch (DomainException ex)
         {
             return ApplicationResult<PublishPersonalBusinessNotificationResult>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        // Authorization: recipient must be an accepted linked customer of the source org.
+        // Do not trust RecipientPlatformUserId alone; relatedId/title/preview never authorize.
+        var link = await _links
+            .FindActiveByUserAndOrganizationAsync(recipientId, sourceOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (link is null)
+        {
+            return ApplicationResult<PublishPersonalBusinessNotificationResult>.Failure(
+                ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                "The recipient is not an active linked customer of this organization.");
         }
 
         var settings = await _settings.GetByUserAsync(recipientId, cancellationToken).ConfigureAwait(false);

@@ -52,6 +52,14 @@ Delivers three bounded v1 completeness items in one package (not an audit):
 - Personal customer-order: `PublishPersonalBusinessNotification` dedupes the same way.
 - Same-organization seller publish for `CustomerOrder*` is allowlisted (`OrganizationBusinessNotificationTypes.AllowsSameOrganization`).
 
+### Personal business notification authorization (COMPLETENESS-02-REPAIR)
+
+- Endpoint remains membership-scoped on `sourceOrganizationId` (caller must be an active member of that org).
+- Use case **requires** an active `LinkedCustomerAppUser` for `(RecipientPlatformUserId, sourceOrganizationId)`.
+- `sourceOrganizationId` is used for that link check (not discarded).
+- Unrelated Personal users and customers linked only to another org are denied (`LinkedCustomerAppUserNotFound`).
+- Allowlisted `CustomerOrder*` types only; title/preview/relatedId never authorize.
+
 ### Delivery timing / consistency
 
 - Ownership notification is created in the same Platform UoW as the transfer insert (after mutation succeeds in-memory, before `SaveChanges`).
