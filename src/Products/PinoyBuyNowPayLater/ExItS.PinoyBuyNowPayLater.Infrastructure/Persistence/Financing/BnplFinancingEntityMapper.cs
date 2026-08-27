@@ -34,6 +34,26 @@ internal static class BnplFinancingEntityMapper
                 d.OfferId))
             .ToList();
 
+        var plans = record.InstallmentPlans
+            .OrderBy(p => p.Version)
+            .Select(p => BnplInstallmentPlan.Reconstitute(
+                BnplInstallmentPlanId.From(p.Id),
+                p.OfferId,
+                p.Version,
+                p.CreatedByActorId,
+                p.CreatedAtUtc,
+                p.IsSuperseded,
+                p.IsLocked,
+                p.Items
+                    .OrderBy(i => i.SequenceNumber)
+                    .Select(i => new BnplInstallmentPlanItem(
+                        BnplInstallmentPlanItemId.From(i.Id),
+                        i.SequenceNumber,
+                        i.PrincipalAmount,
+                        i.DueDate))
+                    .ToList()))
+            .ToList();
+
         return BnplFinancingApplication.Reconstitute(
             BnplFinancingApplicationId.From(record.Id),
             record.OrganizationId,
@@ -56,7 +76,8 @@ internal static class BnplFinancingEntityMapper
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             offers,
-            decisions);
+            decisions,
+            plans);
     }
 
     public static BnplFinancingApplicationRecord ToRecord(BnplFinancingApplication application)
@@ -158,6 +179,44 @@ internal static class BnplFinancingEntityMapper
                 Note = decision.Note,
                 OfferId = decision.OfferId
             });
+        }
+
+        var planById = record.InstallmentPlans.ToDictionary(p => p.Id);
+        foreach (var plan in application.InstallmentPlans)
+        {
+            if (!planById.TryGetValue(plan.Id.Value, out var existingPlan))
+            {
+                var planRecord = new BnplInstallmentPlanRecord
+                {
+                    Id = plan.Id.Value,
+                    ApplicationId = application.Id.Value,
+                    OfferId = plan.OfferId,
+                    Version = plan.Version,
+                    CreatedByActorId = plan.CreatedByActorId,
+                    CreatedAtUtc = plan.CreatedAtUtc,
+                    IsSuperseded = plan.IsSuperseded,
+                    IsLocked = plan.IsLocked
+                };
+
+                foreach (var item in plan.Items)
+                {
+                    planRecord.Items.Add(new BnplInstallmentPlanItemRecord
+                    {
+                        Id = item.Id.Value,
+                        PlanId = plan.Id.Value,
+                        SequenceNumber = item.SequenceNumber,
+                        PrincipalAmount = item.PrincipalAmount,
+                        DueDate = item.DueDate
+                    });
+                }
+
+                record.InstallmentPlans.Add(planRecord);
+            }
+            else
+            {
+                existingPlan.IsSuperseded = plan.IsSuperseded;
+                existingPlan.IsLocked = plan.IsLocked;
+            }
         }
     }
 }

@@ -112,10 +112,10 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
 
         Assert.Contains(migrations, p => p.Contains("InitialBnplCustomerFoundation", StringComparison.Ordinal));
         Assert.Contains(migrations, p => p.Contains("AddBnplFinancingApplicationLifecycle", StringComparison.Ordinal));
+        Assert.Contains(migrations, p => p.Contains("AddBnplInstallmentPlanFoundation", StringComparison.Ordinal));
         foreach (var migration in migrations)
         {
             var text = File.ReadAllText(migration);
-            Assert.DoesNotContain("name: \"installments\"", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("name: \"repayments\"", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("name: \"settlements\"", text, StringComparison.OrdinalIgnoreCase);
         }
@@ -126,6 +126,12 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
         Assert.Contains("financing_offers", financingText, StringComparison.Ordinal);
         Assert.Contains("financing_decisions", financingText, StringComparison.Ordinal);
         Assert.DoesNotContain("'Active'", financingText, StringComparison.Ordinal);
+
+        var planMigration = migrations.Single(p => p.Contains("AddBnplInstallmentPlanFoundation", StringComparison.Ordinal));
+        var planText = File.ReadAllText(planMigration);
+        Assert.Contains("installment_plans", planText, StringComparison.Ordinal);
+        Assert.Contains("installment_plan_items", planText, StringComparison.Ordinal);
+        Assert.DoesNotContain("name: \"repayments\"", planText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -241,6 +247,7 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
         Assert.True(File.Exists(path), path);
         var text = File.ReadAllText(path);
         Assert.Contains("BnplCustomerRecord", text, StringComparison.Ordinal);
+        Assert.Contains("BnplInstallmentPlanRecord", text, StringComparison.Ordinal);
         Assert.DoesNotContain("POSCustomer", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PlatformUser", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PlmBorrower", text, StringComparison.OrdinalIgnoreCase);

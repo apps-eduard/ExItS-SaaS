@@ -6,7 +6,7 @@
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
 | Last updated | 2026-08-27 |
-| Implementation present | Yes — customer foundation |
+| Implementation present | Yes — customer + financing + installment plan foundation |
 
 ## Authoritative docs (`src/Products/PinoyBuyNowPayLater/Docs/`)
 
@@ -26,7 +26,7 @@
 | `Security/` | Role/grant, audit, privacy baselines | Draft-complete |
 | `Decisions/` | Future ADR index | Index only |
 | `Phases/` | Sequencing index | Index only |
-| `Reports/` | WP evidence | BNPL-00 closeout |
+| `Reports/` | WP evidence | BNPL-00..05 reports |
 | `Validation/` | Readiness checklist | BNPL-00 checklist |
 | `Operations/` | Ops planning index | Index only |
 
@@ -85,16 +85,17 @@
 | Path | Purpose | Implementation present |
 |---|---|---|
 | `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold + access + customer persistence + Docs |
-| `ExItS.PinoyBuyNowPayLater.Domain` | Capabilities + customer + financing application | Yes |
-| `ExItS.PinoyBuyNowPayLater.Application` | Access guard + customer/financing use cases | Yes |
-| `ExItS.PinoyBuyNowPayLater.Infrastructure` | BnplDbContext + customer/financing migrations | Yes |
-| `ExItS.PinoyBuyNowPayLater.Api` | Health + access/me + customers + applications | Yes |
+| `ExItS.PinoyBuyNowPayLater.Domain` | Capabilities + customer + financing + installment plan | Yes |
+| `ExItS.PinoyBuyNowPayLater.Application` | Access guard + customer/financing/plan use cases | Yes |
+| `ExItS.PinoyBuyNowPayLater.Infrastructure` | BnplDbContext + customer/financing/plan migrations | Yes |
+| `ExItS.PinoyBuyNowPayLater.Api` | Health + access/me + customers + applications + plans | Yes |
 
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
-| ACTIVE financing / installments / repayments / settlement | BNPL-05+ / BNPL-07+ |
+| ACTIVE financing / collectible debt / repayments / settlement | BNPL-07+ |
+| Automatic term/frequency schedule generator | BNPL-D-00-14 OPEN |
 | Production auto-migrate | Forbidden |
 | ApiClient / Web / React Client | Deferred |
 | Interest / fee / credit-limit engines | BNPL-D-00-14/15/16 OPEN |

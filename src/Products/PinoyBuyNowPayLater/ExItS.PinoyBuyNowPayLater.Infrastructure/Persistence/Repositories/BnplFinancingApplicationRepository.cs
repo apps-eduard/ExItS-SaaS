@@ -21,6 +21,8 @@ internal sealed class BnplFinancingApplicationRepository : IBnplFinancingApplica
             .AsSplitQuery()
             .Include(a => a.Offers)
             .Include(a => a.Decisions)
+            .Include(a => a.InstallmentPlans)
+                .ThenInclude(p => p.Items)
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 a => a.Id == applicationId.Value && a.OrganizationId == organizationId,
@@ -71,6 +73,8 @@ internal sealed class BnplFinancingApplicationRepository : IBnplFinancingApplica
             .AsSplitQuery()
             .Include(a => a.Offers)
             .Include(a => a.Decisions)
+            .Include(a => a.InstallmentPlans)
+                .ThenInclude(p => p.Items)
             .AsNoTracking()
             .Where(a => ids.Contains(a.Id))
             .ToListAsync(cancellationToken)
@@ -95,6 +99,8 @@ internal sealed class BnplFinancingApplicationRepository : IBnplFinancingApplica
         var record = await _db.FinancingApplications
             .Include(a => a.Offers)
             .Include(a => a.Decisions)
+            .Include(a => a.InstallmentPlans)
+                .ThenInclude(p => p.Items)
             .FirstOrDefaultAsync(
                 a => a.Id == application.Id.Value && a.OrganizationId == application.OrganizationId,
                 cancellationToken)

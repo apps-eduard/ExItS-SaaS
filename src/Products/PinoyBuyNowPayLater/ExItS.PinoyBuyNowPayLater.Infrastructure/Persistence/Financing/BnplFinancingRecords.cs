@@ -26,6 +26,7 @@ internal sealed class BnplFinancingApplicationRecord
 
     public List<BnplFinancingOfferRecord> Offers { get; set; } = [];
     public List<BnplFinancingDecisionRecord> Decisions { get; set; } = [];
+    public List<BnplInstallmentPlanRecord> InstallmentPlans { get; set; } = [];
 }
 
 internal sealed class BnplFinancingOfferRecord
@@ -58,4 +59,30 @@ internal sealed class BnplFinancingDecisionRecord
     public Guid? OfferId { get; set; }
 
     public BnplFinancingApplicationRecord? Application { get; set; }
+}
+
+internal sealed class BnplInstallmentPlanRecord
+{
+    public Guid Id { get; set; }
+    public Guid ApplicationId { get; set; }
+    public Guid OfferId { get; set; }
+    public int Version { get; set; }
+    public Guid CreatedByActorId { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public bool IsSuperseded { get; set; }
+    public bool IsLocked { get; set; }
+
+    public BnplFinancingApplicationRecord? Application { get; set; }
+    public List<BnplInstallmentPlanItemRecord> Items { get; set; } = [];
+}
+
+internal sealed class BnplInstallmentPlanItemRecord
+{
+    public Guid Id { get; set; }
+    public Guid PlanId { get; set; }
+    public int SequenceNumber { get; set; }
+    public decimal PrincipalAmount { get; set; }
+    public DateOnly DueDate { get; set; }
+
+    public BnplInstallmentPlanRecord? Plan { get; set; }
 }

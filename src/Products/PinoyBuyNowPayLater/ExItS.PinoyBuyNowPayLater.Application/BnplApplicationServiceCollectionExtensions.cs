@@ -36,6 +36,8 @@ public static class BnplApplicationServiceCollectionExtensions
         services.TryAddScoped<ApproveBnplFinancingEligibility>();
         services.TryAddScoped<DeclineBnplFinancingEligibility>();
         services.TryAddScoped<CreateBnplFinancingOffer>();
+        services.TryAddScoped<AttachBnplInstallmentPlan>();
+        services.TryAddScoped<GetBnplInstallmentPlan>();
         services.TryAddScoped<AcceptBnplFinancingOffer>();
         services.TryAddScoped<ApproveBnplFinancingApplication>();
         services.TryAddScoped<DeclineBnplFinancingApplication>();

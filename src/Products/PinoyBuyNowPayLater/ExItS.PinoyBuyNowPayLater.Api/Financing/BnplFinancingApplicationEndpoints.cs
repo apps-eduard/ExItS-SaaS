@@ -21,6 +21,10 @@ internal static class BnplFinancingApplicationEndpoints
         group.MapPost("/{applicationId:guid}/eligibility/approve", ApproveEligibilityAsync).WithName("ApproveBnplEligibility");
         group.MapPost("/{applicationId:guid}/eligibility/decline", DeclineEligibilityAsync).WithName("DeclineBnplEligibility");
         group.MapPost("/{applicationId:guid}/offers", CreateOfferAsync).WithName("CreateBnplFinancingOffer");
+        group.MapPut("/{applicationId:guid}/offers/{offerId:guid}/installment-plan", PutInstallmentPlanAsync)
+            .WithName("PutBnplInstallmentPlan");
+        group.MapGet("/{applicationId:guid}/offers/{offerId:guid}/installment-plan", GetInstallmentPlanAsync)
+            .WithName("GetBnplInstallmentPlan");
         group.MapPost("/{applicationId:guid}/accept-offer", AcceptOfferAsync).WithName("AcceptBnplFinancingOffer");
         group.MapPost("/{applicationId:guid}/approve", ApproveAsync).WithName("ApproveBnplFinancingApplication");
         group.MapPost("/{applicationId:guid}/decline", DeclineAsync).WithName("DeclineBnplFinancingApplication");
@@ -252,6 +256,79 @@ internal static class BnplFinancingApplicationEndpoints
         return Map(result);
     }
 
+    private static async Task<IResult> PutInstallmentPlanAsync(
+        HttpContext httpContext,
+        [FromServices] AttachBnplInstallmentPlan attach,
+        Guid applicationId,
+        Guid offerId,
+        [FromBody] PutInstallmentPlanRequest request,
+        CancellationToken cancellationToken)
+    {
+        var access = await BnplStaffEndpointAuth.AuthorizeAsync(
+            httpContext, BnplCapabilityCodes.PlanManage, cancellationToken).ConfigureAwait(false);
+        if (access.Denial is not null)
+        {
+            return access.Denial;
+        }
+
+        var items = (request.Items ?? Array.Empty<InstallmentPlanItemRequest>())
+            .Select(i => new BnplInstallmentPlanItemDraft(
+                i.ItemId,
+                i.SequenceNumber,
+                i.PrincipalAmount,
+                i.DueDate))
+            .ToList();
+
+        var result = await attach.ExecuteAsync(
+                access.Context!.OrganizationId,
+                applicationId,
+                offerId,
+                request.PlanId,
+                items,
+                access.Context.ActorId,
+                request.ExpectedVersion,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            return MapFailure(result.ErrorCode, result.ErrorMessage, result.SuggestedHttpStatus);
+        }
+
+        var plan = result.Value.GetInstallmentPlanForOffer(offerId);
+        return Results.Ok(ToPlanDto(result.Value, plan!));
+    }
+
+    private static async Task<IResult> GetInstallmentPlanAsync(
+        HttpContext httpContext,
+        [FromServices] GetBnplInstallmentPlan get,
+        Guid applicationId,
+        Guid offerId,
+        CancellationToken cancellationToken)
+    {
+        var access = await BnplStaffEndpointAuth.AuthorizeAsync(
+            httpContext, BnplCapabilityCodes.PlanRead, cancellationToken).ConfigureAwait(false);
+        if (access.Denial is not null)
+        {
+            return access.Denial;
+        }
+
+        var result = await get.ExecuteAsync(
+                access.Context!.OrganizationId,
+                applicationId,
+                offerId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!result.IsSuccess)
+        {
+            return MapFailure(result.ErrorCode, result.ErrorMessage, result.SuggestedHttpStatus);
+        }
+
+        var (application, plan) = result.Value!;
+        return Results.Ok(ToPlanDto(application, plan));
+    }
+
     private static async Task<IResult> AcceptOfferAsync(
         HttpContext httpContext,
         [FromServices] AcceptBnplFinancingOffer accept,
@@ -396,20 +473,27 @@ internal static class BnplFinancingApplicationEndpoints
             a.EligibilityApproved,
             a.CurrentOfferId,
             a.AcceptedOfferId,
+            a.AcceptedInstallmentPlan?.Id.Value,
             a.HasOutstandingDebt,
             a.HasInstallments,
+            a.HasPlannedInstallmentSchedule,
             a.AreRepaymentsAllowed,
-            a.Offers.Select(o => new FinancingOfferDto(
-                o.Id.Value,
-                o.Version,
-                o.PurchaseAmount,
-                o.DownPaymentAmount,
-                o.FinancedPrincipal,
-                o.CreatedAtUtc,
-                o.ExpiresAtUtc,
-                o.IsSuperseded,
-                o.IsAccepted,
-                o.AcceptedAtUtc)).ToArray(),
+            a.Offers.Select(o =>
+            {
+                var plan = a.GetInstallmentPlanForOffer(o.Id.Value);
+                return new FinancingOfferDto(
+                    o.Id.Value,
+                    o.Version,
+                    o.PurchaseAmount,
+                    o.DownPaymentAmount,
+                    o.FinancedPrincipal,
+                    o.CreatedAtUtc,
+                    o.ExpiresAtUtc,
+                    o.IsSuperseded,
+                    o.IsAccepted,
+                    o.AcceptedAtUtc,
+                    plan is null ? null : ToPlanSummary(plan));
+            }).ToArray(),
             a.Decisions.Select(d => new FinancingDecisionDto(
                 d.DecisionId,
                 d.Stage.ToString(),
@@ -419,6 +503,36 @@ internal static class BnplFinancingApplicationEndpoints
                 d.OfferId)).ToArray(),
             a.CreatedAtUtc,
             a.UpdatedAtUtc);
+
+    private static InstallmentPlanDto ToPlanDto(BnplFinancingApplication application, BnplInstallmentPlan plan) =>
+        new(
+            plan.Id.Value,
+            plan.OfferId,
+            application.Id.Value,
+            plan.Version,
+            plan.TotalScheduledPrincipal,
+            plan.IsLocked,
+            plan.IsSuperseded,
+            application.AcceptedOfferId == plan.OfferId && plan.IsLocked,
+            application.AcceptedOffer?.AcceptedAtUtc,
+            plan.Items.Select(i => new InstallmentPlanItemDto(
+                i.Id.Value,
+                i.SequenceNumber,
+                i.PrincipalAmount,
+                i.DueDate)).ToArray());
+
+    private static InstallmentPlanSummaryDto ToPlanSummary(BnplInstallmentPlan plan) =>
+        new(
+            plan.Id.Value,
+            plan.Version,
+            plan.TotalScheduledPrincipal,
+            plan.IsLocked,
+            plan.IsSuperseded,
+            plan.Items.Select(i => new InstallmentPlanItemDto(
+                i.Id.Value,
+                i.SequenceNumber,
+                i.PrincipalAmount,
+                i.DueDate)).ToArray());
 }
 
 internal sealed record CreateFinancingApplicationRequest(
@@ -447,6 +561,17 @@ internal sealed record CreateOfferRequest(
 
 internal sealed record AcceptOfferRequest(Guid OfferId, int? ExpectedVersion = null);
 
+internal sealed record PutInstallmentPlanRequest(
+    Guid PlanId,
+    IReadOnlyList<InstallmentPlanItemRequest> Items,
+    int? ExpectedVersion = null);
+
+internal sealed record InstallmentPlanItemRequest(
+    Guid ItemId,
+    int SequenceNumber,
+    decimal PrincipalAmount,
+    DateOnly DueDate);
+
 internal sealed record FinancingApplicationDto(
     Guid ApplicationId,
     Guid OrganizationId,
@@ -462,8 +587,10 @@ internal sealed record FinancingApplicationDto(
     bool EligibilityApproved,
     Guid? CurrentOfferId,
     Guid? AcceptedOfferId,
+    Guid? AcceptedPlanId,
     bool HasOutstandingDebt,
     bool HasInstallments,
+    bool HasPlannedInstallmentSchedule,
     bool AreRepaymentsAllowed,
     IReadOnlyList<FinancingOfferDto> Offers,
     IReadOnlyList<FinancingDecisionDto> Decisions,
@@ -480,7 +607,8 @@ internal sealed record FinancingOfferDto(
     DateTimeOffset? ExpiresAtUtc,
     bool IsSuperseded,
     bool IsAccepted,
-    DateTimeOffset? AcceptedAtUtc);
+    DateTimeOffset? AcceptedAtUtc,
+    InstallmentPlanSummaryDto? InstallmentPlan);
 
 internal sealed record FinancingDecisionDto(
     Guid DecisionId,
@@ -489,6 +617,32 @@ internal sealed record FinancingDecisionDto(
     Guid ActorId,
     DateTimeOffset DecidedAtUtc,
     Guid? OfferId);
+
+internal sealed record InstallmentPlanDto(
+    Guid PlanId,
+    Guid OfferId,
+    Guid ApplicationId,
+    int Version,
+    decimal TotalScheduledPrincipal,
+    bool IsLocked,
+    bool IsSuperseded,
+    bool IsAcceptedTerms,
+    DateTimeOffset? OfferAcceptedAtUtc,
+    IReadOnlyList<InstallmentPlanItemDto> Items);
+
+internal sealed record InstallmentPlanSummaryDto(
+    Guid PlanId,
+    int Version,
+    decimal TotalScheduledPrincipal,
+    bool IsLocked,
+    bool IsSuperseded,
+    IReadOnlyList<InstallmentPlanItemDto> Items);
+
+internal sealed record InstallmentPlanItemDto(
+    Guid ItemId,
+    int SequenceNumber,
+    decimal PrincipalAmount,
+    DateOnly DueDate);
 
 internal sealed record FinancingApplicationSearchResponse(
     IReadOnlyList<FinancingApplicationDto> Items,

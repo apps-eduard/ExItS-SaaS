@@ -43,4 +43,4 @@ BNPL-D-00-26: manual approval implemented as **safe default**; Product Owner dec
 
 ## Next
 
-**BNPL-05** — Installment engine
+**BNPL-05** — Installment plan foundation (explicit schedules; see BNPL-05 report)

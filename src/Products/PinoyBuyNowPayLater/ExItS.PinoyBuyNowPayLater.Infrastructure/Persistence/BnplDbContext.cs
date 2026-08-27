@@ -18,6 +18,8 @@ public sealed class BnplDbContext : DbContext
     internal DbSet<BnplFinancingApplicationRecord> FinancingApplications => Set<BnplFinancingApplicationRecord>();
     internal DbSet<BnplFinancingOfferRecord> FinancingOffers => Set<BnplFinancingOfferRecord>();
     internal DbSet<BnplFinancingDecisionRecord> FinancingDecisions => Set<BnplFinancingDecisionRecord>();
+    internal DbSet<BnplInstallmentPlanRecord> InstallmentPlans => Set<BnplInstallmentPlanRecord>();
+    internal DbSet<BnplInstallmentPlanItemRecord> InstallmentPlanItems => Set<BnplInstallmentPlanItemRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -135,6 +137,11 @@ public sealed class BnplDbContext : DbContext
                 .WithOne(d => d.Application!)
                 .HasForeignKey(d => d.ApplicationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.InstallmentPlans)
+                .WithOne(p => p.Application!)
+                .HasForeignKey(p => p.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<BnplFinancingOfferRecord>(entity =>
@@ -174,6 +181,53 @@ public sealed class BnplDbContext : DbContext
 
             entity.HasIndex(e => new { e.ApplicationId, e.DecidedAtUtc })
                 .HasDatabaseName("ix_bnpl_financing_decisions_application_time");
+        });
+
+        modelBuilder.Entity<BnplInstallmentPlanRecord>(entity =>
+        {
+            entity.ToTable("installment_plans");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ApplicationId).HasColumnName("application_id").IsRequired();
+            entity.Property(e => e.OfferId).HasColumnName("offer_id").IsRequired();
+            entity.Property(e => e.Version).HasColumnName("version");
+            entity.Property(e => e.CreatedByActorId).HasColumnName("created_by_actor_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            entity.Property(e => e.IsSuperseded).HasColumnName("is_superseded");
+            entity.Property(e => e.IsLocked).HasColumnName("is_locked");
+
+            entity.HasIndex(e => new { e.ApplicationId, e.OfferId, e.Version })
+                .IsUnique()
+                .HasDatabaseName("ux_bnpl_installment_plans_application_offer_version");
+
+            entity.HasIndex(e => e.OfferId)
+                .HasDatabaseName("ix_bnpl_installment_plans_offer_id");
+
+            entity.HasOne<BnplFinancingOfferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OfferId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_bnpl_installment_plans_offer");
+
+            entity.HasMany(e => e.Items)
+                .WithOne(i => i.Plan!)
+                .HasForeignKey(i => i.PlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BnplInstallmentPlanItemRecord>(entity =>
+        {
+            entity.ToTable("installment_plan_items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id").IsRequired();
+            entity.Property(e => e.SequenceNumber).HasColumnName("sequence_number");
+            entity.Property(e => e.PrincipalAmount).HasColumnName("principal_amount").HasPrecision(18, 2);
+            entity.Property(e => e.DueDate).HasColumnName("due_date");
+
+            entity.HasIndex(e => new { e.PlanId, e.SequenceNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_bnpl_installment_plan_items_plan_sequence");
         });
     }
 }

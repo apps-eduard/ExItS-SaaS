@@ -42,11 +42,11 @@
 | BNPL-D-00-04 | Final DB name / schema | `ExItS_PinoyBuyNowPayLater` + schema `bnpl` | Provisionally Approved / Implemented in BNPL-03 | Financing persistence later | Customer foundation only; no production auto-migrate |
 | BNPL-D-00-08 | Merchant-funded vs platform-funded BNPL / settlement model | Must separate customer balance from merchant settlement | Open / Legal & Commercial Decision Required | BNPL-10 | Document both; implement neither |
 | BNPL-D-00-13 | Personal / customer self-service MVP timing | Future capability | Open / Product Owner Decision Required | BNPL-13 | Staff-operated MVP |
-| BNPL-D-00-14 | Term / frequency choices | Daily/weekly/monthly candidates possible | Open / Product Owner Decision Required | BNPL-05 | Do not invent default terms in code |
+| BNPL-D-00-14 | Term / frequency choices | Daily/weekly/monthly candidates possible | Open / Product Owner Decision Required | Future schedule generators | BNPL-05 stores explicit rows only; do not invent default terms |
 | BNPL-D-00-15 | Fees / interest model | May be zero-interest merchant promo or fee-bearing | Open / Legal & Commercial Decision Required | Pricing, disclosures | No interest engine until policy |
 | BNPL-D-00-16 | Credit-limit model | Per-customer / per-org limits possible | Open / Product Owner Decision Required | Eligibility | Manual approval path only |
 | BNPL-D-00-17 | Early payoff / overdue fee / refund allocation rules | Required before production money | Open / Product Owner Decision Required | BNPL-08–11 | Record repayments principal-only until policy |
-| BNPL-D-00-18 | Product-local grant / capability identifiers | includes `bnpl.application.read` | Implemented in BNPL-02; extended in BNPL-03/04 | Future grant persistence transport | Authorize by capability only |
+| BNPL-D-00-18 | Product-local grant / capability identifiers | includes `bnpl.plan.manage` | Implemented in BNPL-02; extended in BNPL-03/04/05 | Future grant persistence transport | Authorize by capability only |
 | BNPL-D-00-19 | Retention / deletion / export policy | Financial history important | Open / Product Owner Decision Required | Privacy ops | Retain while org subscribed; no silent purge |
 | BNPL-D-00-20 | Regulatory / licensing prerequisites | Technical capability ≠ legal authorization | Open / Legal Decision Required | Production claims | No license/compliance claims |
 | BNPL-D-00-25 | Production payment channels for repayments | Cash / GCash / other | Open / Product Owner Decision Required | BNPL-08 providers | Manual recorded repayment first |

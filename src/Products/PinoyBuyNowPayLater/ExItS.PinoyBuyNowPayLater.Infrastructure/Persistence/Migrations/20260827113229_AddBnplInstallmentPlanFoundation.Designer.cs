@@ -3,6 +3,7 @@ using System;
 using ExItS.PinoyBuyNowPayLater.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExItS.PinoyBuyNowPayLater.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BnplDbContext))]
-    partial class BnplDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260827113229_AddBnplInstallmentPlanFoundation")]
+    partial class AddBnplInstallmentPlanFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

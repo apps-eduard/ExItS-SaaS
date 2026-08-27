@@ -65,8 +65,10 @@ public sealed class BnplCustomerPersistenceTests : IAsyncLifetime
             var entityTypes = db.Model.GetEntityTypes().Select(t => t.ClrType.Name).ToArray();
             Assert.Contains("BnplCustomerRecord", entityTypes);
             Assert.Contains("BnplFinancingApplicationRecord", entityTypes);
-            Assert.DoesNotContain(entityTypes, n => n.Contains("FinancingPlan", StringComparison.OrdinalIgnoreCase));
-            Assert.DoesNotContain(entityTypes, n => n.Contains("Installment", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains("BnplInstallmentPlanRecord", entityTypes);
+            Assert.Contains("BnplInstallmentPlanItemRecord", entityTypes);
+            Assert.DoesNotContain(entityTypes, n => n.Contains("Repayment", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(entityTypes, n => n.Contains("OutstandingBalance", StringComparison.OrdinalIgnoreCase));
             Assert.DoesNotContain(entityTypes, n => n.Contains("POSCustomer", StringComparison.OrdinalIgnoreCase));
             Assert.DoesNotContain(entityTypes, n => n.Contains("PlatformUser", StringComparison.OrdinalIgnoreCase));
             Assert.Equal(BnplDbContext.DatabaseLogicalName, "ExItS_PinoyBuyNowPayLater");

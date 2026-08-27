@@ -6,8 +6,8 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Current phase | BNPL-04 — Financing Application Lifecycle (complete) |
-| Status | Financing Application Complete through APPROVED_PENDING_SALE; ACTIVE Not Started |
+| Current phase | BNPL-05 — Installment Plan Foundation (complete) |
+| Status | Explicit installment schedule on offer; ACTIVE Not Started |
 | Last updated | 2026-08-27 |
 
 ## Phase objective (BNPL-00)
@@ -34,9 +34,9 @@ Establish complete documentation-only foundation for BNPL: first-class product i
 | **BNPL-01** | Product scaffold + Platform registration | **COMPLETE** | BNPL-D-00-01..03 provisional approve | Projects, isolation, ProductCode, Local Validation catalog | No financing domain entities; no migrations | Build; architecture isolation tests |
 | **BNPL-02** | Authorization + Organization/Branch access | **COMPLETE** | BNPL-01; BNPL-D-00-18 | Product-local capabilities, org/branch context, access guard | No money mutations; no grant DB | Authz fail-closed tests |
 | **BNPL-03** | Customer / reference foundation | **COMPLETE** | BNPL-02 | BnplCustomer, DbContext, migration, customer API | No financing entities | Isolation + idempotent create tests |
-| **BNPL-04** | Financing application + lifecycle | **COMPLETE** | BNPL-03 | Application through APPROVED_PENDING_SALE | No ACTIVE; no installments | State machine + ACTIVE prohibition tests |
-| **BNPL-05** | Installment engine | Planned | BNPL-04; open term policy (BNPL-D-00-14) | Schedule generation | No repayments posting | Schedule correctness tests |
-| **BNPL-06** | Commerce/POS product + availability integration | BNPL-04 | Read contracts for catalog/availability | No local inventory ledger; no sale finalization yet | Contract tests; no POS DB |
+| **BNPL-04** | Financing application + lifecycle | **COMPLETE** | BNPL-03 | Application through APPROVED_PENDING_SALE | No ACTIVE; no installment schedule | State machine + ACTIVE prohibition tests |
+| **BNPL-05** | Installment plan foundation | **COMPLETE** | BNPL-04 | Explicit principal-only schedule on offer | No auto term/frequency; no repayments; no ACTIVE | Schedule validation + immutability tests |
+| **BNPL-06** | Commerce/POS product + availability integration | Planned | BNPL-04 | Read contracts for catalog/availability | No local inventory ledger; no sale finalization yet | Contract tests; no POS DB |
 | **BNPL-07** | Financed sale orchestration | BNPL-05, BNPL-06 | Activate financing after commerce sale; snapshots | No second sale engine | Path A/B; stock fail; idempotency |
 | **BNPL-08** | Repayments | BNPL-07 | Repayment posting, allocation | No payment-provider integration unless authorized | Idempotent repayments |
 | **BNPL-09** | Overdue / collections | BNPL-08 | Overdue flags, queues, reminders intent | Do not auto-import PLM collectors | Overdue calculation tests |

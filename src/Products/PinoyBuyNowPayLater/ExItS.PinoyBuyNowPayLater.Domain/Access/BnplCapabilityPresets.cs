@@ -43,6 +43,7 @@ public static class BnplCapabilityPresets
         BnplCapabilityCodes.ApplicationCreate,
         BnplCapabilityCodes.ApplicationApprove,
         BnplCapabilityCodes.PlanRead,
+        BnplCapabilityCodes.PlanManage,
         BnplCapabilityCodes.RepaymentCreate,
         BnplCapabilityCodes.CollectionsManage,
         BnplCapabilityCodes.AuditRead,
@@ -63,7 +64,8 @@ public static class BnplCapabilityPresets
         BnplCapabilityCodes.CustomerManage,
         BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.ApplicationCreate,
-        BnplCapabilityCodes.PlanRead
+        BnplCapabilityCodes.PlanRead,
+        BnplCapabilityCodes.PlanManage
     ], StringComparer.Ordinal);
 
     public static IReadOnlySet<string> CollectorCapabilities { get; } = new HashSet<string>(

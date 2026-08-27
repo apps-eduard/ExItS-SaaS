@@ -25,16 +25,20 @@ public sealed class BnplFinancingApplicationLifecycleTests
         var offer = app.CreateOffer(Approver, Now());
         Assert.Equal(BnplFinancingApplicationStatus.Offered, app.Status);
 
+        AttachEqualPlan(app, offer.Id.Value, offer.FinancedPrincipal);
         app.AcceptOffer(offer.Id.Value, Actor, Now());
         Assert.Equal(BnplFinancingApplicationStatus.CustomerAccepted, app.Status);
+        Assert.True(app.AcceptedInstallmentPlan!.IsLocked);
 
         app.Approve(Approver, Now());
         Assert.Equal(BnplFinancingApplicationStatus.ApprovedPendingSale, app.Status);
         Assert.False(app.HasOutstandingDebt);
         Assert.False(app.HasInstallments);
+        Assert.True(app.HasPlannedInstallmentSchedule);
         Assert.False(app.AreRepaymentsAllowed);
         Assert.NotNull(app.AcceptedOffer);
         Assert.True(app.AcceptedOffer!.IsAccepted);
+        Assert.Throws<BnplFinancingDomainException>(() => app.ActivateProhibited());
     }
 
     [Fact]
@@ -53,10 +57,12 @@ public sealed class BnplFinancingApplicationLifecycleTests
         app.Submit(Now());
         app.ApproveEligibility(Approver, Now());
         var first = app.CreateOffer(Approver, Now(), BnplFinancingOfferId.From(Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc")));
+        AttachEqualPlan(app, first.Id.Value, first.FinancedPrincipal, Guid.Parse("10101010-1010-4010-8010-101010101010"));
         var second = app.CreateOffer(Approver, Now(), BnplFinancingOfferId.From(Guid.Parse("dddddddd-dddd-4ddd-8ddd-dddddddddddd")));
         Assert.True(first.IsSuperseded);
 
         Assert.Throws<BnplFinancingDomainException>(() => app.AcceptOffer(first.Id.Value, Actor, Now()));
+        AttachEqualPlan(app, second.Id.Value, second.FinancedPrincipal, Guid.Parse("20202020-2020-4020-8020-202020202020"));
         app.AcceptOffer(second.Id.Value, Actor, Now());
         Assert.Throws<BnplFinancingDomainException>(() =>
             app.CreateOffer(Approver, Now()));
@@ -136,6 +142,11 @@ public sealed class BnplFinancingApplicationLifecycleTests
         var afterOffers = await harness.Applications.GetByIdAsync(Org, BnplFinancingApplicationId.From(id));
         Assert.Single(afterOffers!.Offers);
 
+        var planId = Guid.Parse("a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1");
+        var items = EqualPrincipalItems(500m, 5, DateOnly.Parse("2026-10-01"));
+        Assert.True((await harness.AttachPlan.ExecuteAsync(Org, id, offerId, planId, items, Approver)).IsSuccess);
+        Assert.True((await harness.AttachPlan.ExecuteAsync(Org, id, offerId, planId, items, Approver)).IsSuccess);
+
         Assert.True((await harness.Accept.ExecuteAsync(Org, id, offerId, Actor)).IsSuccess);
         Assert.True((await harness.Accept.ExecuteAsync(Org, id, offerId, Actor)).IsSuccess);
         Assert.True((await harness.Approve.ExecuteAsync(Org, id, Approver)).IsSuccess);
@@ -154,9 +165,44 @@ public sealed class BnplFinancingApplicationLifecycleTests
         app.Submit(Now());
         app.ApproveEligibility(Approver, Now());
         var offer = app.CreateOffer(Approver, Now());
+        AttachEqualPlan(app, offer.Id.Value, offer.FinancedPrincipal);
         app.AcceptOffer(offer.Id.Value, Actor, Now());
         app.Approve(Approver, Now());
         return app;
+    }
+
+    private static BnplInstallmentPlan AttachEqualPlan(
+        BnplFinancingApplication app,
+        Guid offerId,
+        decimal financedPrincipal,
+        Guid? planId = null) =>
+        app.AttachOrReplaceInstallmentPlan(
+            offerId,
+            BnplInstallmentPlanId.From(planId ?? Guid.Parse("b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2")),
+            EqualPrincipalItems(financedPrincipal, 4, DateOnly.Parse("2026-10-01")),
+            Approver,
+            Now());
+
+    private static IReadOnlyList<BnplInstallmentPlanItemDraft> EqualPrincipalItems(
+        decimal total,
+        int count,
+        DateOnly firstDue)
+    {
+        var each = decimal.Round(total / count, 2, MidpointRounding.AwayFromZero);
+        var items = new List<BnplInstallmentPlanItemDraft>(count);
+        var allocated = 0m;
+        for (var i = 1; i <= count; i++)
+        {
+            var amount = i == count ? total - allocated : each;
+            allocated += amount;
+            items.Add(new BnplInstallmentPlanItemDraft(
+                Guid.Parse($"{i:x8}-1111-4111-8111-111111111111"),
+                i,
+                amount,
+                firstDue.AddMonths(i - 1)));
+        }
+
+        return items;
     }
 
     private static DateTimeOffset Now() => DateTimeOffset.Parse("2026-08-27T12:00:00Z");
@@ -175,6 +221,7 @@ public sealed class BnplFinancingApplicationLifecycleTests
             new SubmitBnplFinancingApplication(apps, uow, clock),
             new ApproveBnplFinancingEligibility(apps, uow, clock),
             new CreateBnplFinancingOffer(apps, uow, clock),
+            new AttachBnplInstallmentPlan(apps, uow, clock),
             new AcceptBnplFinancingOffer(apps, uow, clock),
             new ApproveBnplFinancingApplication(apps, uow, clock));
     }
@@ -187,6 +234,7 @@ public sealed class BnplFinancingApplicationLifecycleTests
         SubmitBnplFinancingApplication Submit,
         ApproveBnplFinancingEligibility ApproveEligibility,
         CreateBnplFinancingOffer CreateOffer,
+        AttachBnplInstallmentPlan AttachPlan,
         AcceptBnplFinancingOffer Accept,
         ApproveBnplFinancingApplication Approve);
 

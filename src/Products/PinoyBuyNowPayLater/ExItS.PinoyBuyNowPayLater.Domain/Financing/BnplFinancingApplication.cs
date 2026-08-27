@@ -2,7 +2,8 @@ namespace ExItS.PinoyBuyNowPayLater.Domain.Financing;
 
 /// <summary>
 /// BNPL financing application aggregate through APPROVED_PENDING_SALE.
-/// Does not create debt, installments, inventory changes, or ACTIVE financing (BNPL-07).
+/// Does not create debt, collectible installments, inventory changes, or ACTIVE financing (BNPL-07).
+/// BNPL-05 adds explicit principal-only installment plans attached to offers (not collectible until ACTIVE).
 /// </summary>
 public sealed class BnplFinancingApplication
 {
@@ -12,6 +13,7 @@ public sealed class BnplFinancingApplication
 
     private readonly List<BnplFinancingOffer> _offers = [];
     private readonly List<BnplFinancingDecision> _decisions = [];
+    private readonly List<BnplInstallmentPlan> _plans = [];
 
     public BnplFinancingApplicationId Id { get; }
     public Guid OrganizationId { get; }
@@ -36,6 +38,7 @@ public sealed class BnplFinancingApplication
 
     public IReadOnlyList<BnplFinancingOffer> Offers => _offers;
     public IReadOnlyList<BnplFinancingDecision> Decisions => _decisions;
+    public IReadOnlyList<BnplInstallmentPlan> InstallmentPlans => _plans;
 
     public BnplFinancingOffer? CurrentOffer =>
         CurrentOfferId is Guid id
@@ -47,11 +50,25 @@ public sealed class BnplFinancingApplication
             ? _offers.FirstOrDefault(o => o.Id.Value == id)
             : null;
 
+    public BnplInstallmentPlan? CurrentInstallmentPlan =>
+        CurrentOfferId is Guid offerId
+            ? _plans.FirstOrDefault(p => p.OfferId == offerId && !p.IsSuperseded)
+            : null;
+
+    public BnplInstallmentPlan? AcceptedInstallmentPlan =>
+        AcceptedOfferId is Guid offerId
+            ? _plans.FirstOrDefault(p => p.OfferId == offerId && p.IsLocked && !p.IsSuperseded)
+            : null;
+
     /// <summary>APPROVED_PENDING_SALE creates no debt.</summary>
     public bool HasOutstandingDebt => false;
 
-    /// <summary>Installments do not exist before ACTIVE (BNPL-05/07).</summary>
+    /// <summary>Collectible installment debt does not exist before ACTIVE (BNPL-07).</summary>
     public bool HasInstallments => false;
+
+    /// <summary>True when an explicit planned schedule exists for the current or accepted offer.</summary>
+    public bool HasPlannedInstallmentSchedule =>
+        CurrentInstallmentPlan is not null || AcceptedInstallmentPlan is not null;
 
     /// <summary>Repayments are unavailable before ACTIVE.</summary>
     public bool AreRepaymentsAllowed => false;
@@ -78,7 +95,8 @@ public sealed class BnplFinancingApplication
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         IEnumerable<BnplFinancingOffer>? offers,
-        IEnumerable<BnplFinancingDecision>? decisions)
+        IEnumerable<BnplFinancingDecision>? decisions,
+        IEnumerable<BnplInstallmentPlan>? plans)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -108,6 +126,11 @@ public sealed class BnplFinancingApplication
         if (decisions is not null)
         {
             _decisions.AddRange(decisions);
+        }
+
+        if (plans is not null)
+        {
+            _plans.AddRange(plans);
         }
     }
 
@@ -152,7 +175,8 @@ public sealed class BnplFinancingApplication
             utcNow,
             utcNow,
             offers: null,
-            decisions: null);
+            decisions: null,
+            plans: null);
     }
 
     public static BnplFinancingApplication Reconstitute(
@@ -177,7 +201,8 @@ public sealed class BnplFinancingApplication
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         IEnumerable<BnplFinancingOffer> offers,
-        IEnumerable<BnplFinancingDecision> decisions) =>
+        IEnumerable<BnplFinancingDecision> decisions,
+        IEnumerable<BnplInstallmentPlan>? plans = null) =>
         new(
             id,
             organizationId,
@@ -200,7 +225,8 @@ public sealed class BnplFinancingApplication
             createdAtUtc,
             updatedAtUtc,
             offers,
-            decisions);
+            decisions,
+            plans);
 
     public bool IsCompatibleCreatePayload(
         Guid organizationId,
@@ -412,6 +438,10 @@ public sealed class BnplFinancingApplication
         foreach (var prior in _offers.Where(o => !o.IsSuperseded && !o.IsAccepted))
         {
             prior.MarkSuperseded();
+            foreach (var priorPlan in _plans.Where(p => p.OfferId == prior.Id.Value && !p.IsSuperseded))
+            {
+                priorPlan.MarkSuperseded();
+            }
         }
 
         var version = _offers.Count == 0 ? 1 : _offers.Max(o => o.Version) + 1;
@@ -430,6 +460,102 @@ public sealed class BnplFinancingApplication
         Touch(utcNow);
         return offer;
     }
+
+    /// <summary>
+    /// Attach or replace an explicit principal-only installment plan on the current unaccepted offer.
+    /// No automatic term/frequency generation (BNPL-D-00-14 OPEN).
+    /// </summary>
+    public BnplInstallmentPlan AttachOrReplaceInstallmentPlan(
+        Guid offerId,
+        BnplInstallmentPlanId planId,
+        IReadOnlyList<BnplInstallmentPlanItemDraft> items,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        int? expectedVersion = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureGuid(actorId, BnplFinancingErrorCodes.InvalidActorId, "ActorId");
+        EnsureExpectedVersion(expectedVersion);
+
+        var existing = _plans.FirstOrDefault(p => p.Id.Value == planId.Value);
+        if (existing is not null)
+        {
+            var offerForExisting = _offers.FirstOrDefault(o => o.Id.Value == offerId)
+                ?? throw new BnplFinancingDomainException(
+                    BnplFinancingErrorCodes.NotFound,
+                    "Offer was not found on this application.");
+
+            if (!existing.IsCompatiblePayload(offerId, offerForExisting.FinancedPrincipal, items))
+            {
+                throw new BnplFinancingDomainException(
+                    BnplFinancingErrorCodes.IdempotencyConflict,
+                    "PlanId already exists with a conflicting schedule.");
+            }
+
+            return existing;
+        }
+
+        var offer = _offers.FirstOrDefault(o => o.Id.Value == offerId)
+            ?? throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.NotFound,
+                "Offer was not found on this application.");
+
+        if (offer.IsAccepted || AcceptedOfferId == offerId)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanImmutable,
+                "An accepted installment plan cannot be replaced.");
+        }
+
+        if (Status != BnplFinancingApplicationStatus.Offered)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.InvalidState,
+                $"Installment plan may only be attached when status is Offered (was {Status}).");
+        }
+
+        if (CurrentOfferId != offerId)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.OfferSuperseded,
+                "Installment plan may only be attached to the current offer.");
+        }
+
+        if (offer.IsSuperseded)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanImmutable,
+                "Cannot attach a plan to a superseded offer.");
+        }
+
+        foreach (var prior in _plans.Where(p => p.OfferId == offerId && !p.IsSuperseded))
+        {
+            prior.MarkSuperseded();
+        }
+
+        var planVersion = _plans.Count(p => p.OfferId == offerId) + 1;
+        var plan = BnplInstallmentPlan.Create(
+            planId,
+            offerId,
+            planVersion,
+            actorId,
+            utcNow,
+            offer.FinancedPrincipal,
+            items);
+        _plans.Add(plan);
+        Touch(utcNow);
+        return plan;
+    }
+
+    public BnplInstallmentPlan? GetInstallmentPlanForOffer(Guid offerId) =>
+        _plans
+            .Where(p => p.OfferId == offerId)
+            .OrderByDescending(p => p.Version)
+            .FirstOrDefault(p => !p.IsSuperseded)
+        ?? _plans
+            .Where(p => p.OfferId == offerId)
+            .OrderByDescending(p => p.Version)
+            .FirstOrDefault();
 
     public void AcceptOffer(
         Guid offerId,
@@ -466,7 +592,23 @@ public sealed class BnplFinancingApplication
                 "Only the current offer version can be accepted.");
         }
 
+        var plan = _plans.FirstOrDefault(p => p.OfferId == offerId && !p.IsSuperseded);
+        if (plan is null)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanRequired,
+                "Customer acceptance requires a valid installment plan on the current offer.");
+        }
+
+        if (plan.TotalScheduledPrincipal != offer.FinancedPrincipal)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanTotalMismatch,
+                "Installment plan total must equal FinancedPrincipal before acceptance.");
+        }
+
         offer.MarkAccepted(actorId, utcNow);
+        plan.MarkLocked();
         AcceptedOfferId = offer.Id.Value;
         Status = BnplFinancingApplicationStatus.CustomerAccepted;
         Touch(utcNow);
@@ -493,6 +635,26 @@ public sealed class BnplFinancingApplication
             throw new BnplFinancingDomainException(
                 BnplFinancingErrorCodes.InvalidState,
                 "An accepted offer is required before approval.");
+        }
+
+        var acceptedOffer = AcceptedOffer
+            ?? throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.InvalidState,
+                "Accepted offer was not found.");
+
+        var plan = _plans.FirstOrDefault(p => p.OfferId == AcceptedOfferId.Value && p.IsLocked && !p.IsSuperseded);
+        if (plan is null)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanRequired,
+                "Approval requires an accepted offer with an immutable installment plan. Legacy principal-only offers without a schedule cannot be approved for BNPL-07.");
+        }
+
+        if (plan.TotalScheduledPrincipal != acceptedOffer.FinancedPrincipal)
+        {
+            throw new BnplFinancingDomainException(
+                BnplFinancingErrorCodes.PlanTotalMismatch,
+                "Accepted installment plan total must equal FinancedPrincipal.");
         }
 
         Status = BnplFinancingApplicationStatus.ApprovedPendingSale;
@@ -574,7 +736,7 @@ public sealed class BnplFinancingApplication
     {
         throw new BnplFinancingDomainException(
             BnplFinancingErrorCodes.ActiveProhibited,
-            "ACTIVE financing requires Commerce sale orchestration (BNPL-07) and is not available in BNPL-04.");
+            "ACTIVE financing requires Commerce sale orchestration (BNPL-07) and is not available.");
     }
 
     private void Touch(DateTimeOffset utcNow)

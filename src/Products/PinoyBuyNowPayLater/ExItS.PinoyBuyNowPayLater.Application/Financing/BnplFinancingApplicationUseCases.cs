@@ -14,6 +14,8 @@ internal static class BnplFinancingResults
             suggestedHttpStatus: ex.ErrorCode is BnplFinancingErrorCodes.ConcurrencyConflict
                 or BnplFinancingErrorCodes.IdempotencyConflict
                 or BnplFinancingErrorCodes.OfferSuperseded
+                or BnplFinancingErrorCodes.PlanRequired
+                or BnplFinancingErrorCodes.PlanImmutable
                 ? 409
                 : ex.ErrorCode is BnplFinancingErrorCodes.NotFound
                     ? 404
@@ -704,5 +706,111 @@ public sealed class CancelBnplFinancingApplication
         {
             return BnplFinancingResults.FromPersistence<BnplFinancingApplication>(ex);
         }
+    }
+}
+
+public sealed class AttachBnplInstallmentPlan
+{
+    private readonly IBnplFinancingApplicationRepository _applications;
+    private readonly IBnplUnitOfWork _unitOfWork;
+    private readonly IBnplClock _clock;
+
+    public AttachBnplInstallmentPlan(
+        IBnplFinancingApplicationRepository applications,
+        IBnplUnitOfWork unitOfWork,
+        IBnplClock clock)
+    {
+        _applications = applications;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<BnplApplicationResult<BnplFinancingApplication>> ExecuteAsync(
+        Guid organizationId,
+        Guid applicationId,
+        Guid offerId,
+        Guid planId,
+        IReadOnlyList<BnplInstallmentPlanItemDraft> items,
+        Guid actorId,
+        int? expectedVersion = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var application = await _applications
+                .GetByIdAsync(organizationId, BnplFinancingApplicationId.From(applicationId), cancellationToken)
+                .ConfigureAwait(false);
+            if (application is null)
+            {
+                return BnplApplicationResult<BnplFinancingApplication>.Failure(
+                    BnplFinancingErrorCodes.NotFound,
+                    "Financing application was not found in this organization.",
+                    404);
+            }
+
+            application.AttachOrReplaceInstallmentPlan(
+                offerId,
+                BnplInstallmentPlanId.From(planId),
+                items,
+                actorId,
+                _clock.UtcNow,
+                expectedVersion);
+            await _applications.UpdateAsync(application, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return BnplApplicationResult<BnplFinancingApplication>.Success(application);
+        }
+        catch (BnplFinancingDomainException ex)
+        {
+            return BnplFinancingResults.FromDomain<BnplFinancingApplication>(ex);
+        }
+        catch (BnplPersistenceConflictException ex)
+        {
+            return BnplFinancingResults.FromPersistence<BnplFinancingApplication>(ex);
+        }
+    }
+}
+
+public sealed class GetBnplInstallmentPlan
+{
+    private readonly IBnplFinancingApplicationRepository _applications;
+
+    public GetBnplInstallmentPlan(IBnplFinancingApplicationRepository applications) =>
+        _applications = applications;
+
+    public async Task<BnplApplicationResult<(BnplFinancingApplication Application, BnplInstallmentPlan Plan)>> ExecuteAsync(
+        Guid organizationId,
+        Guid applicationId,
+        Guid offerId,
+        CancellationToken cancellationToken = default)
+    {
+        var application = await _applications
+            .GetByIdAsync(organizationId, BnplFinancingApplicationId.From(applicationId), cancellationToken)
+            .ConfigureAwait(false);
+        if (application is null)
+        {
+            return BnplApplicationResult<(BnplFinancingApplication, BnplInstallmentPlan)>.Failure(
+                BnplFinancingErrorCodes.NotFound,
+                "Financing application was not found in this organization.",
+                404);
+        }
+
+        if (application.Offers.All(o => o.Id.Value != offerId))
+        {
+            return BnplApplicationResult<(BnplFinancingApplication, BnplInstallmentPlan)>.Failure(
+                BnplFinancingErrorCodes.NotFound,
+                "Offer was not found on this application.",
+                404);
+        }
+
+        var plan = application.GetInstallmentPlanForOffer(offerId);
+        if (plan is null)
+        {
+            return BnplApplicationResult<(BnplFinancingApplication, BnplInstallmentPlan)>.Failure(
+                BnplFinancingErrorCodes.NotFound,
+                "Installment plan was not found for this offer.",
+                404);
+        }
+
+        return BnplApplicationResult<(BnplFinancingApplication, BnplInstallmentPlan)>.Success((application, plan));
     }
 }

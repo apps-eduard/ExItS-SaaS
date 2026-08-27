@@ -1,13 +1,13 @@
 # Pinoy Buy Now Pay Later — Authorization Matrix
 
-> Capability identifiers: **Implemented in BNPL-02; extended in BNPL-03** (BNPL-D-00-18). Do not hard-code authorization to role/preset names.
+> Capability identifiers: **Implemented in BNPL-02; extended in BNPL-03/04/05** (BNPL-D-00-18). Do not hard-code authorization to role/preset names.
 
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Status | BNPL-04 financing application lifecycle |
+| Status | BNPL-05 installment plan foundation |
 | Last updated | 2026-08-27 |
-| Implementation present | Access guard + customer + financing application APIs |
+| Implementation present | Access guard + customer + financing application + installment plan APIs |
 
 ## Access layers
 
@@ -45,6 +45,7 @@ Any missing/invalid layer → **DENY**. Default runtime provider is unavailable 
 | bnpl.application.create | Y | Y | N | Y | N | N |
 | bnpl.application.approve | Y | Y | Y | N | N | N |
 | bnpl.plan.read | Y | Y | Y | Y | Y | Y |
+| bnpl.plan.manage | Y | Y | N | Y | N | N |
 | bnpl.repayment.create | Y | Y | N | N | Y | N |
 | bnpl.collections.manage | Y | Y | N | N | Y | N |
 | bnpl.settlement.manage | Y | N | N | N | N | N |

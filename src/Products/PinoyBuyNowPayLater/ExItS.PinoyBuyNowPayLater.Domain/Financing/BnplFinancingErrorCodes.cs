@@ -19,6 +19,17 @@ public static class BnplFinancingErrorCodes
     public const string OfferImmutable = "bnpl.financing.offer_immutable";
     public const string EligibilityRequired = "bnpl.financing.eligibility_required";
     public const string ActiveProhibited = "bnpl.financing.active_prohibited";
+    public const string InvalidPlanId = "bnpl.financing.invalid_plan_id";
+    public const string InvalidPlanItemId = "bnpl.financing.invalid_plan_item_id";
+    public const string PlanEmpty = "bnpl.financing.plan_empty";
+    public const string PlanTooLarge = "bnpl.financing.plan_too_large";
+    public const string PlanTotalMismatch = "bnpl.financing.plan_total_mismatch";
+    public const string InvalidPlanSequence = "bnpl.financing.invalid_plan_sequence";
+    public const string InvalidPlanAmount = "bnpl.financing.invalid_plan_amount";
+    public const string InvalidPlanDueDate = "bnpl.financing.invalid_plan_due_date";
+    public const string DuplicatePlanItemId = "bnpl.financing.duplicate_plan_item_id";
+    public const string PlanRequired = "bnpl.financing.plan_required";
+    public const string PlanImmutable = "bnpl.financing.plan_immutable";
 }
 
 public sealed class BnplFinancingDomainException : Exception

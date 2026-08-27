@@ -13,6 +13,7 @@ public static class BnplCapabilityCodes
     public const string ApplicationCreate = "bnpl.application.create";
     public const string ApplicationApprove = "bnpl.application.approve";
     public const string PlanRead = "bnpl.plan.read";
+    public const string PlanManage = "bnpl.plan.manage";
     public const string RepaymentCreate = "bnpl.repayment.create";
     public const string CollectionsManage = "bnpl.collections.manage";
     public const string SettlementManage = "bnpl.settlement.manage";
@@ -28,6 +29,7 @@ public static class BnplCapabilityCodes
         ApplicationCreate,
         ApplicationApprove,
         PlanRead,
+        PlanManage,
         RepaymentCreate,
         CollectionsManage,
         SettlementManage,
