@@ -29,23 +29,44 @@ export type UtangAttentionItem = {
   href: string;
 };
 
+const EM_DASH = "\u2014";
+
+/**
+ * Resolve the counterparty display name for a debt relationship.
+ * Local contacts use contact ids; shared/linked ledgers often only set the
+ * counterparty user identity — match via contact.linkedUserIdentityId.
+ */
 export function resolveRelationshipContactName(
-  contacts: ReadonlyArray<Pick<PersonalContactDto, "id" | "displayName">>,
+  contacts: ReadonlyArray<
+    Pick<PersonalContactDto, "id" | "displayName" | "linkedUserIdentityId">
+  >,
   relationship: PersonalDebtRelationshipSummaryDto,
 ): string {
-  const contactId =
-    relationship.perspective === "Borrowed"
-      ? relationship.creditorContactId
-      : relationship.debtorContactId;
+  const borrowed = relationship.perspective === "Borrowed";
+  const contactId = borrowed ? relationship.creditorContactId : relationship.debtorContactId;
   if (contactId) {
-    return contacts.find((c) => c.id === contactId)?.displayName ?? "—";
+    const byId = contacts.find((c) => c.id === contactId)?.displayName?.trim();
+    if (byId) return byId;
   }
-  return "—";
+
+  const counterpartyUserId = borrowed
+    ? relationship.creditorUserIdentityId
+    : relationship.debtorUserIdentityId;
+  if (counterpartyUserId) {
+    const byLinked = contacts.find(
+      (c) => c.linkedUserIdentityId === counterpartyUserId,
+    )?.displayName?.trim();
+    if (byLinked) return byLinked;
+  }
+
+  return EM_DASH;
 }
 
 export function toUtangAccountRow(
   relationship: PersonalDebtRelationshipSummaryDto,
-  contacts: ReadonlyArray<Pick<PersonalContactDto, "id" | "displayName">>,
+  contacts: ReadonlyArray<
+    Pick<PersonalContactDto, "id" | "displayName" | "linkedUserIdentityId">
+  >,
   now = new Date(),
 ): UtangAccountRow {
   const perspective: UtangPerspective =
@@ -67,7 +88,9 @@ export function toUtangAccountRow(
 export function mergeUtangAccounts(
   lent: PersonalDebtRelationshipSummaryDto[],
   borrowed: PersonalDebtRelationshipSummaryDto[],
-  contacts: ReadonlyArray<Pick<PersonalContactDto, "id" | "displayName">>,
+  contacts: ReadonlyArray<
+    Pick<PersonalContactDto, "id" | "displayName" | "linkedUserIdentityId">
+  >,
   now = new Date(),
 ): UtangAccountRow[] {
   const byId = new Map<string, UtangAccountRow>();

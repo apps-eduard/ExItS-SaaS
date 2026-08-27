@@ -120,7 +120,7 @@ export function buildPeopleRows(input: {
     );
     const open = related.find((rel) => rel.status.toLowerCase() === "active");
     let utangSummary: string | undefined;
-    if (open) {
+    if (open && open.currentBalance !== 0) {
       const perspective = open.perspective.toLowerCase();
       const money = formatMoney(open.currentBalance, open.currencyCode);
       if (perspective.includes("lent") || open.creditorContactId === null) {

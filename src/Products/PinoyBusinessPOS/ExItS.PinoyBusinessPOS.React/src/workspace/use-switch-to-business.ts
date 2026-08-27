@@ -1,11 +1,14 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { ACCOUNT_CONTEXT_SWITCH_PATH } from "@/features/account/account-context-switch-route";
 import { sessionAccountClass } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { useSession } from "@/session/SessionProvider";
 import { resolveDestinationRouting } from "@/workspace/workspace-destinations";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+export { ACCOUNT_CONTEXT_SWITCH_PATH };
 
 /**
  * Personal → Organization/Business entry reuses workspace bind + smart destination routing.
@@ -36,11 +39,13 @@ export function useSwitchToBusiness() {
     }
 
     setSwitching(true);
+    navigate(ACCOUNT_CONTEXT_SWITCH_PATH, { replace: true });
     try {
       clearBoundWorkspace();
 
       const ensured = await ensureOrganizationSessionProfile({ session, refreshSession });
       if (!ensured.ok) {
+        navigate("/personal", { replace: true });
         return;
       }
 

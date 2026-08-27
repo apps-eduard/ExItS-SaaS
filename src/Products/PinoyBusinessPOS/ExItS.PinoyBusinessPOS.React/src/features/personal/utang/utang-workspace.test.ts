@@ -3,16 +3,18 @@ import {
   buildHomeAttentionItems,
   filterUtangAccounts,
   mergeUtangAccounts,
+  resolveRelationshipContactName,
   sortUtangAccounts,
   type UtangAccountRow,
 } from "@/features/personal/utang/utang-workspace";
 
 const contactId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const meId = "11111111-1111-1111-1111-111111111111";
+const otherUserId = "22222222-2222-2222-2222-222222222222";
 
 describe("utang-workspace", () => {
   it("merges lent and borrowed summaries without duplicating ids", () => {
-    const contacts = [{ id: contactId, displayName: "Ana" }];
+    const contacts = [{ id: contactId, displayName: "Ana", linkedUserIdentityId: null }];
     const lent = [
       {
         id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -35,6 +37,43 @@ describe("utang-workspace", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].displayName).toBe("Ana");
     expect(rows[0].perspective).toBe("lent");
+  });
+
+  it("resolves linked shared ledger names via counterparty user identity", () => {
+    const contacts = [
+      {
+        id: contactId,
+        displayName: "Kizy",
+        linkedUserIdentityId: otherUserId,
+      },
+    ];
+    const sharedLent = {
+      id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: otherUserId,
+      debtorContactId: null,
+      currencyCode: "PHP",
+      currentBalance: 434,
+      dueDateUtc: null,
+      status: "Active",
+      version: 1,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: true,
+      isPrivate: false,
+    };
+    expect(resolveRelationshipContactName(contacts, sharedLent as never)).toBe("Kizy");
+    expect(mergeUtangAccounts([sharedLent as never], [], contacts)[0].displayName).toBe("Kizy");
+
+    const sharedBorrowed = {
+      ...sharedLent,
+      id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      perspective: "Borrowed",
+      creditorUserIdentityId: otherUserId,
+      debtorUserIdentityId: meId,
+    };
+    expect(resolveRelationshipContactName(contacts, sharedBorrowed as never)).toBe("Kizy");
   });
 
   it("sorts overdue before upcoming", () => {

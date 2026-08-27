@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, X } from "lucide-react";
+import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -618,7 +618,8 @@ export function RelationshipInviteReminderPanel({
 
   return (
     <section className="catalog-form-section exits-animate-panel personal-section flex flex-col gap-3" data-testid="utang-invite-reminder-panel">
-      <h2 className="catalog-form-section__title">
+      <h2 className="catalog-form-section__title m-0 flex items-center gap-2">
+        <BellRing className="size-4 shrink-0" aria-hidden="true" />
         {t("personal.social.inviteAndRemind")}
       </h2>
       {inviteeContactId ? (
@@ -676,7 +677,8 @@ export function RelationshipInviteReminderPanel({
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
           {t("personal.social.reminderServerHint")}
         </p>
-        <Button type="submit" className="min-h-11 w-fit" disabled={createReminder.isPending}>
+        <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={createReminder.isPending}>
+          <BellPlus className="size-4 shrink-0" aria-hidden="true" />
           {t("personal.social.addReminder")}
         </Button>
       </form>

@@ -282,6 +282,11 @@ function renderPath(path: string) {
   );
 }
 
+async function openUtangRecordForm(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByTestId("utang-record-toggle"));
+  await screen.findByTestId("utang-rel-contact");
+}
+
 describe("Personal Utang shared-ledger UI", () => {
   beforeEach(() => {
     confirmMock.mockClear();
@@ -358,7 +363,7 @@ describe("Personal Utang shared-ledger UI", () => {
     renderPath("/personal/utang");
     expect(await screen.findByTestId("utang-hub-owed-to-me")).toBeInTheDocument();
     expect(screen.getByTestId("utang-hub-i-owe")).toBeInTheDocument();
-    expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record Utang");
+    expect(screen.getByTestId("utang-hub-record")).toHaveTextContent("Record money lent");
     expect(screen.getByTestId("utang-hub-pending")).toHaveTextContent("Waiting for you (2)");
     expect(await screen.findByTestId("utang-hub-segments")).toBeInTheDocument();
     expect(screen.getByTestId(`utang-account-${relationshipId}`)).toBeInTheDocument();
@@ -392,6 +397,12 @@ describe("Personal Utang shared-ledger UI", () => {
     expect(screen.getByTestId("people-page")).toBeInTheDocument();
   });
 
+  it("hides record form by default on Money I lent", async () => {
+    renderPath("/personal/utang/lent");
+    expect(await screen.findByTestId("utang-record-toggle")).toHaveTextContent("Record money lent");
+    expect(screen.queryByTestId("utang-rel-contact")).not.toBeInTheDocument();
+  });
+
   it("uses owes-you wording and linked vs private labels on I Lent", async () => {
     renderPath("/personal/utang/lent");
     expect(await screen.findByTestId(`utang-rel-row-${relationshipId}`)).toHaveTextContent(
@@ -401,7 +412,7 @@ describe("Personal Utang shared-ledger UI", () => {
       "Not linked to ExItS",
     );
     expect(screen.getByTestId(`utang-rel-ledger-${sharedRelationshipId}`)).toHaveTextContent(
-      "Linked",
+      "Connected",
     );
     expect(screen.getByTestId("personal-utang-lent").textContent).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-/i,
@@ -411,7 +422,7 @@ describe("Personal Utang shared-ledger UI", () => {
   it("switches create submit to send-for-confirmation for linked contacts", async () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
-    await screen.findByTestId("utang-rel-contact");
+    await openUtangRecordForm(user);
     await user.selectOptions(screen.getByTestId("utang-rel-contact"), linkedContactId);
     expect(screen.getByTestId("utang-rel-submit")).toHaveTextContent("Send for confirmation");
     expect(screen.getByTestId("utang-rel-confirm-hint")).toBeInTheDocument();
@@ -420,7 +431,7 @@ describe("Personal Utang shared-ledger UI", () => {
   it("requires Purpose / Note before recording a private Utang", async () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
-    await screen.findByTestId("utang-rel-contact");
+    await openUtangRecordForm(user);
     await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
     await user.type(screen.getByTestId("utang-rel-amount"), "100");
     await user.click(screen.getByTestId("utang-rel-submit"));
@@ -431,7 +442,7 @@ describe("Personal Utang shared-ledger UI", () => {
   it("shows private save hint for unlinked contacts", async () => {
     const user = userEvent.setup();
     renderPath("/personal/utang/lent");
-    await screen.findByTestId("utang-rel-contact");
+    await openUtangRecordForm(user);
     await user.selectOptions(screen.getByTestId("utang-rel-contact"), contactId);
     expect(screen.getByTestId("utang-rel-private-hint")).toBeInTheDocument();
   });
@@ -494,6 +505,7 @@ describe("Personal Utang shared-ledger UI", () => {
     await screen.findByTestId("utang-entry-type");
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
     await user.type(screen.getByTestId("utang-entry-amount"), "10");
+    await user.type(screen.getByTestId("utang-entry-notes"), "Partial payment");
     await user.click(screen.getByTestId("utang-entry-submit"));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

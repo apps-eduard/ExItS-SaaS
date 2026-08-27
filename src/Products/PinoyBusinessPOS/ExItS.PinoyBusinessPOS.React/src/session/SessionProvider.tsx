@@ -78,6 +78,8 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+import { ACCOUNT_CONTEXT_SWITCH_PATH } from "@/features/account/account-context-switch-route";
+
 const PIN_SETUP_PATH = "/offline-pin-setup";
 const PIN_UNLOCK_PATH = "/offline-pin";
 const SIGN_IN_PATH = "/sign-in";
@@ -97,7 +99,12 @@ export function OfflinePinSetupGate({ children }: { children: ReactNode }) {
       return;
     }
     const path = location.pathname;
-    if (path === PIN_SETUP_PATH || path === PIN_UNLOCK_PATH || path === SIGN_IN_PATH) {
+    if (
+      path === PIN_SETUP_PATH ||
+      path === PIN_UNLOCK_PATH ||
+      path === SIGN_IN_PATH ||
+      path === ACCOUNT_CONTEXT_SWITCH_PATH
+    ) {
       return;
     }
     if (!isOfflinePinAndDekConfigured(session.userId)) {

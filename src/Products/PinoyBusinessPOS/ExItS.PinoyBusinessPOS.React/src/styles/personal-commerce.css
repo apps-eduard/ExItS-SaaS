@@ -142,8 +142,10 @@
 .pc-store-card__badge-row {
   display: flex;
   min-width: 0;
-  justify-content: flex-end;
-  margin-top: 0.1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
 }
 
 .pc-store-card__header-row {
@@ -192,6 +194,56 @@
   font-weight: 700;
   line-height: 1.25;
   color: var(--exits-text);
+}
+
+.pc-store-card__linked-as {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--exits-text-sm);
+  line-height: 1.35;
+  color: var(--exits-text-muted);
+}
+
+.pc-store-card__manage {
+  border-top: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  padding-top: 0.5rem;
+}
+
+.pc-store-card__manage-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pc-store-card__manage-toggle:hover,
+.pc-store-card__manage-toggle:focus-visible {
+  color: var(--exits-text);
+}
+
+.pc-store-card__manage-toggle:focus-visible {
+  outline: 2px solid var(--exits-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--exits-radius-sm);
+}
+
+.pc-store-card__manage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
 }
 
 .pc-store-card__ordering {

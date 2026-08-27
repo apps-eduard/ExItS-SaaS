@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  ArrowRight,
   Bell,
   Building2,
+  CircleAlert,
   HandCoins,
   QrCode,
   Search,
@@ -174,7 +176,7 @@ export function PersonalUtangHubPage() {
         <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="utang-hub-record">
           <Link to="/personal/utang/lent">
             <HandCoins className="size-4 shrink-0" aria-hidden />
-            {t("personal.utang.recordUtang")}
+            {t("personal.utang.recordLent")}
           </Link>
         </Button>
       </div>
@@ -188,7 +190,8 @@ export function PersonalUtangHubPage() {
             String(pendingCount),
           )}
         >
-          <h2 className="catalog-form-section__title m-0">
+          <h2 className="catalog-form-section__title m-0 flex items-center gap-2">
+            <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
             {t("personal.utang.needsConfirmation")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -199,10 +202,11 @@ export function PersonalUtangHubPage() {
           </p>
           <Link
             to="/personal/utang/lent"
-            className="inline-flex min-h-11 items-center gap-1 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
+            className="inline-flex min-h-11 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
             data-testid="utang-hub-pending-review"
           >
             {t("personal.utang.reviewAccounts")}
+            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
           </Link>
         </section>
       ) : null}
@@ -250,7 +254,8 @@ export function PersonalUtangHubPage() {
             data-testid="utang-hub-accounts"
             aria-label={t("personal.utang.activeAccounts")}
           >
-            <h2 className="catalog-form-section__title text-muted">
+            <h2 className="catalog-form-section__title flex items-center gap-2 text-muted">
+              <Users className="size-4 shrink-0" aria-hidden="true" />
               {t("personal.utang.activeAccounts")}
             </h2>
 

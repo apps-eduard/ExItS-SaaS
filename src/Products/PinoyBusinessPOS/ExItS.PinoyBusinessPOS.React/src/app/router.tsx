@@ -14,9 +14,11 @@ import { PersonalExplorePosPage } from "@/features/personal/start-business/Perso
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
+import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
+import { PersonCreatePage } from "@/features/personal/PersonFormPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { ArchivedNotificationsPage } from "@/features/personal/ArchivedNotificationsPage";
@@ -234,6 +236,10 @@ export const appRoutes = [
         children: [
           { index: true, element: <HomePage /> },
           {
+            path: "switching-context",
+            element: <AccountContextSwitchPage />,
+          },
+          {
             path: "onboarding",
             element: (
               <RequireOrganizationSession>
@@ -261,6 +267,7 @@ export const appRoutes = [
               { path: "utang", element: <PersonalUtangHubPage /> },
               { path: "utang/people", element: <Navigate to="/personal/people" replace /> },
               { path: "people", element: <PeoplePage /> },
+              { path: "people/new", element: <PersonCreatePage /> },
               { path: "people/add/local", element: <AddLocalPersonPage /> },
               { path: "people/add", element: <AddPersonPage /> },
               { path: "people/:contactId", element: <PersonDetailPage /> },

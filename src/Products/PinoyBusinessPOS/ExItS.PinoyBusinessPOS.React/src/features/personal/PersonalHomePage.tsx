@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -42,10 +42,16 @@ import {
 } from "@/features/personal/utang/utang-workspace";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
+import { listCachedPersonalTodos } from "@/offline/personal-todo-cache";
 
 export function PersonalHomePage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
+  const offline = usePersonalOfflineContext();
+  const [cachedTodos, setCachedTodos] = useState<
+    Awaited<ReturnType<typeof listCachedPersonalTodos>>
+  >([]);
 
   const dashboardQuery = useQuery({
     queryKey: ["personal", "dashboard"],
@@ -54,7 +60,24 @@ export function PersonalHomePage() {
   const todosQuery = useQuery({
     queryKey: ["personal", "todos"],
     queryFn: ({ signal }) => listPersonalTodos(signal),
+    enabled: online,
+    meta: { suppressGlobalError: true, operation: "list personal todos" },
   });
+
+  useEffect(() => {
+    if (!offline) {
+      return;
+    }
+    let cancelled = false;
+    void listCachedPersonalTodos(offline.db, offline.scopeBinding).then((rows) => {
+      if (!cancelled) {
+        setCachedTodos(rows);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [offline, todosQuery.dataUpdatedAt]);
   const contactsQuery = useQuery({
     queryKey: ["personal", "utang", "contacts"],
     queryFn: ({ signal }) => listPersonalContacts(signal),
@@ -93,6 +116,17 @@ export function PersonalHomePage() {
     });
   }, [accounts, dashboardQuery.data?.pendingConfirmationCount]);
 
+  const counts = useMemo(() => {
+    if (todosQuery.isSuccess) {
+      return summarizeTodoCounts(todosQuery.data);
+    }
+    if (cachedTodos.length > 0) {
+      return summarizeTodoCounts(cachedTodos);
+    }
+    return null;
+  }, [cachedTodos, todosQuery.data, todosQuery.isSuccess]);
+  const usingCachedTodoCounts = !todosQuery.isSuccess && cachedTodos.length > 0;
+
   if (dashboardQuery.isPending) {
     return <LoadingSkeleton label={t("personal.home.loading")} />;
   }
@@ -119,7 +153,6 @@ export function PersonalHomePage() {
   }
 
   const dashboard = dashboardQuery.data;
-  const counts = todosQuery.isSuccess ? summarizeTodoCounts(todosQuery.data) : null;
 
   function attentionTitle(item: (typeof attentionItems)[number]): string {
     if (item.kind === "pendingConfirmation") {
@@ -375,16 +408,21 @@ export function PersonalHomePage() {
           <ListTodo className="personal-todo-create-form__title-icon size-[1.1rem] shrink-0" aria-hidden />
           {t("personal.home.todoSummary")}
         </h2>
-        {todosQuery.isPending ? (
+        {todosQuery.isPending && cachedTodos.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.todo.loading")}
           </p>
-        ) : todosQuery.isError ? (
+        ) : todosQuery.isError && cachedTodos.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("personal.home.todoUnavailable")}
           </p>
         ) : counts ? (
           <>
+            {usingCachedTodoCounts ? (
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("personal.home.todoCachedSummary")}
+              </p>
+            ) : null}
             <div
               className="personal-todo-compact flex flex-wrap gap-x-4 gap-y-1 text-[length:var(--exits-text-sm)]"
               data-testid="personal-todo-counts"

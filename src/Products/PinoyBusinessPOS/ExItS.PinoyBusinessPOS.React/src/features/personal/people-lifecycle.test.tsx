@@ -16,6 +16,7 @@ import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
+import { PersonCreatePage } from "@/features/personal/PersonFormPage";
 import { PersonDetailPage } from "@/features/personal/PersonDetailPage";
 import { buildPeopleRows, deriveConnectionStatus } from "@/features/personal/people-status";
 import type {
@@ -95,6 +96,7 @@ function renderPeopleApp(path: string) {
         element: <TestPersonalShell />,
         children: [
           { path: "people", element: <PeoplePage /> },
+          { path: "people/new", element: <PersonCreatePage /> },
           { path: "people/add/local", element: <AddLocalPersonPage /> },
           { path: "people/add", element: <AddPersonPage /> },
           { path: "people/:contactId", element: <PersonDetailPage /> },
@@ -154,7 +156,7 @@ describe("People lifecycle UX", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders How to add and empty people list", async () => {
+  it("renders Add person toggle and empty people list", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
@@ -175,9 +177,9 @@ describe("People lifecycle UX", () => {
     );
 
     renderPeopleApp("/personal/people");
-    expect(await screen.findByText("How to add")).toBeInTheDocument();
-    expect(screen.getByText("Without ExItS ID")).toBeInTheDocument();
-    expect(screen.getByText("With ExItS Personal ID")).toBeInTheDocument();
+    expect(await screen.findByTestId("people-add-panel")).toBeInTheDocument();
+    expect(await screen.findByTestId("people-add-toggle")).toBeInTheDocument();
+    expect(screen.queryByTestId("person-form-page")).not.toBeInTheDocument();
     expect(screen.getByText(/0 with ExItS ID · 0 local only/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Connection requests/i })).toBeInTheDocument();
   });
@@ -239,9 +241,10 @@ describe("People lifecycle UX", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const user = userEvent.setup();
-    renderPeopleApp("/personal/people/add/local");
+    renderPeopleApp("/personal/people?add=1&kind=walkin");
+    await screen.findByTestId("person-form-page");
     await user.type(screen.getByLabelText(/^Name/i), "Pedro Cruz");
-    await user.click(screen.getByRole("button", { name: "Add person" }));
+    await user.click(screen.getByTestId("person-save"));
     await waitFor(() => {
       expect(
         fetchMock.mock.calls.some(
@@ -336,10 +339,12 @@ describe("People lifecycle UX", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const user = userEvent.setup();
-    renderPeopleApp("/personal/people/add");
+    renderPeopleApp("/personal/people?add=1&kind=exits");
 
-    await user.type(screen.getByLabelText("ExItS ID"), "EX-1234-5678");
-    await user.click(screen.getByRole("button", { name: "Find person" }));
+    await screen.findByTestId("person-form-page");
+
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
 
     const confirmation = await screen.findByTestId("identity-confirmation");
     expect(within(confirmation).getByText("Maria Santos")).toBeInTheDocument();
@@ -350,7 +355,7 @@ describe("People lifecycle UX", () => {
       ),
     ).toBe(false);
 
-    await user.click(screen.getByRole("button", { name: "Add person" }));
+    await user.click(screen.getByTestId("person-save"));
     await waitFor(() => {
       expect(
         fetchMock.mock.calls.some(
@@ -389,10 +394,12 @@ describe("People lifecycle UX", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const user = userEvent.setup();
-    renderPeopleApp("/personal/people/add");
+    renderPeopleApp("/personal/people?add=1&kind=exits");
 
-    await user.type(screen.getByLabelText("ExItS ID"), "EX-1234-5678");
-    await user.click(screen.getByRole("button", { name: "Find person" }));
+    await screen.findByTestId("person-form-page");
+
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
 
     expect(await screen.findByTestId("people-add-error")).toHaveTextContent(
       "Juan Dela Cruz is already in your People list.",
@@ -402,7 +409,7 @@ describe("People lifecycle UX", () => {
       "href",
       "/personal/people/c1",
     );
-    expect(screen.queryByRole("button", { name: "Add person" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("person-save")).not.toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(
         (call) => String(call[0]).includes("/utang/contacts") && call[1]?.method === "POST",
@@ -535,7 +542,9 @@ describe("People lifecycle UX", () => {
     const user = userEvent.setup();
     renderPeopleApp("/personal/notifications");
     await user.click(await screen.findByRole("button", { name: /Connection\. Unread/i }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Connection requests" })).toBeInTheDocument();
+    expect(await screen.findByTestId("invitations-page-title")).toHaveTextContent(
+      "Connection requests",
+    );
     expect(screen.getByText("Eduard")).toBeInTheDocument();
     expect(screen.getByText("wants to connect with you")).toBeInTheDocument();
     expect(connections[0]?.status).toBe("Pending");
