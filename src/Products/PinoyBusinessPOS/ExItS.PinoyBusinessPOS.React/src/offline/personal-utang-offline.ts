@@ -34,8 +34,9 @@ import type { OfflineOperationRecord } from "@/offline/types";
  *   - reminders and their delivery
  *   - Adjustment entries, which correct a balance the device may no longer be looking at
  *
- * These routes have no idempotency support, so `serverDedupeMode` is "none" and the sync processor
- * must not silently replay them. See `server-dedupe-policy.ts`.
+ * These create routes accept a client-stable entity id (PERS-IDEM-01), so `serverDedupeMode` is
+ * `"idempotency-key"` and the sync processor may safely auto-retry after an ambiguous transport
+ * failure. See `server-dedupe-policy.ts`.
  */
 
 export const PERSONAL_UTANG_PRODUCT_DOMAIN = "personal.utang";
@@ -86,9 +87,8 @@ async function personalScopeFields(scope: PersonalOfflineScope) {
 }
 
 /**
- * The Personal routes mint their own ids, so a queued operation has no server id to reuse. The
- * local operation id is still the idempotency key: it makes the queue row unique and it is the
- * key the processor would send the day these routes learn to deduplicate.
+ * The same local entity id is the server entity id and the outbox idempotency key. It must survive
+ * enqueue → app restart → reconnect → replay without being regenerated.
  */
 function localIdempotencyKey(localId: string): string {
   return localId.replace(/-/g, "").toLowerCase();
@@ -127,6 +127,7 @@ export async function enqueuePersonalContactCreate(
 
   const scope = await personalScopeFields(input);
   const body: CreatePersonalContactRequest = {
+    contactId: input.contactId,
     displayName,
     phone: input.contact.phone?.trim() || null,
     email: input.contact.email?.trim() || null,
@@ -164,8 +165,10 @@ export async function enqueuePersonalContactCreate(
 }
 
 export type EnqueuePersonalRelationshipInput = PersonalOfflineScope & {
-  /** Local id, replaced by the server id once the queued relationship posts. */
+  /** Client-stable relationship id — also sent to the server and reused on replay. */
   relationshipId: string;
+  /** Client-stable id for the initial loan entry when amount &gt; 0. */
+  initialLoanEntryId?: string | null;
   /** "Lent" = this person is the creditor, "Borrowed" = this person is the debtor. */
   perspective: "Lent" | "Borrowed";
   /** Local or server contact id for the other side of the debt. */
@@ -234,6 +237,8 @@ export async function enqueuePersonalRelationshipCreate(
   const lent = input.perspective === "Lent";
 
   const body = {
+    relationshipId: input.relationshipId,
+    initialLoanEntryId: input.initialLoanEntryId ?? null,
     creditorUserIdentityId: lent ? input.ownerUserIdentityId : null,
     creditorContactId: lent ? null : contactRef,
     debtorUserIdentityId: lent ? null : input.ownerUserIdentityId,
@@ -349,6 +354,7 @@ export async function enqueuePersonalUtangEntry(
       method: "POST",
       path: `${UTANG_PATH}/relationships/${relationshipRef}/entries`,
       body: {
+        entryId: input.entryId,
         entryType: input.entryType,
         amount,
         expectedVersion: null,

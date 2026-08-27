@@ -32,7 +32,9 @@ public sealed record CreatePersonalContactRequest(
     string? ResolvedPublicUserId = null,
     // Legacy POS JSON aliases — resolve identity only; do not auto-link/connect.
     Guid? LinkedUserIdentityId = null,
-    string? PublicUserId = null);
+    string? PublicUserId = null,
+    /// <summary>Optional client-stable identity for offline replay / ambiguous-outcome reconciliation.</summary>
+    Guid? ContactId = null);
 
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
@@ -58,7 +60,11 @@ public sealed record CreatePersonalDebtRelationshipRequest(
     string? CurrencyCode,
     DateTimeOffset? DueDateUtc,
     decimal? InitialLoanAmount,
-    string? InitialLoanNotes);
+    string? InitialLoanNotes,
+    /// <summary>Optional client-stable identity for offline replay / ambiguous-outcome reconciliation.</summary>
+    Guid? RelationshipId = null,
+    /// <summary>Optional client-stable id for the initial loan entry when <see cref="InitialLoanAmount"/> is set.</summary>
+    Guid? InitialLoanEntryId = null);
 
 public sealed record RecordPersonalUtangEntryRequest(
     string EntryType,
@@ -66,7 +72,9 @@ public sealed record RecordPersonalUtangEntryRequest(
     decimal? AdjustmentDelta,
     int? ExpectedVersion,
     string? Notes,
-    DateTimeOffset? DueDateUtc);
+    DateTimeOffset? DueDateUtc,
+    /// <summary>Optional client-stable identity for offline replay / ambiguous-outcome reconciliation.</summary>
+    Guid? EntryId = null);
 
 public sealed record ConfirmPersonalUtangEntryRequest(int? ExpectedVersion);
 
@@ -107,6 +115,66 @@ public sealed record PersonalUtangBalanceDto(
     string CurrencyCode,
     int Version,
     DateTimeOffset UpdatedAtUtc);
+
+internal static class PersonalUtangIdempotency
+{
+    public static bool ContactMatches(PersonalContact existing, CreatePersonalContactRequest request)
+    {
+        var phone = NormalizeOptional(request.Phone);
+        var email = NormalizeOptionalEmail(request.Email);
+        return string.Equals(existing.DisplayName, NormalizeDisplayName(request.DisplayName), StringComparison.Ordinal)
+            && string.Equals(existing.Phone, phone, StringComparison.Ordinal)
+            && string.Equals(existing.Email, email, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool RelationshipMatches(
+        PersonalDebtRelationship existing,
+        PlatformUserId? creditorUser,
+        PersonalContactId? creditorContact,
+        PlatformUserId? debtorUser,
+        PersonalContactId? debtorContact,
+        string currencyCode)
+    {
+        return existing.CreditorUserIdentityId == creditorUser
+            && existing.CreditorContactId == creditorContact
+            && existing.DebtorUserIdentityId == debtorUser
+            && existing.DebtorContactId == debtorContact
+            && string.Equals(existing.CurrencyCode, NormalizeCurrency(currencyCode), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool EntryMatches(
+        PersonalUtangEntry existing,
+        PersonalDebtRelationshipId relationshipId,
+        PersonalUtangEntryType entryType,
+        decimal amount,
+        decimal? adjustmentDelta)
+    {
+        if (existing.RelationshipId != relationshipId || existing.EntryType != entryType)
+        {
+            return false;
+        }
+
+        if (entryType is PersonalUtangEntryType.Adjustment)
+        {
+            var expectedSigned = adjustmentDelta ?? 0m;
+            return existing.Amount == amount && existing.SignedDelta == expectedSigned;
+        }
+
+        return existing.Amount == amount;
+    }
+
+    private static string NormalizeDisplayName(string displayName) =>
+        displayName.Trim();
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? NormalizeOptionalEmail(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeCurrency(string currencyCode) =>
+        string.IsNullOrWhiteSpace(currencyCode) ? "PHP" : currencyCode.Trim().ToUpperInvariant();
+}
 
 internal static class PersonalUtangAccess
 {
@@ -247,12 +315,42 @@ public sealed class CreatePersonalContact
     {
         try
         {
+            if (request.ContactId is Guid clientContactId && clientContactId != Guid.Empty)
+            {
+                var existingById = await _contacts
+                    .GetByIdAsync(PersonalContactId.From(clientContactId), cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingById is not null)
+                {
+                    if (existingById.OwnerUserIdentityId != ownerUserIdentityId)
+                    {
+                        return ApplicationResult<PersonalContactDto>.Failure(
+                            ApplicationErrorCodes.PersonalContactNotFound,
+                            "Personal contact was not found.");
+                    }
+
+                    if (!PersonalUtangIdempotency.ContactMatches(existingById, request))
+                    {
+                        return ApplicationResult<PersonalContactDto>.Failure(
+                            ApplicationErrorCodes.PersonalUtangIdempotencyConflict,
+                            "Contact identity was reused with a conflicting payload.");
+                    }
+
+                    return ApplicationResult<PersonalContactDto>.Success(ToDto(existingById));
+                }
+            }
+
+            PersonalContactId? clientId = request.ContactId is Guid cid && cid != Guid.Empty
+                ? PersonalContactId.From(cid)
+                : null;
+
             var contact = PersonalContact.Create(
                 ownerUserIdentityId,
                 request.DisplayName,
                 request.Phone,
                 request.Email,
-                _clock.UtcNow);
+                _clock.UtcNow,
+                clientId);
 
             var resolvedPublicInput = request.ResolvedPublicUserId ?? request.PublicUserId;
             var resolvedUserInput = request.ResolvedUserIdentityId ?? request.LinkedUserIdentityId;
@@ -317,7 +415,24 @@ public sealed class CreatePersonalContact
             }
 
             await _contacts.AddAsync(contact, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PersistenceConflictException) when (clientId is not null)
+            {
+                var raced = await _contacts
+                    .GetByIdAsync(clientId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (raced is not null
+                    && raced.OwnerUserIdentityId == ownerUserIdentityId
+                    && PersonalUtangIdempotency.ContactMatches(raced, request))
+                {
+                    return ApplicationResult<PersonalContactDto>.Success(ToDto(raced));
+                }
+
+                throw;
+            }
 
             await _auditWriter.WriteAsync(
                 $"platform-user:{ownerUserIdentityId.Value:D}",
@@ -369,6 +484,31 @@ public sealed class ListPersonalContacts
     {
         var list = await _contacts.ListByOwnerAsync(ownerUserIdentityId, cancellationToken).ConfigureAwait(false);
         return list.Select(CreatePersonalContact.ToDto).ToList();
+    }
+}
+
+public sealed class GetPersonalContact
+{
+    private readonly IPersonalContactRepository _contacts;
+
+    public GetPersonalContact(IPersonalContactRepository contacts) => _contacts = contacts;
+
+    public async Task<ApplicationResult<PersonalContactDto>> ExecuteAsync(
+        PlatformUserId ownerUserIdentityId,
+        Guid contactId,
+        CancellationToken cancellationToken = default)
+    {
+        var contact = await _contacts
+            .GetByIdAsync(PersonalContactId.From(contactId), cancellationToken)
+            .ConfigureAwait(false);
+        if (contact is null || contact.OwnerUserIdentityId != ownerUserIdentityId)
+        {
+            return ApplicationResult<PersonalContactDto>.Failure(
+                ApplicationErrorCodes.PersonalContactNotFound,
+                "Personal contact was not found.");
+        }
+
+        return ApplicationResult<PersonalContactDto>.Success(CreatePersonalContact.ToDto(contact));
     }
 }
 
@@ -476,6 +616,73 @@ public sealed class CreatePersonalDebtRelationship
                 "Cannot create a relationship between two other users.");
         }
 
+        if (request.RelationshipId is Guid clientRelationshipId && clientRelationshipId != Guid.Empty)
+        {
+            var existingRelationship = await _relationships
+                .GetByIdAsync(PersonalDebtRelationshipId.From(clientRelationshipId), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingRelationship is not null)
+            {
+                if (!await PersonalUtangAccess.CanViewAsync(
+                        existingRelationship, actingUserIdentityId, _contacts, cancellationToken)
+                        .ConfigureAwait(false))
+                {
+                    return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                        ApplicationErrorCodes.PersonalUtangUnauthorized,
+                        "Personal debt relationship is not visible to this account.");
+                }
+
+                var currency = request.CurrencyCode ?? "PHP";
+                if (!PersonalUtangIdempotency.RelationshipMatches(
+                        existingRelationship,
+                        creditorUser,
+                        creditorContact,
+                        debtorUser,
+                        debtorContact,
+                        currency))
+                {
+                    return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                        ApplicationErrorCodes.PersonalUtangIdempotencyConflict,
+                        "Relationship identity was reused with a conflicting payload.");
+                }
+
+                if (request.InitialLoanAmount is > 0)
+                {
+                    var history = await _entries
+                        .ListByRelationshipAsync(existingRelationship.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                    PersonalUtangEntry? initialLoan = null;
+                    if (request.InitialLoanEntryId is Guid loanEntryId && loanEntryId != Guid.Empty)
+                    {
+                        initialLoan = history.FirstOrDefault(e => e.Id.Value == loanEntryId);
+                    }
+                    else
+                    {
+                        initialLoan = history
+                            .Where(e => e.EntryType is PersonalUtangEntryType.Loan)
+                            .OrderBy(e => e.CreatedAtUtc)
+                            .FirstOrDefault();
+                    }
+
+                    if (initialLoan is null
+                        || !PersonalUtangIdempotency.EntryMatches(
+                            initialLoan,
+                            existingRelationship.Id,
+                            PersonalUtangEntryType.Loan,
+                            request.InitialLoanAmount.Value,
+                            adjustmentDelta: null))
+                    {
+                        return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Failure(
+                            ApplicationErrorCodes.PersonalUtangIdempotencyConflict,
+                            "Relationship identity was reused with a conflicting payload.");
+                    }
+                }
+
+                return ApplicationResult<PersonalDebtRelationshipSummaryDto>.Success(
+                    ToSummary(existingRelationship, actingUserIdentityId));
+            }
+        }
+
         try
         {
             var sharedInitialLoan = creditorUser is not null
@@ -562,7 +769,10 @@ public sealed class CreatePersonalDebtRelationship
             debtorContact,
             request.CurrencyCode ?? "PHP",
             _clock.UtcNow,
-            request.DueDateUtc);
+            request.DueDateUtc,
+            request.RelationshipId is Guid rid && rid != Guid.Empty
+                ? PersonalDebtRelationshipId.From(rid)
+                : null);
 
         PersonalUtangEntry? initialEntry = null;
         if (request.InitialLoanAmount is > 0)
@@ -578,7 +788,10 @@ public sealed class CreatePersonalDebtRelationship
                 _clock.UtcNow,
                 expectedVersion: null,
                 request.InitialLoanNotes,
-                request.DueDateUtc);
+                request.DueDateUtc,
+                request.InitialLoanEntryId is Guid eid && eid != Guid.Empty
+                    ? PersonalUtangEntryId.From(eid)
+                    : null);
         }
 
         await _relationships.AddAsync(relationship, cancellationToken).ConfigureAwait(false);
@@ -587,7 +800,32 @@ public sealed class CreatePersonalDebtRelationship
             await _entries.AddAsync(initialEntry, cancellationToken).ConfigureAwait(false);
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException) when (
+            request.RelationshipId is Guid conflictId && conflictId != Guid.Empty)
+        {
+            var raced = await _relationships
+                .GetByIdAsync(PersonalDebtRelationshipId.From(conflictId), cancellationToken)
+                .ConfigureAwait(false);
+            if (raced is not null
+                && await PersonalUtangAccess.CanViewAsync(raced, actingUserIdentityId, _contacts, cancellationToken)
+                    .ConfigureAwait(false)
+                && PersonalUtangIdempotency.RelationshipMatches(
+                    raced,
+                    creditorUser,
+                    creditorContact,
+                    debtorUser,
+                    debtorContact,
+                    request.CurrencyCode ?? "PHP"))
+            {
+                return ToSummary(raced, actingUserIdentityId);
+            }
+
+            throw;
+        }
 
         if (initialEntry is not null && initialEntry.Status is PersonalUtangEntryStatus.Pending)
         {
@@ -804,20 +1042,66 @@ public sealed class ListPersonalUtangHistory
         if (!access.IsSuccess)
         {
             return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Failure(
-                access.ErrorCode!, access.ErrorMessage!);
+                access.ErrorCode!,
+                access.ErrorMessage!);
         }
 
         var list = await _entries
             .ListByRelationshipAsync(PersonalDebtRelationshipId.From(relationshipId), cancellationToken)
             .ConfigureAwait(false);
-
+        var isShared = access.Value!.IsSharedLedger;
         return ApplicationResult<IReadOnlyList<PersonalUtangEntryDto>>.Success(
-            list.Select(entry =>
-                    RecordPersonalUtangEntry.ToDto(
-                        entry,
-                        userIdentityId,
-                        access.Value!.IsSharedLedger))
+            list
+                .Select(e => RecordPersonalUtangEntry.ToDto(e, userIdentityId, isShared))
                 .ToList());
+    }
+}
+
+public sealed class GetPersonalUtangEntry
+{
+    private readonly IPersonalUtangEntryRepository _entries;
+    private readonly IPersonalDebtRelationshipRepository _relationships;
+    private readonly IPersonalContactRepository _contacts;
+
+    public GetPersonalUtangEntry(
+        IPersonalUtangEntryRepository entries,
+        IPersonalDebtRelationshipRepository relationships,
+        IPersonalContactRepository contacts)
+    {
+        _entries = entries;
+        _relationships = relationships;
+        _contacts = contacts;
+    }
+
+    public async Task<ApplicationResult<PersonalUtangEntryDto>> ExecuteAsync(
+        PlatformUserId userIdentityId,
+        Guid entryId,
+        CancellationToken cancellationToken = default)
+    {
+        var entry = await _entries
+            .GetByIdAsync(PersonalUtangEntryId.From(entryId), cancellationToken)
+            .ConfigureAwait(false);
+        if (entry is null)
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangEntryNotFound,
+                "Personal utang entry was not found.");
+        }
+
+        var relationship = await _relationships
+            .GetByIdAsync(entry.RelationshipId, cancellationToken)
+            .ConfigureAwait(false);
+        if (relationship is null
+            || !await PersonalUtangAccess.CanViewAsync(relationship, userIdentityId, _contacts, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                ApplicationErrorCodes.PersonalUtangUnauthorized,
+                "Personal debt relationship is not visible to this account.");
+        }
+
+        return ApplicationResult<PersonalUtangEntryDto>.Success(
+            RecordPersonalUtangEntry.ToDto(entry, userIdentityId, relationship.IsSharedLinked));
     }
 }
 
@@ -886,6 +1170,34 @@ public sealed class RecordPersonalUtangEntry
                 "Entry type must be Loan, Payment, or Adjustment.");
         }
 
+        if (request.EntryId is Guid clientEntryId && clientEntryId != Guid.Empty)
+        {
+            var existingEntry = await _entries
+                .GetByIdAsync(PersonalUtangEntryId.From(clientEntryId), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingEntry is not null)
+            {
+                if (!PersonalUtangIdempotency.EntryMatches(
+                        existingEntry,
+                        relationship.Id,
+                        entryType,
+                        request.Amount,
+                        request.AdjustmentDelta))
+                {
+                    return ApplicationResult<PersonalUtangEntryDto>.Failure(
+                        ApplicationErrorCodes.PersonalUtangIdempotencyConflict,
+                        "Entry identity was reused with a conflicting payload.");
+                }
+
+                return ApplicationResult<PersonalUtangEntryDto>.Success(
+                    ToDto(existingEntry, actingUserIdentityId, relationship.IsSharedLinked));
+            }
+        }
+
+        PersonalUtangEntryId? clientId = request.EntryId is Guid eid && eid != Guid.Empty
+            ? PersonalUtangEntryId.From(eid)
+            : null;
+
         try
         {
             if (entryType is PersonalUtangEntryType.Loan && relationship.IsSharedLinked)
@@ -906,6 +1218,29 @@ public sealed class RecordPersonalUtangEntry
                     counterparty.Value,
                     async ct =>
                     {
+                        if (clientId is not null)
+                        {
+                            var raced = await _entries.GetByIdAsync(clientId, ct).ConfigureAwait(false);
+                            if (raced is not null)
+                            {
+                                if (!PersonalUtangIdempotency.EntryMatches(
+                                        raced,
+                                        relationship.Id,
+                                        entryType,
+                                        request.Amount,
+                                        request.AdjustmentDelta))
+                                {
+                                    gateFailure = new PersonalUtangProposalAntiSpam.GateFailure(
+                                        ApplicationErrorCodes.PersonalUtangIdempotencyConflict,
+                                        "Entry identity was reused with a conflicting payload.");
+                                    return;
+                                }
+
+                                createdEntry = raced;
+                                return;
+                            }
+                        }
+
                         var gate = await PersonalUtangProposalAntiSpam.EnsureSharedLoanProposalAllowedAsync(
                             actingUserIdentityId,
                             counterparty,
@@ -933,7 +1268,8 @@ public sealed class RecordPersonalUtangEntry
                             _clock.UtcNow,
                             request.ExpectedVersion,
                             request.Notes,
-                            request.DueDateUtc);
+                            request.DueDateUtc,
+                            clientId);
 
                         await _relationships.UpdateAsync(relationship, ct).ConfigureAwait(false);
                         await _entries.AddAsync(createdEntry, ct).ConfigureAwait(false);
@@ -986,11 +1322,32 @@ public sealed class RecordPersonalUtangEntry
                 _clock.UtcNow,
                 request.ExpectedVersion,
                 request.Notes,
-                request.DueDateUtc);
+                request.DueDateUtc,
+                clientId);
 
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
             await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PersistenceConflictException) when (clientId is not null)
+            {
+                var raced = await _entries.GetByIdAsync(clientId, cancellationToken).ConfigureAwait(false);
+                if (raced is not null
+                    && PersonalUtangIdempotency.EntryMatches(
+                        raced,
+                        relationship.Id,
+                        entryType,
+                        request.Amount,
+                        request.AdjustmentDelta))
+                {
+                    return ApplicationResult<PersonalUtangEntryDto>.Success(
+                        ToDto(raced, actingUserIdentityId, relationship.IsSharedLinked));
+                }
+
+                throw;
+            }
 
             if (entry.Status is PersonalUtangEntryStatus.Pending)
             {

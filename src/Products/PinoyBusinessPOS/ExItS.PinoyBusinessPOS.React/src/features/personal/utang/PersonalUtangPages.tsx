@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
+﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,6 +23,7 @@ import {
   getPersonalDebtRelationship,
   getPersonalMe,
   getPersonalUtangBalance,
+  getPersonalUtangEntry,
   isUtangConcurrencyConflict,
   listBorrowedRelationships,
   listLentRelationships,
@@ -72,6 +73,10 @@ import {
   enqueuePersonalUtangEntry,
 } from "@/offline/personal-utang-offline";
 import { resolveRelationshipContactName } from "@/features/personal/utang/utang-workspace";
+import {
+  isNotFoundStatus,
+  resolveAmbiguousMutationOutcome,
+} from "@/runtime/ambiguous-mutation-outcome";
 
 const UTANG_NOTES_MAX_LENGTH = 512;
 const EM_DASH = "\u2014";
@@ -403,6 +408,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [recordFormOpen, setRecordFormOpen] = useState(false);
   const [cacheEpoch, setCacheEpoch] = useState(0);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const pendingRelationshipIdRef = useRef<string | null>(null);
+  const pendingInitialLoanEntryIdRef = useRef<string | null>(null);
 
   const contactsQuery = useQuery({
     queryKey: ["personal", "utang", "contacts"],
@@ -502,6 +510,10 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
     if (!id.ok) {
       throw new Error("id-unavailable");
     }
+    const loanEntryId = createSecureMutationId();
+    if (!loanEntryId.ok) {
+      throw new Error("id-unavailable");
+    }
     // A contact added offline has no server id yet, so the queued debt waits for it.
     const contact = cachedContacts.find((row) => row.id === contactId);
     const contactIsLocal = contact?.origin === "Local";
@@ -510,6 +522,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       scopeBinding: offline.scopeBinding,
       userId: offline.userId,
       relationshipId: id.id,
+      initialLoanEntryId: loanEntryId.id,
       perspective,
       contactId,
       contactIsLocal,
@@ -529,6 +542,9 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       if (!online) {
         return saveOffline();
       }
+      if (statusLocked) {
+        throw new Error("status-locked");
+      }
       const me = meQuery.data?.userIdentityId;
       if (!me) throw new Error("missing me");
       if (!contactId) throw new Error("missing contact");
@@ -536,9 +552,25 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       if (!(initial > 0)) throw new Error("amount");
       const purpose = notes.trim();
       if (!purpose) throw new Error("purpose");
+
+      if (!pendingRelationshipIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) throw new Error("id-unavailable");
+        pendingRelationshipIdRef.current = generated.id;
+      }
+      if (!pendingInitialLoanEntryIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) throw new Error("id-unavailable");
+        pendingInitialLoanEntryIdRef.current = generated.id;
+      }
+      const relationshipId = pendingRelationshipIdRef.current;
+      const initialLoanEntryId = pendingInitialLoanEntryIdRef.current;
+
       const body =
         mode === "lent"
           ? {
+              relationshipId,
+              initialLoanEntryId,
               creditorUserIdentityId: me,
               creditorContactId: null,
               debtorUserIdentityId: null,
@@ -549,6 +581,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               initialLoanNotes: purpose,
             }
           : {
+              relationshipId,
+              initialLoanEntryId,
               creditorUserIdentityId: null,
               creditorContactId: contactId,
               debtorUserIdentityId: me,
@@ -558,9 +592,32 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               initialLoanAmount: initial,
               initialLoanNotes: purpose,
             };
-      return createPersonalDebtRelationship(body);
+      try {
+        return await createPersonalDebtRelationship(body);
+      } catch (error) {
+        setFormError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error,
+          lookup: () => getPersonalDebtRelationship(relationshipId),
+        });
+        if (outcome.kind === "confirmed") {
+          return outcome.value;
+        }
+        if (outcome.kind === "still_unknown") {
+          setStatusLocked(true);
+          throw new Error("status-unknown");
+        }
+        if (outcome.kind === "not_found" && isNotFoundStatus(outcome.lookupError)) {
+          // Confirmed not created — allow resubmission with the same stable ids.
+          throw error;
+        }
+        throw error;
+      }
     },
     onSuccess: async (created) => {
+      pendingRelationshipIdRef.current = null;
+      pendingInitialLoanEntryIdRef.current = null;
+      setStatusLocked(false);
       setContactId("");
       setAmount("");
       setDueDate("");
@@ -586,6 +643,14 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       }
       if (error instanceof Error && error.message === "purpose") {
         setFormError(t("personal.utang.purposeRequired"));
+        return;
+      }
+      if (error instanceof Error && error.message === "status-unknown") {
+        setFormError(t("checkout.transactionStatusUnknown"));
+        return;
+      }
+      if (error instanceof Error && error.message === "status-locked") {
+        setFormError(t("checkout.transactionStatusUnknown"));
         return;
       }
       const name =
@@ -803,6 +868,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           className="min-h-11"
           disabled={
             createMutation.isPending ||
+            statusLocked ||
             contacts.length === 0 ||
             pendingAtLimit ||
             (!online && (!offline || !ownerUserIdentityId))
@@ -912,6 +978,8 @@ export function PersonalRelationshipDetailPage() {
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [cacheEpoch, setCacheEpoch] = useState(0);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const pendingEntryIdRef = useRef<string | null>(null);
   const [disputeEntryId, setDisputeEntryId] = useState<string | null>(null);
   const [disputeReasonKey, setDisputeReasonKey] = useState<
     "amount" | "notReceived" | "other" | ""
@@ -1046,10 +1114,20 @@ export function PersonalRelationshipDetailPage() {
         await queueEntryOffline();
         return;
       }
+      if (statusLocked) {
+        throw new Error("status-locked");
+      }
+      if (!pendingEntryIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) throw new Error("id-unavailable");
+        pendingEntryIdRef.current = generated.id;
+      }
+      const entryId = pendingEntryIdRef.current;
       const version = balanceQuery.data?.version ?? detailQuery.data?.version;
       const body =
         entryType === "Adjustment"
           ? {
+              entryId,
               entryType: "Adjustment" as const,
               amount: amt,
               adjustmentDelta: Number(adjustmentDelta),
@@ -1057,14 +1135,36 @@ export function PersonalRelationshipDetailPage() {
               notes: purpose,
             }
           : {
+              entryId,
               entryType,
               amount: amt,
               expectedVersion: version ?? null,
               notes: purpose,
             };
-      await recordPersonalUtangEntry(relationshipId, body);
+      try {
+        await recordPersonalUtangEntry(relationshipId, body);
+      } catch (error) {
+        setFormError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error,
+          lookup: () => getPersonalUtangEntry(entryId),
+        });
+        if (outcome.kind === "confirmed") {
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setStatusLocked(true);
+          throw new Error("status-unknown");
+        }
+        if (outcome.kind === "not_found" && isNotFoundStatus(outcome.lookupError)) {
+          throw error;
+        }
+        throw error;
+      }
     },
     onSuccess: async () => {
+      pendingEntryIdRef.current = null;
+      setStatusLocked(false);
       setAmount("");
       setAdjustmentDelta("");
       setNotes("");
@@ -1088,6 +1188,10 @@ export function PersonalRelationshipDetailPage() {
             ? t("personal.utang.adjustmentReasonRequired")
             : t("personal.utang.purposeRequired"),
         );
+        return;
+      }
+      if (error instanceof Error && (error.message === "status-unknown" || error.message === "status-locked")) {
+        setFormError(t("checkout.transactionStatusUnknown"));
         return;
       }
       if (isUtangConcurrencyConflict(error)) {
@@ -1349,6 +1453,7 @@ export function PersonalRelationshipDetailPage() {
           className="min-h-11 w-full sm:w-auto"
           disabled={
             recordMutation.isPending ||
+            statusLocked ||
             adjustmentBlocked ||
             loanBlockedByPendingLimit ||
             (!online && !offline)

@@ -78,9 +78,17 @@ export type CreatePersonalContactRequest = {
   email?: string | null;
   linkedUserIdentityId?: string | null;
   publicUserId?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  contactId?: string | null;
 };
 
-export type UpdatePersonalContactRequest = CreatePersonalContactRequest;
+export type UpdatePersonalContactRequest = {
+  displayName: string;
+  phone?: string | null;
+  email?: string | null;
+  linkedUserIdentityId?: string | null;
+  publicUserId?: string | null;
+};
 
 export type CreatePersonalDebtRelationshipRequest = {
   creditorUserIdentityId: string | null;
@@ -91,6 +99,10 @@ export type CreatePersonalDebtRelationshipRequest = {
   dueDateUtc?: string | null;
   initialLoanAmount?: number | null;
   initialLoanNotes?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  relationshipId?: string | null;
+  /** Client-stable id for the initial loan entry when initialLoanAmount is set. */
+  initialLoanEntryId?: string | null;
 };
 
 export type RecordPersonalUtangEntryRequest = {
@@ -100,6 +112,8 @@ export type RecordPersonalUtangEntryRequest = {
   expectedVersion?: number | null;
   notes?: string | null;
   dueDateUtc?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  entryId?: string | null;
 };
 
 export type ConfirmPersonalUtangEntryRequest = {
@@ -208,6 +222,17 @@ export async function listPersonalContacts(signal?: AbortSignal): Promise<Person
   return items.map((item) => personalContactSchema.parse(normalizeContact(item)));
 }
 
+export async function getPersonalContact(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  const raw = await platformRequest<unknown>({
+    path: `${UTANG}/contacts/${contactId}`,
+    signal,
+  });
+  return personalContactSchema.parse(normalizeContact(raw));
+}
+
 export async function createPersonalContact(
   body: CreatePersonalContactRequest,
   signal?: AbortSignal,
@@ -306,6 +331,17 @@ export async function listPersonalUtangHistory(
   });
   const items = Array.isArray(raw) ? raw : [];
   return items.map((item) => personalUtangEntrySchema.parse(normalizeEntry(item)));
+}
+
+export async function getPersonalUtangEntry(
+  entryId: string,
+  signal?: AbortSignal,
+): Promise<PersonalUtangEntryDto> {
+  const raw = await platformRequest<unknown>({
+    path: `${UTANG}/entries/${entryId}`,
+    signal,
+  });
+  return personalUtangEntrySchema.parse(normalizeEntry(raw));
 }
 
 export async function createPersonalDebtRelationship(

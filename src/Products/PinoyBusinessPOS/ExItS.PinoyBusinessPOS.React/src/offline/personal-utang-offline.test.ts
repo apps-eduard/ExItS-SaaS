@@ -69,7 +69,12 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       api: "platform",
       method: "POST",
       path: "/api/v1/personal/utang/contacts",
-      body: { displayName: "Aling Nena", phone: "0917", email: null },
+      body: {
+        contactId,
+        displayName: "Aling Nena",
+        phone: "0917",
+        email: null,
+      },
     });
 
     const cached = await listCachedPersonalContacts(scope.db, scope.scopeBinding);
@@ -128,6 +133,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe("/api/v1/personal/utang/relationships");
     expect(request?.body).toMatchObject({
+      relationshipId,
       creditorUserIdentityId: ownerUserIdentityId,
       creditorContactId: null,
       debtorUserIdentityId: null,
@@ -234,6 +240,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe(`/api/v1/personal/utang/relationships/${relationshipId}/entries`);
     expect(request?.body).toEqual({
+      entryId,
       entryType: "Payment",
       amount: 40,
       // A Loan or Payment is append-only and the server recomputes the balance, so a version
@@ -349,18 +356,18 @@ describe("RMAP-21F Personal Utang offline queue", () => {
   });
 });
 
-describe("RMAP-21F server dedupe policy", () => {
-  it("records that the Personal routes cannot deduplicate a replay", () => {
-    expect(serverDedupeMode("personal.contact.create")).toBe("none");
-    expect(serverDedupeMode("personal.utang.relationship.create")).toBe("none");
-    expect(serverDedupeMode("personal.utang.entry.record")).toBe("none");
+describe("PERS-IDEM-01 server dedupe policy", () => {
+  it("treats Personal Utang create routes as entity-id dedupe-safe", () => {
+    expect(serverDedupeMode("personal.contact.create")).toBe("idempotency-key");
+    expect(serverDedupeMode("personal.utang.relationship.create")).toBe("idempotency-key");
+    expect(serverDedupeMode("personal.utang.entry.record")).toBe("idempotency-key");
     expect(serverDedupeMode("sale.checkout")).toBe("idempotency-key");
     expect(serverDedupeMode("repayment.create")).toBe("idempotency-key");
   });
 
-  it("never auto-retries a Personal mutation whose outcome is unknown", () => {
+  it("auto-retries a Personal money mutation whose outcome is unknown", () => {
     expect(mayAutoRetry("personal.utang.entry.record", "not-dispatched")).toBe(true);
-    expect(mayAutoRetry("personal.utang.entry.record", "ambiguous-transport")).toBe(false);
+    expect(mayAutoRetry("personal.utang.entry.record", "ambiguous-transport")).toBe(true);
     expect(mayAutoRetry("personal.utang.entry.record", "server-responded")).toBe(false);
   });
 

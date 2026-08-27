@@ -88,12 +88,14 @@ Organization preservations verified on this SHA: online-only policy (`organizati
 
 | Operation family | `serverDedupeMode` | Ambiguous transport |
 | --- | --- | --- |
-| Personal contact / relationship create / utang entry | `none` | **No auto-retry** → PermanentFailure (“Could not confirm…”) |
+| Personal contact / relationship create / utang entry | **`idempotency-key`** (PERS-IDEM-01) | Auto-retry safe — client entity id in body + GET-by-id reconcile |
 | Todo create | `none` | No auto-retry |
 | Todo update/complete/reopen/cancel | `target-state` | Auto-retry allowed |
 | Org POS money | `idempotency-key` | Separate Org stack (preserved) |
 
-**PERSONAL_AMBIGUOUS_FINANCIAL_OUTCOME:** SAFE against blind duplicate auto-retry for money ops, but **GAP** vs Org-style sticky id + GET reconciliation wizard — Personal relies on PermanentFailure + sync panel, not confirm-outcome UX.
+**PERSONAL_AMBIGUOUS_FINANCIAL_OUTCOME (historical audit):** SAFE against blind duplicate auto-retry for money ops, but **GAP** vs Org-style sticky id + GET reconciliation.
+
+**PERS-IDEM-01 (RESOLVED):** That P0 gap is closed on `feat/personal`. See [`PERS-IDEM-01.md`](./PERS-IDEM-01.md). Client-stable entity ids (`contactId` / `relationshipId` / `entryId`) converge on the server; online Utang UI uses Confirming… → GET reconcile; encrypted outbox persists the same ids across replay. People offline UI remains unwired (engine hardened only).
 
 ---
 
@@ -129,8 +131,8 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 ### P0 — security / money / identity / data-loss
 
-1. **Personal Utang money mutations lack server idempotency keys** (`serverDedupeMode=none`) — ambiguous network leaves PermanentFailure; no Org-style GET reconcile.  
-2. **People offline contact enqueue exists but UI never uses it** — risk of divergent mental model / accidental double-create if later wired without idempotency.  
+1. ~~**Personal Utang money mutations lack server idempotency keys** (`serverDedupeMode=none`)~~ — **RESOLVED by PERS-IDEM-01** (see [`PERS-IDEM-01.md`](./PERS-IDEM-01.md); implementation SHA recorded there after push).
+2. **People offline contact enqueue exists but UI never uses it** — risk of divergent mental model / accidental double-create if later wired without idempotency *(backend/outbox path hardened in PERS-IDEM-01; UI still ONLINE_ONLY)*.
 3. **Email activation + password-reset completion missing in React** — account recovery incomplete on Web/PWA.
 
 ### P1 — broken / incomplete primary workflows

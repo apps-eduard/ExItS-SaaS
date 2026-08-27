@@ -10,7 +10,6 @@ import { assertNoHorizontalOverflow } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
-  chooseOwnerOperations,
   clientNavigate,
   completeOfflinePinSetupIfNeeded,
   mockBoundOwnerSession,

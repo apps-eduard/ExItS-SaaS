@@ -191,6 +191,8 @@ public static class ApplicationErrorCodes
     public const string PersonalUtangPendingLimitReached = "application.personal.utang.pending_limit_reached";
     public const string PersonalUtangDailyLimitReached = "application.personal.utang.daily_limit_reached";
     public const string PersonalUtangDuplicateSubmission = "application.personal.utang.duplicate_submission";
+    public const string PersonalUtangEntryNotFound = "application.personal.utang_entry.not_found";
+    public const string PersonalUtangIdempotencyConflict = "application.personal.utang.idempotency_conflict";
     public const string PersonalReminderNotFound = "application.personal.reminder.not_found";
     public const string PersonalReminderRateLimited = "application.personal.reminder.rate_limited";
     public const string PersonalNotificationNotFound = "application.personal.notification.not_found";
