@@ -1,7 +1,7 @@
 # Role and Grant Baseline
 
-**Status:** BNPL-02 capability identifiers implemented  
-**Implementation present:** Capability catalog + presets (bundles) + operational access guard  
+**Status:** BNPL-02 capability identifiers implemented
+**Implementation present:** Capability catalog + presets (bundles) + operational access guard
 **Related:** BNPL-D-00-18 (Provisionally Approved / Implemented in BNPL-02)
 
 ## Capability identifiers (authoritative)
@@ -35,8 +35,9 @@ Source: `BnplCapabilityPresets`. Authorization checks **capabilities**, not pres
 
 ## Rules
 
-- Deny by default  
-- No role-name authorization  
-- No implicit hierarchy  
-- Unknown capability → deny  
-- create ≠ approve; repayment ≠ settlement  
+- Deny by default
+- No role-name authorization
+- No implicit hierarchy
+- Unknown capability → deny
+- create ≠ approve; repayment ≠ settlement
+
