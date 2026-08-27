@@ -4,7 +4,8 @@
 **Status:** COMPLETE  
 **Branch:** `feat/personal`  
 **Date:** 2026-08-27  
-**Baseline:** `11f4c75d8a0848c559f1e67b81712d21132907ef`
+**Baseline:** `11f4c75d8a0848c559f1e67b81712d21132907ef`  
+**Implementation SHA:** `5e97439bc4a80c0768e6c3c58e08281ca9b45774`
 
 ## Gap closed
 
