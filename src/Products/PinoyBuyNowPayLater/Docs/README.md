@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** BNPL-00 Documentation Foundation Complete; Implementation Not Started; Product Owner Approval Pending  
-**Implementation present:** No  
+**Status:** BNPL-01 Product Scaffold Complete; Financing Domain Not Started; Product Owner Approval Pending for commercial/legal decisions
+**Implementation present:** Scaffold only (Domain/Application/Infrastructure/Api; no financing entities)
 **Documentation root:** `src/Products/PinoyBuyNowPayLater/Docs/` (D-P12-02)
 
 BNPL is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, PinoyLoanManager, and PinoyServicePro. It is not a POS module, not “Utang renamed,” not a PLM skin, not a shared-table extension of POS, and not a reason for BNPL to query POS tables directly.
@@ -78,6 +78,7 @@ Focused planning documents:
 | [Security/privacy-and-sensitive-data-baseline.md](Security/privacy-and-sensitive-data-baseline.md) | Privacy baseline |
 | [Validation/BNPL-00-readiness-checklist.md](Validation/BNPL-00-readiness-checklist.md) | Docs-only readiness checklist |
 | [Reports/BNPL-00-foundation-closeout.md](Reports/BNPL-00-foundation-closeout.md) | BNPL-00 closeout |
+| [Reports/BNPL-01-product-scaffold-platform-registration.md](Reports/BNPL-01-product-scaffold-platform-registration.md) | BNPL-01 scaffold evidence |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
@@ -104,10 +105,10 @@ Do not scatter BNPL product docs into the repository-root `docs/` tree unless th
 
 | Item | Value | Status |
 |---|---|---|
-| Display name | Pinoy Buy Now Pay Later | Open (BNPL-D-00-01) |
+| Display name | Pinoy Buy Now Pay Later | Provisionally Approved for Implementation (BNPL-D-00-01) |
 | Short identifier | BNPL | Recorded for docs |
-| Repository directory | `PinoyBuyNowPayLater` | Recorded (BNPL-D-00-03 — folder provisional until owner closes naming) |
-| Product code / slug | `pinoy-buy-now-pay-later` | Open (BNPL-D-00-02) |
+| Repository directory | `PinoyBuyNowPayLater` | Provisionally Approved for Implementation (BNPL-D-00-03) |
+| Product code / slug | `pinoy-buy-now-pay-later` | Provisionally Approved for Implementation (BNPL-D-00-02) |
 | Future database | `ExItS_PinoyBuyNowPayLater` | Open (BNPL-D-00-04) — planning name only; not created |
 
 Phase-12 historical sketches used `BuyNowPayLater` / `ExItS_BuyNowPayLater`. Those names are **superseded as planning aliases** unless the Product Owner deliberately reverts. Prefer the **Pinoy\*** convention used by PLM and PSP.

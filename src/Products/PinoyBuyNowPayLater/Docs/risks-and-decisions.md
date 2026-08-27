@@ -36,9 +36,9 @@
 
 | ID | Question | Current direction | Status | What it blocks | Safe default until decided |
 |---|---|---|---|---|---|
-| BNPL-D-00-01 | Official product display name | Propose **Pinoy Buy Now Pay Later** | Open / Product Owner Decision Required | Marketing, UI chrome | Use proposed name in docs only |
-| BNPL-D-00-02 | Official Platform product code / slug | Propose `pinoy-buy-now-pay-later` | Open / Product Owner Decision Required | Catalog, plans, subscription | Docs only; do not register catalog |
-| BNPL-D-00-03 | Repository directory / project naming | `PinoyBuyNowPayLater` under `src/Products/` | Open / Product Owner Decision Required (folder recorded for docs) | Scaffold BNPL-01 | Keep docs under this path until renamed by owner |
+| BNPL-D-00-01 | Official product display name | **Pinoy Buy Now Pay Later** | Provisionally Approved for Implementation by Product Owner in BNPL-01 | Final marketing/public naming | Use approved display in scaffold/UI chrome; final marketing may still refine |
+| BNPL-D-00-02 | Official Platform product code / slug | `pinoy-buy-now-pay-later` | Provisionally Approved for Implementation by Product Owner in BNPL-01 | Catalog, plans, subscription | Registered in ProductCode + Local Validation catalog (Dev/Testing) |
+| BNPL-D-00-03 | Repository directory / project naming | `PinoyBuyNowPayLater` under `src/Products/` | Provisionally Approved for Implementation by Product Owner in BNPL-01 | Scaffold BNPL-01 | Directory and projects created |
 | BNPL-D-00-04 | Final DB name / schema | Propose `ExItS_PinoyBuyNowPayLater` | Open / Product Owner Decision Required | Persistence, migrations | Planning name only; create neither |
 | BNPL-D-00-08 | Merchant-funded vs platform-funded BNPL / settlement model | Must separate customer balance from merchant settlement | Open / Legal & Commercial Decision Required | BNPL-10 | Document both; implement neither |
 | BNPL-D-00-13 | Personal / customer self-service MVP timing | Future capability | Open / Product Owner Decision Required | BNPL-13 | Staff-operated MVP |

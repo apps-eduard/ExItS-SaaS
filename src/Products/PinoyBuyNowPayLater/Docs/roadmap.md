@@ -6,8 +6,8 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Current phase | BNPL-00 — Product Discovery and Documentation Foundation |
-| Status | Documentation Foundation Complete; Implementation Not Started; Product Owner Approval Pending |
+| Current phase | BNPL-01 — Product Scaffold + Platform Registration (complete) |
+| Status | Scaffold Complete; Financing Domain Not Started |
 | Last updated | 2026-08-27 |
 
 ## Phase objective (BNPL-00)
@@ -29,10 +29,10 @@ Establish complete documentation-only foundation for BNPL: first-class product i
 
 ## Implementation roadmap after BNPL-00 (planning only — not authorization)
 
-| Package | Purpose | Depends on | Owned areas | Explicit non-goals | Test gates |
-|---|---|---|---|---|---|
-| **BNPL-01** | Product scaffold + Platform registration | BNPL-D-00-02 (code) close or provisional authorize | Projects, isolation, ProductCode/catalog if authorized | No financing domain entities; no migrations unless empty scaffold only | Build; architecture isolation tests |
-| **BNPL-02** | Authorization + Organization/Branch access | BNPL-01; BNPL-D-00-18 | Product-local grants, org/branch context | No money mutations | Authz fail-closed tests |
+| Package | Purpose | Status | Depends on | Owned areas | Explicit non-goals | Test gates |
+|---|---|---|---|---|---|---|
+| **BNPL-01** | Product scaffold + Platform registration | **COMPLETE** | BNPL-D-00-01..03 provisional approve | Projects, isolation, ProductCode, Local Validation catalog | No financing domain entities; no migrations | Build; architecture isolation tests |
+| **BNPL-02** | Authorization + Organization/Branch access | Planned | BNPL-01; BNPL-D-00-18 | Product-local grants, org/branch context | No money mutations | Authz fail-closed tests |
 | **BNPL-03** | Customer / reference foundation | BNPL-02 | Customer refs, Personal link contracts | No inventing Platform identity | Isolation of customer refs |
 | **BNPL-04** | Financing application + lifecycle | BNPL-03 | Application states through APPROVED_PENDING_SALE | No ACTIVE without sale; no installments yet | State machine unit tests |
 | **BNPL-05** | Installment engine | BNPL-04; open term policy (BNPL-D-00-14) | Schedule generation | No repayments posting | Schedule correctness tests |

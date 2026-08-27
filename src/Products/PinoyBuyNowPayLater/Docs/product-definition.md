@@ -5,12 +5,12 @@
 
 | Field | Value |
 |---|---|
-| Product name | Pinoy Buy Now Pay Later (proposed display — **Open**, BNPL-D-00-01) |
-| Platform product code | `pinoy-buy-now-pay-later` (proposed — **Open**, BNPL-D-00-02) |
+| Product name | Pinoy Buy Now Pay Later (display — **Provisionally Approved for Implementation**, BNPL-D-00-01) |
+| Platform product code | `pinoy-buy-now-pay-later` (**Provisionally Approved for Implementation**, BNPL-D-00-02) |
 | Docs root | `src/Products/PinoyBuyNowPayLater/Docs/` |
-| Status | BNPL-00 Documentation Foundation Complete; Implementation Not Started; Product Owner Approval Pending |
+| Status | BNPL-01 Product Scaffold Complete; Financing Domain Not Started |
 | Last updated | 2026-08-27 |
-| Implementation present | No |
+| Implementation present | Scaffold only (no financing entities) |
 
 ## Purpose and users
 

@@ -75,6 +75,7 @@
 |---|---|
 | `Reports/README.md` | Reports index |
 | `Reports/BNPL-00-foundation-closeout.md` | BNPL-00 closeout |
+| `Reports/BNPL-01-product-scaffold-platform-registration.md` | BNPL-01 scaffold evidence |
 | `Validation/README.md` | Validation index |
 | `Validation/BNPL-00-readiness-checklist.md` | Readiness checklist |
 
@@ -82,14 +83,20 @@
 
 | Path | Purpose | Implementation present |
 |---|---|---|
-| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Docs only |
+| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold projects + Docs |
 | `src/Products/PinoyBuyNowPayLater/Docs/` | Authoritative product documentation | Documentation |
+| `ExItS.PinoyBuyNowPayLater.Domain` | Domain marker + product identity literal | Scaffold |
+| `ExItS.PinoyBuyNowPayLater.Application` | Application marker | Scaffold |
+| `ExItS.PinoyBuyNowPayLater.Infrastructure` | Infrastructure marker (no EF) | Scaffold |
+| `ExItS.PinoyBuyNowPayLater.Api` | Health-only API host | Scaffold |
+| `tests/ExItS.PinoyBuyNowPayLater.UnitTests` | Scaffold + health tests | Scaffold |
 
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
-| Domain / Application / Infrastructure / Api / Web / Client projects | Not authorized in BNPL-00 |
-| Database / migrations | Not authorized |
-| Platform ProductCode constant / catalog entry | Open (BNPL-D-00-02) |
+| Financing / installment / repayment / settlement entities | BNPL-04+ |
+| Database / migrations | BNPL-D-00-04 OPEN |
+| ApiClient / Web / React Client | Deferred; PWA client later |
 | Docker / deploy for BNPL | Not authorized |
+| BNPL product-local grants | BNPL-02 / BNPL-D-00-18 |
