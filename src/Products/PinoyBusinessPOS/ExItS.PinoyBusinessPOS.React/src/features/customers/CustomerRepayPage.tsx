@@ -15,18 +15,12 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { useI18n } from "@/i18n/I18nProvider";
-import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import {
   cacheCustomer,
   cacheCustomerCreditSummary,
   getCachedCustomer,
   getCachedCustomerCreditSummary,
 } from "@/offline/customer-cache";
-import {
-  enqueueOfflineCustomerRepayment,
-  OfflineCustomerRejectedError,
-} from "@/offline/customer-offline";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -49,7 +43,6 @@ export function CustomerRepayPage() {
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
-  const { refreshCounts } = useOfflineSync();
   const [paymentAmount, setPaymentAmount] = useState("");
   const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
@@ -163,7 +156,7 @@ export function CustomerRepayPage() {
     setError(null);
     try {
       if (!online) {
-        await queuePaymentOffline(amount);
+        setError(t("connectivity.actionRequiresInternet"));
         return;
       }
       await createCustomerRepayment(workspace, customerId, {
@@ -175,39 +168,6 @@ export function CustomerRepayPage() {
       setError(describePosApiError(err, t, "error.detail"));
     } finally {
       setSaving(false);
-    }
-  }
-
-  /**
-   * Queue the payment with a client-chosen repaymentId. The server adopts that id and honours the
-   * idempotency key, so a retry records one payment; the server — not this device — still decides
-   * whether the amount is acceptable against the live balance.
-   */
-  async function queuePaymentOffline(amount: number) {
-    if (!offlineContext || !customerId) {
-      setError(t("offline.paymentEnqueueFailed"));
-      return;
-    }
-    const generated = createSecureMutationId();
-    if (!generated.ok) {
-      setError(t("offline.paymentEnqueueFailed"));
-      return;
-    }
-    try {
-      await enqueueOfflineCustomerRepayment({
-        ...offlineContext,
-        customerId,
-        repaymentId: generated.id,
-        repayment: { amount, remarks },
-      });
-      await refreshCounts();
-      navigate(`/customers/${customerId}`, { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof OfflineCustomerRejectedError
-          ? err.message
-          : t("offline.paymentEnqueueFailed"),
-      );
     }
   }
 

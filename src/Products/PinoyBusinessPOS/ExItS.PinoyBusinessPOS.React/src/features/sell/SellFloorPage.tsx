@@ -27,6 +27,7 @@ import {
   type StockGuardInput,
 } from "@/cart/sell-cart-helpers";
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
+import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -848,6 +849,13 @@ export function SellFloorPage() {
       data-testid="sell-floor"
       className="sell-floor-root flex min-h-0 min-w-0 flex-col"
     >
+      {!online ? (
+        <OnlineRequiredPageState
+          title={t("sell.title")}
+          detail={t("connectivity.pageNeedsInternet")}
+          testId="sell-online-required"
+        />
+      ) : null}
       <header className="sell-floor-toolbar shrink-0">
         <div className="sell-floor-toolbar__title">
           <h1 className="sell-floor-toolbar__heading">{t("sell.title")}</h1>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useBrowserOnline } from "@/connectivity/browser-online";
+import { useAppOnline } from "@/connectivity/ConnectivityProvider";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import {
   isSellReadinessSnapshotUsable,
@@ -8,16 +8,16 @@ import {
 } from "@/offline/sell-readiness-snapshot";
 import { saveSellReadinessSnapshotIfChanged } from "@/offline/sell-readiness-sync";
 import { useSellOfflineContext, type SellOfflineContext } from "@/offline/sell-offline-context";
+import { organizationWebAllowsOfflineBusinessReads } from "@/runtime/organization-web-runtime-policy";
 import { isPosDeviceReadyForMoney } from "@/workspace/pos-device-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 /**
- * Sell readiness that survives losing the network (RMAP-21D).
+ * Sell readiness for Organization.
  *
- * While online and genuinely ready, the live device/shift state is written to the offline
- * snapshot. While offline, and only when the live hydrate could not confirm readiness, the
- * last-good snapshot stands in so a warm session keeps selling Cash on the same shift.
- * This is UX continuation, not authorization — the server still accepts or rejects the sale.
+ * Organization Web/PWA is online-only (ORG-PWA-ONLINE-ONLY-01): snapshot fallback and
+ * offline LocalStore continuation are disabled. The preserved snapshot write-through still
+ * runs while online so future Capacitor can reuse the engine.
  */
 export type SellOfflineReadiness = {
   online: boolean;
@@ -32,11 +32,12 @@ export type SellOfflineReadiness = {
 };
 
 export function useSellOfflineReadiness(): SellOfflineReadiness {
-  const online = useBrowserOnline();
+  const online = useAppOnline();
   const { posDevice, deviceEnforcementEnabled } = useWorkspace();
   const { readiness, currentShift } = useShiftContext();
   const offlineContext = useSellOfflineContext();
   const [snapshot, setSnapshot] = useState<SellReadinessSnapshot | null>(null);
+  const allowOfflineReads = organizationWebAllowsOfflineBusinessReads();
 
   const liveDeviceReady = isPosDeviceReadyForMoney(posDevice, {
     enforcementEnabled: deviceEnforcementEnabled,
@@ -63,7 +64,7 @@ export function useSellOfflineReadiness(): SellOfflineReadiness {
   }, [db, liveOpenShiftNumber, liveReady, liveShiftId, online]);
 
   useEffect(() => {
-    if (online || liveReady || !db) {
+    if (!allowOfflineReads || online || liveReady || !db) {
       return;
     }
     let cancelled = false;
@@ -75,9 +76,10 @@ export function useSellOfflineReadiness(): SellOfflineReadiness {
     return () => {
       cancelled = true;
     };
-  }, [db, liveReady, online]);
+  }, [allowOfflineReads, db, liveReady, online]);
 
-  const useSnapshot = !online && !liveReady && isSellReadinessSnapshotUsable(snapshot);
+  const useSnapshot =
+    allowOfflineReads && !online && !liveReady && isSellReadinessSnapshotUsable(snapshot);
 
   if (useSnapshot && snapshot) {
     return {

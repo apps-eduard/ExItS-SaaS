@@ -75,7 +75,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 100,
-    });
+    }, { allowOfflineEngine: true });
 
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 100 });
 
@@ -122,7 +122,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 100,
-    });
+    }, { allowOfflineEngine: true });
 
     // 80 is what live repricing would have recorded. The customer paid 100.
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 80 });
@@ -194,7 +194,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 50,
-    });
+    }, { allowOfflineEngine: true });
 
     mockedPosRequest.mockRejectedValueOnce(
       new PosApiError(403, { title: "Forbidden", status: 403 }),
@@ -230,7 +230,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 20,
-    });
+    }, { allowOfflineEngine: true });
     await setOperationState(db, saleId, { queueState: "Syncing" });
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 20 });
 

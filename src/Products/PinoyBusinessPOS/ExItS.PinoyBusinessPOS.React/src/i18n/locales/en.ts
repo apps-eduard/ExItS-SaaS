@@ -44,6 +44,16 @@ export const en = {
   "connectivity.online": "Online",
   "connectivity.offlineTitle": "You're offline",
   "connectivity.offlineDetail": "Reconnect to continue.",
+  "connectivity.reconnecting": "Reconnecting…",
+  "connectivity.staleDataDetail": "Shown data may be out of date until you reconnect.",
+  "connectivity.backOnline": "Back online",
+  "connectivity.orgWebRequiresInternet":
+    "ExItS Web requires an internet connection to securely access your business and current data.",
+  "connectivity.pageNeedsInternet": "Reconnect to load current data.",
+  "connectivity.actionRequiresInternet": "Internet connection required to continue.",
+  "checkout.confirmingTransaction": "Confirming transaction…",
+  "checkout.transactionStatusUnknown":
+    "Transaction status could not be confirmed. Do not submit it again until its status is verified.",
   "shell.connection.title": "Connection",
   "shell.connection.online": "Online",
   "shell.connection.onlineDetail": "Connected.",

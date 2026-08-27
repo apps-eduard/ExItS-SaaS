@@ -121,7 +121,7 @@ describe("cold-start IndexedDB unlock", () => {
 
     clearUnlockedDek();
 
-    const cold = await evaluateColdStartOfflineGrant();
+    const cold = await evaluateColdStartOfflineGrant({ allowOrganizationOfflineEngine: true });
     expect(cold.ok).toBe(true);
     if (!cold.ok) {
       return;

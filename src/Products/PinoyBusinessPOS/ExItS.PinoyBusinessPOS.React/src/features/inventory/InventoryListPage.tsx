@@ -6,7 +6,6 @@ import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
-import { LoadingState } from "@/components/exits/LoadingState";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -15,6 +14,7 @@ import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { OrganizationQueryGate } from "@/runtime/OrganizationQueryGate";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type TrackingFilter = "all" | "tracked" | "untracked";
@@ -128,70 +128,78 @@ export function InventoryListPage() {
         }))}
       />
 
-      {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isFetching && !query.isLoading && query.data ? (
         <BackgroundRefreshIndicator active label={t("loading.updating")} />
       ) : null}
-      {query.isError ? (
-        <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
-      ) : null}
-      {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("inventory.empty")} detail={t("inventory.emptyDetail")} />
-      ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
-        {items.map((item) => {
-          const tracked = item.isTracked;
-          return (
-            <li key={item.productId}>
-              <Link
-                className={cn(
-                  "exits-list__card inventory-row block min-w-0 text-foreground no-underline",
-                  !tracked && "inventory-row--untracked",
-                )}
-                to={`/inventory/${item.productId}`}
-                data-testid={`inventory-row-${item.productId}`}
-              >
-                <div className="inventory-row__main min-w-0">
-                  <span className="exits-list__name block truncate font-semibold">{item.name}</span>
-                  <span className="inventory-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                    {tracked
-                      ? `${t("inventory.onHand")}: ${item.onHandQuantity} ${item.unitOfMeasure}`
-                      : t("inventory.notTracked")}
-                    {tracked && item.tracksExpiration
-                      ? ` · ${t("inventory.tracksExpirationShort")}`
-                      : ""}
-                  </span>
-                  <div className="inventory-row__chips mt-2 flex flex-wrap gap-1.5">
-                    <StatusChip tone={tracked ? "success" : "info"}>
-                      {tracked ? t("inventory.tracked") : t("inventory.notTracked")}
-                    </StatusChip>
-                    {tracked && item.isLowStock ? (
-                      <StatusChip tone="warning">{t("inventory.lowStock")}</StatusChip>
-                    ) : null}
-                    {tracked && item.stockStatus ? (
-                      <StatusChip tone={stockTone(item.stockStatus, item.isLowStock)}>
-                        {item.stockStatus}
-                      </StatusChip>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="inventory-row__aside">
-                  {tracked ? (
-                    <span className="inventory-row__qty tabular-nums">
-                      {item.onHandQuantity}
-                      <span className="inventory-row__uom">{item.unitOfMeasure}</span>
-                    </span>
-                  ) : (
-                    <span className="inventory-row__qty inventory-row__qty--muted">—</span>
+      <OrganizationQueryGate
+        title={t("inventory.title")}
+        isLoading={query.isLoading}
+        isError={query.isError}
+        hasData={Boolean(query.data)}
+        onRetry={() => void query.refetch()}
+      >
+        {query.isError && query.data ? (
+          <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
+        ) : null}
+        {query.isSuccess && items.length === 0 ? (
+          <EmptyState title={t("inventory.empty")} detail={t("inventory.emptyDetail")} />
+        ) : null}
+
+        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
+          {items.map((item) => {
+            const tracked = item.isTracked;
+            return (
+              <li key={item.productId}>
+                <Link
+                  className={cn(
+                    "exits-list__card inventory-row block min-w-0 text-foreground no-underline",
+                    !tracked && "inventory-row--untracked",
                   )}
-                  <ChevronRight className="inventory-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                  to={`/inventory/${item.productId}`}
+                  data-testid={`inventory-row-${item.productId}`}
+                >
+                  <div className="inventory-row__main min-w-0">
+                    <span className="exits-list__name block truncate font-semibold">{item.name}</span>
+                    <span className="inventory-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {tracked
+                        ? `${t("inventory.onHand")}: ${item.onHandQuantity} ${item.unitOfMeasure}`
+                        : t("inventory.notTracked")}
+                      {tracked && item.tracksExpiration
+                        ? ` · ${t("inventory.tracksExpirationShort")}`
+                        : ""}
+                    </span>
+                    <div className="inventory-row__chips mt-2 flex flex-wrap gap-1.5">
+                      <StatusChip tone={tracked ? "success" : "info"}>
+                        {tracked ? t("inventory.tracked") : t("inventory.notTracked")}
+                      </StatusChip>
+                      {tracked && item.isLowStock ? (
+                        <StatusChip tone="warning">{t("inventory.lowStock")}</StatusChip>
+                      ) : null}
+                      {tracked && item.stockStatus ? (
+                        <StatusChip tone={stockTone(item.stockStatus, item.isLowStock)}>
+                          {item.stockStatus}
+                        </StatusChip>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="inventory-row__aside">
+                    {tracked ? (
+                      <span className="inventory-row__qty tabular-nums">
+                        {item.onHandQuantity}
+                        <span className="inventory-row__uom">{item.unitOfMeasure}</span>
+                      </span>
+                    ) : (
+                      <span className="inventory-row__qty inventory-row__qty--muted">—</span>
+                    )}
+                    <ChevronRight className="inventory-row__chevron size-4 shrink-0 text-muted" aria-hidden />
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </OrganizationQueryGate>
     </div>
   );
 }

@@ -38,6 +38,7 @@ import {
   persistServerSignedGrantFromApi,
 } from "@/offline/offline-operating-grant";
 import { isOfflinePinAndDekConfigured } from "@/offline/local-store-key";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
 import { sessionAccountClass, isOrganizationContextLocked } from "@/session/account-class";
 import { ensureOrganizationSessionProfile } from "@/session/ensure-organization-profile";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -815,7 +816,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         activeSession.userId &&
         hydratedDevice.status === "authorized" &&
         hydratedDevice.installationDeviceId &&
-        hydratedDevice.posDeviceId
+        hydratedDevice.posDeviceId &&
+        organizationWebAllowsOfflineSession()
       ) {
         void issueOfflineOperatingGrant(
           {

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
   canAccessReportsHub,
@@ -31,8 +32,10 @@ import {
   canViewSuppliers,
 } from "@/access/pos-capabilities";
 import { canAccessClassicReport } from "@/features/reports/report-access";
+import { OnlineRequiredBoot } from "@/components/exits/OnlineRequiredBoot";
 import { AppBootLoader } from "@/components/exits/loading/AppBootLoader";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useOptionalConnectivity } from "@/connectivity/ConnectivityProvider";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
@@ -55,9 +58,11 @@ export function SessionLoading() {
 }
 
 export function RequireSession({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { status, refreshSession } = useSession();
   const location = useLocation();
   const isContextSwitch = isAccountContextSwitchPath(location.pathname);
+  const connectivity = useOptionalConnectivity();
+  const [retrying, setRetrying] = useState(false);
 
   if (status === "loading" && !isContextSwitch) {
     return <SessionLoading />;
@@ -66,11 +71,36 @@ export function RequireSession({ children }: { children: ReactNode }) {
     return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
   }
   if (status === "offline_pin_required" || status === "needs_offline_unlock") {
+    // Organization Web online-only: PIN unlock is Personal-only cold-start path.
+    // If we somehow reach PIN flow without a Personal grant, Prefer OnlineRequired.
     return <Navigate to="/offline-pin" replace state={{ from: location.pathname }} />;
   }
   if (isAuthenticatedOrColdStartOffline(status)) {
     return children;
   }
+
+  const offline =
+    connectivity != null ? !connectivity.isOnline : typeof navigator !== "undefined" && !navigator.onLine;
+
+  if (offline) {
+    return (
+      <OnlineRequiredBoot
+        retrying={retrying}
+        onRetry={async () => {
+          setRetrying(true);
+          try {
+            const restored = connectivity ? await connectivity.retry() : true;
+            if (restored) {
+              await refreshSession();
+            }
+          } finally {
+            setRetrying(false);
+          }
+        }}
+      />
+    );
+  }
+
   return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
 }
 

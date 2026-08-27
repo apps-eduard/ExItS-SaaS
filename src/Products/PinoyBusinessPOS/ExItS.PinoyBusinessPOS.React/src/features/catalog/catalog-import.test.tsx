@@ -30,6 +30,10 @@ let online = true;
 
 vi.mock("@/connectivity/browser-online", () => ({
   useBrowserOnline: () => online,
+  subscribeBrowserOnline: (onChange: (online: boolean) => void) => {
+    onChange(online);
+    return () => undefined;
+  },
 }));
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({

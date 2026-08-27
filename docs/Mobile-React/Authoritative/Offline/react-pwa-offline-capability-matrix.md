@@ -1,9 +1,23 @@
 # React/PWA Offline Capability Matrix (RMAP-21)
 
-**Status:** LOCKED for Master Run 01  
+**Status:** LOCKED for Master Run 01 (historical). **Current Organization Web channel policy: ORG-PWA-ONLINE-ONLY-01.**
 **Authority:** Backend truth → MAUI offline contracts → this matrix → React implementation  
 **Start SHA:** `86ded4380c6c1d45ef89ef08855c20fb00f17d38`  
 **Unknown actions:** fail closed as **OnlineRequired**
+
+## Current channel policy (authoritative)
+
+| Channel | Organization business | Offline engine |
+| --- | --- | --- |
+| **Organization Web/PWA** | **ONLINE-ONLY** — no offline session, no offline money transactions, no new outbox enqueue, no offline business mutations | Preserved in codebase for future Capacitor/native; not activated on Web |
+| PWA installability + static shell cache | Yes | N/A |
+| Organization business API data | Server-authoritative (`NetworkOnly` in service worker) | N/A |
+| Backend offline contracts (grants, idempotency, reconciliation) | Preserved | Preserved |
+| Personal Web offline (Todo/Utang/etc.) | Out of scope for ORG-PWA-ONLINE-ONLY-01 | Unchanged by this policy |
+
+Runtime source of truth: `organizationWebRuntimePolicy` in the React app.
+
+Historical rows below remain evidence of the RMAP-21 engine design. For **Organization Web/PWA**, treat Organization OfflineCapable / Queueable rows as **disabled at Web activation** (engine code retained).
 
 ## Classification
 

@@ -40,6 +40,10 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
 
 vi.mock("@/connectivity/browser-online", () => ({
   useBrowserOnline: () => true,
+  subscribeBrowserOnline: (onChange: (online: boolean) => void) => {
+    onChange(true);
+    return () => undefined;
+  },
 }));
 
 vi.mock("@/offline/organization-offline-context", () => ({

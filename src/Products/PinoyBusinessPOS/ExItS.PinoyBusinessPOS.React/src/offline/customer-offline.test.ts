@@ -64,7 +64,7 @@ describe("RMAP-21E offline Business customer queue", () => {
       ...scope(db, scopeBinding, userId),
       customerId,
       customer: { displayName: "  Juan Dela Cruz  ", mobileNumber: "09171234567" },
-    });
+    }, { allowOfflineEngine: true });
 
     expect(record.queueState).toBe("Pending");
     expect(record.operationType).toBe("customer.create");
@@ -92,7 +92,7 @@ describe("RMAP-21E offline Business customer queue", () => {
         customerId,
         customer: { displayName: "Linked Buyer" },
         platformBusinessCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toBeInstanceOf(OfflineCustomerRejectedError);
 
     await expect(
@@ -101,7 +101,7 @@ describe("RMAP-21E offline Business customer queue", () => {
         customerId,
         customer: { displayName: "Linked Buyer" },
         linkedPersonalPublicUserId: "EXITS-PERSONAL-1",
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.customer.identity_link_not_supported" });
 
     expect(await listOutbox(db)).toEqual([]);
@@ -117,7 +117,7 @@ describe("RMAP-21E offline Business customer queue", () => {
         ...scope(db, scopeBinding, userId),
         customerId,
         customer: { displayName: "   " },
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.customer.display_name_required" });
 
     expect(await listOutbox(db)).toEqual([]);
@@ -135,13 +135,13 @@ describe("RMAP-21E offline Business customer queue", () => {
       customerId,
       operationId: firstEdit,
       customer: { displayName: "Juan v2", expectedUpdatedAtUtc: "2026-08-02T00:00:00Z" },
-    });
+    }, { allowOfflineEngine: true });
     const second = await enqueueOfflineCustomerUpdate({
       ...scope(db, scopeBinding, userId),
       customerId,
       operationId: secondEdit,
       customer: { displayName: "Juan v3", expectedUpdatedAtUtc: "2026-08-02T00:00:00Z" },
-    });
+    }, { allowOfflineEngine: true });
 
     expect(first.idempotencyKey).not.toBe(second.idempotencyKey);
     expect(first.entityLocalId).toBe(customerId);
@@ -170,7 +170,7 @@ describe("RMAP-21E offline Business customer queue", () => {
       customerId,
       repaymentId,
       repayment: { amount: 10.005, remarks: "  Partial  " },
-    });
+    }, { allowOfflineEngine: true });
 
     expect(record.operationType).toBe("repayment.create");
     expect(record.idempotencyKey).toBe(posIdempotencyKeyForEntity(repaymentId));
@@ -195,17 +195,17 @@ describe("RMAP-21E offline Business customer queue", () => {
     };
 
     await expect(
-      enqueueOfflineCustomerRepayment({ ...base, repayment: { amount: 0 } }),
+      enqueueOfflineCustomerRepayment({ ...base, repayment: { amount: 0 } }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.repayment.amount_invalid" });
     await expect(
-      enqueueOfflineCustomerRepayment({ ...base, repayment: { amount: -5 } }),
+      enqueueOfflineCustomerRepayment({ ...base, repayment: { amount: -5 } }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.repayment.amount_invalid" });
     await expect(
       enqueueOfflineCustomerRepayment({
         ...base,
         customerId: "  ",
         repayment: { amount: 5 },
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.repayment.customer_required" });
 
     expect(await listOutbox(db)).toEqual([]);
@@ -220,7 +220,7 @@ describe("RMAP-21E offline Business customer queue", () => {
       ...scope(db, scopeBinding, userId),
       customerId,
       customer: { displayName: "Sensitive Name", mobileNumber: "09991112222", notes: "Kapitbahay" },
-    });
+    }, { allowOfflineEngine: true });
 
     const metadata = await listSafeOutboxMetadata(db);
     const serialized = JSON.stringify(metadata);

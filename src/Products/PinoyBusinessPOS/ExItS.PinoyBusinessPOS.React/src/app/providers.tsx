@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { ConnectivityProvider } from "@/connectivity/ConnectivityProvider";
 import { attachGlobalQueryErrorHandlers } from "@/diagnostics/attach-global-query-error-handlers";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -36,10 +37,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <PreferencesProvider>
         <I18nProvider>
-          <OfflineSyncProvider>
-            <OutboxSyncHost />
-            {children}
-          </OfflineSyncProvider>
+          <ConnectivityProvider>
+            <OfflineSyncProvider>
+              <OutboxSyncHost />
+              {children}
+            </OfflineSyncProvider>
+          </ConnectivityProvider>
         </I18nProvider>
       </PreferencesProvider>
     </QueryClientProvider>

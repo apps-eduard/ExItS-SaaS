@@ -17,14 +17,7 @@ import {
   type SelectedPersonalIdentity,
 } from "@/features/customers/CustomerPersonalLinkPanel";
 import { useI18n } from "@/i18n/I18nProvider";
-import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { getCachedCustomer } from "@/offline/customer-cache";
-import {
-  enqueueOfflineCustomerCreate,
-  enqueueOfflineCustomerUpdate,
-  OfflineCustomerRejectedError,
-} from "@/offline/customer-offline";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
@@ -51,7 +44,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
-  const { refreshCounts } = useOfflineSync();
 
   const [displayName, setDisplayName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -196,7 +188,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setError(null);
     try {
       if (!online) {
-        await saveOffline(name);
+        setError(t("connectivity.actionRequiresInternet"));
         return;
       }
       if (mode === "create") {
@@ -230,45 +222,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       );
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function saveOffline(name: string) {
-    if (!offlineContext) {
-      setError(t("offline.customerEnqueueFailed"));
-      return;
-    }
-    const generated = createSecureMutationId();
-    if (!generated.ok) {
-      setError(t("offline.customerEnqueueFailed"));
-      return;
-    }
-
-    try {
-      if (mode === "create") {
-        await enqueueOfflineCustomerCreate({
-          ...offlineContext,
-          customerId: generated.id,
-          customer: { displayName: name, mobileNumber, address, notes },
-        });
-        await refreshCounts();
-        navigate(`/customers/${generated.id}`, { replace: true });
-        return;
-      }
-      await enqueueOfflineCustomerUpdate({
-        ...offlineContext,
-        customerId: customerId!,
-        operationId: generated.id,
-        customer: { displayName: name, mobileNumber, address, notes, expectedUpdatedAtUtc },
-      });
-      await refreshCounts();
-      navigate(`/customers/${customerId}`, { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof OfflineCustomerRejectedError
-          ? err.message
-          : t("offline.customerEnqueueFailed"),
-      );
     }
   }
 

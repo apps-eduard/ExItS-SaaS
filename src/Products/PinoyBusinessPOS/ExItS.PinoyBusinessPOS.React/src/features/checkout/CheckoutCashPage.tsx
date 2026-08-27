@@ -13,6 +13,7 @@ import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
+  getSale,
   quoteSale,
   type CheckoutPaymentMethod,
   type CommercialDiscountIntentRequest,
@@ -24,8 +25,10 @@ import { lineAmount, useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
+import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
@@ -42,13 +45,14 @@ import { mapCartPriceOverridesToRequest } from "@/features/checkout/map-cart-pri
 import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
-import { enqueueOfflineCashSale, OfflineCashSaleRejectedError } from "@/offline/cash-sale-offline";
+import { OfflineCashSaleRejectedError } from "@/offline/cash-sale-offline";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import {
   loadUsablePriceAuthorities,
   type PriceAuthorityLookup,
 } from "@/offline/price-authority-cache";
+import { organizationWebAllowsOfflineQueueing } from "@/runtime/organization-web-runtime-policy";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
@@ -655,11 +659,19 @@ export function CheckoutCashPage() {
     const lines = mapCartLinesToCheckoutRequest(cart.lines);
 
     if (!online) {
+      // Organization Web/PWA is online-only — never enqueue or report offline success.
+      if (!organizationWebAllowsOfflineQueueing()) {
+        setSubmitError(t("connectivity.actionRequiresInternet"));
+        submittingRef.current = false;
+        setSaving(false);
+        return;
+      }
       try {
         if (!offlineContext || offlineMapping?.ok !== true) {
           setSubmitError(t("offline.priceRefreshRequired"));
           return;
         }
+        const { enqueueOfflineCashSale } = await import("@/offline/cash-sale-offline");
         await enqueueOfflineCashSale({
           db: offlineContext.db,
           scopeBinding: offlineContext.scopeBinding,
@@ -718,6 +730,28 @@ export function CheckoutCashPage() {
       attemptSaleIdRef.current = newSaleId();
       navigate(`/sell/sales/${sale.saleId}/summary`, { replace: true });
     } catch (error) {
+      if (isLikelyNetworkFailure(error) && workspaceScope) {
+        // Ambiguous money outcome: request may have committed before the response was lost.
+        // Do not invite an unsafe duplicate retry — look up by saleId (idempotency key).
+        setSubmitError(t("checkout.confirmingTransaction"));
+        try {
+          const confirmed = await getSale(workspaceScope, saleId);
+          completedRef.current = true;
+          cart.clear();
+          attemptSaleIdRef.current = newSaleId();
+          navigate(`/sell/sales/${confirmed.saleId}/summary`, { replace: true });
+          return;
+        } catch (lookupError) {
+          if (isLikelyNetworkFailure(lookupError)) {
+            // Keep the same saleId so a later retry reuses idempotency headers.
+            setSubmitError(t("checkout.transactionStatusUnknown"));
+            return;
+          }
+          // Lookup reached the server and the sale is absent / rejected — safe to describe failure.
+          setSubmitError(describeCheckoutSaleError(lookupError, t));
+          return;
+        }
+      }
       setSubmitError(describeCheckoutSaleError(error, t));
     } finally {
       submittingRef.current = false;
@@ -729,8 +763,8 @@ export function CheckoutCashPage() {
     saving ||
     cart.lineCount === 0 ||
     offlineBlocked ||
+    !online ||
     (online && (!quote || Boolean(quoteError))) ||
-    (!online && !offlineContext) ||
     offlinePricesLoading ||
     offlinePriceGateBlocked ||
     !tenderOk ||
@@ -755,17 +789,14 @@ export function CheckoutCashPage() {
       />
 
       {!online ? (
-        <Card data-testid="checkout-offline-cash-notice">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("offline.cashOnlyTitle")}
-          </p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.cashOnlyDetail")}
-          </p>
-        </Card>
+        <OnlineRequiredPageState
+          title={t("checkout.title")}
+          detail={t("connectivity.actionRequiresInternet")}
+          testId="checkout-online-required"
+        />
       ) : null}
 
-      {offlinePriceGateBlocked ? (
+      {offlinePriceGateBlocked && organizationWebAllowsOfflineQueueing() ? (
         <Card data-testid="checkout-offline-price-authority-required">
           <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
             {t("offline.priceRefreshRequiredTitle")}

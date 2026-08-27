@@ -4,8 +4,17 @@
 **Package:** MOBILE-REACT-DOC-04  
 **Depends on:** [frontend-architecture-and-reuse.md](frontend-architecture-and-reuse.md), [product-surfaces-and-ux.md](product-surfaces-and-ux.md)
 
-One React client (`ExItS.PinoyBusinessPOS.React`, not created) can be delivered as browser, PWA, and Capacitor packages.
+One React client (`ExItS.PinoyBusinessPOS.React`) can be delivered as browser, PWA, and Capacitor packages.
 **PWA capability is not Capacitor capability.** Do not claim identical device APIs, background behavior, or hardware support.
+
+### Organization Web/PWA (current)
+
+- **ONLINE-ONLY** for Organization business operations (ORG-PWA-ONLINE-ONLY-01).
+- PWA remains installable with static shell/JS/CSS caching.
+- Organization business data and mutations are server-authoritative (`NetworkOnly` for API routes).
+- Organization offline transactions / outbox enqueue / cold-start offline session are **disabled on Web/PWA**.
+- Offline engine code and backend offline support are **preserved** for future Capacitor/native activation.
+- Personal offline behavior is intentionally unchanged by the Organization online-only policy.
 
 PWA production rollout and Capacitor production rollout remain **NOT AUTHORIZED**. This file defines how they would work when separately approved.
 
