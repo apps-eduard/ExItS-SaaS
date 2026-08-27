@@ -1,10 +1,10 @@
 # EXITS-V1-CLOSURE-01 — React Ownership Initiation + External Business QR Acquisition
 
-**Package:** EXITS-V1-CLOSURE-01  
-**Status:** COMPLETE  
-**Branch:** `feat/personal`  
-**Baseline:** `c8955395b61f5b08a28bed9db2706479227ff8bc`  
-**Implementation SHA:** _(record after commit)_
+**Package:** EXITS-V1-CLOSURE-01
+**Status:** COMPLETE
+**Branch:** `feat/personal`
+**Baseline:** `c8955395b61f5b08a28bed9db2706479227ff8bc`
+**Implementation SHA:** `4f43b2bdb4fed01140277a1048718b5ef7a6ed7b`
 
 ## Purpose
 
