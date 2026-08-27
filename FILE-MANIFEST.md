@@ -47,7 +47,12 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales (**multi-unit Sell as checkout**) + inventory + expenses + suppliers + **purchasing hub (Receive stock / POs / discrepancy-aware goods receipts)** + connected supplier request/catalog/linked products/incoming order list/detail + lifecycle actions + **connected buyers + post-accept share prompt + per-buyer shared products/pricing** + **unified org notifications (Read-on-open)** + dashboard/reports; onboarding/auth; sync-status shell; private product-image cache + explicit adopted-template thumbs + queueable offline catalog create (metadata JSON; pending photos as files, never SQLite bytes); offline foundation diagnostics; PosResources en/fil-PH)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ (React Mobile Client host; Gate C/D shell + IMPL-02A product chrome + IMPL-03A same-origin cookie Sign In; not workspace/PIN/Capacitor/selling)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; unified org notifications + Connected buyers; Local Validation :8093)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/ (future React + TypeScript Vite host for browser / PWA / later Capacitor; Gate C scaffold + Gate D Phase A static PWA shell on `feat/pos-react-client`; MAUI remains active)
+src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Domain/ (PPM-01 scaffold; product identity only — no pawn entities)
+src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Application/ (PPM-01 scaffold; no use cases)
+src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Infrastructure/ (PPM-01 scaffold; no DbContext/migrations)
+src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Api/ (PPM-01 scaffold; `/health` only)
+tests/ExItS.PinoyPawnManager.UnitTests/
+src/Products/PinoyPawnManager/Docs/
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/

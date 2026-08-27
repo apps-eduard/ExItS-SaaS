@@ -5,8 +5,8 @@
 
 | Field | Value |
 |---|---|
-| Status | PPM-00 planning architecture |
-| Implementation | None |
+| Status | PPM-01 scaffold present; operational architecture still planning |
+| Implementation | Scaffold only (no pawn entities, no database) |
 | Last updated | 2026-08-27 |
 
 ## System shape

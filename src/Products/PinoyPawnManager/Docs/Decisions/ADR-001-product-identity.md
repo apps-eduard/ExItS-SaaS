@@ -35,7 +35,7 @@ These must not collide with PinoyLoanManager, PinoyBusinessPOS, BNPL, or other p
 - Scaffold solution projects under `src/Products/PinoyPawnManager/`
 - Platform Domain constant `ProductCode.PinoyPawnManager`
 - Local Validation / Dev catalog fixture via `EnsurePpmLocalValidationCatalog` (display name Pinoy Pawn Manager)
-- Local Validation access grants (`GrantPpmProductAccess`) for designated ABC identities
+- Local Validation access grants (`GrantPpmProductAccess`) for designated XYZ identity (**ana.cruz**); ABC remains independently on POS+PLM without PPM
 
 ## What provisional approval does **not** mean
 

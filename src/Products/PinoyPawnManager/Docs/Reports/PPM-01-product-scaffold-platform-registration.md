@@ -9,6 +9,8 @@
 | Last updated | 2026-08-27 |
 | Legal claim | `LEGAL_AUTHORIZATION_CLAIMED` = **NO** |
 | Commit intent | `feat(ppm): scaffold product and register platform access` |
+| Start SHA | `43b3a967d8295f9c6693b82ba3ab129811323ff3` |
+| Scaffold commit | `ce2d13cff69dfd31ff4cc6cef8fbed150df7316e` |
 
 ## Delivered capability
 
@@ -38,8 +40,9 @@ Projects are registered under `ExItS.slnx` in `/src/Products/PinoyPawnManager/` 
 
 - `ProductCode.PinoyPawnManager` = `"pinoy-pawn-manager"` registered on Platform Domain
 - `EnsurePpmLocalValidationCatalog` — idempotent Local Validation catalog/commercial fixture (display name **Pinoy Pawn Manager**; test-only plan/trial schema values — **not** production commercial policy)
-- `GrantPpmProductAccess` for ABC Local Validation identities (**maria.santos**, **carlo.reyes**)
-- XYZ Mini Grocery identities remain **denied by default** (`GrantPpmProductAccess` defaults to `false`)
+- `GrantPpmProductAccess` for XYZ Local Validation identity **ana.cruz** only
+- ABC Sari-Sari identities (**maria.santos**, **carlo.reyes**) keep POS + PLM and remain **denied for PPM**
+- XYZ staff **daniel.garcia** remains POS-only (`GrantPpmProductAccess` false)
 
 This is **Local Validation / Dev fixture registration**, not a claim of full production catalog commercial registration.
 
@@ -47,7 +50,7 @@ This is **Local Validation / Dev fixture registration**, not a claim of full pro
 
 - No `DbContext`, EF migrations, or operational database creation (`ExItS_PinoyPawnManager` remains **PPM-D-00-04** OPEN)
 - No pawn operational entities (customer, pledged item, appraisal, ticket, custody, payment, disposition)
-- No Organization Web / PWA / MAUI / LocalStore projects
+- No Organization Web / PWA / MAUI / LocalStore / ApiClient projects (PPM-01 expected Domain/Application/Infrastructure/Api + tests; frontend is an explicit non-goal)
 - No product-local grant catalog closure (**PPM-D-00-18** OPEN)
 - No closed interest rates, LTV, grace, auction, or licensing claims (**PPM-D-00-08** … **PPM-D-00-20** remain OPEN where applicable)
 - No POS / PLM / BNPL / PSP product code ownership changes beyond Platform Local Validation access flags for PPM
@@ -61,7 +64,7 @@ This is **Local Validation / Dev fixture registration**, not a claim of full pro
 | Unit safety guards | No sibling-product project references under PPM tree; no migration sources |
 | Domain `PpmProductIdentity` | Product code string aligned to `pinoy-pawn-manager` without referencing Platform Domain |
 | Solution layout | First-class folder `src/Products/PinoyPawnManager/` — not nested under PLM or POS |
-| Access fixture | ABC granted PPM access; XYZ denied by default (tenant isolation intent for Local Validation) |
+| Access fixture | XYZ owner Ana granted PPM independently; ABC (POS+PLM) denied PPM; Daniel (XYZ staff) denied PPM |
 
 ## Persistence / migrations
 
@@ -74,14 +77,17 @@ This is **Local Validation / Dev fixture registration**, not a claim of full pro
 
 ## Build / test / runtime evidence
 
-Recorded by the implementing session when authorized. Expected gates for this package:
+| Gate | Result |
+|---|---|
+| `dotnet restore ExItS.slnx` | Pass |
+| PPM Domain / Application / Infrastructure / Api Release build | Pass (0 errors) |
+| Platform API Release build | Pass (pre-existing warnings only) |
+| `ExItS.PinoyPawnManager.UnitTests` Release | Pass (5 passed) |
+| `PinoyPawnManagerArchitectureTests` Release | Pass (10 passed) |
+| Affected Platform unit tests (ProductCode, EnsurePpm/Plm catalog, identity catalog, product-access independence) | Pass (37 passed) |
+| `dotnet build ExItS.slnx -c Release` | **PRE_EXISTING_FAILURE** — POS MAUI `XA5300` Android SDK directory not found. Not repaired on `feat/ppm`. |
 
-- Release build of PPM projects + solution inclusion
-- `ExItS.PinoyPawnManager.UnitTests` scaffold/safety tests
-- `ExItS.ArchitectureTests` PinoyPawnManager isolation tests
-- Platform unit coverage for `ProductCode.PinoyPawnManager` and `EnsurePpmLocalValidationCatalog`
-
-Validation checklist for docs foundation remains: [../Validation/PPM-00-readiness-checklist.md](../Validation/PPM-00-readiness-checklist.md) (PPM-00). PPM-01 validation is scaffold + Local Validation registration evidence above—not a separate legal readiness gate.
+Git hashes are recorded in the integrating commit on `feat/ppm`. This report does **not** authorize merge to `main`.
 
 ## Security limitations
 

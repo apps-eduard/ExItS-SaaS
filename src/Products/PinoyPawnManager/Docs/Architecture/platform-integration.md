@@ -5,8 +5,8 @@
 
 | Field | Value |
 |---|---|
-| Status | PPM-00 planning |
-| Implementation | None |
+| Status | PPM-01 Local Validation / Dev catalog fixture registered |
+| Implementation | Platform product code + Local Validation fixture; no PPM operational APIs |
 | Last updated | 2026-08-27 |
 
 ## Intent
@@ -21,7 +21,7 @@ PPM integrates with **ExItS Platform** for identity, organization membership, br
 | Production authentication maturity | Platform (**R-091**) | No fake production-secure claims (**D-P12-05**) |
 | Organizations / memberships | Platform | Store `OrganizationId` as Guid/contract only |
 | Branch facts | Platform | Store `BranchId` on operational records; vault layout is PPM-owned |
-| SaaS catalog / plans / subscription | Platform | Independent PPM subscription; catalog registration not done in PPM-00 |
+| SaaS catalog / plans / subscription | Platform | Independent PPM subscription. PPM-01 registers a **non-production** Local Validation catalog/trial fixture only. |
 | Entitlement / commercial-state transport | Platform facts (**D-P12-03** Open) | Consume approved contracts only—no Platform DB reads |
 | SaaS billing | Platform | Never store pawn operational money as Platform SaaS payments |
 | Pawn ops, custody, appraisal, tickets, payments | **PPM** | Product-local domain (not implemented) |
@@ -39,15 +39,15 @@ Server-side enforcement must require:
 
 Client-selected org/branch/product context is never authoritative alone.
 
-## Proposed catalog identity (Open)
+## Catalog identity (provisionally approved for implementation)
 
-| Field | Proposed value | Decision |
+| Field | Value | Decision |
 |---|---|---|
-| Display name | Pinoy Pawn Manager | **PPM-D-00-01** OPEN |
-| Product code / slug | `pinoy-pawn-manager` | **PPM-D-00-02** OPEN |
-| Product directory | `PinoyPawnManager` | **PPM-D-00-03** OPEN |
+| Display name | Pinoy Pawn Manager | **PPM-D-00-01** Provisionally Approved for Implementation — not final marketing |
+| Product code / slug | `pinoy-pawn-manager` | **PPM-D-00-02** Provisionally Approved for Implementation — not final marketing |
+| Product directory | `PinoyPawnManager` | **PPM-D-00-03** Provisionally Approved for Implementation — not final marketing |
 
-Do not register Platform catalog entries in PPM-00.
+PPM-01 registered these values as a Local Validation / Dev fixture (`EnsurePpmLocalValidationCatalog`). This is **not** production commercial catalog completeness and does **not** close **PPM-D-00-04**.
 
 ## Personal surface (optional later)
 

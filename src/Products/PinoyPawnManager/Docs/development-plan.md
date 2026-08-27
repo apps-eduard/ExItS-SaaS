@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | PPM-00 planning |
+| Status | PPM-01 complete — next PPM-02 |
 | Last updated | 2026-08-27 |
 
 ## Delivery principles
@@ -44,8 +44,8 @@
 - Claiming BIR/pawnshop license compliance
 - Copying PLM loan schedule engines as pawn tickets
 
-## Gate to implementation
+## Gate to PPM-02
 
-- PPM-00 complete (this Docs tree)
-- Product Owner awareness of Open `PPM-D-00-*` items that block policy-sensitive packages
-- Explicit authorization to start PPM-01
+- PPM-01 complete (scaffold + Local Validation / Dev product identity)
+- **PPM-D-00-18** remains OPEN until Product Owner closes grant identifiers
+- Explicit authorization to start PPM-02

@@ -174,6 +174,40 @@ public sealed class PinoyPawnManagerArchitectureTests
         Assert.DoesNotContain("ProductCode.PinoyPawnManager", text, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Ppm_01_source_contains_no_pawn_operational_entities()
+    {
+        var root = Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyPawnManager");
+        var forbidden = new[]
+        {
+            "PawnTransaction",
+            "PledgedItem",
+            "Appraisal",
+            "PawnAgreement",
+            "PawnPayment",
+            "CustodyMovement",
+            "Renewal",
+            "Redemption",
+            "Disposition"
+        };
+
+        var files = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                        && !p.Contains($"{Path.DirectorySeparatorChar}Docs{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            foreach (var name in forbidden)
+            {
+                Assert.DoesNotContain($"class {name}", text, StringComparison.Ordinal);
+                Assert.DoesNotContain($"record {name}", text, StringComparison.Ordinal);
+                Assert.DoesNotContain($"enum {name}", text, StringComparison.Ordinal);
+            }
+        }
+    }
+
     private static void AssertSourceFilesAvoid(string projectRoot, params string[] forbidden)
     {
         Assert.True(Directory.Exists(projectRoot), projectRoot);

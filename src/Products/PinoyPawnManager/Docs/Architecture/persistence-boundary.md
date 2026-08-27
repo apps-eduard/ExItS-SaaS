@@ -5,8 +5,8 @@
 
 | Field | Value |
 |---|---|
-| Status | PPM-00 planning |
-| Implementation | None |
+| Status | PPM-01: Infrastructure project exists; **no** database |
+| Implementation | None for persistence |
 | Last updated | 2026-08-27 |
 
 ## Intent
@@ -20,7 +20,7 @@ PPM operational data lives in a **separate logical database** owned by the produ
 | Database name | `ExItS_PinoyPawnManager` | **PPM-D-00-04** OPEN |
 | Schema naming | Unset | OPEN |
 
-PPM-00 creates **neither** database nor migrations.
+PPM-01 creates **neither** database nor migrations. **PPM-D-00-04** remains OPEN.
 
 ## Allowed external identifiers (contracts)
 

@@ -117,6 +117,6 @@
 
 - **PPM-D-00-01 / 02 / 03** = Provisionally Approved for Implementation (Product Owner, PPM-01) — **not** final marketing approval
 - **PPM-D-00-04** … **PPM-D-00-20** remain **OPEN**
-- Platform registration in PPM-01 is **Local Validation / Dev fixture** only (`EnsurePpmLocalValidationCatalog`, `GrantPpmProductAccess` for ABC maria/carlo; XYZ denied by default)
+- Platform registration in PPM-01 is **Local Validation / Dev fixture** only (`EnsurePpmLocalValidationCatalog`; PPM commercial fixture + `GrantPpmProductAccess` for XYZ **ana.cruz**; ABC remains POS+PLM without PPM; Daniel remains POS-only)
 - **LEGAL_AUTHORIZATION_CLAIMED=NO**
 - Next package: **PPM-02**
