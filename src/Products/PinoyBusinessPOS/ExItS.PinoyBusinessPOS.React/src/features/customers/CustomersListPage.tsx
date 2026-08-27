@@ -21,6 +21,8 @@ import {
 } from "@/offline/customer-cache";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { CustomerListConnectionBadges } from "@/features/customers/CustomerListConnectionBadges";
+import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
 type StatusFilter = "Active" | "Inactive" | "";
 
@@ -38,23 +40,11 @@ function customerStatusTone(status: string): "success" | "warning" {
   return status.toLowerCase() === "active" ? "success" : "warning";
 }
 
-function customerMeta(
-  customer: PosCustomerListItem,
-  exItsIdHint: string,
-): string {
-  const parts = [customer.mobileNumber].filter(Boolean);
-  // POS-local ExItS ID / buyer org fields prove identity correlation only —
-  // not Platform CustomerLink / LinkedCustomerAppUser Active status.
-  if (customer.linkedPersonalPublicUserId || customer.linkedBuyerPublicOrganizationId) {
-    parts.push(exItsIdHint);
-  }
-  return parts.join(" · ");
-}
-
 export function CustomersListPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const online = useBrowserOnline();
+  const customerLinkOverlay = useOrganizationCustomerLinkOverlay(boundWorkspace?.organizationId);
   const offlineContext = useOrganizationOfflineContext();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -209,7 +199,7 @@ export function CustomersListPage() {
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
         {items.map((customer) => {
-          const meta = customerMeta(customer, t("customers.listExItsIdHint"));
+          const phone = customer.mobileNumber?.trim() || "";
           return (
             <li key={customer.customerId}>
               <Link
@@ -221,11 +211,16 @@ export function CustomersListPage() {
                   <span className="exits-list__name block truncate font-semibold">
                     {customer.displayName}
                   </span>
-                  {meta ? (
+                  {phone ? (
                     <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {meta}
+                      {phone}
                     </span>
                   ) : null}
+                  <CustomerListConnectionBadges
+                    customer={customer}
+                    overlay={customerLinkOverlay}
+                    className="customer-row__badges"
+                  />
                 </span>
                 <span className="customer-row__aside">
                   <StatusChip tone={customerStatusTone(customer.status)}>{customer.status}</StatusChip>

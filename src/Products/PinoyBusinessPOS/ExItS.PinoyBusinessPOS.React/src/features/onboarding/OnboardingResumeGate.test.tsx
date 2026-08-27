@@ -20,6 +20,7 @@ const boundWorkspace: BoundWorkspace = {
 let workspaceState = {
   status: "bound" as const,
   boundWorkspace,
+  sessionGrant: { accessToken: "test-grant", productAccessAllowed: true },
 };
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
@@ -44,7 +45,11 @@ function completedProgress() {
 describe("OnboardingResumeGate", () => {
   afterEach(() => {
     getProgress.mockReset();
-    workspaceState = { status: "bound", boundWorkspace };
+    workspaceState = {
+      status: "bound",
+      boundWorkspace,
+      sessionGrant: { accessToken: "test-grant", productAccessAllowed: true },
+    };
   });
 
   it("checks onboarding progress once per organization, not on every tab path", async () => {
@@ -94,6 +99,26 @@ describe("OnboardingResumeGate", () => {
         },
       ],
       { initialEntries: ["/personal"] },
+    );
+
+    render(<RouterProvider router={router} />);
+    await new Promise((resolve) => window.setTimeout(resolve, 30));
+    expect(getProgress).not.toHaveBeenCalled();
+  });
+
+  it("does not call POS progress until a session grant exists", async () => {
+    workspaceState.sessionGrant = { accessToken: "", productAccessAllowed: false };
+    getProgress.mockResolvedValue(completedProgress());
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: <OnboardingResumeGate />,
+          children: [{ path: "role/manager", element: <div>home</div> }],
+        },
+      ],
+      { initialEntries: ["/role/manager"] },
     );
 
     render(<RouterProvider router={router} />);

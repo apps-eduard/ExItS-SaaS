@@ -1,60 +1,75 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { UserRoundSearch } from "lucide-react";
+import { ChevronDown, UserRoundSearch } from "lucide-react";
 import { resolvePublicUserId } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
-import {
-  findCustomerByLinkedPersonalPublicUserId,
-  type CheckoutCustomerSearchItem,
-} from "@/api/pos/pos-customers-client";
+import type { CheckoutCustomerSearchItem } from "@/api/pos/pos-customers-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import { findExistingCheckoutCustomerForPersonalId } from "@/features/checkout/find-existing-checkout-customer";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
-export type CheckoutCustomerOption = {
-  customerId: string;
-  displayName: string;
-  mobileNumber?: string | null;
-  status: string;
-};
+export type { CheckoutCustomerOption };
 
 type Props = {
   workspace: PosWorkspaceScope;
   disabled?: boolean;
   canLinkCustomer: boolean;
   returnTo: string;
+  /** When a customer is already on the sale, hide lookup and do not send requests. */
+  selectedCustomerId?: string | null;
   onCustomerSelected: (customer: CheckoutCustomerOption) => void;
 };
 
-function toCheckoutOption(item: CheckoutCustomerSearchItem): CheckoutCustomerOption {
+function toCheckoutOption(
+  item: CheckoutCustomerSearchItem,
+  extras?: {
+    linkedPersonalPublicUserId?: string | null;
+    resolvedPersonalDisplayName?: string | null;
+  },
+): CheckoutCustomerOption {
   return {
     customerId: item.customerId,
     displayName: item.displayName,
     mobileNumber: item.mobileNumber,
     status: item.status,
+    linkedPersonalPublicUserId: extras?.linkedPersonalPublicUserId ?? null,
+    resolvedPersonalDisplayName: extras?.resolvedPersonalDisplayName ?? null,
   };
 }
 
 /**
  * Checkout customer selection via Personal QR / ExItS ID — selection only, never creates customers.
+ * Hidden by default. If the Personal ID already has a POS contact, select that row; do not add/link.
  */
 export function CheckoutPersonalCustomerPicker({
   workspace,
   disabled,
   canLinkCustomer,
   returnTo,
+  selectedCustomerId,
   onCustomerSelected,
 }: Props) {
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resolvedPublicId, setResolvedPublicId] = useState<string | null>(null);
   const [resolvedDisplayName, setResolvedDisplayName] = useState<string | null>(null);
   const [notLinked, setNotLinked] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  if (selectedCustomerId) {
+    return null;
+  }
+
   async function resolveAndLookup(subjectOrPayload: string) {
+    if (disabled) {
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotLinked(false);
@@ -65,17 +80,23 @@ export function CheckoutPersonalCustomerPicker({
       setResolvedPublicId(resolved.publicUserId);
       setResolvedDisplayName(resolved.displayName);
 
-      const correlated = await findCustomerByLinkedPersonalPublicUserId(
+      const existing = await findExistingCheckoutCustomerForPersonalId(
         workspace,
         resolved.publicUserId,
       );
-      if (!correlated) {
-        setNotLinked(true);
+      if (existing) {
+        onCustomerSelected(
+          toCheckoutOption(existing, {
+            linkedPersonalPublicUserId: resolved.publicUserId,
+            resolvedPersonalDisplayName: resolved.displayName,
+          }),
+        );
+        setNotLinked(false);
+        setOpen(false);
         return;
       }
 
-      onCustomerSelected(toCheckoutOption(correlated));
-      setNotLinked(false);
+      setNotLinked(true);
     } catch (err) {
       if (err instanceof PlatformApiError || err instanceof PosApiError) {
         setError(err.message || t("checkout.personalResolveFailed"));
@@ -103,71 +124,89 @@ export function CheckoutPersonalCustomerPicker({
     <div
       className="mt-3 flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3"
       data-testid="checkout-personal-customer-picker"
+      data-open={open ? "true" : "false"}
     >
-      <div className="flex items-start gap-2">
-        <UserRoundSearch className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("checkout.personalCustomerTitle")}
-          </p>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.personalCustomerHint")}
-          </p>
-        </div>
-      </div>
-
-      <QrScanOrEnter
-        expectedPurpose="personal"
+      <button
+        type="button"
+        className="checkout-personal-lookup-toggle"
+        data-testid="checkout-personal-customer-picker-toggle"
+        aria-expanded={open}
         disabled={disabled || busy}
-        onResolvedPayload={(value) => void resolveAndLookup(value)}
-      />
+        onClick={() => setOpen((current) => !current)}
+      >
+        <UserRoundSearch className="size-5 shrink-0 text-primary" aria-hidden />
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block text-[length:var(--exits-text-sm)] font-semibold">
+            {t("checkout.personalCustomerTitle")}
+          </span>
+          <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+            {open ? t("checkout.personalCustomerHint") : t("checkout.personalCustomerShowHint")}
+          </span>
+        </span>
+        <ChevronDown
+          className={cn("size-4 shrink-0 text-muted transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+      </button>
 
-      {notLinked && resolvedPublicId ? (
-        <div
-          className="flex flex-col gap-2 rounded border border-[var(--exits-border)] bg-surface p-3"
-          data-testid="checkout-personal-not-linked"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("checkout.customerNotLinked")}
-          </p>
-          {resolvedDisplayName ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{resolvedDisplayName}</p>
-          ) : null}
-          <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
-            {resolvedPublicId}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {linkHref ? (
-              <Button asChild className="min-h-11" data-testid="checkout-personal-add-link">
-                <Link to={linkHref}>{t("checkout.addLinkCustomer")}</Link>
-              </Button>
-            ) : (
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("checkout.customerNotLinkedDenied")}
-              </p>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              data-testid="checkout-personal-not-linked-cancel"
-              disabled={disabled || busy}
-              onClick={clearState}
+      {open ? (
+        <>
+          <QrScanOrEnter
+            expectedPurpose="personal"
+            disabled={disabled || busy}
+            onResolvedPayload={(value) => void resolveAndLookup(value)}
+          />
+
+          {notLinked && resolvedPublicId ? (
+            <div
+              className="flex flex-col gap-2 rounded border border-[var(--exits-border)] bg-surface p-3"
+              data-testid="checkout-personal-not-linked"
             >
-              {t("checkout.customerNotLinkedCancel")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("checkout.customerNotLinked")}
+              </p>
+              {resolvedDisplayName ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {resolvedDisplayName}
+                </p>
+              ) : null}
+              <p className="m-0 break-all text-[length:var(--exits-text-xs)] text-muted">
+                {resolvedPublicId}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {linkHref ? (
+                  <Button asChild className="min-h-11" data-testid="checkout-personal-add-link">
+                    <Link to={linkHref}>{t("checkout.addLinkCustomer")}</Link>
+                  </Button>
+                ) : (
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("checkout.customerNotLinkedDenied")}
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11"
+                  data-testid="checkout-personal-not-linked-cancel"
+                  disabled={disabled || busy}
+                  onClick={clearState}
+                >
+                  {t("checkout.customerNotLinkedCancel")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
-      {error ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          data-testid="checkout-personal-customer-error"
-          role="alert"
-        >
-          {error}
-        </p>
+          {error ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+              data-testid="checkout-personal-customer-error"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

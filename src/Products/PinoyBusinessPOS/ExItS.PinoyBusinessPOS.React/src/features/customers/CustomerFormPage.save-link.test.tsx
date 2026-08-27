@@ -21,6 +21,8 @@ vi.mock("@/api/pos/pos-customers-client", async (importOriginal) => {
   return {
     ...actual,
     createCustomer: vi.fn(),
+    findCustomerByLinkedPersonalPublicUserId: vi.fn(),
+    searchCheckoutCustomers: vi.fn(),
   };
 });
 
@@ -59,7 +61,10 @@ function renderCreate() {
       <MemoryRouter initialEntries={["/customers/new"]}>
         <Routes>
           <Route path="/customers/new" element={<CustomerCreatePage />} />
-          <Route path="/customers/:customerId" element={<div data-testid="customer-detail-stub" />} />
+          <Route
+            path="/customers/:customerId"
+            element={<div data-testid="customer-detail-stub" />}
+          />
         </Routes>
       </MemoryRouter>
     </AppProviders>,
@@ -72,6 +77,13 @@ describe("CustomerFormPage save vs resolve link", () => {
   });
 
   beforeEach(() => {
+    vi.mocked(customersClient.findCustomerByLinkedPersonalPublicUserId).mockResolvedValue(null);
+    vi.mocked(customersClient.searchCheckoutCustomers).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    });
     vi.mocked(customersClient.createCustomer).mockResolvedValue({
       customerId: posCustomerId,
       organizationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -187,6 +199,32 @@ describe("CustomerFormPage save vs resolve link", () => {
       expect(screen.getByTestId("customer-personal-link-confirm")).toBeInTheDocument();
     });
 
+    expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
+    expect(customersClient.createCustomer).not.toHaveBeenCalled();
+  });
+
+  it("does not send add/link when that Personal ID is already a POS customer", async () => {
+    const user = userEvent.setup();
+    vi.mocked(customersClient.findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      customerId: posCustomerId,
+      displayName: "Rosa Personal",
+      mobileNumber: null,
+      status: "Active",
+    });
+    renderCreate();
+
+    await user.click(screen.getByTestId("customer-create-kind-exits"));
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-already-in-contacts")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-already-in-contacts-open")).toHaveAttribute(
+      "href",
+      `/customers/${posCustomerId}`,
+    );
+    expect(screen.getByTestId("customer-save")).toBeDisabled();
     expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
     expect(customersClient.createCustomer).not.toHaveBeenCalled();
   });

@@ -1,12 +1,12 @@
+import { stripLocalValidationRunStamp } from "@/lib/local-validation-run-stamp";
+
 /**
  * Personal commerce shows store names, not Local Validation run stamps.
- * Compact datetime suffixes (YYYYMMDDHHmmss, optional milliseconds) stay in stored data.
+ * Compact datetime suffixes stay in stored data.
  */
-const COMPACT_RUN_STAMP =
-  /\s+(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])([0-5]\d)([0-5]\d)(\d{3})?$/;
 
 export function stripPersonalRunStamp(value: string): string {
-  return value.trim().replace(COMPACT_RUN_STAMP, "").replace(/\s+/g, " ").trim();
+  return stripLocalValidationRunStamp(value);
 }
 
 export function personalStoreDisplayName(

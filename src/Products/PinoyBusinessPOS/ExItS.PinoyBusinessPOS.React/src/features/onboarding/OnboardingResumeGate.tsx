@@ -16,7 +16,7 @@ function shouldSkipOnboardingResume(pathname: string): boolean {
 export function OnboardingResumeGate() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { boundWorkspace, status } = useWorkspace();
+  const { boundWorkspace, status, sessionGrant } = useWorkspace();
   const checkedOrgIdRef = useRef<string | null>(null);
   const pathnameRef = useRef(location.pathname);
   pathnameRef.current = location.pathname;
@@ -36,6 +36,9 @@ export function OnboardingResumeGate() {
 
   useEffect(() => {
     if (status !== "bound" && status !== "ready") {
+      return;
+    }
+    if (!sessionGrant?.accessToken) {
       return;
     }
     if (!organizationId) {
@@ -81,7 +84,7 @@ export function OnboardingResumeGate() {
     return () => {
       cancelled = true;
     };
-  }, [branchId, navigate, organizationId, status]);
+  }, [branchId, navigate, organizationId, sessionGrant?.accessToken, status]);
 
   return null;
 }

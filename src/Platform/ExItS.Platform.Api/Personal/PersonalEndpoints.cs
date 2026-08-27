@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Common;
+using ExItS.Platform.Api.Identity;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
@@ -9,6 +10,8 @@ using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.Api.Personal;
 
@@ -537,6 +540,9 @@ internal static class PersonalEndpoints
             HttpContext http,
             StartBusinessRequest body,
             StartBusinessForPersonalUser startBusiness,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            IHostEnvironment env,
+            IConfiguration configuration,
             CancellationToken ct) =>
         {
             if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
@@ -560,6 +566,22 @@ internal static class PersonalEndpoints
                 http.Connection.RemoteIpAddress?.ToString(),
                 http.Request.Headers.UserAgent.ToString(),
                 ct).ConfigureAwait(false);
+
+            // Start a Business revokes the Personal session and issues an Organization session.
+            // Browser clients must receive the rotated cookie here — same as account-profiles/select.
+            if (result.IsSuccess && result.Value is not null && !string.IsNullOrWhiteSpace(result.Value.SessionToken))
+            {
+                var expiresAt = result.Value.ExpiresAtUtc
+                    ?? DateTimeOffset.UtcNow.AddMinutes(Math.Max(1, sessionOptions.Value.IdleTimeoutMinutes));
+                AuthEndpoints.AppendSessionCookie(
+                    http,
+                    result.Value.SessionToken,
+                    expiresAt,
+                    sessionOptions.Value,
+                    env,
+                    configuration);
+            }
+
             return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/organizations/{dto.OrganizationId}", dto));
         });
 

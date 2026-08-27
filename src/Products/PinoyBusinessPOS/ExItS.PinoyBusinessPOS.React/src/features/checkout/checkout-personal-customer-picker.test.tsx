@@ -4,7 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { resolvePublicUserId } from "@/api/platform/public-identity-client";
-import { findCustomerByLinkedPersonalPublicUserId } from "@/api/pos/pos-customers-client";
+import {
+  findCustomerByLinkedPersonalPublicUserId,
+  searchCheckoutCustomers,
+} from "@/api/pos/pos-customers-client";
 import { buildExItsQr } from "@/lib/exits-qr/envelope";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import * as cameraAccess from "@/lib/qr/camera-access";
@@ -16,6 +19,7 @@ vi.mock("@/api/platform/public-identity-client", () => ({
 
 vi.mock("@/api/pos/pos-customers-client", () => ({
   findCustomerByLinkedPersonalPublicUserId: vi.fn(),
+  searchCheckoutCustomers: vi.fn(),
 }));
 
 vi.mock("@/lib/qr/camera-access", async (importOriginal) => {
@@ -56,6 +60,7 @@ const resolvedPersonal = {
 function renderPicker(
   options: {
     canLinkCustomer?: boolean;
+    selectedCustomerId?: string | null;
     onCustomerSelected?: (customer: {
       customerId: string;
       displayName: string;
@@ -71,6 +76,7 @@ function renderPicker(
           workspace={workspace}
           canLinkCustomer={options.canLinkCustomer ?? true}
           returnTo="/checkout/cash"
+          selectedCustomerId={options.selectedCustomerId}
           onCustomerSelected={onCustomerSelected}
         />
       </MemoryRouter>
@@ -79,14 +85,69 @@ function renderPicker(
   return { onCustomerSelected };
 }
 
+async function expandLookup(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("checkout-personal-customer-picker-toggle"));
+  expect(screen.getByTestId("qr-manual-id")).toBeVisible();
+}
+
 describe("CheckoutPersonalCustomerPicker", () => {
   beforeEach(() => {
     HTMLVideoElement.prototype.play = vi.fn().mockResolvedValue(undefined);
     vi.mocked(resolvePublicUserId).mockReset();
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockReset();
+    vi.mocked(searchCheckoutCustomers).mockReset();
+    vi.mocked(searchCheckoutCustomers).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    });
     vi.mocked(cameraAccess.openPreferredCamera).mockReset();
     vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockReset();
     vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockResolvedValue(null);
+  });
+
+  it("hides ExItS lookup until the cashier opens it", () => {
+    renderPicker();
+    expect(screen.queryByTestId("qr-manual-id")).not.toBeInTheDocument();
+    expect(screen.getByTestId("checkout-personal-customer-picker-toggle")).toBeVisible();
+  });
+
+  it("does not render lookup when a customer is already selected", () => {
+    renderPicker({ selectedCustomerId: customerId });
+    expect(screen.queryByTestId("checkout-personal-customer-picker")).not.toBeInTheDocument();
+    expect(resolvePublicUserId).not.toHaveBeenCalled();
+  });
+
+  it("selects an existing contact from search and does not offer add/link", async () => {
+    const user = userEvent.setup();
+    vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
+    vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue(null);
+    vi.mocked(searchCheckoutCustomers).mockResolvedValue({
+      items: [
+        {
+          customerId,
+          displayName: "Rosa Santos",
+          mobileNumber: "09171234567",
+          status: "Active",
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    const { onCustomerSelected } = renderPicker();
+    await expandLookup(user);
+    await user.type(screen.getByTestId("qr-manual-id"), publicId);
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(onCustomerSelected).toHaveBeenCalledWith(
+        expect.objectContaining({ customerId, displayName: "Rosa Santos" }),
+      );
+    });
+    expect(screen.queryByTestId("checkout-personal-add-link")).not.toBeInTheDocument();
   });
 
   it("selects an existing correlated customer from manual ExItS ID", async () => {
@@ -100,6 +161,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     });
 
     const { onCustomerSelected } = renderPicker();
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), publicId);
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -110,10 +172,44 @@ describe("CheckoutPersonalCustomerPicker", () => {
         displayName: "Rosa Santos",
         mobileNumber: "09171234567",
         status: "Active",
+        linkedPersonalPublicUserId: publicId,
+        resolvedPersonalDisplayName: "Rosa Santos",
       });
     });
     expect(resolvePublicUserId).toHaveBeenCalledWith(publicId, "SaleCustomer");
-    expect(findCustomerByLinkedPersonalPublicUserId).toHaveBeenCalledWith(workspace, publicId);
+    expect(findCustomerByLinkedPersonalPublicUserId).toHaveBeenCalledWith(
+      workspace,
+      publicId,
+      undefined,
+    );
+  });
+
+  it("passes the resolved Personal name when the POS record still has a Local Validation label", async () => {
+    const user = userEvent.setup();
+    vi.mocked(resolvePublicUserId).mockResolvedValue(resolvedPersonal);
+    vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue({
+      customerId,
+      displayName: "Local Walkin 20260826230002",
+      mobileNumber: "09171110001",
+      status: "Active",
+    });
+
+    const { onCustomerSelected } = renderPicker();
+    await expandLookup(user);
+
+    await user.type(screen.getByTestId("qr-manual-id"), publicId);
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(onCustomerSelected).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerId,
+          displayName: "Local Walkin 20260826230002",
+          resolvedPersonalDisplayName: "Rosa Santos",
+          linkedPersonalPublicUserId: publicId,
+        }),
+      );
+    });
   });
 
   it("selects an existing correlated customer from Personal QR payload", async () => {
@@ -128,6 +224,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     });
 
     const { onCustomerSelected } = renderPicker();
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), payload);
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -145,6 +242,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue(null);
 
     renderPicker();
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), publicId);
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -165,6 +263,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     vi.mocked(findCustomerByLinkedPersonalPublicUserId).mockResolvedValue(null);
 
     renderPicker({ canLinkCustomer: false });
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), publicId);
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -179,6 +278,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
   it("rejects organization QR in Personal customer selection", async () => {
     const user = userEvent.setup();
     renderPicker();
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), buildExItsQr("organization", "ORG000123"));
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -194,6 +294,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
   it("rejects device-registration QR in Personal customer selection", async () => {
     const user = userEvent.setup();
     renderPicker();
+    await expandLookup(user);
 
     await user.type(
       screen.getByTestId("qr-manual-id"),
@@ -210,6 +311,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
   it("rejects malformed QR payloads", async () => {
     const user = userEvent.setup();
     renderPicker();
+    await expandLookup(user);
 
     await user.type(screen.getByTestId("qr-manual-id"), "https://evil.example/qr");
     await user.click(screen.getByTestId("qr-manual-submit"));
@@ -229,7 +331,9 @@ describe("CheckoutPersonalCustomerPicker", () => {
       } as unknown as MediaStream,
       facingMode: "environment",
     });
-    vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockResolvedValue(buildExItsQr("personal", publicId));
+    vi.mocked(decodeFrame.decodeQrFromVideoFrame).mockResolvedValue(
+      buildExItsQr("personal", publicId),
+    );
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -242,6 +346,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
     });
 
     const { onCustomerSelected } = renderPicker();
+    await expandLookup(user);
 
     await user.click(screen.getByTestId("qr-mode-scan"));
     await user.click(screen.getByTestId("qr-live-camera-button"));

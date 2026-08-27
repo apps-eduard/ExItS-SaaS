@@ -899,6 +899,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (sessionAccountClass(session) === "Personal") {
       return;
     }
+    try {
+      if (sessionStorage.getItem("exits.postSubscriptionOnboarding")) {
+        return;
+      }
+    } catch {
+      // sessionStorage can throw in restricted browser contexts.
+    }
     if (workspaces.length !== 1) {
       return;
     }

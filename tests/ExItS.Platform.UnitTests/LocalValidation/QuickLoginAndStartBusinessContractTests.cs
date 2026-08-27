@@ -70,6 +70,18 @@ public sealed class QuickLoginAndStartBusinessContractTests
     }
 
     [Fact]
+    public void Personal_start_business_endpoint_refreshes_browser_session_cookie()
+    {
+        var root = FindRepoRoot();
+        var endpoints = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Personal", "PersonalEndpoints.cs"));
+
+        Assert.Contains("personal.MapPost(\"/start-business\"", endpoints, StringComparison.Ordinal);
+        Assert.Contains("AuthEndpoints.AppendSessionCookie", endpoints, StringComparison.Ordinal);
+        Assert.Contains("ExpiresAtUtc", endpoints, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Local_validation_shared_password_is_accepted_only_when_enabled()
     {
         var root = FindRepoRoot();

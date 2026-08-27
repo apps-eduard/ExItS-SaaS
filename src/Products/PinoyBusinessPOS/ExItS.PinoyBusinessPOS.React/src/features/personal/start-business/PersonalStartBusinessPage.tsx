@@ -136,8 +136,11 @@ export function PersonalStartBusinessPage() {
     },
     onSuccess: async (result) => {
       clearBoundWorkspace();
-      await refreshSession();
-      await refreshWorkspaces();
+      const sessionStatus = await refreshSession();
+      if (sessionStatus !== "authenticated") {
+        setFormError(t("personal.startBusiness.sessionSwitchFailed"));
+        return;
+      }
 
       const orgId = result.organizationId;
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
@@ -150,25 +153,29 @@ export function PersonalStartBusinessPage() {
         businessTypeName: selectedType?.name ?? null,
         businessTypeDescription: selectedType?.description ?? null,
       });
+      sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
+      // Leave Personal-only routes before bind awaits (session is now Organization).
+      navigate("/onboarding", { replace: true });
+
       try {
-        await bindDestination({
+        await refreshWorkspaces();
+        const bound = await bindDestination({
           organizationId: orgId,
           organizationDisplayName: orgLabel,
           branchId: null,
           branchName: null,
           experience: "manage_business",
-          route: "/org",
+          route: "/onboarding",
           labelKey: "experience.manageBusiness",
         });
-        await ensureOnboardingProgress(workspace, {
-          primaryBusinessTypeId: result.primaryBusinessTypeId,
-        });
-        sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
+        if (bound) {
+          await ensureOnboardingProgress(workspace, {
+            primaryBusinessTypeId: result.primaryBusinessTypeId,
+          });
+        }
       } catch {
-        // Still enter onboarding; page can ensure progress again from session flag.
-        sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
+        // Onboarding waits for the POS session grant, then can ensure progress from sessionStorage.
       }
-      navigate("/onboarding", { replace: true });
     },
     onError: (error) => {
       if (error instanceof PlatformApiError) {

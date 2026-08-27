@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Percent, Plus, UserRound, WalletCards } from "lucide-react";
+import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
@@ -31,7 +31,14 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import {
+  CheckoutCustomerDirectory,
+  CheckoutCustomerSelectedCard,
+} from "@/features/checkout/CheckoutCustomerDirectory";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
+import { checkoutCustomerTitle } from "@/features/customers/format-pos-customer-label";
+import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 import {
   CHECKOUT_PAYMENT_ICONS,
   CheckoutPaymentMethodCards,
@@ -60,13 +67,6 @@ type DiscountMethod = CommercialDiscountIntentRequest["method"];
 type UiPaymentChoice = CheckoutUiPaymentChoice;
 
 type AppliedDiscount = CommercialDiscountIntentRequest & { localId: string };
-
-type CheckoutCustomerOption = {
-  customerId: string;
-  displayName: string;
-  mobileNumber?: string | null;
-  status: string;
-};
 
 function newSaleId(): string {
   return crypto.randomUUID();
@@ -107,18 +107,6 @@ function toApiPaymentMethod(choice: UiPaymentChoice): CheckoutPaymentMethod {
   return choice;
 }
 
-function confirmLabelKey(
-  choice: UiPaymentChoice,
-): "checkout.confirmCash" | "checkout.confirmGCash" | "checkout.confirmUtang" {
-  if (choice === "GCash") {
-    return "checkout.confirmGCash";
-  }
-  if (choice === "Utang") {
-    return "checkout.confirmUtang";
-  }
-  return "checkout.confirmCash";
-}
-
 /** Checkout page — Cash / GCash (ManualGCash) / Utang. File kept as CheckoutCashPage for route stability. */
 export function CheckoutCashPage() {
   const { t } = useI18n();
@@ -130,6 +118,7 @@ export function CheckoutCashPage() {
   const sellReadiness = useSellOfflineReadiness();
   const { refreshCounts } = useOfflineSync();
   const online = sellReadiness.online;
+  const customerLinkOverlay = useOrganizationCustomerLinkOverlay(boundWorkspace?.organizationId);
 
   const [paymentChoice, setPaymentChoice] = useState<UiPaymentChoice>("Cash");
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false);
@@ -439,6 +428,9 @@ export function CheckoutCashPage() {
     if (isUtang && !(allowCheckoutCustomerSearch && allowCreateCredit)) {
       return;
     }
+    if (selectedCustomer) {
+      return;
+    }
 
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
@@ -462,6 +454,8 @@ export function CheckoutCashPage() {
               displayName: c.displayName,
               mobileNumber: c.mobileNumber,
               status: c.status,
+              linkedPersonalPublicUserId: c.linkedPersonalPublicUserId ?? null,
+              platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
             })),
           )
         : searchCheckoutCustomers(
@@ -496,6 +490,7 @@ export function CheckoutCashPage() {
     customerSearch,
     online,
     paymentChoice,
+    selectedCustomer,
     workspaceScope,
   ]);
 
@@ -1201,6 +1196,83 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
+      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
+        <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">
+          <CheckoutCollapsibleSection
+            testId="checkout-optional-customer-collapse"
+            title={t("checkout.customerSection")}
+            expandLabel={t("checkout.addCustomer")}
+            summary={
+              selectedCustomer
+                ? checkoutCustomerTitle(selectedCustomer, t("checkout.walkInCustomer"))
+                : undefined
+            }
+            open={customerPanelOpen}
+            onOpenChange={setCustomerPanelOpen}
+            icon={UserRound}
+            disabled={saving}
+            trailing={
+              selectedCustomer && !customerPanelOpen ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-9"
+                  data-testid="checkout-customer-clear"
+                  disabled={saving}
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  {t("checkout.customerClear")}
+                </Button>
+              ) : null
+            }
+          >
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.optionalCustomerHint")}
+            </p>
+            {selectedCustomer ? (
+              <div className="mt-3">
+                <CheckoutCustomerSelectedCard
+                  customer={selectedCustomer}
+                  overlay={customerLinkOverlay}
+                  disabled={saving}
+                  onClear={() => setSelectedCustomer(null)}
+                />
+              </div>
+            ) : null}
+            {workspaceScope && !selectedCustomer ? (
+              <CheckoutPersonalCustomerPicker
+                workspace={workspaceScope}
+                disabled={saving}
+                canLinkCustomer={allowCreateCustomer}
+                returnTo={location.pathname}
+                onCustomerSelected={(customer) => {
+                  setSelectedCustomer(customer);
+                  setCustomerPanelOpen(false);
+                }}
+              />
+            ) : null}
+            {!selectedCustomer ? (
+              <CheckoutCustomerDirectory
+                searchId="checkout-optional-customer-search"
+                searchTestId="checkout-optional-customer-search"
+                searchLabel={t("checkout.optionalCustomerSearch")}
+                searchValue={customerSearch}
+                onSearchChange={setCustomerSearch}
+                customers={customers}
+                customersLoading={customersLoading}
+                selectedCustomer={selectedCustomer}
+                overlay={customerLinkOverlay}
+                disabled={saving}
+                onSelect={(customer) => {
+                  setSelectedCustomer(customer);
+                  setCustomerPanelOpen(false);
+                }}
+              />
+            ) : null}
+          </CheckoutCollapsibleSection>
+        </Card>
+      ) : null}
+
       {paymentChoice === "Cash" ? (
         !zeroTotal ? (
           <Card className="checkout-detail-panel exits-animate-panel" key="checkout-cash-tender">
@@ -1208,7 +1280,12 @@ export function CheckoutCashPage() {
               className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
               htmlFor="checkout-cash-received"
             >
-              {t("checkout.cashReceived")}
+              <span className="checkout-cash-received-label">
+                <span className="checkout-collapsible__icon" aria-hidden>
+                  <Banknote className="size-4" strokeWidth={2} />
+                </span>
+                {t("checkout.cashReceived")}
+              </span>
               <span className="checkout-cash-received-row">
                 <input
                   id="checkout-cash-received"
@@ -1261,8 +1338,13 @@ export function CheckoutCashPage() {
             className="checkout-detail-panel exits-animate-panel"
             key="checkout-zero-tender"
           >
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
+            <p className="checkout-cash-received-label m-0 text-[length:var(--exits-text-sm)] text-muted">
+              <span className="checkout-collapsible__icon" aria-hidden>
+                <Banknote className="size-4" strokeWidth={2} />
+              </span>
+              <span>
+                {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
+              </span>
             </p>
             <p
               data-testid="checkout-change"
@@ -1272,122 +1354,6 @@ export function CheckoutCashPage() {
             </p>
           </Card>
         )
-      ) : null}
-
-      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
-        <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">
-          <CheckoutCollapsibleSection
-            testId="checkout-optional-customer-collapse"
-            title={t("checkout.customerSection")}
-            expandLabel={t("checkout.addCustomer")}
-            summary={selectedCustomer?.displayName}
-            open={customerPanelOpen}
-            onOpenChange={setCustomerPanelOpen}
-            icon={UserRound}
-            disabled={saving}
-            trailing={
-              selectedCustomer && !customerPanelOpen ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-9"
-                  data-testid="checkout-customer-clear"
-                  disabled={saving}
-                  onClick={() => setSelectedCustomer(null)}
-                >
-                  {t("checkout.customerClear")}
-                </Button>
-              ) : null
-            }
-          >
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.optionalCustomerHint")}
-            </p>
-            {workspaceScope ? (
-              <CheckoutPersonalCustomerPicker
-                workspace={workspaceScope}
-                disabled={saving}
-                canLinkCustomer={allowCreateCustomer}
-                returnTo={location.pathname}
-                onCustomerSelected={(customer) => {
-                  setSelectedCustomer(customer);
-                  setCustomerSearch(customer.displayName);
-                  setCustomerPanelOpen(false);
-                }}
-              />
-            ) : null}
-            <label
-              className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-              htmlFor="checkout-optional-customer-search"
-            >
-              {t("checkout.optionalCustomerSearch")}
-              <input
-                id="checkout-optional-customer-search"
-                data-testid="checkout-optional-customer-search"
-                type="search"
-                value={customerSearch}
-                disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                onChange={(event) => setCustomerSearch(event.target.value)}
-              />
-            </label>
-            {selectedCustomer ? (
-              <div
-                data-testid="checkout-customer-selected"
-                className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
-              >
-                <span>
-                  {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-9"
-                  data-testid="checkout-customer-clear"
-                  disabled={saving}
-                  onClick={() => setSelectedCustomer(null)}
-                >
-                  {t("checkout.customerClear")}
-                </Button>
-              </div>
-            ) : null}
-            {customersLoading ? (
-              <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                {t("checkout.customerLoading")}
-              </p>
-            ) : customers.length === 0 ? (
-              <p
-                data-testid="checkout-customer-empty"
-                className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
-              >
-                {t("checkout.customerEmpty")}
-              </p>
-            ) : (
-              <ul className="mb-0 mt-2 list-none space-y-1 p-0" data-testid="checkout-customer-list">
-                {customers.map((customer) => (
-                  <li key={customer.customerId}>
-                    <Button
-                      type="button"
-                      variant={
-                        selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
-                      }
-                      className="min-h-11 w-full justify-start"
-                      data-testid={`checkout-customer-${customer.customerId}`}
-                      disabled={saving}
-                      onClick={() => {
-                        setSelectedCustomer(customer);
-                        setCustomerPanelOpen(false);
-                      }}
-                    >
-                      {customer.displayName}
-                      {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CheckoutCollapsibleSection>
-        </Card>
       ) : null}
 
       {paymentChoice === "Utang" ? (
@@ -1413,88 +1379,40 @@ export function CheckoutCashPage() {
             </p>
           ) : (
             <>
-              {workspaceScope ? (
+              {selectedCustomer ? (
+                <div className="mt-3">
+                  <CheckoutCustomerSelectedCard
+                    customer={selectedCustomer}
+                    overlay={customerLinkOverlay}
+                    disabled={saving}
+                    onClear={() => setSelectedCustomer(null)}
+                  />
+                </div>
+              ) : null}
+              {workspaceScope && !selectedCustomer ? (
                 <CheckoutPersonalCustomerPicker
                   workspace={workspaceScope}
                   disabled={saving}
                   canLinkCustomer={allowCreateCustomer}
                   returnTo={location.pathname}
-                  onCustomerSelected={(customer) => {
-                    setSelectedCustomer(customer);
-                    setCustomerSearch(customer.displayName);
-                  }}
+                  onCustomerSelected={setSelectedCustomer}
                 />
               ) : null}
-              <label
-                className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                htmlFor="checkout-customer-search"
-              >
-                {t("checkout.utangCustomerSearch")}
-                <input
-                  id="checkout-customer-search"
-                  data-testid="checkout-customer-search"
-                  type="search"
-                  value={customerSearch}
+              {!selectedCustomer ? (
+                <CheckoutCustomerDirectory
+                  searchId="checkout-customer-search"
+                  searchTestId="checkout-customer-search"
+                  searchLabel={t("checkout.utangCustomerSearch")}
+                  searchValue={customerSearch}
+                  onSearchChange={setCustomerSearch}
+                  customers={customers}
+                  customersLoading={customersLoading}
+                  selectedCustomer={selectedCustomer}
+                  overlay={customerLinkOverlay}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                  onChange={(event) => setCustomerSearch(event.target.value)}
+                  onSelect={setSelectedCustomer}
                 />
-              </label>
-              {selectedCustomer ? (
-                <div
-                  data-testid="checkout-customer-selected"
-                  className="mt-3 flex items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
-                >
-                  <span>
-                    {t("checkout.utangCustomer")}: <strong>{selectedCustomer.displayName}</strong>
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-9"
-                    data-testid="checkout-customer-clear"
-                    disabled={saving}
-                    onClick={() => setSelectedCustomer(null)}
-                  >
-                    {t("checkout.customerClear")}
-                  </Button>
-                </div>
               ) : null}
-              {customersLoading ? (
-                <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                  {t("checkout.customerLoading")}
-                </p>
-              ) : customers.length === 0 ? (
-                <p
-                  data-testid="checkout-customer-empty"
-                  className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
-                >
-                  {t("checkout.customerEmpty")}
-                </p>
-              ) : (
-                <ul
-                  className="mb-0 mt-2 list-none space-y-1 p-0"
-                  data-testid="checkout-customer-list"
-                >
-                  {customers.map((customer) => (
-                    <li key={customer.customerId}>
-                      <Button
-                        type="button"
-                        variant={
-                          selectedCustomer?.customerId === customer.customerId ? "default" : "ghost"
-                        }
-                        className="min-h-11 w-full justify-start"
-                        data-testid={`checkout-customer-${customer.customerId}`}
-                        disabled={saving}
-                        onClick={() => setSelectedCustomer(customer)}
-                      >
-                        {customer.displayName}
-                        {customer.mobileNumber ? ` · ${customer.mobileNumber}` : ""}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
               <label
                 className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
                 htmlFor="checkout-utang-due-date"
@@ -1515,18 +1433,28 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="checkout-actions">
         <Button
           type="button"
           data-testid="checkout-confirm"
-          className="min-h-11"
+          className="checkout-actions__btn h-auto"
           disabled={confirmDisabled}
           onClick={() => void onConfirm()}
         >
-          {saving ? t("checkout.confirming") : t(confirmLabelKey(paymentChoice))}
+          <Check className="size-4 shrink-0" aria-hidden />
+          {saving ? t("checkout.confirming") : t("checkout.confirmSale")}
         </Button>
-        <Button asChild type="button" variant="ghost" className="min-h-11" disabled={saving}>
-          <Link to="/sell">{t("checkout.backToCart")}</Link>
+        <Button
+          asChild
+          type="button"
+          variant="outline"
+          className="checkout-actions__btn h-auto"
+          disabled={saving}
+        >
+          <Link to="/sell">
+            <ArrowLeft className="size-4 shrink-0" aria-hidden />
+            {t("checkout.backToCart")}
+          </Link>
         </Button>
       </div>
     </div>

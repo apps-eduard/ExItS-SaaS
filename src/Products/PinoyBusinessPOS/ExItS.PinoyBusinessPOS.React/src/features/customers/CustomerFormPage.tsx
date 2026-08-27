@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { IdCard, Loader2, Save, UserRound } from "lucide-react";
 import { createBusinessCustomerWithPersonalLink } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
-import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
+import {
+  createCustomer,
+  getCustomer,
+  updateCustomer,
+  type CheckoutCustomerSearchItem,
+} from "@/api/pos/pos-customers-client";
+import { findExistingCheckoutCustomerForPersonalId } from "@/features/checkout/find-existing-checkout-customer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -53,6 +59,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIdentity, setSelectedIdentity] = useState<SelectedPersonalIdentity | null>(null);
+  const [existingContact, setExistingContact] = useState<CheckoutCustomerSearchItem | null>(null);
   const [createKind, setCreateKind] = useState<CreateKind | null>(() =>
     linkPublicId?.trim() ? "exits" : null,
   );
@@ -150,6 +157,15 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   }
 
   async function createWithLinkRequest(name: string, identity: SelectedPersonalIdentity) {
+    const existing = await findExistingCheckoutCustomerForPersonalId(
+      workspace!,
+      identity.publicUserId,
+    );
+    if (existing) {
+      setExistingContact(existing);
+      setError(t("customers.alreadyInContacts").replace("{name}", existing.displayName));
+      return;
+    }
     const taggedNotes = notes.trim()
       ? `${notes.trim()}\nexits-id:${identity.publicUserId}`
       : `exits-id:${identity.publicUserId}`;
@@ -254,7 +270,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           mode === "edit" && customerId ? `/customers/${customerId}` : pageBackNav.customers.to
         }
         backLabel={
-          mode === "edit" && customerId ? t("customers.backDetail") : t(pageBackNav.customers.labelKey)
+          mode === "edit" && customerId
+            ? t("customers.backDetail")
+            : t(pageBackNav.customers.labelKey)
         }
         backTestId="page-header-back-customers"
       />
@@ -266,7 +284,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         </div>
       ) : null}
       {error ? (
-        <div className="exits-alert exits-alert--error" data-testid="customer-form-error" role="alert">
+        <div
+          className="exits-alert exits-alert--error"
+          data-testid="customer-form-error"
+          role="alert"
+        >
           <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
         </div>
       ) : null}
@@ -280,7 +302,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
             {t("customers.createKindLede")}
           </p>
-          <div className="customer-create-kind__grid" role="group" aria-label={t("customers.createKindTitle")}>
+          <div
+            className="customer-create-kind__grid"
+            role="group"
+            aria-label={t("customers.createKindTitle")}
+          >
             <button
               type="button"
               className="customer-create-kind__card"
@@ -294,7 +320,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 <UserRound className="size-5" />
               </span>
               <span className="customer-create-kind__label">{t("customers.createKindWalkIn")}</span>
-              <span className="customer-create-kind__hint">{t("customers.createKindWalkInHint")}</span>
+              <span className="customer-create-kind__hint">
+                {t("customers.createKindWalkInHint")}
+              </span>
             </button>
             <button
               type="button"
@@ -306,7 +334,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 <IdCard className="size-5" />
               </span>
               <span className="customer-create-kind__label">{t("customers.createKindExits")}</span>
-              <span className="customer-create-kind__hint">{t("customers.createKindExitsHint")}</span>
+              <span className="customer-create-kind__hint">
+                {t("customers.createKindExitsHint")}
+              </span>
             </button>
           </div>
         </section>
@@ -332,6 +362,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 onClick={() => {
                   setCreateKind(null);
                   setSelectedIdentity(null);
+                  setExistingContact(null);
                 }}
               >
                 {t("customers.createKindChange")}
@@ -379,8 +410,13 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 disabled={saving}
                 onChange={(event) => setAddress(event.target.value)}
               />
-              <label className="catalog-form-field--full flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
-                <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("customers.notes")}</span>
+              <label
+                className="catalog-form-field--full flex min-w-0 flex-col gap-1.5"
+                htmlFor="customer-notes"
+              >
+                <span className="text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("customers.notes")}
+                </span>
                 <textarea
                   id="customer-notes"
                   name="customerNotes"
@@ -394,6 +430,20 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             </div>
           </section>
 
+          {existingContact ? (
+            <div className="exits-alert" data-testid="customer-already-in-contacts" role="status">
+              <p className="m-0 text-[length:var(--exits-text-sm)]">
+                {t("customers.alreadyInContacts").replace("{name}", existingContact.displayName)}
+              </p>
+              <Link
+                className="mt-2 inline-flex min-h-11 items-center font-semibold"
+                to={`/customers/${existingContact.customerId}`}
+                data-testid="customer-already-in-contacts-open"
+              >
+                {t("customers.openExisting")}
+              </Link>
+            </div>
+          ) : null}
           {mode === "create" && online && workspace && createKind === "exits" ? (
             <CustomerPersonalLinkPanel
               disabled={saving}
@@ -403,6 +453,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 if (!displayName.trim() && user.displayName.trim()) {
                   setDisplayName(user.displayName.trim());
                 }
+                void findExistingCheckoutCustomerForPersonalId(workspace, user.publicUserId).then(
+                  (existing) => {
+                    setExistingContact(existing);
+                  },
+                );
               }}
               onSelected={(identity) => {
                 setSelectedIdentity(identity);
@@ -410,7 +465,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                   setDisplayName(identity.displayName.trim());
                 }
               }}
-              onCleared={() => setSelectedIdentity(null)}
+              onCleared={() => {
+                setSelectedIdentity(null);
+                setExistingContact(null);
+              }}
             />
           ) : null}
           {mode === "create" && !online ? (
@@ -431,7 +489,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 type="submit"
                 className="catalog-form-actions__save"
                 data-testid="customer-save"
-                disabled={saving}
+                disabled={saving || Boolean(existingContact)}
               >
                 {saving ? (
                   <>
@@ -451,7 +509,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                   variant="outline"
                   className="min-h-11"
                   data-testid="customer-save-local-instead"
-                  disabled={saving}
+                  disabled={saving || Boolean(existingContact)}
                   onClick={() => void onSubmit({ localOnly: true })}
                 >
                   {t("customers.saveAsLocalInstead")}

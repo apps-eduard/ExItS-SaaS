@@ -100,6 +100,51 @@ public sealed class ApiStartBusinessAndUtangMigrationTests(PostgreSqlFixture fix
     }
 
     [Fact]
+    public async Task Start_business_sets_rotated_session_cookie_and_revokes_personal_session()
+    {
+        var (token, _, _, _) = await SeedPersonalUserAsync("sbcookie");
+        var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
+        var slug = Unique("bizc");
+        using var request = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/start-business",
+            token,
+            new
+            {
+                displayName = "Cookie Rotation Store",
+                slug,
+                primaryBusinessTypeId,
+                activatePosEntitlement = true,
+                activateProductAccess = true,
+                assignPosOwnerRole = true
+            });
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var setCookies));
+        var cookieHeader = string.Join("; ", setCookies);
+        Assert.Contains(".ExItS.Platform.Auth=", cookieHeader, StringComparison.Ordinal);
+        Assert.Contains("httponly", cookieHeader, StringComparison.OrdinalIgnoreCase);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var rotated = body.GetProperty("sessionToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(rotated));
+        Assert.NotEqual(token, rotated);
+        Assert.Equal("Organization", body.GetProperty("accountClass").GetString());
+
+        using var meOld = Authed(HttpMethod.Get, "/api/v1/platform/auth/me", token);
+        var oldResponse = await _client.SendAsync(meOld);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldResponse.StatusCode);
+
+        using var meNew = Authed(HttpMethod.Get, "/api/v1/platform/auth/me", rotated!);
+        var newResponse = await _client.SendAsync(meNew);
+        newResponse.EnsureSuccessStatusCode();
+        var meBody = await newResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Organization", meBody.GetProperty("accountClass").GetString());
+        Assert.Equal(body.GetProperty("organizationId").GetGuid(), meBody.GetProperty("selectedOrganizationId").GetGuid());
+    }
+
+    [Fact]
     public async Task Migration_preview_execute_idempotent_and_duplicate_protected()
     {
         var (personalToken, userId, _, _) = await SeedPersonalUserAsync("mig");

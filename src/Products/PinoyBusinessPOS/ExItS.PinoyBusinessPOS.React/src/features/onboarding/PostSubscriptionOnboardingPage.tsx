@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronRight, Loader2, Package, SkipForward, Store } from "lucide-react";
@@ -49,7 +49,14 @@ export function PostSubscriptionOnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session } = useSession();
-  const { boundWorkspace, workspaces, bindDestination, status: workspaceStatus } = useWorkspace();
+  const {
+    boundWorkspace,
+    workspaces,
+    bindDestination,
+    status: workspaceStatus,
+    sessionGrant,
+    bindFailureKind,
+  } = useWorkspace();
 
   const organizationId =
     boundWorkspace?.organizationId ??
@@ -65,9 +72,55 @@ export function PostSubscriptionOnboardingPage() {
     [boundWorkspace?.branchId, organizationId],
   );
 
+  const hasPosGrant = Boolean(sessionGrant?.accessToken);
+  const bindAttemptedRef = useRef<string | null>(null);
+
+  const requestOnboardingGrant = useCallback(() => {
+    if (!organizationId) {
+      return;
+    }
+    bindAttemptedRef.current = organizationId;
+    const orgLabel =
+      workspaces.find((item) => item.organizationId === organizationId)?.displayName ??
+      boundWorkspace?.organizationDisplayName ??
+      t("onboarding.ready.businessFallback");
+    void bindDestination({
+      organizationId,
+      organizationDisplayName: orgLabel,
+      branchId: null,
+      branchName: null,
+      experience: "manage_business",
+      route: "/onboarding",
+      labelKey: "experience.manageBusiness",
+    });
+  }, [
+    bindDestination,
+    boundWorkspace?.organizationDisplayName,
+    organizationId,
+    t,
+    workspaces,
+  ]);
+
+  useEffect(() => {
+    if (!organizationId || hasPosGrant) {
+      return;
+    }
+    if (workspaceStatus === "loading" || workspaceStatus === "binding") {
+      return;
+    }
+    if (workspaceStatus === "access_denied") {
+      return;
+    }
+    if (bindAttemptedRef.current === organizationId) {
+      return;
+    }
+    requestOnboardingGrant();
+  }, [hasPosGrant, organizationId, requestOnboardingGrant, workspaceStatus]);
+
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId],
-    enabled: Boolean(workspaceScope),
+    enabled: Boolean(workspaceScope && hasPosGrant),
+    meta: { suppressGlobalError: true, operation: "onboarding progress" },
     queryFn: async ({ signal }) => {
       try {
         return await getOnboardingProgress(workspaceScope!, signal);
@@ -112,7 +165,7 @@ export function PostSubscriptionOnboardingPage() {
     setStepOverride(null);
   }, [progressQuery.data?.organizationSetupStatus, progressQuery.data?.businessSetupStatus, progressQuery.data?.productTemplateStatus]);
 
-  if (!organizationId || workspaceStatus === "loading") {
+  if (!organizationId || workspaceStatus === "loading" || workspaceStatus === "binding") {
     return <LoadingSkeleton label={t("onboarding.loading")} />;
   }
 
@@ -120,6 +173,31 @@ export function PostSubscriptionOnboardingPage() {
     return (
       <ErrorState title={t("onboarding.missingOrgTitle")} detail={t("onboarding.missingOrgDetail")} />
     );
+  }
+
+  if (workspaceStatus === "access_denied" || bindFailureKind) {
+    return (
+      <div className="exits-page mx-auto flex w-full max-w-xl flex-col gap-3 p-3">
+        <ErrorState
+          title={t("onboarding.loadErrorTitle")}
+          detail={t("onboarding.loadErrorDetail")}
+        />
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          onClick={() => {
+            bindAttemptedRef.current = null;
+            requestOnboardingGrant();
+          }}
+        >
+          {t("onboarding.retry")}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!hasPosGrant) {
+    return <LoadingSkeleton label={t("onboarding.loading")} />;
   }
 
   if (progressQuery.isPending) {
