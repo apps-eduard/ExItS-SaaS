@@ -5,7 +5,7 @@
 **Branch:** `feat/personal`  
 **Date:** 2026-08-27  
 **Baseline:** `8ae5ed513271f58103e0e822422db7d4bf680410`  
-**Implementation SHA:** _(record after commit)_
+**Implementation SHA:** `f4509b7fd1eece682b84b53192e1f0e41ea9f303`
 
 ## Gap closed
 
