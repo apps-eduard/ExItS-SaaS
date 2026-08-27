@@ -12,6 +12,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
+import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import {
   listCashDenominations,
   mapEnabledCashDenominations,
@@ -165,6 +166,27 @@ export function ShiftDetailPage() {
       await shiftQuery.refetch();
       await summaryQuery.refetch();
     } catch (error) {
+      if (isLikelyNetworkFailure(error)) {
+        setClosingError(t("checkout.confirmingTransaction"));
+        try {
+          const confirmed = await getCashierShift(workspaceScope!, shift.shiftId);
+          if (confirmed.status.toLowerCase() === "closed") {
+            await refresh();
+            await shiftQuery.refetch();
+            await summaryQuery.refetch();
+            setClosingError(null);
+            return;
+          }
+          setClosingError(
+            error instanceof PosApiError
+              ? (error.problem.detail ?? error.message)
+              : t("shift.closeError"),
+          );
+        } catch {
+          setClosingError(t("checkout.transactionStatusUnknown"));
+        }
+        return;
+      }
       const message =
         error instanceof PosApiError
           ? (error.problem.detail ?? error.message)

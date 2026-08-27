@@ -27,6 +27,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import {
   ensurePwaDefaultCashRegister,
@@ -276,6 +277,27 @@ export function ShiftOpenPage() {
       // After open, land on Sell — not shift detail (close is available from Shifts).
       navigate("/sell", { replace: true });
     } catch (error) {
+      if (isLikelyNetworkFailure(error)) {
+        setSubmitError(t("checkout.confirmingTransaction"));
+        try {
+          const after = await getCurrentCashierShift(workspaceScope!);
+          if (after && after.status.toLowerCase() === "open") {
+            await refresh();
+            navigate("/sell", { replace: true });
+            return;
+          }
+          // Lookup reached the server and there is still no open shift — safe to report failure.
+          setSubmitError(
+            error instanceof PosApiError
+              ? (error.problem.detail ?? error.message)
+              : t("shift.openError"),
+          );
+        } catch {
+          setSubmitError(t("checkout.transactionStatusUnknown"));
+        }
+        void registersQuery.refetch();
+        return;
+      }
       const message =
         error instanceof PosApiError
           ? (error.problem.detail ?? error.message)

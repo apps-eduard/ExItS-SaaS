@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -15,7 +15,9 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { useI18n } from "@/i18n/I18nProvider";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DraftLine = {
@@ -57,6 +59,8 @@ export function ReceiveStockPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -140,9 +144,18 @@ export function ReceiveStockPage() {
   }
 
   async function confirm() {
-    if (!workspace || !allowManage || !online || saving || lines.length === 0) {
+    if (!workspace || !allowManage || !online || saving || statusLocked || lines.length === 0) {
       return;
     }
+    if (!idempotencyKeyRef.current) {
+      const generated = createSecureMutationId();
+      if (!generated.ok) {
+        setError(t("purchasing.directSaveFailed"));
+        return;
+      }
+      idempotencyKeyRef.current = generated.id;
+    }
+    const idempotencyKey = idempotencyKeyRef.current;
     setSaving(true);
     setError(null);
     try {
@@ -152,7 +165,7 @@ export function ReceiveStockPage() {
         sourceName: sourceName.trim() || null,
         referenceNumber: referenceNumber.trim() || null,
         notes: notes.trim() || null,
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey,
         lines: lines.map((line) => ({
           productId: line.productId,
           quantity: line.quantity,
@@ -161,15 +174,56 @@ export function ReceiveStockPage() {
           lotNumber: line.lotNumber,
         })),
       });
+      idempotencyKeyRef.current = null;
       navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
         replace: true,
       });
     } catch (err) {
+      // No GET-by-idempotency-key API. Sticky key makes a same-payload retry safe;
+      // if transport is still down, lock the form instead of inviting a new key.
+      if (isLikelyNetworkFailure(err)) {
+        setError(t("checkout.confirmingTransaction"));
+        try {
+          const receipt = await createDirectPurchaseReceipt(workspace, {
+            purchaseDate,
+            supplierId: supplierId || null,
+            sourceName: sourceName.trim() || null,
+            referenceNumber: referenceNumber.trim() || null,
+            notes: notes.trim() || null,
+            idempotencyKey,
+            lines: lines.map((line) => ({
+              productId: line.productId,
+              quantity: line.quantity,
+              unitCost: line.unitCost,
+              expiryDate: line.expiryDate,
+              lotNumber: line.lotNumber,
+            })),
+          });
+          idempotencyKeyRef.current = null;
+          navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
+            replace: true,
+          });
+          return;
+        } catch (retryErr) {
+          if (isLikelyNetworkFailure(retryErr)) {
+            setStatusLocked(true);
+            setError(t("checkout.transactionStatusUnknown"));
+            return;
+          }
+          setError(
+            retryErr instanceof PosApiError
+              ? (retryErr.problem.detail ?? t("purchasing.directSaveFailed"))
+              : t("purchasing.directSaveFailed"),
+          );
+          return;
+        }
+      }
       setError(
         err instanceof PosApiError
           ? (err.problem.detail ?? t("purchasing.directSaveFailed"))
           : t("purchasing.directSaveFailed"),
       );
+    } finally {
       setSaving(false);
     }
   }
@@ -412,7 +466,7 @@ export function ReceiveStockPage() {
             <Button
               type="button"
               className="min-h-11"
-              disabled={saving}
+              disabled={saving || statusLocked}
               onClick={() => void confirm()}
               data-testid="direct-confirm"
             >

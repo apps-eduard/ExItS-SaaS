@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function PurchaseOrderDetailPage() {
@@ -58,6 +59,7 @@ export function PurchaseOrderDetailPage() {
   async function runAction(
     action: () => Promise<unknown>,
     successKey: "purchasing.submitted" | "purchasing.cancelled" | "purchasing.changesAccepted",
+    options?: { reconcile?: () => Promise<boolean> },
   ) {
     if (!workspace || !purchaseOrderId || busy) {
       return;
@@ -73,6 +75,32 @@ export function PurchaseOrderDetailPage() {
       });
       await query.refetch();
     } catch (err) {
+      if (options?.reconcile) {
+        setError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error: err,
+          lookup: async () => {
+            const ok = await options.reconcile!();
+            if (!ok) {
+              throw err;
+            }
+            return true;
+          },
+        });
+        if (outcome.kind === "confirmed") {
+          setError(null);
+          setBanner(t(successKey));
+          await queryClient.invalidateQueries({
+            queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
+          });
+          await query.refetch();
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setError(t("checkout.transactionStatusUnknown"));
+          return;
+        }
+      }
       setError(
         err instanceof PosApiError
           ? (err.problem.detail ?? t("purchasing.actionFailed"))
@@ -190,6 +218,12 @@ export function PurchaseOrderDetailPage() {
               void runAction(
                 () => submitPurchaseOrder(workspace, purchaseOrderId),
                 "purchasing.submitted",
+                {
+                  reconcile: async () => {
+                    const latest = await getPurchaseOrder(workspace, purchaseOrderId);
+                    return latest.status.toLowerCase() === "ordered";
+                  },
+                },
               )
             }
             data-testid="po-submit"

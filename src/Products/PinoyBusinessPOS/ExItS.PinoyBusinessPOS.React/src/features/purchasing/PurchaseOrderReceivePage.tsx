@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
+  getGoodsReceipt,
   getPurchaseOrder,
   isPurchaseOrderReceivable,
   receivePurchaseOrder,
@@ -16,6 +17,8 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { buildReceivePlan, parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { useI18n } from "@/i18n/I18nProvider";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type LineEdit = {
@@ -43,6 +46,8 @@ export function PurchaseOrderReceivePage() {
   const [reviewing, setReviewing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const goodsReceiptIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -132,18 +137,27 @@ export function PurchaseOrderReceivePage() {
   }
 
   async function onConfirm() {
-    if (!workspace || !purchaseOrderId || !canReceive || busy) {
+    if (!workspace || !purchaseOrderId || !canReceive || busy || statusLocked) {
       return;
     }
     const planned = tryPlan();
     if (!planned) {
       return;
     }
+    if (!goodsReceiptIdRef.current) {
+      const generated = createSecureMutationId();
+      if (!generated.ok) {
+        setError(t("purchasing.receiveFailed"));
+        return;
+      }
+      goodsReceiptIdRef.current = generated.id;
+    }
+    const goodsReceiptId = goodsReceiptIdRef.current;
     setBusy(true);
     setError(null);
     try {
       await receivePurchaseOrder(workspace, purchaseOrderId, {
-        goodsReceiptId: crypto.randomUUID(),
+        goodsReceiptId,
         deliveryReference: deliveryReference.trim() || null,
         notes: notes.trim() || null,
         lines: planned.map((line) => ({
@@ -155,8 +169,24 @@ export function PurchaseOrderReceivePage() {
           discrepancyNote: line.discrepancyKind && notes.trim() ? notes.trim() : null,
         })),
       });
+      goodsReceiptIdRef.current = null;
       navigate(`/purchasing/${purchaseOrderId}`, { replace: true });
     } catch (err) {
+      setError(t("checkout.confirmingTransaction"));
+      const outcome = await resolveAmbiguousMutationOutcome({
+        error: err,
+        lookup: () => getGoodsReceipt(workspace, goodsReceiptId),
+      });
+      if (outcome.kind === "confirmed") {
+        goodsReceiptIdRef.current = null;
+        navigate(`/purchasing/${purchaseOrderId}`, { replace: true });
+        return;
+      }
+      if (outcome.kind === "still_unknown") {
+        setStatusLocked(true);
+        setError(t("checkout.transactionStatusUnknown"));
+        return;
+      }
       setError(
         err instanceof PosApiError
           ? (err.problem.detail ?? t("purchasing.receiveFailed"))
@@ -307,7 +337,7 @@ export function PurchaseOrderReceivePage() {
             <Button
               type="button"
               className="min-h-11"
-              disabled={!canReceive || busy}
+              disabled={!canReceive || busy || statusLocked}
               onClick={() => void onConfirm()}
               data-testid="receive-confirm"
             >

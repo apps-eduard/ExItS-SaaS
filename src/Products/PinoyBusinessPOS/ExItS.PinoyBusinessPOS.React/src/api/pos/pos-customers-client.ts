@@ -8,6 +8,7 @@ import {
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 
 const CUSTOMERS_PATH = "/api/v1/pos/customers";
+const REPAYMENTS_PATH = "/api/v1/pos/repayments";
 
 /** .NET Guid strings are not always RFC UUID version-nibble compliant. */
 const guidSchema = z
@@ -528,6 +529,21 @@ export async function createCustomerRepayment(
       body,
       OFFLINE_OPERATION_TYPES.RepaymentCreate,
     ),
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+/** GET /api/v1/pos/repayments/{repaymentId} — status lookup after ambiguous create. */
+export async function getRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}`,
   });
   return posRepaymentSchema.parse(raw);
 }
