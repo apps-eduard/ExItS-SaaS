@@ -369,6 +369,10 @@ export const en = {
   "workspace.noActiveBranches": "No active branches yet. Manage business is still available.",
   "workspace.switch": "Switch workspace",
   "workspace.switchExperience": "Switch experience",
+  "workspace.branchRequiredTitle": "Choose a branch",
+  "workspace.branchRequiredDetail":
+    "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+  "workspace.branchRequiredCta": "Choose workspace",
   "workspace.previousWorkspaceInaccessible":
     "The previously selected workspace is no longer accessible. Choose again.",
   "workspace.previousBranchInaccessible":

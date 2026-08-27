@@ -161,6 +161,7 @@ import {
   RequireViewStatement,
   RequireViewSuppliers,
   RequireWorkspaceBound,
+  RequireBranchBound,
   RequireOrganizationBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
@@ -330,11 +331,11 @@ export const appRoutes = [
             path: "sell",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireCreateSale>
                     <Outlet />
                   </RequireCreateSale>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -448,11 +449,11 @@ export const appRoutes = [
             path: "catalog",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireManageCatalog>
                     <Outlet />
                   </RequireManageCatalog>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -774,11 +775,11 @@ export const appRoutes = [
             path: "orders",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewCustomerOrders>
                     <Outlet />
                   </RequireViewCustomerOrders>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [

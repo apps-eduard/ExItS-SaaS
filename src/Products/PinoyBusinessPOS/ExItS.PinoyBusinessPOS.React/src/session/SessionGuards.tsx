@@ -36,6 +36,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
 import { isAuthenticatedOrColdStartOffline, isOfflinePinFlowStatus, useSession } from "@/session/SessionProvider";
@@ -201,6 +202,32 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
     return children;
   }
   // Auto destination bind is in flight via WorkspaceProvider.
+  if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {
+    return <SessionLoading />;
+  }
+  if (routingPlan) {
+    return <Navigate to={workspaceRouteForOutcome(routingPlan.outcome)} replace />;
+  }
+  return <Navigate to="/workspace" replace />;
+}
+
+/**
+ * Branch-scoped org surfaces (Catalog, Sell, Orders, …).
+ * Manage Business binds org-only (no branch) — never leave the user on endless
+ * "Checking session…" when they open these tabs.
+ */
+export function RequireBranchBound({ children }: { children: ReactNode }) {
+  const { status, boundWorkspace, routingPlan } = useWorkspace();
+
+  if (status === "loading" || status === "binding" || status === "idle") {
+    return <SessionLoading />;
+  }
+  if (boundWorkspace?.branchId) {
+    return children;
+  }
+  if (boundWorkspace) {
+    return <BranchRequiredPanel />;
+  }
   if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {
     return <SessionLoading />;
   }

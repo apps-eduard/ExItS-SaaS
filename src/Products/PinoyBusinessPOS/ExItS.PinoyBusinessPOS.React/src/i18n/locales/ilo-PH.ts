@@ -2780,5 +2780,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Saanen a magun-od ti dati a napili a workspace. Agpili manen.",
   "workspace.switch": "Sukatan ti workspace",
   "workspace.switchExperience": "Sukatan ti experience",
+  "workspace.branchRequiredTitle": "Choose a branch",
+  "workspace.branchRequiredDetail": "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+  "workspace.branchRequiredCta": "Choose workspace",
   "workspace.title": "Agpili iti workspace",
 };

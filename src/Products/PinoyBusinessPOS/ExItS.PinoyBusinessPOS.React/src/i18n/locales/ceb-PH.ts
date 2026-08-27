@@ -2780,5 +2780,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Dili na available ang miaging napili nga workspace. Pilia pag-usab.",
   "workspace.switch": "Ilisan ang workspace",
   "workspace.switchExperience": "Ilisan ang experience",
+  "workspace.branchRequiredTitle": "Choose a branch",
+  "workspace.branchRequiredDetail": "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+  "workspace.branchRequiredCta": "Choose workspace",
   "workspace.title": "Pagpili og workspace",
 };

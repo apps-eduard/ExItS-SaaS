@@ -2779,5 +2779,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Hindi na available ang dating napiling workspace. Pumili muli.",
   "workspace.switch": "Magpalit ng workspace",
   "workspace.switchExperience": "Magpalit ng experience",
+  "workspace.branchRequiredTitle": "Choose a branch",
+  "workspace.branchRequiredDetail": "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+  "workspace.branchRequiredCta": "Choose workspace",
   "workspace.title": "Pumili ng workspace",
 };

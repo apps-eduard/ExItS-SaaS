@@ -2780,5 +2780,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Indi na available ang dati nga napilian nga workspace. Pilia liwat.",
   "workspace.switch": "Islan ang workspace",
   "workspace.switchExperience": "Islan ang experience",
+  "workspace.branchRequiredTitle": "Choose a branch",
+  "workspace.branchRequiredDetail": "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+  "workspace.branchRequiredCta": "Choose workspace",
   "workspace.title": "Magpili sang workspace",
 };

@@ -87,8 +87,13 @@ export function CatalogProductsPage() {
       ),
   });
 
-  if (!workspace) {
+  if (!boundWorkspace) {
     return <LoadingState label={t("session.loading")} />;
+  }
+
+  if (!workspace) {
+    // Guarded by RequireBranchBound; keep a non-hanging fallback if reached.
+    return <LoadingState label={t("loading.label")} />;
   }
 
   const totalCount = query.data?.totalCount ?? 0;

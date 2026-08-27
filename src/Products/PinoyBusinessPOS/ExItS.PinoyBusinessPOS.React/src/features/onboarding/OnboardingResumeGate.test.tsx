@@ -14,7 +14,7 @@ const boundWorkspace: BoundWorkspace = {
   organizationDisplayName: "Test Org",
   branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
   branchName: "Main",
-  experience: "Operations",
+  experience: "operations",
 };
 
 let workspaceState = {

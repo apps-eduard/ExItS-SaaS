@@ -54,6 +54,8 @@ export type OrgNavTab = {
 export function buildOrgBottomNavTabs(input: {
   grant: PosSessionGrantFacts | null | undefined;
   experience: WorkingExperience;
+  /** False for Manage Business (org-only bind) — hide branch-scoped tabs. */
+  hasBranch?: boolean;
 }): OrgNavTab[] {
   const homeTo =
     input.experience === "start_selling"
@@ -69,6 +71,21 @@ export function buildOrgBottomNavTabs(input: {
     labelKey: "org.nav.home",
     testId: "org-nav-home",
   };
+
+  // Manage Business is org-scoped (no branch). Catalog / Sell / Orders need a branch
+  // and previously hung on endless "Checking session…" from those pages.
+  if (input.experience === "manage_business" || input.hasBranch === false) {
+    return [
+      home,
+      {
+        id: "more",
+        to: "/more",
+        end: false,
+        labelKey: "org.nav.more",
+        testId: "org-nav-more",
+      },
+    ];
+  }
 
   const left: OrgNavTab[] = [home];
   const right: OrgNavTab[] = [];
