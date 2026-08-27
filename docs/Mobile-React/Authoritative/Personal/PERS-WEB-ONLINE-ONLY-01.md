@@ -10,8 +10,8 @@
 | Label | SHA |
 | --- | --- |
 | Required baseline | `774e09016c449999462280af4a8b22a4719887a1` |
-| Implementation | *(recorded after push)* |
-| Tip / remote | *(recorded after push)* |
+| Implementation | `c500193ef150a64cc13d191896c2735b76a3ea93` |
+| Tip / remote | *(docs SHA record after push)* |
 
 ## Policy
 
