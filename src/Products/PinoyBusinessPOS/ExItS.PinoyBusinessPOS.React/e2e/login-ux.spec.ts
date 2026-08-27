@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { mockAuthorizedPosDevice, seedInstallationId } from "./mock-sell-ready";
 import { mockBoundCashierSession, signInAndBindCashier } from "./mock-bound-session";
-import { buildSignedOfflineGrantDto } from "./mock-signed-offline-grant";
 
 async function mockUnauthenticatedSignIn(page: import("@playwright/test").Page) {
   await page.route("**/platform-api/**", async (route) => {
@@ -62,32 +61,26 @@ test.describe("login UX", () => {
     await expect(page.getByTestId("auth-forgot-password-link")).toBeVisible();
   });
 
-  test("logout while offline routes to offline PIN unlock", async ({ page, context }) => {
+  test("cold start offline on a protected route shows Online Required", async ({ page, context }) => {
     await seedInstallationId(page);
     await mockBoundCashierSession(page);
     await mockAuthorizedPosDevice(page);
-
-    await page.route("**/pos-api/api/v1/pos/offline-operating-grants", async (route) => {
-      const grant = await buildSignedOfflineGrantDto();
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ grant }),
-      });
-    });
-
     await signInAndBindCashier(page);
 
-    await page.getByTestId("account-menu-trigger").click();
-    await page.route("**/platform-api/api/v1/platform/auth/logout", async (route) => {
+    await context.setOffline(true);
+    await page.route("**/platform-api/**", async (route) => {
       await route.abort("failed");
     });
-    await page.getByRole("menuitem", { name: "Sign out" }).click();
-
-    await expect(page.getByTestId("offline-pin-unlock-page")).toBeVisible({ timeout: 15000 });
-
-    await context.setOffline(true);
+    await page.route("**/pos-api/**", async (route) => {
+      await route.abort("failed");
+    });
     await page.reload();
-    await expect(page.getByTestId("offline-pin-unlock-page")).toBeVisible();
+    await expect(
+      page
+        .getByTestId("online-required-boot")
+        .or(page.getByTestId("sign-in-offline-banner"))
+        .or(page.getByText("You're offline")),
+    ).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId("offline-pin-unlock-page")).toHaveCount(0);
   });
 });

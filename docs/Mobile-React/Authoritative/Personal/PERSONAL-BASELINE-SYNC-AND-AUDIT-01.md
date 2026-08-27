@@ -24,9 +24,21 @@ Historical reports (RMAP-22A…H, RMAP-21F/G) remain historical. This document i
 
 | Bucket | Meaning |
 | --- | --- |
-| **CURRENT IMPLEMENTATION** | Verified in React routes/components/clients/offline code on this SHA |
+| **HISTORICAL AUDIT** | Findings as of baseline sync / original audit SHA — preserved for traceability |
+| **CURRENT POLICY** | Authoritative Product Owner channel policy after PERS-WEB-ONLINE-ONLY-01 |
+| **CURRENT IMPLEMENTATION** | Verified in React routes/components/clients/offline code on current tip |
 | **VERIFIED GAP** | Missing, partial, or unsafe relative to product expectations — evidence-based |
 | **DEFERRED / FUTURE IDEA** | Explicitly not in scope; do not treat as implemented |
+
+### CURRENT POLICY (PERS-WEB-ONLINE-ONLY-01)
+
+Personal Web/PWA is **ONLINE_ONLY**. See [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md).
+
+- No Personal Web offline session / PIN enroll gate / new outbox enqueue
+- Offline engine preserved for future Capacitor/native (`allowOfflineEngine`)
+- Legacy pending Personal outbox: preserve-and-drain-when-online
+- Organization Web remains ONLINE_ONLY (unchanged)
+- **PERS-IDEM-01** and **PERS-AUTH-01** remain
 
 ### Deferred / future ideas (not implemented)
 
@@ -45,11 +57,11 @@ Router: `ExItS.PinoyBusinessPOS.React/src/app/router.tsx` Personal tree under `R
 | Surface | Class | Evidence |
 | --- | --- | --- |
 | Sign-in / sign-up / forgot-password | COMPLETE / PARTIAL | `/sign-in`, `/forgot-password`; activation + reset-completion pages **MISSING** |
-| Offline PIN unlock / enroll | COMPLETE (Personal) | `/offline-pin`, `/offline-pin-setup`; Org Web skips enroll gate |
-| Personal Home | COMPLETE | `/personal` → `PersonalHomePage` (Utang summary, people/todo/stores tiles) |
-| People | FUNCTIONAL_BUT_UX_GAP | `/personal/people` list/add/detail/QR resolve; offline contact queue **not UI-wired** |
-| Utang lent / owe / create / pay / history / invites | COMPLETE | `/personal/utang/*`; named settlement wizard **MISSING** |
-| Todo | COMPLETE | `/personal/todo` CRUD + offline transitions |
+| Offline PIN unlock / enroll | COMPLETE (engine) / DISABLED (Personal Web) | Routes preserved; Personal Web skips enroll/unlock (PERS-WEB-ONLINE-ONLY-01) |
+| Personal Home | COMPLETE | `/personal` → `PersonalHomePage` (Utang summary, people/todo/stores tiles); live data online-required |
+| People | COMPLETE (ONLINE_ONLY) | `/personal/people` list/add/detail/QR resolve; offline contact UI intentionally not wired |
+| Utang lent / owe / create / pay / history / invites | COMPLETE (ONLINE_ONLY Web) | `/personal/utang/*`; Web mutations online + PERS-IDEM-01; named settlement wizard **MISSING** |
+| Todo | COMPLETE (ONLINE_ONLY Web) | `/personal/todo` CRUD online; Web does not enqueue offline transitions |
 | Stores / shop / cart / checkout / orders / receipts | COMPLETE (online) | Linked merchants + customer ordering; cart memory-only |
 | My QR / public resolve-in-flow | FUNCTIONAL_BUT_UX_GAP | `/personal/my-qr`; dedicated resolve route **MISSING** |
 | Notifications + invitations | PARTIAL | Inbox/archive/utang/people invites; ownership-transfer UI **MISSING** |
@@ -61,27 +73,38 @@ Organization preservations verified on this SHA: online-only policy (`organizati
 
 ---
 
-## Personal offline matrix (AUDIT ONLY — policy unchanged)
+## Personal offline matrix
 
-| Capability | Classification |
+### HISTORICAL AUDIT (pre PERS-WEB-ONLINE-ONLY-01)
+
+| Capability | Historical classification |
 | --- | --- |
-| Auth (register/sign-in/forgot/activate) | ONLINE_ONLY |
-| Personal ↔ Org switch | ONLINE_ONLY |
-| Personal Home dashboard (live) | ONLINE_ONLY |
 | Home todo counts when cached | OFFLINE_READ |
-| People list/detail/QR/connect | ONLINE_ONLY (UI) |
-| Contact create (engine) | OFFLINE_QUEUEABLE — **NOT_IMPLEMENTED in UI** |
+| Contact create (engine) | OFFLINE_QUEUEABLE — NOT_IMPLEMENTED in UI |
 | Utang relationship/list/detail read | OFFLINE_READ (encrypted cache) |
 | Utang relationship create (contact-side) | OFFLINE_QUEUEABLE |
 | Utang Loan/Payment entry | OFFLINE_QUEUEABLE |
-| Utang Adjustment / invite / remind / identity link | ONLINE_ONLY |
 | Todo create/update/complete/reopen/cancel | OFFLINE_QUEUEABLE |
+| Offline PIN + DEK | Present for Personal Web |
+
+### CURRENT POLICY (Personal Web/PWA)
+
+| Capability | Classification |
+| --- | --- |
+| Auth (register/sign-in/forgot/activate/reset) | ONLINE_ONLY |
+| Personal ↔ Org switch | ONLINE_ONLY |
+| Personal Home dashboard (live) | ONLINE_ONLY |
+| People list/detail/QR/connect / contact create | ONLINE_ONLY (`PEOPLE_WEB_POLICY=ONLINE_ONLY`) |
+| Utang relationship create / Loan / Payment | ONLINE_ONLY (Web); engine preserved |
+| Utang Adjustment / invite / remind / identity link | ONLINE_ONLY |
+| Todo create/update/complete/reopen/cancel | ONLINE_ONLY (Web); engine preserved |
 | Todo share / push reminders | ONLINE_ONLY / NOT_IMPLEMENTED |
 | Stores / cart / checkout / orders | ONLINE_ONLY |
 | My QR / notifications / Start Business / profile | ONLINE_ONLY |
-| Offline PIN + DEK | Present for Personal (not Org Web) |
-| Personal outbox | Encrypted AES-GCM (`enqueueEncryptedOperation`) |
-| Utang/Todo caches | Encrypted |
+| Offline PIN + DEK (Web activation) | DISABLED |
+| New Personal Web outbox enqueue | DISABLED |
+| Legacy Personal outbox | PRESERVE_AND_DRAIN_WHEN_ONLINE |
+| Personal outbox / Utang/Todo caches / DEK engine | PRESERVED (not deleted) |
 | Cart | Unencrypted React memory |
 
 ### Idempotency / ambiguous financial outcome (Personal)
@@ -95,7 +118,9 @@ Organization preservations verified on this SHA: online-only policy (`organizati
 
 **PERSONAL_AMBIGUOUS_FINANCIAL_OUTCOME (historical audit):** SAFE against blind duplicate auto-retry for money ops, but **GAP** vs Org-style sticky id + GET reconciliation.
 
-**PERS-IDEM-01 (RESOLVED):** That P0 gap is closed on `feat/personal`. See [`PERS-IDEM-01.md`](./PERS-IDEM-01.md). Client-stable entity ids (`contactId` / `relationshipId` / `entryId`) converge on the server; online Utang UI uses Confirming… → GET reconcile; encrypted outbox persists the same ids across replay. People offline UI remains unwired (engine hardened only).
+**PERS-IDEM-01 (RESOLVED):** That P0 gap is closed on `feat/personal`. See [`PERS-IDEM-01.md`](./PERS-IDEM-01.md). Client-stable entity ids (`contactId` / `relationshipId` / `entryId`) converge on the server; online Utang UI uses Confirming… → GET reconcile. Idempotency remains required under Web online-only.
+
+**PERS-WEB-ONLINE-ONLY-01 (RESOLVED):** Personal Web/PWA channel is ONLINE_ONLY. See [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md).
 
 ---
 
@@ -132,7 +157,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 ### P0 — security / money / identity / data-loss
 
 1. ~~**Personal Utang money mutations lack server idempotency keys** (`serverDedupeMode=none`)~~ — **RESOLVED by PERS-IDEM-01** (see [`PERS-IDEM-01.md`](./PERS-IDEM-01.md); implementation SHA recorded there after push).
-2. **People offline contact enqueue exists but UI never uses it** — risk of divergent mental model / accidental double-create if later wired without idempotency *(backend/outbox path hardened in PERS-IDEM-01; UI still ONLINE_ONLY)*.
+2. ~~**People offline contact enqueue exists but UI never uses it**~~ — **RESOLVED BY PRODUCT DECISION** (PERS-WEB-ONLINE-ONLY-01): Personal Web/PWA is ONLINE_ONLY; offline People UI intentionally not implemented (`PEOPLE_WEB_POLICY=ONLINE_ONLY`). Engine preserved; do not implement PERS-PEOPLE-OFFLINE-01.
 3. ~~**Email activation + password-reset completion missing in React**~~ — **RESOLVED by PERS-AUTH-01** (see [`PERS-AUTH-01.md`](./PERS-AUTH-01.md); implementation SHA recorded there after push).
 
 ### P1 — broken / incomplete primary workflows
@@ -180,13 +205,12 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 ## Next implementation packages (evidence-based order)
 
-1. ~~**PERS-IDEM-01**~~ — RESOLVED (`d7b7001d` / tip docs).
-2. ~~**PERS-AUTH-01**~~ — RESOLVED (this package; see [`PERS-AUTH-01.md`](./PERS-AUTH-01.md)).
-3. **PERS-PEOPLE-OFFLINE-01** — Decide: wire People UI to existing contact outbox **or** remove dead enqueue path; classify policy explicitly.  
-4. **PERS-E2E-22H-REPAIR** — Refresh RMAP-22H mocks for People + Start Business onboarding seller path.  
-5. **PERS-SETTLE-01** / **PERS-OWNERSHIP-01** — settlement UX; ownership-transfer UI if product prioritizes.  
-
-Do **not** change Personal offline/online policy until a dedicated authorized package.
+1. ~~**PERS-IDEM-01**~~ — RESOLVED.
+2. ~~**PERS-AUTH-01**~~ — RESOLVED.
+3. ~~**PERS-WEB-ONLINE-ONLY-01**~~ — RESOLVED (see [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md)).
+4. ~~**PERS-PEOPLE-OFFLINE-01**~~ — **CANCELLED** by ONLINE_ONLY product decision (not a remaining gap).
+5. **PERS-E2E-22H-REPAIR** — Refresh RMAP-22H mocks for seller multi-user commerce continuation.
+6. **PERS-SETTLE-01** / **PERS-OWNERSHIP-01** — settlement UX; ownership-transfer UI if product prioritizes.
 
 ---
 

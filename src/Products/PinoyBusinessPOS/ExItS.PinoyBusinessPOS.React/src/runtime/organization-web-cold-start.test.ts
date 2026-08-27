@@ -46,7 +46,7 @@ describe("Organization Web cold-start offline session", () => {
 
     localStorage.setItem(
       OFFLINE_OPERATING_GRANT_STORE_KEY,
-      JSON.stringify({ grants: { [grant.grantId]: grant } }),
+      JSON.stringify({ version: 1, grants: { [grant.grantId]: grant } }),
     );
 
     const result = await evaluateColdStartOfflineGrant({

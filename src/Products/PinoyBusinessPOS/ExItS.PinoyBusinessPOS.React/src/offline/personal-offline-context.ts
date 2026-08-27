@@ -1,8 +1,13 @@
+import { useAppOnline } from "@/connectivity/ConnectivityProvider";
 import { useEffect, useMemo, useState } from "react";
 import type { BrowserSessionSnapshot } from "@/api/platform/browser-session";
 import type { OfflineDb } from "@/offline/db";
 import { openSharedOfflineDatabase, personalScopeKey } from "@/offline/db";
 import { useOfflineSync } from "@/offline/OfflineSyncProvider";
+import {
+  personalWebAllowsOfflineBusinessReads,
+  personalWebAllowsOfflineSession,
+} from "@/runtime/personal-web-runtime-policy";
 import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
 
@@ -14,6 +19,10 @@ import { useSession } from "@/session/SessionProvider";
  * store, keyed by the Personal user id, and it is opened only for a principal the Platform already
  * calls Personal. Organization staff are locked to their home organization and have no Personal
  * profile at all, so they must never reach this database, not even to create it.
+ *
+ * Personal Web/PWA (PERS-WEB-ONLINE-ONLY-01): while offline, this hook returns null so LocalStore
+ * is not treated as an active operating session. While online, the store may still open so legacy
+ * pending outbox rows can drain and write-through cache can warm for future native.
  */
 export type PersonalOfflineContext = {
   db: OfflineDb;
@@ -49,14 +58,20 @@ export function personalOfflineEligibility(
 export function usePersonalOfflineContext(): PersonalOfflineContext | null {
   const { session } = useSession();
   const { bindDatabase } = useOfflineSync();
+  const online = useAppOnline();
   const [opened, setOpened] = useState<{ db: OfflineDb; scopeBinding: string } | null>(null);
 
   const eligibility = personalOfflineEligibility(session);
   const scopeBinding = eligibility.eligible ? eligibility.scopeBinding : null;
   const userId = eligibility.eligible ? eligibility.userId : null;
 
+  const allowOfflineReads = personalWebAllowsOfflineBusinessReads();
+  const allowOfflineSession = personalWebAllowsOfflineSession();
+  /** Open LocalStore only when online (legacy drain / warm) unless offline reads are enabled. */
+  const mayOpenStore = allowOfflineReads || online;
+
   useEffect(() => {
-    if (!scopeBinding) {
+    if (!scopeBinding || !mayOpenStore) {
       setOpened(null);
       return;
     }
@@ -79,12 +94,23 @@ export function usePersonalOfflineContext(): PersonalOfflineContext | null {
     return () => {
       cancelled = true;
     };
-  }, [bindDatabase, scopeBinding]);
+  }, [bindDatabase, mayOpenStore, scopeBinding]);
 
   return useMemo(() => {
     if (!opened || !userId || opened.scopeBinding !== scopeBinding) {
       return null;
     }
+    // Web online-only: never expose LocalStore as an offline operating context.
+    if (!allowOfflineSession && !allowOfflineReads && !online) {
+      return null;
+    }
     return { db: opened.db, scopeBinding: opened.scopeBinding, userId };
-  }, [opened, scopeBinding, userId]);
+  }, [
+    allowOfflineReads,
+    allowOfflineSession,
+    online,
+    opened,
+    scopeBinding,
+    userId,
+  ]);
 }

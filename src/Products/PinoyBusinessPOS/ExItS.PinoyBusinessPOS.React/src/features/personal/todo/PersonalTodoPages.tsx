@@ -54,9 +54,7 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
-import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import {
   cachePersonalTodo,
@@ -65,12 +63,7 @@ import {
   listCachedPersonalTodos,
   type CachedPersonalTodo,
 } from "@/offline/personal-todo-cache";
-import {
-  enqueuePersonalTodoCreate,
-  enqueuePersonalTodoTransition,
-  enqueuePersonalTodoUpdate,
-  type PersonalTodoTransition,
-} from "@/offline/personal-todo-offline";
+import { type PersonalTodoTransition } from "@/offline/personal-todo-offline";
 
 const TABS: { id: TodoAgendaTab; labelKey: MessageKey }[] = [
   { id: "today", labelKey: "personal.todo.filterToday" },
@@ -192,13 +185,6 @@ function loadErrorDetail(error: unknown, t: (key: MessageKey) => string): string
   return t("personal.todo.loadErrorDetail");
 }
 
-function offlineErrorMessage(error: unknown, t: (key: MessageKey) => string): string {
-  const code = (error as { code?: string } | null)?.code;
-  return code === "offline.personal.todo.not_cached"
-    ? t("offline.todoNotCached")
-    : t("offline.todoEnqueueFailed");
-}
-
 /** Marks a to-do whose local change is still waiting in the outbox. */
 function WaitingChip({ pending }: { pending: boolean }) {
   const { t } = useI18n();
@@ -226,7 +212,6 @@ export function PersonalTodoHubPage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
-  const { refreshCounts } = useOfflineSync();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TodoAgendaTab>(() => parseTodoAgendaTab(searchParams.get("tab")));
   const [createFormOpen, setCreateFormOpen] = useState(() => searchParams.get("add") === "1");
@@ -236,7 +221,6 @@ export function PersonalTodoHubPage() {
   const [form, setForm] = useState<TodoFormState>(emptyTodoForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [cachedTodos, setCachedTodos] = useState<CachedPersonalTodo[]>([]);
-  const [cacheEpoch, setCacheEpoch] = useState(0);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [activeTodoId, setActiveTodoId] = useState<string | null>(null);
 
@@ -318,35 +302,14 @@ export function PersonalTodoHubPage() {
     return () => {
       cancelled = true;
     };
-  }, [cacheEpoch, offline, todosQuery.dataUpdatedAt]);
+  }, [offline, todosQuery.dataUpdatedAt]);
 
   const usingCache = !online || todosQuery.isError;
-
-  const createOffline = async () => {
-    if (!offline) {
-      throw new Error("offline-unavailable");
-    }
-    const id = createSecureMutationId();
-    if (!id.ok) {
-      throw new Error("id-unavailable");
-    }
-    await enqueuePersonalTodoCreate({
-      db: offline.db,
-      scopeBinding: offline.scopeBinding,
-      userId: offline.userId,
-      todoId: id.id,
-      todo: todoFormToRequestBody(form),
-      ownerUserIdentityId: offline.userId,
-    });
-    await refreshCounts();
-    setCacheEpoch((epoch) => epoch + 1);
-  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!online) {
-        await createOffline();
-        return;
+        throw new Error("online-required");
       }
       await createPersonalTodo(todoFormToRequestBody(form));
     },
@@ -359,10 +322,14 @@ export function PersonalTodoHubPage() {
       await queryClient.invalidateQueries({ queryKey: ["personal", "todos"] });
     },
     onError: (error) => {
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalTodo"));
+        return;
+      }
       if (isTodoConcurrencyConflict(error)) {
         setConflictBanner(true);
       }
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+      setFormError(mutationErrorMessage(error, t));
     },
   });
 
@@ -375,27 +342,7 @@ export function PersonalTodoHubPage() {
       todo: PersonalTodoDto;
     }) => {
       if (!online) {
-        if (!offline) {
-          throw new Error("offline-unavailable");
-        }
-        const id = createSecureMutationId();
-        if (!id.ok) {
-          throw new Error("id-unavailable");
-        }
-        const cached = cachedTodos.find((row) => row.id === todo.id);
-        await enqueuePersonalTodoTransition({
-          db: offline.db,
-          scopeBinding: offline.scopeBinding,
-          userId: offline.userId,
-          operationId: id.id,
-          todoId: todo.id,
-          todoIsLocal: cached?.serverId == null,
-          dependsOnTodoOperationId: cached?.serverId == null ? todo.id : null,
-          transition: action,
-        });
-        await refreshCounts();
-        setCacheEpoch((epoch) => epoch + 1);
-        return;
+        throw new Error("online-required");
       }
       const body = { expectedVersion: todo.version };
       if (action === "complete") {
@@ -445,15 +392,21 @@ export function PersonalTodoHubPage() {
       }
     },
     onError: (error) => {
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalTodo"));
+        return;
+      }
       if (isTodoConcurrencyConflict(error)) {
         setConflictBanner(true);
       }
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+      setFormError(mutationErrorMessage(error, t));
     },
   });
 
   const todos: CachedPersonalTodo[] | PersonalTodoDto[] = usingCache
-    ? cachedTodos
+    ? cachedTodos.length > 0
+      ? cachedTodos
+      : (todosQuery.data ?? [])
     : (todosQuery.data ?? []);
 
   const filtered = useMemo(
@@ -471,7 +424,7 @@ export function PersonalTodoHubPage() {
     return <LoadingSkeleton label={t("personal.todo.loading")} />;
   }
   const activeTabLabel = t(TABS.find((item) => item.id === tab)?.labelKey ?? "personal.todo.title");
-  const offlineBlocked = !online && !offline;
+  const offlineBlocked = !online;
 
   if (online && todosQuery.isError && cachedTodos.length === 0) {
     return (
@@ -678,7 +631,7 @@ export function PersonalTodoHubPage() {
 
               {!online ? (
                 <>
-                  <OfflineNotice message={t("offline.todoWillQueue")} />
+                  <OfflineNotice message={t("offline.requiredPersonalTodo")} />
                   {form.reminderAtLocal ? (
                     <OfflineNotice message={t("offline.todoNoReminders")} />
                   ) : null}
@@ -895,14 +848,12 @@ export function PersonalTodoDetailPage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
-  const { refreshCounts } = useOfflineSync();
   const editFormRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<TodoFormState | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [conflictBanner, setConflictBanner] = useState(false);
   const [editing, setEditing] = useState(false);
   const [cachedTodo, setCachedTodo] = useState<CachedPersonalTodo | null>(null);
-  const [cacheEpoch, setCacheEpoch] = useState(0);
 
   const todoQuery = useQuery({
     queryKey: ["personal", "todos", todoId],
@@ -938,7 +889,7 @@ export function PersonalTodoDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [cacheEpoch, offline, todoId, todoQuery.dataUpdatedAt]);
+  }, [offline, todoId, todoQuery.dataUpdatedAt]);
 
   const usingCache = !online || todoQuery.isError;
 
@@ -946,7 +897,9 @@ export function PersonalTodoDetailPage() {
     if (!wantsEdit || editing) {
       return;
     }
-    const todo = usingCache ? cachedTodo : (todoQuery.data ?? null);
+    const todo = usingCache
+      ? cachedTodo ?? todoQuery.data ?? null
+      : (todoQuery.data ?? null);
     if (!todo || todo.status !== "Open") {
       return;
     }
@@ -959,37 +912,10 @@ export function PersonalTodoDetailPage() {
     await queryClient.invalidateQueries({ queryKey: ["personal", "todos", todoId] });
   };
 
-  const requireOfflineIds = () => {
-    if (!offline) {
-      throw new Error("offline-unavailable");
-    }
-    const id = createSecureMutationId();
-    if (!id.ok) {
-      throw new Error("id-unavailable");
-    }
-    return { offline, operationId: id.id };
-  };
-
   const saveMutation = useMutation({
     mutationFn: async ({ current, next }: { current: PersonalTodoDto; next: TodoFormState }) => {
       if (!online) {
-        const { offline: ctx, operationId } = requireOfflineIds();
-        const isLocal = cachedTodo?.serverId == null;
-        await enqueuePersonalTodoUpdate({
-          db: ctx.db,
-          scopeBinding: ctx.scopeBinding,
-          userId: ctx.userId,
-          operationId,
-          todoId: current.id,
-          todoIsLocal: isLocal,
-          dependsOnTodoOperationId: isLocal ? current.id : null,
-          todo: todoFormToRequestBody(next),
-          // The server still owns the version, so a stale offline edit is still rejectable.
-          expectedVersion: cachedTodo?.version ?? null,
-        });
-        await refreshCounts();
-        setCacheEpoch((epoch) => epoch + 1);
-        return;
+        throw new Error("online-required");
       }
       await updatePersonalTodo(current.id, {
         ...todoFormToRequestBody(next),
@@ -1004,10 +930,14 @@ export function PersonalTodoDetailPage() {
       await invalidate();
     },
     onError: (error) => {
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalTodo"));
+        return;
+      }
       if (isTodoConcurrencyConflict(error)) {
         setConflictBanner(true);
       }
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+      setFormError(mutationErrorMessage(error, t));
     },
   });
 
@@ -1020,21 +950,7 @@ export function PersonalTodoDetailPage() {
       todo: PersonalTodoDto;
     }) => {
       if (!online) {
-        const { offline: ctx, operationId } = requireOfflineIds();
-        const isLocal = cachedTodo?.serverId == null;
-        await enqueuePersonalTodoTransition({
-          db: ctx.db,
-          scopeBinding: ctx.scopeBinding,
-          userId: ctx.userId,
-          operationId,
-          todoId: todo.id,
-          todoIsLocal: isLocal,
-          dependsOnTodoOperationId: isLocal ? todo.id : null,
-          transition: action,
-        });
-        await refreshCounts();
-        setCacheEpoch((epoch) => epoch + 1);
-        return;
+        throw new Error("online-required");
       }
       const body = { expectedVersion: todo.version };
       if (action === "complete") {
@@ -1051,16 +967,22 @@ export function PersonalTodoDetailPage() {
       await invalidate();
     },
     onError: (error) => {
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalTodo"));
+        return;
+      }
       if (isTodoConcurrencyConflict(error)) {
         setConflictBanner(true);
       }
-      setFormError(online ? mutationErrorMessage(error, t) : offlineErrorMessage(error, t));
+      setFormError(mutationErrorMessage(error, t));
     },
   });
 
   if (online && todoQuery.isPending) return <LoadingSkeleton label={t("personal.todo.loading")} />;
 
-  const todo: PersonalTodoDto | null = usingCache ? cachedTodo : (todoQuery.data ?? null);
+  const todo: PersonalTodoDto | null = usingCache
+    ? cachedTodo ?? todoQuery.data ?? null
+    : (todoQuery.data ?? null);
   if (!todo) {
     return (
       <div className="personal-page exits-page flex flex-col gap-3">
@@ -1073,7 +995,7 @@ export function PersonalTodoDetailPage() {
         <ErrorState
           title={t("personal.todo.loadErrorTitle")}
           detail={
-            usingCache
+            usingCache && !todoQuery.data
               ? t("offline.todoNotCached")
               : loadErrorDetail(todoQuery.error, t)
           }
@@ -1085,7 +1007,7 @@ export function PersonalTodoDetailPage() {
   }
 
   const activeForm = form ?? todoFormFromDto(todo);
-  const offlineBlocked = !online && !offline;
+  const offlineBlocked = !online;
 
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-todo-detail">
@@ -1141,7 +1063,7 @@ export function PersonalTodoDetailPage() {
             idPrefix="todo-edit"
             titleAutoFocus
           />
-          {!online ? <OfflineNotice message={t("offline.todoWillQueue")} /> : null}
+          {!online ? <OfflineNotice message={t("offline.requiredPersonalTodo")} /> : null}
           {formError ? (
             <p
               role="alert"

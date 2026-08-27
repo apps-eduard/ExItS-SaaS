@@ -50,7 +50,6 @@ import type { MessageKey } from "@/i18n/messages";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { cn } from "@/lib/cn";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { ONLINE_REQUIRED_CODES, onlineRequiredDetailKey } from "@/offline/online-required";
 import { usePersonalOfflineContext } from "@/offline/personal-offline-context";
 import {
@@ -60,7 +59,6 @@ import {
   cachePersonalRelationships,
   cachePersonalUserIdentityId,
   getCachedPersonalRelationship,
-  getCachedPersonalUserIdentityId,
   listCachedPersonalContacts,
   listCachedPersonalEntries,
   listCachedPersonalRelationships,
@@ -68,10 +66,6 @@ import {
   type CachedPersonalEntry,
   type CachedPersonalRelationship,
 } from "@/offline/personal-utang-cache";
-import {
-  enqueuePersonalRelationshipCreate,
-  enqueuePersonalUtangEntry,
-} from "@/offline/personal-utang-offline";
 import { resolveRelationshipContactName } from "@/features/personal/utang/utang-workspace";
 import {
   isNotFoundStatus,
@@ -399,7 +393,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
-  const { refreshCounts: refreshOfflineSync } = useOfflineSync();
   const perspective = mode === "lent" ? "Lent" : "Borrowed";
   const [contactId, setContactId] = useState("");
   const [amount, setAmount] = useState("");
@@ -407,7 +400,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [recordFormOpen, setRecordFormOpen] = useState(false);
-  const [cacheEpoch, setCacheEpoch] = useState(0);
   const [statusLocked, setStatusLocked] = useState(false);
   const pendingRelationshipIdRef = useRef<string | null>(null);
   const pendingInitialLoanEntryIdRef = useRef<string | null>(null);
@@ -451,28 +443,22 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
   const cachedContacts = usePersonalUtangCache<CachedPersonalContact[]>(
     ({ db }) => listCachedPersonalContacts(db.db, db.scopeBinding),
-    [cacheEpoch, contactsQuery.dataUpdatedAt],
+    [contactsQuery.dataUpdatedAt],
     [],
   );
   const cachedRows = usePersonalUtangCache<CachedPersonalRelationship[]>(
     ({ db }) => listCachedPersonalRelationships(db.db, db.scopeBinding, perspective),
-    [cacheEpoch, listQuery.dataUpdatedAt, perspective],
+    [listQuery.dataUpdatedAt, perspective],
     [],
-  );
-  const cachedOwnerId = usePersonalUtangCache<string | null>(
-    ({ db }) => getCachedPersonalUserIdentityId(db.db),
-    [cacheEpoch, meQuery.dataUpdatedAt],
-    null,
   );
 
   const usingCache = !online || listQuery.isError || contactsQuery.isError;
-  const ownerUserIdentityId = meQuery.data?.userIdentityId ?? cachedOwnerId;
 
   const contacts: CachedPersonalContact[] | PersonalContactDto[] = usingCache
-    ? cachedContacts
+    ? (cachedContacts.length > 0 ? cachedContacts : (contactsQuery.data ?? []))
     : (contactsQuery.data ?? []);
   const rows: CachedPersonalRelationship[] | PersonalDebtRelationshipSummaryDto[] = usingCache
-    ? cachedRows
+    ? (cachedRows.length > 0 ? cachedRows : (listQuery.data ?? []))
     : (listQuery.data ?? []);
   const selectedLinked = contactId ? contactLooksLinked(contacts, contactId) : false;
   const existingSharedForContact =
@@ -495,52 +481,10 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
   );
   const pendingAtLimit = pendingOutgoingCount >= PERSONAL_UTANG_MAX_PENDING_OUTGOING;
 
-  const saveOffline = async () => {
-    if (!offline) {
-      throw new Error("offline-unavailable");
-    }
-    if (!ownerUserIdentityId) {
-      throw new Error("owner-unknown");
-    }
-    const purpose = notes.trim();
-    if (!purpose) {
-      throw new Error("purpose");
-    }
-    const id = createSecureMutationId();
-    if (!id.ok) {
-      throw new Error("id-unavailable");
-    }
-    const loanEntryId = createSecureMutationId();
-    if (!loanEntryId.ok) {
-      throw new Error("id-unavailable");
-    }
-    // A contact added offline has no server id yet, so the queued debt waits for it.
-    const contact = cachedContacts.find((row) => row.id === contactId);
-    const contactIsLocal = contact?.origin === "Local";
-    const { relationship } = await enqueuePersonalRelationshipCreate({
-      db: offline.db,
-      scopeBinding: offline.scopeBinding,
-      userId: offline.userId,
-      relationshipId: id.id,
-      initialLoanEntryId: loanEntryId.id,
-      perspective,
-      contactId,
-      contactIsLocal,
-      dependsOnContactOperationId: contactIsLocal ? contactId : null,
-      ownerUserIdentityId,
-      dueDateUtc: dueDate ? new Date(dueDate).toISOString() : null,
-      initialLoanAmount: Number(amount),
-      initialLoanNotes: purpose,
-    });
-    await refreshOfflineSync();
-    setCacheEpoch((epoch) => epoch + 1);
-    return relationship;
-  };
-
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!online) {
-        return saveOffline();
+        throw new Error("online-required");
       }
       if (statusLocked) {
         throw new Error("status-locked");
@@ -629,16 +573,12 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
     },
     onError: (error) => {
       setRecordFormOpen(true);
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalUtangRecord"));
+        return;
+      }
       if (!online) {
-        if (error instanceof Error && error.message === "purpose") {
-          setFormError(t("personal.utang.purposeRequired"));
-          return;
-        }
-        setFormError(
-          error instanceof Error && error.message === "owner-unknown"
-            ? t("offline.personalOwnerUnknown")
-            : t("offline.personalEnqueueFailed"),
-        );
+        setFormError(t("offline.requiredPersonalUtangRecord"));
         return;
       }
       if (error instanceof Error && error.message === "purpose") {
@@ -834,7 +774,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             </p>
           </div>
         ) : null}
-        {!online ? <OfflineNotice message={t("offline.personalUtangWillQueue")} /> : null}
+        {!online ? <OfflineNotice message={t("offline.requiredPersonalUtangRecord")} /> : null}
         {selectedLinked ? (
           <p
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -871,7 +811,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
             statusLocked ||
             contacts.length === 0 ||
             pendingAtLimit ||
-            (!online && (!offline || !ownerUserIdentityId))
+            !online
           }
           data-testid="utang-rel-submit"
         >
@@ -971,13 +911,11 @@ export function PersonalRelationshipDetailPage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offline = usePersonalOfflineContext();
-  const { refreshCounts: refreshOfflineSync } = useOfflineSync();
   const [entryType, setEntryType] = useState<"Payment" | "Loan" | "Adjustment">("Payment");
   const [amount, setAmount] = useState("");
   const [adjustmentDelta, setAdjustmentDelta] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [cacheEpoch, setCacheEpoch] = useState(0);
   const [statusLocked, setStatusLocked] = useState(false);
   const pendingEntryIdRef = useRef<string | null>(null);
   const [disputeEntryId, setDisputeEntryId] = useState<string | null>(null);
@@ -1029,17 +967,17 @@ export function PersonalRelationshipDetailPage() {
 
   const cachedContacts = usePersonalUtangCache<CachedPersonalContact[]>(
     ({ db }) => listCachedPersonalContacts(db.db, db.scopeBinding),
-    [cacheEpoch, contactsQuery.dataUpdatedAt],
+    [contactsQuery.dataUpdatedAt],
     [],
   );
   const cachedDetail = usePersonalUtangCache<CachedPersonalRelationship | null>(
     ({ db }) => getCachedPersonalRelationship(db.db, db.scopeBinding, relationshipId),
-    [cacheEpoch, detailQuery.dataUpdatedAt, relationshipId],
+    [detailQuery.dataUpdatedAt, relationshipId],
     null,
   );
   const cachedHistory = usePersonalUtangCache<CachedPersonalEntry[]>(
     ({ db }) => listCachedPersonalEntries(db.db, db.scopeBinding, relationshipId),
-    [cacheEpoch, historyQuery.dataUpdatedAt, relationshipId],
+    [historyQuery.dataUpdatedAt, relationshipId],
     [],
   );
 
@@ -1067,43 +1005,6 @@ export function PersonalRelationshipDetailPage() {
     await queryClient.invalidateQueries({ queryKey: ["personal", "dashboard"] });
   };
 
-  const queueEntryOffline = async () => {
-    if (!offline || !detail) {
-      throw new Error("offline-unavailable");
-    }
-    if (entryType === "Adjustment") {
-      throw new Error("adjustment-online-only");
-    }
-    const purpose = notes.trim();
-    if (!purpose) {
-      throw new Error("purpose");
-    }
-    const id = createSecureMutationId();
-    if (!id.ok) {
-      throw new Error("id-unavailable");
-    }
-    const owner =
-      detail.perspective === "Borrowed"
-        ? detail.debtorUserIdentityId
-        : detail.creditorUserIdentityId;
-    await enqueuePersonalUtangEntry({
-      db: offline.db,
-      scopeBinding: offline.scopeBinding,
-      userId: offline.userId,
-      entryId: id.id,
-      relationshipId,
-      relationshipIsLocal,
-      dependsOnRelationshipOperationId: relationshipIsLocal ? relationshipId : null,
-      entryType,
-      amount: Number(amount),
-      notes: purpose,
-      ownerUserIdentityId: owner ?? offline.userId,
-      localBalanceBefore: currentBalance,
-    });
-    await refreshOfflineSync();
-    setCacheEpoch((epoch) => epoch + 1);
-  };
-
   const recordMutation = useMutation({
     mutationFn: async () => {
       const amt = Number(amount);
@@ -1111,8 +1012,7 @@ export function PersonalRelationshipDetailPage() {
       const purpose = notes.trim();
       if (!purpose) throw new Error("purpose");
       if (!online) {
-        await queueEntryOffline();
-        return;
+        throw new Error("online-required");
       }
       if (statusLocked) {
         throw new Error("status-locked");
@@ -1172,14 +1072,12 @@ export function PersonalRelationshipDetailPage() {
       await invalidateUtang();
     },
     onError: (error) => {
+      if (error instanceof Error && error.message === "online-required") {
+        setFormError(t("offline.requiredPersonalUtangRecord"));
+        return;
+      }
       if (!online) {
-        setFormError(
-          error instanceof Error && error.message === "adjustment-online-only"
-            ? t(onlineRequiredDetailKey(ONLINE_REQUIRED_CODES.PersonalUtangAdjustment))
-            : error instanceof Error && error.message === "purpose"
-              ? t("personal.utang.purposeRequired")
-              : t("offline.personalEnqueueFailed"),
-        );
+        setFormError(t("offline.requiredPersonalUtangRecord"));
         return;
       }
       if (error instanceof Error && error.message === "purpose") {
@@ -1422,7 +1320,7 @@ export function PersonalRelationshipDetailPage() {
           />
         ) : null}
         {!online && !adjustmentBlocked ? (
-          <OfflineNotice message={t("offline.personalEntryWillQueue")} />
+          <OfflineNotice message={t("offline.requiredPersonalUtangRecord")} />
         ) : null}
         {shared && online ? (
           <p
@@ -1456,7 +1354,7 @@ export function PersonalRelationshipDetailPage() {
             statusLocked ||
             adjustmentBlocked ||
             loanBlockedByPendingLimit ||
-            (!online && !offline)
+            !online
           }
           data-testid="utang-entry-submit"
         >

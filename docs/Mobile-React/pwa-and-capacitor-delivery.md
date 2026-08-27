@@ -10,11 +10,11 @@ One React client (`ExItS.PinoyBusinessPOS.React`) can be delivered as browser, P
 ### Organization Web/PWA (current)
 
 - **ONLINE-ONLY** for Organization business operations (ORG-PWA-ONLINE-ONLY-01).
+- **ONLINE-ONLY** for Personal Web/PWA operations (PERS-WEB-ONLINE-ONLY-01).
 - PWA remains installable with static shell/JS/CSS caching.
-- Organization business data and mutations are server-authoritative (`NetworkOnly` for API routes).
-- Organization offline transactions / outbox enqueue / cold-start offline session are **disabled on Web/PWA**.
+- Organization and Personal business data and mutations are server-authoritative (`NetworkOnly` for API routes).
+- Offline session / outbox enqueue / cold-start offline session are **disabled on Web/PWA** for both channels.
 - Offline engine code and backend offline support are **preserved** for future Capacitor/native activation.
-- Personal offline behavior is intentionally unchanged by the Organization online-only policy.
 
 PWA production rollout and Capacitor production rollout remain **NOT AUTHORIZED**. This file defines how they would work when separately approved.
 

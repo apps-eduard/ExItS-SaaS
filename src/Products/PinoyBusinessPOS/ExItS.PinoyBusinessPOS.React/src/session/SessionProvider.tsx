@@ -33,6 +33,7 @@ import {
   type StoredOfflineOperatingGrant,
 } from "@/offline/offline-operating-grant";
 import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
 import { sessionAccountClass } from "@/session/account-class";
 import {
   clearPendingRemoteLogout,
@@ -100,11 +101,16 @@ export function OfflinePinSetupGate({ children }: { children: ReactNode }) {
     if (status !== "authenticated" || !session?.userId) {
       return;
     }
+    const accountClass = sessionAccountClass(session);
     // Organization Web/PWA is online-only — do not force Organization staff into offline PIN enrollment.
     if (
       !organizationWebAllowsOfflineSession() &&
-      (sessionAccountClass(session) === "Organization" || session.organizationContextLocked)
+      (accountClass === "Organization" || session.organizationContextLocked)
     ) {
+      return;
+    }
+    // Personal Web/PWA is online-only — do not force Personal users into offline PIN enrollment.
+    if (!personalWebAllowsOfflineSession() && accountClass === "Personal") {
       return;
     }
     const path = location.pathname;

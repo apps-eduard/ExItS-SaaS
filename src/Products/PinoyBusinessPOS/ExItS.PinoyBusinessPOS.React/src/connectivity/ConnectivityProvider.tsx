@@ -39,7 +39,7 @@ export type ConnectivitySnapshot = {
 
 const ConnectivityContext = createContext<ConnectivitySnapshot | null>(null);
 
-const PROBE_PATHS = ["/pos-api/health", "/platform-api/health", "/"] as const;
+const PROBE_PATHS = ["/pos-api/health", "/platform-api/health"] as const;
 const MIN_PROBE_INTERVAL_MS = 4_000;
 const MAX_PROBE_INTERVAL_MS = 60_000;
 const BACK_ONLINE_TOAST_MS = 2_800;

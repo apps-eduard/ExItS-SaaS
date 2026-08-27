@@ -11,7 +11,6 @@ import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
   clientNavigate,
-  completeOfflinePinSetupIfNeeded,
   mockBoundOwnerSession,
   signInAndBindOwner,
 } from "./mock-bound-session";
@@ -772,13 +771,7 @@ async function signInAs(page: Page, email: string) {
   await page.getByLabel("Email or staff login").fill(email);
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
-  // Personal accounts still enroll offline PIN (Organization Web skips). Wait for either
-  // destination, then complete PIN when the enroll gate wins the race.
-  await Promise.race([
-    page.getByTestId("personal-shell").waitFor({ state: "visible", timeout: 20000 }),
-    page.getByTestId("offline-pin-setup-page").waitFor({ state: "visible", timeout: 20000 }),
-  ]);
-  await completeOfflinePinSetupIfNeeded(page);
+  // Personal Web is online-only (PERS-WEB-ONLINE-ONLY-01): no offline PIN enroll gate.
   await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 20000 });
 }
 

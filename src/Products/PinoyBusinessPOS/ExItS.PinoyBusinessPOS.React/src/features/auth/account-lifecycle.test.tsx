@@ -141,13 +141,11 @@ describe("PERS-AUTH-01 account lifecycle", () => {
 
   it("prevents activation double-submit while pending", async () => {
     const user = userEvent.setup();
-    const deferred = {
-      resolve: (_value: { ok: true }) => {},
-    };
+    let resolveActivation: (value: { ok: true }) => void = () => {};
     vi.mocked(activatePersonalAccount).mockImplementation(
       () =>
         new Promise<{ ok: true }>((resolve) => {
-          deferred.resolve = resolve;
+          resolveActivation = resolve;
         }),
     );
     renderRoute("/activate-account?token=pending-token");
@@ -159,7 +157,7 @@ describe("PERS-AUTH-01 account lifecycle", () => {
     await waitFor(() => expect(submit).toBeDisabled());
     await user.click(submit);
     expect(activatePersonalAccount).toHaveBeenCalledTimes(1);
-    deferred.resolve({ ok: true });
+    resolveActivation({ ok: true });
   });
 
   it("shows missing-token state for reset", () => {

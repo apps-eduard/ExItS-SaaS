@@ -48,7 +48,7 @@ export const en = {
   "connectivity.staleDataDetail": "Shown data may be out of date until you reconnect.",
   "connectivity.backOnline": "Back online",
   "connectivity.orgWebRequiresInternet":
-    "ExItS Web requires an internet connection to securely access your business and current data.",
+    "ExItS Web requires an internet connection to securely access your account and current data.",
   "connectivity.pageNeedsInternet": "Reconnect to load current data.",
   "connectivity.actionRequiresInternet": "Internet connection required to continue.",
   "checkout.confirmingTransaction": "Confirming transaction…",
@@ -193,6 +193,9 @@ export const en = {
   "offline.todoCachedNotice": "Showing saved to-dos. They refresh when you reconnect.",
   "offline.todoWillQueue":
     "You are offline. Saving keeps this to-do on this device until you reconnect.",
+  "offline.requiredPersonalTodo": "To-dos need internet on this Web app.",
+  "offline.requiredPersonalUtangRecord": "Recording utang needs internet on this Web app.",
+  "offline.requiredPersonalPeople": "People changes need internet on this Web app.",
   "offline.todoEnqueueFailed": "Could not save this to-do on this device. Try again.",
   "offline.todoNotCached": "This to-do is not saved on this device.",
   "offline.todoNoReminders": "Reminders are sent by ExItS, so they arrive when you reconnect.",

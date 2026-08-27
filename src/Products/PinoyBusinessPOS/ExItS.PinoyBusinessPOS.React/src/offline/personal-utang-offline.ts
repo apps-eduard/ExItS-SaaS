@@ -18,12 +18,19 @@ import {
 } from "@/offline/queued-request";
 import { PERSONAL_OPERATION_TYPES } from "@/offline/server-dedupe-policy";
 import type { OfflineOperationRecord } from "@/offline/types";
+import {
+  guardPersonalWebOfflineEnqueue,
+  type PersonalOfflineEnqueueRuntimeOptions,
+} from "@/runtime/personal-web-runtime-policy";
 
 /**
- * Offline Personal Utang (RMAP-21F).
+ * Offline Personal Utang engine (RMAP-21F).
  *
- * Offline-capable, because each is a private record the signed-in person is making about their own
- * money and the server needs no live state to accept it:
+ * Personal Web/PWA (PERS-WEB-ONLINE-ONLY-01) does not activate this path for new user actions —
+ * enqueue wrappers call `guardPersonalWebOfflineEnqueue`. Engine unit tests and future Capacitor
+ * may pass `{ allowOfflineEngine: true }`. People contact enqueue remains engine-only (not Web UI).
+ *
+ * Engine-capable operations (preserved for native):
  *   - personal.contact.create               (a name in this person's own address book)
  *   - personal.utang.relationship.create    (a debt this person is recording, contact-side only)
  *   - personal.utang.entry.record           (Loan or Payment — append-only, balance recomputed)
@@ -110,7 +117,9 @@ export type EnqueuedPersonalContact = {
 
 export async function enqueuePersonalContactCreate(
   input: EnqueuePersonalContactInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalContact> {
+  guardPersonalWebOfflineEnqueue(options);
   if (input.linkedUserIdentityId) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.contact.identity_link_not_supported",
@@ -200,7 +209,9 @@ export type EnqueuedPersonalRelationship = {
  */
 export async function enqueuePersonalRelationshipCreate(
   input: EnqueuePersonalRelationshipInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalRelationship> {
+  guardPersonalWebOfflineEnqueue(options);
   if (input.counterpartyUserIdentityId) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.relationship.counterparty_identity_not_supported",
@@ -323,7 +334,9 @@ export type EnqueuedPersonalEntry = {
  */
 export async function enqueuePersonalUtangEntry(
   input: EnqueuePersonalEntryInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalEntry> {
+  guardPersonalWebOfflineEnqueue(options);
   if (!input.relationshipId.trim()) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.entry.relationship_required",

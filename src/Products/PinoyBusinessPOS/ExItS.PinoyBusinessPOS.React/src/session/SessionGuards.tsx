@@ -43,6 +43,8 @@ import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
 import { isAuthenticatedOrColdStartOffline, isOfflinePinFlowStatus, useSession } from "@/session/SessionProvider";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
@@ -71,8 +73,32 @@ export function RequireSession({ children }: { children: ReactNode }) {
     return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
   }
   if (status === "offline_pin_required" || status === "needs_offline_unlock") {
-    // Organization Web online-only: PIN unlock is Personal-only cold-start path.
-    // If we somehow reach PIN flow without a Personal grant, Prefer OnlineRequired.
+    // Web online-only: never route to offline PIN when both channel policies deny offline session.
+    if (!personalWebAllowsOfflineSession() && !organizationWebAllowsOfflineSession()) {
+      const offline =
+        connectivity != null
+          ? !connectivity.isOnline
+          : typeof navigator !== "undefined" && !navigator.onLine;
+      if (offline) {
+        return (
+          <OnlineRequiredBoot
+            retrying={retrying}
+            onRetry={async () => {
+              setRetrying(true);
+              try {
+                const restored = connectivity ? await connectivity.retry() : true;
+                if (restored) {
+                  await refreshSession();
+                }
+              } finally {
+                setRetrying(false);
+              }
+            }}
+          />
+        );
+      }
+      return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
+    }
     return <Navigate to="/offline-pin" replace state={{ from: location.pathname }} />;
   }
   if (isAuthenticatedOrColdStartOffline(status)) {

@@ -6,6 +6,8 @@ import {
   verifyGrantSignature,
   type StoredOfflineOperatingGrant,
 } from "@/offline/offline-operating-grant";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
 import { peekDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 
 export type OfflinePinProfile = {
@@ -47,9 +49,13 @@ function profileLabel(grant: StoredOfflineOperatingGrant): string {
 /**
  * Lists users on this installation with a valid server-signed grant and offline PIN enrollment.
  * Branch/org context comes from each grant — never from role alone.
+ *
+ * Web/PWA online-only policies hide Organization and Personal profiles unless
+ * `allowOfflineEngine` is set (unit tests / future Capacitor).
  */
 export async function listEligibleOfflinePinProfiles(
   now: number = Date.now(),
+  options?: { allowOfflineEngine?: boolean },
 ): Promise<OfflinePinProfile[]> {
   const installationDeviceId = peekDurableInstallationDeviceId()?.trim();
   if (!installationDeviceId) {
@@ -64,7 +70,19 @@ export async function listEligibleOfflinePinProfiles(
     if (isGrantExpired(grant, now)) {
       continue;
     }
-    if (grant.scopeKind === "Organization" && !isOrganizationOfflineGrant(grant, now)) {
+    if (grant.scopeKind === "Organization") {
+      if (!organizationWebAllowsOfflineSession() && !options?.allowOfflineEngine) {
+        continue;
+      }
+      if (!isOrganizationOfflineGrant(grant, now)) {
+        continue;
+      }
+    }
+    if (
+      grant.scopeKind === "Personal" &&
+      !personalWebAllowsOfflineSession() &&
+      !options?.allowOfflineEngine
+    ) {
       continue;
     }
     if (!(await verifyGrantSignature(grant))) {
