@@ -10,6 +10,7 @@ import { OfflinePinUnlockPage } from "@/features/offline/OfflinePinUnlockPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
+import { PersonalGuidePage } from "@/features/personal/guide/PersonalGuidePage";
 import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
 import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
@@ -303,6 +304,7 @@ export const appRoutes = [
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },
               { path: "more", element: <PersonalMorePage /> },
+              { path: "guide", element: <PersonalGuidePage /> },
               {
                 path: "ownership-transfers",
                 element: <PersonalOwnershipTransfersPage />,

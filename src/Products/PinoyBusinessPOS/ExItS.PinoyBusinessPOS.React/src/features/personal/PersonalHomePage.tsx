@@ -34,6 +34,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
+import { PersonalGuideHomeCard } from "@/features/personal/guide/PersonalGuideHomeCard";
 import { loadStoresToPayPreview } from "@/features/personal/stores-to-pay";
 import {
   buildHomeAttentionItems,
@@ -180,6 +181,8 @@ export function PersonalHomePage() {
         titleIcon={Home}
         description={t("personal.lede")}
       />
+
+      <PersonalGuideHomeCard />
 
       <section
         className="catalog-form-section exits-animate-panel personal-section gap-3"

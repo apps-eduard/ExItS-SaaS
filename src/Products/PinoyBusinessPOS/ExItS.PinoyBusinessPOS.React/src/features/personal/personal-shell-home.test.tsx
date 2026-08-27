@@ -37,6 +37,7 @@ function createPersonalFetchMock() {
         status: 200,
         json: async () => ({
           sessionId: personalUserId,
+          userId: personalUserId,
           username: "ana",
           displayName: "Ana Reyes",
           email: "ana@example.com",
@@ -266,6 +267,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
       expect(screen.getByTestId("personal-more-page")).toBeInTheDocument();
     });
     expect(screen.getByTestId("more-open-stores")).toBeInTheDocument();
+    expect(screen.getByTestId("more-open-guide")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-customer-links")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-orders")).toBeInTheDocument();
     expect(screen.getByTestId("more-open-start-business")).toBeInTheDocument();

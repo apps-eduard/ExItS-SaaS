@@ -7,6 +7,7 @@ import {
   Bell,
   Building2,
   CircleAlert,
+  Compass,
   HandCoins,
   QrCode,
   Search,
@@ -405,6 +406,27 @@ export function PersonalMorePage() {
         backLabel={t(personalPageBackNav.home.labelKey)}
         backTestId="page-header-back-more"
       />
+
+      <section
+        className="catalog-form-section exits-animate-panel personal-section gap-3"
+        data-testid="personal-more-guide"
+      >
+        <h2 className="catalog-form-section__title text-muted">
+          {t("personal.guide.title")}
+        </h2>
+        <ActionTileGrid
+          tiles={[
+            {
+              key: "guide",
+              label: t("personal.more.exploreExits"),
+              icon: Compass,
+              testId: "more-open-guide",
+              to: "/personal/guide",
+              primary: true,
+            },
+          ]}
+        />
+      </section>
 
       {canSwitch ? (
         <section

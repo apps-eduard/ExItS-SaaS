@@ -6406,6 +6406,25 @@ a.exits-chip--primary:hover {
   animation-delay: 30ms;
 }
 
+.personal-guide-card__header {
+  background: transparent;
+  border: 0;
+  color: inherit;
+}
+
+.personal-guide-card__header:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--exits-ring, var(--exits-primary));
+}
+
+.personal-guide-card--learned {
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+}
+
+.personal-guide-progress {
+  min-width: 0;
+}
+
 .personal-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
