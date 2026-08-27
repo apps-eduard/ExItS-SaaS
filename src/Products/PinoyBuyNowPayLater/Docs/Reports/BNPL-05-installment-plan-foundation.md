@@ -6,6 +6,7 @@
 | Status | **COMPLETE** |
 | Branch | `feat/bnpl` |
 | Baseline | `b925499d0db59551ab1551d320478fe3510843da` |
+| Implementation | `2636d0844f4b65417895f071bac70eabfdb549e0` |
 
 ## Delivered
 
