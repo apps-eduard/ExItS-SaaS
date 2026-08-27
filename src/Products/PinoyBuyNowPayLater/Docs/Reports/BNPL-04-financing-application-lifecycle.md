@@ -23,7 +23,7 @@
 
 ## Implemented states
 
-Draft → PendingEligibility → Offered → CustomerAccepted → ApprovedPendingSale  
+Draft → PendingEligibility → Offered → CustomerAccepted → ApprovedPendingSale
 (+ Declined, Cancelled)
 
 **ACTIVE is not implemented and cannot be reached.**

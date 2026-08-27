@@ -1,7 +1,7 @@
 # Financing Lifecycle
 
-**Status:** Implemented through APPROVED_PENDING_SALE (BNPL-04)  
-**Implementation present:** Yes — `BnplFinancingApplication`  
+**Status:** Implemented through APPROVED_PENDING_SALE (BNPL-04)
+**Implementation present:** Yes — `BnplFinancingApplication`
 **Related:** BNPL-D-00-07, BNPL-D-00-22–24
 
 ## Implemented state machine (BNPL-04)

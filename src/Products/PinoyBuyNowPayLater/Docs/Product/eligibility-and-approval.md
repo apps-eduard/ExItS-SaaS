@@ -1,7 +1,7 @@
 # Eligibility and Approval
 
-**Status:** Manual path implemented (BNPL-04)  
-**Implementation present:** Yes — manual eligibility + manual approval  
+**Status:** Manual path implemented (BNPL-04)
+**Implementation present:** Yes — manual eligibility + manual approval
 **Related:** BNPL-D-00-16, BNPL-D-00-26
 
 ## Separation of concerns (binding)
