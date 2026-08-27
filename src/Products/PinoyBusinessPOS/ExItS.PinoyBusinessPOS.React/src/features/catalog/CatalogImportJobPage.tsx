@@ -16,22 +16,14 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 export function CatalogImportJobPage() {
   const { t } = useI18n();
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const online = useBrowserOnline();
-  const { boundWorkspace } = useWorkspace();
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
+  const workspace = usePosWorkspaceScope();
 
   const jobQuery = useQuery({
     queryKey: ["catalog-import", "job", workspace?.organizationId, jobId],

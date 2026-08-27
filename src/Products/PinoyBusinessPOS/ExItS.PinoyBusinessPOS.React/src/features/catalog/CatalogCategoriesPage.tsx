@@ -20,7 +20,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 type StatusFilter = "Active" | "Inactive" | "";
 
@@ -37,7 +37,7 @@ const STATUS_FILTERS: Array<{
 export function CatalogCategoriesPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -51,14 +51,6 @@ export function CatalogCategoriesPage() {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const query = useQuery({
     queryKey: [

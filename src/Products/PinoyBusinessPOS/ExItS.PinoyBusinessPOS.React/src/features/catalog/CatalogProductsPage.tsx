@@ -20,7 +20,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 const PAGE_SIZE = 20;
 
@@ -38,7 +38,7 @@ const STATUS_FILTERS: Array<{
 
 export function CatalogProductsPage() {
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
@@ -52,14 +52,6 @@ export function CatalogProductsPage() {
   useEffect(() => {
     setPage(1);
   }, [debounced, status]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const query = useQuery({
     queryKey: [
@@ -87,13 +79,8 @@ export function CatalogProductsPage() {
       ),
   });
 
-  if (!boundWorkspace) {
-    return <LoadingState label={t("session.loading")} />;
-  }
-
   if (!workspace) {
-    // Guarded by RequireBranchBound; keep a non-hanging fallback if reached.
-    return <LoadingState label={t("loading.label")} />;
+    return <LoadingState label={t("session.loading")} />;
   }
 
   const totalCount = query.data?.totalCount ?? 0;

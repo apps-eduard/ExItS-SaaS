@@ -44,20 +44,6 @@ describe("org bottom nav config", () => {
     expect(tabs[0]?.to).toBe("/role/cashier");
   });
 
-  it("limits Manage Business nav to Home and More (no branch-scoped tabs)", () => {
-    const tabs = buildOrgBottomNavTabs({
-      grant: baseGrant({
-        mappedPosRoleCode: "StoreManager",
-        organizationManagementAuthority: true,
-        membershipRole: "OrganizationOwner",
-      }),
-      experience: "manage_business",
-      hasBranch: false,
-    });
-    expect(tabs.map((t) => t.id)).toEqual(["home", "more"]);
-    expect(tabs[0]?.to).toBe("/org");
-  });
-
   it("matches nested sell routes to the Sell tab", () => {
     const tabs = buildOrgBottomNavTabs({
       grant: baseGrant({ mappedPosRoleCode: "StoreManager" }),

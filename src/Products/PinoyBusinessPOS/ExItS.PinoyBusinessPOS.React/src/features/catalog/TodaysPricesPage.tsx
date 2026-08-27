@@ -16,7 +16,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 type PriceDraft = {
   productId: string;
@@ -41,7 +41,7 @@ function toDrafts(products: PosCatalogProductDto[]): PriceDraft[] {
 export function TodaysPricesPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [drafts, setDrafts] = useState<PriceDraft[]>([]);
@@ -52,14 +52,6 @@ export function TodaysPricesPage() {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const query = useQuery({
     queryKey: ["catalog", "prices", workspace?.organizationId, workspace?.branchId, debounced],

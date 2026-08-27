@@ -16,6 +16,8 @@ export function OrgMorePage() {
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId, "more-entry"],
     enabled: Boolean(organizationId),
+    staleTime: 60_000,
+    meta: { suppressGlobalError: true, operation: "onboarding progress (more)" },
     queryFn: async ({ signal }) => {
       try {
         return await getOnboardingProgress(

@@ -449,11 +449,11 @@ export const appRoutes = [
             path: "catalog",
             element: (
               <RequireOrganizationSession>
-                <RequireBranchBound>
+                <RequireWorkspaceBound>
                   <RequireManageCatalog>
                     <Outlet />
                   </RequireManageCatalog>
-                </RequireBranchBound>
+                </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -775,11 +775,11 @@ export const appRoutes = [
             path: "orders",
             element: (
               <RequireOrganizationSession>
-                <RequireBranchBound>
+                <RequireWorkspaceBound>
                   <RequireViewCustomerOrders>
                     <Outlet />
                   </RequireViewCustomerOrders>
-                </RequireBranchBound>
+                </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
             children: [

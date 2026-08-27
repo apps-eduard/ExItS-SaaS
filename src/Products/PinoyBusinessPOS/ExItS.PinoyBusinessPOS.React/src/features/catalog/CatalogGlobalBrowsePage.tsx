@@ -28,14 +28,14 @@ import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 export function CatalogGlobalBrowsePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -46,14 +46,6 @@ export function CatalogGlobalBrowsePage() {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const categoriesQuery = useQuery({
     queryKey: ["merchant-catalog", "categories"],

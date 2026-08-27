@@ -51,7 +51,7 @@ import {
 
 import { useI18n } from "@/i18n/I18nProvider";
 
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 function FormSelect({
   label,
@@ -152,16 +152,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const queryClient = useQueryClient();
 
-  const { boundWorkspace } = useWorkspace();
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-
-    [boundWorkspace],
-  );
+  const workspace = usePosWorkspaceScope();
 
   const [name, setName] = useState("");
 
