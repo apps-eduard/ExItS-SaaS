@@ -52,5 +52,12 @@ export function resolveOrganizationNotificationHref(
     return "/customers";
   }
 
+  if (type.startsWith("CustomerOrder") && relatedId) {
+    return `/orders/${relatedId}`;
+  }
+  if (type.startsWith("CustomerOrder")) {
+    return "/orders";
+  }
+
   return null;
 }

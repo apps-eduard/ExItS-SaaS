@@ -296,4 +296,76 @@ public sealed class OrganizationBusinessNotificationTests
         Assert.Equal(SupplierConnectionNotificationTypes.AcceptedConfirmation, notifications.Items[0].RelatedType);
         Assert.Equal(org, notifications.Items[0].OrganizationId);
     }
+
+    [Fact]
+    public async Task Customer_order_submitted_may_publish_to_same_seller_organization()
+    {
+        var org = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(OrganizationMembership.Create(org, owner, OrganizationRole.OrganizationOwner, now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var useCase = new PublishOrganizationBusinessNotification(
+            memberships, notifications, new FakeUow(), new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+
+        var first = await useCase.ExecuteAsync(
+            org,
+            new PublishOrganizationBusinessNotificationRequest(
+                org.Value,
+                CustomerOrderNotificationTypes.Submitted,
+                orderId,
+                "New customer order",
+                "CO-1 · Buyer · 100.00"));
+        var retry = await useCase.ExecuteAsync(
+            org,
+            new PublishOrganizationBusinessNotificationRequest(
+                org.Value,
+                CustomerOrderNotificationTypes.Submitted,
+                orderId,
+                "New customer order",
+                "CO-1 · Buyer · 100.00"));
+
+        Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
+        Assert.True(retry.IsSuccess);
+        Assert.Equal(1, first.Value!.CreatedCount);
+        Assert.Equal(0, retry.Value!.CreatedCount);
+        Assert.Equal(1, retry.Value.SkippedExistingCount);
+        Assert.Single(notifications.Items);
+        Assert.Equal(CustomerOrderNotificationTypes.Submitted, notifications.Items[0].RelatedType);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Personal_customer_order_status_publish_is_idempotent()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var recipient = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var settings = new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            notifications, settings, new FakeUow(), new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+        var request = new PublishPersonalBusinessNotificationRequest(
+            recipient.Value,
+            CustomerOrderNotificationTypes.Accepted,
+            orderId,
+            "Order accepted",
+            "CO-9 · Accepted");
+
+        var first = await useCase.ExecuteAsync(source, request);
+        var retry = await useCase.ExecuteAsync(source, request);
+
+        Assert.True(first.IsSuccess, first.ErrorMessage);
+        Assert.True(retry.IsSuccess);
+        Assert.True(first.Value!.Created);
+        Assert.False(retry.Value!.Created);
+        Assert.True(retry.Value.SkippedExisting);
+        Assert.Single(notifications.Items);
+        Assert.Equal(recipient, notifications.Items[0].RecipientUserIdentityId);
+        Assert.Equal(CustomerOrderNotificationTypes.Accepted, notifications.Items[0].RelatedType);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+    }
 }

@@ -196,6 +196,20 @@ public static class OrganizationBusinessNotificationTypes
         SupplierConnectionNotificationTypes.IsKnown(relatedType)
         || CustomerOrderNotificationTypes.IsKnown(relatedType)
         || ConnectedPurchaseOrderNotificationTypes.IsKnown(relatedType);
+
+    /// <summary>
+    /// Same-organization publish is allowed for supplier local confirmations and seller-facing
+    /// customer-order inbox events (e.g. New customer order).
+    /// </summary>
+    public static bool AllowsSameOrganization(string? relatedType) =>
+        SupplierConnectionNotificationTypes.IsLocalActivity(relatedType)
+        || CustomerOrderNotificationTypes.IsKnown(relatedType);
+}
+
+/// <summary>Personal inbox RelatedType for Organization ownership-transfer requests.</summary>
+public static class OwnershipTransferNotificationTypes
+{
+    public const string Requested = "OrganizationOwnershipTransfer";
 }
 
 /// <summary>RelatedType values for customer-order lifecycle organization inbox events.</summary>

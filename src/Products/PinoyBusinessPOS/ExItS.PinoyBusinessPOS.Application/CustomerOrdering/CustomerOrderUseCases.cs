@@ -640,6 +640,7 @@ public sealed class AcceptCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -648,13 +649,15 @@ public sealed class AcceptCustomerOrder
         ICustomerOrderStockService stock,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IPersonalBusinessNotificationPublisher? personalNotifications = null)
     {
         _orders = orders;
         _stock = stock;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -712,7 +715,13 @@ public sealed class AcceptCustomerOrder
         string relatedType,
         string title,
         CancellationToken cancellationToken) =>
-        CustomerOrderLifecycleNotifier.NotifyCustomerAsync(_notifications, order, relatedType, title, cancellationToken);
+        CustomerOrderLifecycleNotifier.NotifyCustomerAsync(
+            _notifications,
+            _personalNotifications,
+            order,
+            relatedType,
+            title,
+            cancellationToken);
 }
 
 public sealed class RejectCustomerOrder
@@ -720,6 +729,7 @@ public sealed class RejectCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -728,13 +738,15 @@ public sealed class RejectCustomerOrder
         ICustomerOrderStockService stock,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IPersonalBusinessNotificationPublisher? personalNotifications = null)
     {
         _orders = orders;
         _stock = stock;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -780,7 +792,13 @@ public sealed class RejectCustomerOrder
             if (result.IsSuccess && rejected is not null)
             {
                 await CustomerOrderLifecycleNotifier
-                    .NotifyCustomerAsync(_notifications, rejected, CustomerOrderNotificationTypes.Rejected, "Order rejected", cancellationToken)
+                    .NotifyCustomerAsync(
+                        _notifications,
+                        _personalNotifications,
+                        rejected,
+                        CustomerOrderNotificationTypes.Rejected,
+                        "Order rejected",
+                        cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -802,6 +820,7 @@ public sealed class CancelCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -810,13 +829,15 @@ public sealed class CancelCustomerOrder
         ICustomerOrderStockService stock,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IPersonalBusinessNotificationPublisher? personalNotifications = null)
     {
         _orders = orders;
         _stock = stock;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -863,6 +884,15 @@ public sealed class CancelCustomerOrder
                         $"{cancelled.OrderNumber} was cancelled.",
                         cancellationToken)
                     .ConfigureAwait(false);
+                await CustomerOrderLifecycleNotifier
+                    .NotifyCustomerAsync(
+                        _notifications,
+                        _personalNotifications,
+                        cancelled,
+                        CustomerOrderNotificationTypes.Cancelled,
+                        "Order cancelled",
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;
@@ -882,16 +912,19 @@ public sealed class AdvanceCustomerOrderFulfillment
 {
     private readonly ICustomerOrderRepository _orders;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IClock _clock;
 
     public AdvanceCustomerOrderFulfillment(
         ICustomerOrderRepository orders,
         IClock clock,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IPersonalBusinessNotificationPublisher? personalNotifications = null)
     {
         _orders = orders;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
     }
 
     public Task<ApplicationResult<CustomerOrderDto>> StartPreparingAsync(
@@ -992,7 +1025,13 @@ public sealed class AdvanceCustomerOrderFulfillment
             if (notifyType is not null)
             {
                 await CustomerOrderLifecycleNotifier
-                    .NotifyCustomerAsync(_notifications, order, notifyType, "Order update", cancellationToken)
+                    .NotifyCustomerAsync(
+                        _notifications,
+                        _personalNotifications,
+                        order,
+                        notifyType,
+                        "Order update",
+                        cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -1012,6 +1051,7 @@ public sealed class CompleteCustomerOrder
     private readonly ICustomerOrderStockService _stock;
     private readonly ICustomerOrderUtangLedgerService _utangLedger;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPersonalBusinessNotificationPublisher _personalNotifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -1022,7 +1062,8 @@ public sealed class CompleteCustomerOrder
         ICustomerOrderUtangLedgerService utangLedger,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IPersonalBusinessNotificationPublisher? personalNotifications = null)
     {
         _orders = orders;
         _products = products;
@@ -1031,6 +1072,7 @@ public sealed class CompleteCustomerOrder
         _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _personalNotifications = personalNotifications ?? new NoOpPersonalBusinessNotificationPublisher();
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -1075,7 +1117,13 @@ public sealed class CompleteCustomerOrder
             if (result.IsSuccess && completed is not null)
             {
                 await CustomerOrderLifecycleNotifier
-                    .NotifyCustomerAsync(_notifications, completed, CustomerOrderNotificationTypes.Completed, "Order completed", cancellationToken)
+                    .NotifyCustomerAsync(
+                        _notifications,
+                        _personalNotifications,
+                        completed,
+                        CustomerOrderNotificationTypes.Completed,
+                        "Order completed",
+                        cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -1095,28 +1143,44 @@ public sealed class CompleteCustomerOrder
 internal static class CustomerOrderLifecycleNotifier
 {
     public static async Task NotifyCustomerAsync(
-        IOrganizationBusinessNotificationPublisher notifications,
+        IOrganizationBusinessNotificationPublisher orgNotifications,
+        IPersonalBusinessNotificationPublisher personalNotifications,
         CustomerOrder order,
         string relatedType,
         string title,
         CancellationToken cancellationToken)
     {
-        if (order.CustomerParty.PartyType != CustomerPartyType.Organization
-            || order.CustomerParty.BuyerOrganizationId is not Guid buyerOrg
-            || buyerOrg == Guid.Empty)
+        if (order.CustomerParty.PartyType == CustomerPartyType.Organization
+            && order.CustomerParty.BuyerOrganizationId is Guid buyerOrg
+            && buyerOrg != Guid.Empty)
         {
+            await orgNotifications
+                .PublishAsync(
+                    order.SellerOrganizationId.Value,
+                    buyerOrg,
+                    relatedType,
+                    order.Id.Value.ToString("D"),
+                    title,
+                    $"{order.OrderNumber} · {order.Status}",
+                    cancellationToken)
+                .ConfigureAwait(false);
             return;
         }
 
-        await notifications
-            .PublishAsync(
-                order.SellerOrganizationId.Value,
-                buyerOrg,
-                relatedType,
-                order.Id.Value.ToString("D"),
-                title,
-                $"{order.OrderNumber} · {order.Status}",
-                cancellationToken)
-            .ConfigureAwait(false);
+        if (order.CustomerParty.PartyType == CustomerPartyType.Personal
+            && order.CustomerParty.PlatformUserId is Guid personalUserId
+            && personalUserId != Guid.Empty)
+        {
+            await personalNotifications
+                .PublishAsync(
+                    order.SellerOrganizationId.Value,
+                    personalUserId,
+                    relatedType,
+                    order.Id.Value.ToString("D"),
+                    title,
+                    $"{order.OrderNumber} · {order.Status}",
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 }

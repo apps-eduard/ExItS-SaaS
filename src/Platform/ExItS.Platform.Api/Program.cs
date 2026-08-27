@@ -462,6 +462,7 @@ builder.Services.AddScoped<DisconnectPersonalLinkedMerchant>();
 builder.Services.AddScoped<ListOrganizationInAppNotifications>();
 builder.Services.AddScoped<MarkOrganizationInAppNotificationRead>();
 builder.Services.AddScoped<PublishOrganizationBusinessNotification>();
+builder.Services.AddScoped<PublishPersonalBusinessNotification>();
 builder.Services.AddScoped<MarkRelatedOrganizationNotificationsRead>();
 builder.Services.AddScoped<UnlinkAcceptedCustomerLink>();
 builder.Services.AddScoped<ListLinkedMerchantsForPersonalUser>();

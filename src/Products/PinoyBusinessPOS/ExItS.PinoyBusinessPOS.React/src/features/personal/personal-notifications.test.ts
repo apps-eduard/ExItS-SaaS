@@ -146,6 +146,12 @@ describe("resolveNotificationDeepLink", () => {
     expect(resolveNotificationDeepLink("OrganizationOwnershipTransfer")).toBe(
       "/personal/ownership-transfers",
     );
+    expect(
+      resolveNotificationDeepLink(
+        "CustomerOrderAccepted",
+        "44444444-4444-4444-4444-444444444444",
+      ),
+    ).toBe("/personal/orders/44444444-4444-4444-4444-444444444444");
   });
 
   it("opens the related Utang relationship for pending review", () => {

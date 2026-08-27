@@ -14,6 +14,30 @@ public sealed class OwnershipTransferUseCaseTests
     private static readonly DateTimeOffset T0 = new(2026, 8, 14, 10, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task Request_creates_personal_notification_for_recipient_with_transfer_related_id()
+    {
+        var h = await Harness.CreateAsync();
+        var request = await h.Request.ExecuteAsync(h.OrgA.Id, h.OwnerA.Id, h.Recipient.PublicUserId!);
+        Assert.True(request.IsSuccess, request.ErrorMessage);
+
+        Assert.Single(h.PersonalNotifications.Items);
+        var n = h.PersonalNotifications.Items[0];
+        Assert.Equal(h.Recipient.Id, n.RecipientUserIdentityId);
+        Assert.Equal(OwnershipTransferNotificationTypes.Requested, n.RelatedType);
+        Assert.Equal(request.Value!.Id.ToString("D"), n.RelatedId);
+        Assert.Contains("Transfer Store A", n.Preview, StringComparison.Ordinal);
+        Assert.False(n.IsRead);
+
+        // Existing related identity is found — publisher-style dedupe key.
+        var existing = await h.PersonalNotifications.FindByRecipientRelatedAsync(
+            h.Recipient.Id,
+            OwnershipTransferNotificationTypes.Requested,
+            request.Value.Id.ToString("D"));
+        Assert.NotNull(existing);
+        Assert.Equal(n.Id, existing!.Id);
+    }
+
+    [Fact]
     public async Task Request_and_accept_removes_former_owner_and_creates_sole_new_owner()
     {
         var h = await Harness.CreateAsync();
@@ -134,6 +158,7 @@ public sealed class OwnershipTransferUseCaseTests
         public required InMemoryPlatformOrganizationRepository Organizations { get; init; }
         public required InMemoryOrganizationMembershipRepository Memberships { get; init; }
         public required InMemoryOrganizationOwnershipTransferRepository Transfers { get; init; }
+        public required CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository PersonalNotifications { get; init; }
         public required FixedClock Clock { get; init; }
         public required PlatformUser OwnerA { get; init; }
         public required PlatformUser Recipient { get; init; }
@@ -155,6 +180,7 @@ public sealed class OwnershipTransferUseCaseTests
             var orgs = new InMemoryPlatformOrganizationRepository();
             var memberships = new InMemoryOrganizationMembershipRepository();
             var transfers = new InMemoryOrganizationOwnershipTransferRepository();
+            var personalNotifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
             var assignments = new InMemoryProductAccessAssignmentRepository();
             var sessions = new InMemoryPlatformAuthSessionRepository();
             var tokens = new InMemoryPlatformAccessTokenRepository();
@@ -188,7 +214,7 @@ public sealed class OwnershipTransferUseCaseTests
 
             var resolve = new ResolveOwnershipTransferTarget(users);
             var request = new RequestOwnershipTransfer(
-                orgs, users, memberships, transfers, uow, clock, audit, resolve);
+                orgs, users, memberships, transfers, uow, clock, audit, resolve, personalNotifications);
             var accept = new AcceptOwnershipTransfer(
                 transfers, memberships, orgs, users, assignments, sessions, tokens, ensure, uow, clock, audit);
             var decline = new DeclineOwnershipTransfer(transfers, orgs, users, uow, clock, audit);
@@ -201,6 +227,7 @@ public sealed class OwnershipTransferUseCaseTests
                 Organizations = orgs,
                 Memberships = memberships,
                 Transfers = transfers,
+                PersonalNotifications = personalNotifications,
                 Clock = clock,
                 OwnerA = ownerA,
                 Recipient = recipient,
