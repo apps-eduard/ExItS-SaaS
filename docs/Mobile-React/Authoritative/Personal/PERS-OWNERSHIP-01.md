@@ -23,7 +23,7 @@ React Personal **recipient** only:
 
 | Flag / exclusion | Value |
 | --- | --- |
-| `REACT_ORG_OWNER_INITIATION_PRESENT` | **NO** — no React Org Owner “request transfer” UI |
+| `REACT_ORG_OWNER_INITIATION_PRESENT` | **YES** — `/org/ownership-transfer` (EXITS-V1-CLOSURE-01) |
 | Ownership-transfer backend / domain semantics | Unchanged |
 | Migrations | None |
 | Permanent bottom-nav item | Not added (More tile only) |
@@ -47,7 +47,7 @@ DTO (camelCase): `id`, `organizationId`, `organizationDisplayName`, `publicOrgan
 - Accept confirmation discloses Owner role, former owner leaves, business data stays, Personal/Utang/payment methods/POS-local roles/devices are **not** transferred
 - Expired (`status === Expired` or `expiresAtUtc < now`) hides Accept/Decline
 - Accept success: success panel first; **Go to business** / **Stay in Personal** then `refreshWorkspaces()` + invalidate pending (avoids workspace `loading` remount wiping success state)
-- `REACT_ORG_OWNER_INITIATION_PRESENT=NO`
+- `REACT_ORG_OWNER_INITIATION_PRESENT=YES` (see EXITS-V1-CLOSURE-01)
 
 ## Notifications
 

@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   Banknote,
   BarChart3,
+  KeyRound,
   LayoutDashboard,
   MapPin,
   MonitorSmartphone,
@@ -113,13 +114,22 @@ export function OrgEssentialsPage() {
 
   const administrationTiles: ActionTileDef[] = [];
   if (canInvite) {
-    administrationTiles.push({
-      key: "staff",
-      label: t("staffManage.title"),
-      icon: Users,
-      testId: "open-staff-manage",
-      to: "/org/staff",
-    });
+    administrationTiles.push(
+      {
+        key: "staff",
+        label: t("staffManage.title"),
+        icon: Users,
+        testId: "open-staff-manage",
+        to: "/org/staff",
+      },
+      {
+        key: "ownership",
+        label: t("org.ownershipTransfer.tile"),
+        icon: KeyRound,
+        testId: "open-org-ownership-transfer",
+        to: "/org/ownership-transfer",
+      },
+    );
   }
   if (canAdmin) {
     administrationTiles.push(

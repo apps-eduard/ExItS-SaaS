@@ -18,6 +18,7 @@ import {
   zodResolver,
   type PasswordConfirmValues,
 } from "@/features/auth/password-confirm-schema";
+import { resolveAuthContinuePath } from "@/features/store/store-acquisition";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function ActivateAccountPage() {
@@ -114,7 +115,13 @@ export function ActivateAccountPage() {
                 return;
               }
               scrubTokenFromBrowserLocation("/activate-account");
-              await navigate("/sign-in", { replace: true, state: { notice: "activated" } });
+              const continuePath = resolveAuthContinuePath(null);
+              await navigate(
+                continuePath
+                  ? `/sign-in?continue=${encodeURIComponent(continuePath)}`
+                  : "/sign-in",
+                { replace: true, state: { notice: "activated" } },
+              );
             },
             (formErrors) => {
               const first = Object.keys(formErrors)[0] as keyof PasswordConfirmValues | undefined;

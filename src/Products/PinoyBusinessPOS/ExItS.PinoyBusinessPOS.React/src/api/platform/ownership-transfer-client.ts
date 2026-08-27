@@ -37,6 +37,13 @@ export type OrganizationOwnershipTransferDto = z.infer<
   typeof organizationOwnershipTransferSchema
 >;
 
+export const ownershipTransferTargetSchema = z.object({
+  publicUserId: z.string(),
+  displayName: z.string(),
+});
+
+export type OwnershipTransferTargetDto = z.infer<typeof ownershipTransferTargetSchema>;
+
 function normalizeTransfer(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") {
     return raw;
@@ -66,7 +73,22 @@ function normalizeTransfer(raw: unknown): unknown {
   };
 }
 
+function normalizeTarget(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") {
+    return raw;
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    publicUserId: pick(r, "publicUserId", "PublicUserId"),
+    displayName: pick(r, "displayName", "DisplayName"),
+  };
+}
+
 const BASE = "/api/v1/platform/ownership-transfers";
+
+function orgTransferBase(organizationId: string): string {
+  return `/api/v1/platform/organizations/${organizationId}/ownership-transfer`;
+}
 
 export async function listMyPendingOwnershipTransfers(
   signal?: AbortSignal,
@@ -92,6 +114,56 @@ export async function declineOwnershipTransfer(
   const raw = await platformRequest<unknown>({
     method: "POST",
     path: `${BASE}/${transferId}/decline`,
+  });
+  return organizationOwnershipTransferSchema.parse(normalizeTransfer(raw));
+}
+
+export async function resolveOwnershipTransferTarget(
+  organizationId: string,
+  input: string,
+  signal?: AbortSignal,
+): Promise<OwnershipTransferTargetDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${orgTransferBase(organizationId)}/resolve-target`,
+    body: { input },
+    signal,
+  });
+  return ownershipTransferTargetSchema.parse(normalizeTarget(raw));
+}
+
+export async function requestOwnershipTransfer(
+  organizationId: string,
+  targetInput: string,
+): Promise<OrganizationOwnershipTransferDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${orgTransferBase(organizationId)}/request`,
+    body: { targetInput },
+  });
+  return organizationOwnershipTransferSchema.parse(normalizeTransfer(raw));
+}
+
+export async function getPendingOwnershipTransferForOrg(
+  organizationId: string,
+  signal?: AbortSignal,
+): Promise<OrganizationOwnershipTransferDto | null> {
+  const raw = await platformRequest<unknown>({
+    path: `${orgTransferBase(organizationId)}/pending`,
+    signal,
+  });
+  if (raw == null) {
+    return null;
+  }
+  return organizationOwnershipTransferSchema.parse(normalizeTransfer(raw));
+}
+
+export async function cancelOwnershipTransfer(
+  transferId: string,
+): Promise<OrganizationOwnershipTransferDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${BASE}/${transferId}/cancel`,
   });
   return organizationOwnershipTransferSchema.parse(normalizeTransfer(raw));
 }

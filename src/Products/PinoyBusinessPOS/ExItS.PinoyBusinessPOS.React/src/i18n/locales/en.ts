@@ -179,6 +179,8 @@ export const en = {
   "offline.requiredPersonalUtangSettle": "Settling this utang needs internet.",
   "offline.requiredPersonalOwnershipTransfer":
     "Accepting or declining ownership needs internet.",
+  "offline.requiredOrgOwnershipTransfer":
+    "Starting or cancelling an ownership transfer needs internet.",
   "offline.personalCachedNotice": "Showing saved utang. It refreshes when you reconnect.",
   "offline.personalWaitingBadge": "Waiting to sync",
   "offline.personalContactWillQueue":
@@ -908,15 +910,40 @@ export const en = {
   "personal.social.qrShareText": "My ExItS ID:",
   "personal.social.qrImageAlt": "Personal ExItS QR code",
   "org.businessQr.title": "Business QR",
-  "org.businessQr.lede": "Your organization's public ExItS identity.",
-  "org.businessQr.connectHint": "Use this to identify or connect with this business.",
-  "org.businessQr.shareText": "Business ExItS ID:",
-  "org.businessQr.imageAlt": "Business ExItS QR code",
+  "org.businessQr.lede": "Customers scan this to open your store in ExItS.",
+  "org.businessQr.connectHint": "Scan to open your store in ExItS.",
+  "org.businessQr.shareText": "Open this store in ExItS",
+  "org.businessQr.imageAlt": "Business store QR code",
   "org.businessQr.back": "Back to organization",
   "org.businessQr.loadErrorTitle": "Could not load Business QR",
   "org.businessQr.loadErrorDetail": "Try again when you are online.",
   "org.businessQr.noOrg": "No organization is selected.",
+  "org.businessQr.copyStoreLink": "Copy store link",
+  "org.businessQr.copyBusinessId": "Copy Business ID",
   "org.action.businessQrDetail": "Show the public Business QR for this organization",
+  "store.landing.lede": "Continue in ExItS to order from this business.",
+  "store.landing.signIn": "Sign in",
+  "store.landing.createAccount": "Create account",
+  "store.landing.continueStore": "Continue to store",
+  "store.landing.continueFailed": "Could not open this store right now. Try again online.",
+  "store.landing.linkConsentHint":
+    "Opening a store never silently joins you as staff or creates ownership. Customer linking still requires consent.",
+  "store.landing.unavailableTitle": "Store unavailable",
+  "store.landing.unavailableDetail": "This store could not be found or is not available.",
+  "store.landing.invalidId": "That store link is not valid.",
+  "store.landing.loadErrorDetail": "Could not load this store. Try again when you are online.",
+  "store.landing.offlineTitle": "You're offline",
+  "store.landing.offlineDetail": "Connect to the internet to open this store.",
+  "store.landing.orderingUnavailable": "Ordering is currently unavailable for this store.",
+  "store.landing.staffTitle": "Use a Personal account",
+  "store.landing.staffDetail":
+    "Organization staff sessions cannot open Personal customer stores. Sign in with a Personal ExItS account.",
+  "store.landing.signInPersonal": "Sign in as Personal",
+  "store.install.title": "Install ExItS",
+  "store.install.detail": "Add ExItS to your home screen for quicker access. Optional — you can continue in the browser.",
+  "store.install.accept": "Install ExItS",
+  "store.install.dismiss": "Not now",
+  "store.install.continueBrowser": "Continue in browser",
   "org.notifications.title": "Notifications",
   "org.notifications.lede": "Business alerts for this organization — suppliers, orders, and customer links.",
   "org.notifications.close": "Close notifications",
@@ -1704,6 +1731,57 @@ export const en = {
     "Assign Owner, Manager, or Cashier POS roles for selling. Heavy administration stays on this surface.",
   "org.overviewOffline": "Connect to refresh today’s store overview.",
   "org.overviewOpenDashboard": "Open full dashboard",
+  "org.ownershipTransfer.title": "Transfer ownership",
+  "org.ownershipTransfer.lede":
+    "Offer ownership of this organization to another Personal ExItS account. The recipient must accept.",
+  "org.ownershipTransfer.tile": "Transfer ownership",
+  "org.ownershipTransfer.initiateHint":
+    "Enter the recipient’s Personal ExItS ID or paste their Personal QR payload, then resolve before requesting.",
+  "org.ownershipTransfer.targetLabel": "Personal ExItS ID or QR",
+  "org.ownershipTransfer.targetPlaceholder": "EX-____-____ or exits://qr/…",
+  "org.ownershipTransfer.targetHint":
+    "Only a Personal account can receive ownership. Organization staff logins are not valid here.",
+  "org.ownershipTransfer.targetRequired": "Enter a Personal ExItS ID or QR payload.",
+  "org.ownershipTransfer.resolve": "Resolve",
+  "org.ownershipTransfer.resolveFailed": "Could not resolve that Personal identity.",
+  "org.ownershipTransfer.resolvedTitle": "Transfer target",
+  "org.ownershipTransfer.changeTarget": "Change",
+  "org.ownershipTransfer.request": "Request transfer",
+  "org.ownershipTransfer.requestTitle": "Transfer ownership to {name}?",
+  "org.ownershipTransfer.requestConfirm": "Send ownership offer",
+  "org.ownershipTransfer.back": "Back",
+  "org.ownershipTransfer.confirmBulletRecipientAccept":
+    "The recipient must accept the offer in their Personal account.",
+  "org.ownershipTransfer.confirmBulletExpires":
+    "The offer expires on the date set by the server if it is not accepted.",
+  "org.ownershipTransfer.confirmBulletOwner":
+    "After accept, the recipient becomes the Organization Owner.",
+  "org.ownershipTransfer.confirmBulletLeave":
+    "You leave the organization after the transfer completes.",
+  "org.ownershipTransfer.confirmBulletDataStays":
+    "Business profile, staff, inventory, sales, and suppliers stay with the organization.",
+  "org.ownershipTransfer.confirmBulletNotTransferred":
+    "Personal data, Personal Utang, payment methods, POS-local roles, and device registrations do not transfer.",
+  "org.ownershipTransfer.requestFailed": "Could not request this ownership transfer.",
+  "org.ownershipTransfer.pendingHint":
+    "Waiting for the recipient to accept. You can cancel while it is still pending.",
+  "org.ownershipTransfer.createdAt": "Requested {date}",
+  "org.ownershipTransfer.expiresAt": "Expires {date}",
+  "org.ownershipTransfer.statusPending": "Pending",
+  "org.ownershipTransfer.cancel": "Cancel transfer",
+  "org.ownershipTransfer.cancelTitle": "Cancel transfer to {name}?",
+  "org.ownershipTransfer.cancelDetail":
+    "The offer will be withdrawn. You remain the owner.",
+  "org.ownershipTransfer.cancelConfirm": "Cancel offer",
+  "org.ownershipTransfer.keepPending": "Keep pending",
+  "org.ownershipTransfer.cancelFailed": "Could not cancel this ownership transfer.",
+  "org.ownershipTransfer.staleConflict":
+    "This transfer changed. The page was refreshed — review again.",
+  "org.ownershipTransfer.errorTitle": "Could not load ownership transfer",
+  "org.ownershipTransfer.errorDetail":
+    "Ownership transfer status could not be loaded. Check your connection and try again.",
+  "org.ownershipTransfer.retry": "Try again",
+  "org.ownershipTransfer.noOrg": "No organization is selected.",
   "devices.listTitle": "Authorized devices",
   "devices.listLede":
     "Optional list of phones, tablets, or browsers marked for this organization. Separate from cash registers used for shifts.",

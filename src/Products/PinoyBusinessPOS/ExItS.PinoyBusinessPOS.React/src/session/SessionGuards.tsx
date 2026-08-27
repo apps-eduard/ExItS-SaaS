@@ -380,6 +380,17 @@ export function RequireInviteStaff({ children }: { children: ReactNode }) {
   return children;
 }
 
+/** Organization ownership transfer — Owner membership only (not Admin alone). */
+export function RequireOrganizationOwnerMembership({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canInviteOrganizationStaff(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="org-owner-membership-denied" />;
+  }
+
+  return children;
+}
+
 export function RequireOwnerRoleHome({ children }: { children: ReactNode }) {
   const { sessionGrant } = useWorkspace();
 

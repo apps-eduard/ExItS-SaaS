@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   acceptOwnershipTransfer,
+  cancelOwnershipTransfer,
   declineOwnershipTransfer,
+  getPendingOwnershipTransferForOrg,
   listMyPendingOwnershipTransfers,
+  requestOwnershipTransfer,
+  resolveOwnershipTransferTarget,
 } from "@/api/platform/ownership-transfer-client";
 
 const platformRequest = vi.hoisted(() => vi.fn());
@@ -119,6 +123,91 @@ describe("ownership-transfer-client", () => {
       expect.objectContaining({
         method: "POST",
         path: `/api/v1/platform/ownership-transfers/${transferId}/decline`,
+      }),
+    );
+  });
+
+  it("resolves ownership transfer target", async () => {
+    platformRequest.mockResolvedValueOnce({
+      publicUserId: "EX-1111-2222",
+      displayName: "Paul",
+    });
+
+    const result = await resolveOwnershipTransferTarget(orgId, "EX-1111-2222");
+
+    expect(result).toEqual({ publicUserId: "EX-1111-2222", displayName: "Paul" });
+    expect(platformRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "POST",
+        path: `/api/v1/platform/organizations/${orgId}/ownership-transfer/resolve-target`,
+        body: { input: "EX-1111-2222" },
+      }),
+    );
+  });
+
+  it("normalizes PascalCase resolve-target payloads", async () => {
+    platformRequest.mockResolvedValueOnce({
+      PublicUserId: "EX-9999-8888",
+      DisplayName: "Ana",
+    });
+
+    const result = await resolveOwnershipTransferTarget(
+      orgId,
+      "exits://qr/v1/personal/EX-9999-8888",
+    );
+    expect(result.publicUserId).toBe("EX-9999-8888");
+    expect(result.displayName).toBe("Ana");
+  });
+
+  it("requests ownership transfer", async () => {
+    platformRequest.mockResolvedValueOnce(sampleTransfer);
+
+    const result = await requestOwnershipTransfer(orgId, "EX-1111-2222");
+
+    expect(result.status).toBe("Pending");
+    expect(platformRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "POST",
+        path: `/api/v1/platform/organizations/${orgId}/ownership-transfer/request`,
+        body: { targetInput: "EX-1111-2222" },
+      }),
+    );
+  });
+
+  it("gets pending ownership transfer for org", async () => {
+    platformRequest.mockResolvedValueOnce(sampleTransfer);
+
+    const result = await getPendingOwnershipTransferForOrg(orgId);
+
+    expect(result?.toPublicUserId).toBe("EX-1111-2222");
+    expect(platformRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: `/api/v1/platform/organizations/${orgId}/ownership-transfer/pending`,
+      }),
+    );
+  });
+
+  it("returns null when org has no pending transfer", async () => {
+    platformRequest.mockResolvedValueOnce(null);
+
+    const result = await getPendingOwnershipTransferForOrg(orgId);
+    expect(result).toBeNull();
+  });
+
+  it("cancels ownership transfer", async () => {
+    platformRequest.mockResolvedValueOnce({
+      ...sampleTransfer,
+      status: "Cancelled",
+      cancelledAtUtc: "2026-08-21T00:00:00Z",
+    });
+
+    const result = await cancelOwnershipTransfer(transferId);
+
+    expect(result.status).toBe("Cancelled");
+    expect(platformRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "POST",
+        path: `/api/v1/platform/ownership-transfers/${transferId}/cancel`,
       }),
     );
   });

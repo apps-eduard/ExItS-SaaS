@@ -134,3 +134,64 @@ public sealed class ResolvePublicOrganizationId(
             target.Status.ToString()));
     }
 }
+
+/// <summary>
+/// Anonymous public store landing lookup by PublicOrganizationId only.
+/// Returns minimal public-safe fields. Generic not-found for unknown/inactive orgs.
+/// Does not grant membership, customer link, staff, or ownership.
+/// </summary>
+public sealed record PublicStoreLandingDto(
+    string PublicOrganizationId,
+    string DisplayName,
+    bool OrderingAvailable);
+
+public sealed class LookupPublicStoreLanding(
+    IPlatformOrganizationRepository organizations,
+    IAuditWriter audit)
+{
+    public async Task<ApplicationResult<PublicStoreLandingDto>> ExecuteAsync(
+        string publicOrganizationIdOrPayload,
+        CancellationToken cancellationToken = default)
+    {
+        string normalized;
+        try
+        {
+            normalized = PublicOrganizationIdRules.TryExtractFromQrPayload(publicOrganizationIdOrPayload);
+        }
+        catch (DomainException)
+        {
+            return ApplicationResult<PublicStoreLandingDto>.Failure(
+                DomainErrorCodes.InvalidPublicOrganizationId,
+                "Store was not found.");
+        }
+
+        var target = await organizations
+            .GetByPublicOrganizationIdAsync(normalized, cancellationToken)
+            .ConfigureAwait(false);
+
+        var foundActive = target is not null && target.Status is OrganizationStatus.Active;
+
+        await audit.WriteAsync(
+            "anonymous:public-store",
+            AuditActorType.System,
+            PlatformAuditActions.PublicStoreLandingLookedUp,
+            "public_organization_id",
+            normalized,
+            foundActive ? AuditOutcome.Succeeded : AuditOutcome.Denied,
+            summary: "purpose=public-store-landing",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (!foundActive)
+        {
+            // Generic customer-friendly not-found (no suspension detail leakage).
+            return ApplicationResult<PublicStoreLandingDto>.Failure(
+                ApplicationErrorCodes.OrganizationNotFound,
+                "This store is unavailable.");
+        }
+
+        return ApplicationResult<PublicStoreLandingDto>.Success(new PublicStoreLandingDto(
+            target!.PublicOrganizationId!,
+            target.DisplayName,
+            OrderingAvailable: true));
+    }
+}

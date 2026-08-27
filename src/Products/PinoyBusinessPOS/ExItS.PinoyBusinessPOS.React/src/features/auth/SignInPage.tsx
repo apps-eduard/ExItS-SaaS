@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Info, LayoutGrid } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -12,6 +12,11 @@ import {
   readRememberedUsername,
 } from "@/features/auth/remember-me";
 import { TestUserSelector } from "@/features/auth/TestUserSelector";
+import {
+  rememberStoreAcquisitionIntent,
+  resolveAuthContinuePath,
+} from "@/features/store/store-acquisition";
+import { normalizePublicOrganizationId } from "@/features/store/business-qr-url";
 import { useI18n } from "@/i18n/I18nProvider";
 import { registerPersonalAccount } from "@/api/platform/platform-auth-client";
 import { evaluateOfflinePinLoginOffer } from "@/offline/offline-pin-login-offer";
@@ -26,6 +31,11 @@ import {
   resolveAuthLoginFailurePresentation,
 } from "@/diagnostics/auth-login-failure";
 type AuthTab = "sign-in" | "sign-up";
+
+function readInitialAuthTab(search: string): AuthTab {
+  const params = new URLSearchParams(search);
+  return params.get("tab") === "sign-up" ? "sign-up" : "sign-in";
+}
 
 function AuthInlineFeedback({
   message,
@@ -56,8 +66,19 @@ export function SignInPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { signIn, status, coldStartDenial } = useSession();
-  const [activeTab, setActiveTab] = useState<AuthTab>("sign-in");
+  const [activeTab, setActiveTab] = useState<AuthTab>(() => readInitialAuthTab(location.search));
+  const continueTarget = resolveAuthContinuePath(searchParams.get("continue"));
+
+  useEffect(() => {
+    const continuePath = searchParams.get("continue");
+    const storeMatch = continuePath?.match(/^\/store\/(ORG\d{6})$/i);
+    const publicId = normalizePublicOrganizationId(storeMatch?.[1] ?? null);
+    if (publicId) {
+      rememberStoreAcquisitionIntent(publicId);
+    }
+  }, [searchParams]);
   const [usernameOrEmail, setUsernameOrEmail] = useState(() => readRememberedUsername());
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -150,7 +171,7 @@ export function SignInPage() {
         });
         return;
       }
-      navigate("/", { replace: true });
+      navigate(continueTarget ?? "/", { replace: true });
     } catch (caught) {
       const failure = buildAuthLoginFailure(caught);
       setSignInFailure({
@@ -181,6 +202,7 @@ export function SignInPage() {
     setActiveTab("sign-in");
     setUsernameOrEmail(signUpEmail.trim());
     setPassword("");
+    // Acquisition intent remains in sessionStorage across activation email round-trip.
   }
 
   function handlePinLogin() {    if (pinGrantExpired) {

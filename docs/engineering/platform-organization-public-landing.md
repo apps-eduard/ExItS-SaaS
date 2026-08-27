@@ -1,13 +1,22 @@
 # Platform Organization Public Landing, Social Links, and Organization-Scoped Login
 
-**Status:** FUTURE DESIGN  
-**Package:** RMAP-B05 — Public Organization Landing, Social Links & Organization-Scoped Login  
-**Authorization:** NOT STARTED · NOT AUTHORIZED FOR IMPLEMENTATION  
+**Status:** FUTURE DESIGN (full RMAP-B05)
+**Package:** RMAP-B05 — Public Organization Landing, Social Links & Organization-Scoped Login
+**Authorization:** NOT STARTED for full CMS / social / custom-domain design
 
-`RMAP_B05_STATUS=NOT_STARTED`  
+`RMAP_B05_STATUS=NOT_STARTED`
 `RMAP_B05_AUTHORIZED=NO`
 
-This document records Product Owner decisions only. It is design documentation. Do not implement RMAP-B05 until explicitly authorized.
+**Bounded v1 subset (EXITS-V1-CLOSURE-01):** authorized and implemented on `feat/personal`:
+
+- Public HTTPS Business QR → `/store/ORG######`
+- Anonymous public store landing + auth continuation
+- Optional PWA install offer
+
+Does **not** implement slug CMS, social links, SEO, custom domains, or workforce `/login`.
+See [EXITS-V1-CLOSURE-01.md](../Mobile-React/Authoritative/EXITS-V1-CLOSURE-01.md).
+
+This document records Product Owner decisions for the **full** RMAP-B05 design. Do not implement the remainder until explicitly authorized.
 
 ---
 

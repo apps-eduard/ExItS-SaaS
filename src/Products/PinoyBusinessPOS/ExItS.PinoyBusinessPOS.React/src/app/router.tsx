@@ -64,6 +64,8 @@ import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillment
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
+import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
+import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import { CatalogGlobalBrowsePage } from "@/features/catalog/CatalogGlobalBrowsePage";
 import { CatalogImportJobPage } from "@/features/catalog/CatalogImportJobPage";
@@ -137,6 +139,7 @@ import {
   RequireCreateSale,
   RequireEditCustomer,
   RequireInviteStaff,
+  RequireOrganizationOwnerMembership,
   RequireManageCatalog,
   RequireManageInventory,
   RequireManagePurchasing,
@@ -177,6 +180,10 @@ export const appRoutes = [
     element: <SessionWorkspaceRoot />,
     errorElement: <RouteErrorPage />,
     children: [
+      {
+        path: "/store/:publicOrganizationId",
+        element: <PublicStoreLandingPage />,
+      },
       {
         path: "/sign-in",
         element: (
@@ -427,6 +434,14 @@ export const appRoutes = [
             children: [
               { index: true, element: <OrgEssentialsPage /> },
               { path: "business-qr", element: <OrgBusinessQrPage /> },
+              {
+                path: "ownership-transfer",
+                element: (
+                  <RequireOrganizationOwnerMembership>
+                    <OrgOwnershipTransferPage />
+                  </RequireOrganizationOwnerMembership>
+                ),
+              },
               {
                 path: "staff",
                 element: (

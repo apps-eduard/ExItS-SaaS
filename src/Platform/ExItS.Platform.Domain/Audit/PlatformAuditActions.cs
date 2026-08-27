@@ -51,6 +51,7 @@ public static class PlatformAuditActions
     public const string PlatformUserPublicIdAssigned = "platform.user.public_id_assigned";
     public const string PlatformUserPublicIdResolved = "platform.user.public_id_resolved";
     public const string OrganizationPublicIdResolved = "platform.organization.public_id_resolved";
+    public const string PublicStoreLandingLookedUp = "platform.organization.public_store_landing_looked_up";
     public const string ExItsQrResolved = "platform.qr.resolved";
     public const string PosDeviceRegistrationTokenCreated = "platform.pos_device.registration_token.created";
     public const string PosDeviceRegistrationTokenRedeemed = "platform.pos_device.registration_token.redeemed";

@@ -246,6 +246,7 @@ builder.Services.AddScoped<RedeemPosDeviceRegistrationToken>();
 builder.Services.AddScoped<GetPosDeviceRegistrationTokenMetadata>();
 builder.Services.AddScoped<GetOrganizationPublicIdentity>();
 builder.Services.AddScoped<ResolvePublicOrganizationId>();
+builder.Services.AddScoped<LookupPublicStoreLanding>();
 builder.Services.AddScoped<ResolveExItsQr>();
 builder.Services.Configure<PosProductApiOptions>(builder.Configuration.GetSection(PosProductApiOptions.SectionName));
 builder.Services.AddHttpClient<IPosOrganizationCatalogReadClient, PosOrganizationCatalogReadClient>((sp, client) =>
@@ -608,6 +609,7 @@ app.MapOrganizationAuditEndpoints();
 app.MapIdentityEndpoints();
 app.MapPublicIdentityEndpoints();
 app.MapScopedQrEndpoints();
+app.MapPublicStoreEndpoints();
 app.MapCredentialEndpoints();
 app.MapAuthEndpoints();
 app.MapExternalAuthEndpoints();
