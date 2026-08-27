@@ -15,30 +15,31 @@ export async function replaceCatalogCache(
   categories: ReadonlyArray<PosProductCategoryDto>,
 ): Promise<void> {
   const cachedAtUtc = new Date().toISOString();
+  const tx = db.transaction(["catalogProducts", "catalogCategories"], "readwrite");
+  const productStore = tx.objectStore("catalogProducts");
+  const categoryStore = tx.objectStore("catalogCategories");
 
-  const productTx = db.transaction("catalogProducts", "readwrite");
-  await productTx.store.clear();
+  await productStore.clear();
   for (const product of products) {
     const record: CachedCatalogProductRecord = {
       productId: product.productId,
       cachedAtUtc,
       product,
     };
-    await productTx.store.put(record);
+    await productStore.put(record);
   }
-  await productTx.done;
 
-  const categoryTx = db.transaction("catalogCategories", "readwrite");
-  await categoryTx.store.clear();
+  await categoryStore.clear();
   for (const category of categories) {
     const record: CachedCatalogCategoryRecord = {
       categoryId: category.categoryId,
       cachedAtUtc,
       category,
     };
-    await categoryTx.store.put(record);
+    await categoryStore.put(record);
   }
-  await categoryTx.done;
+
+  await tx.done;
 }
 
 export async function listCachedCatalogProducts(db: OfflineDb): Promise<PosCatalogProductDto[]> {

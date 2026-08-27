@@ -52,9 +52,9 @@ import { cn } from "@/lib/cn";
 import {
   listCachedCatalogCategories,
   listCachedCatalogProducts,
-  replaceCatalogCache,
 } from "@/offline/catalog-cache";
-import { refreshPriceAuthoritiesForProducts } from "@/offline/price-authority-refresh";
+import { syncCatalogCacheIfNeeded } from "@/offline/catalog-cache-sync";
+import { refreshPriceAuthoritiesIfNeeded } from "@/offline/price-authority-sync";
 import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -202,6 +202,8 @@ export function SellFloorPage() {
   const categoriesQuery = useQuery({
     queryKey: ["pos-catalog-categories", workspaceScope?.organizationId],
     enabled: workspaceScope !== null,
+    staleTime: 30_000,
+    meta: { suppressGlobalError: true, operation: "list sell catalog categories" },
     queryFn: ({ signal }) =>
       listCatalogCategories(workspaceScope!, { status: "Active", pageSize: 50 }, signal),
   });
@@ -209,6 +211,8 @@ export function SellFloorPage() {
   const browseQuery = useQuery({
     queryKey: ["pos-catalog-browse", workspaceScope?.organizationId, activeCategory],
     enabled: workspaceScope !== null && debouncedSearch.trim().length === 0,
+    staleTime: 30_000,
+    meta: { suppressGlobalError: true, operation: "browse sell catalog products" },
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspaceScope!,
@@ -235,16 +239,21 @@ export function SellFloorPage() {
    * the offline cache. Nothing else may create catalog rows on this device.
    */
   useEffect(() => {
-    if (!online || !offlineDb || !browseProducts || !browseCategories) {
+    if (!online || !offlineDb || !browseProducts || !browseCategories || !workspaceScope) {
       return;
     }
     if (activeCategory !== "all") {
       return;
     }
-    void replaceCatalogCache(offlineDb, browseProducts, browseCategories).catch(() => {
+    void syncCatalogCacheIfNeeded(
+      offlineDb,
+      workspaceScope,
+      browseProducts,
+      browseCategories,
+    ).catch(() => {
       // A cache write failure must never interrupt selling.
     });
-  }, [activeCategory, browseCategories, browseProducts, offlineDb, online]);
+  }, [activeCategory, browseCategories, browseProducts, offlineDb, online, workspaceScope]);
 
   /**
    * Lease the price of everything just cached (RMAP-21 Review Repair 01), so an offline Cash sale
@@ -255,7 +264,7 @@ export function SellFloorPage() {
       return;
     }
     const controller = new AbortController();
-    void refreshPriceAuthoritiesForProducts(
+    void refreshPriceAuthoritiesIfNeeded(
       offlineDb,
       workspaceScope,
       browseProducts,

@@ -4,9 +4,9 @@ import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import {
   isSellReadinessSnapshotUsable,
   loadSellReadinessSnapshot,
-  saveSellReadinessSnapshot,
   type SellReadinessSnapshot,
 } from "@/offline/sell-readiness-snapshot";
+import { saveSellReadinessSnapshotIfChanged } from "@/offline/sell-readiness-sync";
 import { useSellOfflineContext, type SellOfflineContext } from "@/offline/sell-offline-context";
 import { isPosDeviceReadyForMoney } from "@/workspace/pos-device-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -52,7 +52,7 @@ export function useSellOfflineReadiness(): SellOfflineReadiness {
     if (!online || !liveReady || !db || !liveShiftId) {
       return;
     }
-    void saveSellReadinessSnapshot(db, {
+    void saveSellReadinessSnapshotIfChanged(db, {
       deviceReady: true,
       moneyPostReady: true,
       shiftId: liveShiftId,
