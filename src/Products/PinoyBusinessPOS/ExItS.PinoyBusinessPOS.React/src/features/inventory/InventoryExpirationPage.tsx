@@ -20,6 +20,7 @@ import {
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const EXPIRING_PAGE_SIZE = 50;
@@ -144,7 +145,7 @@ export function InventoryExpirationPage() {
   const counts = query.data?.pages[0];
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+    return <BranchRequiredPanel title={t("inventory.expirationTitle")} />;
   }
 
   return (

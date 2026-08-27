@@ -486,11 +486,11 @@ export const appRoutes = [
             path: "inventory",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewInventory>
                     <Outlet />
                   </RequireViewInventory>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -503,11 +503,11 @@ export const appRoutes = [
             path: "shifts",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewShifts>
                     <Outlet />
                   </RequireViewShifts>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -587,11 +587,11 @@ export const appRoutes = [
             path: "suppliers",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewSuppliers>
                     <Outlet />
                   </RequireViewSuppliers>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -758,11 +758,11 @@ export const appRoutes = [
             path: "returns",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewReturns>
                     <Outlet />
                   </RequireViewReturns>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [

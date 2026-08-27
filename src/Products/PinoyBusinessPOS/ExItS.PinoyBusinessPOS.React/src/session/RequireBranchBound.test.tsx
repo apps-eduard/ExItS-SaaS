@@ -87,4 +87,59 @@ describe("RequireBranchBound", () => {
     expect(screen.getByTestId("catalog-ok")).toBeInTheDocument();
     expect(screen.queryByTestId("branch-required-panel")).not.toBeInTheDocument();
   });
+
+  it("keeps children visible during soft workspace reload when already branch-bound", () => {
+    workspaceMock = {
+      status: "loading",
+      boundWorkspace: {
+        organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        organizationDisplayName: "Mica Org",
+        branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        branchName: "Main",
+        experience: "operations",
+      },
+      routingPlan: null,
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter>
+          <RequireBranchBound>
+            <div data-testid="catalog-ok">catalog</div>
+          </RequireBranchBound>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("catalog-ok")).toBeInTheDocument();
+    expect(screen.queryByText(/Checking session/i)).not.toBeInTheDocument();
+  });
+
+  it("shows branch-required for org-only bind even while status reports loading", () => {
+    workspaceMock = {
+      status: "loading",
+      boundWorkspace: {
+        organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        organizationDisplayName: "Mica Org",
+        branchId: null,
+        branchName: null,
+        experience: "manage_business",
+      },
+      routingPlan: null,
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter>
+          <RequireBranchBound>
+            <div data-testid="inventory-ok">inventory</div>
+          </RequireBranchBound>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("branch-required-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-ok")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Checking session/i)).not.toBeInTheDocument();
+  });
 });

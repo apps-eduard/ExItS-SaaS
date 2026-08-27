@@ -193,7 +193,9 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
 export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 
-  if (status === "loading" || status === "binding" || status === "idle") {
+  // Prefer an existing bind over a background reload spinner. Intentional rebinds
+  // still use status === "binding".
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
   }
   // Branch-scoped surfaces prefer a branch; org-only Manage Business still reaches
@@ -212,14 +214,14 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
 }
 
 /**
- * Branch-scoped org surfaces (Catalog, Sell, Orders, …).
+ * Branch-scoped org surfaces (Catalog Sell floor, Inventory, Shifts, …).
  * Manage Business binds org-only (no branch) — never leave the user on endless
  * "Checking session…" when they open these tabs.
  */
 export function RequireBranchBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 
-  if (status === "loading" || status === "binding" || status === "idle") {
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
   }
   if (boundWorkspace?.branchId) {
@@ -241,7 +243,7 @@ export function RequireBranchBound({ children }: { children: ReactNode }) {
 export function RequireOrganizationBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 
-  if (status === "loading" || status === "binding" || status === "idle") {
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
   }
   if (boundWorkspace?.organizationId) {
@@ -258,7 +260,7 @@ export function RequireOrganizationBound({ children }: { children: ReactNode }) 
 
 export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   const { status: sessionStatus } = useSession();
-  const { status } = useWorkspace();
+  const { status, boundWorkspace } = useWorkspace();
   const location = useLocation();
   const isContextSwitch = isAccountContextSwitchPath(location.pathname);
 
@@ -269,7 +271,10 @@ export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   if (sessionStatus === "loading") {
     return <SessionLoading />;
   }
-  if (sessionStatus === "authenticated" && (status === "loading" || status === "binding")) {
+  if (
+    sessionStatus === "authenticated" &&
+    (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace))
+  ) {
     return <SessionLoading />;
   }
   if (sessionStatus === "cold_start_offline" && status === "idle") {

@@ -24,6 +24,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import {
@@ -232,7 +233,7 @@ export function ShiftOpenPage() {
   }
 
   if (!workspaceScope) {
-    return <LoadingState label={t("loading.label")} />;
+    return <BranchRequiredPanel title={t("shift.openTitle")} />;
   }
 
   async function onOpen(skipOpeningCash: boolean) {

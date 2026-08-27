@@ -15,6 +15,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 
 const PAGE_SIZE = 20;
 
@@ -89,7 +90,7 @@ export function SuppliersListPage() {
   });
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+    return <BranchRequiredPanel title={t("suppliers.title")} />;
   }
 
   const totalCount = query.data?.totalCount ?? 0;

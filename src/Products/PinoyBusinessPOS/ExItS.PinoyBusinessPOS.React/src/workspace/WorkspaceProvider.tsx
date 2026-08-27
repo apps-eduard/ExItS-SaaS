@@ -357,8 +357,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return activeSession;
   }, [denyBind, refreshSession, session]);
 
+  const loadGenerationRef = useRef(0);
+  const loadInFlightRef = useRef<Promise<void> | null>(null);
+
   const loadWorkspaces = useCallback(async (currentSession: BrowserSessionSnapshot | null) => {
-    setStatus("loading");
+    const generation = ++loadGenerationRef.current;
+    const hadBound = Boolean(boundWorkspaceRef.current);
+    // Keep a valid bind visible during background refresh so branch/org guards
+    // never flash endless "Checking session…" over an already-bound workspace.
+    if (!hadBound) {
+      setStatus("loading");
+    }
     setAccessDeniedDetail(null);
     setBindFailureKind(null);
     setFailureDiagnostic(null);
@@ -367,6 +376,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const accountClass = sessionAccountClass(currentSession);
 
     const organizationsResult = await listEligibleOrganizations();
+    if (generation !== loadGenerationRef.current) {
+      return;
+    }
     if (!organizationsResult.ok) {
       setFailureDiagnostic(
         normalizePosError({
@@ -391,6 +403,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const branchesByOrganizationId = new Map<string, PlatformBranch[]>();
     for (const organization of organizationsResult.organizations) {
       const branchesResult = await listOrganizationBranches(organization.organizationId);
+      if (generation !== loadGenerationRef.current) {
+        return;
+      }
       branchesByOrganizationId.set(
         organization.organizationId,
         branchesResult.ok ? branchesResult.branches : [],
@@ -423,6 +438,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     ) {
       const only = accessible[0];
       const probed = await probeOrganizationSessionGrant(only.organizationId);
+      if (generation !== loadGenerationRef.current) {
+        return;
+      }
       if (probed.ok) {
         nextGrants.set(only.organizationId, probed.grant);
       } else {
@@ -442,6 +460,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
     setGrantByOrganizationId(nextGrants);
     setGrantProbeFailureByOrganizationId(nextFailures);
+
+    if (generation !== loadGenerationRef.current) {
+      return;
+    }
 
     const previousBound = boundWorkspaceRef.current;
     let resolvedBound: BoundWorkspace | null = null;
@@ -501,7 +523,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshWorkspaces = useCallback(async () => {
-    await loadWorkspaces(session);
+    const existing = loadInFlightRef.current;
+    if (existing) {
+      await existing;
+      return;
+    }
+    const run = loadWorkspaces(session).finally(() => {
+      if (loadInFlightRef.current === run) {
+        loadInFlightRef.current = null;
+      }
+    });
+    loadInFlightRef.current = run;
+    await run;
   }, [loadWorkspaces, session]);
 
   const ensureOrganizationGrantHint = useCallback(
@@ -853,8 +886,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    void loadWorkspaces(session);
-  }, [loadWorkspaces, session, sessionStatus]);
+    void refreshWorkspaces();
+  }, [refreshWorkspaces, sessionStatus]);
 
   useEffect(() => {
     let cancelled = false;

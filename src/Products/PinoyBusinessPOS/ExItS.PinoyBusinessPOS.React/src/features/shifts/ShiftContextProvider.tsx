@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -38,15 +39,20 @@ export function ShiftContextProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
+  const refreshGenerationRef = useRef(0);
 
   const allowView = canViewShifts(sessionGrant);
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const branchId = boundWorkspace?.branchId ?? null;
 
   const refresh = useCallback(async () => {
-    if (!boundWorkspace?.branchId || !allowView) {
+    const generation = ++refreshGenerationRef.current;
+
+    if (!organizationId || !branchId || !allowView) {
       setCurrentShift(null);
       setLoading(false);
       setErrorMessage(null);
-      setDenied(!allowView && Boolean(boundWorkspace?.branchId));
+      setDenied(!allowView && Boolean(branchId));
       return;
     }
 
@@ -55,11 +61,17 @@ export function ShiftContextProvider({ children }: { children: ReactNode }) {
     setDenied(false);
     try {
       const shift = await getCurrentCashierShift({
-        organizationId: boundWorkspace.organizationId,
-        branchId: boundWorkspace.branchId,
+        organizationId,
+        branchId,
       });
+      if (generation !== refreshGenerationRef.current) {
+        return;
+      }
       setCurrentShift(shift);
     } catch (error) {
+      if (generation !== refreshGenerationRef.current) {
+        return;
+      }
       setCurrentShift(null);
       if (error instanceof PosApiError && (error.status === 403 || error.status === 401)) {
         setDenied(true);
@@ -68,12 +80,17 @@ export function ShiftContextProvider({ children }: { children: ReactNode }) {
         setErrorMessage(error instanceof Error ? error.message : "Could not load shift.");
       }
     } finally {
-      setLoading(false);
+      if (generation === refreshGenerationRef.current) {
+        setLoading(false);
+      }
     }
-  }, [allowView, boundWorkspace]);
+  }, [allowView, branchId, organizationId]);
 
   useEffect(() => {
     void refresh();
+    return () => {
+      refreshGenerationRef.current += 1;
+    };
   }, [refresh]);
 
   // Re-read authoritative server state when the tab becomes visible again.
@@ -105,7 +122,7 @@ export function ShiftContextProvider({ children }: { children: ReactNode }) {
       loading,
       errorMessage,
       denied,
-      hasOpenShift: isOpenCashierShift(currentShift),
+      hasOpenShift: Boolean(currentShift && isOpenCashierShift(currentShift)),
       readiness,
       refresh,
     }),
