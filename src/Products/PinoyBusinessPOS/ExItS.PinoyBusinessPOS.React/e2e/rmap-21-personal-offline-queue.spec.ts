@@ -101,10 +101,28 @@ async function mockPersonalApi(page: Page) {
     if (pathname.includes("/personal/connections")) {
       return json(route, []);
     }
+    if (pathname.includes("/personal/linked-merchants")) {
+      return json(route, { items: [], totalCount: 0, page: 1, pageSize: 50 });
+    }
+    if (pathname.includes("/personal/customer-link-requests")) {
+      return json(route, []);
+    }
+    // Soft-empty remaining Personal GETs so home tiles cannot raise a blocking error overlay.
+    if (method === "GET" && pathname.includes("/personal/")) {
+      return json(route, []);
+    }
     return json(route, { detail: `unmocked ${pathname}` }, 404);
   });
 
   return { posts };
+}
+
+async function dismissClientErrorIfPresent(page: Page) {
+  const dismiss = page.getByRole("button", { name: "Dismiss" });
+  for (let i = 0; i < 3; i += 1) {
+    if (!(await dismiss.isVisible().catch(() => false))) break;
+    await dismiss.click();
+  }
 }
 
 async function signIn(page: Page) {
@@ -113,10 +131,7 @@ async function signIn(page: Page) {
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 20000 });
-  const dismiss = page.getByRole("button", { name: "Dismiss" });
-  if (await dismiss.isVisible().catch(() => false)) {
-    await dismiss.click();
-  }
+  await dismissClientErrorIfPresent(page);
 }
 
 async function readPersonalOutbox(page: Page) {
@@ -158,6 +173,7 @@ test.describe("PERS-WEB-ONLINE-ONLY Personal Web blocks offline enqueue", () => 
 
     await clientNavigate(page, "/personal/todo");
     await expect(page.getByTestId("personal-todo-hub")).toBeVisible({ timeout: 15000 });
+    await dismissClientErrorIfPresent(page);
 
     await page.getByTestId("todo-create-toggle").click();
     await page.context().setOffline(true);

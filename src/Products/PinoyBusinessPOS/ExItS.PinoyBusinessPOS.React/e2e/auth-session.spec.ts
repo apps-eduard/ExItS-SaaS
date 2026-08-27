@@ -47,7 +47,7 @@ test.describe("auth session", () => {
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByTestId("sign-in-page")).toBeVisible({ timeout: 15000 });
     await expect(page).toHaveURL(/\/sign-in$/);
 
     expect(logoutRequests.length).toBeGreaterThan(0);
@@ -55,15 +55,15 @@ test.describe("auth session", () => {
     expect(logoutRequests[0]?.csrf).toBeTruthy();
 
     await page.goto("/sell");
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByTestId("sign-in-page")).toBeVisible();
     await expect(page).toHaveURL(/\/sign-in/);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByTestId("sign-in-page")).toBeVisible();
     await expect(page.getByRole("banner")).toHaveCount(0);
   });
 
-  test("failed logout keeps the authenticated shell and shows an error", async ({ page }) => {
+  test("failed remote logout still locks locally and reaches sign-in", async ({ page }) => {
     await mockBoundCashierSession(page);
     await page.route("**/platform-api/api/v1/platform/auth/logout", async (route) => {
       await route.fulfill({
@@ -78,8 +78,12 @@ test.describe("auth session", () => {
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
-    await expect(page.getByRole("alert")).toContainText(/logout unavailable|Sign out failed/i);
-    await expect(page.getByRole("heading", { name: "New Sale" })).toBeVisible();
-    await expect(page).not.toHaveURL(/\/sign-in/);
+    // Current contract: local session clears even when Platform logout fails; pending remote logout is marked.
+    await expect(page.getByTestId("sign-in-page")).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/\/sign-in/);
+    const pending = await page.evaluate(() =>
+      window.localStorage.getItem("exits.pos-client.pending-remote-logout.v1"),
+    );
+    expect(pending).toBeTruthy();
   });
 });

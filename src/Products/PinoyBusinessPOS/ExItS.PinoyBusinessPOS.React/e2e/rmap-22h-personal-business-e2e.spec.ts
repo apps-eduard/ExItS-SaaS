@@ -879,7 +879,8 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
       .poll(() => state.businessStarted && state.actor === "Owner", { timeout: 15000 })
       .toBeTruthy();
     // Post–Organization loading/onboarding work: Start Business enters /onboarding (not /workspace).
-    // Full buyer order + seller transition story is tracked as PERS-E2E-22H-REPAIR.
+    // Full buyer→seller order continuation: e2e/pers-e2e-22h-buyer-seller-continuation.spec.ts
+    // (PERS-E2E-22H-REPAIR — separate BrowserContexts + shared mock order state).
     await expect(page).toHaveURL(/\/(onboarding|workspace)/, { timeout: 15000 });
   });
 

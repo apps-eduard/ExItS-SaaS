@@ -134,7 +134,7 @@ Organization preservations verified on this SHA: online-only policy (`organizati
 | Org Manage Business hang | **PASS** |
 | Org bottom-nav stress (20 cycles) | **PASS** |
 
-Manual stress of Personal↔Org switching is covered by unit tests (`personal-switch-to-business.test.tsx`) and Org e2e; integrated two-user RMAP-22H stories remain **PARTIAL** (mock debt — see below).
+Manual stress of Personal↔Org switching is covered by unit tests (`personal-switch-to-business.test.tsx`) and Org e2e; integrated two-user buyer→seller commerce continuation is covered by **PERS-E2E-22H-REPAIR** (mock-bound multi-context).
 
 Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preserved; no redesign in this package.
 
@@ -162,7 +162,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 ### P1 — broken / incomplete primary workflows
 
-1. RMAP-22H integrated story mocks stale vs People `/personal/connections` and Start Business → `/onboarding` seller continuation (e2e debt).  
+1. ~~RMAP-22H seller multi-user commerce continuation (e2e debt)~~ — **RESOLVED by PERS-E2E-22H-REPAIR** (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)). Start Business → `/onboarding` handoff remains covered by RMAP-22H; buyer→seller shared-order continuation is the companion suite.  
 2. No named Utang **settlement/close** flow (pay-to-zero only).  
 3. Ownership-transfer Personal UI absent (backend/docs exist historically).
 
@@ -191,7 +191,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 | Build | **PASS** |
 | Org Manage Business e2e | **PASS** |
 | Org bottom-nav stress e2e | **PASS** |
-| RMAP-22H | **PASS** (7/7 after FF hygiene: PIN enroll wait, People `/personal/people`, connections mock, purpose field, todo create toggle, Start Business → `/onboarding` handoff). Full buyer→seller order continuation deferred as **PERS-E2E-22H-REPAIR**. |
+| RMAP-22H | **PASS** (7/7 hygiene stories). Buyer→seller continuation: **PERS-E2E-22H-REPAIR** companion **PASS** (7/7 mock multi-user). |
 | Org online-only regression | **PASS** |
 | Org idempotency regression | **PASS** |
 | Loading UX regression | **PASS** (suite includes loading-ux tests) |
@@ -199,7 +199,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 ### Narrow code change (not feature work)
 
-`e2e/rmap-22h-personal-business-e2e.spec.ts` only: Personal offline PIN after sign-in; People at `/personal/people`; Start Business → `/onboarding`; mock `GET /api/v1/personal/connections` + unread-count; purpose + todo create toggle. Seller multi-user commerce continuation deferred to **PERS-E2E-22H-REPAIR**. **No Personal offline policy change. No Organization product change.**
+Historical RMAP-22H hygiene only. Seller multi-user commerce continuation delivered by **PERS-E2E-22H-REPAIR** (`e2e/pers-e2e-22h-buyer-seller-continuation.spec.ts`). **No Personal offline policy change. No Organization product change.**
 
 ---
 
@@ -209,7 +209,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 2. ~~**PERS-AUTH-01**~~ — RESOLVED.
 3. ~~**PERS-WEB-ONLINE-ONLY-01**~~ — RESOLVED (see [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md)).
 4. ~~**PERS-PEOPLE-OFFLINE-01**~~ — **CANCELLED** by ONLINE_ONLY product decision (not a remaining gap).
-5. **PERS-E2E-22H-REPAIR** — Refresh RMAP-22H mocks for seller multi-user commerce continuation.
+5. ~~**PERS-E2E-22H-REPAIR**~~ — RESOLVED (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)).
 6. **PERS-SETTLE-01** / **PERS-OWNERSHIP-01** — settlement UX; ownership-transfer UI if product prioritizes.
 
 ---
