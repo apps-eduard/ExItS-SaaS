@@ -1,16 +1,12 @@
 # Role and Grant Baseline
 
-**Status:** Planning baseline (BNPL-00)  
-**Implementation present:** No  
-**Related:** BNPL-D-00-18
+**Status:** BNPL-02 capability identifiers implemented  
+**Implementation present:** Capability catalog + presets (bundles) + operational access guard  
+**Related:** BNPL-D-00-18 (Provisionally Approved / Implemented in BNPL-02)
 
-## Presets (planning labels — not final codes)
+## Capability identifiers (authoritative)
 
-Owner · Manager · BNPL Approver · Sales/Cashier · Collector/Support · Reporting/Read-only
-
-## Grant areas (intent)
-
-| Area | Examples |
+| Capability | Purpose |
 |---|---|
 | `bnpl.config` | Product settings |
 | `bnpl.application.create` | Create financing request |
@@ -22,4 +18,25 @@ Owner · Manager · BNPL Approver · Sales/Cashier · Collector/Support · Repor
 | `bnpl.audit.read` | Audit views |
 | `bnpl.reports.read` | Reports |
 
-Identifiers are **Open**. Do not hard-code authorization to role names. Do not implement implicit role hierarchy. Do not copy POS/PLM/PSP grant catalogs.
+Source: `ExItS.PinoyBuyNowPayLater.Domain.Access.BnplCapabilityCodes`.
+
+## Presets (bundles only — never authorize by name)
+
+| Preset label | Bundle intent |
+|---|---|
+| Owner | All capabilities |
+| Manager | create/approve/read/repayment/collections/audit/reports (not config/settlement by default) |
+| BnplApprover | approve + plan.read |
+| Sales | create + plan.read |
+| Collector | plan.read + repayment + collections |
+| Reporting | plan.read + reports.read |
+
+Source: `BnplCapabilityPresets`. Authorization checks **capabilities**, not preset labels.
+
+## Rules
+
+- Deny by default  
+- No role-name authorization  
+- No implicit hierarchy  
+- Unknown capability → deny  
+- create ≠ approve; repayment ≠ settlement  

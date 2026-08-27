@@ -76,6 +76,7 @@
 | `Reports/README.md` | Reports index |
 | `Reports/BNPL-00-foundation-closeout.md` | BNPL-00 closeout |
 | `Reports/BNPL-01-product-scaffold-platform-registration.md` | BNPL-01 scaffold evidence |
+| `Reports/BNPL-02-authorization-organization-branch-access.md` | BNPL-02 access foundation |
 | `Validation/README.md` | Validation index |
 | `Validation/BNPL-00-readiness-checklist.md` | Readiness checklist |
 
@@ -83,13 +84,10 @@
 
 | Path | Purpose | Implementation present |
 |---|---|---|
-| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold projects + Docs |
-| `src/Products/PinoyBuyNowPayLater/Docs/` | Authoritative product documentation | Documentation |
-| `ExItS.PinoyBuyNowPayLater.Domain` | Domain marker + product identity literal | Scaffold |
-| `ExItS.PinoyBuyNowPayLater.Application` | Application marker | Scaffold |
-| `ExItS.PinoyBuyNowPayLater.Infrastructure` | Infrastructure marker (no EF) | Scaffold |
-| `ExItS.PinoyBuyNowPayLater.Api` | Health-only API host | Scaffold |
-| `tests/ExItS.PinoyBuyNowPayLater.UnitTests` | Scaffold + health tests | Scaffold |
+| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold + access foundation + Docs |
+| `ExItS.PinoyBuyNowPayLater.Domain` | Product identity + capability catalog | Yes |
+| `ExItS.PinoyBuyNowPayLater.Application` | Access guard / context / branch scope | Yes |
+| `ExItS.PinoyBuyNowPayLater.Api` | Health + `/api/v1/bnpl/access/me` | Yes |
 
 ## Not present (intentionally)
 

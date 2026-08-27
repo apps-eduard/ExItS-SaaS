@@ -1,5 +1,6 @@
 using ExItS.PinoyBuyNowPayLater.Application;
 using ExItS.PinoyBuyNowPayLater.Domain;
+using ExItS.PinoyBuyNowPayLater.Domain.Access;
 
 namespace ExItS.PinoyBuyNowPayLater.UnitTests;
 
@@ -16,6 +17,7 @@ public sealed class ScaffoldAssemblyTests
     public void Product_identity_literal_matches_platform_product_code_value()
     {
         Assert.Equal("pinoy-buy-now-pay-later", BnplProductIdentity.ProductCode);
+        Assert.True(BnplProductIdentity.IsPinoyBuyNowPayLater("Pinoy-Buy-Now-Pay-Later"));
     }
 
     [Fact]

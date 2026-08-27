@@ -153,6 +153,7 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
             "Products",
             "PinoyBuyNowPayLater",
             "ExItS.PinoyBuyNowPayLater.Domain",
+            "Access",
             "BnplProductIdentity.cs");
         Assert.True(File.Exists(identityPath), identityPath);
         var text = File.ReadAllText(identityPath);

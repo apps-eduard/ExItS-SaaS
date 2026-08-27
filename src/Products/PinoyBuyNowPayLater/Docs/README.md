@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** BNPL-01 Product Scaffold Complete; Financing Domain Not Started; Product Owner Approval Pending for commercial/legal decisions
-**Implementation present:** Scaffold only (Domain/Application/Infrastructure/Api; no financing entities)
+**Status:** BNPL-02 Authorization Foundation Complete; Financing Domain Not Started; Product Owner Approval Pending for commercial/legal decisions
+**Implementation present:** Scaffold + access guard/capabilities (no financing entities)
 **Documentation root:** `src/Products/PinoyBuyNowPayLater/Docs/` (D-P12-02)
 
 BNPL is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, PinoyLoanManager, and PinoyServicePro. It is not a POS module, not “Utang renamed,” not a PLM skin, not a shared-table extension of POS, and not a reason for BNPL to query POS tables directly.
@@ -79,6 +79,7 @@ Focused planning documents:
 | [Validation/BNPL-00-readiness-checklist.md](Validation/BNPL-00-readiness-checklist.md) | Docs-only readiness checklist |
 | [Reports/BNPL-00-foundation-closeout.md](Reports/BNPL-00-foundation-closeout.md) | BNPL-00 closeout |
 | [Reports/BNPL-01-product-scaffold-platform-registration.md](Reports/BNPL-01-product-scaffold-platform-registration.md) | BNPL-01 scaffold evidence |
+| [Reports/BNPL-02-authorization-organization-branch-access.md](Reports/BNPL-02-authorization-organization-branch-access.md) | BNPL-02 access foundation evidence |
 
 Category folders below are indexes only. They must not become a second source of truth.
 
