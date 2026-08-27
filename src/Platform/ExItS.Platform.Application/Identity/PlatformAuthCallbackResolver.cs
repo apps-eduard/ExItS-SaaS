@@ -10,15 +10,22 @@ public static class PlatformAuthCallbackResolver
 {
     public const string AdminActivatePath = "/admin/activate-account";
     public const string AdminResetPath = "/admin/reset-password";
-    public const string PinoyLoanManagerActivatePath = "/activate-account";
-    public const string PinoyLoanManagerResetPath = "/reset-password";
+    public const string ProductActivatePath = "/activate-account";
+    public const string ProductResetPath = "/reset-password";
+
+    /// <summary>Alias retained for PLM callers/tests.</summary>
+    public const string PinoyLoanManagerActivatePath = ProductActivatePath;
+
+    /// <summary>Alias retained for PLM callers/tests.</summary>
+    public const string PinoyLoanManagerResetPath = ProductResetPath;
 
     public static bool TryCreateLink(
         PlatformAuthOutboundMessage message,
         string adminPublicBaseUrl,
         string? pinoyLoanManagerPublicBaseUrl,
         bool allowHttpLoopbackPublicUrls,
-        out string absoluteUrl)
+        out string absoluteUrl,
+        string? pinoyBusinessPosPublicBaseUrl = null)
     {
         absoluteUrl = string.Empty;
         if (message.Kind == PlatformAuthOutboundMessageKinds.EmailVerification)
@@ -27,9 +34,10 @@ public static class PlatformAuthCallbackResolver
                 message,
                 adminPublicBaseUrl,
                 pinoyLoanManagerPublicBaseUrl,
+                pinoyBusinessPosPublicBaseUrl,
                 allowHttpLoopbackPublicUrls,
                 AdminActivatePath,
-                PinoyLoanManagerActivatePath,
+                ProductActivatePath,
                 out absoluteUrl);
         }
 
@@ -39,9 +47,10 @@ public static class PlatformAuthCallbackResolver
                 message,
                 adminPublicBaseUrl,
                 pinoyLoanManagerPublicBaseUrl,
+                pinoyBusinessPosPublicBaseUrl,
                 allowHttpLoopbackPublicUrls,
                 AdminResetPath,
-                PinoyLoanManagerResetPath,
+                ProductResetPath,
                 out absoluteUrl);
         }
 
@@ -80,9 +89,10 @@ public static class PlatformAuthCallbackResolver
         PlatformAuthOutboundMessage message,
         string adminPublicBaseUrl,
         string? pinoyLoanManagerPublicBaseUrl,
+        string? pinoyBusinessPosPublicBaseUrl,
         bool allowHttpLoopbackPublicUrls,
         string adminPath,
-        string plmPath,
+        string productPath,
         out string absoluteUrl)
     {
         var encodedToken = Uri.EscapeDataString(message.OpaqueToken ?? string.Empty);
@@ -97,7 +107,22 @@ public static class PlatformAuthCallbackResolver
                 return false;
             }
 
-            absoluteUrl = Combine(pinoyLoanManagerPublicBaseUrl!, plmPath, encodedToken);
+            absoluteUrl = Combine(pinoyLoanManagerPublicBaseUrl!, productPath, encodedToken);
+            return true;
+        }
+
+        if (string.Equals(
+                message.PublicSurface,
+                PlatformAuthPublicSurfaces.PinoyBusinessPos,
+                StringComparison.Ordinal))
+        {
+            if (!IsAllowedPublicBaseUrl(pinoyBusinessPosPublicBaseUrl, allowHttpLoopbackPublicUrls))
+            {
+                absoluteUrl = string.Empty;
+                return false;
+            }
+
+            absoluteUrl = Combine(pinoyBusinessPosPublicBaseUrl!, productPath, encodedToken);
             return true;
         }
 

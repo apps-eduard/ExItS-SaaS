@@ -634,6 +634,8 @@ $platformEnv = @{
     # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
     PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
     PlatformEmail__PinoyLoanManagerPublicBaseUrl = 'http://localhost:4176'
+    # Personal/POS React Vite (:5177) hosts /activate-account and /reset-password.
+    PlatformEmail__PinoyBusinessPosPublicBaseUrl = "http://localhost:$reactPosPort"
     PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
     DataProtection__KeysPath = $dpKeys
 }

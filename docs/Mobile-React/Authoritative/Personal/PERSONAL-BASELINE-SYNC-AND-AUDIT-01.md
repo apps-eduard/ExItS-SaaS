@@ -133,7 +133,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 1. ~~**Personal Utang money mutations lack server idempotency keys** (`serverDedupeMode=none`)~~ — **RESOLVED by PERS-IDEM-01** (see [`PERS-IDEM-01.md`](./PERS-IDEM-01.md); implementation SHA recorded there after push).
 2. **People offline contact enqueue exists but UI never uses it** — risk of divergent mental model / accidental double-create if later wired without idempotency *(backend/outbox path hardened in PERS-IDEM-01; UI still ONLINE_ONLY)*.
-3. **Email activation + password-reset completion missing in React** — account recovery incomplete on Web/PWA.
+3. ~~**Email activation + password-reset completion missing in React**~~ — **RESOLVED by PERS-AUTH-01** (see [`PERS-AUTH-01.md`](./PERS-AUTH-01.md); implementation SHA recorded there after push).
 
 ### P1 — broken / incomplete primary workflows
 
@@ -180,8 +180,8 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 ## Next implementation packages (evidence-based order)
 
-1. **PERS-IDEM-01** — Personal Utang (and contact create) server/client idempotency + ambiguous-outcome UX aligned with Org conventions (without forcing Org online-only onto Personal).  
-2. **PERS-AUTH-01** — Activation + password-reset completion pages.  
+1. ~~**PERS-IDEM-01**~~ — RESOLVED (`d7b7001d` / tip docs).
+2. ~~**PERS-AUTH-01**~~ — RESOLVED (this package; see [`PERS-AUTH-01.md`](./PERS-AUTH-01.md)).
 3. **PERS-PEOPLE-OFFLINE-01** — Decide: wire People UI to existing contact outbox **or** remove dead enqueue path; classify policy explicitly.  
 4. **PERS-E2E-22H-REPAIR** — Refresh RMAP-22H mocks for People + Start Business onboarding seller path.  
 5. **PERS-SETTLE-01** / **PERS-OWNERSHIP-01** — settlement UX; ownership-transfer UI if product prioritizes.  

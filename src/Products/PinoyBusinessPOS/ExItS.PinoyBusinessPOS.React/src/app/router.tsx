@@ -3,6 +3,8 @@ import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { OfflinePinEnrollPage } from "@/features/offline/OfflinePinEnrollPage";
 import { OfflinePinUnlockPage } from "@/features/offline/OfflinePinUnlockPage";
 import { HomePage } from "@/features/home/HomePage";
@@ -189,6 +191,14 @@ export const appRoutes = [
             <ForgotPasswordPage />
           </GuestOnly>
         ),
+      },
+      {
+        path: "/activate-account",
+        element: <ActivateAccountPage />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPasswordPage />,
       },
       {
         path: "/offline-pin-setup",

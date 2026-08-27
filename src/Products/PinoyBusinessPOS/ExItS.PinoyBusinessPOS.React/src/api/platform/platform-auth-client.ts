@@ -15,11 +15,14 @@ import {
   AUTH_TOKEN_PATH,
   AUTH_REGISTER_PATH,
   AUTH_FORGOT_PASSWORD_PATH,
+  AUTH_ACTIVATE_PATH,
+  AUTH_RESET_PASSWORD_PATH,
   LOCAL_VALIDATION_ENABLED_PATH,
   LOCAL_VALIDATION_IDENTITIES_PATH,
   organizationBranchContextPath,
   organizationBranchesPath,
   POS_PRODUCT_CODE,
+  POS_PUBLIC_SURFACE,
   SESSION_EXPIRED_ERROR_CODE,
   toBrowserSessionSnapshot,
   type BrowserSessionSnapshot,
@@ -540,7 +543,7 @@ export async function registerPersonalAccount(
     await platformRequest<{ message?: string }>({
       method: "POST",
       path: AUTH_REGISTER_PATH,
-      body: { displayName, email },
+      body: { displayName, email, publicSurface: POS_PUBLIC_SURFACE },
       skipAntiforgery: true,
     });
     return { ok: true };
@@ -560,7 +563,7 @@ export async function requestPasswordReset(
     await platformRequest<{ message?: string }>({
       method: "POST",
       path: AUTH_FORGOT_PASSWORD_PATH,
-      body: { usernameOrEmail },
+      body: { usernameOrEmail, publicSurface: POS_PUBLIC_SURFACE },
       skipAntiforgery: true,
     });
     return { ok: true };
@@ -570,5 +573,59 @@ export async function requestPasswordReset(
         ? (error.problem.detail ?? error.message)
         : "Password reset request failed. Check your connection and try again.";
     return { ok: false, detail };
+  }
+}
+
+export async function activatePersonalAccount(
+  token: string,
+  password: string,
+): Promise<
+  | { ok: true }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  try {
+    await platformRequest<unknown>({
+      method: "POST",
+      path: AUTH_ACTIVATE_PATH,
+      body: { token, password },
+      skipAntiforgery: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    return {
+      ok: false,
+      status: 0,
+      body: { detail: "Activation failed. Check your connection and try again." },
+    };
+  }
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string,
+): Promise<
+  | { ok: true }
+  | { ok: false; status: number; body: PlatformProblem | null }
+> {
+  try {
+    await platformRequest<unknown>({
+      method: "POST",
+      path: AUTH_RESET_PASSWORD_PATH,
+      body: { token, newPassword },
+      skipAntiforgery: true,
+    });
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    return {
+      ok: false,
+      status: 0,
+      body: { detail: "Password reset failed. Check your connection and try again." },
+    };
   }
 }

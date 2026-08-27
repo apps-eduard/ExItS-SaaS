@@ -81,6 +81,7 @@ export function SignInPage() {
   const [pinNoEnrollment, setPinNoEnrollment] = useState(false);
   const [pinGrantExpired, setPinGrantExpired] = useState(false);
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
+  const notice = (location.state as { notice?: string } | null)?.notice;
   const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
   const offlineLocked =
     status === "unauthenticated" &&
@@ -103,6 +104,16 @@ export function SignInPage() {
   useEffect(() => {
     void prefetchPlatformAntiforgeryToken();
   }, []);
+
+  useEffect(() => {
+    if (notice === "activated") {
+      setInfo(t("auth.noticeActivated"));
+      setActiveTab("sign-in");
+    } else if (notice === "reset") {
+      setInfo(t("auth.noticeReset"));
+      setActiveTab("sign-in");
+    }
+  }, [notice, t]);
 
   useEffect(() => {
     let cancelled = false;

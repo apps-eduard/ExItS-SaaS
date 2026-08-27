@@ -63,8 +63,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("Mailpit", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("PlatformEmail__SmtpHost", startScript, StringComparison.Ordinal);
         Assert.Contains("PlatformEmail__PinoyLoanManagerPublicBaseUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__PinoyBusinessPosPublicBaseUrl", startScript, StringComparison.Ordinal);
         Assert.Contains("PlatformEmail__AllowHttpLoopbackPublicUrls", startScript, StringComparison.Ordinal);
         Assert.Contains("PlatformEmail__PinoyLoanManagerPublicBaseUrl", live, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__PinoyBusinessPosPublicBaseUrl", live, StringComparison.Ordinal);
         Assert.Contains("dotnet watch", startScript, StringComparison.Ordinal);
         Assert.Contains("DataProtectionKeys", startScript, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-platform-db", stackScript, StringComparison.Ordinal);
@@ -93,7 +95,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("PLATFORM_API_PROXY_TARGET", startScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationReactAdminBanner", startScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationMailpitBanner", startScript, StringComparison.Ordinal);
-        Assert.Contains("PlatformEmail__AdminPublicBaseUrl = $publicAdminWebReactUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl", startScript, StringComparison.Ordinal);
+        Assert.Contains("PlatformEmail__PinoyBusinessPosPublicBaseUrl", startScript, StringComparison.Ordinal);
         Assert.Contains("Email links:", stackScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8025", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);

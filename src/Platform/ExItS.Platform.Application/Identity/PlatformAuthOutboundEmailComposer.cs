@@ -13,7 +13,8 @@ public static class PlatformAuthOutboundEmailComposer
         string adminPublicBaseUrl,
         string? pinoyLoanManagerPublicBaseUrl = null,
         bool allowHttpLoopbackPublicUrls = false,
-        string? linkGuidanceHtml = null)
+        string? linkGuidanceHtml = null,
+        string? pinoyBusinessPosPublicBaseUrl = null)
     {
         var baseUrl = adminPublicBaseUrl.TrimEnd('/');
         var encodedToken = WebUtility.UrlEncode(message.OpaqueToken ?? string.Empty);
@@ -27,6 +28,7 @@ public static class PlatformAuthOutboundEmailComposer
                     message,
                     adminPublicBaseUrl,
                     pinoyLoanManagerPublicBaseUrl,
+                    pinoyBusinessPosPublicBaseUrl,
                     allowHttpLoopbackPublicUrls,
                     """
                     <p>Welcome to ExItS.</p>
@@ -43,6 +45,7 @@ public static class PlatformAuthOutboundEmailComposer
                     message,
                     adminPublicBaseUrl,
                     pinoyLoanManagerPublicBaseUrl,
+                    pinoyBusinessPosPublicBaseUrl,
                     allowHttpLoopbackPublicUrls,
                     "<p>A password reset was requested for your ExItS account.</p>",
                     "Reset password") + guidance),
@@ -74,6 +77,7 @@ public static class PlatformAuthOutboundEmailComposer
         PlatformAuthOutboundMessage message,
         string adminPublicBaseUrl,
         string? pinoyLoanManagerPublicBaseUrl,
+        string? pinoyBusinessPosPublicBaseUrl,
         bool allowHttpLoopbackPublicUrls,
         string introHtml,
         string linkText)
@@ -83,7 +87,8 @@ public static class PlatformAuthOutboundEmailComposer
                 adminPublicBaseUrl,
                 pinoyLoanManagerPublicBaseUrl,
                 allowHttpLoopbackPublicUrls,
-                out var href))
+                out var href,
+                pinoyBusinessPosPublicBaseUrl))
         {
             return $"""
                     {introHtml}

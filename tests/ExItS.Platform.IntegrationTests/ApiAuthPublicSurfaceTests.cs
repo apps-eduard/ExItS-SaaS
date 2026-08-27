@@ -81,4 +81,26 @@ public sealed class ApiAuthPublicSurfaceTests(PostgreSqlFixture fixture) : IAsyn
         var forgotBody = await forgot.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains("eligible account", forgotBody.GetProperty("message").GetString(), StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task Known_pos_surface_is_accepted_without_changing_forgot_ack()
+    {
+        var email = $"pos.surface.{Guid.NewGuid():N}@example.com";
+        var register = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/register",
+            new
+            {
+                displayName = "POS Surface",
+                email,
+                publicSurface = "pinoy-business-pos"
+            });
+        Assert.Equal(HttpStatusCode.OK, register.StatusCode);
+
+        var forgot = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/forgot-password",
+            new { usernameOrEmail = email, publicSurface = "pinoy-business-pos" });
+        Assert.Equal(HttpStatusCode.OK, forgot.StatusCode);
+        var forgotBody = await forgot.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("eligible account", forgotBody.GetProperty("message").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
 }
