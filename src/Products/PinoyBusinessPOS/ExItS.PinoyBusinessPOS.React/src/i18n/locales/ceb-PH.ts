@@ -1875,7 +1875,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.merchants.listTitle": "[CEB] Your stores",
   "personal.merchants.listLede": "[CEB] Shop, review purchases, and manage store connections.",
   "personal.merchants.search": "[CEB] Search stores",
-  "personal.merchants.searchPlaceholder": "[CEB] Store or linked name",
+  "personal.merchants.searchPlaceholder": "[CEB] Store name",
   "personal.merchants.filter.label": "[CEB] Filter stores",
   "personal.merchants.filter.all": "[CEB] All",
   "personal.merchants.filter.canOrder": "[CEB] Can order",

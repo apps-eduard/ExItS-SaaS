@@ -1874,7 +1874,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.merchants.listTitle": "Your stores",
   "personal.merchants.listLede": "Shop, review purchases, and manage store connections.",
   "personal.merchants.search": "Search stores",
-  "personal.merchants.searchPlaceholder": "Store or linked name",
+  "personal.merchants.searchPlaceholder": "Store name",
   "personal.merchants.filter.label": "Filter stores",
   "personal.merchants.filter.all": "All",
   "personal.merchants.filter.canOrder": "Can order",

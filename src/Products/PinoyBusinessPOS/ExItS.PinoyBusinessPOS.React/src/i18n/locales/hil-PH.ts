@@ -1875,7 +1875,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.merchants.listTitle": "[HIL] Your stores",
   "personal.merchants.listLede": "[HIL] Shop, review purchases, and manage store connections.",
   "personal.merchants.search": "[HIL] Search stores",
-  "personal.merchants.searchPlaceholder": "[HIL] Store or linked name",
+  "personal.merchants.searchPlaceholder": "[HIL] Store name",
   "personal.merchants.filter.label": "[HIL] Filter stores",
   "personal.merchants.filter.all": "[HIL] All",
   "personal.merchants.filter.canOrder": "[HIL] Can order",

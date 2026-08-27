@@ -1,6 +1,8 @@
 import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { getLinkedCustomerStatement } from "@/api/pos/pos-linked-customers-client";
+import { selectCanonicalLinkedMerchantPerStore } from "@/features/customer-ordering/select-canonical-linked-merchant";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 
 /** How many store rows to show on Personal Home. */
 export const STORES_TO_PAY_PREVIEW_LIMIT = 2;
@@ -32,9 +34,10 @@ export async function loadStoresToPayPreview(
   signal?: AbortSignal,
 ): Promise<StoresToPayPreview> {
   const page = await listLinkedMerchants(1, 50, signal);
-  const storeCount = page.totalCount;
+  const stores = selectCanonicalLinkedMerchantPerStore(page.items);
+  const storeCount = stores.length;
 
-  if (page.items.length === 0) {
+  if (stores.length === 0) {
     return { storeCount: 0, activeCount: 0, preview: [] };
   }
 
@@ -43,7 +46,7 @@ export async function loadStoresToPayPreview(
     return { storeCount, activeCount: 0, preview: [] };
   }
 
-  const merchants = page.items.slice(0, STORES_TO_PAY_FETCH_CAP);
+  const merchants = stores.slice(0, STORES_TO_PAY_FETCH_CAP);
   const settled = await Promise.allSettled(
     merchants.map(async (merchant) => {
       const statement = await getLinkedCustomerStatement(
@@ -52,8 +55,8 @@ export async function loadStoresToPayPreview(
         { signal },
       );
       const displayName =
-        merchant.organizationDisplayName.trim() ||
-        statement.merchantDisplayName?.trim() ||
+        personalStoreDisplayName(merchant.organizationDisplayName) ||
+        personalStoreDisplayName(statement.merchantDisplayName) ||
         "Store";
       return {
         organizationId: merchant.organizationId,

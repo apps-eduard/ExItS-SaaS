@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { LinkedMerchantsListSection } from "@/features/customer-ordering/LinkedMerchantsListSection";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { useLinkedMerchantsOrderingProbes } from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
+import { selectCanonicalLinkedMerchantPerStore } from "@/features/customer-ordering/select-canonical-linked-merchant";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
@@ -43,7 +44,9 @@ export function LinkedMerchantsPage() {
     };
   }, []);
 
-  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const items = selectCanonicalLinkedMerchantPerStore(
+    query.data?.pages.flatMap((page) => page.items) ?? [],
+  );
   const organizationIds = useMemo(
     () => items.map((merchant) => merchant.organizationId),
     [items],

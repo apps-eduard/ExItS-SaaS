@@ -66,6 +66,7 @@ function ChipContent({
 /**
  * Shared chip bar for flow steps, filters, and action links.
  * Size comes from density tokens (`--exits-chip-*`); default density is balance.
+ * Filter chips are the global tab selector (Your stores, notifications, auth, reports).
  */
 export function ExitsChipBar({
   items,
@@ -82,7 +83,7 @@ export function ExitsChipBar({
       role={role}
       aria-label={ariaLabel}
       data-testid={testId}
-      className={cn("exits-chip-bar", `exits-chip-bar--${variant}`, className)}
+      className={cn("exits-chip-bar", `exits-chip-bar--${variant}`, "exits-animate-toolbar", className)}
     >
       {items.map((item, index) => {
         const classNameChip = chipClassName(item);

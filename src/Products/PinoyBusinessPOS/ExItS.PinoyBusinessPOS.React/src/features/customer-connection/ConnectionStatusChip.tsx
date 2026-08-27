@@ -6,12 +6,14 @@ import {
   type ConnectionRelationshipState,
 } from "@/features/customer-connection/connection-state";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 type ConnectionStatusChipProps = {
   state: ConnectionRelationshipState;
   audience: "personal" | "organization";
   testId?: string;
   showIcon?: boolean;
+  className?: string;
 };
 
 function StatusIcon({ state }: { state: ConnectionRelationshipState }) {
@@ -42,12 +44,13 @@ export function ConnectionStatusChip({
   audience,
   testId = "connection-status-chip",
   showIcon = true,
+  className,
 }: ConnectionStatusChipProps) {
   const { t } = useI18n();
   const label = t(connectionStatusLabelKey(state, audience));
 
   return (
-    <span data-testid={testId} className="inline-flex items-center gap-1.5">
+    <span data-testid={testId} className={cn("inline-flex items-center", className)}>
       <StatusChip tone={connectionStatusTone(state, audience)}>
         <span className="inline-flex items-center gap-1.5">
           {showIcon ? <StatusIcon state={state} /> : null}

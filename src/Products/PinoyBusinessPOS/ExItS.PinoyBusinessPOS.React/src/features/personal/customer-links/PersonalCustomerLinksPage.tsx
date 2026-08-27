@@ -28,6 +28,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 import {
   cascadeResolveSiblingRequests,
   groupByKey,
@@ -400,7 +401,7 @@ function PendingTabContent({
                   <div className="customer-link-card__heading min-w-0 flex-1">
                     <div className="customer-link-card__title-row">
                       <p className="exits-list__name m-0 min-w-0 flex-1 truncate font-semibold">
-                        {request.organizationDisplayName}
+                        {personalStoreDisplayName(request.organizationDisplayName)}
                       </p>
                       <div className="flex flex-wrap items-center gap-1">
                         <StatusChip tone="warning">
@@ -540,7 +541,7 @@ function HistoryTabContent({
                 <div className="customer-link-card__heading min-w-0 flex-1">
                   <div className="customer-link-card__title-row">
                     <p className="exits-list__name m-0 min-w-0 flex-1 truncate font-semibold">
-                      {request.organizationDisplayName}
+                      {personalStoreDisplayName(request.organizationDisplayName)}
                     </p>
                     <StatusChip tone={statusTone(request.status)}>
                       {t(statusLabelKey(request.status))}

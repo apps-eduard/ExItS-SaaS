@@ -33,6 +33,10 @@ import {
   PAYMENT_METHOD_CODES,
   resolveFulfillmentSelection,
 } from "@/features/customer-ordering/personal-merchant-cart";
+import {
+  personalCustomerRelationshipLabel,
+  personalStoreDisplayName,
+} from "@/features/customer-ordering/format-personal-store-label";
 import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -105,9 +109,14 @@ export function MerchantCheckoutPage() {
   );
 
   const checkoutStoreName =
-    storefrontQuery.data?.organizationDisplayName ??
-    merchantContextQuery.data?.organizationDisplayName ??
-    t("personal.shopLink");
+    personalStoreDisplayName(
+      storefrontQuery.data?.organizationDisplayName ??
+        merchantContextQuery.data?.organizationDisplayName,
+    ) || t("personal.shopLink");
+  const relationshipLabel = personalCustomerRelationshipLabel(
+    merchantContextQuery.data?.customerDisplayName,
+    session?.displayName,
+  );
 
   const selection = useMemo(() => {
     if (!storefrontQuery.data) {
@@ -301,7 +310,6 @@ export function MerchantCheckoutPage() {
       <div className={pageShell} data-testid="checkout-ordering-unavailable">
         <PageHeader
           title={t("orders.checkoutTitle")}
-          description={checkoutStoreName}
           backTo={
             organizationId
               ? `/personal/linked-merchants/${organizationId}/shop`
@@ -315,7 +323,7 @@ export function MerchantCheckoutPage() {
         <PersonalCommerceNav active="stores" />
         <OrderingUnavailablePanel
           storeName={checkoutStoreName}
-          relationshipLabel={merchantContextQuery.data?.customerDisplayName}
+          relationshipLabel={relationshipLabel}
           statementTo={merchantContextQuery.data?.statementTo}
         />
       </div>
@@ -366,7 +374,7 @@ export function MerchantCheckoutPage() {
     <div className={pageShell} data-testid="merchant-checkout-page">
       <PageHeader
         title={t("orders.checkoutTitle")}
-        description={storefrontQuery.data.organizationDisplayName}
+        description={checkoutStoreName}
         backTo={`/personal/linked-merchants/${organizationId}/shop`}
         backLabel={t("orders.backToShop")}
         backTestId="page-header-back-checkout"

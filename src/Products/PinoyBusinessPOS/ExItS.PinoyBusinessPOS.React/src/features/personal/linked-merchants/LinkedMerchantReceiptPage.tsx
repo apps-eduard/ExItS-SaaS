@@ -13,6 +13,10 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  personalStoreDisplayName,
+  stripPersonalRunStamp,
+} from "@/features/customer-ordering/format-personal-store-label";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -224,16 +228,20 @@ export function LinkedMerchantReceiptPage() {
             <dt>{t("summary.status")}</dt>
             <dd data-testid="linked-merchant-receipt-status">{receipt.status}</dd>
           </div>
-          {receipt.merchantDisplayName ? (
+          {personalStoreDisplayName(receipt.merchantDisplayName) ? (
             <div className="pc-receipt-card__meta-row">
               <dt>{t("personal.merchantReceipt.store")}</dt>
-              <dd data-testid="linked-merchant-receipt-store">{receipt.merchantDisplayName}</dd>
+              <dd data-testid="linked-merchant-receipt-store">
+                {personalStoreDisplayName(receipt.merchantDisplayName)}
+              </dd>
             </div>
           ) : null}
-          {receipt.customerDisplayName ? (
+          {stripPersonalRunStamp(receipt.customerDisplayName ?? "") ? (
             <div className="pc-receipt-card__meta-row">
               <dt>{t("summary.customer")}</dt>
-              <dd data-testid="linked-merchant-receipt-customer">{receipt.customerDisplayName}</dd>
+              <dd data-testid="linked-merchant-receipt-customer">
+                {stripPersonalRunStamp(receipt.customerDisplayName ?? "")}
+              </dd>
             </div>
           ) : null}
         </dl>

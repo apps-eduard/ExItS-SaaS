@@ -51,4 +51,16 @@ describe("filterLinkedMerchantRows", () => {
     expect(filterLinkedMerchantRows(searchable, "all", "1111")).toHaveLength(1);
     expect(filterLinkedMerchantRows(searchable, "all", "missing")).toHaveLength(0);
   });
+
+  it("matches a store after stripping the Local Validation run stamp", () => {
+    const searchable = [
+      row(
+        "Kizy Store 20260826225642",
+        { canCustomerOrder: false, canCustomerDelivery: false, pending: false, resolved: true },
+        "Mica Linked 20260826230121",
+      ),
+    ];
+    expect(filterLinkedMerchantRows(searchable, "all", "kizy store")).toHaveLength(1);
+    expect(filterLinkedMerchantRows(searchable, "all", "20260826225642")).toHaveLength(1);
+  });
 });

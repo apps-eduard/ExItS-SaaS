@@ -3,7 +3,6 @@ import {
   AlertCircle,
   ArrowLeft,
   FileQuestion,
-  Link2,
   Receipt,
   RefreshCw,
   ShieldX,
@@ -11,8 +10,6 @@ import {
   WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
-import { storeDisplayInitial } from "@/features/customer-ordering/personal-commerce-ui";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -29,10 +26,6 @@ export type MerchantStatementStatusVariant =
 
 type MerchantStatementStatusPanelProps = {
   variant: MerchantStatementStatusVariant;
-  storeName?: string;
-  relationshipLabel?: string | null;
-  /** When true, show Connected chip — relationship is Linked; panel is only about data load. */
-  showConnectedRelationship?: boolean;
   detail?: string | null;
   onRetry?: () => void;
   shopTo?: string | null;
@@ -105,16 +98,12 @@ function variantMeta(variant: MerchantStatementStatusVariant): {
 
 export function MerchantStatementStatusPanel({
   variant,
-  storeName,
-  relationshipLabel,
-  showConnectedRelationship = false,
   detail,
   onRetry,
   shopTo,
 }: MerchantStatementStatusPanelProps) {
   const { t } = useI18n();
   const meta = variantMeta(variant);
-  const displayName = storeName?.trim() || t("personal.merchantStatement.title");
   const resolvedDetail = detail?.trim() || t(meta.detailKey);
   const actionCount = 1 + (onRetry ? 1 : 0) + (shopTo ? 1 : 0);
 
@@ -127,52 +116,16 @@ export function MerchantStatementStatusPanel({
       data-testid={`merchant-statement-status-${variant}`}
       aria-labelledby="merchant-statement-status-title"
     >
-      <div className="pc-statement-status__hero">
-        <span className="pc-statement-status__avatar" aria-hidden>
-          {storeDisplayInitial(displayName)}
-        </span>
-        <div className="pc-statement-status__identity min-w-0 flex-1">
-          <h2 id="merchant-statement-status-title" className="pc-statement-status__store">
-            {displayName}
-          </h2>
-          {showConnectedRelationship ? (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <ConnectionStatusChip
-                state="Linked"
-                audience="personal"
-                testId="merchant-statement-connection-chip"
-              />
-              {relationshipLabel ? (
-                <span className="pc-statement-status__relationship text-[length:var(--exits-text-sm)] text-muted">
-                  {relationshipLabel}
-                </span>
-              ) : null}
-            </div>
-          ) : relationshipLabel ? (
-            <>
-              <Link2 className="pc-statement-status__link-icon size-3.5 shrink-0" aria-hidden />
-              <span className="pc-statement-status__relationship">{relationshipLabel}</span>
-            </>
-          ) : null}
-        </div>
-      </div>
-
-      {showConnectedRelationship ? (
-        <p className="pc-statement-status__connected-copy m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("connection.detail.personal.connected")}
-        </p>
-      ) : null}
-
       <div className="pc-statement-status__message">
         <span className="pc-statement-status__icon-wrap" aria-hidden>
           <meta.Icon className="pc-statement-status__icon" />
         </span>
         <div className="min-w-0">
-          <p className="pc-statement-status__headline">{t(meta.titleKey)}</p>
+          <p id="merchant-statement-status-title" className="pc-statement-status__headline">
+            {t(meta.titleKey)}
+          </p>
           <p className="pc-statement-status__detail">{resolvedDetail}</p>
-          {meta.hintKey ? (
-            <p className="pc-statement-status__hint">{t(meta.hintKey)}</p>
-          ) : null}
+          {meta.hintKey ? <p className="pc-statement-status__hint">{t(meta.hintKey)}</p> : null}
         </div>
       </div>
 
@@ -185,10 +138,7 @@ export function MerchantStatementStatusPanel({
         )}
       >
         <Button asChild className="pc-statement-status__action">
-          <Link
-            to={personalPageBackNav.merchants.to}
-            data-testid="merchant-statement-back-stores"
-          >
+          <Link to={personalPageBackNav.merchants.to} data-testid="merchant-statement-back-stores">
             <ArrowLeft className="size-4 shrink-0" aria-hidden />
             {t("personal.merchantStatement.backToStores")}
           </Link>

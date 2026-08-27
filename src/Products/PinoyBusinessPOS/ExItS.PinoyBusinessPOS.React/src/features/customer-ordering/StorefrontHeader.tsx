@@ -1,8 +1,10 @@
+import { Package, Truck } from "lucide-react";
 import type { CustomerStorefrontDto } from "@/api/pos/pos-customer-orders-client";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { SearchField } from "@/components/exits/SearchField";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
-import { storeDisplayInitial } from "@/features/customer-ordering/personal-commerce-ui";
+import { PersonalStoreIdentity } from "@/features/customer-ordering/PersonalStoreIdentity";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 import { useI18n } from "@/i18n/I18nProvider";
 
 type StorefrontHeaderProps = {
@@ -14,6 +16,7 @@ type StorefrontHeaderProps = {
   onSearchClear: () => void;
   categoryId: string;
   onCategoryChange: (categoryId: string) => void;
+  relationshipLabel?: string | null;
 };
 
 export function StorefrontHeader({
@@ -25,36 +28,50 @@ export function StorefrontHeader({
   onSearchClear,
   categoryId,
   onCategoryChange,
+  relationshipLabel,
 }: StorefrontHeaderProps) {
   const { t } = useI18n();
+  const storeName = personalStoreDisplayName(storefront.organizationDisplayName);
   const selectedBranch =
     storefront.branches.find((b) => b.branchId === branchId) ?? storefront.branches[0] ?? null;
   const pickupAvailable = storefront.branches.some((b) => b.pickupEnabled && b.pickupOperational);
   const deliveryAvailable =
     storefront.canCustomerDelivery &&
     storefront.branches.some((b) => b.deliveryEnabled && b.deliveryOperational);
+  const showMeta =
+    Boolean(selectedBranch) || pickupAvailable || deliveryAvailable || Boolean(selectedBranch?.onlineOrdersPaused);
 
   return (
-    <header className="pc-storefront-hero exits-animate-panel" data-testid="storefront-header">
-      <div className="pc-storefront-hero__identity">
-        <span className="pc-storefront-hero__avatar" aria-hidden>
-          {storeDisplayInitial(storefront.organizationDisplayName)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="pc-storefront-hero__title">{storefront.organizationDisplayName}</h1>
-          <p className="pc-storefront-hero__subtitle">
-            {selectedBranch ? selectedBranch.name : t("personal.shopLede")}
-          </p>
-          <div className="pc-storefront-hero__chips mt-2">
-            <StatusChip tone="success">{t("personal.orderingAvailable")}</StatusChip>
-            {pickupAvailable ? <StatusChip tone="info">{t("orders.pickup")}</StatusChip> : null}
-            {deliveryAvailable ? <StatusChip tone="info">{t("orders.delivery")}</StatusChip> : null}
-            {selectedBranch?.onlineOrdersPaused ? (
-              <StatusChip tone="warning">{t("orders.paused")}</StatusChip>
-            ) : null}
-          </div>
+    <header className="pc-store-card pc-store-card--static exits-animate-panel" data-testid="storefront-header">
+      <PersonalStoreIdentity
+        storeName={storeName}
+        relationshipLabel={relationshipLabel}
+        canCustomerOrder={storefront.canCustomerOrder}
+        headingLevel="h2"
+      />
+
+      {showMeta ? (
+        <div className="pc-store-card__meta">
+          {selectedBranch ? (
+            <span className="pc-store-card__meta-item">{selectedBranch.name}</span>
+          ) : null}
+          {pickupAvailable ? (
+            <span className="pc-store-card__meta-item">
+              <Package className="size-3.5 shrink-0" aria-hidden />
+              {t("orders.pickup")}
+            </span>
+          ) : null}
+          {deliveryAvailable ? (
+            <span className="pc-store-card__meta-item">
+              <Truck className="size-3.5 shrink-0" aria-hidden />
+              {t("orders.delivery")}
+            </span>
+          ) : null}
+          {selectedBranch?.onlineOrdersPaused ? (
+            <StatusChip tone="warning">{t("orders.paused")}</StatusChip>
+          ) : null}
         </div>
-      </div>
+      ) : null}
 
       <div className="pc-storefront-toolbar">
         {storefront.branches.length > 1 ? (

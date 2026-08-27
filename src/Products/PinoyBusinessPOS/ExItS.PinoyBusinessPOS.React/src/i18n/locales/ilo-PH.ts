@@ -1875,7 +1875,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.merchants.listTitle": "[ILO] Your stores",
   "personal.merchants.listLede": "[ILO] Shop, review purchases, and manage store connections.",
   "personal.merchants.search": "[ILO] Search stores",
-  "personal.merchants.searchPlaceholder": "[ILO] Store or linked name",
+  "personal.merchants.searchPlaceholder": "[ILO] Store name",
   "personal.merchants.filter.label": "[ILO] Filter stores",
   "personal.merchants.filter.all": "[ILO] All",
   "personal.merchants.filter.canOrder": "[ILO] Can order",

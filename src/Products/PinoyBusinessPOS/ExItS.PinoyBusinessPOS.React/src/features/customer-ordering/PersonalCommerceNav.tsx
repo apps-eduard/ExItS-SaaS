@@ -1,5 +1,6 @@
 import { Link2, Receipt, Store } from "lucide-react";
 import { ActionTileGrid } from "@/components/exits/ActionTileGrid";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -7,7 +8,7 @@ export type PersonalCommerceNavActive = "none" | "stores" | "orders" | "links";
 
 type PersonalCommerceNavProps = {
   active: PersonalCommerceNavActive;
-  /** Section card with heading (More page). Toolbar = tiles only (child pages). */
+  /** Section card with heading (More page). Toolbar = chip tabs (child pages). */
   variant?: "section" | "toolbar";
   className?: string;
 };
@@ -69,6 +70,23 @@ export function PersonalCommerceNav({
   ];
 
   const grid = <ActionTileGrid tiles={tiles} />;
+  const chips = (
+    <ExitsChipBar
+      variant="filter"
+      ariaLabel={t("personal.more.group.commerce")}
+      items={tiles.map((tile) => {
+        const Icon = tile.icon;
+        return {
+          key: tile.key,
+          label: tile.label,
+          icon: <Icon />,
+          state: tile.current ? "active" : "idle",
+          testId: tile.testId,
+          href: tile.to,
+        };
+      })}
+    />
+  );
 
   if (variant === "section") {
     return (
@@ -101,7 +119,7 @@ export function PersonalCommerceNav({
       }
     >
       <h2 className="pc-commerce-nav__heading">{t("personal.more.group.commerce")}</h2>
-      {grid}
+      {chips}
     </div>
   );
 }

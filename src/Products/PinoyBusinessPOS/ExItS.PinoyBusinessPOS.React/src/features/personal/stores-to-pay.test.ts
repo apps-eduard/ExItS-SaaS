@@ -162,4 +162,56 @@ describe("loadStoresToPayPreview", () => {
     });
     expect(linkedCustomers.getLinkedCustomerStatement).not.toHaveBeenCalled();
   });
+
+  it("counts the same merchant once when multiple customer links exist", async () => {
+    const org = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    vi.mocked(linkedMerchants.listLinkedMerchants).mockResolvedValue({
+      items: [
+        {
+          linkedCustomerId: "11111111-1111-4111-8111-111111111111",
+          businessCustomerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          organizationId: org,
+          organizationDisplayName: "Kizy Store",
+          customerDisplayName: "Mica Linked 30121",
+          linkStatus: "Linked",
+          linkedAtUtc: "2026-08-20T00:00:00Z",
+          canCustomerOrder: false,
+          canCustomerDelivery: false,
+        },
+        {
+          linkedCustomerId: "22222222-2222-4222-8222-222222222222",
+          businessCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          organizationId: org,
+          organizationDisplayName: "Kizy Store",
+          customerDisplayName: "Mica Linked 30240",
+          linkStatus: "Linked",
+          linkedAtUtc: "2026-08-27T12:00:00Z",
+          canCustomerOrder: false,
+          canCustomerDelivery: false,
+        },
+      ],
+      totalCount: 2,
+      page: 1,
+      pageSize: 50,
+    });
+    vi.mocked(buyerToken.ensurePersonalBuyerPosToken).mockResolvedValue({ ok: true });
+    vi.mocked(linkedCustomers.getLinkedCustomerStatement).mockResolvedValue({
+      organizationId: org,
+      platformBusinessCustomerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      posCustomerId: "99999999-9999-4999-8999-999999999999",
+      linkedCustomerAppUserId: "88888888-8888-4888-8888-888888888888",
+      merchantDisplayName: "Kizy Store",
+      customerDisplayName: "Mica Linked 30240",
+      outstandingBalance: 100,
+      currency: "PHP",
+      asOfUtc: "2026-08-27T00:00:00Z",
+    });
+
+    const result = await loadStoresToPayPreview();
+    expect(result.storeCount).toBe(1);
+    expect(result.activeCount).toBe(1);
+    expect(result.preview).toHaveLength(1);
+    expect(linkedCustomers.getLinkedCustomerStatement).toHaveBeenCalledTimes(1);
+    expect(result.preview[0]?.businessCustomerId).toBe("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+  });
 });

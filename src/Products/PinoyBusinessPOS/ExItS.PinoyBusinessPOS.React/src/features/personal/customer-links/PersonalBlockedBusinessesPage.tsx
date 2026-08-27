@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { personalStoreDisplayName } from "@/features/customer-ordering/format-personal-store-label";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useState } from "react";
@@ -125,7 +126,9 @@ export function PersonalBlockedBusinessesPage() {
                 <div className="flex items-start gap-3">
                   <Ban className="mt-1 size-5 shrink-0 text-muted" aria-hidden />
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 font-semibold">{row.organizationDisplayName}</p>
+                    <p className="m-0 font-semibold">
+                      {personalStoreDisplayName(row.organizationDisplayName)}
+                    </p>
                     <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                       {t("personal.blockedBusinesses.blockedAt").replace(
                         "{date}",

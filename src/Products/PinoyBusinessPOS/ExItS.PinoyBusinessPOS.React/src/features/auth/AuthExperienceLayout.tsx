@@ -51,7 +51,7 @@ export function AuthExperienceLayout({
           data-testid="auth-experience-sheet"
         >
           <UnderlineTabBar
-            className="auth-experience__tabs grid w-full grid-cols-2 [&>button]:justify-center [&>button]:text-[length:var(--exits-text-md)]"
+            className="auth-experience__tabs exits-chip-bar--equal"
             items={[
               { key: "sign-in", label: t("auth.tabSignIn"), testId: "auth-tab-sign-in" },
               { key: "sign-up", label: t("auth.tabSignUp"), testId: "auth-tab-sign-up" },

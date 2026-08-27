@@ -18,7 +18,13 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
+import { PersonalStoreIdentityCard } from "@/features/customer-ordering/PersonalStoreIdentity";
+import {
+  personalCustomerRelationshipLabel,
+  personalStoreDisplayName,
+} from "@/features/customer-ordering/format-personal-store-label";
 import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
+import { useLinkedMerchantsOrderingProbes } from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
 import {
   formatLinkedCustomerActivityAmount,
   formatLinkedCustomerActivityLabel,
@@ -26,10 +32,10 @@ import {
   formatLinkedCustomerActivityReference,
 } from "@/features/personal/linked-merchants/format-linked-customer-activity";
 import { MerchantStatementStatusPanel } from "@/features/personal/linked-merchants/MerchantStatementStatusPanel";
-import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+import { useSession } from "@/session/SessionProvider";
 
 type LoadState =
   | { kind: "loading" }
@@ -112,6 +118,7 @@ function ActivityRow({
 
 export function LinkedMerchantStatementPage() {
   const { t } = useI18n();
+  const { session } = useSession();
   const online = useBrowserOnline();
   const { organizationId = "", businessCustomerId = "" } = useParams<{
     organizationId: string;
@@ -130,22 +137,46 @@ export function LinkedMerchantStatementPage() {
   const [busyOlder, setBusyOlder] = useState(false);
 
   const merchantContextQuery = useLinkedMerchantShopContext(organizationId, Boolean(organizationId));
+  const { byOrganizationId } = useLinkedMerchantsOrderingProbes(
+    organizationId ? [organizationId] : [],
+    Boolean(organizationId) && online,
+  );
+  const orderingProbe = byOrganizationId.get(organizationId);
   const shopTo = organizationId ? `/personal/linked-merchants/${organizationId}/shop` : null;
   const storeName =
-    merchantContextQuery.data?.organizationDisplayName ?? t("personal.merchantStatement.title");
-  const relationshipLabel = merchantContextQuery.data?.customerDisplayName ?? null;
+    personalStoreDisplayName(merchantContextQuery.data?.organizationDisplayName) ||
+    t("personal.merchantStatement.title");
+  const relationshipLabel = personalCustomerRelationshipLabel(
+    merchantContextQuery.data?.customerDisplayName,
+    session?.displayName,
+  );
+  const canCustomerOrder = Boolean(orderingProbe?.resolved && orderingProbe.canCustomerOrder);
+  const orderingPending = !orderingProbe || orderingProbe.pending;
 
   const pageShell =
     "personal-page personal-commerce-page linked-merchant-statement-page exits-page flex min-w-0 flex-col gap-3";
 
-  function statementPageHeader(title?: string) {
+  function statementPageHeader() {
     return (
       <PageHeader
-        title={title ?? storeName}
+        title={t("personal.merchantStatement.openPurchases")}
         description={t("personal.merchantStatement.lede")}
         backTo={personalPageBackNav.merchants.to}
         backLabel={t(personalPageBackNav.merchants.labelKey)}
         backTestId="page-header-back-merchant-statement"
+      />
+    );
+  }
+
+  function statementIdentity(name: string, linkedAs: string | null) {
+    return (
+      <PersonalStoreIdentityCard
+        storeName={name}
+        relationshipLabel={linkedAs}
+        canCustomerOrder={canCustomerOrder}
+        orderingPending={orderingPending}
+        headingLevel="h2"
+        connectionTestId="merchant-statement-connection-chip"
       />
     );
   }
@@ -162,18 +193,15 @@ export function LinkedMerchantStatementPage() {
     options?: {
       onRetry?: () => void;
       includeShop?: boolean;
-      showConnectedRelationship?: boolean;
     },
   ) {
     return (
       <div className={pageShell} data-testid="linked-merchant-statement-page">
         {statementPageHeader()}
         <PersonalCommerceNav active="stores" />
+        {statementIdentity(storeName, relationshipLabel)}
         <MerchantStatementStatusPanel
           variant={variant}
-          storeName={storeName}
-          relationshipLabel={relationshipLabel}
-          showConnectedRelationship={options?.showConnectedRelationship}
           detail={detail}
           onRetry={options?.onRetry}
           shopTo={options?.includeShop === false ? null : shopTo}
@@ -355,6 +383,7 @@ export function LinkedMerchantStatementPage() {
       <div className={pageShell} data-testid="linked-merchant-statement-page">
         {statementPageHeader()}
         <PersonalCommerceNav active="stores" />
+        {statementIdentity(storeName, relationshipLabel)}
         <LoadingSkeleton label={t("loading.label")} />
       </div>
     );
@@ -373,39 +402,35 @@ export function LinkedMerchantStatementPage() {
     // history-not-ready (correlation / projection), not a broken relationship.
     return statementStatusShell("historyNotReady", undefined, {
       onRetry: () => void loadInitial(),
-      showConnectedRelationship: true,
     });
   }
 
   if (state.kind === "error") {
     return statementStatusShell("historyLoadError", undefined, {
       onRetry: () => void loadInitial(),
-      showConnectedRelationship: true,
     });
   }
 
   const { summary, openDebt, openDebtHasMore, recent, recentHasMore } = state;
   const hasNoActivity =
     summary.outstandingBalance <= 0 && openDebt.length === 0 && recent.length === 0;
+  const statementStoreName =
+    personalStoreDisplayName(summary.merchantDisplayName) || storeName;
+  const statementRelationshipLabel =
+    personalCustomerRelationshipLabel(summary.customerDisplayName, session?.displayName) ??
+    relationshipLabel;
 
   return (
     <div className={pageShell} data-testid="linked-merchant-statement-page">
-      {statementPageHeader(summary.merchantDisplayName ?? undefined)}
+      {statementPageHeader()}
       <PersonalCommerceNav active="stores" />
-
-      <div className="flex flex-wrap items-center gap-2" data-testid="linked-merchant-connection-row">
-        <ConnectionStatusChip state="Linked" audience="personal" />
-        <span className="text-[length:var(--exits-text-sm)] text-muted">
-          {t("connection.detail.personal.connected")}
-        </span>
-      </div>
+      {statementIdentity(statementStoreName, statementRelationshipLabel)}
 
       <section className="pc-balance-hero exits-animate-panel" data-testid="linked-merchant-outstanding">
         <p className="pc-balance-hero__label">{t("personal.merchantStatement.outstandingLabel")}</p>
         <p className="pc-balance-hero__amount">
           {summary.outstandingBalance.toFixed(2)} {summary.currency}
         </p>
-        <p className="pc-balance-hero__context">{summary.customerDisplayName}</p>
         {summary.asOfUtc ? (
           <p className="pc-balance-hero__as-of">
             {new Date(summary.asOfUtc).toLocaleString()}
@@ -416,9 +441,6 @@ export function LinkedMerchantStatementPage() {
       {hasNoActivity ? (
         <MerchantStatementStatusPanel
           variant="empty"
-          storeName={summary.merchantDisplayName ?? storeName}
-          relationshipLabel={summary.customerDisplayName}
-          showConnectedRelationship
           shopTo={shopTo}
         />
       ) : (

@@ -5,7 +5,6 @@ import {
   Ban,
   CalendarClock,
   ChevronDown,
-  Link2,
   Loader2,
   Package,
   Receipt,
@@ -22,15 +21,17 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { SearchField } from "@/components/exits/SearchField";
-import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
+import { PersonalStoreIdentity } from "@/features/customer-ordering/PersonalStoreIdentity";
 import {
-  CommerceLoadMore,
-  MerchantOrderingBadge,
-  storeDisplayInitial,
-} from "@/features/customer-ordering/personal-commerce-ui";
+  personalCustomerRelationshipLabel,
+  personalStoreDisplayName,
+  personalStoreSearchText,
+} from "@/features/customer-ordering/format-personal-store-label";
+import { CommerceLoadMore } from "@/features/customer-ordering/personal-commerce-ui";
 import type { MerchantOrderingProbe } from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import { useSession } from "@/session/SessionProvider";
 
 export type StoreListFilter = "all" | "can_order" | "unavailable";
 
@@ -74,12 +75,15 @@ export function filterLinkedMerchantRows(
       if (!needle) {
         return true;
       }
-      const hay =
-        `${row.merchant.organizationDisplayName} ${row.merchant.customerDisplayName}`.toLowerCase();
-      return hay.includes(needle);
+      return personalStoreSearchText(
+        row.merchant.organizationDisplayName,
+        row.merchant.customerDisplayName,
+      ).includes(needle);
     })
     .sort((a, b) =>
-      a.merchant.organizationDisplayName.localeCompare(b.merchant.organizationDisplayName),
+      personalStoreDisplayName(a.merchant.organizationDisplayName).localeCompare(
+        personalStoreDisplayName(b.merchant.organizationDisplayName),
+      ),
     );
 }
 
@@ -91,6 +95,7 @@ function LinkedMerchantStoreCard({
   index: number;
 }) {
   const { t } = useI18n();
+  const { session } = useSession();
   const { merchant, ordering } = row;
   const queryClient = useQueryClient();
   const [connError, setConnError] = useState<string | null>(null);
@@ -98,6 +103,11 @@ function LinkedMerchantStoreCard({
 
   const statementTo = `/personal/linked-merchants/${merchant.organizationId}/${merchant.businessCustomerId}`;
   const shopTo = `/personal/linked-merchants/${merchant.organizationId}/shop`;
+  const storeName = personalStoreDisplayName(merchant.organizationDisplayName);
+  const relationshipName = personalCustomerRelationshipLabel(
+    merchant.customerDisplayName,
+    session?.displayName,
+  );
   const canCustomerOrder = ordering.resolved && ordering.canCustomerOrder;
   const canCustomerDelivery = ordering.resolved && ordering.canCustomerDelivery;
 
@@ -125,34 +135,14 @@ function LinkedMerchantStoreCard({
       style={{ animationDelay: `${Math.min(index, 8) * 45 + 40}ms` }}
     >
       <article className="pc-store-card" data-testid="linked-merchant-card">
-        <div className="pc-store-card__top">
-          <span className="pc-store-card__avatar" aria-hidden>
-            {storeDisplayInitial(merchant.organizationDisplayName)}
-          </span>
-          <div className="pc-store-card__body">
-            <h3 className="pc-store-card__name">{merchant.organizationDisplayName}</h3>
-            <p className="pc-store-card__linked-as m-0">
-              <Link2 className="pc-store-card__link-icon size-3.5 shrink-0" aria-hidden />
-              <span>
-                {t("personal.merchants.linkedAs").replace(
-                  "{name}",
-                  merchant.customerDisplayName,
-                )}
-              </span>
-            </p>
-            <div className="pc-store-card__badge-row">
-              <ConnectionStatusChip
-                state="Linked"
-                audience="personal"
-                testId="linked-merchant-connection-chip"
-              />
-              <MerchantOrderingBadge
-                available={canCustomerOrder}
-                pending={ordering.pending}
-              />
-            </div>
-          </div>
-        </div>
+        <PersonalStoreIdentity
+          storeName={storeName}
+          relationshipLabel={relationshipName}
+          canCustomerOrder={canCustomerOrder}
+          orderingPending={ordering.pending}
+          headingLevel="h3"
+          connectionTestId="linked-merchant-connection-chip"
+        />
 
         <div className="pc-store-card__meta">
           <span className="pc-store-card__meta-item">
@@ -186,7 +176,7 @@ function LinkedMerchantStoreCard({
             <>
               <Button
                 asChild
-                className="pc-store-card__action pc-store-card__action--shop"
+                className="pc-store-card__action pc-store-card__action--shop !h-full !min-h-[var(--exits-touch-target-min)]"
                 data-testid="open-merchant-shop"
               >
                 <Link to={shopTo}>
@@ -197,7 +187,7 @@ function LinkedMerchantStoreCard({
               <Button
                 asChild
                 variant="outline"
-                className="pc-store-card__action pc-store-card__action--statement"
+                className="pc-store-card__action pc-store-card__action--statement !h-full !min-h-[var(--exits-touch-target-min)]"
                 data-testid="open-merchant-statement"
               >
                 <Link to={statementTo}>
@@ -209,7 +199,7 @@ function LinkedMerchantStoreCard({
           ) : (
             <Button
               asChild
-              className="pc-store-card__action pc-store-card__action--statement"
+              className="pc-store-card__action pc-store-card__action--statement !h-full !min-h-[var(--exits-touch-target-min)]"
               data-testid="open-merchant-statement"
             >
               <Link to={statementTo}>
@@ -374,7 +364,7 @@ export function LinkedMerchantsListSection({
       ) : (
         <ul className="pc-store-directory">
           {filteredRows.map((row, index) => (
-            <LinkedMerchantStoreCard key={row.merchant.linkedCustomerId} row={row} index={index} />
+            <LinkedMerchantStoreCard key={row.merchant.organizationId} row={row} index={index} />
           ))}
         </ul>
       )}
