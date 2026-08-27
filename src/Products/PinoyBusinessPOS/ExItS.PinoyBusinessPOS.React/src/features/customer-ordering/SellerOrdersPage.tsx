@@ -44,6 +44,8 @@ export function SellerOrdersPage() {
   const query = useQuery({
     queryKey: ["seller-orders", workspace?.organizationId, filter],
     enabled: Boolean(workspace),
+    staleTime: 15_000,
+    meta: { suppressGlobalError: true, operation: "list seller orders" },
     queryFn: ({ signal }) =>
       listSellerCustomerOrders(
         workspace!,

@@ -72,6 +72,8 @@ export function CatalogProductsPage() {
       page,
     ],
     enabled: Boolean(workspace),
+    staleTime: 30_000,
+    meta: { suppressGlobalError: true, operation: "list catalog products" },
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
