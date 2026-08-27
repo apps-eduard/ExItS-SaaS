@@ -57,6 +57,11 @@ public interface IInventoryRepository
 
     Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default);
 
+    Task<StockMovement?> GetMovementByIdAsync(
+        PosOrganizationId organizationId,
+        StockMovementId movementId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasAnyMovementAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

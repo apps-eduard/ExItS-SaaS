@@ -152,6 +152,64 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal("Cancelled", cancelled!.Status);
     }
 
+    [Fact]
+    public async Task Idempotent_create_replays_same_purchase_order()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var supplier = await CreateSupplierAsync(client, org, new CreateSupplierRequest("Idem Supplier"));
+        var product = await CreateProductAsync(client, org, "Salt", "Piece", 5m, sku: "po-salt-1");
+        var purchaseOrderId = Guid.NewGuid();
+
+        var body = new CreatePurchaseOrderRequest(
+            supplier.SupplierId,
+            new DateOnly(2026, 8, 21),
+            [new CreatePurchaseOrderLineRequest(product.ProductId, 3m, 4m)],
+            PurchaseOrderId: purchaseOrderId);
+
+        using var firstResponse = await PostCreateWithIdempotencyAsync(client, org, body);
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        var created = await firstResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+        Assert.Equal(purchaseOrderId, created!.PurchaseOrderId);
+
+        using var secondResponse = await PostCreateWithIdempotencyAsync(client, org, body);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        var replayed = await secondResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+        Assert.Equal(created.PurchaseOrderId, replayed!.PurchaseOrderId);
+
+        using var bodyOnly = Scoped(HttpMethod.Post, PurchaseOrders, org);
+        bodyOnly.Content = JsonContent.Create(body, options: JsonOptions);
+        using var bodyOnlyResponse = await client.SendAsync(bodyOnly);
+        Assert.True(
+            bodyOnlyResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created,
+            $"Unexpected status {bodyOnlyResponse.StatusCode}");
+        var bodyOnlyPo = await bodyOnlyResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+        Assert.Equal(purchaseOrderId, bodyOnlyPo!.PurchaseOrderId);
+
+        using var list = Scoped(HttpMethod.Get, $"{PurchaseOrders}?page=1&pageSize=20", org);
+        using var listResponse = await client.SendAsync(list);
+        listResponse.EnsureSuccessStatusCode();
+        var page = await listResponse.Content.ReadFromJsonAsync<PagedResult<PosPurchaseOrderDto>>(JsonOptions);
+        Assert.Single(page!.Items);
+        Assert.Equal(purchaseOrderId, page.Items[0].PurchaseOrderId);
+    }
+
+    private static async Task<HttpResponseMessage> PostCreateWithIdempotencyAsync(
+        HttpClient client,
+        Guid org,
+        CreatePurchaseOrderRequest body)
+    {
+        var json = JsonSerializer.Serialize(body, JsonOptions);
+        using var request = Scoped(HttpMethod.Post, PurchaseOrders, org);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", body.PurchaseOrderId!.Value.ToString("N"));
+        request.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", ComputePayloadHash(json));
+        request.Headers.TryAddWithoutValidation("X-Pos-Operation-Id", body.PurchaseOrderId.Value.ToString("D"));
+        request.Headers.TryAddWithoutValidation("X-Pos-Operation-Type", OfflineOperationTypes.PurchaseOrderCreate);
+        request.Content = JsonContent.Create(body, options: JsonOptions);
+        return await client.SendAsync(request);
+    }
+
     private static async Task<PosSupplierDto> CreateSupplierAsync(
         HttpClient client,
         Guid org,

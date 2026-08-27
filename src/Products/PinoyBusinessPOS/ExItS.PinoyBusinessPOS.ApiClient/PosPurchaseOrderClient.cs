@@ -53,8 +53,20 @@ public sealed class PosPurchaseOrderClient(HttpClient httpClient, IConnectivityS
     public Task<ApiResult<PosPurchaseOrderDto>> GetAsync(Guid purchaseOrderId, CancellationToken ct = default) =>
         SendAsync<PosPurchaseOrderDto>(HttpMethod.Get, $"{PurchaseOrdersPath}/{purchaseOrderId:D}", null, null, ct);
 
-    public Task<ApiResult<PosPurchaseOrderDto>> CreateAsync(CreatePurchaseOrderRequest request, CancellationToken ct = default) =>
-        SendAsync<PosPurchaseOrderDto>(HttpMethod.Post, PurchaseOrdersPath, request, null, ct);
+    public Task<ApiResult<PosPurchaseOrderDto>> CreateAsync(CreatePurchaseOrderRequest request, CancellationToken ct = default)
+    {
+        IReadOnlyDictionary<string, string>? headers = null;
+        if (request.PurchaseOrderId is Guid purchaseOrderId && purchaseOrderId != Guid.Empty)
+        {
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            headers = PosMutationIdempotencyHelper.BuildHeaders(
+                purchaseOrderId,
+                json,
+                OfflineOperationTypes.PurchaseOrderCreate);
+        }
+
+        return SendAsync<PosPurchaseOrderDto>(HttpMethod.Post, PurchaseOrdersPath, request, headers, ct);
+    }
 
     public Task<ApiResult<PosPurchaseOrderDto>> UpdateAsync(
         Guid purchaseOrderId,

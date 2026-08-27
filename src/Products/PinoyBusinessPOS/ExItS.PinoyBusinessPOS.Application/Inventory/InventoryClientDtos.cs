@@ -50,7 +50,8 @@ public sealed record AdjustInventoryRequest(
     DateOnly? ExpirationDate = null,
     string? LotNumber = null,
     Guid? LotId = null,
-    Guid? ProductUnitId = null);
+    Guid? ProductUnitId = null,
+    Guid? MovementId = null);
 
 public sealed record PosInventoryLotDto(
     Guid LotId,

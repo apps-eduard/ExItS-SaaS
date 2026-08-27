@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   adjustInventoryStock,
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
+  getStockMovement,
   listInventoryMovements,
   listProductLots,
   type PosInventoryLotDto,
@@ -23,6 +25,8 @@ import {
   resolveLotExpiryLabel,
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const LOT_PAGE_SIZE = 50;
@@ -58,6 +62,9 @@ export function InventoryDetailPage() {
   const [adjustLotNumber, setAdjustLotNumber] = useState("");
   const [selectedLotId, setSelectedLotId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const movementIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -150,30 +157,50 @@ export function InventoryDetailPage() {
     },
   });
 
-  const adjustMutation = useMutation({
-    mutationFn: () => {
-      const reason = adjustReason.trim();
-      if (!reason) {
-        throw new Error(t("inventory.reasonRequired"));
+  async function onAdjust() {
+    if (!workspace || !productId || statusLocked || adjusting) {
+      return;
+    }
+    const reason = adjustReason.trim();
+    if (!reason) {
+      setError(t("inventory.reasonRequired"));
+      return;
+    }
+    if (tracksExpiration && adjustDirection === "In" && !adjustExpiry.trim()) {
+      setError(t("inventory.expirationDateRequired"));
+      return;
+    }
+    if (tracksExpiration && adjustDirection === "Out" && lots.length > 0 && !selectedLotId) {
+      setError(t("inventory.lotRequired"));
+      return;
+    }
+    if (
+      tracksExpiration &&
+      adjustDirection === "Out" &&
+      lots.length === 0 &&
+      !adjustExpiry.trim()
+    ) {
+      setError(t("inventory.expirationDateRequired"));
+      return;
+    }
+
+    setAdjusting(true);
+    setError(null);
+    try {
+      if (!movementIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) {
+          setError(t("inventory.reasonRequired"));
+          return;
+        }
+        movementIdRef.current = generated.id;
       }
-      if (tracksExpiration && adjustDirection === "In" && !adjustExpiry.trim()) {
-        throw new Error(t("inventory.expirationDateRequired"));
-      }
-      if (tracksExpiration && adjustDirection === "Out" && lots.length > 0 && !selectedLotId) {
-        throw new Error(t("inventory.lotRequired"));
-      }
-      if (
-        tracksExpiration &&
-        adjustDirection === "Out" &&
-        lots.length === 0 &&
-        !adjustExpiry.trim()
-      ) {
-        throw new Error(t("inventory.expirationDateRequired"));
-      }
-      return adjustInventoryStock(workspace!, productId!, {
+      const movementId = movementIdRef.current;
+      await adjustInventoryStock(workspace, productId, {
         direction: adjustDirection,
         quantity: Number(adjustQty),
         reason,
+        movementId,
         expirationDate:
           tracksExpiration && adjustDirection === "In"
             ? adjustExpiry.trim() || null
@@ -186,8 +213,8 @@ export function InventoryDetailPage() {
             : null,
         lotId: tracksExpiration && selectedLotId ? selectedLotId : null,
       });
-    },
-    onSuccess: async () => {
+      movementIdRef.current = null;
+      setStatusLocked(false);
       setAdjustQty("");
       setAdjustReason("");
       setAdjustExpiry("");
@@ -195,13 +222,45 @@ export function InventoryDetailPage() {
       setSelectedLotId("");
       setError(null);
       await invalidate();
-    },
-    onError: (err) => {
+    } catch (err) {
+      const movementId = movementIdRef.current;
+      if (movementId && workspace) {
+        setError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error: err,
+          lookup: () => getStockMovement(workspace, movementId),
+        });
+        if (outcome.kind === "confirmed") {
+          movementIdRef.current = null;
+          setStatusLocked(false);
+          setAdjustQty("");
+          setAdjustReason("");
+          setAdjustExpiry("");
+          setAdjustLotNumber("");
+          setSelectedLotId("");
+          setError(null);
+          await invalidate();
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setStatusLocked(true);
+          setError(t("checkout.transactionStatusUnknown"));
+          return;
+        }
+        if (outcome.kind === "not_found") {
+          setError(describePosApiError(outcome.lookupError, t, "error.detail"));
+          return;
+        }
+      }
       setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : describePosApiError(err, t, "error.detail"),
       );
-    },
-  });
+    } finally {
+      setAdjusting(false);
+    }
+  }
 
   if (!workspace || accountQuery.isLoading) {
     return <LoadingState label={t("loading.label")} />;
@@ -432,11 +491,11 @@ export function InventoryDetailPage() {
             <Button
               type="button"
               className="min-h-11"
-              disabled={adjustMutation.isPending || !adjustQty.trim()}
-              onClick={() => adjustMutation.mutate()}
+              disabled={adjusting || statusLocked || !adjustQty.trim()}
+              onClick={() => void onAdjust()}
               data-testid="inventory-adjust"
             >
-              {t("inventory.applyAdjustment")}
+              {adjusting ? t("checkout.confirmingTransaction") : t("inventory.applyAdjustment")}
             </Button>
           </Card>
           <Button

@@ -58,6 +58,7 @@ internal static class PurchaseOrderEndpoints
             HttpRequest request,
             CreatePurchaseOrderRequest body,
             CreatePurchaseOrder useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -68,10 +69,16 @@ internal static class PurchaseOrderEndpoints
             }
 
             PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
-            var result = await useCase.ExecuteAsync(organizationId, body, ct, actorId).ConfigureAwait(false);
-            return PosApiResults.FromResult(
-                result,
-                dto => Results.Created($"/api/v1/pos/purchase-orders/{dto.PurchaseOrderId:D}", dto));
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.PurchaseOrderCreate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, body, ct2, actorId),
+                    dto => dto,
+                    dto => Results.Created($"/api/v1/pos/purchase-orders/{dto.PurchaseOrderId:D}", dto),
+                    ct)
+                .ConfigureAwait(false);
         });
 
         group.MapGet("/{purchaseOrderId:guid}", async (

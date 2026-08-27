@@ -1,5 +1,9 @@
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
 
 const INVENTORY_PATH = "/api/v1/pos/inventory";
 
@@ -169,7 +173,7 @@ export function disableInventoryTracking(
   });
 }
 
-export function adjustInventoryStock(
+export async function adjustInventoryStock(
   workspace: PosWorkspaceScope,
   productId: string,
   body: {
@@ -180,15 +184,54 @@ export function adjustInventoryStock(
     expirationDate?: string | null;
     lotNumber?: string | null;
     lotId?: string | null;
+    movementId: string;
   },
   signal?: AbortSignal,
 ): Promise<PosInventoryAccountDto> {
+  const payload: Record<string, unknown> = {
+    direction: body.direction,
+    quantity: body.quantity,
+    reason: body.reason,
+    movementId: body.movementId,
+  };
+  if (body.productUnitId) {
+    payload.productUnitId = body.productUnitId;
+  }
+  if (body.expirationDate) {
+    payload.expirationDate = body.expirationDate;
+  }
+  if (body.lotNumber) {
+    payload.lotNumber = body.lotNumber;
+  }
+  if (body.lotId) {
+    payload.lotId = body.lotId;
+  }
+  const headers = await buildPosMutationIdempotencyHeaders(
+    body.movementId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.InventoryAdjustment,
+  );
   return posRequest({
     method: "POST",
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/adjustments`,
-    body,
+    body: payload,
+    headers,
+  });
+}
+
+/** GET /api/v1/pos/inventory/movements/{movementId} — status lookup after ambiguous adjust. */
+export function getStockMovement(
+  workspace: PosWorkspaceScope,
+  movementId: string,
+  signal?: AbortSignal,
+): Promise<PosStockMovementDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/movements/${movementId}`,
   });
 }
 

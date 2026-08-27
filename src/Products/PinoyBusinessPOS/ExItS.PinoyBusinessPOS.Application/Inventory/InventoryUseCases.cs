@@ -144,6 +144,20 @@ public sealed class InventoryQueryService
             take);
     }
 
+    public async Task<PosStockMovementDto?> GetMovementByIdAsync(
+        Guid organizationId,
+        Guid movementId,
+        CancellationToken cancellationToken = default)
+    {
+        var movement = await _inventory
+            .GetMovementByIdAsync(
+                PosOrganizationId.From(organizationId),
+                StockMovementId.From(movementId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return movement is null ? null : MapMovement(movement);
+    }
+
     private async Task<PagedResult<PosInventoryAccountDto>> MapPageAsync(
         PosOrganizationId orgId,
         IReadOnlyList<InventoryAccount> accounts,
@@ -476,6 +490,7 @@ public sealed class AdjustInventoryStock
         string? lotNumber = null,
         Guid? lotId = null,
         Guid? productUnitId = null,
+        Guid? movementId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -487,6 +502,35 @@ public sealed class AdjustInventoryStock
 
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
+
+        if (movementId is Guid clientMovementId && clientMovementId != Guid.Empty)
+        {
+            var existingMovement = await _inventory
+                .GetMovementByIdAsync(orgId, StockMovementId.From(clientMovementId), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingMovement is not null)
+            {
+                if (existingMovement.ProductId != catalogProductId)
+                {
+                    return ApplicationResult<InventoryAccount>.Failure(
+                        ApplicationErrorCodes.DomainViolation,
+                        "Movement identity does not match this product.");
+                }
+
+                var existingAccount = await _inventory
+                    .GetByProductIdAsync(orgId, catalogProductId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingAccount is null)
+                {
+                    return ApplicationResult<InventoryAccount>.Failure(
+                        ApplicationErrorCodes.InventoryAccountNotFound,
+                        "Inventory account was not found.");
+                }
+
+                return ApplicationResult<InventoryAccount>.Success(existingAccount);
+            }
+        }
+
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
         if (product is null)
         {
@@ -524,6 +568,10 @@ public sealed class AdjustInventoryStock
                 baseQuantity = ProductUnitConversion.ToBaseQuantity(quantity, unit.MultiplierToBase);
             }
 
+            StockMovementId? clientId = movementId is Guid mid && mid != Guid.Empty
+                ? StockMovementId.From(mid)
+                : null;
+
             var normalizedDirection = (direction ?? string.Empty).Trim();
             StockMovement movement;
             if (string.Equals(normalizedDirection, "In", StringComparison.OrdinalIgnoreCase))
@@ -537,6 +585,7 @@ public sealed class AdjustInventoryStock
                     reason,
                     actorId,
                     utcNow,
+                    id: clientId,
                     sellingMode: product.SellingMode);
             }
             else if (string.Equals(normalizedDirection, "Out", StringComparison.OrdinalIgnoreCase))
@@ -550,6 +599,7 @@ public sealed class AdjustInventoryStock
                     reason,
                     actorId,
                     utcNow,
+                    id: clientId,
                     sellingMode: product.SellingMode);
             }
             else

@@ -6,6 +6,7 @@ using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
 
@@ -126,12 +127,28 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
     public Task<ApiResult<PosInventoryAccountDto>> AdjustAsync(
         Guid productId,
         AdjustInventoryRequest request,
-        CancellationToken ct = default) =>
-        SendAsync<PosInventoryAccountDto>(
+        CancellationToken ct = default)
+    {
+        IReadOnlyDictionary<string, string>? headers = null;
+        if (request.MovementId is Guid movementId && movementId != Guid.Empty)
+        {
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            headers = PosMutationIdempotencyHelper.BuildHeaders(
+                movementId,
+                json,
+                OfflineOperationTypes.InventoryAdjustment);
+        }
+
+        return SendAsync<PosInventoryAccountDto>(
             HttpMethod.Post,
             $"{InventoryPath}/{productId:D}/adjustments",
             request,
-            ct);
+            ct,
+            headers);
+    }
+
+    public Task<ApiResult<PosStockMovementDto>> GetMovementAsync(Guid movementId, CancellationToken ct = default) =>
+        SendAsync<PosStockMovementDto>(HttpMethod.Get, $"{InventoryPath}/movements/{movementId:D}", null, ct);
 
     public Task<ApiResult<PosStockMovementPagedResult>> ListMovementsAsync(
         Guid productId,
@@ -284,7 +301,8 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
         HttpMethod method,
         string path,
         object? body,
-        CancellationToken ct)
+        CancellationToken ct,
+        IReadOnlyDictionary<string, string>? extraHeaders = null)
     {
         if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
         {
@@ -301,6 +319,14 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
             if (body is not null)
             {
                 request.Content = JsonContent.Create(body, options: JsonOptions);
+            }
+
+            if (extraHeaders is not null)
+            {
+                foreach (var (key, value) in extraHeaders)
+                {
+                    request.Headers.TryAddWithoutValidation(key, value);
+                }
             }
 
             using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);

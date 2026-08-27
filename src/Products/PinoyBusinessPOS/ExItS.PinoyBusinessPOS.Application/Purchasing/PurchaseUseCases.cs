@@ -112,7 +112,8 @@ public sealed record CreatePurchaseOrderRequest(
     DateOnly? ExpectedDeliveryDate = null,
     string? SupplierReference = null,
     string? Notes = null,
-    string? PaymentTerm = null);
+    string? PaymentTerm = null,
+    Guid? PurchaseOrderId = null);
 
 public sealed record UpdatePurchaseOrderRequest(
     Guid SupplierId,
@@ -600,6 +601,22 @@ public sealed class CreatePurchaseOrder
         try
         {
             var org = PosOrganizationId.From(organizationId);
+
+            if (request.PurchaseOrderId is Guid clientPoId && clientPoId != Guid.Empty)
+            {
+                var existingById = await _orders
+                    .GetByIdAsync(org, PurchaseOrderId.From(clientPoId), cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingById is not null)
+                {
+                    var existingSupplier = await _suppliers
+                        .GetByIdAsync(org, existingById.SupplierId, cancellationToken)
+                        .ConfigureAwait(false);
+                    return ApplicationResult<PosPurchaseOrderDto>.Success(
+                        PurchaseMapper.Map(existingById, supplierName: existingSupplier?.Name));
+                }
+            }
+
             var supplierId = SupplierId.From(request.SupplierId);
             var supplierError = await PurchaseSupplierGuard
                 .EnsureActiveSupplierAsync(_suppliers, org, supplierId, cancellationToken)
@@ -696,6 +713,9 @@ public sealed class CreatePurchaseOrder
                 request.ExpectedDeliveryDate,
                 request.SupplierReference,
                 request.Notes,
+                id: request.PurchaseOrderId is Guid poId && poId != Guid.Empty
+                    ? PurchaseOrderId.From(poId)
+                    : null,
                 paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
                 createdBy: actorId == Guid.Empty ? null : actorId);
 

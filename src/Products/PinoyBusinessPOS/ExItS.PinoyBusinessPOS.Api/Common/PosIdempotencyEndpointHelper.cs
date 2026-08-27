@@ -112,6 +112,8 @@ internal static class PosIdempotencyEndpointHelper
         Application.Expenses.PosExpenseDto e => e.ExpenseId.ToString("D"),
         Application.Purchasing.PosPurchaseOrderDto p => p.PurchaseOrderId.ToString("D"),
         Application.Purchasing.PosGoodsReceiptDto g => g.GoodsReceiptId.ToString("D"),
+        Application.Inventory.PosInventoryAccountDto a => a.ProductId.ToString("D"),
+        Application.Inventory.PosStockMovementDto sm => sm.MovementId.ToString("D"),
         Application.CashierShifts.PosCashierShiftMovementDto m => m.MovementId.ToString("D"),
         Application.Returns.PosSaleReturnDto r => r.ReturnId.ToString("D"),
         Application.Permissions.PosRoleAssignmentDto a => a.AssignmentId.ToString("D"),

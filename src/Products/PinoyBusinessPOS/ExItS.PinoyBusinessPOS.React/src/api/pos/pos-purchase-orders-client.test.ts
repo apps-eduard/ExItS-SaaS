@@ -99,6 +99,7 @@ describe("RMAP-17 purchasing clients", () => {
       .mockResolvedValueOnce(jsonResponse(poDto({ status: "Cancelled" })));
 
     await createPurchaseOrder(workspace, {
+      purchaseOrderId: poId,
       supplierId,
       orderDate: "2026-08-21",
       lines: [{ productId, orderedQty: 10, unitPurchaseCost: 50 }],
@@ -113,6 +114,28 @@ describe("RMAP-17 purchasing clients", () => {
     for (const url of urls) {
       assertNotStockTouchingUrl(url);
     }
+
+    const createInit = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const createHeaders = new Headers(createInit.headers);
+    expect(createHeaders.get(IDEMPOTENCY_KEY_HEADER)).toBe(poId.replace(/-/g, ""));
+    expect(createHeaders.get(OPERATION_TYPE_HEADER)).toBe(OFFLINE_OPERATION_TYPES.PurchaseOrderCreate);
+  });
+
+  it("create sends purchase_order.create idempotency headers with client purchaseOrderId", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(poDto(), 201));
+    await createPurchaseOrder(workspace, {
+      purchaseOrderId: poId,
+      supplierId,
+      orderDate: "2026-08-21",
+      lines: [{ productId, orderedQty: 10, unitPurchaseCost: 50 }],
+    });
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const headers = new Headers(init.headers);
+    expect(headers.get(IDEMPOTENCY_KEY_HEADER)).toBe(poId.replace(/-/g, ""));
+    expect(headers.get(PAYLOAD_HASH_HEADER)).toMatch(/^[a-f0-9]{64}$/);
+    expect(headers.get(OPERATION_TYPE_HEADER)).toBe(OFFLINE_OPERATION_TYPES.PurchaseOrderCreate);
+    const body = JSON.parse(String(init.body));
+    expect(body.purchaseOrderId).toBe(poId);
   });
 
   it("submit sends purchase_order.submit idempotency headers", async () => {

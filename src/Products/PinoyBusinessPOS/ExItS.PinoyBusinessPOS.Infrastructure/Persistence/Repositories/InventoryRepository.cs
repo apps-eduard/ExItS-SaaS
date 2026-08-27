@@ -306,6 +306,19 @@ internal sealed class InventoryRepository : IInventoryRepository
         return Task.CompletedTask;
     }
 
+    public async Task<StockMovement?> GetMovementByIdAsync(
+        PosOrganizationId organizationId,
+        StockMovementId movementId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.StockMovements.AsNoTracking()
+            .FirstOrDefaultAsync(
+                m => m.OrganizationId == organizationId.Value && m.Id == movementId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : InventoryEntityMapper.ToDomain(record);
+    }
+
     public Task<bool> HasAnyMovementAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

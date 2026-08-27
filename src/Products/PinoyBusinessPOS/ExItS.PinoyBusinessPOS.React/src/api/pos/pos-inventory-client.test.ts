@@ -88,6 +88,7 @@ describe("pos-inventory-client lots", () => {
             quantity: 2,
             reason: "Expired",
             lotId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            movementId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
           });
           return new Response(JSON.stringify(accountJson({ onHandQuantity: 10 })), {
             status: 200,
@@ -136,13 +137,21 @@ describe("pos-inventory-client lots", () => {
     expect(account.tracksExpiration).toBe(true);
   });
 
-  it("posts adjust body with lotId for Out", async () => {
+  it("posts adjust body with lotId and movementId idempotency headers", async () => {
+    const movementId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const account = await adjustInventoryStock(workspace, productId, {
       direction: "Out",
       quantity: 2,
       reason: "Expired",
       lotId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      movementId,
     });
     expect(account.onHandQuantity).toBe(10);
+    const init = vi.mocked(fetch).mock.calls.at(-1)![1] as RequestInit;
+    const headers = new Headers(init.headers);
+    expect(headers.get("Idempotency-Key")).toBe(movementId.replace(/-/g, ""));
+    expect(headers.get("X-Pos-Operation-Type")).toBe("inventory.adjustment");
+    const body = JSON.parse(String(init.body));
+    expect(body.movementId).toBe(movementId);
   });
 });
