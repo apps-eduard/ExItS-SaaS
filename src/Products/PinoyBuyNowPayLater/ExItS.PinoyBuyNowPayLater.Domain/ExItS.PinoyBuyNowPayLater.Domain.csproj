@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyBuyNowPayLater.Domain</RootNamespace>
+    <AssemblyName>ExItS.PinoyBuyNowPayLater.Domain</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyBuyNowPayLater.Infrastructure" />
+    <InternalsVisibleTo Include="ExItS.PinoyBuyNowPayLater.UnitTests" />
+  </ItemGroup>
+
+</Project>

@@ -32,6 +32,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly IProductRepository _products;
     private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
     private readonly EnsurePlmLocalValidationCatalog _ensurePlmCatalog;
+    private readonly EnsureBnplLocalValidationCatalog _ensureBnplCatalog;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
@@ -75,6 +76,7 @@ public sealed class InitializeLocalValidationDataset
         IProductRepository products,
         EnsureMvpPosPlans ensureMvpPosPlans,
         EnsurePlmLocalValidationCatalog ensurePlmCatalog,
+        EnsureBnplLocalValidationCatalog ensureBnplCatalog,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
         GenerateEntitlementSnapshot generateSnapshot,
@@ -117,6 +119,7 @@ public sealed class InitializeLocalValidationDataset
         _products = products;
         _ensureMvpPosPlans = ensureMvpPosPlans;
         _ensurePlmCatalog = ensurePlmCatalog;
+        _ensureBnplCatalog = ensureBnplCatalog;
         _createTrial = createTrial;
         _startTrial = startTrial;
         _generateSnapshot = generateSnapshot;
@@ -212,11 +215,13 @@ public sealed class InitializeLocalValidationDataset
                     {
                         await _ensurePlmCatalog.EnsureCommercialAsync(organization.Id, cancellationToken)
                             .ConfigureAwait(false);
+                        await _ensureBnplCatalog.EnsureCommercialAsync(organization.Id, cancellationToken)
+                            .ConfigureAwait(false);
                     }
                     else
                     {
                         _logger.LogWarning(
-                            "Skipping PLM Local Validation commercial fixture for '{Slug}' because organization status is {Status}. Closed catalog organizations cannot be reopened.",
+                            "Skipping PLM/BNPL Local Validation commercial fixtures for '{Slug}' because organization status is {Status}. Closed catalog organizations cannot be reopened.",
                             orgDef.Slug,
                             organization.Status);
                     }
@@ -229,6 +234,7 @@ public sealed class InitializeLocalValidationDataset
         }
 
         await _ensurePlmCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
+        await _ensureBnplCatalog.EnsureReferenceAsync(cancellationToken).ConfigureAwait(false);
 
         var identities = LocalValidationOptions.IdentitiesForSeedScope(seedScope);
         var usersByKey = new Dictionary<string, PlatformUser>(StringComparer.OrdinalIgnoreCase);
@@ -584,6 +590,12 @@ public sealed class InitializeLocalValidationDataset
             await EnsureProductAccessAsync(organization.Id, userId, ProductCode.PinoyLoanManager, ct)
                 .ConfigureAwait(false);
         }
+
+        if (identity.GrantBnplProductAccess)
+        {
+            await EnsureProductAccessAsync(organization.Id, userId, ProductCode.PinoyBuyNowPayLater, ct)
+                .ConfigureAwait(false);
+        }
     }
 
     private async Task ReconcileOrganizationAccessAsync(
@@ -701,6 +713,32 @@ public sealed class InitializeLocalValidationDataset
                     await _revokeProductAccess
                         .ExecuteAsync(
                             plmAccess.Id,
+                            LocalValidationOptions.Actor,
+                            "local-validation single-scope reconcile",
+                            ct)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            if (identity.GrantBnplProductAccess)
+            {
+                await EnsureProductAccessAsync(org.Id, userId, ProductCode.PinoyBuyNowPayLater, ct)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                var bnplAccess = await _accessAssignments
+                    .FindActiveByUserOrganizationProductAsync(
+                        userId,
+                        org.Id,
+                        ProductCode.Create(ProductCode.PinoyBuyNowPayLater),
+                        ct)
+                    .ConfigureAwait(false);
+                if (bnplAccess is not null)
+                {
+                    await _revokeProductAccess
+                        .ExecuteAsync(
+                            bnplAccess.Id,
                             LocalValidationOptions.Actor,
                             "local-validation single-scope reconcile",
                             ct)
