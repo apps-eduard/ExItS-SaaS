@@ -113,6 +113,22 @@ public sealed class ProductAccessUseCaseTests
             ProductCode.PinoyLoanManager,
             SubscriptionStatus.GracePeriod,
             [view]));
+        Assert.True(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyPawnManager,
+            SubscriptionStatus.Trialing,
+            []));
+        Assert.True(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyPawnManager,
+            SubscriptionStatus.Active,
+            []));
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyPawnManager,
+            SubscriptionStatus.Expired,
+            []));
+        Assert.False(ProductAccessEligibility.CanEnterProduct(
+            ProductCode.PinoyPawnManager,
+            SubscriptionStatus.GracePeriod,
+            [view]));
     }
 
     [Fact]

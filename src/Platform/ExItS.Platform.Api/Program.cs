@@ -161,6 +161,8 @@ builder.Services.AddScoped<CreateTrialDefinition>();
 builder.Services.AddScoped<RetireTrialDefinition>();
 builder.Services.AddScoped<EnsureMvpPosPlans>();
 builder.Services.AddScoped<EnsurePlmLocalValidationCatalog>();
+builder.Services.AddScoped<EnsureBnplLocalValidationCatalog>();
+builder.Services.AddScoped<EnsurePpmLocalValidationCatalog>();
 builder.Services.AddScoped<EnsurePhilippinePosStarterCatalog>();
 builder.Services.AddScoped<CommercialCatalogQueryService>();
 builder.Services.AddScoped<OrganizationCurrentPlanQueryService>();

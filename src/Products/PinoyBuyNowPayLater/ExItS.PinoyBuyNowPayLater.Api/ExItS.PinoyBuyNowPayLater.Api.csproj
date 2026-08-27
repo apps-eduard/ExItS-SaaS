@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyBuyNowPayLater.Api</RootNamespace>
+    <AssemblyName>ExItS.PinoyBuyNowPayLater.Api</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.PinoyBuyNowPayLater.Application\ExItS.PinoyBuyNowPayLater.Application.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyBuyNowPayLater.Infrastructure\ExItS.PinoyBuyNowPayLater.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyBuyNowPayLater.UnitTests" />
+  </ItemGroup>
+
+</Project>

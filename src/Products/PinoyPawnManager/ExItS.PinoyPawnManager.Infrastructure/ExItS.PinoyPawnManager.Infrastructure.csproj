@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyPawnManager.Infrastructure</RootNamespace>
+    <AssemblyName>ExItS.PinoyPawnManager.Infrastructure</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExItS.PinoyPawnManager.Application\ExItS.PinoyPawnManager.Application.csproj" />
+    <ProjectReference Include="..\ExItS.PinoyPawnManager.Domain\ExItS.PinoyPawnManager.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExItS.PinoyPawnManager.UnitTests" />
+  </ItemGroup>
+
+</Project>

@@ -10,6 +10,8 @@ ExItS is an independent multi-product portfolio. Shared commercial and identity 
 |---|---|
 | **ExItS Platform** | Identity, organizations, plans, subscriptions, entitlements, Platform Admin, audit |
 | **PinoyBusinessPOS** | Retail POS operations (catalog, sales, inventory, credit/utang, offline, mobile/web) |
+| **PinoyLoanManager** | Independent lending product (separate subscription) |
+| **PinoyPawnManager** | Independent pawn/custody product — **PPM-01 scaffold only** (no operational pawn domain yet) |
 | **Personal Web** | Personal account experience (utang, business upgrade, linked-customer views) |
 
 Platform and product databases are separate authorities. There are no cross-database foreign keys or joins. Authorization and entitlements are explicit; product operational data never becomes Platform data.

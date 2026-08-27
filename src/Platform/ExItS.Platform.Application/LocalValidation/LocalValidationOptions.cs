@@ -39,7 +39,7 @@ public sealed class LocalValidationOptions
     public string SharedPassword { get; set; } = string.Empty;
 
     /// <summary>Deterministic Local Validation dataset version (logged on seed).</summary>
-    public const string DatasetVersion = "2026-08-20-plm-local-validation-v1";
+    public const string DatasetVersion = "2026-08-27-bnpl-ppm-local-validation-v1";
 
     public const string ProductPlanCode = "local-validation-pos";
     public const string ProductPlanDisplayName = "Local Validation POS Plan";
@@ -51,6 +51,21 @@ public sealed class LocalValidationOptions
     public const string PlmLocalValidationPlanCode = "plm-local-validation";
     public const string PlmLocalValidationPlanDisplayName = "PLM Local Validation";
     public const string PlmLocalValidationTrialDisplayName = "PLM Local Validation";
+
+    /// <summary>
+    /// Test-only BNPL commercial fixture identifiers. Not production plan, trial, or pricing policy.
+    /// </summary>
+    public const string BnplLocalValidationPlanCode = "bnpl-local-validation";
+    public const string BnplLocalValidationPlanDisplayName = "BNPL Local Validation";
+    public const string BnplLocalValidationTrialDisplayName = "BNPL Local Validation";
+
+    /// <summary>
+    /// Test-only PPM commercial fixture identifiers. Not production plan, trial, pricing, or licensing policy.
+    /// Does not close PPM-D-00-04–20.
+    /// </summary>
+    public const string PpmLocalValidationPlanCode = "ppm-local-validation";
+    public const string PpmLocalValidationPlanDisplayName = "PPM Local Validation";
+    public const string PpmLocalValidationTrialDisplayName = "PPM Local Validation";
 
     public const string Actor = "local-validation-initializer";
 
@@ -118,7 +133,9 @@ public sealed record LocalValidationIdentityDefinition(
     OrganizationMembershipValidationRole? OrganizationRole,
     bool GrantPosProductAccess,
     string? PosLocalRoleCode,
-    bool GrantPlmProductAccess = false);
+    bool GrantPlmProductAccess = false,
+    bool GrantBnplProductAccess = false,
+    bool GrantPpmProductAccess = false);
 
 public enum OrganizationMembershipValidationRole
 {
@@ -240,7 +257,8 @@ public static class LocalValidationIdentityCatalog
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Owner",
-            GrantPlmProductAccess: true),
+            GrantPlmProductAccess: true,
+            GrantBnplProductAccess: true),
         new(
             Key: "carlo-reyes",
             Username: "carlo.reyes",
@@ -254,7 +272,8 @@ public static class LocalValidationIdentityCatalog
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationMember,
             GrantPosProductAccess: true,
             PosLocalRoleCode: "Cashier",
-            GrantPlmProductAccess: true),
+            GrantPlmProductAccess: true,
+            GrantBnplProductAccess: true),
         new(
             Key: "ana-cruz",
             Username: "ana.cruz",
@@ -267,7 +286,8 @@ public static class LocalValidationIdentityCatalog
             OrganizationSlug: LocalValidationOrganizationCatalog.XyzMiniGrocerySlug,
             OrganizationRole: OrganizationMembershipValidationRole.OrganizationOwner,
             GrantPosProductAccess: true,
-            PosLocalRoleCode: "Owner"),
+            PosLocalRoleCode: "Owner",
+            GrantPpmProductAccess: true),
         new(
             Key: "daniel-garcia",
             Username: "daniel.garcia",

@@ -117,28 +117,36 @@ public sealed class LocalValidationIdentityCatalogTests
             && i.OrganizationSlug == LocalValidationOrganizationCatalog.AbcSariSariSlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
             && i.PosLocalRoleCode == "Owner"
-            && i.GrantPlmProductAccess);
+            && i.GrantPlmProductAccess
+            && i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "carlo-reyes"
             && i.OrganizationSlug == LocalValidationOrganizationCatalog.AbcSariSariSlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
             && i.PosLocalRoleCode == "Cashier"
-            && i.GrantPlmProductAccess);
+            && i.GrantPlmProductAccess
+            && i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "ana-cruz"
             && i.OrganizationSlug == LocalValidationOrganizationCatalog.XyzMiniGrocerySlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
             && i.PosLocalRoleCode == "Owner"
-            && !i.GrantPlmProductAccess);
+            && !i.GrantPlmProductAccess
+            && !i.GrantBnplProductAccess
+            && i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "daniel-garcia"
             && i.OrganizationSlug == LocalValidationOrganizationCatalog.XyzMiniGrocerySlug
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
             && i.PosLocalRoleCode == "Cashier"
-            && !i.GrantPlmProductAccess);
+            && !i.GrantPlmProductAccess
+            && !i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Equal(2, catalog.Count(i => i.PreferredAccountClass == AccountClass.Platform));
         Assert.Equal(4, catalog.Count(i => i.PreferredAccountClass == AccountClass.Organization));
