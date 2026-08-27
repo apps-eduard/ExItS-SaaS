@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  ArrowLeftRight,
   ArrowRight,
   Bell,
   Building2,
@@ -16,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
+import { listMyPendingOwnershipTransfers } from "@/api/platform/ownership-transfer-client";
 import {
   listBorrowedRelationships,
   listLentRelationships,
@@ -29,6 +31,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
 import {
   countSegment,
@@ -375,6 +378,20 @@ export function PersonalUtangHubPage() {
 export function PersonalMorePage() {
   const { t } = useI18n();
   const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
+  const pendingOwnershipQuery = useQuery({
+    queryKey: PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY,
+    queryFn: ({ signal }) => listMyPendingOwnershipTransfers(signal),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const pendingOwnershipCount = pendingOwnershipQuery.data?.length ?? 0;
+  const ownershipTileLabel =
+    pendingOwnershipCount > 0
+      ? t("personal.ownershipTransfers.moreTileCount").replace(
+          "{count}",
+          String(pendingOwnershipCount),
+        )
+      : t("personal.ownershipTransfers.moreTile");
 
   return (
     <div
@@ -454,6 +471,13 @@ export function PersonalMorePage() {
               icon: QrCode,
               testId: "more-open-qr",
               to: "/personal/my-qr",
+            },
+            {
+              key: "ownership",
+              label: ownershipTileLabel,
+              icon: ArrowLeftRight,
+              testId: "more-open-ownership-transfers",
+              to: "/personal/ownership-transfers",
             },
           ]}
         />

@@ -183,13 +183,27 @@ function extractLeadingName(preview: string): string | null {
   return name && name.length > 0 ? name : null;
 }
 
-/** Route for notification tap — keep connection vs Utang invitation separate. */
+/**
+ * Route for notification tap — keep connection vs Utang invitation separate.
+ *
+ * PERS-OWNERSHIP-01 gap: Platform does not currently emit an ownership-transfer
+ * in-app notification `relatedType` (no OrganizationOwnershipTransfer / similar
+ * string found). When backend adds one, map it to `/personal/ownership-transfers`.
+ */
 export function resolveNotificationDeepLink(
   relatedType: string,
   relatedId?: string | null,
 ): string {
   const type = relatedType.trim().toLowerCase();
   const id = relatedId?.trim() || "";
+  // Defensive: if a future/related ownership string appears, deep-link the inbox.
+  if (
+    type === "organizationownershiptransfer" ||
+    type.includes("ownershiptransfer") ||
+    type.includes("ownership_transfer")
+  ) {
+    return "/personal/ownership-transfers";
+  }
   if (type === "personalutanginvitation" || type.includes("utanginvitation")) {
     return "/personal/utang/invitations";
   }

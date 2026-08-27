@@ -177,6 +177,8 @@ export const en = {
   "offline.requiredPersonalUtangReminder": "Sending a reminder needs internet.",
   "offline.requiredPersonalUtangAdjustment": "Correcting a balance needs internet.",
   "offline.requiredPersonalUtangSettle": "Settling this utang needs internet.",
+  "offline.requiredPersonalOwnershipTransfer":
+    "Accepting or declining ownership needs internet.",
   "offline.personalCachedNotice": "Showing saved utang. It refreshes when you reconnect.",
   "offline.personalWaitingBadge": "Waiting to sync",
   "offline.personalContactWillQueue":
@@ -1114,6 +1116,49 @@ export const en = {
   "personal.more.switchToBusiness": "Switch to business",
   "personal.more.switchingBusiness": "Switching…",
   "personal.more.back": "Back to More",
+  "personal.ownershipTransfers.moreTile": "Ownership transfers",
+  "personal.ownershipTransfers.moreTileCount": "Ownership transfers ({count})",
+  "personal.ownershipTransfers.title": "Ownership transfers",
+  "personal.ownershipTransfers.lede":
+    "When someone offers you ownership of a business, review and accept or decline here.",
+  "personal.ownershipTransfers.emptyTitle": "No pending ownership transfers",
+  "personal.ownershipTransfers.emptyDetail":
+    "Offers to transfer business ownership to you will appear here.",
+  "personal.ownershipTransfers.errorTitle": "Could not load transfers",
+  "personal.ownershipTransfers.errorDetail":
+    "Ownership transfers could not be loaded. Check your connection and try again.",
+  "personal.ownershipTransfers.retry": "Try again",
+  "personal.ownershipTransfers.cardHint":
+    "Accepting makes you the Organization Owner. Business data stays with the organization.",
+  "personal.ownershipTransfers.expiresAt": "Expires {date}",
+  "personal.ownershipTransfers.statusPending": "Pending",
+  "personal.ownershipTransfers.statusExpired": "Expired",
+  "personal.ownershipTransfers.expiredDetail":
+    "This offer has expired. Ask the current owner to send a new transfer if still needed.",
+  "personal.ownershipTransfers.accept": "Accept",
+  "personal.ownershipTransfers.decline": "Decline",
+  "personal.ownershipTransfers.cancel": "Cancel",
+  "personal.ownershipTransfers.acceptTitle": "Become owner of {name}?",
+  "personal.ownershipTransfers.acceptBulletOwner":
+    "You become the Organization Owner of this business.",
+  "personal.ownershipTransfers.acceptBulletLeave":
+    "The current owner leaves the organization.",
+  "personal.ownershipTransfers.acceptBulletDataStays":
+    "Business profile, staff, inventory, sales, and suppliers stay with the organization.",
+  "personal.ownershipTransfers.acceptBulletNotTransferred":
+    "This does not transfer Personal data, Personal Utang, payment methods, POS-local roles, or device registrations.",
+  "personal.ownershipTransfers.acceptConfirm": "Accept ownership",
+  "personal.ownershipTransfers.declineTitle": "Decline ownership of {name}?",
+  "personal.ownershipTransfers.declineConfirm": "Decline offer",
+  "personal.ownershipTransfers.acceptFailed": "Could not accept this ownership transfer.",
+  "personal.ownershipTransfers.declineFailed": "Could not decline this ownership transfer.",
+  "personal.ownershipTransfers.staleConflict":
+    "This transfer changed. The list was refreshed — review again.",
+  "personal.ownershipTransfers.successTitle": "You're now the owner of {name}",
+  "personal.ownershipTransfers.successDetail":
+    "You can open the business workspace now, or stay in Personal.",
+  "personal.ownershipTransfers.goToBusiness": "Go to business",
+  "personal.ownershipTransfers.stayPersonal": "Stay in Personal",
   "personal.explore.title": "Explore POS plans",
   "personal.explore.lede": "Choose a plan, then create your business organization.",
   "personal.explore.loading": "Loading plans…",

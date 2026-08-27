@@ -64,7 +64,7 @@ Router: `ExItS.PinoyBusinessPOS.React/src/app/router.tsx` Personal tree under `R
 | Todo | COMPLETE (ONLINE_ONLY Web) | `/personal/todo` CRUD online; Web does not enqueue offline transitions |
 | Stores / shop / cart / checkout / orders / receipts | COMPLETE (online) | Linked merchants + customer ordering; cart memory-only |
 | My QR / public resolve-in-flow | FUNCTIONAL_BUT_UX_GAP | `/personal/my-qr`; dedicated resolve route **MISSING** |
-| Notifications + invitations | PARTIAL | Inbox/archive/utang/people invites; ownership-transfer UI **MISSING** |
+| Notifications + invitations | COMPLETE (recipient) | Inbox/archive/utang/people invites; ownership-transfer Personal UI **RESOLVED by PERS-OWNERSHIP-01** |
 | Profile + preferences | FUNCTIONAL_BUT_UX_GAP | Profile + language/theme/density; no dedicated diagnostics page |
 | Start a Business | COMPLETE | Explore + start → Organization **onboarding** handoff |
 | Personal ↔ Org context switch | COMPLETE | `useSwitchToBusiness`, `ensurePersonalSessionProfile`, `/switching-context` |
@@ -164,7 +164,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 
 1. ~~RMAP-22H seller multi-user commerce continuation (e2e debt)~~ — **RESOLVED by PERS-E2E-22H-REPAIR** (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)). Start Business → `/onboarding` handoff remains covered by RMAP-22H; buyer→seller shared-order continuation is the companion suite.  
 2. ~~No named Utang **settlement/close** flow (pay-to-zero only)~~ — **RESOLVED by PERS-SETTLE-01** (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).  
-3. Ownership-transfer Personal UI absent (backend/docs exist historically).
+3. ~~Ownership-transfer Personal UI absent (backend/docs exist historically).~~ — **RESOLVED by PERS-OWNERSHIP-01** (see [`PERS-OWNERSHIP-01.md`](./PERS-OWNERSHIP-01.md)).
 
 ### P2 — important UX / completeness
 
@@ -211,7 +211,7 @@ Historical RMAP-22H hygiene only. Seller multi-user commerce continuation delive
 4. ~~**PERS-PEOPLE-OFFLINE-01**~~ — **CANCELLED** by ONLINE_ONLY product decision (not a remaining gap).
 5. ~~**PERS-E2E-22H-REPAIR**~~ — RESOLVED (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)).
 6. ~~**PERS-SETTLE-01**~~ — RESOLVED (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).
-7. **PERS-OWNERSHIP-01** — ownership-transfer UI if product prioritizes.
+7. ~~**PERS-OWNERSHIP-01**~~ — RESOLVED (see [`PERS-OWNERSHIP-01.md`](./PERS-OWNERSHIP-01.md)). Org Owner initiation UI remains out of scope (`REACT_ORG_OWNER_INITIATION_PRESENT=NO`).
 
 ---
 

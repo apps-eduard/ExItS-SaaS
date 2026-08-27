@@ -11,6 +11,7 @@ import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
+import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
@@ -295,6 +296,10 @@ export const appRoutes = [
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },
               { path: "more", element: <PersonalMorePage /> },
+              {
+                path: "ownership-transfers",
+                element: <PersonalOwnershipTransfersPage />,
+              },
               { path: "profile", element: <PersonalProfilePage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },
               {

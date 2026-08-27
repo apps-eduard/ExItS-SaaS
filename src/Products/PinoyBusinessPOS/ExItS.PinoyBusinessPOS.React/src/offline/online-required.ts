@@ -37,6 +37,7 @@ export const ONLINE_REQUIRED_CODES = {
   PersonalUtangAdjustment: "online_required.personal_utang_adjustment",
   PersonalUtangSettle: "online_required.personal_utang_settle",
   PersonalUtangClose: "online_required.personal_utang_close",
+  PersonalOwnershipTransfer: "online_required.personal_ownership_transfer",
   PersonalTodoShare: "online_required.personal_todo_share",
   CatalogImport: "online_required.catalog_import",
 } as const;
@@ -61,6 +62,8 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.PersonalUtangAdjustment]: "offline.requiredPersonalUtangAdjustment",
   [ONLINE_REQUIRED_CODES.PersonalUtangSettle]: "offline.requiredPersonalUtangSettle",
   [ONLINE_REQUIRED_CODES.PersonalUtangClose]: "offline.requiredPersonalUtangSettle",
+  [ONLINE_REQUIRED_CODES.PersonalOwnershipTransfer]:
+    "offline.requiredPersonalOwnershipTransfer",
   [ONLINE_REQUIRED_CODES.PersonalTodoShare]: "offline.requiredPersonalTodoShare",
   [ONLINE_REQUIRED_CODES.CatalogImport]: "offline.requiredCatalogImport",
 };

@@ -143,6 +143,9 @@ describe("resolveNotificationDeepLink", () => {
     expect(resolveNotificationDeepLink("PersonalConnectionRequest")).toBe("/personal/invitations");
     expect(resolveNotificationDeepLink("PersonalUtangInvitation")).toBe("/personal/utang/invitations");
     expect(resolveNotificationDeepLink("CustomerLinkRequest")).toBe("/personal/customer-links");
+    expect(resolveNotificationDeepLink("OrganizationOwnershipTransfer")).toBe(
+      "/personal/ownership-transfers",
+    );
   });
 
   it("opens the related Utang relationship for pending review", () => {
