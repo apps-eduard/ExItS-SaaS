@@ -18,12 +18,19 @@ import {
 } from "@/offline/queued-request";
 import { PERSONAL_OPERATION_TYPES } from "@/offline/server-dedupe-policy";
 import type { OfflineOperationRecord } from "@/offline/types";
+import {
+  guardPersonalWebOfflineEnqueue,
+  type PersonalOfflineEnqueueRuntimeOptions,
+} from "@/runtime/personal-web-runtime-policy";
 
 /**
- * Offline Personal Utang (RMAP-21F).
+ * Offline Personal Utang engine (RMAP-21F).
  *
- * Offline-capable, because each is a private record the signed-in person is making about their own
- * money and the server needs no live state to accept it:
+ * Personal Web/PWA (PERS-WEB-ONLINE-ONLY-01) does not activate this path for new user actions —
+ * enqueue wrappers call `guardPersonalWebOfflineEnqueue`. Engine unit tests and future Capacitor
+ * may pass `{ allowOfflineEngine: true }`. People contact enqueue remains engine-only (not Web UI).
+ *
+ * Engine-capable operations (preserved for native):
  *   - personal.contact.create               (a name in this person's own address book)
  *   - personal.utang.relationship.create    (a debt this person is recording, contact-side only)
  *   - personal.utang.entry.record           (Loan or Payment — append-only, balance recomputed)
@@ -34,8 +41,9 @@ import type { OfflineOperationRecord } from "@/offline/types";
  *   - reminders and their delivery
  *   - Adjustment entries, which correct a balance the device may no longer be looking at
  *
- * These routes have no idempotency support, so `serverDedupeMode` is "none" and the sync processor
- * must not silently replay them. See `server-dedupe-policy.ts`.
+ * These create routes accept a client-stable entity id (PERS-IDEM-01), so `serverDedupeMode` is
+ * `"idempotency-key"` and the sync processor may safely auto-retry after an ambiguous transport
+ * failure. See `server-dedupe-policy.ts`.
  */
 
 export const PERSONAL_UTANG_PRODUCT_DOMAIN = "personal.utang";
@@ -86,9 +94,8 @@ async function personalScopeFields(scope: PersonalOfflineScope) {
 }
 
 /**
- * The Personal routes mint their own ids, so a queued operation has no server id to reuse. The
- * local operation id is still the idempotency key: it makes the queue row unique and it is the
- * key the processor would send the day these routes learn to deduplicate.
+ * The same local entity id is the server entity id and the outbox idempotency key. It must survive
+ * enqueue → app restart → reconnect → replay without being regenerated.
  */
 function localIdempotencyKey(localId: string): string {
   return localId.replace(/-/g, "").toLowerCase();
@@ -110,7 +117,9 @@ export type EnqueuedPersonalContact = {
 
 export async function enqueuePersonalContactCreate(
   input: EnqueuePersonalContactInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalContact> {
+  guardPersonalWebOfflineEnqueue(options);
   if (input.linkedUserIdentityId) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.contact.identity_link_not_supported",
@@ -127,6 +136,7 @@ export async function enqueuePersonalContactCreate(
 
   const scope = await personalScopeFields(input);
   const body: CreatePersonalContactRequest = {
+    contactId: input.contactId,
     displayName,
     phone: input.contact.phone?.trim() || null,
     email: input.contact.email?.trim() || null,
@@ -164,8 +174,10 @@ export async function enqueuePersonalContactCreate(
 }
 
 export type EnqueuePersonalRelationshipInput = PersonalOfflineScope & {
-  /** Local id, replaced by the server id once the queued relationship posts. */
+  /** Client-stable relationship id — also sent to the server and reused on replay. */
   relationshipId: string;
+  /** Client-stable id for the initial loan entry when amount &gt; 0. */
+  initialLoanEntryId?: string | null;
   /** "Lent" = this person is the creditor, "Borrowed" = this person is the debtor. */
   perspective: "Lent" | "Borrowed";
   /** Local or server contact id for the other side of the debt. */
@@ -197,7 +209,9 @@ export type EnqueuedPersonalRelationship = {
  */
 export async function enqueuePersonalRelationshipCreate(
   input: EnqueuePersonalRelationshipInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalRelationship> {
+  guardPersonalWebOfflineEnqueue(options);
   if (input.counterpartyUserIdentityId) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.relationship.counterparty_identity_not_supported",
@@ -234,6 +248,8 @@ export async function enqueuePersonalRelationshipCreate(
   const lent = input.perspective === "Lent";
 
   const body = {
+    relationshipId: input.relationshipId,
+    initialLoanEntryId: input.initialLoanEntryId ?? null,
     creditorUserIdentityId: lent ? input.ownerUserIdentityId : null,
     creditorContactId: lent ? null : contactRef,
     debtorUserIdentityId: lent ? null : input.ownerUserIdentityId,
@@ -318,7 +334,9 @@ export type EnqueuedPersonalEntry = {
  */
 export async function enqueuePersonalUtangEntry(
   input: EnqueuePersonalEntryInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalEntry> {
+  guardPersonalWebOfflineEnqueue(options);
   if (!input.relationshipId.trim()) {
     throw new OfflinePersonalUtangRejectedError(
       "offline.personal.entry.relationship_required",
@@ -349,6 +367,7 @@ export async function enqueuePersonalUtangEntry(
       method: "POST",
       path: `${UTANG_PATH}/relationships/${relationshipRef}/entries`,
       body: {
+        entryId: input.entryId,
         entryType: input.entryType,
         amount,
         expectedVersion: null,
@@ -381,6 +400,9 @@ export async function enqueuePersonalUtangEntry(
     canCancel: false,
     affectsBalance: true,
     isSharedLedger: false,
+    intent: "Regular",
+    settlementBalanceSnapshot: null,
+    isSettlement: false,
   };
   await cacheLocalPersonalEntry(input.db, input.scopeBinding, entry);
   return { operation, entry };

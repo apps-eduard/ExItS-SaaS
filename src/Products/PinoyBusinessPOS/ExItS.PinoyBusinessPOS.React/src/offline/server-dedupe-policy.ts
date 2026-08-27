@@ -1,11 +1,10 @@
 /**
  * Which queued operations the server can deduplicate, and what the sync processor is therefore
- * allowed to do after a failure it cannot classify (RMAP-21F).
+ * allowed to do after a failure it cannot classify (RMAP-21F / PERS-IDEM-01).
  *
  * POS money routes accept a client-chosen entity id plus `Idempotency-Key`, so replaying one is
- * safe: the second request lands on the same row. The Platform Personal routes have neither — the
- * server mints the id and there is no idempotency store — so a replay after an ambiguous failure
- * would create a second contact, a second debt, or a second payment against a friend.
+ * safe: the second request lands on the same row. Personal Utang contact / relationship / entry
+ * create routes now accept the same client-stable entity id in the body and converge on replay.
  *
  * A browser cannot tell "the request never left the device" apart from "the server committed and
  * the response was lost". For an operation with no server-side dedupe, the safe answer is to stop
@@ -41,9 +40,6 @@ export const PERSONAL_TODO_OPERATION_TYPES = {
 } as const;
 
 const NO_SERVER_DEDUPE = new Set<string>([
-  PERSONAL_OPERATION_TYPES.ContactCreate,
-  PERSONAL_OPERATION_TYPES.RelationshipCreate,
-  PERSONAL_OPERATION_TYPES.EntryRecord,
   // The server mints the To-do id, so a replayed create makes a second To-do.
   PERSONAL_TODO_OPERATION_TYPES.TodoCreate,
 ]);

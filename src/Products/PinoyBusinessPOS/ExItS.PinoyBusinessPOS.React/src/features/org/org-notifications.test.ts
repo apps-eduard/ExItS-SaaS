@@ -26,6 +26,15 @@ describe("resolveOrganizationNotificationHref", () => {
     ).toBe("/purchasing/22222222-2222-2222-2222-222222222222");
   });
 
+  it("routes customer-order notifications to seller order detail", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "CustomerOrderSubmitted",
+        relatedId: "33333333-3333-3333-3333-333333333333",
+      }),
+    ).toBe("/orders/33333333-3333-3333-3333-333333333333");
+  });
+
   it("returns null for unknown types", () => {
     expect(
       resolveOrganizationNotificationHref({

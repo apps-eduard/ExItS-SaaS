@@ -67,6 +67,8 @@ export const AUTH_ME_PATH = "/api/v1/platform/auth/me";
 export const AUTH_LOGOUT_PATH = "/api/v1/platform/auth/logout";
 export const AUTH_REGISTER_PATH = "/api/v1/platform/auth/register";
 export const AUTH_FORGOT_PASSWORD_PATH = "/api/v1/platform/auth/forgot-password";
+export const AUTH_ACTIVATE_PATH = "/api/v1/platform/auth/activate-account";
+export const AUTH_RESET_PASSWORD_PATH = "/api/v1/platform/auth/reset-password";
 export const AUTH_ACCOUNT_PROFILES_PATH = "/api/v1/platform/auth/account-profiles";
 export const AUTH_ACCOUNT_PROFILES_SELECT_PATH = "/api/v1/platform/auth/account-profiles/select";
 export const AUTH_ACCOUNT_PROFILES_ENSURE_PATH = "/api/v1/platform/auth/account-profiles/ensure";
@@ -78,6 +80,8 @@ export const LOCAL_VALIDATION_IDENTITIES_PATH =
   "/api/v1/platform/local-validation/quick-login-identities";
 
 export const POS_PRODUCT_CODE = "pinoy-business-pos";
+/** Server allow-listed public surface for Personal/POS activation and password-reset emails. */
+export const POS_PUBLIC_SURFACE = "pinoy-business-pos";
 
 export const SESSION_EXPIRED_ERROR_CODE = "application.auth.session_expired";
 

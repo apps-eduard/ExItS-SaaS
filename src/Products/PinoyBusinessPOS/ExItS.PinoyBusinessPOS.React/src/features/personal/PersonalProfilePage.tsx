@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -159,6 +160,17 @@ export function PersonalProfilePage() {
         className="rounded-[var(--exits-radius-md)] border border-border bg-surface"
         data-testid="personal-profile-card"
       >
+        <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+          <PersonAvatar name={profile.displayName} size="lg" />
+          <div className="min-w-0">
+            <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold text-foreground">
+              {profile.displayName}
+            </p>
+            <p className="m-0 mt-0.5 truncate text-[length:var(--exits-text-sm)] text-muted">
+              {profile.email}
+            </p>
+          </div>
+        </div>
         {editing ? (
           <div className="flex flex-col gap-4 p-4">
             <label className="flex flex-col gap-1.5">

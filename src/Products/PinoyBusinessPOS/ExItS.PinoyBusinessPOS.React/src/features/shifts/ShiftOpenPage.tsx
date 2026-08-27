@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw } from "lucide-react";
+import { ActionButtonLoading } from "@/components/exits/loading/ActionButtonLoading";
 import { canManageRegisters, canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -24,7 +25,9 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import {
   ensurePwaDefaultCashRegister,
@@ -232,7 +235,7 @@ export function ShiftOpenPage() {
   }
 
   if (!workspaceScope) {
-    return <LoadingState label={t("loading.label")} />;
+    return <BranchRequiredPanel title={t("shift.openTitle")} />;
   }
 
   async function onOpen(skipOpeningCash: boolean) {
@@ -274,6 +277,27 @@ export function ShiftOpenPage() {
       // After open, land on Sell — not shift detail (close is available from Shifts).
       navigate("/sell", { replace: true });
     } catch (error) {
+      if (isLikelyNetworkFailure(error)) {
+        setSubmitError(t("checkout.confirmingTransaction"));
+        try {
+          const after = await getCurrentCashierShift(workspaceScope!);
+          if (after && after.status.toLowerCase() === "open") {
+            await refresh();
+            navigate("/sell", { replace: true });
+            return;
+          }
+          // Lookup reached the server and there is still no open shift — safe to report failure.
+          setSubmitError(
+            error instanceof PosApiError
+              ? (error.problem.detail ?? error.message)
+              : t("shift.openError"),
+          );
+        } catch {
+          setSubmitError(t("checkout.transactionStatusUnknown"));
+        }
+        void registersQuery.refetch();
+        return;
+      }
       const message =
         error instanceof PosApiError
           ? (error.problem.detail ?? error.message)
@@ -542,22 +566,19 @@ export function ShiftOpenPage() {
           )}
         </div>
         <div className="catalog-form-actions__secondary">
-          <Button
+          <ActionButtonLoading
             type="button"
             className="catalog-form-actions__save min-h-11"
             disabled={startBlocked}
+            loading={saving}
             data-testid="shift-open-confirm"
             data-blocked={startBlocked ? "true" : "false"}
             title={startBlocked ? startBlockedReason : undefined}
             onClick={() => void onOpen(!showOpeningCash)}
           >
-            {saving ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <Play className="size-4 shrink-0" aria-hidden />
-            )}
+            {!saving ? <Play className="size-4 shrink-0" aria-hidden /> : null}
             {saving ? t("shift.opening") : t("shift.openConfirm")}
-          </Button>
+          </ActionButtonLoading>
         </div>
       </div>
     </div>

@@ -75,7 +75,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
     const saleId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const { db, scopeBinding } = await openScopedDb(userId);
 
-    const record = await enqueueOfflineCashSale(baseInput(db, scopeBinding, userId, saleId));
+    const record = await enqueueOfflineCashSale(baseInput(db, scopeBinding, userId, saleId), { allowOfflineEngine: true });
 
     expect(record.queueState).toBe("Pending");
     expect(record.operationType).toBe("sale.checkout");
@@ -136,7 +136,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       enqueueOfflineCashSale({
         ...baseInput(db, scopeBinding, userId, saleId),
         discounts: [{ scope: "Sale", method: "Percentage", value: 10, reason: "Regular buyer" }],
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.discount_not_supported" });
 
     expect(await listOutbox(db)).toHaveLength(0);
@@ -151,7 +151,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
     const attempt = enqueueOfflineCashSale({
       ...baseInput(db, scopeBinding, userId, saleId),
       priceOverrides: [{ requestedUnitPrice: 90, reason: "Price match", lineNumber: 1 }],
-    });
+    }, { allowOfflineEngine: true });
 
     await expect(attempt).rejects.toBeInstanceOf(OfflineCashSaleRejectedError);
     await expect(attempt).rejects.toMatchObject({
@@ -167,13 +167,13 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
     const { db, scopeBinding } = await openScopedDb(userId);
     const base = baseInput(db, scopeBinding, userId, saleId);
 
-    await expect(enqueueOfflineCashSale({ ...base, shiftId: "  " })).rejects.toMatchObject({
+    await expect(enqueueOfflineCashSale({ ...base, shiftId: "  " }, { allowOfflineEngine: true })).rejects.toMatchObject({
       code: "offline.sale.shift_required",
     });
-    await expect(enqueueOfflineCashSale({ ...base, lines: [] })).rejects.toMatchObject({
+    await expect(enqueueOfflineCashSale({ ...base, lines: [] }, { allowOfflineEngine: true })).rejects.toMatchObject({
       code: "offline.sale.lines_required",
     });
-    await expect(enqueueOfflineCashSale({ ...base, amountTendered: -1 })).rejects.toMatchObject({
+    await expect(enqueueOfflineCashSale({ ...base, amountTendered: -1 }, { allowOfflineEngine: true })).rejects.toMatchObject({
       code: "offline.sale.tender_invalid",
     });
 
@@ -188,7 +188,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
     const base = baseInput(db, scopeBinding, userId, saleId);
 
     await expect(
-      enqueueOfflineCashSale({ ...base, lines: [{ productId, quantity: 2 }] }),
+      enqueueOfflineCashSale({ ...base, lines: [{ productId, quantity: 2 }] }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_required" });
 
     // One leased line does not license the unleased one beside it.
@@ -196,7 +196,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       enqueueOfflineCashSale({
         ...base,
         lines: [leasedLine, { productId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1", quantity: 1 }],
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_required" });
 
     expect(await listOutbox(db)).toHaveLength(0);
@@ -220,7 +220,7 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       enqueueOfflineCashSale({
         ...baseInput(db, scopeBinding, userId, saleId),
         lines: [mockLeasedCheckoutLine(expired, 1)],
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_expired" });
 
     expect(await listOutbox(db)).toHaveLength(0);
@@ -237,18 +237,18 @@ describe("RMAP-21D offline Cash sale enqueue", () => {
       enqueueOfflineCashSale({
         ...base,
         lines: [{ ...leasedLine, unitPriceSnapshot: 1 }],
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
 
     await expect(
-      enqueueOfflineCashSale({ ...base, lines: [{ ...leasedLine, lineTotal: 1 }] }),
+      enqueueOfflineCashSale({ ...base, lines: [{ ...leasedLine, lineTotal: 1 }] }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
 
     await expect(
       enqueueOfflineCashSale({
         ...base,
         lines: [{ ...leasedLine, productId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1" }],
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.sale.price_authority_line_mismatch" });
 
     expect(await listOutbox(db)).toHaveLength(0);

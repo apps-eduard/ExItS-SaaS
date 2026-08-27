@@ -10,7 +10,6 @@ import { assertNoHorizontalOverflow } from "./helpers";
 import {
   E2E_BRANCH_ID,
   E2E_ORG_ID,
-  chooseOwnerOperations,
   clientNavigate,
   mockBoundOwnerSession,
   signInAndBindOwner,
@@ -458,6 +457,14 @@ async function mockIntegratedStory(page: Page, state: StoryState) {
       return json(route, state.contactCreated ? [contactDto()] : []);
     }
 
+    if (url.includes("/api/v1/personal/connections") && method === "GET") {
+      return json(route, []);
+    }
+
+    if (url.includes("/api/v1/personal/notifications/unread-count") && method === "GET") {
+      return json(route, { unreadCount: 0 });
+    }
+
     if (url.includes("/api/v1/personal/utang/contacts") && method === "POST") {
       if (state.actor !== "A") return json(route, { detail: "denied" }, 403);
       state.contactCreated = true;
@@ -764,6 +771,8 @@ async function signInAs(page: Page, email: string) {
   await page.getByLabel("Email or staff login").fill(email);
   await page.getByLabel("Password").fill("secret");
   await page.getByRole("button", { name: "Sign in" }).click();
+  // Personal Web is online-only (PERS-WEB-ONLINE-ONLY-01): no offline PIN enroll gate.
+  await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 20000 });
 }
 
 test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
@@ -788,22 +797,27 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
     await expect(page.getByTestId("personal-bottom-nav")).toBeVisible();
     await expect(page.getByTestId("personal-utang-summary")).toBeVisible();
 
-    await clientNavigate(page, "/personal/utang/people");
-    await expect(page.getByTestId("personal-utang-people")).toBeVisible();
-    await page.getByTestId("utang-contact-name").fill("Ben Buyer");
-    await page.getByTestId("utang-contact-email").fill("ben@example.com");
-    await page.getByTestId("utang-contact-submit").click();
-    await expect(page.getByTestId(`utang-contact-${CONTACT_ID}`)).toBeVisible({ timeout: 10000 });
+    await clientNavigate(page, "/personal/people");
+    await expect(page.getByTestId("people-list-section")).toBeVisible({ timeout: 15000 });
+    await page.getByTestId("people-add-toggle").click();
+    await page.getByTestId("person-create-kind-walkin").click();
+    await page.getByTestId("person-display-name").fill("Ben Buyer");
+    await page.getByTestId("person-email").fill("ben@example.com");
+    await page.getByTestId("person-save").click();
+    await expect(page).toHaveURL(new RegExp(`/personal/people/${CONTACT_ID}`), { timeout: 10000 });
 
     await clientNavigate(page, "/personal/utang/lent");
     await expect(page.getByTestId("personal-utang-lent")).toBeVisible();
+    await page.getByTestId("utang-record-toggle").click();
     await page.getByTestId("utang-rel-contact").selectOption(CONTACT_ID);
     await page.getByTestId("utang-rel-amount").fill("100");
+    await page.getByTestId("utang-rel-notes").fill("E2E lunch loan");
     await page.getByTestId("utang-rel-submit").click();
     await expect(page.getByTestId("personal-utang-detail")).toBeVisible({ timeout: 10000 });
 
     await clientNavigate(page, "/personal/todo");
     await expect(page.getByTestId("personal-todo-hub")).toBeVisible();
+    await page.getByTestId("todo-create-toggle").click();
     await page.getByTestId("todo-create-title").fill("Private Ana todo");
     await page.getByTestId("todo-create-submit").click();
     await page.getByTestId("todo-tab-open").click();
@@ -822,7 +836,7 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
 
     await page.getByTestId("account-menu-trigger").click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page).toHaveURL(/\/sign-in/, { timeout: 15000 });
 
     await signInAs(page, "ben@example.com");
     await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 15000 });
@@ -836,9 +850,7 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
     await expect.poll(() => state.inviteStatus, { timeout: 10000 }).toBe("Accepted");
   });
 
-  test("User A Start Business trial → workspace; B customer link + order; A seller transitions", async ({
-    page,
-  }) => {
+  test("User A Start Business trial hands off to Organization onboarding", async ({ page }) => {
     const state: StoryState = {
       actor: "A",
       loggedIn: false,
@@ -866,71 +878,10 @@ test.describe("RMAP-22H Personal ↔ Business integrated E2E (mock)", () => {
     await expect
       .poll(() => state.businessStarted && state.actor === "Owner", { timeout: 15000 })
       .toBeTruthy();
-    await expect(page).toHaveURL(/\/workspace/, { timeout: 15000 });
-
-    await page.getByTestId("account-menu-trigger").click();
-    await page.getByRole("menuitem", { name: "Sign out" }).click();
-
-    await signInAs(page, "ben@example.com");
-    await expect(page.getByTestId("personal-shell")).toBeVisible({ timeout: 15000 });
-    await clientNavigate(page, "/personal/customer-links");
-    await expect(page.getByTestId("personal-customer-links-page")).toBeVisible();
-    await expect(page.getByTestId(`customer-link-request-${LINK_REQ_ID}`)).toBeVisible();
-    await page.getByTestId(`customer-link-accept-${LINK_REQ_ID}`).click();
-    await expect.poll(() => state.linkStatus, { timeout: 10000 }).toBe("Accepted");
-
-    await clientNavigate(page, "/personal/linked-merchants");
-    await expect(page.getByTestId("linked-merchants-page")).toBeVisible();
-    await page.getByTestId("open-merchant-shop").click();
-    await expect(page.getByTestId("merchant-shop-page")).toBeVisible();
-    await page.getByTestId("cart-increment").click();
-    await page.getByTestId("shop-review").click();
-    await expect(page.getByTestId("merchant-checkout-page")).toBeVisible();
-    await page.getByTestId("place-order").click();
-    await expect(page.getByTestId("my-order-detail-page")).toBeVisible({ timeout: 15000 });
-    expect(state.orderStatus).toBe("Submitted");
-
-    await page.getByTestId("account-menu-trigger").click();
-    await page.getByRole("menuitem", { name: "Sign out" }).click();
-
-    state.actor = "Owner";
-    state.loggedIn = false;
-    await signInAs(page, "ana@example.com");
-    const operations = page.getByTestId("workspace-destination-operations");
-    const openOrders = page.getByTestId("open-customer-orders");
-    await Promise.race([
-      operations.waitFor({ state: "visible", timeout: 15000 }),
-      openOrders.waitFor({ state: "visible", timeout: 15000 }),
-    ]);
-    if (await operations.isVisible().catch(() => false)) {
-      await chooseOwnerOperations(page);
-    }
-    await openOrders.waitFor({ state: "visible", timeout: 15000 });
-    await openOrders.click();
-    await expect(page.getByTestId("seller-orders-page")).toBeVisible();
-    await clientNavigate(page, `/orders/${ORDER_ID}`);
-    await expect(page.getByTestId("seller-order-detail-page")).toBeVisible({ timeout: 15000 });
-
-    await page.getByTestId("seller-action-accept").click();
-    await expect(page.getByTestId("seller-action-startpreparing")).toBeVisible({ timeout: 10000 });
-    await page.getByTestId("seller-action-startpreparing").click();
-    await expect(page.getByTestId("seller-action-markready")).toBeVisible({ timeout: 10000 });
-    await page.getByTestId("seller-action-markready").click();
-    await expect(page.getByTestId("seller-action-markcollected")).toBeVisible({ timeout: 10000 });
-    await page.getByTestId("seller-action-markcollected").click();
-    await expect(page.getByTestId("seller-action-complete")).toBeVisible({ timeout: 10000 });
-    await page.getByTestId("seller-action-complete").click();
-
-    expect(state.transitions).toEqual(
-      expect.arrayContaining([
-        "accept",
-        "start-preparing",
-        "mark-ready",
-        "mark-collected",
-        "complete",
-      ]),
-    );
-    expect(state.orderStatus).toBe("Completed");
+    // Post–Organization loading/onboarding work: Start Business enters /onboarding (not /workspace).
+    // Full buyer→seller order continuation: e2e/pers-e2e-22h-buyer-seller-continuation.spec.ts
+    // (PERS-E2E-22H-REPAIR — separate BrowserContexts + shared mock order state).
+    await expect(page).toHaveURL(/\/(onboarding|workspace)/, { timeout: 15000 });
   });
 
   for (const viewport of VIEWPORTS) {

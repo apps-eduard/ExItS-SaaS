@@ -32,6 +32,9 @@ import {
   type ColdStartGrantDenialReason,
   type StoredOfflineOperatingGrant,
 } from "@/offline/offline-operating-grant";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
+import { sessionAccountClass } from "@/session/account-class";
 import {
   clearPendingRemoteLogout,
   completePendingRemoteLogoutIfNeeded,
@@ -78,6 +81,8 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+import { ACCOUNT_CONTEXT_SWITCH_PATH } from "@/features/account/account-context-switch-route";
+
 const PIN_SETUP_PATH = "/offline-pin-setup";
 const PIN_UNLOCK_PATH = "/offline-pin";
 const SIGN_IN_PATH = "/sign-in";
@@ -96,8 +101,25 @@ export function OfflinePinSetupGate({ children }: { children: ReactNode }) {
     if (status !== "authenticated" || !session?.userId) {
       return;
     }
+    const accountClass = sessionAccountClass(session);
+    // Organization Web/PWA is online-only — do not force Organization staff into offline PIN enrollment.
+    if (
+      !organizationWebAllowsOfflineSession() &&
+      (accountClass === "Organization" || session.organizationContextLocked)
+    ) {
+      return;
+    }
+    // Personal Web/PWA is online-only — do not force Personal users into offline PIN enrollment.
+    if (!personalWebAllowsOfflineSession() && accountClass === "Personal") {
+      return;
+    }
     const path = location.pathname;
-    if (path === PIN_SETUP_PATH || path === PIN_UNLOCK_PATH || path === SIGN_IN_PATH) {
+    if (
+      path === PIN_SETUP_PATH ||
+      path === PIN_UNLOCK_PATH ||
+      path === SIGN_IN_PATH ||
+      path === ACCOUNT_CONTEXT_SWITCH_PATH
+    ) {
       return;
     }
     if (!isOfflinePinAndDekConfigured(session.userId)) {

@@ -55,6 +55,8 @@ public interface IPosInventoryClient
         AdjustInventoryRequest request,
         CancellationToken ct = default);
 
+    Task<ApiResult<PosStockMovementDto>> GetMovementAsync(Guid movementId, CancellationToken ct = default);
+
     Task<ApiResult<PosStockMovementPagedResult>> ListMovementsAsync(
         Guid productId,
         string? movementType = null,

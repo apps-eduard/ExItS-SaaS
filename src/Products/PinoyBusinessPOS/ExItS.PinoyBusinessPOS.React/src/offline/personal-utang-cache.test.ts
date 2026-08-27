@@ -69,6 +69,9 @@ const entry: PersonalUtangEntryDto = {
   canCancel: false,
   affectsBalance: true,
   isSharedLedger: false,
+  intent: "Regular",
+  settlementBalanceSnapshot: null,
+  isSettlement: false,
 };
 
 async function openPersonal(userId: string) {

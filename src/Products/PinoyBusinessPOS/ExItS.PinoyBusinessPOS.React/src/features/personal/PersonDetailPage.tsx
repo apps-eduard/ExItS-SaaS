@@ -12,6 +12,8 @@ import { ErrorState } from "@/components/exits/ErrorState";
 
 import { PageHeader } from "@/components/exits/PageHeader";
 
+import { PersonAvatar } from "@/components/exits/PersonAvatar";
+
 import { StatusChip } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
@@ -323,22 +325,25 @@ export function PersonDetailPage() {
 
     <section className="mx-auto flex w-full max-w-lg flex-col gap-4">
 
-      <PageHeader title={contact.displayName} />
+      <PageHeader
+        title={contact.displayName}
+        backTo="/personal/people"
+        backLabel={t("shell.back")}
+        backTestId="person-detail-back"
+      />
 
-      <div>
+      <div className="flex items-start gap-3">
+        <PersonAvatar name={contact.displayName} size="lg" />
 
-        <p className="m-0 text-muted">
+        <div className="min-w-0 flex-1">
+          <p className="m-0 text-muted">
+            {publicUserId ? publicUserId : t("people.localContact")}
+          </p>
 
-          {publicUserId ? publicUserId : t("people.localContact")}
-
-        </p>
-
-        <div className="mt-2">
-
-          <StatusChip tone={statusTone(connection.status)}>{statusLabel(connection.status)}</StatusChip>
-
+          <div className="mt-2">
+            <StatusChip tone={statusTone(connection.status)}>{statusLabel(connection.status)}</StatusChip>
+          </div>
         </div>
-
       </div>
 
 

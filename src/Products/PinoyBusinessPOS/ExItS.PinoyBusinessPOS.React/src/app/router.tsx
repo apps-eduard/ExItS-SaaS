@@ -3,20 +3,25 @@ import { SessionWorkspaceRoot } from "@/app/SessionWorkspaceRoot";
 import { RootLayout } from "@/app/RootLayout";
 import { SignInPage } from "@/features/auth/SignInPage";
 import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { ActivateAccountPage } from "@/features/auth/ActivateAccountPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { OfflinePinEnrollPage } from "@/features/offline/OfflinePinEnrollPage";
 import { OfflinePinUnlockPage } from "@/features/offline/OfflinePinUnlockPage";
 import { HomePage } from "@/features/home/HomePage";
 import { NotFoundPage } from "@/features/not-found/NotFoundPage";
 import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
+import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
+import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
+import { PersonCreatePage } from "@/features/personal/PersonFormPage";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { ArchivedNotificationsPage } from "@/features/personal/ArchivedNotificationsPage";
@@ -59,6 +64,8 @@ import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillment
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
+import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
+import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import { CatalogGlobalBrowsePage } from "@/features/catalog/CatalogGlobalBrowsePage";
 import { CatalogImportJobPage } from "@/features/catalog/CatalogImportJobPage";
@@ -132,6 +139,7 @@ import {
   RequireCreateSale,
   RequireEditCustomer,
   RequireInviteStaff,
+  RequireOrganizationOwnerMembership,
   RequireManageCatalog,
   RequireManageInventory,
   RequireManagePurchasing,
@@ -161,6 +169,7 @@ import {
   RequireViewStatement,
   RequireViewSuppliers,
   RequireWorkspaceBound,
+  RequireBranchBound,
   RequireOrganizationBound,
   WorkspaceBootGate,
 } from "@/session/SessionGuards";
@@ -171,6 +180,10 @@ export const appRoutes = [
     element: <SessionWorkspaceRoot />,
     errorElement: <RouteErrorPage />,
     children: [
+      {
+        path: "/store/:publicOrganizationId",
+        element: <PublicStoreLandingPage />,
+      },
       {
         path: "/sign-in",
         element: (
@@ -186,6 +199,14 @@ export const appRoutes = [
             <ForgotPasswordPage />
           </GuestOnly>
         ),
+      },
+      {
+        path: "/activate-account",
+        element: <ActivateAccountPage />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPasswordPage />,
       },
       {
         path: "/offline-pin-setup",
@@ -233,6 +254,10 @@ export const appRoutes = [
         children: [
           { index: true, element: <HomePage /> },
           {
+            path: "switching-context",
+            element: <AccountContextSwitchPage />,
+          },
+          {
             path: "onboarding",
             element: (
               <RequireOrganizationSession>
@@ -260,6 +285,7 @@ export const appRoutes = [
               { path: "utang", element: <PersonalUtangHubPage /> },
               { path: "utang/people", element: <Navigate to="/personal/people" replace /> },
               { path: "people", element: <PeoplePage /> },
+              { path: "people/new", element: <PersonCreatePage /> },
               { path: "people/add/local", element: <AddLocalPersonPage /> },
               { path: "people/add", element: <AddPersonPage /> },
               { path: "people/:contactId", element: <PersonDetailPage /> },
@@ -277,6 +303,10 @@ export const appRoutes = [
               { path: "todo", element: <PersonalTodoHubPage /> },
               { path: "todo/:todoId", element: <PersonalTodoDetailPage /> },
               { path: "more", element: <PersonalMorePage /> },
+              {
+                path: "ownership-transfers",
+                element: <PersonalOwnershipTransfersPage />,
+              },
               { path: "profile", element: <PersonalProfilePage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },
               {
@@ -330,11 +360,11 @@ export const appRoutes = [
             path: "sell",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireCreateSale>
                     <Outlet />
                   </RequireCreateSale>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -404,6 +434,14 @@ export const appRoutes = [
             children: [
               { index: true, element: <OrgEssentialsPage /> },
               { path: "business-qr", element: <OrgBusinessQrPage /> },
+              {
+                path: "ownership-transfer",
+                element: (
+                  <RequireOrganizationOwnerMembership>
+                    <OrgOwnershipTransferPage />
+                  </RequireOrganizationOwnerMembership>
+                ),
+              },
               {
                 path: "staff",
                 element: (
@@ -478,11 +516,11 @@ export const appRoutes = [
             path: "inventory",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewInventory>
                     <Outlet />
                   </RequireViewInventory>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -495,11 +533,11 @@ export const appRoutes = [
             path: "shifts",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewShifts>
                     <Outlet />
                   </RequireViewShifts>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -579,11 +617,11 @@ export const appRoutes = [
             path: "suppliers",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewSuppliers>
                     <Outlet />
                   </RequireViewSuppliers>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [
@@ -750,11 +788,11 @@ export const appRoutes = [
             path: "returns",
             element: (
               <RequireOrganizationSession>
-                <RequireWorkspaceBound>
+                <RequireBranchBound>
                   <RequireViewReturns>
                     <Outlet />
                   </RequireViewReturns>
-                </RequireWorkspaceBound>
+                </RequireBranchBound>
               </RequireOrganizationSession>
             ),
             children: [

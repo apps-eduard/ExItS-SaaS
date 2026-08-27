@@ -439,6 +439,13 @@ public static class OfflineOperationTypes
     public const string ExpenseCreate = "expense.create";
 
     /// <summary>
+    /// Server-side idempotency operation type for purchase order create. Purchasing is online-only:
+    /// no offline dispatcher or queue handler. Names the server idempotency scope so a retried
+    /// create request replays the same draft instead of minting another PO.
+    /// </summary>
+    public const string PurchaseOrderCreate = "purchase_order.create";
+
+    /// <summary>
     /// Server-side idempotency operation type for purchase order submit. Purchasing is online-only.
     /// </summary>
     public const string PurchaseOrderSubmit = "purchase_order.submit";
@@ -447,6 +454,13 @@ public static class OfflineOperationTypes
     /// Server-side idempotency operation type for purchase order receive. Purchasing is online-only.
     /// </summary>
     public const string PurchaseOrderReceive = "purchase_order.receive";
+
+    /// <summary>
+    /// Server-side idempotency operation type for inventory stock adjustment. Online-only: no offline
+    /// dispatcher or queue handler. Names the server idempotency scope so a retried adjustment
+    /// replays instead of creating a second StockMovement.
+    /// </summary>
+    public const string InventoryAdjustment = "inventory.adjustment";
 
     /// <summary>Server-side idempotency for inventory transfer create. Online-only.</summary>
     public const string InventoryTransferCreate = "inventory_transfer.create";

@@ -2,8 +2,11 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  ArrowLeftRight,
+  ArrowRight,
   Bell,
   Building2,
+  CircleAlert,
   HandCoins,
   QrCode,
   Search,
@@ -14,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
+import { listMyPendingOwnershipTransfers } from "@/api/platform/ownership-transfer-client";
 import {
   listBorrowedRelationships,
   listLentRelationships,
@@ -27,6 +31,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { Button } from "@/components/ui/button";
 import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
+import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
 import {
   countSegment,
@@ -174,7 +179,7 @@ export function PersonalUtangHubPage() {
         <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="utang-hub-record">
           <Link to="/personal/utang/lent">
             <HandCoins className="size-4 shrink-0" aria-hidden />
-            {t("personal.utang.recordUtang")}
+            {t("personal.utang.recordLent")}
           </Link>
         </Button>
       </div>
@@ -188,7 +193,8 @@ export function PersonalUtangHubPage() {
             String(pendingCount),
           )}
         >
-          <h2 className="catalog-form-section__title m-0">
+          <h2 className="catalog-form-section__title m-0 flex items-center gap-2">
+            <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
             {t("personal.utang.needsConfirmation")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -199,10 +205,11 @@ export function PersonalUtangHubPage() {
           </p>
           <Link
             to="/personal/utang/lent"
-            className="inline-flex min-h-11 items-center gap-1 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
+            className="inline-flex min-h-11 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
             data-testid="utang-hub-pending-review"
           >
             {t("personal.utang.reviewAccounts")}
+            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
           </Link>
         </section>
       ) : null}
@@ -250,7 +257,8 @@ export function PersonalUtangHubPage() {
             data-testid="utang-hub-accounts"
             aria-label={t("personal.utang.activeAccounts")}
           >
-            <h2 className="catalog-form-section__title text-muted">
+            <h2 className="catalog-form-section__title flex items-center gap-2 text-muted">
+              <Users className="size-4 shrink-0" aria-hidden="true" />
               {t("personal.utang.activeAccounts")}
             </h2>
 
@@ -370,6 +378,20 @@ export function PersonalUtangHubPage() {
 export function PersonalMorePage() {
   const { t } = useI18n();
   const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
+  const pendingOwnershipQuery = useQuery({
+    queryKey: PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY,
+    queryFn: ({ signal }) => listMyPendingOwnershipTransfers(signal),
+    staleTime: 60_000,
+    retry: false,
+  });
+  const pendingOwnershipCount = pendingOwnershipQuery.data?.length ?? 0;
+  const ownershipTileLabel =
+    pendingOwnershipCount > 0
+      ? t("personal.ownershipTransfers.moreTileCount").replace(
+          "{count}",
+          String(pendingOwnershipCount),
+        )
+      : t("personal.ownershipTransfers.moreTile");
 
   return (
     <div
@@ -449,6 +471,13 @@ export function PersonalMorePage() {
               icon: QrCode,
               testId: "more-open-qr",
               to: "/personal/my-qr",
+            },
+            {
+              key: "ownership",
+              label: ownershipTileLabel,
+              icon: ArrowLeftRight,
+              testId: "more-open-ownership-transfers",
+              to: "/personal/ownership-transfers",
             },
           ]}
         />

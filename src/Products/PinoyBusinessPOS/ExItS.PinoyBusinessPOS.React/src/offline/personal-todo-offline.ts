@@ -16,12 +16,19 @@ import {
 } from "@/offline/queued-request";
 import { PERSONAL_TODO_OPERATION_TYPES } from "@/offline/server-dedupe-policy";
 import type { OfflineOperationRecord } from "@/offline/types";
+import {
+  guardPersonalWebOfflineEnqueue,
+  type PersonalOfflineEnqueueRuntimeOptions,
+} from "@/runtime/personal-web-runtime-policy";
 
 /**
- * Offline Personal To-do (RMAP-21G).
+ * Offline Personal To-do engine (RMAP-21G).
  *
- * Offline-capable, because a To-do is the person's own private note to themselves and the server
- * needs no live state and no second human to accept it:
+ * Personal Web/PWA (PERS-WEB-ONLINE-ONLY-01) does not activate this path for new user actions —
+ * enqueue wrappers call `guardPersonalWebOfflineEnqueue`. Engine unit tests and future Capacitor
+ * may pass `{ allowOfflineEngine: true }`.
+ *
+ * Engine-capable operations (preserved for native):
  *   - personal.todo.create    (POST /todos)
  *   - personal.todo.update    (PUT /todos/{id})
  *   - personal.todo.complete  (POST /todos/{id}/complete)
@@ -107,7 +114,9 @@ export type EnqueuedPersonalTodo = {
 
 export async function enqueuePersonalTodoCreate(
   input: EnqueuePersonalTodoCreateInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<EnqueuedPersonalTodo> {
+  guardPersonalWebOfflineEnqueue(options);
   if (input.shareWithUserIdentityId) {
     throw new OfflinePersonalTodoRejectedError(
       "offline.personal.todo.share_not_supported",
@@ -185,7 +194,9 @@ export type EnqueuePersonalTodoUpdateInput = PersonalTodoOfflineScope & {
 
 export async function enqueuePersonalTodoUpdate(
   input: EnqueuePersonalTodoUpdateInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<{ operation: OfflineOperationRecord; todo: CachedPersonalTodo }> {
+  guardPersonalWebOfflineEnqueue(options);
   const title = input.todo.title.trim();
   if (!title) {
     throw new OfflinePersonalTodoRejectedError(
@@ -282,7 +293,9 @@ const TRANSITION_STATUS: Record<PersonalTodoTransition, string> = {
  */
 export async function enqueuePersonalTodoTransition(
   input: EnqueuePersonalTodoTransitionInput,
+  options?: PersonalOfflineEnqueueRuntimeOptions,
 ): Promise<{ operation: OfflineOperationRecord; todo: CachedPersonalTodo }> {
+  guardPersonalWebOfflineEnqueue(options);
   if (!input.todoId.trim()) {
     throw new OfflinePersonalTodoRejectedError(
       "offline.personal.todo.id_required",

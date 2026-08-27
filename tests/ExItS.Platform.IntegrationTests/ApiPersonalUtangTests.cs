@@ -861,6 +861,168 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
             .GetProperty("currentBalance").GetDecimal());
     }
 
+    [Fact]
+    public async Task Personal_utang_client_ids_are_idempotent_across_replay()
+    {
+        var (token, userId) = await SeedPersonalUserAsync("idem");
+        var contactId = Guid.NewGuid();
+        var relationshipId = Guid.NewGuid();
+        var loanEntryId = Guid.NewGuid();
+        var paymentEntryId = Guid.NewGuid();
+
+        using var contactRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { contactId, displayName = "Idem Friend", phone = "+639170000099" });
+        var contactCreated = await _client.SendAsync(contactRequest);
+        Assert.Equal(HttpStatusCode.Created, contactCreated.StatusCode);
+        Assert.Equal(contactId, (await contactCreated.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+
+        using var contactReplay = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { contactId, displayName = "Idem Friend", phone = "+639170000099" });
+        var contactReplayResponse = await _client.SendAsync(contactReplay);
+        Assert.Equal(HttpStatusCode.Created, contactReplayResponse.StatusCode);
+        Assert.Equal(contactId, (await contactReplayResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+
+        using var contactConflict = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { contactId, displayName = "Different Name", phone = "+639170000099" });
+        var contactConflictResponse = await _client.SendAsync(contactConflict);
+        Assert.Equal(HttpStatusCode.Conflict, contactConflictResponse.StatusCode);
+
+        using var getContact = Authed(HttpMethod.Get, $"/api/v1/personal/utang/contacts/{contactId}", token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(getContact)).StatusCode);
+
+        using var relationshipRequest = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            token,
+            new
+            {
+                relationshipId,
+                initialLoanEntryId = loanEntryId,
+                creditorUserIdentityId = userId,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 500m,
+                initialLoanNotes = "idem loan"
+            });
+        var relationshipCreated = await _client.SendAsync(relationshipRequest);
+        Assert.Equal(HttpStatusCode.Created, relationshipCreated.StatusCode);
+        var relationship = await relationshipCreated.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(relationshipId, relationship.GetProperty("id").GetGuid());
+        Assert.Equal(500m, relationship.GetProperty("currentBalance").GetDecimal());
+
+        using var relationshipReplay = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            token,
+            new
+            {
+                relationshipId,
+                initialLoanEntryId = loanEntryId,
+                creditorUserIdentityId = userId,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 500m,
+                initialLoanNotes = "idem loan"
+            });
+        var relationshipReplayResponse = await _client.SendAsync(relationshipReplay);
+        Assert.Equal(HttpStatusCode.Created, relationshipReplayResponse.StatusCode);
+        Assert.Equal(
+            500m,
+            (await relationshipReplayResponse.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("currentBalance")
+                .GetDecimal());
+
+        using var relationshipConflict = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/relationships",
+            token,
+            new
+            {
+                relationshipId,
+                initialLoanEntryId = loanEntryId,
+                creditorUserIdentityId = userId,
+                debtorContactId = contactId,
+                currencyCode = "PHP",
+                initialLoanAmount = 999m,
+                initialLoanNotes = "different"
+            });
+        Assert.Equal(HttpStatusCode.Conflict, (await _client.SendAsync(relationshipConflict)).StatusCode);
+
+        using var paymentRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            token,
+            new
+            {
+                entryId = paymentEntryId,
+                entryType = "Payment",
+                amount = 100m,
+                notes = "partial"
+            });
+        var paymentCreated = await _client.SendAsync(paymentRequest);
+        Assert.Equal(HttpStatusCode.Created, paymentCreated.StatusCode);
+        Assert.Equal(paymentEntryId, (await paymentCreated.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+
+        using var paymentReplay = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            token,
+            new
+            {
+                entryId = paymentEntryId,
+                entryType = "Payment",
+                amount = 100m,
+                notes = "partial"
+            });
+        var paymentReplayResponse = await _client.SendAsync(paymentReplay);
+        Assert.Equal(HttpStatusCode.Created, paymentReplayResponse.StatusCode);
+        Assert.Equal(
+            paymentEntryId,
+            (await paymentReplayResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());
+
+        using var paymentConflict = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/entries",
+            token,
+            new
+            {
+                entryId = paymentEntryId,
+                entryType = "Payment",
+                amount = 250m,
+                notes = "different"
+            });
+        Assert.Equal(HttpStatusCode.Conflict, (await _client.SendAsync(paymentConflict)).StatusCode);
+
+        using var getEntry = Authed(HttpMethod.Get, $"/api/v1/personal/utang/entries/{paymentEntryId}", token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(getEntry)).StatusCode);
+
+        using var getLoanEntry = Authed(HttpMethod.Get, $"/api/v1/personal/utang/entries/{loanEntryId}", token);
+        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(getLoanEntry)).StatusCode);
+
+        using var historyRequest = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/utang/relationships/{relationshipId}/history",
+            token);
+        var historyResponse = await _client.SendAsync(historyRequest);
+        Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
+        var history = await historyResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, history.GetArrayLength());
+
+        var (otherToken, _) = await SeedPersonalUserAsync("idemx");
+        using var otherGet = Authed(HttpMethod.Get, $"/api/v1/personal/utang/entries/{paymentEntryId}", otherToken);
+        var otherStatus = (await _client.SendAsync(otherGet)).StatusCode;
+        Assert.NotEqual(HttpStatusCode.OK, otherStatus);
+    }
+
     private static async Task<JsonElement> contactResponse(HttpResponseMessage response)
     {
         response.EnsureSuccessStatusCode();

@@ -51,6 +51,7 @@ public static class PlatformAuditActions
     public const string PlatformUserPublicIdAssigned = "platform.user.public_id_assigned";
     public const string PlatformUserPublicIdResolved = "platform.user.public_id_resolved";
     public const string OrganizationPublicIdResolved = "platform.organization.public_id_resolved";
+    public const string PublicStoreLandingLookedUp = "platform.organization.public_store_landing_looked_up";
     public const string ExItsQrResolved = "platform.qr.resolved";
     public const string PosDeviceRegistrationTokenCreated = "platform.pos_device.registration_token.created";
     public const string PosDeviceRegistrationTokenRedeemed = "platform.pos_device.registration_token.redeemed";
@@ -260,6 +261,8 @@ public static class PlatformAuditActions
     public const string PersonalUtangEntryConfirmed = "platform.personal.utang_entry.confirmed";
     public const string PersonalUtangEntryDisputed = "platform.personal.utang_entry.disputed";
     public const string PersonalUtangEntryCancelled = "platform.personal.utang_entry.cancelled";
+    public const string PersonalUtangSettled = "platform.personal.utang.settled";
+    public const string PersonalUtangClosed = "platform.personal.utang.closed";
     public const string PersonalUtangInvitationCreated = "platform.personal.utang_invitation.created";
     public const string PersonalUtangInvitationResent = "platform.personal.utang_invitation.resent";
     public const string PersonalUtangInvitationRevoked = "platform.personal.utang_invitation.revoked";

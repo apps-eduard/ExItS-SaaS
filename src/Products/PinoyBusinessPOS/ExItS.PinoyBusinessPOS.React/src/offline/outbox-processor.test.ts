@@ -75,7 +75,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 100,
-    });
+    }, { allowOfflineEngine: true });
 
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 100 });
 
@@ -122,7 +122,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 100,
-    });
+    }, { allowOfflineEngine: true });
 
     // 80 is what live repricing would have recorded. The customer paid 100.
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 80 });
@@ -136,7 +136,7 @@ describe("outbox processor", () => {
     db.close();
   });
 
-  it("parks ambiguous Personal create failure without auto-retry", async () => {
+  it("auto-retries ambiguous Personal create when server entity-id dedupe is available", async () => {
     const personalKey = personalScopeKey("user-p");
     const db = await openOfflineDatabase("Personal", personalKey);
     await enqueueEncryptedOperation({
@@ -152,7 +152,7 @@ describe("outbox processor", () => {
         api: "platform",
         method: "POST",
         path: "/api/v1/personal/utang/contacts",
-        body: { displayName: "Ana" },
+        body: { contactId: "local-contact-1", displayName: "Ana" },
       }),
       entityLocalId: "local-contact-1",
     });
@@ -162,7 +162,7 @@ describe("outbox processor", () => {
     const result = await processNextOutboxOperation(db, personalKey);
     expect(result.status).toBe("failed");
     if (result.status === "failed") {
-      expect(result.queueState).toBe("PermanentFailure");
+      expect(result.queueState).toBe("RetryableFailure");
     }
     const [row] = await listOutbox(db);
     expect(row.failureCode).toBe("offline.ambiguous_transport");
@@ -194,7 +194,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 50,
-    });
+    }, { allowOfflineEngine: true });
 
     mockedPosRequest.mockRejectedValueOnce(
       new PosApiError(403, { title: "Forbidden", status: 403 }),
@@ -230,7 +230,7 @@ describe("outbox processor", () => {
         ),
       ],
       amountTendered: 20,
-    });
+    }, { allowOfflineEngine: true });
     await setOperationState(db, saleId, { queueState: "Syncing" });
     mockedPosRequest.mockResolvedValueOnce({ saleId, total: 20 });
 

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { PosApiError, posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
 import { formatPaymentMethodLabel } from "@/api/pos/pos-sales-client";
 import { roundMoney } from "@/cart/sell-cart-helpers";
 
@@ -301,12 +305,21 @@ export async function createSaleReturn(
     payload.returnId = validated.returnId;
   }
 
+  const headers = validated.returnId
+    ? await buildPosMutationIdempotencyHeaders(
+        validated.returnId,
+        JSON.stringify(payload),
+        OFFLINE_OPERATION_TYPES.SaleReturnCreate,
+      )
+    : undefined;
+
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: RETURNS_PATH,
     body: payload,
+    headers,
   });
   return parseReturn(raw);
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
   canAccessReportsHub,
@@ -31,38 +32,101 @@ import {
   canViewSuppliers,
 } from "@/access/pos-capabilities";
 import { canAccessClassicReport } from "@/features/reports/report-access";
-import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/exits/LoadingState";
+import { OnlineRequiredBoot } from "@/components/exits/OnlineRequiredBoot";
+import { AppBootLoader } from "@/components/exits/loading/AppBootLoader";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useOptionalConnectivity } from "@/connectivity/ConnectivityProvider";
+import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
 import { SellAccessDeniedPage } from "@/features/sell/SellAccessDeniedPage";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { sessionAccountClass, type AccountClassName } from "@/session/account-class";
 import { isAuthenticatedOrColdStartOffline, isOfflinePinFlowStatus, useSession } from "@/session/SessionProvider";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
 export function SessionLoading() {
   const { t } = useI18n();
-  return <LoadingState label={t("session.loading")} />;
+  return (
+    <AppBootLoader
+      label={t("loading.preparingWorkspace")}
+      brand={t("app.name")}
+      testId="session-checking"
+    />
+  );
 }
 
 export function RequireSession({ children }: { children: ReactNode }) {
-  const { status } = useSession();
+  const { status, refreshSession } = useSession();
   const location = useLocation();
+  const isContextSwitch = isAccountContextSwitchPath(location.pathname);
+  const connectivity = useOptionalConnectivity();
+  const [retrying, setRetrying] = useState(false);
 
-  if (status === "loading") {
+  if (status === "loading" && !isContextSwitch) {
     return <SessionLoading />;
   }
   if (status === "expired") {
     return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
   }
   if (status === "offline_pin_required" || status === "needs_offline_unlock") {
+    // Web online-only: never route to offline PIN when both channel policies deny offline session.
+    if (!personalWebAllowsOfflineSession() && !organizationWebAllowsOfflineSession()) {
+      const offline =
+        connectivity != null
+          ? !connectivity.isOnline
+          : typeof navigator !== "undefined" && !navigator.onLine;
+      if (offline) {
+        return (
+          <OnlineRequiredBoot
+            retrying={retrying}
+            onRetry={async () => {
+              setRetrying(true);
+              try {
+                const restored = connectivity ? await connectivity.retry() : true;
+                if (restored) {
+                  await refreshSession();
+                }
+              } finally {
+                setRetrying(false);
+              }
+            }}
+          />
+        );
+      }
+      return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
+    }
     return <Navigate to="/offline-pin" replace state={{ from: location.pathname }} />;
   }
   if (isAuthenticatedOrColdStartOffline(status)) {
     return children;
   }
+
+  const offline =
+    connectivity != null ? !connectivity.isOnline : typeof navigator !== "undefined" && !navigator.onLine;
+
+  if (offline) {
+    return (
+      <OnlineRequiredBoot
+        retrying={retrying}
+        onRetry={async () => {
+          setRetrying(true);
+          try {
+            const restored = connectivity ? await connectivity.retry() : true;
+            if (restored) {
+              await refreshSession();
+            }
+          } finally {
+            setRetrying(false);
+          }
+        }}
+      />
+    );
+  }
+
   return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
 }
 
@@ -143,7 +207,7 @@ export function RequireAccountClass({
         title={t("accountClass.deniedTitle")}
         description={t("accountClass.deniedLede")}
       />
-      <ErrorState title={t("accountClass.deniedTitle")} detail={t("accountClass.deniedDetail")} />
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("accountClass.deniedDetail")}</p>
     </div>
   );
 }
@@ -177,10 +241,9 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
             title={t("accountClass.deniedTitle")}
             description={t("accountClass.deniedLede")}
           />
-          <ErrorState
-            title={t("accountClass.deniedTitle")}
-            detail={t("accountClass.deniedDetail")}
-          />
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("accountClass.deniedDetail")}
+          </p>
         </div>
       );
     }
@@ -192,7 +255,9 @@ export function AllowInvitationAccept({ children }: { children: ReactNode }) {
 export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 
-  if (status === "loading" || status === "binding" || status === "idle") {
+  // Prefer an existing bind over a background reload spinner. Intentional rebinds
+  // still use status === "binding".
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
   }
   // Branch-scoped surfaces prefer a branch; org-only Manage Business still reaches
@@ -210,11 +275,37 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
   return <Navigate to="/workspace" replace />;
 }
 
+/**
+ * Branch-scoped org surfaces (Catalog Sell floor, Inventory, Shifts, …).
+ * Manage Business binds org-only (no branch) — never leave the user on endless
+ * "Checking session…" when they open these tabs.
+ */
+export function RequireBranchBound({ children }: { children: ReactNode }) {
+  const { status, boundWorkspace, routingPlan } = useWorkspace();
+
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
+    return <SessionLoading />;
+  }
+  if (boundWorkspace?.branchId) {
+    return children;
+  }
+  if (boundWorkspace) {
+    return <BranchRequiredPanel />;
+  }
+  if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {
+    return <SessionLoading />;
+  }
+  if (routingPlan) {
+    return <Navigate to={workspaceRouteForOutcome(routingPlan.outcome)} replace />;
+  }
+  return <Navigate to="/workspace" replace />;
+}
+
 /** Organization-level Manage Business — branch optional. */
 export function RequireOrganizationBound({ children }: { children: ReactNode }) {
   const { status, boundWorkspace, routingPlan } = useWorkspace();
 
-  if (status === "loading" || status === "binding" || status === "idle") {
+  if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
   }
   if (boundWorkspace?.organizationId) {
@@ -231,12 +322,25 @@ export function RequireOrganizationBound({ children }: { children: ReactNode }) 
 
 export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   const { status: sessionStatus } = useSession();
-  const { status } = useWorkspace();
+  const { status, boundWorkspace } = useWorkspace();
+  const location = useLocation();
+  const isContextSwitch = isAccountContextSwitchPath(location.pathname);
+
+  if (isContextSwitch) {
+    return children;
+  }
 
   if (sessionStatus === "loading") {
     return <SessionLoading />;
   }
-  if (sessionStatus === "authenticated" && (status === "loading" || status === "binding")) {
+  // Keep shell painted during intentional bind — RootLayout shows the overlay.
+  if (sessionStatus === "authenticated" && status === "binding") {
+    return children;
+  }
+  if (
+    sessionStatus === "authenticated" &&
+    ((status === "loading" || status === "idle") && !boundWorkspace)
+  ) {
     return <SessionLoading />;
   }
   if (sessionStatus === "cold_start_offline" && status === "idle") {
@@ -271,6 +375,17 @@ export function RequireInviteStaff({ children }: { children: ReactNode }) {
 
   if (!canInviteOrganizationStaff(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="staff-invite-denied" />;
+  }
+
+  return children;
+}
+
+/** Organization ownership transfer — Owner membership only (not Admin alone). */
+export function RequireOrganizationOwnerMembership({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canInviteOrganizationStaff(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="org-owner-membership-denied" />;
   }
 
   return children;

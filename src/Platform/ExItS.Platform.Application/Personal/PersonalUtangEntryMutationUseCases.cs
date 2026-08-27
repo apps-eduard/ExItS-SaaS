@@ -15,6 +15,7 @@ public sealed class ConfirmPersonalUtangEntry
     private readonly IPersonalDebtRelationshipRepository _relationships;
     private readonly IPersonalUtangEntryRepository _entries;
     private readonly IPersonalContactRepository _contacts;
+    private readonly IPersonalReminderRepository _reminders;
     private readonly IPlatformUserRepository _users;
     private readonly IPersonalAccountSettingsRepository _settings;
     private readonly IPersonalInAppNotificationRepository _notifications;
@@ -26,6 +27,7 @@ public sealed class ConfirmPersonalUtangEntry
         IPersonalDebtRelationshipRepository relationships,
         IPersonalUtangEntryRepository entries,
         IPersonalContactRepository contacts,
+        IPersonalReminderRepository reminders,
         IPlatformUserRepository users,
         IPersonalAccountSettingsRepository settings,
         IPersonalInAppNotificationRepository notifications,
@@ -36,6 +38,7 @@ public sealed class ConfirmPersonalUtangEntry
         _relationships = relationships;
         _entries = entries;
         _contacts = contacts;
+        _reminders = reminders;
         _users = users;
         _settings = settings;
         _notifications = notifications;
@@ -69,9 +72,23 @@ public sealed class ConfirmPersonalUtangEntry
         try
         {
             var priorStatus = entry.Status;
+            var priorRelationshipStatus = relationship.Status;
             relationship.ConfirmEntry(entry, actingUserIdentityId, _clock.UtcNow, request.ExpectedVersion);
             await _relationships.UpdateAsync(relationship, cancellationToken).ConfigureAwait(false);
             await _entries.UpdateAsync(entry, cancellationToken).ConfigureAwait(false);
+
+            if (priorRelationshipStatus is not PersonalDebtRelationshipStatus.Closed
+                && relationship.Status is PersonalDebtRelationshipStatus.Closed)
+            {
+                var reminders = await _reminders.ListByRelationshipAsync(relationship.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var reminder in reminders.Where(r => r.Status is PersonalReminderStatus.Scheduled))
+                {
+                    reminder.Cancel(_clock.UtcNow);
+                    await _reminders.UpdateAsync(reminder, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
             if (priorStatus is PersonalUtangEntryStatus.Pending)
             {
                 await PersonalUtangEntryNotifications.NotifyProposerResolvedAsync(
@@ -370,6 +387,11 @@ internal static class PersonalUtangEntryErrors
         DomainErrorCodes.PersonalUtangConcurrencyConflict => ApplicationErrorCodes.ConcurrencyConflict,
         DomainErrorCodes.PersonalUtangEntryInvalid => ApplicationErrorCodes.PersonalUtangEntryInvalid,
         DomainErrorCodes.PersonalUtangUnauthorized => ApplicationErrorCodes.PersonalUtangUnauthorized,
+        DomainErrorCodes.PersonalUtangSettlementInvalid => ApplicationErrorCodes.PersonalUtangSettlementInvalid,
+        DomainErrorCodes.PersonalUtangSettlementStale => ApplicationErrorCodes.PersonalUtangSettlementStale,
+        DomainErrorCodes.PersonalUtangPendingBlocksSettlement =>
+            ApplicationErrorCodes.PersonalUtangPendingBlocksSettlement,
+        DomainErrorCodes.PersonalUtangCloseInvalid => ApplicationErrorCodes.PersonalUtangCloseInvalid,
         _ => ex.ErrorCode
     };
 }

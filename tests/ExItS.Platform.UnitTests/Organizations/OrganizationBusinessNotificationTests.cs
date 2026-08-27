@@ -296,4 +296,224 @@ public sealed class OrganizationBusinessNotificationTests
         Assert.Equal(SupplierConnectionNotificationTypes.AcceptedConfirmation, notifications.Items[0].RelatedType);
         Assert.Equal(org, notifications.Items[0].OrganizationId);
     }
+
+    [Fact]
+    public async Task Customer_order_submitted_may_publish_to_same_seller_organization()
+    {
+        var org = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(OrganizationMembership.Create(org, owner, OrganizationRole.OrganizationOwner, now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var useCase = new PublishOrganizationBusinessNotification(
+            memberships, notifications, new FakeUow(), new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+
+        var first = await useCase.ExecuteAsync(
+            org,
+            new PublishOrganizationBusinessNotificationRequest(
+                org.Value,
+                CustomerOrderNotificationTypes.Submitted,
+                orderId,
+                "New customer order",
+                "CO-1 · Buyer · 100.00"));
+        var retry = await useCase.ExecuteAsync(
+            org,
+            new PublishOrganizationBusinessNotificationRequest(
+                org.Value,
+                CustomerOrderNotificationTypes.Submitted,
+                orderId,
+                "New customer order",
+                "CO-1 · Buyer · 100.00"));
+
+        Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
+        Assert.True(retry.IsSuccess);
+        Assert.Equal(1, first.Value!.CreatedCount);
+        Assert.Equal(0, retry.Value!.CreatedCount);
+        Assert.Equal(1, retry.Value.SkippedExistingCount);
+        Assert.Single(notifications.Items);
+        Assert.Equal(CustomerOrderNotificationTypes.Submitted, notifications.Items[0].RelatedType);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Personal_customer_order_status_publish_requires_active_link_and_is_idempotent()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var recipient = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            recipient,
+            CustomerLinkRequestId.New(),
+            now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var settings = new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            links, notifications, settings, new FakeUow(), new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+        var request = new PublishPersonalBusinessNotificationRequest(
+            recipient.Value,
+            CustomerOrderNotificationTypes.Accepted,
+            orderId,
+            "Order accepted",
+            "CO-9 · Accepted");
+
+        var first = await useCase.ExecuteAsync(source, request);
+        var retry = await useCase.ExecuteAsync(source, request);
+
+        Assert.True(first.IsSuccess, first.ErrorMessage);
+        Assert.True(retry.IsSuccess);
+        Assert.True(first.Value!.Created);
+        Assert.False(retry.Value!.Created);
+        Assert.True(retry.Value.SkippedExisting);
+        Assert.Single(notifications.Items);
+        Assert.Equal(recipient, notifications.Items[0].RecipientUserIdentityId);
+        Assert.Equal(CustomerOrderNotificationTypes.Accepted, notifications.Items[0].RelatedType);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_unrelated_personal_user_in_same_source_org_context()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var linkedBuyer = PlatformUserId.From(Guid.NewGuid());
+        var unrelated = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            linkedBuyer,
+            CustomerLinkRequestId.New(),
+            now));
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository(),
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                unrelated.Value,
+                CustomerOrderNotificationTypes.Ready,
+                Guid.NewGuid().ToString("D"),
+                "Ready",
+                "CO-1 · Ready"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_recipient_linked_only_to_other_organization()
+    {
+        var orgA = PlatformOrganizationId.From(Guid.NewGuid());
+        var orgB = PlatformOrganizationId.From(Guid.NewGuid());
+        var buyerOfB = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            orgB,
+            BusinessCustomerId.New(),
+            buyerOfB,
+            CustomerLinkRequestId.New(),
+            now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            notifications,
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            orgA,
+            new PublishPersonalBusinessNotificationRequest(
+                buyerOfB.Value,
+                CustomerOrderNotificationTypes.Delivered,
+                Guid.NewGuid().ToString("D"),
+                "Delivered",
+                "CO-2 · Delivered"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.LinkedCustomerAppUserNotFound, result.ErrorCode);
+        Assert.Empty(notifications.Items);
+    }
+
+    [Fact]
+    public async Task Personal_publish_denies_unapproved_related_type()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var recipient = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            recipient,
+            CustomerLinkRequestId.New(),
+            now));
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository(),
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                recipient.Value,
+                "MarketingBlast",
+                Guid.NewGuid().ToString("D"),
+                "Promo",
+                "Buy more"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.DomainViolation, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Personal_publish_allows_legitimate_linked_buyer()
+    {
+        var source = PlatformOrganizationId.From(Guid.NewGuid());
+        var buyer = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var links = new CustomerLinkCompletenessTests.InMemoryLinkedCustomerAppUserRepository();
+        await links.AddAsync(LinkedCustomerAppUser.CreateFromAcceptedLink(
+            source,
+            BusinessCustomerId.New(),
+            buyer,
+            CustomerLinkRequestId.New(),
+            now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryPersonalInAppNotificationRepository();
+        var useCase = new PublishPersonalBusinessNotification(
+            links,
+            notifications,
+            new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository(),
+            new FakeUow(),
+            new FixedClock(now));
+        var orderId = Guid.NewGuid().ToString("D");
+
+        var result = await useCase.ExecuteAsync(
+            source,
+            new PublishPersonalBusinessNotificationRequest(
+                buyer.Value,
+                CustomerOrderNotificationTypes.OutForDelivery,
+                orderId,
+                "Out for delivery",
+                "CO-3 · Out for delivery"));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.Created);
+        Assert.Single(notifications.Items);
+        Assert.Equal(orderId, notifications.Items[0].RelatedId);
+        Assert.Equal(CustomerOrderNotificationTypes.OutForDelivery, notifications.Items[0].RelatedType);
+    }
 }

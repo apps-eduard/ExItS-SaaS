@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
@@ -19,6 +21,7 @@ internal static class InventoryEndpoints
         group.MapGet("/low-stock", ListLowStock);
         group.MapGet("/reorder-suggestions", ListReorderSuggestions);
         group.MapGet("/lots", ListExpiringLots);
+        group.MapGet("/movements/{movementId:guid}", GetMovementById);
         MapStockCounts(group);
         InventoryTransferEndpoints.Map(group);
 
@@ -407,6 +410,7 @@ internal static class InventoryEndpoints
         AdjustInventoryRequest body,
         AdjustInventoryStock useCase,
         InventoryQueryService queries,
+        IPosIdempotencyService idempotency,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -417,23 +421,56 @@ internal static class InventoryEndpoints
         }
 
         PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
-        var result = await useCase
-            .ExecuteAsync(
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
                 organizationId,
-                productId,
-                body.Direction,
-                body.Quantity,
-                body.Reason,
-                actorId,
-                body.ReorderLevel,
-                branchId,
-                body.ExpirationDate,
-                body.LotNumber,
-                body.LotId,
-                body.ProductUnitId,
+                OfflineOperationTypes.InventoryAdjustment,
+                idempotency,
+                ct2 => ToAccountDtoAsync(
+                    useCase.ExecuteAsync(
+                        organizationId,
+                        productId,
+                        body.Direction,
+                        body.Quantity,
+                        body.Reason,
+                        actorId,
+                        body.ReorderLevel,
+                        branchId,
+                        body.ExpirationDate,
+                        body.LotNumber,
+                        body.LotId,
+                        body.ProductUnitId,
+                        body.MovementId,
+                        ct2),
+                    organizationId,
+                    productId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
                 ct)
             .ConfigureAwait(false);
-        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> GetMovementById(
+        HttpRequest request,
+        Guid movementId,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var movement = await queries.GetMovementByIdAsync(organizationId, movementId, ct).ConfigureAwait(false);
+        return movement is null
+            ? PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryMovementNotFound,
+                "Stock movement was not found.",
+                StatusCodes.Status404NotFound)
+            : Results.Ok(movement);
     }
 
     private static async Task<IResult> ListMovements(
@@ -498,6 +535,27 @@ internal static class InventoryEndpoints
                 "Inventory account was not found.",
                 StatusCodes.Status404NotFound)
             : Results.Ok(dto);
+    }
+
+    private static async Task<ApplicationResult<PosInventoryAccountDto>> ToAccountDtoAsync(
+        Task<ApplicationResult<InventoryAccount>> execute,
+        Guid organizationId,
+        Guid productId,
+        InventoryQueryService queries,
+        CancellationToken ct)
+    {
+        var result = await execute.ConfigureAwait(false);
+        if (!result.IsSuccess)
+        {
+            return ApplicationResult<PosInventoryAccountDto>.Failure(result.ErrorCode!, result.ErrorMessage!);
+        }
+
+        var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return dto is null
+            ? ApplicationResult<PosInventoryAccountDto>.Failure(
+                ApplicationErrorCodes.InventoryAccountNotFound,
+                "Inventory account was not found.")
+            : ApplicationResult<PosInventoryAccountDto>.Success(dto);
     }
 
     private static async Task<IResult> FromStockCountResultAsync(

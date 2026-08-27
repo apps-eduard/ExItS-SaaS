@@ -5353,6 +5353,14 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("entry_type");
 
+                    b.Property<string>("Intent")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("Regular")
+                        .HasColumnName("intent");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
@@ -5369,6 +5377,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ResolvedByUserIdentityId")
                         .HasColumnType("uuid")
                         .HasColumnName("resolved_by_user_identity_id");
+
+                    b.Property<decimal?>("SettlementBalanceSnapshot")
+                        .HasColumnType("decimal(18,4)")
+                        .HasColumnName("settlement_balance_snapshot");
 
                     b.Property<decimal>("SignedDelta")
                         .HasColumnType("decimal(18,4)")

@@ -137,7 +137,54 @@ export function localizePersonalNotification(
     });
   }
 
+  if (relatedTypeEquals(item.relatedType, "OrganizationOwnershipTransfer")) {
+    const business = extractOwnershipBusinessName(item.preview);
+    return {
+      title: t("personal.social.notif.ownershipTransferTitle"),
+      preview: business
+        ? t("personal.social.notif.ownershipTransferPreview").replace("{name}", business)
+        : t("personal.social.notif.ownershipTransferPreviewGeneric"),
+    };
+  }
+
+  if (item.relatedType.startsWith("CustomerOrder")) {
+    return localizeCustomerOrderNotification(item, t);
+  }
+
   return { title: item.title, preview: item.preview };
+}
+
+function localizeCustomerOrderNotification(
+  item: Pick<PersonalInAppNotificationDto, "title" | "preview" | "relatedType">,
+  t: (key: MessageKey) => string,
+): { title: string; preview: string } {
+  const type = item.relatedType;
+  const titleKeyByType: Record<string, MessageKey> = {
+    CustomerOrderAccepted: "personal.social.notif.orderAcceptedTitle",
+    CustomerOrderRejected: "personal.social.notif.orderRejectedTitle",
+    CustomerOrderCancelled: "personal.social.notif.orderCancelledTitle",
+    CustomerOrderReady: "personal.social.notif.orderReadyTitle",
+    CustomerOrderOutForDelivery: "personal.social.notif.orderOutForDeliveryTitle",
+    CustomerOrderDelivered: "personal.social.notif.orderDeliveredTitle",
+    CustomerOrderCollected: "personal.social.notif.orderCollectedTitle",
+    CustomerOrderCompleted: "personal.social.notif.orderCompletedTitle",
+  };
+  const titleKey = titleKeyByType[type] ?? "personal.social.notif.orderUpdateTitle";
+  return {
+    title: t(titleKey),
+    preview: item.preview,
+  };
+}
+
+/** Pull business display name from ownership-transfer English preview. */
+export function extractOwnershipBusinessName(preview: string): string | null {
+  const trimmed = preview.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const match = /^(.*?)\s+wants to transfer ownership to you\.?$/i.exec(trimmed);
+  const name = match?.[1]?.trim();
+  return name && name.length > 0 ? name : null;
 }
 
 function localizeNamedPreview(
@@ -183,13 +230,29 @@ function extractLeadingName(preview: string): string | null {
   return name && name.length > 0 ? name : null;
 }
 
-/** Route for notification tap — keep connection vs Utang invitation separate. */
+/**
+ * Route for notification tap — keep connection vs Utang invitation separate.
+ * Ownership transfer and customer-order lifecycle use canonical relatedTypes.
+ */
 export function resolveNotificationDeepLink(
   relatedType: string,
   relatedId?: string | null,
 ): string {
   const type = relatedType.trim().toLowerCase();
   const id = relatedId?.trim() || "";
+  if (
+    type === "organizationownershiptransfer" ||
+    type.includes("ownershiptransfer") ||
+    type.includes("ownership_transfer")
+  ) {
+    return "/personal/ownership-transfers";
+  }
+  if (type.startsWith("customerorder") && id) {
+    return `/personal/orders/${id}`;
+  }
+  if (type.startsWith("customerorder")) {
+    return "/personal/orders";
+  }
   if (type === "personalutanginvitation" || type.includes("utanginvitation")) {
     return "/personal/utang/invitations";
   }

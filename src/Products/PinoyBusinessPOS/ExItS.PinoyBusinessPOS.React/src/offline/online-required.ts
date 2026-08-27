@@ -35,6 +35,10 @@ export const ONLINE_REQUIRED_CODES = {
   PersonalUtangInvite: "online_required.personal_utang_invite",
   PersonalUtangReminder: "online_required.personal_utang_reminder",
   PersonalUtangAdjustment: "online_required.personal_utang_adjustment",
+  PersonalUtangSettle: "online_required.personal_utang_settle",
+  PersonalUtangClose: "online_required.personal_utang_close",
+  PersonalOwnershipTransfer: "online_required.personal_ownership_transfer",
+  OrgOwnershipTransfer: "online_required.org_ownership_transfer",
   PersonalTodoShare: "online_required.personal_todo_share",
   CatalogImport: "online_required.catalog_import",
 } as const;
@@ -57,6 +61,11 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.PersonalUtangInvite]: "offline.requiredPersonalUtangInvite",
   [ONLINE_REQUIRED_CODES.PersonalUtangReminder]: "offline.requiredPersonalUtangReminder",
   [ONLINE_REQUIRED_CODES.PersonalUtangAdjustment]: "offline.requiredPersonalUtangAdjustment",
+  [ONLINE_REQUIRED_CODES.PersonalUtangSettle]: "offline.requiredPersonalUtangSettle",
+  [ONLINE_REQUIRED_CODES.PersonalUtangClose]: "offline.requiredPersonalUtangSettle",
+  [ONLINE_REQUIRED_CODES.PersonalOwnershipTransfer]:
+    "offline.requiredPersonalOwnershipTransfer",
+  [ONLINE_REQUIRED_CODES.OrgOwnershipTransfer]: "offline.requiredOrgOwnershipTransfer",
   [ONLINE_REQUIRED_CODES.PersonalTodoShare]: "offline.requiredPersonalTodoShare",
   [ONLINE_REQUIRED_CODES.CatalogImport]: "offline.requiredCatalogImport",
 };

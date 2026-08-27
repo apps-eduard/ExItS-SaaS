@@ -180,6 +180,16 @@ builder.Services.AddHttpClient<IOrganizationBusinessNotificationPublisher, Platf
 
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient<IPersonalBusinessNotificationPublisher, PlatformPersonalBusinessNotificationClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddHttpClient<ILinkedCustomerPlatformAuthorization, LinkedCustomerPlatformAuthorizationClient>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;

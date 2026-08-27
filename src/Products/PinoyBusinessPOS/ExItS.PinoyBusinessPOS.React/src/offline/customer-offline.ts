@@ -14,6 +14,10 @@ import type { OfflineDb } from "@/offline/db";
 import { enqueueEncryptedOperation } from "@/offline/outbox";
 import { QUEUED_REQUEST_PAYLOAD_VERSION, serializeQueuedRequest } from "@/offline/queued-request";
 import type { OfflineOperationRecord } from "@/offline/types";
+import {
+  guardOrganizationWebOfflineEnqueue,
+  type OfflineEnqueueRuntimeOptions,
+} from "@/runtime/organization-web-runtime-policy";
 
 /**
  * Offline Business customer and customer-credit work (RMAP-21E).
@@ -104,7 +108,9 @@ export type EnqueueOfflineCustomerCreateInput = OfflineCustomerScope & {
  */
 export async function enqueueOfflineCustomerCreate(
   input: EnqueueOfflineCustomerCreateInput,
+  options?: OfflineEnqueueRuntimeOptions,
 ): Promise<OfflineOperationRecord> {
+  guardOrganizationWebOfflineEnqueue(options);
   if (input.platformBusinessCustomerId || input.linkedPersonalPublicUserId) {
     throw new OfflineCustomerRejectedError(
       "offline.customer.identity_link_not_supported",
@@ -144,7 +150,9 @@ export type EnqueueOfflineCustomerUpdateInput = OfflineCustomerScope & {
 
 export async function enqueueOfflineCustomerUpdate(
   input: EnqueueOfflineCustomerUpdateInput,
+  options?: OfflineEnqueueRuntimeOptions,
 ): Promise<OfflineOperationRecord> {
+  guardOrganizationWebOfflineEnqueue(options);
   if (!input.operationId.trim()) {
     throw new OfflineCustomerRejectedError(
       "offline.customer.operation_id_required",
@@ -185,7 +193,9 @@ export type EnqueueOfflineRepaymentInput = OfflineCustomerScope & {
  */
 export async function enqueueOfflineCustomerRepayment(
   input: EnqueueOfflineRepaymentInput,
+  options?: OfflineEnqueueRuntimeOptions,
 ): Promise<OfflineOperationRecord> {
+  guardOrganizationWebOfflineEnqueue(options);
   if (!input.customerId.trim()) {
     throw new OfflineCustomerRejectedError(
       "offline.repayment.customer_required",

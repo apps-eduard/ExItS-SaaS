@@ -286,3 +286,180 @@ export function utcIsoToLocalDateTimeInput(iso: string | null | undefined): stri
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+export type QuickDuePreset = "today" | "tomorrow" | "nextWeek" | "none";
+
+/** Build datetime-local value for a local calendar day at the given clock time. */
+export function localDateTimeInputForLocalDay(
+  date: Date,
+  hour = 9,
+  minute = 0,
+): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(hour)}:${pad(minute)}`;
+}
+
+export function quickDueLocalDateTime(preset: QuickDuePreset, now = new Date()): string {
+  const dayStart = startOfLocalDay(now);
+  switch (preset) {
+    case "today":
+      return localDateTimeInputForLocalDay(dayStart, 17, 0);
+    case "tomorrow":
+      return localDateTimeInputForLocalDay(addLocalDays(dayStart, 1), 9, 0);
+    case "nextWeek":
+      return localDateTimeInputForLocalDay(addLocalDays(dayStart, 7), 9, 0);
+    default:
+      return "";
+  }
+}
+
+/** Server-aligned ordering: due items first (ascending due), then newest updated. */
+export function sortPersonalTodos(todos: readonly PersonalTodoDto[]): PersonalTodoDto[] {
+  return [...todos].sort((left, right) => {
+    const leftHasDue = left.dueAtUtc ? 1 : 0;
+    const rightHasDue = right.dueAtUtc ? 1 : 0;
+    if (leftHasDue !== rightHasDue) {
+      return rightHasDue - leftHasDue;
+    }
+    if (left.dueAtUtc && right.dueAtUtc) {
+      const dueCompare =
+        new Date(left.dueAtUtc).getTime() - new Date(right.dueAtUtc).getTime();
+      if (dueCompare !== 0) {
+        return dueCompare;
+      }
+    }
+    return new Date(right.updatedAtUtc).getTime() - new Date(left.updatedAtUtc).getTime();
+  });
+}
+
+export function filterTodosBySearch(
+  todos: readonly PersonalTodoDto[],
+  query: string,
+): PersonalTodoDto[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [...todos];
+  }
+  return todos.filter((todo) => {
+    if (todo.title.toLowerCase().includes(normalized)) {
+      return true;
+    }
+    return (todo.notes?.toLowerCase().includes(normalized) ?? false);
+  });
+}
+
+export function filterAndSortTodosForTab(
+  todos: readonly PersonalTodoDto[],
+  tab: TodoAgendaTab,
+  options?: { search?: string; now?: Date },
+): PersonalTodoDto[] {
+  const now = options?.now ?? new Date();
+  const search = options?.search ?? "";
+  const tabbed = filterTodosByTab([...todos], tab, now);
+  const searched = filterTodosBySearch(tabbed, search);
+  return sortPersonalTodos(searched);
+}
+
+export type TodoAgendaTabEmptyKey = {
+  titleKey:
+    | "personal.todo.emptyTodayTitle"
+    | "personal.todo.emptyUpcomingTitle"
+    | "personal.todo.emptyOverdueTitle"
+    | "personal.todo.emptyOpenTitle"
+    | "personal.todo.emptyCompletedTitle"
+    | "personal.todo.emptyCancelledTitle"
+    | "personal.todo.emptySearchTitle";
+  detailKey:
+    | "personal.todo.emptyTodayDetail"
+    | "personal.todo.emptyUpcomingDetail"
+    | "personal.todo.emptyOverdueDetail"
+    | "personal.todo.emptyOpenDetail"
+    | "personal.todo.emptyCompletedDetail"
+    | "personal.todo.emptyCancelledDetail"
+    | "personal.todo.emptySearchDetail";
+};
+
+export function todoEmptyStateKeys(
+  tab: TodoAgendaTab,
+  hasSearch: boolean,
+): TodoAgendaTabEmptyKey {
+  if (hasSearch) {
+    return {
+      titleKey: "personal.todo.emptySearchTitle",
+      detailKey: "personal.todo.emptySearchDetail",
+    };
+  }
+  switch (tab) {
+    case "today":
+      return {
+        titleKey: "personal.todo.emptyTodayTitle",
+        detailKey: "personal.todo.emptyTodayDetail",
+      };
+    case "upcoming":
+      return {
+        titleKey: "personal.todo.emptyUpcomingTitle",
+        detailKey: "personal.todo.emptyUpcomingDetail",
+      };
+    case "overdue":
+      return {
+        titleKey: "personal.todo.emptyOverdueTitle",
+        detailKey: "personal.todo.emptyOverdueDetail",
+      };
+    case "open":
+      return {
+        titleKey: "personal.todo.emptyOpenTitle",
+        detailKey: "personal.todo.emptyOpenDetail",
+      };
+    case "completed":
+      return {
+        titleKey: "personal.todo.emptyCompletedTitle",
+        detailKey: "personal.todo.emptyCompletedDetail",
+      };
+    default:
+      return {
+        titleKey: "personal.todo.emptyCancelledTitle",
+        detailKey: "personal.todo.emptyCancelledDetail",
+      };
+  }
+}
+
+export function relatedEntityHref(
+  relatedEntityType: string | null | undefined,
+  relatedEntityId: string | null | undefined,
+): string | null {
+  if (!relatedEntityType || !relatedEntityId) {
+    return null;
+  }
+  switch (relatedEntityType) {
+    case "PersonalContact":
+      return `/personal/people/${relatedEntityId}`;
+    case "PersonalUtangRelationship":
+      return `/personal/utang/relationships/${relatedEntityId}`;
+    default:
+      return null;
+  }
+}
+
+export function priorityRank(priority: string): number {
+  switch (priority) {
+    case "High":
+      return 3;
+    case "Normal":
+      return 2;
+    case "Low":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+export function priorityToneClass(priority: string): string | null {
+  switch (priority) {
+    case "High":
+      return "personal-todo-meta__chip--priority-high";
+    case "Low":
+      return "personal-todo-meta__chip--priority-low";
+    default:
+      return null;
+  }
+}

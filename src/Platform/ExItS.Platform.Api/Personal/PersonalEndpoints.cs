@@ -204,6 +204,145 @@ internal static class PersonalEndpoints
                 dto => Results.Ok(dto with { AcceptToken = null }));
         });
 
+        personal.MapPost("/customer-link-requests/{requestId:guid}/block-business", async (
+            HttpContext http,
+            Guid requestId,
+            BlockBusinessFromCustomerLinkRequest blockBusiness,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await blockBusiness
+                .ExecuteAsync(CustomerLinkRequestId.From(requestId), PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapGet("/customer-link-requests/history", async (
+            HttpContext http,
+            ListResolvedCustomerLinkRequestsForPersonalUser listHistory,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out var accountClass, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await listHistory
+                .ExecuteAsync(PlatformUserId.From(userId), accountClass, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapGet("/blocked-businesses", async (
+            HttpContext http,
+            ListPersonalBlockedBusinesses listBlocked,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var list = await listBlocked
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        personal.MapPost("/blocked-businesses/{organizationId:guid}/unblock", async (
+            HttpContext http,
+            Guid organizationId,
+            UnblockPersonalOrganizationConnection unblock,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await unblock
+                .ExecuteAsync(
+                    PlatformUserId.From(userId),
+                    PlatformOrganizationId.From(organizationId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/linked-merchants/by-organization/{organizationId:guid}/disconnect", async (
+            HttpContext http,
+            Guid organizationId,
+            DisconnectPersonalLinkedMerchant disconnect,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await disconnect
+                .ExecuteAsync(
+                    PlatformUserId.From(userId),
+                    PlatformOrganizationId.From(organizationId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/linked-merchants/by-organization/{organizationId:guid}/disconnect-and-block", async (
+            HttpContext http,
+            Guid organizationId,
+            DisconnectPersonalLinkedMerchant disconnect,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out _, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await disconnect
+                .ExecuteAndBlockAsync(
+                    PlatformUserId.From(userId),
+                    PlatformOrganizationId.From(organizationId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         // WP06: Personal feature entitlement check for POS history APIs (session-bound; not self-grant).
         personal.MapGet("/features/{featureCode}/active", async (
             HttpContext http,
@@ -831,6 +970,22 @@ internal static class PersonalEndpoints
             return Results.Ok(list);
         });
 
+        utang.MapGet("/contacts/{contactId:guid}", async (
+            HttpContext http,
+            Guid contactId,
+            GetPersonalContact getContact,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getContact.ExecuteAsync(PlatformUserId.From(userId), contactId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         utang.MapPost("/relationships", async (
             HttpContext http,
             CreatePersonalDebtRelationshipRequest body,
@@ -927,6 +1082,22 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
 
+        utang.MapGet("/entries/{entryId:guid}", async (
+            HttpContext http,
+            Guid entryId,
+            GetPersonalUtangEntry getEntry,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getEntry.ExecuteAsync(PlatformUserId.From(userId), entryId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         utang.MapPost("/relationships/{relationshipId:guid}/entries", async (
             HttpContext http,
             Guid relationshipId,
@@ -1001,6 +1172,42 @@ internal static class PersonalEndpoints
 
             var result = await cancelEntry
                 .ExecuteAsync(PlatformUserId.From(userId), relationshipId, entryId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/settle", async (
+            HttpContext http,
+            Guid relationshipId,
+            SettlePersonalDebtRelationshipRequest body,
+            SettlePersonalDebtRelationship settle,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await settle
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/close", async (
+            HttpContext http,
+            Guid relationshipId,
+            ClosePersonalDebtRelationshipRequest body,
+            ClosePersonalDebtRelationship close,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await close
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });

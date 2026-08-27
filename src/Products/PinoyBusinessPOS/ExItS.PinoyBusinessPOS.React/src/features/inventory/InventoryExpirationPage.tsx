@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
@@ -20,6 +21,7 @@ import {
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const EXPIRING_PAGE_SIZE = 50;
@@ -144,7 +146,7 @@ export function InventoryExpirationPage() {
   const counts = query.data?.pages[0];
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+    return <BranchRequiredPanel title={t("inventory.expirationTitle")} />;
   }
 
   return (
@@ -240,6 +242,9 @@ export function InventoryExpirationPage() {
       ) : null}
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+      {query.isFetching && !query.isLoading && query.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}

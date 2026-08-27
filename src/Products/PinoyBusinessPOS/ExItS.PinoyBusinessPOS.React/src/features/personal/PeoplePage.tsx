@@ -1,50 +1,74 @@
-import { ArrowLeft, ChevronRight, IdCard, Info, Link2, Search, UserRound } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, ChevronRight, Info, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PeopleInfoDialog } from "@/features/personal/PeopleInfoDialog";
+import {
+  parsePersonCreateKind,
+  PersonCreateForm,
+} from "@/features/personal/PersonFormPage";
 import {
   usePersonalConnectionRequestsQuery,
   usePersonalContactsQuery,
   usePersonalUtangSummariesQuery,
 } from "@/features/personal/people-queries";
+import { PeopleListSection } from "@/features/personal/PeopleListSection";
 import {
   buildPeopleRows,
-  initialsFor,
   summarizePeopleContacts,
-  type PeopleConnectionStatus,
 } from "@/features/personal/people-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
-function statusTone(
-  status: PeopleConnectionStatus,
-): "neutral" | "success" | "warning" | "info" {
-  if (status === "connected") {
-    return "success";
-  }
-  if (status === "request_sent" || status === "request_received" || status === "blocked") {
-    return "warning";
-  }
-  return "neutral";
-}
-
 export function PeoplePage() {
   const { t } = useI18n();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const addFromUrl = searchParams.get("add") === "1";
+  const urlKind = parsePersonCreateKind(searchParams.get("kind"));
+  const linkPublicId = searchParams.get("linkPublicId");
+
   const [infoOpen, setInfoOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(addFromUrl);
+
+  useEffect(() => {
+    setAddOpen(addFromUrl);
+  }, [addFromUrl]);
+
+  function closeAddPanel() {
+    setAddOpen(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete("add");
+    next.delete("kind");
+    next.delete("linkPublicId");
+    setSearchParams(next, { replace: true });
+  }
+
+  function toggleAddPanel() {
+    if (addOpen) {
+      closeAddPanel();
+      return;
+    }
+    setAddOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.set("add", "1");
+    setSearchParams(next, { replace: true });
+  }
   const contactsQuery = usePersonalContactsQuery();
   const connectionsQuery = usePersonalConnectionRequestsQuery();
   const utangQuery = usePersonalUtangSummariesQuery();
 
-  const isLoading =
-    contactsQuery.isLoading || connectionsQuery.isLoading || utangQuery.isLoading;
+  const isInitialLoading =
+    (contactsQuery.isLoading || connectionsQuery.isLoading || utangQuery.isLoading) &&
+    !contactsQuery.data;
+  const isRefreshing =
+    (contactsQuery.isFetching || connectionsQuery.isFetching || utangQuery.isFetching) &&
+    Boolean(contactsQuery.data);
   const error = contactsQuery.error ?? connectionsQuery.error ?? utangQuery.error;
 
   const summary = useMemo(
@@ -61,32 +85,10 @@ export function PeoplePage() {
       connectionRequests: connectionsQuery.data,
       lent: utangQuery.data.lent,
       borrowed: utangQuery.data.borrowed,
-      search: searchOpen ? search : "",
     });
-  }, [contactsQuery.data, connectionsQuery.data, utangQuery.data, search, searchOpen]);
+  }, [contactsQuery.data, connectionsQuery.data, utangQuery.data]);
 
-  function statusLabel(status: PeopleConnectionStatus): string {
-    switch (status) {
-      case "connected":
-        return t("people.status.connected");
-      case "request_sent":
-        return t("people.status.requestSent");
-      case "request_received":
-        return t("people.status.requestReceived");
-      case "blocked":
-        return t("people.status.blocked");
-      case "local":
-        return t("people.status.local");
-      default:
-        return t("people.status.notConnected");
-    }
-  }
-
-  if (isLoading) {
-    return <LoadingState label={t("loading.label")} />;
-  }
-
-  if (error) {
+  if (error && !contactsQuery.data) {
     const detail =
       error instanceof PlatformApiError
         ? (error.problem.detail ?? error.message)
@@ -110,7 +112,7 @@ export function PeoplePage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <section className="personal-page people-page exits-page mx-auto flex w-full max-w-3xl flex-col gap-4">
       <header className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="shrink-0" aria-label={t("shell.back")}>
           <Link to="/personal">
@@ -132,37 +134,53 @@ export function PeoplePage() {
         </Button>
       </header>
 
-      <Card className="flex flex-col gap-3">
-        <div>
-          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("people.howToAdd.title")}
-          </h2>
-          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.howToAdd.lede")}
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Link
-            to="/personal/people/add/local"
-            className="flex min-h-[var(--exits-touch-target-min)] flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 text-inherit no-underline transition-colors hover:border-primary/40 hover:bg-surface-muted"
+      {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
+      {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
+      {!isInitialLoading ? (
+        <>
+      <Card className="flex flex-col gap-3" data-testid="people-add-panel">
+        <button
+          type="button"
+          className={cn(
+            "flex w-full min-h-[var(--exits-touch-target-min)] items-start gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
+            "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+          data-testid="people-add-toggle"
+          aria-label={t("people.add.toggle")}
+          aria-expanded={addOpen}
+          aria-controls="people-add-form"
+          onClick={toggleAddPanel}
+        >
+          <span
+            className={cn(
+              "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-primary transition-transform",
+              addOpen && "rotate-45",
+            )}
+            aria-hidden
           >
-            <UserRound className="size-6 text-primary" aria-hidden="true" />
-            <span className="font-semibold">{t("people.howToAdd.withoutId")}</span>
-            <span className="text-[length:var(--exits-text-sm)] text-muted">
-              {t("people.howToAdd.withoutIdHelp")}
+            <Plus className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1 pt-0.5">
+            <span className="block text-[length:var(--exits-text-lg)] font-semibold">
+              {t("people.newTitle")}
             </span>
-          </Link>
-          <Link
-            to="/personal/people/add"
-            className="flex min-h-[var(--exits-touch-target-min)] flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 text-inherit no-underline transition-colors hover:border-primary/40 hover:bg-surface-muted"
-          >
-            <IdCard className="size-6 text-primary" aria-hidden="true" />
-            <span className="font-semibold">{t("people.howToAdd.withId")}</span>
-            <span className="text-[length:var(--exits-text-sm)] text-muted">
-              {t("people.howToAdd.withIdHelp")}
+            <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
+              {addOpen ? t("people.createKindLede") : t("people.howToAdd.lede")}
             </span>
-          </Link>
-        </div>
+          </span>
+        </button>
+
+        {addOpen ? (
+          <div id="people-add-form" className="border-t border-border pt-3">
+            <PersonCreateForm
+              key={`${urlKind ?? "pick"}-${linkPublicId ?? ""}`}
+              embedded
+              initialKind={urlKind}
+              linkPublicId={linkPublicId}
+              onCancel={closeAddPanel}
+            />
+          </div>
+        ) : null}
       </Card>
 
       <Card className="flex flex-col gap-2">
@@ -194,94 +212,9 @@ export function PeoplePage() {
         </Button>
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("people.title")}
-            </h2>
-            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("people.summary")
-                .replace("{identified}", String(summary.identified))
-                .replace("{local}", String(summary.local))}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={t("people.search")}
-            aria-pressed={searchOpen}
-            onClick={() => setSearchOpen((value) => !value)}
-          >
-            <Search className="size-5" aria-hidden="true" />
-          </Button>
-        </div>
-
-        {searchOpen ? (
-          <label className="block">
-            <span className="sr-only">{t("people.search")}</span>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t("people.searchPlaceholder")}
-              className="h-[var(--exits-control-height)] w-full rounded-[var(--exits-radius-md)] border border-border bg-background px-3 text-[length:var(--exits-text-md)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
-            />
-          </label>
-        ) : null}
-
-        {rows.length === 0 ? (
-          <p className="m-0 py-2 text-[length:var(--exits-text-sm)] text-muted">
-            {t("people.emptyBody")}
-          </p>
-        ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0" role="list">
-            {rows.map((row) => (
-              <li key={row.contact.id}>
-                <Link
-                  to={`/personal/people/${row.contact.id}`}
-                  className="flex min-h-[var(--exits-touch-target-min)] items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 py-3 text-inherit no-underline transition-colors hover:bg-surface-muted"
-                >
-                  <span
-                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-                    aria-hidden="true"
-                  >
-                    {initialsFor(row.contact.displayName)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{row.contact.displayName}</span>
-                    <span className="mt-1 flex items-center justify-between gap-2">
-                      <span
-                        className={cn(
-                          "flex min-w-0 items-center gap-1 truncate text-[length:var(--exits-text-sm)] text-muted",
-                        )}
-                      >
-                        {row.identityLine === "exits" && row.publicUserId ? (
-                          <>
-                            <Link2 className="size-3.5 shrink-0" aria-hidden="true" />
-                            <span className="truncate">{row.publicUserId}</span>
-                          </>
-                        ) : (
-                          <span className="truncate">{t("people.localContact")}</span>
-                        )}
-                      </span>
-                      <StatusChip tone={statusTone(row.connectionStatus)} className="shrink-0">
-                        {statusLabel(row.connectionStatus)}
-                      </StatusChip>
-                    </span>
-                    {row.utangSummary ? (
-                      <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                        {row.utangSummary}
-                      </span>
-                    ) : null}
-                  </span>
-                  <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden="true" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <PeopleListSection rows={rows} summary={summary} />
+        </>
+      ) : null}
 
       <PeopleInfoDialog open={infoOpen} onClose={() => setInfoOpen(false)} />
     </section>

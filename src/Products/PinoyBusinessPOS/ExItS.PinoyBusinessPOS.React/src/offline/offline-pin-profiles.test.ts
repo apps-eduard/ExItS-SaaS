@@ -75,15 +75,24 @@ describe("offline PIN profiles", () => {
     await enrollOfflinePinAndDek(USER, PIN);
   });
 
-  it("lists eligible offline PIN profiles for this installation", async () => {
+  it("Web online-only policy hides eligible profiles from the login offer", async () => {
     const profiles = await listEligibleOfflinePinProfiles();
+    expect(profiles).toHaveLength(0);
+    const offer = await evaluateOfflinePinLoginOffer();
+    expect(offer.canOfferPinUnlock).toBe(false);
+  });
+
+  it("lists eligible offline PIN profiles when offline engine is opted in", async () => {
+    const profiles = await listEligibleOfflinePinProfiles(Date.now(), {
+      allowOfflineEngine: true,
+    });
     expect(profiles).toHaveLength(1);
     expect(profiles[0]?.displayName).toBe("Maria Santos");
     expect(profiles[0]?.branchName).toBe("Main Branch");
   });
 
-  it("offers PIN unlock when a profile is prepared", async () => {
-    const offer = await evaluateOfflinePinLoginOffer();
+  it("offers PIN unlock when a profile is prepared and engine is opted in", async () => {
+    const offer = await evaluateOfflinePinLoginOffer({ allowOfflineEngine: true });
     expect(offer.canOfferPinUnlock).toBe(true);
     expect(offer.grantExpired).toBe(false);
   });

@@ -192,6 +192,10 @@ public static class DomainErrorCodes
     public const string PersonalUtangDuplicateSubmission = "platform.personal.utang.duplicate_submission";
     public const string PersonalUtangUnauthorized = "platform.personal.utang.unauthorized";
     public const string PersonalUtangConcurrencyConflict = "platform.personal.utang.concurrency_conflict";
+    public const string PersonalUtangSettlementInvalid = "platform.personal.utang.settlement.invalid";
+    public const string PersonalUtangSettlementStale = "platform.personal.utang.settlement.stale";
+    public const string PersonalUtangPendingBlocksSettlement = "platform.personal.utang.settlement.pending_entries";
+    public const string PersonalUtangCloseInvalid = "platform.personal.utang.close.invalid";
 
     public const string InvalidPersonalUtangInvitationId = "platform.personal.utang_invitation.id.invalid";
     public const string InvalidPersonalUtangInvitationStatusTransition =

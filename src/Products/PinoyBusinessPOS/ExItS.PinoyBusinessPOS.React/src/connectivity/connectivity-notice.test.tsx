@@ -21,7 +21,9 @@ describe("connectivity notice", () => {
       </AppProviders>,
     );
     expect(screen.getByTestId("connectivity-notice")).toHaveTextContent("You're offline");
-    expect(screen.getByTestId("connectivity-notice")).toHaveTextContent("Reconnect to continue.");
+    expect(screen.getByTestId("connectivity-notice")).toHaveTextContent(
+      "Shown data may be out of date until you reconnect.",
+    );
     expect(screen.getByTestId("connectivity-notice")).not.toHaveTextContent(/offline pos mode/i);
     expect(screen.getByTestId("connectivity-notice")).not.toHaveTextContent(/authenticated/i);
   });
@@ -38,7 +40,7 @@ describe("connectivity notice", () => {
     );
     expect(screen.getByTestId("connectivity-notice")).toHaveTextContent("Wala kang koneksyon");
     expect(screen.getByTestId("connectivity-notice")).toHaveTextContent(
-      "Kumonekta ulit para magpatuloy.",
+      "Maaaring luma ang ipinapakitang data hanggang makakonekta ka ulit.",
     );
   });
 });

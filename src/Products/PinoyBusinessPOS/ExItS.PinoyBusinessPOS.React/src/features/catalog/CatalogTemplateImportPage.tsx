@@ -40,7 +40,7 @@ import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 type WizardStep = "choose" | "preview" | "confirm";
 
@@ -83,7 +83,7 @@ export function CatalogTemplateImportPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [step, setStep] = useState<WizardStep>("choose");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -96,14 +96,6 @@ export function CatalogTemplateImportPage() {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const templatesQuery = useQuery({
     queryKey: ["merchant-catalog", "templates", debounced],

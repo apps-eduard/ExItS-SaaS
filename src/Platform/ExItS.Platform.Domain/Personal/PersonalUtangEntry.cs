@@ -20,6 +20,10 @@ public sealed class PersonalUtangEntry
     public PlatformUserId? ResolvedByUserIdentityId { get; private set; }
     public DateTimeOffset? ResolvedAtUtc { get; private set; }
     public string? DisputeReason { get; private set; }
+    public PersonalUtangEntryIntent Intent { get; }
+    public decimal? SettlementBalanceSnapshot { get; }
+
+    public bool IsSettlement => Intent == PersonalUtangEntryIntent.Settlement;
 
     /// <summary>Max stored length for Purpose / Note (and optional payment notes).</summary>
     public const int NotesMaxLength = 512;
@@ -38,7 +42,9 @@ public sealed class PersonalUtangEntry
         PersonalUtangEntryStatus status,
         PlatformUserId? resolvedByUserIdentityId,
         DateTimeOffset? resolvedAtUtc,
-        string? disputeReason)
+        string? disputeReason,
+        PersonalUtangEntryIntent intent,
+        decimal? settlementBalanceSnapshot)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -54,6 +60,8 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedByUserIdentityId;
         ResolvedAtUtc = resolvedAtUtc;
         DisputeReason = disputeReason;
+        Intent = intent;
+        SettlementBalanceSnapshot = settlementBalanceSnapshot;
     }
 
     internal static PersonalUtangEntry Create(
@@ -67,7 +75,9 @@ public sealed class PersonalUtangEntry
         DateTimeOffset utcNow,
         PersonalUtangEntryStatus status,
         string? notes,
-        DateTimeOffset? dueDateUtc)
+        DateTimeOffset? dueDateUtc,
+        PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular,
+        decimal? settlementBalanceSnapshot = null)
     {
         ArgumentNullException.ThrowIfNull(relationshipId);
         ArgumentNullException.ThrowIfNull(createdByUserIdentityId);
@@ -78,6 +88,8 @@ public sealed class PersonalUtangEntry
         {
             EnsureUtc(dueDateUtc.Value);
         }
+
+        ValidateSettlementIntent(entryType, intent, settlementBalanceSnapshot, amount);
 
         return new PersonalUtangEntry(
             id ?? PersonalUtangEntryId.New(),
@@ -93,7 +105,9 @@ public sealed class PersonalUtangEntry
             status,
             resolvedByUserIdentityId: null,
             resolvedAtUtc: null,
-            disputeReason: null);
+            disputeReason: null,
+            intent,
+            settlementBalanceSnapshot);
     }
 
     /// <summary>
@@ -134,7 +148,9 @@ public sealed class PersonalUtangEntry
         PersonalUtangEntryStatus status = PersonalUtangEntryStatus.Confirmed,
         PlatformUserId? resolvedByUserIdentityId = null,
         DateTimeOffset? resolvedAtUtc = null,
-        string? disputeReason = null) =>
+        string? disputeReason = null,
+        PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular,
+        decimal? settlementBalanceSnapshot = null) =>
         new(
             id,
             relationshipId,
@@ -149,7 +165,9 @@ public sealed class PersonalUtangEntry
             status,
             resolvedByUserIdentityId,
             resolvedAtUtc,
-            disputeReason);
+            disputeReason,
+            intent,
+            settlementBalanceSnapshot);
 
     /// <summary>Applies confirmation metadata and the post-confirmation balance snapshot.</summary>
     internal void MarkConfirmed(PlatformUserId resolvedBy, DateTimeOffset utcNow, decimal balanceAfter)
@@ -181,6 +199,46 @@ public sealed class PersonalUtangEntry
         ResolvedByUserIdentityId = resolvedBy;
         ResolvedAtUtc = utcNow;
         DisputeReason = null;
+    }
+
+    private static void ValidateSettlementIntent(
+        PersonalUtangEntryType entryType,
+        PersonalUtangEntryIntent intent,
+        decimal? settlementBalanceSnapshot,
+        decimal amount)
+    {
+        if (intent is not PersonalUtangEntryIntent.Settlement)
+        {
+            if (settlementBalanceSnapshot is not null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonalUtangSettlementInvalid,
+                    "Settlement balance snapshot is only valid for settlement intent.");
+            }
+
+            return;
+        }
+
+        if (entryType is not PersonalUtangEntryType.Payment)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Settlement intent requires a Payment entry.");
+        }
+
+        if (settlementBalanceSnapshot is null || settlementBalanceSnapshot.Value <= 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Settlement requires a positive balance snapshot.");
+        }
+
+        if (settlementBalanceSnapshot.Value != amount)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Settlement payment amount must equal the balance snapshot.");
+        }
     }
 
     private static string? NormalizeDisputeReason(string? disputeReason)

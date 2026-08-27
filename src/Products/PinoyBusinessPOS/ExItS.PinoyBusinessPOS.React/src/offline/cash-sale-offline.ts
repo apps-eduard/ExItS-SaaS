@@ -13,6 +13,8 @@ import type { OfflineDb } from "@/offline/db";
 import { enqueueEncryptedOperation } from "@/offline/outbox";
 import { isPriceAuthorityUsable } from "@/offline/price-authority-cache";
 import type { OfflineOperationRecord } from "@/offline/types";
+import { guardOrganizationWebOfflineEnqueue } from "@/runtime/organization-web-runtime-policy";
+import type { OfflineEnqueueRuntimeOptions } from "@/runtime/organization-web-runtime-policy";
 
 /**
  * Offline Cash sale enqueue (RMAP-21D).
@@ -21,6 +23,9 @@ import type { OfflineOperationRecord } from "@/offline/types";
  * they need a provider reference or a live customer credit decision. Discounts and price
  * overrides stay online-only because the server owns every money calculation and the
  * capability check behind them — this client must never compute an authorized price offline.
+ *
+ * Organization Web/PWA must not enqueue (ORG-PWA-ONLINE-ONLY-01). Pass
+ * `{ allowOfflineEngine: true }` only from engine unit tests or future Capacitor activation.
  */
 
 export const POS_SALE_PRODUCT_DOMAIN = "pos.sale";
@@ -163,7 +168,9 @@ function assertEveryLineIsLeased(lines: ReadonlyArray<CheckoutSaleLineRequest>):
  */
 export async function enqueueOfflineCashSale(
   input: EnqueueOfflineCashSaleInput,
+  options?: OfflineEnqueueRuntimeOptions,
 ): Promise<OfflineOperationRecord> {
+  guardOrganizationWebOfflineEnqueue(options);
   assertOfflineCashSaleAllowed(input);
 
   const payload = buildCheckoutSalePayload({

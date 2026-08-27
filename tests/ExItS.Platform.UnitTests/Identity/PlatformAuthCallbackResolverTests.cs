@@ -136,6 +136,35 @@ public sealed class PlatformAuthCallbackResolverTests
     }
 
     [Fact]
+    public void Pinoy_business_pos_surface_uses_explicit_pos_base()
+    {
+        var verification = Message(
+            PlatformAuthOutboundMessageKinds.EmailVerification,
+            PlatformAuthPublicSurfaces.PinoyBusinessPos);
+        var reset = Message(
+            PlatformAuthOutboundMessageKinds.PasswordReset,
+            PlatformAuthPublicSurfaces.PinoyBusinessPos);
+
+        Assert.True(PlatformAuthCallbackResolver.TryCreateLink(
+            verification,
+            "https://admin.example",
+            pinoyLoanManagerPublicBaseUrl: null,
+            allowHttpLoopbackPublicUrls: true,
+            out var activate,
+            pinoyBusinessPosPublicBaseUrl: "http://localhost:5177"));
+        Assert.Equal("http://localhost:5177/activate-account?token=opaque%2Ftoken", activate);
+
+        Assert.True(PlatformAuthCallbackResolver.TryCreateLink(
+            reset,
+            "https://admin.example",
+            pinoyLoanManagerPublicBaseUrl: null,
+            allowHttpLoopbackPublicUrls: true,
+            out var resetUrl,
+            pinoyBusinessPosPublicBaseUrl: "http://localhost:5177"));
+        Assert.Equal("http://localhost:5177/reset-password?token=opaque%2Ftoken", resetUrl);
+    }
+
+    [Fact]
     public void Unknown_surface_is_rejected()
     {
         var unknown = PlatformAuthPublicSurfaces.Normalize("https://evil.example/callback");
@@ -145,6 +174,10 @@ public sealed class PlatformAuthCallbackResolverTests
         var empty = PlatformAuthPublicSurfaces.Normalize("  ");
         Assert.True(empty.IsSuccess);
         Assert.Null(empty.Value);
+
+        var pos = PlatformAuthPublicSurfaces.Normalize("pinoy-business-pos");
+        Assert.True(pos.IsSuccess);
+        Assert.Equal(PlatformAuthPublicSurfaces.PinoyBusinessPos, pos.Value);
     }
 
     private static PlatformAuthOutboundMessage Message(string kind, string? publicSurface) =>

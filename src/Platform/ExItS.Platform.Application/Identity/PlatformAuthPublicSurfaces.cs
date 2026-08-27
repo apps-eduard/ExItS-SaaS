@@ -9,6 +9,7 @@ namespace ExItS.Platform.Application.Identity;
 public static class PlatformAuthPublicSurfaces
 {
     public const string PinoyLoanManager = "pinoy-loan-manager";
+    public const string PinoyBusinessPos = "pinoy-business-pos";
 
     public static ApplicationResult<string?> Normalize(string? value)
     {
@@ -21,6 +22,11 @@ public static class PlatformAuthPublicSurfaces
         if (string.Equals(trimmed, PinoyLoanManager, StringComparison.OrdinalIgnoreCase))
         {
             return ApplicationResult<string?>.Success(PinoyLoanManager);
+        }
+
+        if (string.Equals(trimmed, PinoyBusinessPos, StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult<string?>.Success(PinoyBusinessPos);
         }
 
         return ApplicationResult<string?>.Failure(

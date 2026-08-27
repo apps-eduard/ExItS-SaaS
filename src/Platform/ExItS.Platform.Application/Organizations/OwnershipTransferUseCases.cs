@@ -3,11 +3,13 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Application.Organizations;
 
@@ -123,6 +125,8 @@ public sealed class RequestOwnershipTransfer
     private readonly IClock _clock;
     private readonly IAuditWriter _audit;
     private readonly ResolveOwnershipTransferTarget _resolveTarget;
+    private readonly IPersonalInAppNotificationRepository? _personalNotifications;
+    private readonly IPersonalAccountSettingsRepository? _personalSettings;
 
     public RequestOwnershipTransfer(
         IPlatformOrganizationRepository organizations,
@@ -132,7 +136,9 @@ public sealed class RequestOwnershipTransfer
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IAuditWriter audit,
-        ResolveOwnershipTransferTarget resolveTarget)
+        ResolveOwnershipTransferTarget resolveTarget,
+        IPersonalInAppNotificationRepository? personalNotifications = null,
+        IPersonalAccountSettingsRepository? personalSettings = null)
     {
         _organizations = organizations;
         _users = users;
@@ -142,6 +148,8 @@ public sealed class RequestOwnershipTransfer
         _clock = clock;
         _audit = audit;
         _resolveTarget = resolveTarget;
+        _personalNotifications = personalNotifications;
+        _personalSettings = personalSettings;
     }
 
     public async Task<ApplicationResult<OrganizationOwnershipTransferDto>> ExecuteAsync(
@@ -234,6 +242,8 @@ public sealed class RequestOwnershipTransfer
                 target.Id,
                 _clock.UtcNow);
             await _transfers.AddAsync(transfer, cancellationToken).ConfigureAwait(false);
+            await TryCreateRecipientNotificationAsync(transfer, organization, target, cancellationToken)
+                .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             await _audit.WriteAsync(
@@ -262,6 +272,54 @@ public sealed class RequestOwnershipTransfer
         {
             return ApplicationResult<OrganizationOwnershipTransferDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task TryCreateRecipientNotificationAsync(
+        OrganizationOwnershipTransfer transfer,
+        PlatformOrganization organization,
+        PlatformUser target,
+        CancellationToken cancellationToken)
+    {
+        if (_personalNotifications is null)
+        {
+            return;
+        }
+
+        if (_personalSettings is not null)
+        {
+            var settings = await _personalSettings.GetByUserAsync(target.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var inAppEnabled = settings?.InAppNotificationsEnabled ?? true;
+            if (!inAppEnabled)
+            {
+                return;
+            }
+        }
+
+        var relatedId = transfer.Id.Value.ToString("D");
+        var existing = await _personalNotifications
+            .FindByRecipientRelatedAsync(
+                target.Id,
+                OwnershipTransferNotificationTypes.Requested,
+                relatedId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            return;
+        }
+
+        var businessName = string.IsNullOrWhiteSpace(organization.DisplayName)
+            ? "A business"
+            : organization.DisplayName.Trim();
+        var notification = PersonalInAppNotification.Create(
+            target.Id,
+            title: "Ownership transfer",
+            preview: $"{businessName} wants to transfer ownership to you.",
+            relatedType: OwnershipTransferNotificationTypes.Requested,
+            utcNow: _clock.UtcNow,
+            relatedId: relatedId);
+        await _personalNotifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<OrganizationOwnershipTransferDto> MapAsync(

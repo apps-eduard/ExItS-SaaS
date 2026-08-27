@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -21,6 +22,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
@@ -44,6 +46,8 @@ export function SellerOrdersPage() {
   const query = useQuery({
     queryKey: ["seller-orders", workspace?.organizationId, filter],
     enabled: Boolean(workspace),
+    staleTime: 15_000,
+    meta: { suppressGlobalError: true, operation: "list seller orders" },
     queryFn: ({ signal }) =>
       listSellerCustomerOrders(
         workspace!,
@@ -56,25 +60,7 @@ export function SellerOrdersPage() {
   });
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
-  }
-
-  if (query.isLoading) {
-    return <LoadingState label={t("loading.label")} />;
-  }
-
-  if (query.isError) {
-    return (
-      <div className="flex min-w-0 flex-col gap-4">
-        <ErrorState
-          title={t("orders.error")}
-          detail={describePosApiError(query.error, t, "error.detail")}
-        />
-        <Button type="button" className="min-h-11 w-fit" onClick={() => void query.refetch()}>
-          {t("orders.retry")}
-        </Button>
-      </div>
-    );
+    return <BranchRequiredPanel title={t("orders.sellerTitle")} />;
   }
 
   const items = filterSellerOrdersClientSide(query.data?.items ?? [], filter);
@@ -105,37 +91,60 @@ export function SellerOrdersPage() {
         }))}
       />
 
-      {items.length === 0 ? (
-        <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
-      ) : (
-        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="seller-orders-list">
-          {items.map((order) => (
-            <li key={order.orderId}>
-              <Link
-                className="exits-list__card customer-order-row block min-w-0 text-foreground no-underline"
-                to={`/orders/${order.orderId}`}
-                data-testid="seller-order-card"
-              >
-                <div className="customer-order-row__main min-w-0">
-                  <strong className="exits-list__name block truncate font-semibold">
-                    {order.customerDisplayName}
-                  </strong>
-                  <p className="customer-order-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                    #{order.orderNumber} · {order.fulfillmentType} · {order.lineCount} {t("orders.items")}
-                  </p>
-                </div>
-                <div className="customer-order-row__aside">
-                  <span className="customer-order-row__total">{money(order.total)}</span>
-                  <StatusChip tone="info">
-                    {t(displayOrderStatusKey(order) as MessageKey)}
-                  </StatusChip>
-                  <ChevronRight className="customer-order-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+      {query.isFetching && !query.isLoading && query.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
+
+      {query.isError ? (
+        <div className="flex min-w-0 flex-col gap-4">
+          <ErrorState
+            title={t("orders.error")}
+            detail={describePosApiError(query.error, t, "error.detail")}
+          />
+          <Button type="button" className="min-h-11 w-fit" onClick={() => void query.refetch()}>
+            {t("orders.retry")}
+          </Button>
+        </div>
+      ) : null}
+
+      {!query.isLoading && !query.isError ? (
+        items.length === 0 ? (
+          <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
+        ) : (
+          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="seller-orders-list">
+            {items.map((order) => (
+              <li key={order.orderId}>
+                <Link
+                  className="exits-list__card customer-order-row block min-w-0 text-foreground no-underline"
+                  to={`/orders/${order.orderId}`}
+                  data-testid="seller-order-card"
+                >
+                  <div className="customer-order-row__main min-w-0">
+                    <strong className="exits-list__name block truncate font-semibold">
+                      {order.customerDisplayName}
+                    </strong>
+                    <p className="customer-order-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                      #{order.orderNumber} · {order.fulfillmentType} · {order.lineCount}{" "}
+                      {t("orders.items")}
+                    </p>
+                  </div>
+                  <div className="customer-order-row__aside">
+                    <span className="customer-order-row__total">{money(order.total)}</span>
+                    <StatusChip tone="info">
+                      {t(displayOrderStatusKey(order) as MessageKey)}
+                    </StatusChip>
+                    <ChevronRight
+                      className="customer-order-row__chevron size-4 shrink-0 text-muted"
+                      aria-hidden
+                    />
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : null}
     </div>
   );
 }

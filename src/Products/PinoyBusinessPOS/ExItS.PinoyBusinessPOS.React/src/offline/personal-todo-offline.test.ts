@@ -80,7 +80,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         dueAtUtc: "2026-09-01T00:00:00.000Z",
         priority: "High",
       },
-    });
+    }, { allowOfflineEngine: true });
 
     expect(operation.scopeKind).toBe("Personal");
     expect(operation.organizationId).toBeNull();
@@ -122,7 +122,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         relatedEntityType: null,
         relatedEntityId: "33333333-3333-4333-8333-333333333333",
       },
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.body).toMatchObject({ relatedEntityType: null, relatedEntityId: null });
@@ -137,7 +137,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         todoId,
         ownerUserIdentityId,
         todo: { title: "   " },
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.personal.todo.title_required" });
 
     await expect(
@@ -147,7 +147,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         ownerUserIdentityId,
         todo: { title: "Share this" },
         shareWithUserIdentityId: "44444444-4444-4444-8444-444444444444",
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.personal.todo.share_not_supported" });
 
     expect(() => rejectOfflineTodoShare()).toThrow(OfflinePersonalTodoRejectedError);
@@ -164,7 +164,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       todoId,
       todo: { title: "Bayaran bukas", notes: null, priority: "Normal" },
       expectedVersion: 4,
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.method).toBe("PUT");
@@ -192,7 +192,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         todoId,
         todo: { title: "Invented from blank fields" },
         expectedVersion: null,
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.personal.todo.not_cached" });
 
     expect(await listOutbox(scope.db)).toEqual([]);
@@ -207,7 +207,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       operationId,
       todoId,
       transition: "complete",
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe(`/api/v1/personal/todos/${todoId}/complete`);
@@ -229,7 +229,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       operationId,
       todoId,
       transition: "cancel",
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe(`/api/v1/personal/todos/${todoId}/cancel`);
@@ -248,7 +248,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       operationId,
       todoId,
       transition: "reopen",
-    });
+    }, { allowOfflineEngine: true });
 
     expect(operation.operationType).toBe("personal.todo.reopen");
     expect(todo.status).toBe("Open");
@@ -263,7 +263,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       todoId,
       ownerUserIdentityId,
       todo: { title: "Created offline" },
-    });
+    }, { allowOfflineEngine: true });
 
     const { operation } = await enqueuePersonalTodoTransition({
       ...scope,
@@ -272,7 +272,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       todoIsLocal: true,
       dependsOnTodoOperationId: todoId,
       transition: "complete",
-    });
+    }, { allowOfflineEngine: true });
 
     expect(operation.dependsOnOperationId).toBe(todoId);
     const request = await decryptRequest(operation, scope.scopeBinding);
@@ -304,7 +304,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
         todoId,
         ownerUserIdentityId,
         todo: { title: "Should never land here" },
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toThrow(/scope mismatch/i);
 
     expect(await listOutbox(db)).toEqual([]);
@@ -318,7 +318,7 @@ describe("RMAP-21G Personal To-do offline queue", () => {
       todoId,
       ownerUserIdentityId,
       todo: { title: "Bayaran ang ospital", notes: "dalhin ang resibo" },
-    });
+    }, { allowOfflineEngine: true });
 
     const serialized = JSON.stringify(await listSafeOutboxMetadata(scope.db));
     expect(serialized).not.toContain("ospital");

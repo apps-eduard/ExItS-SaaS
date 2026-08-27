@@ -220,6 +220,21 @@ async function mockBoundOrgSession(
       return route.fulfill({ status: 204, body: "" });
     }
 
+    if (url.includes(`/organizations/${E2E_ORG_ID}/notifications`) && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [], totalCount: 0 }),
+      });
+    }
+
+    if (
+      url.match(new RegExp(`/organizations/${E2E_ORG_ID}/notifications/[^/]+/read`)) &&
+      method === "POST"
+    ) {
+      return route.fulfill({ status: 204, body: "" });
+    }
+
     return route.fulfill({ status: 404, contentType: "application/json", body: "{}" });
   });
 

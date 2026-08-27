@@ -1,0 +1,223 @@
+# PERSONAL-BASELINE-SYNC-AND-AUDIT-01
+
+**Package:** PERSONAL-BASELINE-SYNC-AND-AUDIT-01  
+**Status:** COMPLETE (audit + baseline sync; no Personal feature implementation)  
+**Branch:** `feat/personal`  
+**Date:** 2026-08-27  
+
+## Baseline identity
+
+| Label | SHA |
+| --- | --- |
+| Personal remote (pre-sync) | `ed382be941a3145014abda1810f2b517afcb57c0` |
+| Organization frozen | `112dc2675b0fbba0450a698662c445c02cc60a18` |
+| Fast-forward safe | **YES** (`origin/feat/personal` is ancestor of `origin/feat/organization`) |
+| Personal synced HEAD | `112dc2675b0fbba0450a698662c445c02cc60a18` |
+
+Organization is **FROZEN**. This package does not intentionally change Organization behavior. Personal offline/online **policy was not changed**.
+
+Historical reports (RMAP-22A…H, RMAP-21F/G) remain historical. This document is the **current** Personal React audit after sync onto the Organization foundation.
+
+---
+
+## Separation of claims
+
+| Bucket | Meaning |
+| --- | --- |
+| **HISTORICAL AUDIT** | Findings as of baseline sync / original audit SHA — preserved for traceability |
+| **CURRENT POLICY** | Authoritative Product Owner channel policy after PERS-WEB-ONLINE-ONLY-01 |
+| **CURRENT IMPLEMENTATION** | Verified in React routes/components/clients/offline code on current tip |
+| **VERIFIED GAP** | Missing, partial, or unsafe relative to product expectations — evidence-based |
+| **DEFERRED / FUTURE IDEA** | Explicitly not in scope; do not treat as implemented |
+
+### CURRENT POLICY (PERS-WEB-ONLINE-ONLY-01)
+
+Personal Web/PWA is **ONLINE_ONLY**. See [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md).
+
+- No Personal Web offline session / PIN enroll gate / new outbox enqueue
+- Offline engine preserved for future Capacitor/native (`allowOfflineEngine`)
+- Legacy pending Personal outbox: preserve-and-drain-when-online
+- Organization Web remains ONLINE_ONLY (unchanged)
+- **PERS-IDEM-01** and **PERS-AUTH-01** remain
+
+### Deferred / future ideas (not implemented)
+
+- Public external-camera Organization QR acquisition  
+- QR → registration continuation  
+- Install ExItS after registration  
+- Resume original QR intent after registration/install  
+- Advanced action QR / payment QR flows  
+
+---
+
+## CURRENT IMPLEMENTATION (summary)
+
+Router: `ExItS.PinoyBusinessPOS.React/src/app/router.tsx` Personal tree under `RequirePersonalSession` + `PersonalShell`.
+
+| Surface | Class | Evidence |
+| --- | --- | --- |
+| Sign-in / sign-up / forgot-password | COMPLETE / PARTIAL | `/sign-in`, `/forgot-password`; activation + reset-completion pages **MISSING** |
+| Offline PIN unlock / enroll | COMPLETE (engine) / DISABLED (Personal Web) | Routes preserved; Personal Web skips enroll/unlock (PERS-WEB-ONLINE-ONLY-01) |
+| Personal Home | COMPLETE | `/personal` → `PersonalHomePage` (Utang summary, people/todo/stores tiles); live data online-required |
+| People | COMPLETE (ONLINE_ONLY) | `/personal/people` list/add/detail/QR resolve; offline contact UI intentionally not wired |
+| Utang lent / owe / create / pay / history / invites | COMPLETE (ONLINE_ONLY Web) | `/personal/utang/*`; Web mutations online + PERS-IDEM-01; named settlement wizard **MISSING** |
+| Todo | COMPLETE (ONLINE_ONLY Web) | `/personal/todo` CRUD online; Web does not enqueue offline transitions |
+| Stores / shop / cart / checkout / orders / receipts | COMPLETE (online) | Linked merchants + customer ordering; cart memory-only |
+| My QR / public resolve-in-flow | FUNCTIONAL_BUT_UX_GAP | `/personal/my-qr`; dedicated resolve route **MISSING** |
+| Notifications + invitations | COMPLETE (recipient) | Inbox/archive/utang/people invites; ownership-transfer Personal UI **RESOLVED by PERS-OWNERSHIP-01** |
+| Profile + preferences | FUNCTIONAL_BUT_UX_GAP | Profile + language/theme/density; no dedicated diagnostics page |
+| Start a Business | COMPLETE | Explore + start → Organization **onboarding** handoff |
+| Personal ↔ Org context switch | COMPLETE | `useSwitchToBusiness`, `ensurePersonalSessionProfile`, `/switching-context` |
+
+Organization preservations verified on this SHA: online-only policy (`organization-web-runtime-policy.ts`), mutation idempotency infra, loading UX, Manage Business / bottom-nav e2e PASS.
+
+---
+
+## Personal offline matrix
+
+### HISTORICAL AUDIT (pre PERS-WEB-ONLINE-ONLY-01)
+
+| Capability | Historical classification |
+| --- | --- |
+| Home todo counts when cached | OFFLINE_READ |
+| Contact create (engine) | OFFLINE_QUEUEABLE — NOT_IMPLEMENTED in UI |
+| Utang relationship/list/detail read | OFFLINE_READ (encrypted cache) |
+| Utang relationship create (contact-side) | OFFLINE_QUEUEABLE |
+| Utang Loan/Payment entry | OFFLINE_QUEUEABLE |
+| Todo create/update/complete/reopen/cancel | OFFLINE_QUEUEABLE |
+| Offline PIN + DEK | Present for Personal Web |
+
+### CURRENT POLICY (Personal Web/PWA)
+
+| Capability | Classification |
+| --- | --- |
+| Auth (register/sign-in/forgot/activate/reset) | ONLINE_ONLY |
+| Personal ↔ Org switch | ONLINE_ONLY |
+| Personal Home dashboard (live) | ONLINE_ONLY |
+| People list/detail/QR/connect / contact create | ONLINE_ONLY (`PEOPLE_WEB_POLICY=ONLINE_ONLY`) |
+| Utang relationship create / Loan / Payment | ONLINE_ONLY (Web); engine preserved |
+| Utang Adjustment / invite / remind / identity link | ONLINE_ONLY |
+| Todo create/update/complete/reopen/cancel | ONLINE_ONLY (Web); engine preserved |
+| Todo share / push reminders | ONLINE_ONLY / NOT_IMPLEMENTED |
+| Stores / cart / checkout / orders | ONLINE_ONLY |
+| My QR / notifications / Start Business / profile | ONLINE_ONLY |
+| Offline PIN + DEK (Web activation) | DISABLED |
+| New Personal Web outbox enqueue | DISABLED |
+| Legacy Personal outbox | PRESERVE_AND_DRAIN_WHEN_ONLINE |
+| Personal outbox / Utang/Todo caches / DEK engine | PRESERVED (not deleted) |
+| Cart | Unencrypted React memory |
+
+### Idempotency / ambiguous financial outcome (Personal)
+
+| Operation family | `serverDedupeMode` | Ambiguous transport |
+| --- | --- | --- |
+| Personal contact / relationship create / utang entry | **`idempotency-key`** (PERS-IDEM-01) | Auto-retry safe — client entity id in body + GET-by-id reconcile |
+| Todo create | `none` | No auto-retry |
+| Todo update/complete/reopen/cancel | `target-state` | Auto-retry allowed |
+| Org POS money | `idempotency-key` | Separate Org stack (preserved) |
+
+**PERSONAL_AMBIGUOUS_FINANCIAL_OUTCOME (historical audit):** SAFE against blind duplicate auto-retry for money ops, but **GAP** vs Org-style sticky id + GET reconciliation.
+
+**PERS-IDEM-01 (RESOLVED):** That P0 gap is closed on `feat/personal`. See [`PERS-IDEM-01.md`](./PERS-IDEM-01.md). Client-stable entity ids (`contactId` / `relationshipId` / `entryId`) converge on the server; online Utang UI uses Confirming… → GET reconcile. Idempotency remains required under Web online-only.
+
+**PERS-WEB-ONLINE-ONLY-01 (RESOLVED):** Personal Web/PWA channel is ONLINE_ONLY. See [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md).
+
+---
+
+## UX / responsive (code + Playwright)
+
+| Viewport | Result |
+| --- | --- |
+| Phone 375×812 | RMAP-22H responsive shell **PASS** (no horizontal overflow assert) |
+| Tablet 768×1024 / 1024×768 | **PASS** |
+| Desktop 1440×900 | **PASS** |
+| Org Manage Business hang | **PASS** |
+| Org bottom-nav stress (20 cycles) | **PASS** |
+
+Manual stress of Personal↔Org switching is covered by unit tests (`personal-switch-to-business.test.tsx`) and Org e2e; integrated two-user buyer→seller commerce continuation is covered by **PERS-E2E-22H-REPAIR** (mock-bound multi-context).
+
+Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preserved; no redesign in this package.
+
+---
+
+## Cross-context safety
+
+| Check | Result |
+| --- | --- |
+| AccountClass guards | `RequirePersonalSession` / `RequireOrganizationSession` |
+| Staff cannot open Personal | E2E privacy test **PASS** |
+| Org online-only after sync | Policy + unit tests **PASS** |
+| Org idempotency after sync | Unit tests **PASS** |
+| Stale Personal data under Org | Guards + workspace bind isolate contexts |
+
+---
+
+## Gap classification (prioritized plan — DO NOT IMPLEMENT HERE)
+
+### P0 — security / money / identity / data-loss
+
+1. ~~**Personal Utang money mutations lack server idempotency keys** (`serverDedupeMode=none`)~~ — **RESOLVED by PERS-IDEM-01** (see [`PERS-IDEM-01.md`](./PERS-IDEM-01.md); implementation SHA recorded there after push).
+2. ~~**People offline contact enqueue exists but UI never uses it**~~ — **RESOLVED BY PRODUCT DECISION** (PERS-WEB-ONLINE-ONLY-01): Personal Web/PWA is ONLINE_ONLY; offline People UI intentionally not implemented (`PEOPLE_WEB_POLICY=ONLINE_ONLY`). Engine preserved; do not implement PERS-PEOPLE-OFFLINE-01.
+3. ~~**Email activation + password-reset completion missing in React**~~ — **RESOLVED by PERS-AUTH-01** (see [`PERS-AUTH-01.md`](./PERS-AUTH-01.md); implementation SHA recorded there after push).
+
+### P1 — broken / incomplete primary workflows
+
+1. ~~RMAP-22H seller multi-user commerce continuation (e2e debt)~~ — **RESOLVED by PERS-E2E-22H-REPAIR** (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)). Start Business → `/onboarding` handoff remains covered by RMAP-22H; buyer→seller shared-order continuation is the companion suite.  
+2. ~~No named Utang **settlement/close** flow (pay-to-zero only)~~ — **RESOLVED by PERS-SETTLE-01** (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).  
+3. ~~Ownership-transfer Personal UI absent (backend/docs exist historically).~~ — **RESOLVED by PERS-OWNERSHIP-01** (see [`PERS-OWNERSHIP-01.md`](./PERS-OWNERSHIP-01.md)).
+
+### P2 — important UX / completeness
+
+1. Dedicated public-user resolve route absent (resolve embedded in People/customer-link).  
+2. Diagnostics page absent (copy-diagnostics only on errors).  
+3. Cart not durable across refresh/offline.  
+4. Todo share stub / online-required only.
+
+### P3 — polish
+
+1. Unused `PersonalNotificationsPage` duplicate in social module.  
+2. Home empty-state composition polish.  
+3. Locale native-speaker certification still PENDING (roadmap note).
+
+---
+
+## Test evidence (this package)
+
+| Gate | Result |
+| --- | --- |
+| Full React Vitest | **932 passed** / 168 files |
+| Typecheck | **PASS** |
+| Lint | **PASS** (0 errors; existing warnings) |
+| Build | **PASS** |
+| Org Manage Business e2e | **PASS** |
+| Org bottom-nav stress e2e | **PASS** |
+| RMAP-22H | **PASS** (7/7 hygiene stories). Buyer→seller continuation: **PERS-E2E-22H-REPAIR** companion **PASS** (7/7 mock multi-user). |
+| Org online-only regression | **PASS** |
+| Org idempotency regression | **PASS** |
+| Loading UX regression | **PASS** (suite includes loading-ux tests) |
+| Context-switch regression | **PASS** (unit + RMAP-22H privacy/invite accept) |
+
+### Narrow code change (not feature work)
+
+Historical RMAP-22H hygiene only. Seller multi-user commerce continuation delivered by **PERS-E2E-22H-REPAIR** (`e2e/pers-e2e-22h-buyer-seller-continuation.spec.ts`). **No Personal offline policy change. No Organization product change.**
+
+---
+
+## Next implementation packages (evidence-based order)
+
+1. ~~**PERS-IDEM-01**~~ — RESOLVED.
+2. ~~**PERS-AUTH-01**~~ — RESOLVED.
+3. ~~**PERS-WEB-ONLINE-ONLY-01**~~ — RESOLVED (see [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md)).
+4. ~~**PERS-PEOPLE-OFFLINE-01**~~ — **CANCELLED** by ONLINE_ONLY product decision (not a remaining gap).
+5. ~~**PERS-E2E-22H-REPAIR**~~ — RESOLVED (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)).
+6. ~~**PERS-SETTLE-01**~~ — RESOLVED (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).
+7. ~~**PERS-OWNERSHIP-01**~~ — RESOLVED (see [`PERS-OWNERSHIP-01.md`](./PERS-OWNERSHIP-01.md)). Org Owner initiation UI remains out of scope (`REACT_ORG_OWNER_INITIATION_PRESENT=NO`).
+
+---
+
+## Git notes
+
+- Fast-forward only: `feat/personal` → Organization SHA `112dc267…`  
+- Do not modify `feat/organization` or `main`  
+- Docs commit: `docs(personal): audit current React experience`  
+- E2E hygiene (if present): separate focused commit before docs  

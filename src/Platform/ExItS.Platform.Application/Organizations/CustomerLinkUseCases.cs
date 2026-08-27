@@ -343,6 +343,7 @@ public sealed class CreateCustomerLinkRequest
     private readonly IPersonalAccountSettingsRepository? _personalSettings;
     private readonly IPersonalInAppNotificationRepository? _personalNotifications;
     private readonly IPersonalOrganizationConnectionBlockRepository? _blocks;
+    private readonly ILinkedCustomerAppUserRepository? _links;
 
     public CreateCustomerLinkRequest(
         IBusinessCustomerRepository customers,
@@ -353,7 +354,8 @@ public sealed class CreateCustomerLinkRequest
         IPlatformOrganizationRepository? organizations = null,
         IPersonalAccountSettingsRepository? personalSettings = null,
         IPersonalInAppNotificationRepository? personalNotifications = null,
-        IPersonalOrganizationConnectionBlockRepository? blocks = null)
+        IPersonalOrganizationConnectionBlockRepository? blocks = null,
+        ILinkedCustomerAppUserRepository? links = null)
     {
         _customers = customers;
         _requests = requests;
@@ -364,6 +366,7 @@ public sealed class CreateCustomerLinkRequest
         _personalSettings = personalSettings;
         _personalNotifications = personalNotifications;
         _blocks = blocks;
+        _links = links;
     }
 
     public Task<ApplicationResult<CustomerLinkRequestDto>> ExecuteAsync(
@@ -435,6 +438,20 @@ public sealed class CreateCustomerLinkRequest
                     .ConfigureAwait(false))
             {
                 return CustomerConnectionBlockSupport.UnavailableFailure<CustomerLinkRequestDto>();
+            }
+
+            // Same organization must not create another actively-linked customer for the same Personal.
+            if (targetId is not null && _links is not null)
+            {
+                var existingActiveLink = await _links
+                    .FindActiveByUserAndOrganizationAsync(targetId, organizationId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingActiveLink is not null)
+                {
+                    return ApplicationResult<CustomerLinkRequestDto>.Failure(
+                        ApplicationErrorCodes.CustomerLinkRequestConflict,
+                        "This ExItS account is already linked to a customer in this organization.");
+                }
             }
 
             var pending = await _requests
@@ -1384,6 +1401,80 @@ public sealed class ListPendingCustomerLinkRequestsForPersonalUser
                 org?.DisplayName ?? "Merchant",
                 request.BusinessCustomerId.Value,
                 nameof(CustomerLinkRequestStatus.Pending),
+                request.CreatedAtUtc,
+                request.ExpiresAtUtc,
+                request.TargetPublicUserId));
+        }
+
+        return ApplicationResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>.Success(list);
+    }
+}
+
+public sealed class ListResolvedCustomerLinkRequestsForPersonalUser
+{
+    private readonly ICustomerLinkRequestRepository _requests;
+    private readonly IPlatformUserRepository _users;
+    private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IClock _clock;
+
+    public ListResolvedCustomerLinkRequestsForPersonalUser(
+        ICustomerLinkRequestRepository requests,
+        IPlatformUserRepository users,
+        IPlatformOrganizationRepository organizations,
+        IClock clock)
+    {
+        _requests = requests;
+        _users = users;
+        _organizations = organizations;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> ExecuteAsync(
+        PlatformUserId userId,
+        AccountClass accountClass,
+        CancellationToken cancellationToken = default)
+    {
+        if (accountClass != AccountClass.Personal)
+        {
+            return ApplicationResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>.Failure(
+                ApplicationErrorCodes.AccountScopeDenied,
+                "Listing customer link history requires a Personal session.");
+        }
+
+        var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return ApplicationResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>.Failure(
+                DomainErrorCodes.UserNotActive,
+                "Listing customer link history requires an active user.");
+        }
+
+        if (user.IsOrganizationScopedStaff
+            || user.HomeOrganizationId is not null
+            || !string.IsNullOrWhiteSpace(user.StaffNumber))
+        {
+            return ApplicationResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>.Success(
+                Array.Empty<PersonalPendingCustomerLinkRequestDto>());
+        }
+
+        var resolved = await _requests
+            .ListResolvedForTargetUserAsync(userId, take: 50, cancellationToken)
+            .ConfigureAwait(false);
+        var now = _clock.UtcNow;
+        var list = new List<PersonalPendingCustomerLinkRequestDto>();
+        foreach (var request in resolved)
+        {
+            var effectiveStatus = request.Status == CustomerLinkRequestStatus.Pending && request.IsExpired(now)
+                ? nameof(CustomerLinkRequestStatus.Expired)
+                : request.Status.ToString();
+            var org = await _organizations.GetByIdAsync(request.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            list.Add(new PersonalPendingCustomerLinkRequestDto(
+                request.Id.Value,
+                request.OrganizationId.Value,
+                org?.DisplayName ?? "Merchant",
+                request.BusinessCustomerId.Value,
+                effectiveStatus,
                 request.CreatedAtUtc,
                 request.ExpiresAtUtc,
                 request.TargetPublicUserId));

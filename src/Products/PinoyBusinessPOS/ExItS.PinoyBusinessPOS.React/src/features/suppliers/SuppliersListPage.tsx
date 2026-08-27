@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
@@ -15,6 +16,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 
 const PAGE_SIZE = 20;
 
@@ -89,7 +91,7 @@ export function SuppliersListPage() {
   });
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+    return <BranchRequiredPanel title={t("suppliers.title")} />;
   }
 
   const totalCount = query.data?.totalCount ?? 0;
@@ -177,6 +179,9 @@ export function SuppliersListPage() {
       />
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+      {query.isFetching && !query.isLoading && query.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}

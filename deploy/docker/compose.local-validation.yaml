@@ -124,6 +124,7 @@ services:
       PlatformEmail__FromDisplayName: ExItS Local Validation
       PlatformEmail__AdminPublicBaseUrl: ${LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN:-http://localhost:8095}
       PlatformEmail__PinoyLoanManagerPublicBaseUrl: ${LOCAL_VALIDATION_PLM_ORIGIN:-http://localhost:4176}
+      PlatformEmail__PinoyBusinessPosPublicBaseUrl: ${LOCAL_VALIDATION_REACT_POS_ORIGIN:-http://localhost:5177}
       PlatformEmail__AllowHttpLoopbackPublicUrls: "true"
       DataProtection__KeysPath: /var/exits/dataprotection
     volumes:

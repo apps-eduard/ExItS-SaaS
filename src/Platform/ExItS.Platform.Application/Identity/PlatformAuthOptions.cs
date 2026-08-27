@@ -104,8 +104,14 @@ public sealed class PlatformEmailDeliveryOptions
     public string? PinoyLoanManagerPublicBaseUrl { get; set; }
 
     /// <summary>
-    /// When true, http://localhost and http://127.0.0.1 are allowed for the PLM public base URL (Local Validation).
-    /// Production must keep this false so only HTTPS PLM origins are accepted.
+    /// Explicit Pinoy Business POS / Personal React public origin for EmailVerification and PasswordReset only.
+    /// Never derived from request Host/Origin/Referer.
+    /// </summary>
+    public string? PinoyBusinessPosPublicBaseUrl { get; set; }
+
+    /// <summary>
+    /// When true, http://localhost and http://127.0.0.1 are allowed for product public base URLs (Local Validation).
+    /// Production must keep this false so only HTTPS product origins are accepted.
     /// </summary>
     public bool AllowHttpLoopbackPublicUrls { get; set; }
 

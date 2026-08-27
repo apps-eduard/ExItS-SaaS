@@ -16,6 +16,7 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 
 export function ReturnsHubPage() {
   const { t } = useI18n();
@@ -68,7 +69,7 @@ export function ReturnsHubPage() {
   });
 
   if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+    return <BranchRequiredPanel title={t("returns.title")} />;
   }
 
   function runSearch() {

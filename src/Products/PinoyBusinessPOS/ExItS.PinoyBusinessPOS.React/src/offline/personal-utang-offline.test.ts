@@ -56,7 +56,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       ...scope,
       contactId,
       contact: { displayName: "  Aling Nena  ", phone: "0917", email: null },
-    });
+    }, { allowOfflineEngine: true });
 
     expect(operation.scopeKind).toBe("Personal");
     expect(operation.organizationId).toBeNull();
@@ -69,7 +69,12 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       api: "platform",
       method: "POST",
       path: "/api/v1/personal/utang/contacts",
-      body: { displayName: "Aling Nena", phone: "0917", email: null },
+      body: {
+        contactId,
+        displayName: "Aling Nena",
+        phone: "0917",
+        email: null,
+      },
     });
 
     const cached = await listCachedPersonalContacts(scope.db, scope.scopeBinding);
@@ -87,7 +92,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
         contactId,
         contact: { displayName: "Kumpare" },
         linkedUserIdentityId: ownerUserIdentityId,
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({
       code: "offline.personal.contact.identity_link_not_supported",
     });
@@ -97,7 +102,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
     const scope = await openPersonal("personal-contact-nameless");
 
     await expect(
-      enqueuePersonalContactCreate({ ...scope, contactId, contact: { displayName: "   " } }),
+      enqueuePersonalContactCreate({ ...scope, contactId, contact: { displayName: "   " } }, { allowOfflineEngine: true }),
     ).rejects.toBeInstanceOf(OfflinePersonalUtangRejectedError);
   });
 
@@ -108,7 +113,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       ...scope,
       contactId,
       contact: { displayName: "Tindera" },
-    });
+    }, { allowOfflineEngine: true });
 
     const { operation, relationship } = await enqueuePersonalRelationshipCreate({
       ...scope,
@@ -120,7 +125,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       ownerUserIdentityId,
       initialLoanAmount: 250.129,
       initialLoanNotes: "  sari-sari  ",
-    });
+    }, { allowOfflineEngine: true });
 
     expect(operation.dependsOnOperationId).toBe(contactId);
     expect(relationship.currentBalance).toBe(250.13);
@@ -128,6 +133,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe("/api/v1/personal/utang/relationships");
     expect(request?.body).toMatchObject({
+      relationshipId,
       creditorUserIdentityId: ownerUserIdentityId,
       creditorContactId: null,
       debtorUserIdentityId: null,
@@ -173,7 +179,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       contactId,
       ownerUserIdentityId,
       initialLoanAmount: 100,
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.body).toMatchObject({
@@ -196,7 +202,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
         ownerUserIdentityId,
         initialLoanAmount: 100,
         counterpartyUserIdentityId: "55555555-5555-4555-8555-555555555555",
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({
       code: "offline.personal.relationship.counterparty_identity_not_supported",
     });
@@ -213,7 +219,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
         contactId,
         ownerUserIdentityId: "",
         initialLoanAmount: 100,
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.personal.relationship.owner_unknown" });
   });
 
@@ -229,11 +235,12 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       notes: "bayad",
       ownerUserIdentityId,
       localBalanceBefore: 250,
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe(`/api/v1/personal/utang/relationships/${relationshipId}/entries`);
     expect(request?.body).toEqual({
+      entryId,
       entryType: "Payment",
       amount: 40,
       // A Loan or Payment is append-only and the server recomputes the balance, so a version
@@ -262,7 +269,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       entryType: "Loan",
       amount: 60,
       ownerUserIdentityId,
-    });
+    }, { allowOfflineEngine: true });
 
     const request = await decryptRequest(operation, scope.scopeBinding);
     expect(request?.path).toBe(
@@ -291,7 +298,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
         entryType: "Payment",
         amount: 0,
         ownerUserIdentityId,
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toMatchObject({ code: "offline.personal.entry.amount_invalid" });
   });
 
@@ -315,7 +322,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
         userId: "staff-user",
         contactId,
         contact: { displayName: "Should never land here" },
-      }),
+      }, { allowOfflineEngine: true }),
     ).rejects.toThrow(/scope mismatch/i);
 
     expect(await listOutbox(db)).toEqual([]);
@@ -328,7 +335,7 @@ describe("RMAP-21F Personal Utang offline queue", () => {
       ...scope,
       contactId,
       contact: { displayName: "Aling Nena", phone: "09171234567" },
-    });
+    }, { allowOfflineEngine: true });
 
     const metadata = await listSafeOutboxMetadata(scope.db);
     expect(metadata).toHaveLength(1);
@@ -349,18 +356,18 @@ describe("RMAP-21F Personal Utang offline queue", () => {
   });
 });
 
-describe("RMAP-21F server dedupe policy", () => {
-  it("records that the Personal routes cannot deduplicate a replay", () => {
-    expect(serverDedupeMode("personal.contact.create")).toBe("none");
-    expect(serverDedupeMode("personal.utang.relationship.create")).toBe("none");
-    expect(serverDedupeMode("personal.utang.entry.record")).toBe("none");
+describe("PERS-IDEM-01 server dedupe policy", () => {
+  it("treats Personal Utang create routes as entity-id dedupe-safe", () => {
+    expect(serverDedupeMode("personal.contact.create")).toBe("idempotency-key");
+    expect(serverDedupeMode("personal.utang.relationship.create")).toBe("idempotency-key");
+    expect(serverDedupeMode("personal.utang.entry.record")).toBe("idempotency-key");
     expect(serverDedupeMode("sale.checkout")).toBe("idempotency-key");
     expect(serverDedupeMode("repayment.create")).toBe("idempotency-key");
   });
 
-  it("never auto-retries a Personal mutation whose outcome is unknown", () => {
+  it("auto-retries a Personal money mutation whose outcome is unknown", () => {
     expect(mayAutoRetry("personal.utang.entry.record", "not-dispatched")).toBe(true);
-    expect(mayAutoRetry("personal.utang.entry.record", "ambiguous-transport")).toBe(false);
+    expect(mayAutoRetry("personal.utang.entry.record", "ambiguous-transport")).toBe(true);
     expect(mayAutoRetry("personal.utang.entry.record", "server-responded")).toBe(false);
   });
 

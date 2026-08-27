@@ -149,6 +149,7 @@ export type CreatePurchaseOrderRequest = {
   supplierReference?: string | null;
   notes?: string | null;
   paymentTerm?: string | null;
+  purchaseOrderId?: string | null;
 };
 
 export type UpdatePurchaseOrderRequest = CreatePurchaseOrderRequest & {
@@ -239,6 +240,9 @@ function serializeCreateBody(body: CreatePurchaseOrderRequest): Record<string, u
   }
   if (body.paymentTerm) {
     payload.paymentTerm = body.paymentTerm;
+  }
+  if (body.purchaseOrderId) {
+    payload.purchaseOrderId = body.purchaseOrderId;
   }
   return payload;
 }
@@ -349,13 +353,22 @@ export async function createPurchaseOrder(
   body: CreatePurchaseOrderRequest,
   signal?: AbortSignal,
 ): Promise<PosPurchaseOrderDto> {
+  if (!body.purchaseOrderId) {
+    throw new Error("purchaseOrderId is required for create purchase order idempotency.");
+  }
   const payload = serializeCreateBody(body);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    body.purchaseOrderId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.PurchaseOrderCreate,
+  );
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: PURCHASE_ORDERS_PATH,
     body: payload,
+    headers,
   });
   return posPurchaseOrderDtoSchema.parse(raw);
 }

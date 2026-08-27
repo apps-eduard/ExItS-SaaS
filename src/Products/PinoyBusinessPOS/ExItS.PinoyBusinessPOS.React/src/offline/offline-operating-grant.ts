@@ -12,6 +12,8 @@ import {
   scopeKindToNumeric,
   verifyOfflineOperatingGrantSignature,
 } from "@/offline/server-signed-offline-grant";
+import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
+import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-policy";
 
 /** Matches server ServerSignedOfflineOperatingGrant.CurrentSchemaVersion. */
 export const OFFLINE_OPERATING_GRANT_SCHEMA_VERSION = 4;
@@ -231,6 +233,10 @@ export async function evaluateColdStartOfflineGrant(options?: {
   userId?: string | null;
   installationDeviceId?: string | null;
   now?: Date;
+  /** Opt into Organization cold-start for engine tests / future Capacitor. */
+  allowOrganizationOfflineEngine?: boolean;
+  /** Opt into Personal cold-start for engine tests / future Capacitor. */
+  allowPersonalOfflineEngine?: boolean;
 }): Promise<ColdStartGrantEvaluation> {
   const durable = getDurableInstallationDeviceId();
   const installationDeviceId =
@@ -264,8 +270,25 @@ export async function evaluateColdStartOfflineGrant(options?: {
     if (isGrantExpired(grant, nowMs)) {
       return false;
     }
-    if (grant.scopeKind === "Organization" && !isOrganizationOfflineGrant(grant, nowMs)) {
-      return false;
+    if (grant.scopeKind === "Organization") {
+      // Organization Web/PWA is online-only: do not cold-start into an org offline session.
+      // Engine / future Capacitor tests may pass allowOrganizationOfflineEngine.
+      if (
+        !organizationWebAllowsOfflineSession() &&
+        !options?.allowOrganizationOfflineEngine
+      ) {
+        return false;
+      }
+      if (!isOrganizationOfflineGrant(grant, nowMs)) {
+        return false;
+      }
+    }
+    if (grant.scopeKind === "Personal") {
+      // Personal Web/PWA is online-only (PERS-WEB-ONLINE-ONLY-01).
+      // Engine / future Capacitor tests may pass allowPersonalOfflineEngine.
+      if (!personalWebAllowsOfflineSession() && !options?.allowPersonalOfflineEngine) {
+        return false;
+      }
     }
     return grant.schemaVersion === OFFLINE_OPERATING_GRANT_SCHEMA_VERSION;
   });

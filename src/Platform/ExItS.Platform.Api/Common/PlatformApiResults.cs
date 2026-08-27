@@ -114,6 +114,12 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.TrialNotAllowed
             or ApplicationErrorCodes.TrialAlreadyConsumed
             or ApplicationErrorCodes.ConcurrencyConflict
+            or ApplicationErrorCodes.PersonalUtangSettlementStale
+            or ApplicationErrorCodes.PersonalUtangSettlementConflict
+            or ApplicationErrorCodes.PersonalUtangIdempotencyConflict
+            or ApplicationErrorCodes.PersonalUtangPendingBlocksSettlement
+            or DomainErrorCodes.PersonalUtangSettlementStale
+            or DomainErrorCodes.PersonalUtangPendingBlocksSettlement
             or ApplicationErrorCodes.PersonalRewardBalanceConflict
             or ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported
             or ApplicationErrorCodes.OrganizationNotEligible

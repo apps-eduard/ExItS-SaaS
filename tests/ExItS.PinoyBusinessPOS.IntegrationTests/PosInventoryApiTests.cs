@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Customers;
@@ -8,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using Microsoft.AspNetCore.Hosting;
@@ -285,6 +288,79 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         using var response = await client.SendAsync(update);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Equal(DomainErrorCodes.InventoryUomChangeBlocked, await ReadErrorCodeAsync(response));
+    }
+
+    [Fact]
+    public async Task Idempotent_adjust_replays_same_stock_movement()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Sugar", "Piece", 15m, "inv-sugar-idem");
+        var movementId = Guid.NewGuid();
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
+        using var enableResponse = await client.SendAsync(enable);
+        Assert.Equal(HttpStatusCode.OK, enableResponse.StatusCode);
+
+        var body = new AdjustInventoryRequest("Out", 2m, "Spill", MovementId: movementId);
+        using var firstResponse = await PostAdjustWithIdempotencyAsync(client, org, product.ProductId, body);
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var first = await firstResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(8m, first!.OnHandQuantity);
+
+        using var secondResponse = await PostAdjustWithIdempotencyAsync(client, org, product.ProductId, body);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        var second = await secondResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(8m, second!.OnHandQuantity);
+
+        using var bodyOnly = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org);
+        bodyOnly.Content = JsonContent.Create(body, options: JsonOptions);
+        using var bodyOnlyResponse = await client.SendAsync(bodyOnly);
+        Assert.Equal(HttpStatusCode.OK, bodyOnlyResponse.StatusCode);
+        var bodyOnlyAccount = await bodyOnlyResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(8m, bodyOnlyAccount!.OnHandQuantity);
+
+        using var getMovement = Scoped(HttpMethod.Get, $"{Inventory}/movements/{movementId:D}", org);
+        using var getMovementResponse = await client.SendAsync(getMovement);
+        Assert.Equal(HttpStatusCode.OK, getMovementResponse.StatusCode);
+        var movement = await getMovementResponse.Content.ReadFromJsonAsync<PosStockMovementDto>(JsonOptions);
+        Assert.Equal(movementId, movement!.MovementId);
+        Assert.Equal(product.ProductId, movement.ProductId);
+
+        using var list = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/movements?page=1&pageSize=50", org);
+        using var listResponse = await client.SendAsync(list);
+        listResponse.EnsureSuccessStatusCode();
+        var page = await listResponse.Content.ReadFromJsonAsync<PosStockMovementPagedResult>(JsonOptions);
+        Assert.Equal(1, page!.Items.Count(m => m.MovementId == movementId));
+
+        using var getAccount = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}", org);
+        using var getAccountResponse = await client.SendAsync(getAccount);
+        var account = await getAccountResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(8m, account!.OnHandQuantity);
+    }
+
+    private static async Task<HttpResponseMessage> PostAdjustWithIdempotencyAsync(
+        HttpClient client,
+        Guid org,
+        Guid productId,
+        AdjustInventoryRequest body)
+    {
+        var json = JsonSerializer.Serialize(body, JsonOptions);
+        using var request = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", body.MovementId!.Value.ToString("N"));
+        request.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", ComputePayloadHash(json));
+        request.Headers.TryAddWithoutValidation("X-Pos-Operation-Id", body.MovementId.Value.ToString("D"));
+        request.Headers.TryAddWithoutValidation("X-Pos-Operation-Type", OfflineOperationTypes.InventoryAdjustment);
+        request.Content = JsonContent.Create(body, options: JsonOptions);
+        return await client.SendAsync(request);
+    }
+
+    private static string ComputePayloadHash(string json)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(

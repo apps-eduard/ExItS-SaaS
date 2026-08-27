@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -14,13 +14,14 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 const PAGE_SIZE = 20;
 
@@ -38,7 +39,7 @@ const STATUS_FILTERS: Array<{
 
 export function CatalogProductsPage() {
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
@@ -53,14 +54,6 @@ export function CatalogProductsPage() {
     setPage(1);
   }, [debounced, status]);
 
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
-
   const query = useQuery({
     queryKey: [
       "catalog",
@@ -72,6 +65,8 @@ export function CatalogProductsPage() {
       page,
     ],
     enabled: Boolean(workspace),
+    staleTime: 30_000,
+    meta: { suppressGlobalError: true, operation: "list catalog products" },
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
@@ -173,6 +168,9 @@ export function CatalogProductsPage() {
       />
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+      {query.isFetching && !query.isLoading && query.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}

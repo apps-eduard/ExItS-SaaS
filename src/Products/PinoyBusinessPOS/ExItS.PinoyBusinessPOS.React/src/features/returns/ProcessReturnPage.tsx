@@ -7,6 +7,7 @@ import {
   estimateTotalRefundAmount,
   formatRefundMethodLabel,
   getRefundableSale,
+  getSaleReturn,
   isCashRefundMethod,
   isCashShiftRequiredError,
   isGCashRefundMethod,
@@ -25,6 +26,7 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { describeReturnError } from "@/features/returns/return-errors";
 import { resolveReturnMutationId } from "@/features/returns/return-mutation-id";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import {
   clampReturnQuantity,
   formatReturnQuantityDisplay,
@@ -221,6 +223,28 @@ export function ProcessReturnPage() {
         await reloadRefundable();
         setError(t("returns.errorStale"));
       } else {
+        setError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error: err,
+          lookup: () => getSaleReturn(workspace, returnId),
+        });
+        if (outcome.kind === "confirmed") {
+          setCompletedReturnId(outcome.value.returnId);
+          setCompletedRefund(outcome.value.totalRefundAmount);
+          setCompletedMethod(outcome.value.refundMethod);
+          setStep("success");
+          setPendingReturnId(null);
+          await queryClient.invalidateQueries({ queryKey: ["sale-returns"] });
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setError(t("checkout.transactionStatusUnknown"));
+          return;
+        }
+        if (outcome.kind === "not_found") {
+          setError(describeReturnError(outcome.lookupError, t));
+          return;
+        }
         setError(describeReturnError(err, t));
       }
     } finally {

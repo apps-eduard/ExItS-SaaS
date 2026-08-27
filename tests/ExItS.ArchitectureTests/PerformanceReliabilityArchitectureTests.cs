@@ -52,6 +52,12 @@ public sealed class PerformanceReliabilityArchitectureTests
         Assert.Contains("OfflineOperationTypes.ExpenseCreate", expense, StringComparison.Ordinal);
         Assert.Contains("OfflineOperationTypes.PurchaseOrderSubmit", purchasing, StringComparison.Ordinal);
         Assert.Contains("OfflineOperationTypes.PurchaseOrderReceive", purchasing, StringComparison.Ordinal);
+        Assert.Contains("OfflineOperationTypes.PurchaseOrderCreate", purchasing, StringComparison.Ordinal);
+
+        var inventory = File.ReadAllText(Path.Combine(root,
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosInventoryClient.cs"));
+        Assert.Contains("PosMutationIdempotencyHelper.BuildHeaders", inventory, StringComparison.Ordinal);
+        Assert.Contains("OfflineOperationTypes.InventoryAdjustment", inventory, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -63,6 +63,20 @@ export const personalUtangEntrySchema = z.object({
   canCancel: z.boolean().optional().default(false),
   affectsBalance: z.boolean().optional().default(true),
   isSharedLedger: z.boolean().optional().default(false),
+  intent: z.string().optional().default("Regular"),
+  settlementBalanceSnapshot: z.number().nullable().optional().default(null),
+  isSettlement: z.boolean().optional().default(false),
+});
+
+export const settlePersonalDebtRelationshipResultSchema = z.object({
+  outcome: z.enum(["Completed", "AwaitingCounterpartyConfirmation", "AlreadySettled"]),
+  relationship: personalDebtRelationshipSummarySchema,
+  settlementEntry: personalUtangEntrySchema.nullable().optional().default(null),
+});
+
+export const closePersonalDebtRelationshipResultSchema = z.object({
+  outcome: z.enum(["Closed", "AlreadySettled"]),
+  relationship: personalDebtRelationshipSummarySchema,
 });
 
 export type PersonalContactDto = z.infer<typeof personalContactSchema>;
@@ -71,6 +85,23 @@ export type PersonalDebtRelationshipSummaryDto = z.infer<
 >;
 export type PersonalUtangBalanceDto = z.infer<typeof personalUtangBalanceSchema>;
 export type PersonalUtangEntryDto = z.infer<typeof personalUtangEntrySchema>;
+export type SettlePersonalDebtRelationshipResultDto = z.infer<
+  typeof settlePersonalDebtRelationshipResultSchema
+>;
+export type ClosePersonalDebtRelationshipResultDto = z.infer<
+  typeof closePersonalDebtRelationshipResultSchema
+>;
+
+export type SettlePersonalDebtRelationshipRequest = {
+  expectedVersion?: number | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM). */
+  settlementEntryId?: string | null;
+  notes?: string | null;
+};
+
+export type ClosePersonalDebtRelationshipRequest = {
+  expectedVersion?: number | null;
+};
 
 export type CreatePersonalContactRequest = {
   displayName: string;
@@ -78,9 +109,17 @@ export type CreatePersonalContactRequest = {
   email?: string | null;
   linkedUserIdentityId?: string | null;
   publicUserId?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  contactId?: string | null;
 };
 
-export type UpdatePersonalContactRequest = CreatePersonalContactRequest;
+export type UpdatePersonalContactRequest = {
+  displayName: string;
+  phone?: string | null;
+  email?: string | null;
+  linkedUserIdentityId?: string | null;
+  publicUserId?: string | null;
+};
 
 export type CreatePersonalDebtRelationshipRequest = {
   creditorUserIdentityId: string | null;
@@ -91,6 +130,10 @@ export type CreatePersonalDebtRelationshipRequest = {
   dueDateUtc?: string | null;
   initialLoanAmount?: number | null;
   initialLoanNotes?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  relationshipId?: string | null;
+  /** Client-stable id for the initial loan entry when initialLoanAmount is set. */
+  initialLoanEntryId?: string | null;
 };
 
 export type RecordPersonalUtangEntryRequest = {
@@ -100,6 +143,8 @@ export type RecordPersonalUtangEntryRequest = {
   expectedVersion?: number | null;
   notes?: string | null;
   dueDateUtc?: string | null;
+  /** Client-stable id for offline replay / ambiguous-outcome reconciliation (PERS-IDEM-01). */
+  entryId?: string | null;
 };
 
 export type ConfirmPersonalUtangEntryRequest = {
@@ -176,6 +221,8 @@ function normalizeEntry(raw: unknown): unknown {
   const r = raw as Record<string, unknown>;
   const status = String(pick(r, "status", "Status") ?? "Confirmed");
   const affectsBalanceRaw = pick(r, "affectsBalance", "AffectsBalance");
+  const settlementSnapshotRaw = pick(r, "settlementBalanceSnapshot", "SettlementBalanceSnapshot");
+  const isSettlement = Boolean(pick(r, "isSettlement", "IsSettlement") ?? false);
   return {
     id: pick(r, "id", "Id"),
     relationshipId: pick(r, "relationshipId", "RelationshipId"),
@@ -197,6 +244,32 @@ function normalizeEntry(raw: unknown): unknown {
     affectsBalance:
       affectsBalanceRaw == null ? status === "Confirmed" : Boolean(affectsBalanceRaw),
     isSharedLedger: Boolean(pick(r, "isSharedLedger", "IsSharedLedger") ?? false),
+    intent: String(pick(r, "intent", "Intent") ?? (isSettlement ? "Settlement" : "Regular")),
+    settlementBalanceSnapshot:
+      settlementSnapshotRaw == null || settlementSnapshotRaw === ""
+        ? null
+        : Number(settlementSnapshotRaw),
+    isSettlement,
+  };
+}
+
+function normalizeSettleResult(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  const settlementEntry = pick(r, "settlementEntry", "SettlementEntry");
+  return {
+    outcome: pick(r, "outcome", "Outcome"),
+    relationship: normalizeRelationship(pick(r, "relationship", "Relationship")),
+    settlementEntry: settlementEntry == null ? null : normalizeEntry(settlementEntry),
+  };
+}
+
+function normalizeCloseResult(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  return {
+    outcome: pick(r, "outcome", "Outcome"),
+    relationship: normalizeRelationship(pick(r, "relationship", "Relationship")),
   };
 }
 
@@ -206,6 +279,17 @@ export async function listPersonalContacts(signal?: AbortSignal): Promise<Person
   const raw = await platformRequest<unknown>({ path: `${UTANG}/contacts`, signal });
   const items = Array.isArray(raw) ? raw : [];
   return items.map((item) => personalContactSchema.parse(normalizeContact(item)));
+}
+
+export async function getPersonalContact(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<PersonalContactDto> {
+  const raw = await platformRequest<unknown>({
+    path: `${UTANG}/contacts/${contactId}`,
+    signal,
+  });
+  return personalContactSchema.parse(normalizeContact(raw));
 }
 
 export async function createPersonalContact(
@@ -308,6 +392,17 @@ export async function listPersonalUtangHistory(
   return items.map((item) => personalUtangEntrySchema.parse(normalizeEntry(item)));
 }
 
+export async function getPersonalUtangEntry(
+  entryId: string,
+  signal?: AbortSignal,
+): Promise<PersonalUtangEntryDto> {
+  const raw = await platformRequest<unknown>({
+    path: `${UTANG}/entries/${entryId}`,
+    signal,
+  });
+  return personalUtangEntrySchema.parse(normalizeEntry(raw));
+}
+
 export async function createPersonalDebtRelationship(
   body: CreatePersonalDebtRelationshipRequest,
   signal?: AbortSignal,
@@ -380,6 +475,34 @@ export async function cancelPersonalUtangEntry(
   return personalUtangEntrySchema.parse(normalizeEntry(raw));
 }
 
+export async function settlePersonalDebtRelationship(
+  relationshipId: string,
+  body: SettlePersonalDebtRelationshipRequest = {},
+  signal?: AbortSignal,
+): Promise<SettlePersonalDebtRelationshipResultDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/relationships/${relationshipId}/settle`,
+    body,
+    signal,
+  });
+  return settlePersonalDebtRelationshipResultSchema.parse(normalizeSettleResult(raw));
+}
+
+export async function closePersonalDebtRelationship(
+  relationshipId: string,
+  body: ClosePersonalDebtRelationshipRequest = {},
+  signal?: AbortSignal,
+): Promise<ClosePersonalDebtRelationshipResultDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `${UTANG}/relationships/${relationshipId}/close`,
+    body,
+    signal,
+  });
+  return closePersonalDebtRelationshipResultSchema.parse(normalizeCloseResult(raw));
+}
+
 export async function getPersonalMe(signal?: AbortSignal): Promise<{ userIdentityId: string }> {
   const raw = await platformRequest<unknown>({ path: "/api/v1/personal/me", signal });
   const r = (raw ?? {}) as Record<string, unknown>;
@@ -395,6 +518,14 @@ export function isUtangConcurrencyConflict(error: unknown): boolean {
     (err.errorCode === "application.concurrency_conflict" ||
       err.errorCode === "platform.personal.utang.concurrency_conflict")
   );
+}
+
+export function isUtangSettlementStaleConflict(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const err = error as { status?: number; errorCode?: string };
+  const code = (err.errorCode ?? "").toLowerCase();
+  if (code.includes("settlement.stale")) return true;
+  return err.status === 409 && code.includes("settlement.stale");
 }
 
 export function formatDueLabel(

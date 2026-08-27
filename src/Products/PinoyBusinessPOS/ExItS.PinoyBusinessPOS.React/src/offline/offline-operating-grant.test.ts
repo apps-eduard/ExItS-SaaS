@@ -94,11 +94,13 @@ describe("offline operating grant", () => {
     expect(grant.signature.length).toBeGreaterThan(10);
   });
 
-  it("cold-start evaluation accepts a valid server grant", async () => {
+  it("cold-start evaluation accepts a valid server grant when Organization engine is opted in", async () => {
     const grant = await buildSignedGrant();
     persistServerSignedGrant(grant);
 
-    const evaluation = await evaluateColdStartOfflineGrant();
+    const evaluation = await evaluateColdStartOfflineGrant({
+      allowOrganizationOfflineEngine: true,
+    });
     expect(evaluation.ok).toBe(true);
     if (evaluation.ok) {
       const session = synthesizeSessionFromGrant(evaluation.grant);
@@ -106,6 +108,14 @@ describe("offline operating grant", () => {
       expect(session.accountClass).toBe("Organization");
       expect(session.selectedOrganizationId).toBe(ORG);
     }
+  });
+
+  it("Organization Web policy rejects Organization cold-start without engine opt-in", async () => {
+    const grant = await buildSignedGrant();
+    persistServerSignedGrant(grant);
+
+    const evaluation = await evaluateColdStartOfflineGrant();
+    expect(evaluation.ok).toBe(false);
   });
 
   it("rejects tampered grant signature", async () => {
@@ -117,7 +127,9 @@ describe("offline operating grant", () => {
     store.grants[USER].branchName = "Tampered Branch";
     window.localStorage.setItem(OFFLINE_OPERATING_GRANT_STORE_KEY, JSON.stringify(store));
 
-    const evaluation = await evaluateColdStartOfflineGrant();
+    const evaluation = await evaluateColdStartOfflineGrant({
+      allowOrganizationOfflineEngine: true,
+    });
     expect(evaluation.ok).toBe(false);
     if (!evaluation.ok) {
       expect(evaluation.reason).toBe("signature_failed");
@@ -134,6 +146,7 @@ describe("offline operating grant", () => {
 
     const evaluation = await evaluateColdStartOfflineGrant({
       now: new Date("2026-02-01T12:00:00.000Z"),
+      allowOrganizationOfflineEngine: true,
     });
     expect(evaluation.ok).toBe(false);
     if (!evaluation.ok) {
@@ -169,7 +182,9 @@ describe("offline operating grant", () => {
       }),
     );
 
-    const evaluation = await evaluateColdStartOfflineGrant();
+    const evaluation = await evaluateColdStartOfflineGrant({
+      allowOrganizationOfflineEngine: true,
+    });
     expect(evaluation.ok).toBe(false);
     if (!evaluation.ok) {
       expect(evaluation.reason).toBe("unsupported_schema");

@@ -5,6 +5,7 @@ using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 
 namespace ExItS.Platform.Api.Organizations;
 
@@ -381,6 +382,31 @@ internal static class BusinessCustomerEndpoints
                 organizationId.ToString("D"),
                 organizationId,
                 summary: "Publish organization business notification.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/personal-business-notifications", async (
+            Guid organizationId,
+            PublishPersonalBusinessNotificationRequest body,
+            PublishPersonalBusinessNotification useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureActiveOrganizationMemberAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(PersonalInAppNotification),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Publish personal business notification.",
                 cancellationToken: ct).ConfigureAwait(false);
             if (denied is not null)
             {

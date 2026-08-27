@@ -634,7 +634,11 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
                 ? PlatformUserId.From(resolvedBy)
                 : null,
             record.ResolvedAtUtc,
-            record.DisputeReason);
+            record.DisputeReason,
+            string.IsNullOrWhiteSpace(record.Intent)
+                ? PersonalUtangEntryIntent.Regular
+                : Enum.Parse<PersonalUtangEntryIntent>(record.Intent, ignoreCase: true),
+            record.SettlementBalanceSnapshot);
 
     private static PersonalUtangEntryRecord ToRecord(PersonalUtangEntry entry) =>
         new()
@@ -652,7 +656,9 @@ internal sealed class PersonalUtangEntryRepository(PlatformDbContext db) : IPers
             Status = entry.Status.ToString(),
             ResolvedByUserIdentityId = entry.ResolvedByUserIdentityId?.Value,
             ResolvedAtUtc = entry.ResolvedAtUtc,
-            DisputeReason = entry.DisputeReason
+            DisputeReason = entry.DisputeReason,
+            Intent = entry.Intent.ToString(),
+            SettlementBalanceSnapshot = entry.SettlementBalanceSnapshot
         };
 }
 

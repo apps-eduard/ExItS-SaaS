@@ -37,7 +37,8 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
             delivery.AdminPublicBaseUrl!,
             opts.PinoyLoanManagerPublicBaseUrl,
             opts.AllowHttpLoopbackPublicUrls,
-            opts.LinkGuidanceHtml);
+            opts.LinkGuidanceHtml,
+            opts.PinoyBusinessPosPublicBaseUrl);
         using var client = Settings.PlatformEmailTestSender.CreateClient(delivery);
         using var mail = new System.Net.Mail.MailMessage
         {

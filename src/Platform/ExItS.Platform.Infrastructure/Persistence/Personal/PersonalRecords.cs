@@ -121,6 +121,8 @@ internal sealed class PersonalUtangEntryRecord
     public Guid? ResolvedByUserIdentityId { get; set; }
     public DateTimeOffset? ResolvedAtUtc { get; set; }
     public string? DisputeReason { get; set; }
+    public string Intent { get; set; } = "Regular";
+    public decimal? SettlementBalanceSnapshot { get; set; }
 }
 
 internal sealed class PersonalUtangInvitationRecord

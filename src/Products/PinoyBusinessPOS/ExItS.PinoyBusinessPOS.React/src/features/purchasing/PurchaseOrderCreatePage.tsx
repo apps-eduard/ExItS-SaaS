@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
+import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
-import { createPurchaseOrder } from "@/api/pos/pos-purchase-orders-client";
+import {
+  createPurchaseOrder,
+  getPurchaseOrder,
+} from "@/api/pos/pos-purchase-orders-client";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
@@ -15,6 +19,8 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DraftLine = {
@@ -51,6 +57,8 @@ export function PurchaseOrderCreatePage() {
   const [selectedProduct, setSelectedProduct] = useState<PosCatalogProductDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [statusLocked, setStatusLocked] = useState(false);
+  const purchaseOrderIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -125,7 +133,7 @@ export function PurchaseOrderCreatePage() {
   }
 
   async function submit() {
-    if (!workspace || !allowManage || !online || saving) {
+    if (!workspace || !allowManage || !online || saving || statusLocked) {
       return;
     }
     if (!supplierId) {
@@ -139,7 +147,17 @@ export function PurchaseOrderCreatePage() {
     setSaving(true);
     setError(null);
     try {
+      if (!purchaseOrderIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) {
+          setError(t("purchasing.saveFailed"));
+          return;
+        }
+        purchaseOrderIdRef.current = generated.id;
+      }
+      const purchaseOrderId = purchaseOrderIdRef.current;
       const po = await createPurchaseOrder(workspace, {
+        purchaseOrderId,
         supplierId,
         orderDate,
         notes: notes.trim() || null,
@@ -149,13 +167,37 @@ export function PurchaseOrderCreatePage() {
           unitPurchaseCost: l.unitPurchaseCost,
         })),
       });
+      purchaseOrderIdRef.current = null;
       navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
     } catch (err) {
+      const purchaseOrderId = purchaseOrderIdRef.current;
+      if (purchaseOrderId && workspace) {
+        setError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error: err,
+          lookup: () => getPurchaseOrder(workspace, purchaseOrderId),
+        });
+        if (outcome.kind === "confirmed") {
+          purchaseOrderIdRef.current = null;
+          navigate(`/purchasing/${outcome.value.purchaseOrderId}`, { replace: true });
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setStatusLocked(true);
+          setError(t("checkout.transactionStatusUnknown"));
+          return;
+        }
+        if (outcome.kind === "not_found") {
+          setError(describePosApiError(outcome.lookupError, t, "error.detail"));
+          return;
+        }
+      }
       const detail =
         err instanceof PosApiError
           ? (err.problem.detail ?? t("purchasing.saveFailed"))
           : t("purchasing.saveFailed");
       setError(detail);
+    } finally {
       setSaving(false);
     }
   }
@@ -351,7 +393,7 @@ export function PurchaseOrderCreatePage() {
       <Button
         type="button"
         className="min-h-11"
-        disabled={!allowManage || !online || saving}
+        disabled={!allowManage || !online || saving || statusLocked}
         onClick={() => void submit()}
         data-testid="po-create-submit"
       >

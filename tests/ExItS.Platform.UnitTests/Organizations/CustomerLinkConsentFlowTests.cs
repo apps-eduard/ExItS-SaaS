@@ -96,6 +96,86 @@ public sealed class CustomerLinkConsentFlowTests
     }
 
     [Fact]
+    public async Task Create_link_request_conflicts_when_personal_already_actively_linked_in_same_org()
+    {
+        var harness = await Harness.CreateAsync();
+        var first = await harness.CreateTargetedPendingAsync();
+        Assert.True(first.IsSuccess);
+        var accept = await harness.Accept.ExecuteByIdAsync(
+            CustomerLinkRequestId.From(first.Value!.Id),
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(accept.IsSuccess, accept.ErrorMessage);
+
+        var otherCustomer = BusinessCustomer.Create(harness.Org.Id, "Second Local", harness.Clock.UtcNow);
+        await harness.Customers.AddAsync(otherCustomer);
+
+        var second = await harness.CreateRequest.ExecuteAsync(
+            harness.Org.Id,
+            otherCustomer.Id,
+            email: null,
+            harness.Inviter.Id,
+            harness.Personal.Id,
+            harness.Personal.PublicUserId);
+
+        Assert.False(second.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerLinkRequestConflict, second.ErrorCode);
+    }
+
+    [Fact]
+    public async Task ListResolved_includes_accepted_excludes_pending_and_other_users()
+    {
+        var harness = await Harness.CreateAsync();
+
+        var pendingOnly = await harness.CreateTargetedPendingAsync();
+        Assert.True(pendingOnly.IsSuccess, pendingOnly.ErrorMessage);
+
+        var pendingListed = await harness.ListResolved.ExecuteAsync(
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(pendingListed.IsSuccess, pendingListed.ErrorMessage);
+        Assert.Empty(pendingListed.Value!);
+
+        var acceptCustomer = BusinessCustomer.Create(
+            harness.Org.Id,
+            "Accept History Customer",
+            T0,
+            email: "accept-history@example.com");
+        await harness.Customers.AddAsync(acceptCustomer);
+        var toAccept = await harness.CreateRequest.ExecuteAsync(
+            harness.Org.Id,
+            acceptCustomer.Id,
+            email: null,
+            harness.Inviter.Id,
+            harness.Personal.Id,
+            harness.Personal.PublicUserId);
+        Assert.True(toAccept.IsSuccess, toAccept.ErrorMessage);
+
+        var accepted = await harness.Accept.ExecuteByIdAsync(
+            CustomerLinkRequestId.From(toAccept.Value!.Id),
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
+
+        var history = await harness.ListResolved.ExecuteAsync(
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(history.IsSuccess, history.ErrorMessage);
+        Assert.Single(history.Value!);
+        Assert.Equal(toAccept.Value.Id, history.Value![0].Id);
+        Assert.Equal(nameof(CustomerLinkRequestStatus.Active), history.Value[0].Status);
+        Assert.DoesNotContain(history.Value, r => r.Id == pendingOnly.Value!.Id);
+
+        var other = PlatformUser.Create("other.history", "Other History", "other.history@example.com", T0);
+        other.AssignPublicUserId("EX-7777-6666", T0);
+        await harness.Users.AddAsync(other);
+
+        var otherHistory = await harness.ListResolved.ExecuteAsync(other.Id, AccountClass.Personal);
+        Assert.True(otherHistory.IsSuccess, otherHistory.ErrorMessage);
+        Assert.Empty(otherHistory.Value!);
+    }
+
+    [Fact]
     public async Task Target_accept_by_id_creates_link_without_membership_or_roles()
     {
         var harness = await Harness.CreateAsync();
@@ -140,19 +220,25 @@ public sealed class CustomerLinkConsentFlowTests
         Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
         Assert.True(acceptNotification.IsRead);
 
+        // Decline path uses a second BusinessCustomer; request must be created while no Active link
+        // yet exists for this Personal in the org (or after using a distinct Personal identity).
+        var declinePersonal = PlatformUser.Create("rosa.decline", "Rosa Decline", "rosa.decline@example.com", T0);
+        declinePersonal.AssignPublicUserId("EX-4827-1937", T0);
+        await harness.Users.AddAsync(declinePersonal);
+
         var declineCustomer = BusinessCustomer.Create(
             harness.Org.Id,
             "Decline Customer",
             T0,
-            email: "rosa@example.com");
+            email: "rosa.decline@example.com");
         await harness.Customers.AddAsync(declineCustomer);
         var declineCreated = await harness.CreateRequest.ExecuteAsync(
             harness.Org.Id,
             declineCustomer.Id,
             email: null,
             invitedByUserId: harness.Inviter.Id,
-            targetUserIdentityId: harness.Personal.Id,
-            publicUserId: null);
+            targetUserIdentityId: declinePersonal.Id,
+            publicUserId: declinePersonal.PublicUserId);
         Assert.True(declineCreated.IsSuccess, declineCreated.ErrorMessage);
 
         var declineNotification = harness.PersonalNotifications.Items.Single(n =>
@@ -161,7 +247,7 @@ public sealed class CustomerLinkConsentFlowTests
 
         var declined = await harness.Decline.ExecuteByIdAsync(
             CustomerLinkRequestId.From(declineCreated.Value.Id),
-            harness.Personal.Id,
+            declinePersonal.Id,
             AccountClass.Personal);
         Assert.True(declined.IsSuccess, declined.ErrorMessage);
         Assert.True(declineNotification.IsRead);
@@ -392,6 +478,9 @@ public sealed class CustomerLinkConsentFlowTests
             harness.Personal.PublicUserId);
         Assert.True(pending.IsSuccess, pending.ErrorMessage);
 
+        var acceptPersonal = PlatformUser.Create("accept.personal", "Accept Personal", "accept.personal@example.com", T0);
+        acceptPersonal.AssignPublicUserId("EX-1111-2222", T0);
+        await harness.Users.AddAsync(acceptPersonal);
         var acceptCustomer = BusinessCustomer.Create(harness.Org.Id, "Accept Customer", T0, email: "accept@example.com");
         await harness.Customers.AddAsync(acceptCustomer);
         var acceptInvite = await harness.CreateRequest.ExecuteAsync(
@@ -399,14 +488,17 @@ public sealed class CustomerLinkConsentFlowTests
             acceptCustomer.Id,
             email: null,
             harness.Inviter.Id,
-            harness.Personal.Id,
-            harness.Personal.PublicUserId);
+            acceptPersonal.Id,
+            acceptPersonal.PublicUserId);
         Assert.True(acceptInvite.IsSuccess, acceptInvite.ErrorMessage);
         Assert.True((await harness.Accept.ExecuteByIdAsync(
             CustomerLinkRequestId.From(acceptInvite.Value!.Id),
-            harness.Personal.Id,
+            acceptPersonal.Id,
             AccountClass.Personal)).IsSuccess);
 
+        var declinePersonal = PlatformUser.Create("decline.personal", "Decline Personal", "decline.personal@example.com", T0);
+        declinePersonal.AssignPublicUserId("EX-3333-4444", T0);
+        await harness.Users.AddAsync(declinePersonal);
         var declineCustomer = BusinessCustomer.Create(harness.Org.Id, "Decline Customer", T0, email: "decline@example.com");
         await harness.Customers.AddAsync(declineCustomer);
         var declineInvite = await harness.CreateRequest.ExecuteAsync(
@@ -414,25 +506,28 @@ public sealed class CustomerLinkConsentFlowTests
             declineCustomer.Id,
             email: null,
             harness.Inviter.Id,
-            harness.Personal.Id,
-            harness.Personal.PublicUserId);
+            declinePersonal.Id,
+            declinePersonal.PublicUserId);
         Assert.True(declineInvite.IsSuccess, declineInvite.ErrorMessage);
         Assert.True((await harness.Decline.ExecuteByIdAsync(
             CustomerLinkRequestId.From(declineInvite.Value!.Id),
-            harness.Personal.Id,
+            declinePersonal.Id,
             AccountClass.Personal)).IsSuccess);
 
+        var expirePersonal = PlatformUser.Create("expire.personal", "Expire Personal", "expire.personal@example.com", T0);
+        expirePersonal.AssignPublicUserId("EX-5555-6666", T0);
+        await harness.Users.AddAsync(expirePersonal);
         var expireCustomer = BusinessCustomer.Create(harness.Org.Id, "Expire Customer", T0, email: "expire@example.com");
         await harness.Customers.AddAsync(expireCustomer);
         var (expireRequest, _) = CustomerLinkRequest.Create(
             harness.Org.Id,
             expireCustomer.Id,
-            harness.Personal.NormalizedEmail,
+            expirePersonal.NormalizedEmail,
             T0,
             harness.Inviter.Id,
             lifetime: TimeSpan.FromHours(1),
-            targetUserIdentityId: harness.Personal.Id,
-            targetPublicUserId: harness.Personal.PublicUserId);
+            targetUserIdentityId: expirePersonal.Id,
+            targetPublicUserId: expirePersonal.PublicUserId);
         await harness.Requests.AddAsync(expireRequest);
 
         // Only the short-lifetime invite expires; default 7-day pending remains Pending.
@@ -581,6 +676,7 @@ public sealed class CustomerLinkConsentFlowTests
             DeclineCustomerLinkRequest decline,
             RevokeCustomerLinkRequest revokePending,
             ListPendingCustomerLinkRequestsForPersonalUser listPending,
+            ListResolvedCustomerLinkRequestsForPersonalUser listResolved,
             ListOrganizationInAppNotifications listOrgNotifications,
             CustomerLinkRequestStatsQuery stats,
             AuthorizeLinkedCustomerAccess authorize)
@@ -603,6 +699,7 @@ public sealed class CustomerLinkConsentFlowTests
             Decline = decline;
             RevokePending = revokePending;
             ListPending = listPending;
+            ListResolved = listResolved;
             ListOrgNotifications = listOrgNotifications;
             Stats = stats;
             Authorize = authorize;
@@ -626,6 +723,7 @@ public sealed class CustomerLinkConsentFlowTests
         public DeclineCustomerLinkRequest Decline { get; }
         public RevokeCustomerLinkRequest RevokePending { get; }
         public ListPendingCustomerLinkRequestsForPersonalUser ListPending { get; }
+        public ListResolvedCustomerLinkRequestsForPersonalUser ListResolved { get; }
         public ListOrganizationInAppNotifications ListOrgNotifications { get; }
         public CustomerLinkRequestStatsQuery Stats { get; }
         public AuthorizeLinkedCustomerAccess Authorize { get; }
@@ -675,7 +773,9 @@ public sealed class CustomerLinkConsentFlowTests
                 users,
                 orgs,
                 personalSettings,
-                personalNotifications);
+                personalNotifications,
+                blocks: null,
+                links: links);
             var accept = new AcceptCustomerLinkRequest(
                 requests,
                 customers,
@@ -707,6 +807,7 @@ public sealed class CustomerLinkConsentFlowTests
                 decline,
                 new RevokeCustomerLinkRequest(requests, uow, clock),
                 new ListPendingCustomerLinkRequestsForPersonalUser(requests, users, orgs, clock),
+                new ListResolvedCustomerLinkRequestsForPersonalUser(requests, users, orgs, clock),
                 new ListOrganizationInAppNotifications(orgNotifications),
                 new CustomerLinkRequestStatsQuery(requests),
                 new AuthorizeLinkedCustomerAccess(users, links, customers));

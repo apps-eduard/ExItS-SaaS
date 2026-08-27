@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   createCustomerRepayment,
   getCustomer,
   getCustomerCreditSummary,
+  getRepayment,
 } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,12 +23,8 @@ import {
   getCachedCustomer,
   getCachedCustomerCreditSummary,
 } from "@/offline/customer-cache";
-import {
-  enqueueOfflineCustomerRepayment,
-  OfflineCustomerRejectedError,
-} from "@/offline/customer-offline";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
+import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function parsePaymentAmount(raw: string): number | null {
@@ -49,13 +46,14 @@ export function CustomerRepayPage() {
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
-  const { refreshCounts } = useOfflineSync();
   const [paymentAmount, setPaymentAmount] = useState("");
   const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusLocked, setStatusLocked] = useState(false);
   const [cachedName, setCachedName] = useState<string | null>(null);
   const [cachedOwed, setCachedOwed] = useState<number | null>(null);
+  const repaymentIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -147,7 +145,7 @@ export function CustomerRepayPage() {
     parsed === null ? null : Math.round(Math.max(0, amountOwed - parsed) * 100) / 100;
 
   async function onSubmit() {
-    if (!workspace || !customerId) {
+    if (!workspace || !customerId || statusLocked) {
       return;
     }
     const amount = parsePaymentAmount(paymentAmount);
@@ -163,51 +161,51 @@ export function CustomerRepayPage() {
     setError(null);
     try {
       if (!online) {
-        await queuePaymentOffline(amount);
+        setError(t("connectivity.actionRequiresInternet"));
         return;
       }
+      if (!repaymentIdRef.current) {
+        const generated = createSecureMutationId();
+        if (!generated.ok) {
+          setError(t("customers.paymentInvalid"));
+          return;
+        }
+        repaymentIdRef.current = generated.id;
+      }
+      const repaymentId = repaymentIdRef.current;
       await createCustomerRepayment(workspace, customerId, {
         amount,
         remarks,
+        repaymentId,
       });
+      repaymentIdRef.current = null;
       navigate(`/customers/${customerId}`, { replace: true });
     } catch (err) {
+      const repaymentId = repaymentIdRef.current;
+      if (repaymentId && workspace) {
+        setError(t("checkout.confirmingTransaction"));
+        const outcome = await resolveAmbiguousMutationOutcome({
+          error: err,
+          lookup: () => getRepayment(workspace, repaymentId),
+        });
+        if (outcome.kind === "confirmed") {
+          repaymentIdRef.current = null;
+          navigate(`/customers/${customerId}`, { replace: true });
+          return;
+        }
+        if (outcome.kind === "still_unknown") {
+          setStatusLocked(true);
+          setError(t("checkout.transactionStatusUnknown"));
+          return;
+        }
+        if (outcome.kind === "not_found") {
+          setError(describePosApiError(outcome.lookupError, t, "error.detail"));
+          return;
+        }
+      }
       setError(describePosApiError(err, t, "error.detail"));
     } finally {
       setSaving(false);
-    }
-  }
-
-  /**
-   * Queue the payment with a client-chosen repaymentId. The server adopts that id and honours the
-   * idempotency key, so a retry records one payment; the server — not this device — still decides
-   * whether the amount is acceptable against the live balance.
-   */
-  async function queuePaymentOffline(amount: number) {
-    if (!offlineContext || !customerId) {
-      setError(t("offline.paymentEnqueueFailed"));
-      return;
-    }
-    const generated = createSecureMutationId();
-    if (!generated.ok) {
-      setError(t("offline.paymentEnqueueFailed"));
-      return;
-    }
-    try {
-      await enqueueOfflineCustomerRepayment({
-        ...offlineContext,
-        customerId,
-        repaymentId: generated.id,
-        repayment: { amount, remarks },
-      });
-      await refreshCounts();
-      navigate(`/customers/${customerId}`, { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof OfflineCustomerRejectedError
-          ? err.message
-          : t("offline.paymentEnqueueFailed"),
-      );
     }
   }
 
@@ -241,7 +239,7 @@ export function CustomerRepayPage() {
       {!online ? (
         <Card data-testid="customer-repay-offline-notice">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.paymentWillQueue")}
+            {t("connectivity.actionRequiresInternet")}
           </p>
         </Card>
       ) : null}
@@ -302,7 +300,7 @@ export function CustomerRepayPage() {
           type="button"
           className="min-h-11"
           data-testid="customer-payment-submit"
-          disabled={saving || amountOwed <= 0}
+          disabled={saving || statusLocked || amountOwed <= 0}
           onClick={() => void onSubmit()}
         >
           {saving ? t("customers.saving") : t("customers.recordPayment")}

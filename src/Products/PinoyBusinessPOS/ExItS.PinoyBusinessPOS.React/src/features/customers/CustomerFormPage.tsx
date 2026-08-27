@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { IdCard, Loader2, Save, UserRound } from "lucide-react";
+import { createBusinessCustomerWithPersonalLink } from "@/api/platform/public-identity-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { createCustomer, getCustomer, updateCustomer } from "@/api/pos/pos-customers-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,17 +14,10 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   CustomerPersonalLinkPanel,
-  type PendingPersonalCustomerLink,
+  type SelectedPersonalIdentity,
 } from "@/features/customers/CustomerPersonalLinkPanel";
 import { useI18n } from "@/i18n/I18nProvider";
-import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { getCachedCustomer } from "@/offline/customer-cache";
-import {
-  enqueueOfflineCustomerCreate,
-  enqueueOfflineCustomerUpdate,
-  OfflineCustomerRejectedError,
-} from "@/offline/customer-offline";
-import { useOfflineSync } from "@/offline/OfflineSyncProvider";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
@@ -49,7 +44,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
-  const { refreshCounts } = useOfflineSync();
 
   const [displayName, setDisplayName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -58,7 +52,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [personalLink, setPersonalLink] = useState<PendingPersonalCustomerLink | null>(null);
+  const [selectedIdentity, setSelectedIdentity] = useState<SelectedPersonalIdentity | null>(null);
   const [createKind, setCreateKind] = useState<CreateKind | null>(() =>
     linkPublicId?.trim() ? "exits" : null,
   );
@@ -88,8 +82,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setExpectedUpdatedAtUtc(existing.data.updatedAtUtc);
   }, [existing.data]);
 
-  // Editing offline starts from the cached row so a queued edit still carries the fields the
-  // cashier last saw, including the concurrency token the server will check.
   useEffect(() => {
     if (mode !== "edit" || !customerId || !offlineContext || existing.data || online) {
       return;
@@ -122,7 +114,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
     if (!online) {
       setCreateKind("walkin");
-      setPersonalLink(null);
+      setSelectedIdentity(null);
       return;
     }
     if (linkPublicId?.trim()) {
@@ -142,7 +134,48 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     return <ErrorState title={t("error.title")} detail={(existing.error as Error).message} />;
   }
 
-  async function onSubmit() {
+  async function createLocalOnly(name: string) {
+    const created = await createCustomer(workspace!, {
+      displayName: name,
+      mobileNumber,
+      address,
+      notes,
+      platformBusinessCustomerId: null,
+    });
+    if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
+    navigate(`/customers/${created.customerId}`, { replace: true });
+  }
+
+  async function createWithLinkRequest(name: string, identity: SelectedPersonalIdentity) {
+    const taggedNotes = notes.trim()
+      ? `${notes.trim()}\nexits-id:${identity.publicUserId}`
+      : `exits-id:${identity.publicUserId}`;
+    const linkResult = await createBusinessCustomerWithPersonalLink(workspace!.organizationId, {
+      displayName: name,
+      phone: mobileNumber.trim() || null,
+      notes: taggedNotes,
+      owningProductCode: "PinoyBusinessPOS",
+      publicUserId: identity.publicUserId,
+      targetUserIdentityId: identity.userIdentityId,
+    });
+    const created = await createCustomer(workspace!, {
+      displayName: name,
+      mobileNumber,
+      address,
+      notes: taggedNotes,
+      platformBusinessCustomerId: linkResult.customerId,
+    });
+    if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
+    navigate(`/customers/${created.customerId}?pendingLink=1`, { replace: true });
+  }
+
+  async function onSubmit(options?: { localOnly?: boolean }) {
     if (!workspace) {
       return;
     }
@@ -155,31 +188,20 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setError(null);
     try {
       if (!online) {
-        await saveOffline(name);
+        setError(t("connectivity.actionRequiresInternet"));
         return;
       }
       if (mode === "create") {
-        const created = await createCustomer(workspace, {
-          displayName: name,
-          mobileNumber,
-          address,
-          notes: personalLink
-            ? notes.trim()
-              ? `${notes.trim()}\nexits-id:${personalLink.publicUserId}`
-              : `exits-id:${personalLink.publicUserId}`
-            : notes,
-          platformBusinessCustomerId: personalLink?.platformBusinessCustomerId ?? null,
-        });
-        if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
-          navigate(returnTo, { replace: true });
+        const wantLink = createKind === "exits" && !options?.localOnly;
+        if (wantLink) {
+          if (!selectedIdentity) {
+            setError(t("customers.personalLink.selectRequired"));
+            return;
+          }
+          await createWithLinkRequest(name, selectedIdentity);
           return;
         }
-        navigate(
-          personalLink
-            ? `/customers/${created.customerId}?pendingLink=1`
-            : `/customers/${created.customerId}`,
-          { replace: true },
-        );
+        await createLocalOnly(name);
         return;
       }
       const updated = await updateCustomer(workspace, customerId!, {
@@ -191,55 +213,22 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       });
       navigate(`/customers/${updated.customerId}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("error.detail"));
+      setError(
+        err instanceof PlatformApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : t("error.detail"),
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  /**
-   * Queue the customer for the server instead of pretending it was accepted. A create picks the
-   * id here so the server adopts it, which keeps the queued row and the eventual server row the
-   * same customer.
-   */
-  async function saveOffline(name: string) {
-    if (!offlineContext) {
-      setError(t("offline.customerEnqueueFailed"));
-      return;
-    }
-    const generated = createSecureMutationId();
-    if (!generated.ok) {
-      setError(t("offline.customerEnqueueFailed"));
-      return;
-    }
-
-    try {
-      if (mode === "create") {
-        await enqueueOfflineCustomerCreate({
-          ...offlineContext,
-          customerId: generated.id,
-          customer: { displayName: name, mobileNumber, address, notes },
-        });
-        await refreshCounts();
-        navigate(`/customers/${generated.id}`, { replace: true });
-        return;
-      }
-      await enqueueOfflineCustomerUpdate({
-        ...offlineContext,
-        customerId: customerId!,
-        operationId: generated.id,
-        customer: { displayName: name, mobileNumber, address, notes, expectedUpdatedAtUtc },
-      });
-      await refreshCounts();
-      navigate(`/customers/${customerId}`, { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof OfflineCustomerRejectedError
-          ? err.message
-          : t("offline.customerEnqueueFailed"),
-      );
-    }
-  }
+  const primarySaveLabel =
+    mode === "create" && createKind === "exits" && selectedIdentity
+      ? t("customers.saveAndSendLink")
+      : t("customers.save");
 
   return (
     <form
@@ -298,7 +287,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
               data-testid="customer-create-kind-walkin"
               onClick={() => {
                 setCreateKind("walkin");
-                setPersonalLink(null);
+                setSelectedIdentity(null);
               }}
             >
               <span className="customer-create-kind__icon" aria-hidden>
@@ -342,7 +331,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 disabled={saving || Boolean(linkPublicId?.trim())}
                 onClick={() => {
                   setCreateKind(null);
-                  setPersonalLink(null);
+                  setSelectedIdentity(null);
                 }}
               >
                 {t("customers.createKindChange")}
@@ -407,24 +396,21 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
           {mode === "create" && online && workspace && createKind === "exits" ? (
             <CustomerPersonalLinkPanel
-              organizationId={workspace.organizationId}
-              displayName={displayName}
-              phone={mobileNumber}
-              notes={notes}
               disabled={saving}
               initialSubject={linkPublicId}
+              selected={selectedIdentity}
               onResolved={(user) => {
                 if (!displayName.trim() && user.displayName.trim()) {
                   setDisplayName(user.displayName.trim());
                 }
               }}
-              onLinkRequestCreated={(link) => {
-                setPersonalLink(link);
-                if (!displayName.trim()) {
-                  setDisplayName(link.displayName);
+              onSelected={(identity) => {
+                setSelectedIdentity(identity);
+                if (!displayName.trim() && identity.displayName.trim()) {
+                  setDisplayName(identity.displayName.trim());
                 }
               }}
-              onCleared={() => setPersonalLink(null)}
+              onCleared={() => setSelectedIdentity(null)}
             />
           ) : null}
           {mode === "create" && !online ? (
@@ -440,7 +426,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           ) : null}
 
           <div className={cn("catalog-form-actions", "customer-form-actions")}>
-            <div className="catalog-form-actions__primary">
+            <div className="catalog-form-actions__primary flex flex-col gap-2 sm:flex-row">
               <Button
                 type="submit"
                 className="catalog-form-actions__save"
@@ -455,10 +441,22 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 ) : (
                   <>
                     <Save className="size-4 shrink-0" aria-hidden />
-                    {t("customers.save")}
+                    {primarySaveLabel}
                   </>
                 )}
               </Button>
+              {mode === "create" && createKind === "exits" && online ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  data-testid="customer-save-local-instead"
+                  disabled={saving}
+                  onClick={() => void onSubmit({ localOnly: true })}
+                >
+                  {t("customers.saveAsLocalInstead")}
+                </Button>
+              ) : null}
             </div>
           </div>
         </>

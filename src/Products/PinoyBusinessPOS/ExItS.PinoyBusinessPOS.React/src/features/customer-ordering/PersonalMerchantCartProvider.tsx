@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { CustomerStorefrontProductDto } from "@/api/pos/pos-customer-orders-client";
 import {
   cartItemCount,
@@ -12,6 +20,12 @@ import {
   incrementCartLine,
   type PersonalMerchantCartState,
 } from "@/features/customer-ordering/personal-merchant-cart";
+import {
+  clearPersonalMerchantCartStorage,
+  loadPersonalMerchantCartFromStorage,
+  savePersonalMerchantCartToStorage,
+} from "@/features/customer-ordering/personal-merchant-cart-storage";
+import { useSession } from "@/session/SessionProvider";
 
 type PersonalMerchantCartContextValue = {
   cart: PersonalMerchantCartState;
@@ -28,7 +42,29 @@ type PersonalMerchantCartContextValue = {
 const PersonalMerchantCartContext = createContext<PersonalMerchantCartContextValue | null>(null);
 
 export function PersonalMerchantCartProvider({ children }: { children: ReactNode }) {
+  const { session, status } = useSession();
+  const accountKey =
+    status === "authenticated" && session?.userId ? session.userId.trim() : null;
+
   const [cart, setCart] = useState<PersonalMerchantCartState>(EMPTY_PERSONAL_MERCHANT_CART);
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accountKey) {
+      setCart(EMPTY_PERSONAL_MERCHANT_CART);
+      setHydratedKey(null);
+      return;
+    }
+    setCart(loadPersonalMerchantCartFromStorage(accountKey));
+    setHydratedKey(accountKey);
+  }, [accountKey]);
+
+  useEffect(() => {
+    if (!accountKey || hydratedKey !== accountKey) {
+      return;
+    }
+    savePersonalMerchantCartToStorage(accountKey, cart);
+  }, [accountKey, cart, hydratedKey]);
 
   const ensureMerchant = useCallback((sellerOrganizationId: string, displayName: string | null) => {
     setCart((prev) => ensureMerchantCart(prev, sellerOrganizationId, displayName));
@@ -48,7 +84,10 @@ export function PersonalMerchantCartProvider({ children }: { children: ReactNode
 
   const clearAll = useCallback(() => {
     setCart(clearPersonalMerchantCart());
-  }, []);
+    if (accountKey) {
+      clearPersonalMerchantCartStorage(accountKey);
+    }
+  }, [accountKey]);
 
   const quantityOf = useCallback((productId: string) => getCartQuantity(cart, productId), [cart]);
 
