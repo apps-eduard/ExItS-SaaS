@@ -1,49 +1,26 @@
 # Eligibility and Approval
 
-**Status:** Planning baseline (BNPL-00)  
-**Implementation present:** No  
+**Status:** Manual path implemented (BNPL-04)  
+**Implementation present:** Yes — manual eligibility + manual approval  
 **Related:** BNPL-D-00-16, BNPL-D-00-26
 
-## Separation of concerns
+## Separation of concerns (binding)
 
-Keep these stages distinct:
+1. **Eligibility evaluation** — may this request proceed? (`ApproveEligibility` / `DeclineEligibility`)
+2. **Financing offer** — concrete principal-only terms (`CreateOffer`)
+3. **Customer acceptance** — staff-recorded acceptance of current offer (`AcceptOffer`)
+4. **Merchant approval** — final approve to APPROVED_PENDING_SALE (`Approve`)
+5. **Commerce completion** — sale success → ACTIVE (**BNPL-07 only**)
 
-1. **Eligibility evaluation** — may this customer/amount/term proceed?  
-2. **Financing offer** — concrete terms presented  
-3. **Customer acceptance** — customer agrees (when required)  
-4. **Merchant/system approval** — if still required after offer  
-5. **Commerce completion** — sale success → ACTIVE  
+Do **not** collapse eligible into ACTIVE. Do not collapse create capability into approve.
 
-Do **not** collapse “eligible” into “ACTIVE.”
+## BNPL-04 safe default
 
-## Supported future models (architecture)
-
-| Model | Notes |
-|---|---|
-| Merchant manual approval | Default safe path until automation authorized |
-| Simple configured rules | Amount caps, term caps, product eligibility flags |
-| Customer credit limit | Open (BNPL-D-00-16) |
-| Financing amount / term restrictions | Open (BNPL-D-00-14) |
-| Future automated risk engine | Allowed as future WP; **no AI credit model claimed or implemented in BNPL-00** |
-
-## Declined path
-
-If declined:
-
-- No completed commerce sale  
-- No inventory deduction  
-- No ACTIVE financing  
-
-## Outcomes
-
-| Outcome | Financing | Commerce | Inventory |
-|---|---|---|---|
-| Declined | Terminal non-ACTIVE | None | Unchanged |
-| Offered / accepted / approved pending sale | Non-ACTIVE | None yet | Unchanged |
-| Activated | ACTIVE | Sale exists | Deducted by Commerce |
+Manual eligibility and manual approval are implemented as the **safe default** (BNPL-D-00-26 Product Owner decision remains OPEN for future automation models).
 
 ## Explicit non-claims
 
-- No claim of credit bureau integration  
-- No claim of fair-lending automation  
-- No invented score thresholds
+- No credit bureau / credit score
+- No credit limit engine (BNPL-D-00-16 OPEN)
+- No AI risk engine
+- No interest/fee/term engine (BNPL-D-00-14/15 OPEN)

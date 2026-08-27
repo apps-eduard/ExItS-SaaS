@@ -27,11 +27,12 @@ public sealed class ScaffoldAssemblyTests
         var domain = typeof(DomainAssembly).Assembly;
         var typeNames = domain.GetTypes().Select(t => t.Name).ToHashSet(StringComparer.Ordinal);
         Assert.Contains(nameof(BnplCustomer), typeNames);
-        Assert.Contains(nameof(BnplCapabilityCodes), typeNames);
+        Assert.Contains("BnplFinancingApplication", typeNames);
         Assert.DoesNotContain("FinancingPlan", typeNames);
-        Assert.DoesNotContain("FinancingApplication", typeNames);
         Assert.DoesNotContain("Installment", typeNames);
         Assert.DoesNotContain("Repayment", typeNames);
         Assert.DoesNotContain("Settlement", typeNames);
+        Assert.False(Enum.GetNames(typeof(ExItS.PinoyBuyNowPayLater.Domain.Financing.BnplFinancingApplicationStatus))
+            .Contains("Active", StringComparer.Ordinal));
     }
 }

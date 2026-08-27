@@ -39,6 +39,7 @@ public static class BnplCapabilityPresets
     [
         BnplCapabilityCodes.CustomerRead,
         BnplCapabilityCodes.CustomerManage,
+        BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.ApplicationCreate,
         BnplCapabilityCodes.ApplicationApprove,
         BnplCapabilityCodes.PlanRead,
@@ -51,6 +52,7 @@ public static class BnplCapabilityPresets
     public static IReadOnlySet<string> ApproverCapabilities { get; } = new HashSet<string>(
     [
         BnplCapabilityCodes.CustomerRead,
+        BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.ApplicationApprove,
         BnplCapabilityCodes.PlanRead
     ], StringComparer.Ordinal);
@@ -59,6 +61,7 @@ public static class BnplCapabilityPresets
     [
         BnplCapabilityCodes.CustomerRead,
         BnplCapabilityCodes.CustomerManage,
+        BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.ApplicationCreate,
         BnplCapabilityCodes.PlanRead
     ], StringComparer.Ordinal);
@@ -66,6 +69,7 @@ public static class BnplCapabilityPresets
     public static IReadOnlySet<string> CollectorCapabilities { get; } = new HashSet<string>(
     [
         BnplCapabilityCodes.CustomerRead,
+        BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.PlanRead,
         BnplCapabilityCodes.RepaymentCreate,
         BnplCapabilityCodes.CollectionsManage
@@ -74,6 +78,7 @@ public static class BnplCapabilityPresets
     public static IReadOnlySet<string> ReportingCapabilities { get; } = new HashSet<string>(
     [
         BnplCapabilityCodes.CustomerRead,
+        BnplCapabilityCodes.ApplicationRead,
         BnplCapabilityCodes.PlanRead,
         BnplCapabilityCodes.ReportsRead
     ], StringComparer.Ordinal);

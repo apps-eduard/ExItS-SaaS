@@ -89,36 +89,43 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
     }
 
     [Fact]
-    public void Platform_product_code_registers_bnpl_and_customer_migration_exists_without_financing_tables()
+    public void Platform_product_code_registers_bnpl_and_migrations_exclude_installments_repayments()
     {
         var root = FindRepositoryRoot();
         var productCode = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Domain", "Products", "ProductCode.cs"));
         Assert.Contains("PinoyBuyNowPayLater = \"pinoy-buy-now-pay-later\"", productCode, StringComparison.Ordinal);
 
-        var migrations = Directory.GetFiles(
-                Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater"),
-                "*Migration*.cs",
-                SearchOption.AllDirectories)
-            .Concat(Directory.GetFiles(
-                Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater"),
-                "*InitialBnplCustomerFoundation*.cs",
-                SearchOption.AllDirectories))
-            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+        var migrationsDir = Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBuyNowPayLater",
+            "ExItS.PinoyBuyNowPayLater.Infrastructure",
+            "Persistence",
+            "Migrations");
+        Assert.True(Directory.Exists(migrationsDir), migrationsDir);
+        var migrations = Directory.GetFiles(migrationsDir, "*.cs")
+            .Where(p => !p.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase)
+                        && !p.EndsWith("ModelSnapshot.cs", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         Assert.Contains(migrations, p => p.Contains("InitialBnplCustomerFoundation", StringComparison.Ordinal));
+        Assert.Contains(migrations, p => p.Contains("AddBnplFinancingApplicationLifecycle", StringComparison.Ordinal));
         foreach (var migration in migrations)
         {
             var text = File.ReadAllText(migration);
-            Assert.DoesNotContain("FinancingApplication", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("FinancingPlan", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Installment", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Repayment", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Settlement", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("name: \"installments\"", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("name: \"repayments\"", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("name: \"settlements\"", text, StringComparison.OrdinalIgnoreCase);
         }
+
+        var financingMigration = migrations.Single(p => p.Contains("AddBnplFinancingApplicationLifecycle", StringComparison.Ordinal));
+        var financingText = File.ReadAllText(financingMigration);
+        Assert.Contains("financing_applications", financingText, StringComparison.Ordinal);
+        Assert.Contains("financing_offers", financingText, StringComparison.Ordinal);
+        Assert.Contains("financing_decisions", financingText, StringComparison.Ordinal);
+        Assert.DoesNotContain("'Active'", financingText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -198,10 +205,11 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
         {
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("class FinancingPlan", text, StringComparison.Ordinal);
-            Assert.DoesNotContain("class FinancingApplication", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Installment", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Repayment", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Settlement", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("MarkActive(", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("enum BnplFinancingApplicationStatus\n{\n    Active", text, StringComparison.Ordinal);
 
             var declaresDbContext =
                 text.Contains("class BnplDbContext :", StringComparison.Ordinal)

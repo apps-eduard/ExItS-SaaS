@@ -85,17 +85,16 @@
 | Path | Purpose | Implementation present |
 |---|---|---|
 | `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold + access + customer persistence + Docs |
-| `ExItS.PinoyBuyNowPayLater.Domain` | Capabilities + BnplCustomer | Yes |
-| `ExItS.PinoyBuyNowPayLater.Application` | Access guard + customer use cases | Yes |
-| `ExItS.PinoyBuyNowPayLater.Infrastructure` | BnplDbContext + InitialBnplCustomerFoundation | Yes |
-| `ExItS.PinoyBuyNowPayLater.Api` | Health + access/me + customers API | Yes |
+| `ExItS.PinoyBuyNowPayLater.Domain` | Capabilities + customer + financing application | Yes |
+| `ExItS.PinoyBuyNowPayLater.Application` | Access guard + customer/financing use cases | Yes |
+| `ExItS.PinoyBuyNowPayLater.Infrastructure` | BnplDbContext + customer/financing migrations | Yes |
+| `ExItS.PinoyBuyNowPayLater.Api` | Health + access/me + customers + applications | Yes |
 
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
-| Financing / installment / repayment / settlement entities | BNPL-04+ |
+| ACTIVE financing / installments / repayments / settlement | BNPL-05+ / BNPL-07+ |
 | Production auto-migrate | Forbidden |
-| ApiClient / Web / React Client | Deferred; PWA client later |
-| Docker / deploy for BNPL | Not authorized |
-| BNPL grant persistence DB | Capabilities via trusted transport (D-P12-03) |
+| ApiClient / Web / React Client | Deferred |
+| Interest / fee / credit-limit engines | BNPL-D-00-14/15/16 OPEN |

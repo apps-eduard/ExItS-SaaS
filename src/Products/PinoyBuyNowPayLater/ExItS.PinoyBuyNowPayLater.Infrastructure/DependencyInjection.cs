@@ -1,5 +1,6 @@
 using ExItS.PinoyBuyNowPayLater.Application;
 using ExItS.PinoyBuyNowPayLater.Application.Customers;
+using ExItS.PinoyBuyNowPayLater.Application.Financing;
 using ExItS.PinoyBuyNowPayLater.Infrastructure.Persistence;
 using ExItS.PinoyBuyNowPayLater.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,7 @@ public static class BnplInfrastructureServiceCollectionExtensions
             options.UseNpgsql(connectionString));
 
         services.AddScoped<IBnplCustomerRepository, BnplCustomerRepository>();
+        services.AddScoped<IBnplFinancingApplicationRepository, BnplFinancingApplicationRepository>();
         services.AddScoped<IBnplUnitOfWork, BnplUnitOfWork>();
         services.AddBnplCustomerUseCases();
         return services;

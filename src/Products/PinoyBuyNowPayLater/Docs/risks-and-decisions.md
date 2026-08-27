@@ -46,11 +46,11 @@
 | BNPL-D-00-15 | Fees / interest model | May be zero-interest merchant promo or fee-bearing | Open / Legal & Commercial Decision Required | Pricing, disclosures | No interest engine until policy |
 | BNPL-D-00-16 | Credit-limit model | Per-customer / per-org limits possible | Open / Product Owner Decision Required | Eligibility | Manual approval path only |
 | BNPL-D-00-17 | Early payoff / overdue fee / refund allocation rules | Required before production money | Open / Product Owner Decision Required | BNPL-08–11 | Record repayments principal-only until policy |
-| BNPL-D-00-18 | Product-local grant / capability identifiers | `BnplCapabilityCodes` + customer.read/manage | Implemented in BNPL-02; extended in BNPL-03 | Future grant persistence transport | Authorize by capability only; presets never used as authz keys |
+| BNPL-D-00-18 | Product-local grant / capability identifiers | includes `bnpl.application.read` | Implemented in BNPL-02; extended in BNPL-03/04 | Future grant persistence transport | Authorize by capability only |
 | BNPL-D-00-19 | Retention / deletion / export policy | Financial history important | Open / Product Owner Decision Required | Privacy ops | Retain while org subscribed; no silent purge |
 | BNPL-D-00-20 | Regulatory / licensing prerequisites | Technical capability ≠ legal authorization | Open / Legal Decision Required | Production claims | No license/compliance claims |
 | BNPL-D-00-25 | Production payment channels for repayments | Cash / GCash / other | Open / Product Owner Decision Required | BNPL-08 providers | Manual recorded repayment first |
-| BNPL-D-00-26 | Approval model (manual vs rules vs future risk engine) | Support manual + configurable rules; no fake AI | Open / Product Owner Decision Required | Eligibility engine | Manual approve/decline |
+| BNPL-D-00-26 | Approval model (manual vs rules vs future risk engine) | Manual path implemented as safe default in BNPL-04 | Open / Product Owner Decision Required | Future automation | Manual approve/decline only until owner decides |
 | BNPL-D-00-27 | Documentation baseline owner approval | BNPL-00 docs complete | Open / Product Owner Decision Required | Closing BNPL-00 as approved | Treat as draft-complete; Implementation Not Started |
 | BNPL-D-00-28 | Phase-12 names `BuyNowPayLater` / `ExItS_BuyNowPayLater` | Prefer Pinoy\* alignment | Deferred / Owner may supersede | Naming consistency | Use PinoyBuyNowPayLater in this foundation |
 

@@ -11,8 +11,8 @@ Always load with:
 5. The active work-package prompt/report
 6. Files required for the task only
 
-**Status:** BNPL-03 Customer Foundation Complete; Financing Domain Not Started; Product Owner Approval Pending for commercial/legal decisions
-**Implementation present:** Scaffold + access guard + BnplCustomer persistence (no financing entities)
+**Status:** BNPL-04 Financing Application Lifecycle Complete (through APPROVED_PENDING_SALE); ACTIVE / Commerce Not Started
+**Implementation present:** Scaffold + access + customers + financing applications (no ACTIVE/installments/repayments)
 **Documentation root:** `src/Products/PinoyBuyNowPayLater/Docs/` (D-P12-02)
 
 BNPL is a **separate first-class ExItS SaaS product**, a sibling of PinoyBusinessPOS, PinoyLoanManager, and PinoyServicePro. It is not a POS module, not “Utang renamed,” not a PLM skin, not a shared-table extension of POS, and not a reason for BNPL to query POS tables directly.

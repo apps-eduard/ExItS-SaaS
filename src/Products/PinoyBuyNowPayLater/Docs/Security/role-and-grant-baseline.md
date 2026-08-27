@@ -1,8 +1,8 @@
 # Role and Grant Baseline
 
-**Status:** BNPL-02 capability identifiers implemented; BNPL-03 customer capabilities extended
-**Implementation present:** Capability catalog + presets (bundles) + operational access guard + customer CRUD authz
-**Related:** BNPL-D-00-18 (Implemented in BNPL-02; extended in BNPL-03)
+**Status:** BNPL-02..04 capability identifiers implemented
+**Implementation present:** Capability catalog + presets + access guard + financing application authz
+**Related:** BNPL-D-00-18 (extended in BNPL-03/04)
 
 ## Capability identifiers (authoritative)
 
@@ -11,8 +11,9 @@
 | `bnpl.config` | Product settings |
 | `bnpl.customer.read` | View / search BNPL customers |
 | `bnpl.customer.manage` | Create / update / link BNPL customers |
-| `bnpl.application.create` | Create financing request |
-| `bnpl.application.approve` | Approve / decline |
+| `bnpl.application.read` | View / search financing applications |
+| `bnpl.application.create` | Create/edit/submit/offer/accept/cancel applications |
+| `bnpl.application.approve` | Eligibility + final approve/decline |
 | `bnpl.plan.read` | View plans |
 | `bnpl.repayment.create` | Record repayment |
 | `bnpl.collections.manage` | Collections queue |

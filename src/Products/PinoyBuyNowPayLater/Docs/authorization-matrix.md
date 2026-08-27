@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Status | BNPL-03 customer foundation + access |
+| Status | BNPL-04 financing application lifecycle |
 | Last updated | 2026-08-27 |
-| Implementation present | Access guard + customer capabilities + customer API |
+| Implementation present | Access guard + customer + financing application APIs |
 
 ## Access layers
 
@@ -41,6 +41,7 @@ Any missing/invalid layer → **DENY**. Default runtime provider is unavailable 
 | bnpl.config | Y | N | N | N | N | N |
 | bnpl.customer.read | Y | Y | Y | Y | Y | Y |
 | bnpl.customer.manage | Y | Y | N | Y | N | N |
+| bnpl.application.read | Y | Y | Y | Y | Y | Y |
 | bnpl.application.create | Y | Y | N | Y | N | N |
 | bnpl.application.approve | Y | Y | Y | N | N | N |
 | bnpl.plan.read | Y | Y | Y | Y | Y | Y |
@@ -67,3 +68,4 @@ Customer aggregate is organization-scoped (not branch-bound).
 
 - `GET /api/v1/bnpl/access/me`
 - `POST|GET|PATCH /api/v1/bnpl/customers` (+ personal-link / commerce-link)
+- `/api/v1/bnpl/applications` lifecycle (submit, eligibility, offer, accept, approve, cancel) — stops at APPROVED_PENDING_SALE

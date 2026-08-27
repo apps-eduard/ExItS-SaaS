@@ -1,6 +1,7 @@
 using ExItS.PinoyBuyNowPayLater.Api;
 using ExItS.PinoyBuyNowPayLater.Api.Access;
 using ExItS.PinoyBuyNowPayLater.Api.Customers;
+using ExItS.PinoyBuyNowPayLater.Api.Financing;
 using ExItS.PinoyBuyNowPayLater.Application;
 using ExItS.PinoyBuyNowPayLater.Infrastructure;
 
@@ -15,6 +16,7 @@ app.UseExceptionHandler();
 app.MapBnplHealth();
 app.MapBnplAccess();
 app.MapBnplCustomers();
+app.MapBnplFinancingApplications();
 app.Run();
 
 // Exposes the entry assembly for test hosts without shipping operational probes.
