@@ -5,8 +5,8 @@
 
 | Field | Value |
 |---|---|
-| Status | PPM-00 documentation foundation |
-| Implementation started | No |
+| Status | PPM-01 complete — next PPM-02 |
+| Implementation started | Yes — scaffold only |
 | Last updated | 2026-08-27 |
 
 ## Purpose
@@ -37,14 +37,15 @@ This folder indexes delivery phases/packages. **[../roadmap.md](../roadmap.md) i
 
 ## Current phase
 
-**PPM-00** — documentation only. `IMPLEMENTATION_STARTED=NO`.
+**PPM-01 complete** — product scaffold + Local Validation / Dev Platform registration. No operational pawn domain.
 
 ## Next recommended
 
-**PPM-01** after PPM-00 closeout and explicit authorization—still no operational domain unless separately authorized.
+**PPM-02** — Authorization + Organization/Branch foundation (explicit authorization required).
 
 ## Related
 
 - [../Reports/PPM-00-foundation-closeout.md](../Reports/PPM-00-foundation-closeout.md)
+- [../Reports/PPM-01-product-scaffold-platform-registration.md](../Reports/PPM-01-product-scaffold-platform-registration.md)
 - [../Validation/PPM-00-readiness-checklist.md](../Validation/PPM-00-readiness-checklist.md)
 - [../risks-and-decisions.md](../risks-and-decisions.md)

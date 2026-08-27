@@ -13,13 +13,13 @@ Always load with:
 
 | Field | Value |
 |---|---|
-| Display name (proposed) | Pinoy Pawn Manager |
+| Display name | Pinoy Pawn Manager (**PPM-D-00-01** Provisionally Approved for Implementation — not final marketing) |
 | Short code | PPM |
-| Platform product code (proposed) | `pinoy-pawn-manager` (**PPM-D-00-02** Open) |
-| Product directory (proposed) | `src/Products/PinoyPawnManager/` (**PPM-D-00-03** Open) |
+| Platform product code | `pinoy-pawn-manager` (**PPM-D-00-02** Provisionally Approved for Implementation — not final marketing) |
+| Product directory | `src/Products/PinoyPawnManager/` (**PPM-D-00-03** Provisionally Approved for Implementation — not final marketing) |
 | Documentation root | `src/Products/PinoyPawnManager/Docs/` (D-P12-02) |
-| Status | **PPM-00 documentation foundation** — planning only |
-| Implementation present | **No** |
+| Status | **PPM-01 complete** — implementation scaffold present; **no** operational domain |
+| Implementation present | **Scaffold only** (Domain / Application / Infrastructure / Api / UnitTests) — no DbContext, migrations, or pawn entities |
 | Last updated | 2026-08-27 |
 
 Pinoy Pawn Manager is a **separate first-class ExItS SaaS product**. It is **not** a PinoyLoanManager module, **not** a PinoyBusinessPOS feature, **not** BNPL with collateral, and **not** ordinary retail inventory management.
@@ -56,7 +56,7 @@ ExItS Platform
 | `PHYSICAL_RELEASE_SEPARATE_FROM_PAYMENT` | YES |
 | `CUSTODY_HISTORY_REQUIRED` | YES |
 | `LEGAL_AUTHORIZATION_CLAIMED` | NO |
-| `IMPLEMENTATION_STARTED` | NO |
+| Implementation | Scaffold only — no operational pawn domain |
 | Web/PWA runtime (initial) | **ONLINE-ONLY** for financial and custody mutations |
 
 ---
@@ -73,6 +73,7 @@ ExItS Platform
 | [roadmap.md](roadmap.md) | PPM-00 … PPM-16 packages |
 | [risks-and-decisions.md](risks-and-decisions.md) | `PPM-D-00-*` / `PPM-R-00-*` register |
 | [FILE-MANIFEST.md](FILE-MANIFEST.md) | Path inventory |
+| [Reports/PPM-01-product-scaffold-platform-registration.md](Reports/PPM-01-product-scaffold-platform-registration.md) | PPM-01 closeout |
 
 ### Domain folders
 
@@ -101,8 +102,9 @@ Payment completion and **physical item release** are related but **separate** tr
 
 ## Agent instructions
 
-- **PPM-00 is documentation only.** Do not create API/UI/DB/migrations/entities.
+- **PPM-01 is complete** (scaffold + Local Validation / Dev Platform registration). Do not invent operational pawn domain without PPM-02+ authorization.
 - Do not invent closed legal rates, grace periods, auction rules, or licensing claims.
 - Prefer stable IDs (`PPM-D-00-XX`, `PPM-R-00-XX`, portfolio `R-…` / `D-…`).
 - Do not copy PLM loan entities or POS inventory entities as pawn collateral.
-- When implementing later packages, treat this Docs tree as authoritative product intent.
+- Treat this Docs tree as authoritative product intent.
+- Next package: **PPM-02** (explicit authorization required).

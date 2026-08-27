@@ -20,9 +20,9 @@
 
 | ID | Question | Current direction | Status | What it blocks | Safe default until decided |
 |---|---|---|---|---|---|
-| PPM-D-00-01 | Official product display name | **Pinoy Pawn Manager** | OPEN | Branding, catalog display | Use proposed name in docs only |
-| PPM-D-00-02 | Platform product code / slug | **`pinoy-pawn-manager`** | OPEN | Catalog, plans, subscription | Docs-only; do not register catalog in PPM-00 |
-| PPM-D-00-03 | Product folder / project naming | **`PinoyPawnManager`** under `src/Products/` | OPEN | Scaffold (PPM-01) | Docs path may use proposed directory; no code projects |
+| PPM-D-00-01 | Official product display name | **Pinoy Pawn Manager** | **Provisionally Approved for Implementation** (Product Owner, PPM-01) — **not** final marketing approval | Final marketing / brand lock | Use this name in scaffold, Local Validation catalog, and docs; marketing copy may still change |
+| PPM-D-00-02 | Platform product code / slug | **`pinoy-pawn-manager`** | **Provisionally Approved for Implementation** (Product Owner, PPM-01) — **not** final marketing approval | Final marketing slug lock; production commercial catalog beyond Local Validation | Registered as `ProductCode.PinoyPawnManager` + Local Validation / Dev fixture only |
+| PPM-D-00-03 | Product folder / project naming | **`PinoyPawnManager`** under `src/Products/` | **Provisionally Approved for Implementation** (Product Owner, PPM-01) — **not** final marketing approval | Rename cost if marketing forces change | Scaffold projects live under `src/Products/PinoyPawnManager/` |
 | PPM-D-00-04 | Database name / schema | Propose DB `ExItS_PinoyPawnManager`; schema unset | OPEN | Persistence, migrations | Planning name only; create neither |
 | PPM-D-00-05 | Accepted collateral categories | Configurable per org; jewelry/phones/etc. as candidates | OPEN | Intake forms, restrictions | Categories configurable; none assumed mandatory |
 | PPM-D-00-06 | Appraisal methodology / configuration | Manual appraisal + notes/photos; optional supervisor | OPEN | Appraisal engine | Manual appraisal only; no AI valuation |
@@ -56,10 +56,11 @@
 | PPM-R-00-09 | False compliance / licensing claims | Open vigilance | Legal | Explicit non-claims |
 | PPM-R-00-10 | Overbuilding vault hierarchy before MVP | Open | Delay | Start with Branch → StorageArea → Bin/Bag |
 
-## Accepted planning baselines (not implementation)
+## Accepted planning baselines (not final marketing / not legal closure)
 
 - First-class independent product and subscription
-- Separate operational persistence
+- Separate operational persistence (DB name still Open — **PPM-D-00-04**)
+- Display name / product code / directory provisionally approved for implementation in PPM-01 (**PPM-D-00-01/02/03**) — not final marketing Closed
 - Appraisal value ≠ loan principal
 - Agreement and appraisal snapshots are historical evidence
 - Custody history is required (current location alone is insufficient)
@@ -68,6 +69,7 @@
 - Web/PWA online-only for financial/custody mutations initially
 - No AI valuation in foundation
 - Technical capability ≠ legal authorization
+- Local Validation / Dev catalog fixture ≠ full production commercial registration
 
 ## Instructions
 

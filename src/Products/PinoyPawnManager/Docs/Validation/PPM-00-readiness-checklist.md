@@ -56,12 +56,15 @@
 
 ## Gate to PPM-01
 
-- [x] PPM-00 docs tree authoritative for product intent  
-- [ ] Explicit authorization to start PPM-01 (Product Owner / work package)  
-- [ ] Awareness of Open `PPM-D-00-*` items that block policy-sensitive packages  
+- [x] PPM-00 docs tree authoritative for product intent
+- [x] Explicit authorization to start PPM-01 (Product Owner / work package) — completed in PPM-01
+- [x] Awareness of Open `PPM-D-00-*` items that block policy-sensitive packages
+
+> Historical checklist for **PPM-00**. Scaffold delivery and Local Validation registration evidence: [../Reports/PPM-01-product-scaffold-platform-registration.md](../Reports/PPM-01-product-scaffold-platform-registration.md). Next package: **PPM-02**.
 
 ## Related
 
 - [../Reports/PPM-00-foundation-closeout.md](../Reports/PPM-00-foundation-closeout.md)
+- [../Reports/PPM-01-product-scaffold-platform-registration.md](../Reports/PPM-01-product-scaffold-platform-registration.md)
 - [../FILE-MANIFEST.md](../FILE-MANIFEST.md)
 - [../risks-and-decisions.md](../risks-and-decisions.md)

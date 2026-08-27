@@ -7,7 +7,7 @@
 | Product | Pinoy Pawn Manager (PPM) |
 | Docs root | `src/Products/PinoyPawnManager/Docs/` |
 | Last updated | 2026-08-27 |
-| Implementation present | No |
+| Implementation present | Scaffold only (PPM-01) — no operational domain |
 
 ## Authoritative docs
 
@@ -15,15 +15,15 @@
 
 | Path | Purpose | Status |
 |---|---|---|
-| `README.md` | Doc index and permanent principles | PPM-00 |
-| `product-definition.md` | Purpose, ownership, boundaries | PPM-00 |
+| `README.md` | Doc index and permanent principles | PPM-01 |
+| `product-definition.md` | Purpose, ownership, boundaries | PPM-01 |
 | `architecture.md` | System architecture overview | PPM-00 |
 | `security.md` | Security overview | PPM-00 |
 | `authorization-matrix.md` | Grants / presets planning | PPM-00 |
 | `development-plan.md` | Delivery buckets | PPM-00 |
-| `roadmap.md` | PPM-00 … PPM-16 packages | PPM-00 |
-| `risks-and-decisions.md` | `PPM-D-00-*` / `PPM-R-00-*` | PPM-00 |
-| `FILE-MANIFEST.md` | This inventory | PPM-00 |
+| `roadmap.md` | PPM-00 … PPM-16 packages | PPM-01 |
+| `risks-and-decisions.md` | `PPM-D-00-*` / `PPM-R-00-*` | PPM-01 |
+| `FILE-MANIFEST.md` | This inventory | PPM-01 |
 
 ### Product/
 
@@ -84,30 +84,39 @@
 | `Compliance/README.md` | Compliance index |
 | `Compliance/philippines-regulatory-review.md` | Open legal/regulatory questions |
 | `Decisions/README.md` | ADR index |
-| `Decisions/ADR-001-product-identity.md` | PROPOSED identity ADR |
+| `Decisions/ADR-001-product-identity.md` | Provisional implementation approval (not final marketing Closed) |
 | `Phases/README.md` | Phase pointer (roadmap canonical) |
 | `Operations/README.md` | Operating notes (planning) |
 | `Reports/README.md` | Reports index |
 | `Reports/PPM-00-foundation-closeout.md` | PPM-00 closeout |
+| `Reports/PPM-01-product-scaffold-platform-registration.md` | PPM-01 closeout |
 | `Validation/README.md` | Validation index |
-| `Validation/PPM-00-readiness-checklist.md` | Readiness checklist |
+| `Validation/PPM-00-readiness-checklist.md` | PPM-00 readiness checklist (docs foundation) |
 
 ## Source roots
 
 | Path | Role |
 |---|---|
-| `src/Products/PinoyPawnManager/Docs/` | Authoritative docs (this package) |
-| `src/Products/PinoyPawnManager/` (code) | **Forbidden in PPM-00** — no API/UI/DB projects created |
+| `src/Products/PinoyPawnManager/Docs/` | Authoritative docs |
+| `src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Domain/` | Scaffold Domain (PPM-01) |
+| `src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Application/` | Scaffold Application (PPM-01) |
+| `src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Infrastructure/` | Scaffold Infrastructure — **no DbContext** (PPM-01) |
+| `src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Api/` | Scaffold Api — health only (PPM-01) |
+| `tests/ExItS.PinoyPawnManager.UnitTests/` | Scaffold / safety unit tests (PPM-01) |
 
-## Explicitly not in this product tree
+## Explicitly not in this product tree (after PPM-01)
 
+- Operational pawn domain entities
+- DbContext / migrations / operational database
+- Organization Web / PWA / MAUI / LocalStore
 - Platform operational ownership
 - POS / PLM / BNPL / PSP databases and domains
 - Customer-specific forks
-- Implementation code (PPM-00)
 
 ## Notes
 
-- Product code/directory/DB names remain **proposed** until `PPM-D-00-01` … `PPM-D-00-04` close.
+- **PPM-D-00-01 / 02 / 03** = Provisionally Approved for Implementation (Product Owner, PPM-01) — **not** final marketing approval
+- **PPM-D-00-04** … **PPM-D-00-20** remain **OPEN**
+- Platform registration in PPM-01 is **Local Validation / Dev fixture** only (`EnsurePpmLocalValidationCatalog`, `GrantPpmProductAccess` for ABC maria/carlo; XYZ denied by default)
 - **LEGAL_AUTHORIZATION_CLAIMED=NO**
-- **IMPLEMENTATION_STARTED=NO**
+- Next package: **PPM-02**

@@ -5,14 +5,14 @@
 
 | Field | Value |
 |---|---|
-| Product display name | Pinoy Pawn Manager (**PPM-D-00-01** Open / proposed) |
+| Product display name | Pinoy Pawn Manager (**PPM-D-00-01** Provisionally Approved for Implementation — not final marketing) |
 | Short code | PPM |
-| Platform product code | `pinoy-pawn-manager` (**PPM-D-00-02** Open / proposed) |
-| Product directory | `src/Products/PinoyPawnManager/` (**PPM-D-00-03** Open / proposed) |
+| Platform product code | `pinoy-pawn-manager` (**PPM-D-00-02** Provisionally Approved for Implementation — not final marketing) |
+| Product directory | `src/Products/PinoyPawnManager/` (**PPM-D-00-03** Provisionally Approved for Implementation — not final marketing) |
 | Docs root | `src/Products/PinoyPawnManager/Docs/` |
-| Status | PPM-00 documentation foundation; **implementation absent** |
+| Status | **PPM-01 complete** — implementation scaffold only; no operational domain |
 | Last updated | 2026-08-27 |
-| Implementation present | No |
+| Implementation present | Scaffold only (Domain / Application / Infrastructure / Api / UnitTests) — no DbContext, migrations, or pawn entities |
 
 ## Purpose and users
 
@@ -50,10 +50,10 @@ ExItS Platform
 | Identity / production auth | Platform | Portfolio **R-091** / honesty **D-P12-05** apply |
 | Organizations / memberships | Platform | PPM stores `OrganizationId` as Guid/contract only |
 | Branches | Platform facts + product usage | PPM records `BranchId` on operational records; branch vaults are PPM-owned |
-| Catalog / plans / subscription | Platform | Independent subscription required; catalog registration not performed in PPM-00 |
+| Catalog / plans / subscription | Platform | Independent subscription required; **Local Validation / Dev** fixture via `EnsurePpmLocalValidationCatalog` (PPM-01) — not full production commercial registration |
 | Entitlements | Platform facts | **D-P12-03** Open — no Platform table reads |
 | SaaS billing | Platform | Never store pawn operational money as Platform SaaS payments |
-| Pawn operations / custody / money | **PPM** | Not implemented |
+| Pawn operations / custody / money | **PPM** | Not implemented (scaffold only) |
 
 ## Domain ownership matrix
 
@@ -111,8 +111,8 @@ ExItS Platform
 
 | Surface | Ownership | Notes |
 |---|---|---|
-| PPM API | Product | Intended; no project in PPM-00 |
-| Organization Web / PWA | Product | Primary ops UI; **online-only** mutations initially |
+| PPM API | Product | Scaffold host + health only (PPM-01); no operational endpoints |
+| Organization Web / PWA | Product | Primary ops UI; **online-only** mutations initially — not created in PPM-01 |
 | Platform Admin | Platform | Catalog/subscription only — not pawn ops UI |
 | ExItS Personal | Platform presentation | Optional future ticket/status view (**PPM-15**) |
 | MAUI / native offline | Deferred | Separate architecture decision if ever needed |
@@ -145,14 +145,17 @@ Detail: [Product/pawn-transaction-model.md](Product/pawn-transaction-model.md).
 | **POS** | Retail inventory and sales |
 | **PPM** | Pledge → custody → appraisal → pawn obligation → redeem/renew/dispose |
 
-## Exclusions (PPM-00)
+## Exclusions (still true after PPM-01)
 
-- No backend/frontend projects, DbContext, migrations, APIs, or domain entities
+- No DbContext, migrations, or operational database
+- No pawn operational domain entities
+- No Organization Web / PWA / MAUI projects
 - No fixed interest rates, LTV %, grace days, or auction schedules
 - No AI valuation engine
 - No claim of Philippine pawnshop regulatory compliance
 - No direct POS inventory writes
 - No PLM entity reuse as pawn tickets
+- No full production commercial catalog registration beyond Local Validation / Dev fixture
 
 ## Related docs
 
@@ -161,3 +164,4 @@ Detail: [Product/pawn-transaction-model.md](Product/pawn-transaction-model.md).
 - [Architecture/bnpl-boundary.md](Architecture/bnpl-boundary.md)
 - [Architecture/pos-commerce-boundary.md](Architecture/pos-commerce-boundary.md)
 - [Compliance/philippines-regulatory-review.md](Compliance/philippines-regulatory-review.md)
+- [Reports/PPM-01-product-scaffold-platform-registration.md](Reports/PPM-01-product-scaffold-platform-registration.md)
