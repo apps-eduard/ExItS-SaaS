@@ -11,7 +11,7 @@
 | --- | --- |
 | Required baseline | `774e09016c449999462280af4a8b22a4719887a1` |
 | Implementation | `c500193ef150a64cc13d191896c2735b76a3ea93` |
-| Tip / remote | *(docs SHA record after push)* |
+| Tip / remote | `e95519189be5576ad4b0c9fc2a8ed1075399f546` |
 
 ## Policy
 
