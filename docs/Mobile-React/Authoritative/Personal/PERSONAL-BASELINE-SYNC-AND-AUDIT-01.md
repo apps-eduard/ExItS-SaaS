@@ -163,7 +163,7 @@ Loading foundation (PageSkeleton / BackgroundRefreshIndicator / shell) is preser
 ### P1 — broken / incomplete primary workflows
 
 1. ~~RMAP-22H seller multi-user commerce continuation (e2e debt)~~ — **RESOLVED by PERS-E2E-22H-REPAIR** (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)). Start Business → `/onboarding` handoff remains covered by RMAP-22H; buyer→seller shared-order continuation is the companion suite.  
-2. No named Utang **settlement/close** flow (pay-to-zero only).  
+2. ~~No named Utang **settlement/close** flow (pay-to-zero only)~~ — **RESOLVED by PERS-SETTLE-01** (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).  
 3. Ownership-transfer Personal UI absent (backend/docs exist historically).
 
 ### P2 — important UX / completeness
@@ -210,7 +210,8 @@ Historical RMAP-22H hygiene only. Seller multi-user commerce continuation delive
 3. ~~**PERS-WEB-ONLINE-ONLY-01**~~ — RESOLVED (see [`PERS-WEB-ONLINE-ONLY-01.md`](./PERS-WEB-ONLINE-ONLY-01.md)).
 4. ~~**PERS-PEOPLE-OFFLINE-01**~~ — **CANCELLED** by ONLINE_ONLY product decision (not a remaining gap).
 5. ~~**PERS-E2E-22H-REPAIR**~~ — RESOLVED (see [`PERS-E2E-22H-REPAIR.md`](./PERS-E2E-22H-REPAIR.md)).
-6. **PERS-SETTLE-01** / **PERS-OWNERSHIP-01** — settlement UX; ownership-transfer UI if product prioritizes.
+6. ~~**PERS-SETTLE-01**~~ — RESOLVED (see [`PERS-SETTLE-01.md`](./PERS-SETTLE-01.md)).
+7. **PERS-OWNERSHIP-01** — ownership-transfer UI if product prioritizes.
 
 ---
 

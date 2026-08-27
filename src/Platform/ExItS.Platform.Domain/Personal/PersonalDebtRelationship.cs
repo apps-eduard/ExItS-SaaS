@@ -246,7 +246,9 @@ public sealed class PersonalDebtRelationship
         int? expectedVersion,
         string? notes = null,
         DateTimeOffset? dueDateUtc = null,
-        PersonalUtangEntryId? entryId = null)
+        PersonalUtangEntryId? entryId = null,
+        PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular,
+        decimal? settlementBalanceSnapshot = null)
     {
         EnsureUtc(utcNow);
         EnsureVersion(expectedVersion);
@@ -261,6 +263,25 @@ public sealed class PersonalDebtRelationship
         if (amount <= 0)
         {
             throw new DomainException(DomainErrorCodes.PersonalUtangAmountInvalid, "Entry amount must be positive.");
+        }
+
+        if (intent is PersonalUtangEntryIntent.Settlement)
+        {
+            if (entryType is not PersonalUtangEntryType.Payment)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonalUtangSettlementInvalid,
+                    "Settlement intent requires a Payment entry.");
+            }
+
+            if (settlementBalanceSnapshot is null
+                || settlementBalanceSnapshot.Value <= 0
+                || settlementBalanceSnapshot.Value != amount)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonalUtangSettlementInvalid,
+                    "Settlement requires a positive balance snapshot equal to the payment amount.");
+            }
         }
 
         if (dueDateUtc is not null)
@@ -304,12 +325,108 @@ public sealed class PersonalDebtRelationship
             utcNow,
             status,
             notes,
-            dueDateUtc);
+            dueDateUtc,
+            intent,
+            settlementBalanceSnapshot);
+    }
+
+    /// <summary>
+    /// Records an explicit full-balance settlement Payment against the existing ledger.
+    /// Shared ledgers remain Pending until counterparty confirmation; private settles immediately.
+    /// </summary>
+    public PersonalUtangEntry RecordSettlementPayment(
+        PlatformUserId actingUserIdentityId,
+        DateTimeOffset utcNow,
+        int? expectedVersion,
+        PersonalUtangEntryId? entryId = null,
+        string? notes = null)
+    {
+        ArgumentNullException.ThrowIfNull(actingUserIdentityId);
+        EnsureUtc(utcNow);
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                $"Cannot settle a relationship in status {Status}.");
+        }
+
+        if (CurrentBalance == 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Balance is already zero; close the relationship instead of settling.");
+        }
+
+        if (CurrentBalance < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangSettlementInvalid,
+                "Cannot settle a relationship with a negative balance.");
+        }
+
+        var snapshot = CurrentBalance;
+        return RecordEntry(
+            actingUserIdentityId,
+            PersonalUtangEntryType.Payment,
+            amount: snapshot,
+            signedDelta: -snapshot,
+            utcNow,
+            expectedVersion,
+            notes,
+            dueDateUtc: null,
+            entryId,
+            PersonalUtangEntryIntent.Settlement,
+            settlementBalanceSnapshot: snapshot);
+    }
+
+    /// <summary>
+    /// Closes an Active relationship whose confirmed balance is exactly zero.
+    /// Idempotent when already Closed. Does not create a Payment entry.
+    /// </summary>
+    public void CloseAsSettled(
+        DateTimeOffset utcNow,
+        int? expectedVersion = null,
+        bool hasUnresolvedPending = false)
+    {
+        EnsureUtc(utcNow);
+        EnsureVersion(expectedVersion);
+
+        if (Status is PersonalDebtRelationshipStatus.Closed)
+        {
+            return;
+        }
+
+        if (Status is not PersonalDebtRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangCloseInvalid,
+                $"Cannot close a relationship in status {Status}.");
+        }
+
+        if (hasUnresolvedPending)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangPendingBlocksSettlement,
+                "Unresolved pending entries must be resolved before closing.");
+        }
+
+        if (CurrentBalance != 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PersonalUtangCloseInvalid,
+                "Relationship balance must be zero before closing as settled.");
+        }
+
+        Status = PersonalDebtRelationshipStatus.Closed;
+        UpdatedAtUtc = utcNow;
+        Version++;
     }
 
     /// <summary>
     /// Counterparty confirms a Pending entry. Idempotent if already Confirmed.
-    /// Proposer cannot self-confirm.
+    /// Proposer cannot self-confirm. Settlement confirmation may close the relationship
+    /// in the same version bump when the confirmed balance reaches zero.
     /// </summary>
     public PersonalUtangEntry ConfirmEntry(
         PersonalUtangEntry entry,
@@ -323,17 +440,17 @@ public sealed class PersonalDebtRelationship
         EnsureEntryBelongs(entry);
         EnsureVersion(expectedVersion);
 
+        if (entry.Status is PersonalUtangEntryStatus.Confirmed)
+        {
+            // Idempotent retry: balance already applied once (including settlement → Closed).
+            return entry;
+        }
+
         if (Status is not PersonalDebtRelationshipStatus.Active)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPersonalDebtRelationship,
                 "Cannot confirm entries on a closed relationship.");
-        }
-
-        if (entry.Status is PersonalUtangEntryStatus.Confirmed)
-        {
-            // Idempotent retry: balance already applied once.
-            return entry;
         }
 
         if (entry.Status is not PersonalUtangEntryStatus.Pending)
@@ -345,6 +462,17 @@ public sealed class PersonalDebtRelationship
 
         EnsureCounterpartyMayResolve(entry, actingUserIdentityId);
 
+        if (entry.IsSettlement)
+        {
+            if (!entry.SettlementBalanceSnapshot.HasValue
+                || CurrentBalance != entry.SettlementBalanceSnapshot.Value)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PersonalUtangSettlementStale,
+                    "Settlement confirmation is stale because the relationship balance changed.");
+            }
+        }
+
         var newBalance = CurrentBalance + entry.SignedDelta;
         CurrentBalance = newBalance;
         if (entry.DueDateUtc is not null && entry.EntryType is PersonalUtangEntryType.Loan)
@@ -355,6 +483,12 @@ public sealed class PersonalDebtRelationship
         entry.MarkConfirmed(actingUserIdentityId, utcNow, newBalance);
         UpdatedAtUtc = utcNow;
         Version++;
+
+        if (entry.IsSettlement && CurrentBalance == 0m)
+        {
+            Status = PersonalDebtRelationshipStatus.Closed;
+        }
+
         return entry;
     }
 

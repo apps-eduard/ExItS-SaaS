@@ -16,8 +16,22 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   listPersonalUtangHistory,
   recordPersonalUtangEntry,
+  settlePersonalDebtRelationship,
+  closePersonalDebtRelationship,
+  getPersonalDebtRelationship,
+  getPersonalUtangBalance,
 } from "@/api/platform/personal-utang-client";
 import { en } from "@/i18n/locales/en";
+
+const onlineMock = vi.hoisted(() => ({ current: true }));
+
+vi.mock("@/connectivity/browser-online", () => ({
+  useBrowserOnline: () => onlineMock.current,
+  subscribeBrowserOnline: (onChange: (online: boolean) => void) => {
+    onChange(onlineMock.current);
+    return () => undefined;
+  },
+}));
 
 const {
   contactId,
@@ -74,6 +88,9 @@ const {
           canCancel: false,
           affectsBalance: true,
           isSharedLedger: true,
+          intent: "Regular",
+          settlementBalanceSnapshot: null,
+          isSettlement: false,
         };
       },
     ),
@@ -190,6 +207,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         canCancel: false,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: pendingOutgoingId,
@@ -211,6 +231,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         canCancel: true,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: confirmedId,
@@ -232,6 +255,9 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
         canCancel: false,
         affectsBalance: true,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
     ]),
     confirmPersonalUtangEntry: confirmMock,
@@ -239,6 +265,8 @@ vi.mock("@/api/platform/personal-utang-client", async () => {
     cancelPersonalUtangEntry: vi.fn(),
     recordPersonalUtangEntry: vi.fn(),
     createPersonalDebtRelationship: vi.fn(),
+    settlePersonalDebtRelationship: vi.fn(),
+    closePersonalDebtRelationship: vi.fn(),
   };
 });
 
@@ -289,8 +317,11 @@ async function openUtangRecordForm(user: ReturnType<typeof userEvent.setup>) {
 
 describe("Personal Utang shared-ledger UI", () => {
   beforeEach(() => {
+    onlineMock.current = true;
     confirmMock.mockClear();
     vi.mocked(recordPersonalUtangEntry).mockReset();
+    vi.mocked(settlePersonalDebtRelationship).mockReset();
+    vi.mocked(closePersonalDebtRelationship).mockReset();
     vi.mocked(listPersonalUtangHistory).mockReset();
     vi.mocked(listPersonalUtangHistory).mockImplementation(async () => [
       {
@@ -313,6 +344,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: false,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: pendingOutgoingId,
@@ -334,6 +368,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: true,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: confirmedId,
@@ -355,6 +392,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: false,
         affectsBalance: true,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
     ]);
   });
@@ -536,6 +576,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: true,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: "dddddddd-dddd-dddd-dddd-ddddddddddd2",
@@ -557,6 +600,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: true,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
       {
         id: "dddddddd-dddd-dddd-dddd-ddddddddddd3",
@@ -578,6 +624,9 @@ describe("Personal Utang shared-ledger UI", () => {
         canCancel: true,
         affectsBalance: false,
         isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
       },
     ]);
 
@@ -592,6 +641,336 @@ describe("Personal Utang shared-ledger UI", () => {
 
     await user.selectOptions(screen.getByTestId("utang-entry-type"), "Payment");
     expect(screen.getByTestId("utang-entry-submit")).not.toBeDisabled();
+  });
+});
+
+describe("Personal Utang settlement UI", () => {
+  beforeEach(() => {
+    onlineMock.current = true;
+    vi.mocked(settlePersonalDebtRelationship).mockReset();
+    vi.mocked(closePersonalDebtRelationship).mockReset();
+    vi.mocked(getPersonalDebtRelationship).mockReset();
+    vi.mocked(getPersonalUtangBalance).mockReset();
+    vi.mocked(listPersonalUtangHistory).mockReset();
+  });
+
+  it("shows Settle when Active with balance greater than zero", async () => {
+    vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
+      id: relationshipId,
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: null,
+      debtorContactId: contactId,
+      currencyCode: "PHP",
+      currentBalance: 200,
+      dueDateUtc: null,
+      status: "Active",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: false,
+      isPrivate: true,
+    });
+    vi.mocked(getPersonalUtangBalance).mockResolvedValue({
+      relationshipId,
+      currentBalance: 200,
+      currencyCode: "PHP",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    });
+    vi.mocked(listPersonalUtangHistory).mockResolvedValue([]);
+
+    renderPath(`/personal/utang/relationships/${relationshipId}`);
+    expect(await screen.findByTestId("utang-settle")).toBeInTheDocument();
+    expect(screen.getByTestId("utang-detail-status")).toHaveTextContent("Active");
+    expect(screen.queryByTestId("utang-mark-settled")).not.toBeInTheDocument();
+  });
+
+  it("shows Mark as settled when Active with zero balance", async () => {
+    vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
+      id: relationshipId,
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: null,
+      debtorContactId: contactId,
+      currencyCode: "PHP",
+      currentBalance: 0,
+      dueDateUtc: null,
+      status: "Active",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: false,
+      isPrivate: true,
+    });
+    vi.mocked(getPersonalUtangBalance).mockResolvedValue({
+      relationshipId,
+      currentBalance: 0,
+      currencyCode: "PHP",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    });
+    vi.mocked(listPersonalUtangHistory).mockResolvedValue([]);
+
+    renderPath(`/personal/utang/relationships/${relationshipId}`);
+    expect(await screen.findByTestId("utang-mark-settled")).toBeInTheDocument();
+    expect(screen.queryByTestId("utang-settle")).not.toBeInTheDocument();
+  });
+
+  it("hides mutation form when Closed / Settled", async () => {
+    vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
+      id: relationshipId,
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: null,
+      debtorContactId: contactId,
+      currencyCode: "PHP",
+      currentBalance: 0,
+      dueDateUtc: null,
+      status: "Closed",
+      version: 3,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: false,
+      isPrivate: true,
+    });
+    vi.mocked(getPersonalUtangBalance).mockResolvedValue({
+      relationshipId,
+      currentBalance: 0,
+      currencyCode: "PHP",
+      version: 3,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    });
+    vi.mocked(listPersonalUtangHistory).mockResolvedValue([
+      {
+        id: confirmedId,
+        relationshipId,
+        entryType: "Payment",
+        amount: 200,
+        signedDelta: -200,
+        balanceAfter: 0,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-21T00:00:00Z",
+        status: "Confirmed",
+        resolvedByUserIdentityId: null,
+        resolvedAtUtc: null,
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: false,
+        affectsBalance: true,
+        isSharedLedger: false,
+        intent: "Settlement",
+        settlementBalanceSnapshot: 200,
+        isSettlement: true,
+      },
+    ]);
+
+    renderPath(`/personal/utang/relationships/${relationshipId}`);
+    expect(await screen.findByTestId("utang-detail-status")).toHaveTextContent("Settled");
+    expect(screen.queryByTestId("utang-entry-type")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("utang-settle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("utang-mark-settled")).not.toBeInTheDocument();
+    expect(screen.getByTestId("utang-history")).toBeInTheDocument();
+    expect(screen.getByTestId(`utang-history-entry-${confirmedId}`)).toHaveTextContent(
+      "Settlement",
+    );
+  });
+
+  it("disables Settle while offline", async () => {
+    onlineMock.current = true;
+    vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
+      id: relationshipId,
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: null,
+      debtorContactId: contactId,
+      currencyCode: "PHP",
+      currentBalance: 200,
+      dueDateUtc: null,
+      status: "Active",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: false,
+      isPrivate: true,
+    });
+    vi.mocked(getPersonalUtangBalance).mockResolvedValue({
+      relationshipId,
+      currentBalance: 200,
+      currencyCode: "PHP",
+      version: 2,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    });
+    vi.mocked(listPersonalUtangHistory).mockResolvedValue([]);
+
+    const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+    const { PreferencesProvider } = await import("@/hooks/usePreferences");
+    const { I18nProvider } = await import("@/i18n/I18nProvider");
+    const hostClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    function Host({ onlineFlag }: { onlineFlag: boolean }) {
+      onlineMock.current = onlineFlag;
+      return (
+        <QueryClientProvider client={hostClient}>
+          <PreferencesProvider>
+            <I18nProvider>
+              <MemoryRouter initialEntries={[`/personal/utang/relationships/${relationshipId}`]}>
+                <Routes>
+                  <Route
+                    path="/personal/utang/relationships/:relationshipId"
+                    element={<PersonalRelationshipDetailPage />}
+                  />
+                </Routes>
+              </MemoryRouter>
+            </I18nProvider>
+          </PreferencesProvider>
+        </QueryClientProvider>
+      );
+    }
+
+    const view = render(<Host onlineFlag={true} />);
+    expect(await screen.findByTestId("utang-settle")).not.toBeDisabled();
+    view.rerender(<Host onlineFlag={false} />);
+    expect(screen.getByTestId("utang-settle")).toBeDisabled();
+    expect(
+      screen.getByText("Settling this utang needs internet."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows awaiting banner after linked settle mock", async () => {
+    const user = userEvent.setup();
+    const settlementId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    vi.mocked(getPersonalDebtRelationship).mockResolvedValue({
+      id: sharedRelationshipId,
+      perspective: "Lent",
+      creditorUserIdentityId: meId,
+      creditorContactId: null,
+      debtorUserIdentityId: otherId,
+      debtorContactId: linkedContactId,
+      currencyCode: "PHP",
+      currentBalance: 100,
+      dueDateUtc: null,
+      status: "Active",
+      version: 3,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: true,
+      isPrivate: false,
+    });
+    vi.mocked(getPersonalUtangBalance).mockResolvedValue({
+      relationshipId: sharedRelationshipId,
+      currentBalance: 100,
+      currencyCode: "PHP",
+      version: 3,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+    });
+    vi.mocked(listPersonalUtangHistory).mockResolvedValue([
+      {
+        id: confirmedId,
+        relationshipId: sharedRelationshipId,
+        entryType: "Loan",
+        amount: 100,
+        signedDelta: 100,
+        balanceAfter: 100,
+        notes: null,
+        dueDateUtc: null,
+        createdByUserIdentityId: meId,
+        createdAtUtc: "2026-08-20T00:00:00Z",
+        status: "Confirmed",
+        resolvedByUserIdentityId: otherId,
+        resolvedAtUtc: "2026-08-20T01:00:00Z",
+        disputeReason: null,
+        canConfirm: false,
+        canDispute: false,
+        canCancel: false,
+        affectsBalance: true,
+        isSharedLedger: true,
+        intent: "Regular",
+        settlementBalanceSnapshot: null,
+        isSettlement: false,
+      },
+    ]);
+    vi.mocked(settlePersonalDebtRelationship).mockImplementation(async () => {
+      vi.mocked(listPersonalUtangHistory).mockResolvedValue([
+        {
+          id: settlementId,
+          relationshipId: sharedRelationshipId,
+          entryType: "Payment",
+          amount: 100,
+          signedDelta: -100,
+          balanceAfter: 100,
+          notes: null,
+          dueDateUtc: null,
+          createdByUserIdentityId: meId,
+          createdAtUtc: "2026-08-21T03:00:00Z",
+          status: "Pending",
+          resolvedByUserIdentityId: null,
+          resolvedAtUtc: null,
+          disputeReason: null,
+          canConfirm: false,
+          canDispute: false,
+          canCancel: true,
+          affectsBalance: false,
+          isSharedLedger: true,
+          intent: "Settlement",
+          settlementBalanceSnapshot: 100,
+          isSettlement: true,
+        },
+      ]);
+      return {
+        outcome: "AwaitingCounterpartyConfirmation",
+        relationship: {
+          id: sharedRelationshipId,
+          perspective: "Lent",
+          creditorUserIdentityId: meId,
+          creditorContactId: null,
+          debtorUserIdentityId: otherId,
+          debtorContactId: linkedContactId,
+          currencyCode: "PHP",
+          currentBalance: 100,
+          dueDateUtc: null,
+          status: "Active",
+          version: 4,
+          updatedAtUtc: "2026-08-21T03:00:00Z",
+          isSharedLedger: true,
+          isPrivate: false,
+        },
+        settlementEntry: {
+          id: settlementId,
+          relationshipId: sharedRelationshipId,
+          entryType: "Payment",
+          amount: 100,
+          signedDelta: -100,
+          balanceAfter: 100,
+          notes: null,
+          dueDateUtc: null,
+          createdByUserIdentityId: meId,
+          createdAtUtc: "2026-08-21T03:00:00Z",
+          status: "Pending",
+          resolvedByUserIdentityId: null,
+          resolvedAtUtc: null,
+          disputeReason: null,
+          canConfirm: false,
+          canDispute: false,
+          canCancel: true,
+          affectsBalance: false,
+          isSharedLedger: true,
+          intent: "Settlement",
+          settlementBalanceSnapshot: 100,
+          isSettlement: true,
+        },
+      };
+    });
+
+    renderPath(`/personal/utang/relationships/${sharedRelationshipId}`);
+    await user.click(await screen.findByTestId("utang-settle"));
+    await user.click(screen.getByTestId("utang-settle-confirm"));
+    expect(await screen.findByTestId("utang-settle-awaiting")).toBeInTheDocument();
+    expect(settlePersonalDebtRelationship).toHaveBeenCalled();
   });
 });
 

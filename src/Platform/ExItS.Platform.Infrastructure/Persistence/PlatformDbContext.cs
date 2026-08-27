@@ -1849,6 +1849,14 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.ResolvedByUserIdentityId).HasColumnName("resolved_by_user_identity_id");
             entity.Property(e => e.ResolvedAtUtc).HasColumnName("resolved_at_utc");
             entity.Property(e => e.DisputeReason).HasColumnName("dispute_reason").HasMaxLength(256);
+            entity.Property(e => e.Intent)
+                .HasColumnName("intent")
+                .HasMaxLength(32)
+                .IsRequired()
+                .HasDefaultValue("Regular");
+            entity.Property(e => e.SettlementBalanceSnapshot)
+                .HasColumnName("settlement_balance_snapshot")
+                .HasColumnType("decimal(18,4)");
             entity.HasIndex(e => e.RelationshipId);
             entity.HasIndex(e => new { e.RelationshipId, e.Status });
 

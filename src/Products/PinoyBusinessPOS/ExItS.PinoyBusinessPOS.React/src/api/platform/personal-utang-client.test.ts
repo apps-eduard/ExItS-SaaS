@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  closePersonalDebtRelationship,
   confirmPersonalUtangEntry,
   disputePersonalUtangEntry,
   formatDueLabel,
   isUtangConcurrencyConflict,
+  isUtangSettlementStaleConflict,
   listLentRelationships,
   listPersonalContacts,
   listPersonalUtangHistory,
+  settlePersonalDebtRelationship,
 } from "@/api/platform/personal-utang-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 
@@ -85,6 +88,9 @@ describe("personal-utang-client", () => {
                 CanCancel: false,
                 AffectsBalance: false,
                 IsSharedLedger: true,
+                Intent: "Regular",
+                SettlementBalanceSnapshot: null,
+                IsSettlement: false,
               },
             ],
             text: async () => "",
@@ -102,6 +108,9 @@ describe("personal-utang-client", () => {
     expect(history[0]?.status).toBe("Pending");
     expect(history[0]?.canConfirm).toBe(true);
     expect(history[0]?.affectsBalance).toBe(false);
+    expect(history[0]?.intent).toBe("Regular");
+    expect(history[0]?.isSettlement).toBe(false);
+    expect(history[0]?.settlementBalanceSnapshot).toBeNull();
     vi.unstubAllGlobals();
   });
 
@@ -185,6 +194,100 @@ describe("personal-utang-client", () => {
     vi.unstubAllGlobals();
   });
 
+  it("posts settle and close relationship actions", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/antiforgery/token")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
+          text: async (): Promise<string> => "",
+        };
+      }
+      expect(init?.method ?? "GET").toBe("POST");
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (url.includes("/settle")) {
+        expect(body.settlementEntryId).toBe("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        expect(body.expectedVersion).toBe(4);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            outcome: "Completed",
+            relationship: {
+              id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              perspective: "Lent",
+              currencyCode: "PHP",
+              currentBalance: 0,
+              status: "Closed",
+              version: 5,
+              updatedAtUtc: "2026-08-21T02:00:00Z",
+              isSharedLedger: false,
+              isPrivate: true,
+            },
+            settlementEntry: {
+              id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+              relationshipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              entryType: "Payment",
+              amount: 100,
+              signedDelta: -100,
+              balanceAfter: 0,
+              createdByUserIdentityId: "11111111-1111-1111-1111-111111111111",
+              createdAtUtc: "2026-08-21T02:00:00Z",
+              status: "Confirmed",
+              intent: "Settlement",
+              settlementBalanceSnapshot: 100,
+              isSettlement: true,
+              affectsBalance: true,
+            },
+          }),
+          text: async () => "",
+        };
+      }
+      if (url.includes("/close")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            Outcome: "Closed",
+            Relationship: {
+              Id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              Perspective: "Lent",
+              CurrencyCode: "PHP",
+              CurrentBalance: 0,
+              Status: "Closed",
+              Version: 2,
+              UpdatedAtUtc: "2026-08-21T02:00:00Z",
+              IsSharedLedger: false,
+              IsPrivate: true,
+            },
+          }),
+          text: async () => "",
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}), text: async () => "" };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const settled = await settlePersonalDebtRelationship("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", {
+      expectedVersion: 4,
+      settlementEntryId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    });
+    expect(settled.outcome).toBe("Completed");
+    expect(settled.relationship.status).toBe("Closed");
+    expect(settled.settlementEntry?.isSettlement).toBe(true);
+    expect(settled.settlementEntry?.intent).toBe("Settlement");
+    expect(settled.settlementEntry?.settlementBalanceSnapshot).toBe(100);
+
+    const closed = await closePersonalDebtRelationship("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", {
+      expectedVersion: 1,
+    });
+    expect(closed.outcome).toBe("Closed");
+    expect(closed.relationship.status).toBe("Closed");
+    vi.unstubAllGlobals();
+  });
+
   it("detects concurrency conflicts", () => {
     expect(
       isUtangConcurrencyConflict(
@@ -192,6 +295,28 @@ describe("personal-utang-client", () => {
       ),
     ).toBe(true);
     expect(isUtangConcurrencyConflict(new PlatformApiError(400, { errorCode: "x" }))).toBe(false);
+  });
+
+  it("detects settlement stale conflicts", () => {
+    expect(
+      isUtangSettlementStaleConflict(
+        new PlatformApiError(409, {
+          errorCode: "application.personal.utang.settlement.stale",
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isUtangSettlementStaleConflict(
+        new PlatformApiError(409, {
+          errorCode: "platform.personal.utang.settlement.stale",
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isUtangSettlementStaleConflict(
+        new PlatformApiError(409, { errorCode: "application.concurrency_conflict" }),
+      ),
+    ).toBe(false);
   });
 
   it("classifies due dates", () => {

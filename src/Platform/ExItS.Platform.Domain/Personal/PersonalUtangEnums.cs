@@ -67,6 +67,16 @@ public enum PersonalUtangEntryType
 }
 
 /// <summary>
+/// Distinguishes ordinary ledger payments from explicit full-balance settlement intent.
+/// Settlement uses the existing Payment entry type — never a second ledger.
+/// </summary>
+public enum PersonalUtangEntryIntent
+{
+    Regular = 0,
+    Settlement = 1
+}
+
+/// <summary>
 /// Lifecycle of a personal utang ledger entry.
 /// Only <see cref="Confirmed"/> entries affect relationship balance and dashboard totals.
 /// </summary>

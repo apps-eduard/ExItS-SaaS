@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildHomeAttentionItems,
   filterUtangAccounts,
+  isActiveUtangAccount,
   mergeUtangAccounts,
   resolveRelationshipContactName,
   sortUtangAccounts,
@@ -153,5 +154,26 @@ describe("utang-workspace", () => {
     expect(items[0].count).toBe(2);
     expect(items[1].kind).toBe("overdue");
     expect(items[1].displayName).toBe("Ana");
+  });
+
+  it("treats Closed relationships as inactive", () => {
+    const closed: UtangAccountRow = {
+      relationshipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      perspective: "lent",
+      displayName: "Ana",
+      currentBalance: 0,
+      dueDateUtc: null,
+      updatedAtUtc: "2026-08-21T00:00:00Z",
+      isSharedLedger: false,
+      status: "Closed",
+      dueKind: "none",
+    };
+    const active: UtangAccountRow = {
+      ...closed,
+      status: "Active",
+      currentBalance: 50,
+    };
+    expect(isActiveUtangAccount(closed)).toBe(false);
+    expect(isActiveUtangAccount(active)).toBe(true);
   });
 });

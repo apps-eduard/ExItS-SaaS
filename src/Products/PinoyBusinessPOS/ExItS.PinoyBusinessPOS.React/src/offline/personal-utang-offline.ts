@@ -400,6 +400,9 @@ export async function enqueuePersonalUtangEntry(
     canCancel: false,
     affectsBalance: true,
     isSharedLedger: false,
+    intent: "Regular",
+    settlementBalanceSnapshot: null,
+    isSettlement: false,
   };
   await cacheLocalPersonalEntry(input.db, input.scopeBinding, entry);
   return { operation, entry };

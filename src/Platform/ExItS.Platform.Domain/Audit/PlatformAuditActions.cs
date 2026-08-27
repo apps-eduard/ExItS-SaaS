@@ -260,6 +260,8 @@ public static class PlatformAuditActions
     public const string PersonalUtangEntryConfirmed = "platform.personal.utang_entry.confirmed";
     public const string PersonalUtangEntryDisputed = "platform.personal.utang_entry.disputed";
     public const string PersonalUtangEntryCancelled = "platform.personal.utang_entry.cancelled";
+    public const string PersonalUtangSettled = "platform.personal.utang.settled";
+    public const string PersonalUtangClosed = "platform.personal.utang.closed";
     public const string PersonalUtangInvitationCreated = "platform.personal.utang_invitation.created";
     public const string PersonalUtangInvitationResent = "platform.personal.utang_invitation.resent";
     public const string PersonalUtangInvitationRevoked = "platform.personal.utang_invitation.revoked";

@@ -176,6 +176,7 @@ export const en = {
   "offline.requiredPersonalUtangInvite": "Sharing this utang needs internet.",
   "offline.requiredPersonalUtangReminder": "Sending a reminder needs internet.",
   "offline.requiredPersonalUtangAdjustment": "Correcting a balance needs internet.",
+  "offline.requiredPersonalUtangSettle": "Settling this utang needs internet.",
   "offline.personalCachedNotice": "Showing saved utang. It refreshes when you reconnect.",
   "offline.personalWaitingBadge": "Waiting to sync",
   "offline.personalContactWillQueue":
@@ -799,6 +800,27 @@ export const en = {
   "personal.utang.adjustmentDelta": "Adjustment (+/-)",
   "personal.utang.saveEntry": "Save",
   "personal.utang.concurrencyConflict": "This record changed. Refresh and try again.",
+  "personal.utang.settle": "Settle",
+  "personal.utang.settleTitle": "Settle this utang?",
+  "personal.utang.settleConfirm": "Confirm settle",
+  "personal.utang.settlePrivateHint":
+    "This marks the balance as settled in your private record.",
+  "personal.utang.settleSharedHint":
+    "The other person must confirm before this shared utang is settled.",
+  "personal.utang.settleAmount": "Settlement amount",
+  "personal.utang.settleAfter": "Balance after settle",
+  "personal.utang.settleAwaiting": "Waiting for the other person to confirm settlement.",
+  "personal.utang.markSettled": "Mark as settled",
+  "personal.utang.markSettledHint": "Balance is already ₱0. Mark this utang as settled.",
+  "personal.utang.statusSettled": "Settled",
+  "personal.utang.statusActive": "Active",
+  "personal.utang.statusClosed": "Closed",
+  "personal.utang.settlementEntry": "Settlement",
+  "personal.utang.settleStaleConflict":
+    "This balance changed. Refresh and try settling again.",
+  "personal.utang.settlePendingBlocked":
+    "Confirm or dispute pending entries before settling.",
+  "personal.utang.settleRequiresOnline": "Settling this utang needs internet.",
   "personal.utang.activity": "Activity",
   "personal.utang.historyEmptyTitle": "No activity yet",
   "personal.utang.historyEmptyDetail": "Payments and adjustments will show here.",

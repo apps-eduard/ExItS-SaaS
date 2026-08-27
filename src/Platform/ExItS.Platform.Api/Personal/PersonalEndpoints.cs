@@ -1176,6 +1176,42 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        utang.MapPost("/relationships/{relationshipId:guid}/settle", async (
+            HttpContext http,
+            Guid relationshipId,
+            SettlePersonalDebtRelationshipRequest body,
+            SettlePersonalDebtRelationship settle,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await settle
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        utang.MapPost("/relationships/{relationshipId:guid}/close", async (
+            HttpContext http,
+            Guid relationshipId,
+            ClosePersonalDebtRelationshipRequest body,
+            ClosePersonalDebtRelationship close,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await close
+                .ExecuteAsync(PlatformUserId.From(userId), relationshipId, body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
 
         utang.MapPost("/relationships/{relationshipId:guid}/invitations", async (
             HttpContext http,

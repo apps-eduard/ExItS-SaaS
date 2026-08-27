@@ -331,6 +331,8 @@ builder.Services.AddScoped<RecordPersonalUtangEntry>();
 builder.Services.AddScoped<ConfirmPersonalUtangEntry>();
 builder.Services.AddScoped<DisputePersonalUtangEntry>();
 builder.Services.AddScoped<CancelPersonalUtangEntry>();
+builder.Services.AddScoped<SettlePersonalDebtRelationship>();
+builder.Services.AddScoped<ClosePersonalDebtRelationship>();
 builder.Services.AddScoped<CreatePersonalUtangInvitation>();
 builder.Services.AddScoped<ListPersonalUtangInvitations>();
 builder.Services.AddScoped<ResendPersonalUtangInvitation>();

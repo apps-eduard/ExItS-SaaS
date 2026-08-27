@@ -107,7 +107,10 @@ public sealed record PersonalUtangEntryDto(
     bool CanDispute,
     bool CanCancel,
     bool AffectsBalance,
-    bool IsSharedLedger);
+    bool IsSharedLedger,
+    string Intent,
+    decimal? SettlementBalanceSnapshot,
+    bool IsSettlement);
 
 public sealed record PersonalUtangBalanceDto(
     Guid RelationshipId,
@@ -147,11 +150,24 @@ internal static class PersonalUtangIdempotency
         PersonalDebtRelationshipId relationshipId,
         PersonalUtangEntryType entryType,
         decimal amount,
-        decimal? adjustmentDelta)
+        decimal? adjustmentDelta,
+        PersonalUtangEntryIntent intent = PersonalUtangEntryIntent.Regular)
     {
         if (existing.RelationshipId != relationshipId || existing.EntryType != entryType)
         {
             return false;
+        }
+
+        if (existing.Intent != intent)
+        {
+            return false;
+        }
+
+        if (intent is PersonalUtangEntryIntent.Settlement || existing.IsSettlement)
+        {
+            return existing.IsSettlement
+                && existing.EntryType is PersonalUtangEntryType.Payment
+                && existing.Amount == amount;
         }
 
         if (entryType is PersonalUtangEntryType.Adjustment)
@@ -1425,6 +1441,9 @@ public sealed class RecordPersonalUtangEntry
             CanDispute: canResolve,
             CanCancel: canCancel,
             AffectsBalance: entry.Status is PersonalUtangEntryStatus.Confirmed,
-            IsSharedLedger: isSharedLedger);
+            IsSharedLedger: isSharedLedger,
+            Intent: entry.Intent.ToString(),
+            SettlementBalanceSnapshot: entry.SettlementBalanceSnapshot,
+            IsSettlement: entry.IsSettlement);
     }
 }
