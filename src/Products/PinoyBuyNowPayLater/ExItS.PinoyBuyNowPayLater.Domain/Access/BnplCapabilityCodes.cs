@@ -2,11 +2,13 @@ namespace ExItS.PinoyBuyNowPayLater.Domain.Access;
 
 /// <summary>
 /// Stable BNPL capability identifiers. Authorization checks capabilities, never role/preset names.
-/// Provisionally implemented in BNPL-02 (BNPL-D-00-18).
+/// Implemented in BNPL-02; extended in BNPL-03 with customer capabilities (BNPL-D-00-18).
 /// </summary>
 public static class BnplCapabilityCodes
 {
     public const string Config = "bnpl.config";
+    public const string CustomerRead = "bnpl.customer.read";
+    public const string CustomerManage = "bnpl.customer.manage";
     public const string ApplicationCreate = "bnpl.application.create";
     public const string ApplicationApprove = "bnpl.application.approve";
     public const string PlanRead = "bnpl.plan.read";
@@ -19,6 +21,8 @@ public static class BnplCapabilityCodes
     public static IReadOnlyList<string> All { get; } =
     [
         Config,
+        CustomerRead,
+        CustomerManage,
         ApplicationCreate,
         ApplicationApprove,
         PlanRead,

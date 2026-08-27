@@ -1,6 +1,7 @@
 using ExItS.PinoyBuyNowPayLater.Application;
 using ExItS.PinoyBuyNowPayLater.Domain;
 using ExItS.PinoyBuyNowPayLater.Domain.Access;
+using ExItS.PinoyBuyNowPayLater.Domain.Customers;
 
 namespace ExItS.PinoyBuyNowPayLater.UnitTests;
 
@@ -21,14 +22,16 @@ public sealed class ScaffoldAssemblyTests
     }
 
     [Fact]
-    public void Scaffold_has_no_financing_domain_types()
+    public void Scaffold_has_customer_foundation_without_financing_domain_types()
     {
         var domain = typeof(DomainAssembly).Assembly;
         var typeNames = domain.GetTypes().Select(t => t.Name).ToHashSet(StringComparer.Ordinal);
+        Assert.Contains(nameof(BnplCustomer), typeNames);
+        Assert.Contains(nameof(BnplCapabilityCodes), typeNames);
         Assert.DoesNotContain("FinancingPlan", typeNames);
+        Assert.DoesNotContain("FinancingApplication", typeNames);
         Assert.DoesNotContain("Installment", typeNames);
         Assert.DoesNotContain("Repayment", typeNames);
         Assert.DoesNotContain("Settlement", typeNames);
-        Assert.DoesNotContain("BnplApplication", typeNames);
     }
 }

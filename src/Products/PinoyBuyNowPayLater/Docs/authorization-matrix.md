@@ -1,13 +1,13 @@
 # Pinoy Buy Now Pay Later — Authorization Matrix
 
-> Capability identifiers: **Provisionally Approved / Implemented in BNPL-02** (BNPL-D-00-18). Do not hard-code authorization to role/preset names.
+> Capability identifiers: **Implemented in BNPL-02; extended in BNPL-03** (BNPL-D-00-18). Do not hard-code authorization to role/preset names.
 
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Status | BNPL-02 access foundation implemented |
+| Status | BNPL-03 customer foundation + access |
 | Last updated | 2026-08-27 |
-| Implementation present | Access guard + capability catalog (no financing endpoints) |
+| Implementation present | Access guard + customer capabilities + customer API |
 
 ## Access layers
 
@@ -39,6 +39,8 @@ Any missing/invalid layer → **DENY**. Default runtime provider is unavailable 
 | Capability | Owner | Manager | Approver | Sales | Collector | Reporting |
 |---|---|---|---|---|---|---|
 | bnpl.config | Y | N | N | N | N | N |
+| bnpl.customer.read | Y | Y | Y | Y | Y | Y |
+| bnpl.customer.manage | Y | Y | N | Y | N | N |
 | bnpl.application.create | Y | Y | N | Y | N | N |
 | bnpl.application.approve | Y | Y | Y | N | N | N |
 | bnpl.plan.read | Y | Y | Y | Y | Y | Y |
@@ -48,14 +50,20 @@ Any missing/invalid layer → **DENY**. Default runtime provider is unavailable 
 | bnpl.audit.read | Y | Y | N | N | N | N |
 | bnpl.reports.read | Y | Y | N | N | N | Y |
 
+## Customer staff operations
+
+Require `X-Bnpl-Branch-Id` + `bnpl.customer.read` / `bnpl.customer.manage`.
+Customer aggregate is organization-scoped (not branch-bound).
+
 ## Least privilege
 
-- Deny by default  
-- Separate create vs approve  
-- Separate repayment vs settlement  
-- Branch-scoped staff must not see other branches unless org-wide scope is explicitly asserted  
-- Customer/Personal actors never receive organization staff capabilities  
+- Deny by default
+- Separate create vs approve
+- Separate repayment vs settlement
+- Branch-scoped staff must not see other branches unless org-wide scope is explicitly asserted
+- Customer/Personal actors never receive organization staff capabilities
 
-## Diagnostic surface
+## Diagnostic / customer surfaces
 
-`GET /api/v1/bnpl/access/me` — returns effective context for the trusted actor when all base layers succeed; otherwise fail-closed denial.
+- `GET /api/v1/bnpl/access/me`
+- `POST|GET|PATCH /api/v1/bnpl/customers` (+ personal-link / commerce-link)

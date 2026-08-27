@@ -2,9 +2,10 @@ namespace ExItS.Platform.Application.LocalValidation;
 
 /// <summary>
 /// Dev/Testing-only documentation of intended BNPL capability fixtures for Local Validation identities.
-/// Capabilities are not persisted in BNPL-02 (no BNPL grant DB). Trusted transport (future) must supply
+/// Capabilities are not persisted in a BNPL grant DB. Trusted transport (future) must supply
 /// these facts into BnplAccessContext. Preset labels are bundles — never authorize by preset name.
-/// Capability identifier strings match BNPL Domain BnplCapabilityCodes / BnplCapabilityPresets.
+/// Capability identifier strings match BNPL Domain BnplCapabilityCodes / BnplCapabilityPresets
+/// (including bnpl.customer.read / bnpl.customer.manage from BNPL-03).
 /// </summary>
 public static class BnplLocalValidationAccessFixtures
 {

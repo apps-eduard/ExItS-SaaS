@@ -7,7 +7,9 @@ public sealed class BnplCapabilityCatalogTests
     [Fact]
     public void Known_capability_catalog_is_stable()
     {
-        Assert.Equal(9, BnplCapabilityCodes.All.Count);
+        Assert.Equal(11, BnplCapabilityCodes.All.Count);
+        Assert.True(BnplCapabilityCodes.IsKnown(BnplCapabilityCodes.CustomerRead));
+        Assert.True(BnplCapabilityCodes.IsKnown(BnplCapabilityCodes.CustomerManage));
         Assert.True(BnplCapabilityCodes.IsKnown(BnplCapabilityCodes.ApplicationApprove));
         Assert.False(BnplCapabilityCodes.IsKnown("bnpl.fake"));
         Assert.False(BnplCapabilityCodes.IsKnown(null));
@@ -16,6 +18,8 @@ public sealed class BnplCapabilityCatalogTests
     [Fact]
     public void Presets_are_capability_bundles_not_authorization_keys()
     {
+        Assert.Contains(BnplCapabilityCodes.CustomerManage, BnplCapabilityPresets.SalesCapabilities);
+        Assert.Contains(BnplCapabilityCodes.CustomerRead, BnplCapabilityPresets.ReportingCapabilities);
         Assert.Contains(BnplCapabilityCodes.ApplicationApprove, BnplCapabilityPresets.ApproverCapabilities);
         Assert.DoesNotContain(BnplCapabilityCodes.SettlementManage, BnplCapabilityPresets.SalesCapabilities);
         Assert.DoesNotContain(BnplCapabilityCodes.ApplicationApprove, BnplCapabilityPresets.SalesCapabilities);

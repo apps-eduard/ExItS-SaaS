@@ -1,8 +1,9 @@
+/// <summary>
+/// Assembly marker for Pinoy Buy Now Pay Later Infrastructure.
+/// Persistence: BnplDbContext + customer foundation (BNPL-03). No production Migrate() at API startup.
+/// </summary>
 namespace ExItS.PinoyBuyNowPayLater.Infrastructure;
 
-/// <summary>
-/// Assembly marker. No persistence context, EF, or migrations in BNPL-01 (BNPL-D-00-04 remains open).
-/// </summary>
 public static class InfrastructureAssembly
 {
 }

@@ -1,30 +1,33 @@
 # Persistence and Database Boundary
 
-**Status:** Planning baseline (BNPL-00)  
-**Implementation present:** No  
+**Status:** Initial persistence implemented (BNPL-03)
+**Implementation present:** Yes — customer foundation only
 **Related:** BNPL-D-00-04, BNPL-D-00-12
 
-## Proposed database
+## Database
 
 | Item | Value | Status |
 |---|---|---|
-| Logical database name | `ExItS_PinoyBuyNowPayLater` | Proposed only |
-| Schema name | — | Open |
-| Created in BNPL-00? | **No** | Required |
+| Logical database name | `ExItS_PinoyBuyNowPayLater` | **BNPL-D-00-04 Provisionally Approved / Implemented in BNPL-03** |
+| Schema name | `bnpl` | Implemented (product-local schema convention) |
+| Connection string name | `BnplDatabase` | Implemented |
+| DbContext | `BnplDbContext` | Implemented |
+| Initial migration | `InitialBnplCustomerFoundation` | Implemented |
+| Production auto-migrate | **Forbidden** | No `Database.Migrate()` on API startup |
 
-Sharing an **identity reference** (Guid) is allowed. Sharing **database ownership** is not.
+## Tables (BNPL-03)
 
-## Isolation verification (documentation)
+| Table | Purpose |
+|---|---|
+| `bnpl.customers` | Organization-scoped BNPL customer profiles + optional external id columns |
 
-- BNPL does not read PinoyBusinessPOS DB  
-- BNPL does not read PinoyLoanManager DB  
-- BNPL does not read PinoyServicePro DB  
-- POS / PLM / PSP do not own BNPL financing data  
-- Platform does not own BNPL operational financing records  
-- OrganizationId / BranchId / ProductId / SaleId cross boundaries only as identifiers/contracts  
-- No cross-product foreign keys  
-- No cross-product EF navigation properties  
+No financing / installment / repayment / settlement tables.
 
-## Migrations
+## Isolation verification
 
-Forbidden until an authorized persistence work package. Do not auto-apply production migrations at API startup (`Migrate()` forbidden on production paths).
+- BNPL does not read PinoyBusinessPOS DB
+- BNPL does not read PinoyLoanManager DB
+- BNPL does not read PinoyServicePro DB
+- No cross-product foreign keys
+- No cross-product EF navigation properties
+- External identity columns are opaque Guids/strings only

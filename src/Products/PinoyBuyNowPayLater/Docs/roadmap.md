@@ -6,8 +6,8 @@
 | Field | Value |
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
-| Current phase | BNPL-02 — Authorization + Organization/Branch Access (complete) |
-| Status | Access Foundation Complete; Financing Domain Not Started |
+| Current phase | BNPL-03 — Customer / Reference Foundation (complete) |
+| Status | Customer Persistence Complete; Financing Domain Not Started |
 | Last updated | 2026-08-27 |
 
 ## Phase objective (BNPL-00)
@@ -33,8 +33,8 @@ Establish complete documentation-only foundation for BNPL: first-class product i
 |---|---|---|---|---|---|---|
 | **BNPL-01** | Product scaffold + Platform registration | **COMPLETE** | BNPL-D-00-01..03 provisional approve | Projects, isolation, ProductCode, Local Validation catalog | No financing domain entities; no migrations | Build; architecture isolation tests |
 | **BNPL-02** | Authorization + Organization/Branch access | **COMPLETE** | BNPL-01; BNPL-D-00-18 | Product-local capabilities, org/branch context, access guard | No money mutations; no grant DB | Authz fail-closed tests |
-| **BNPL-03** | Customer / reference foundation | Planned | BNPL-02 | Customer refs, Personal link contracts | No inventing Platform identity | Isolation of customer refs |
-| **BNPL-04** | Financing application + lifecycle | BNPL-03 | Application states through APPROVED_PENDING_SALE | No ACTIVE without sale; no installments yet | State machine unit tests |
+| **BNPL-03** | Customer / reference foundation | **COMPLETE** | BNPL-02 | BnplCustomer, DbContext, migration, customer API | No financing entities | Isolation + idempotent create tests |
+| **BNPL-04** | Financing application + lifecycle | Planned | BNPL-03 | Application states through APPROVED_PENDING_SALE | No ACTIVE without sale; no installments yet | State machine unit tests |
 | **BNPL-05** | Installment engine | BNPL-04; open term policy (BNPL-D-00-14) | Schedule generation | No repayments posting | Schedule correctness tests |
 | **BNPL-06** | Commerce/POS product + availability integration | BNPL-04 | Read contracts for catalog/availability | No local inventory ledger; no sale finalization yet | Contract tests; no POS DB |
 | **BNPL-07** | Financed sale orchestration | BNPL-05, BNPL-06 | Activate financing after commerce sale; snapshots | No second sale engine | Path A/B; stock fail; idempotency |

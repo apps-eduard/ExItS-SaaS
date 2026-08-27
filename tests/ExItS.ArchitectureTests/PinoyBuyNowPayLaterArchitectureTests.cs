@@ -29,27 +29,32 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
     }
 
     [Fact]
-    public void Infrastructure_and_api_do_not_reference_other_products_or_platform_infrastructure()
+    public void Infrastructure_may_use_ef_but_api_does_not_reference_ef_or_other_products()
     {
         var root = FindRepositoryRoot();
-        foreach (var relative in new[]
-                 {
-                     Path.Combine("src", "Products", "PinoyBuyNowPayLater", "ExItS.PinoyBuyNowPayLater.Infrastructure",
-                         "ExItS.PinoyBuyNowPayLater.Infrastructure.csproj"),
-                     Path.Combine("src", "Products", "PinoyBuyNowPayLater", "ExItS.PinoyBuyNowPayLater.Api",
-                         "ExItS.PinoyBuyNowPayLater.Api.csproj")
-                 })
-        {
-            var path = Path.Combine(root, relative);
-            Assert.True(File.Exists(path), path);
-            var text = File.ReadAllText(path);
-            Assert.DoesNotContain("PinoyBusinessPOS", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("PinoyLoanManager", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("PinoyServicePro", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("ExItS.Platform.Infrastructure", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("EntityFrameworkCore", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("Npgsql", text, StringComparison.OrdinalIgnoreCase);
-        }
+        var infrastructure = Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater",
+            "ExItS.PinoyBuyNowPayLater.Infrastructure", "ExItS.PinoyBuyNowPayLater.Infrastructure.csproj");
+        var api = Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater",
+            "ExItS.PinoyBuyNowPayLater.Api", "ExItS.PinoyBuyNowPayLater.Api.csproj");
+
+        Assert.True(File.Exists(infrastructure), infrastructure);
+        Assert.True(File.Exists(api), api);
+
+        var infraText = File.ReadAllText(infrastructure);
+        Assert.Contains("EntityFrameworkCore", infraText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Npgsql", infraText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyBusinessPOS", infraText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyLoanManager", infraText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyServicePro", infraText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ExItS.Platform.Infrastructure", infraText, StringComparison.OrdinalIgnoreCase);
+
+        var apiText = File.ReadAllText(api);
+        Assert.DoesNotContain("EntityFrameworkCore", apiText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Npgsql", apiText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyBusinessPOS", apiText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyLoanManager", apiText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyServicePro", apiText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ExItS.Platform.Infrastructure", apiText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -84,17 +89,36 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
     }
 
     [Fact]
-    public void Platform_product_code_registers_bnpl_and_no_bnpl_migrations_exist()
+    public void Platform_product_code_registers_bnpl_and_customer_migration_exists_without_financing_tables()
     {
         var root = FindRepositoryRoot();
         var productCode = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Domain", "Products", "ProductCode.cs"));
         Assert.Contains("PinoyBuyNowPayLater = \"pinoy-buy-now-pay-later\"", productCode, StringComparison.Ordinal);
 
-        var productRoot = Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater");
-        Assert.Empty(Directory.GetFiles(productRoot, "*Migration*.cs", SearchOption.AllDirectories)
+        var migrations = Directory.GetFiles(
+                Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater"),
+                "*Migration*.cs",
+                SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(
+                Path.Combine(root, "src", "Products", "PinoyBuyNowPayLater"),
+                "*InitialBnplCustomerFoundation*.cs",
+                SearchOption.AllDirectories))
             .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)));
+                        && !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        Assert.Contains(migrations, p => p.Contains("InitialBnplCustomerFoundation", StringComparison.Ordinal));
+        foreach (var migration in migrations)
+        {
+            var text = File.ReadAllText(migration);
+            Assert.DoesNotContain("FinancingApplication", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("FinancingPlan", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Installment", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Repayment", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Settlement", text, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]
@@ -163,7 +187,7 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
     }
 
     [Fact]
-    public void Scaffold_sources_do_not_define_financing_entities()
+    public void Sources_do_not_define_financing_entities_and_dbcontext_stays_in_infrastructure()
     {
         var root = Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyBuyNowPayLater");
         var files = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
@@ -174,11 +198,47 @@ public sealed class PinoyBuyNowPayLaterArchitectureTests
         {
             var text = File.ReadAllText(file);
             Assert.DoesNotContain("class FinancingPlan", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("class FinancingApplication", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Installment", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Repayment", text, StringComparison.Ordinal);
             Assert.DoesNotContain("class Settlement", text, StringComparison.Ordinal);
-            Assert.DoesNotContain("DbContext", text, StringComparison.OrdinalIgnoreCase);
+
+            var declaresDbContext =
+                text.Contains("class BnplDbContext :", StringComparison.Ordinal)
+                || text.Contains(": DbContext", StringComparison.Ordinal);
+            if (declaresDbContext)
+            {
+                var normalized = file.Replace('/', Path.DirectorySeparatorChar);
+                Assert.True(
+                    normalized.Contains(".Infrastructure", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains(
+                        $"{Path.DirectorySeparatorChar}Infrastructure{Path.DirectorySeparatorChar}",
+                        StringComparison.OrdinalIgnoreCase),
+                    $"DbContext types must live under Infrastructure. Offending file: {file}");
+            }
         }
+    }
+
+    [Fact]
+    public void Bnpl_dbcontext_model_does_not_reference_other_product_entity_types()
+    {
+        var path = Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "Products",
+            "PinoyBuyNowPayLater",
+            "ExItS.PinoyBuyNowPayLater.Infrastructure",
+            "Persistence",
+            "BnplDbContext.cs");
+        Assert.True(File.Exists(path), path);
+        var text = File.ReadAllText(path);
+        Assert.Contains("BnplCustomerRecord", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("POSCustomer", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PlatformUser", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PlmBorrower", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("DbSet<Sale", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyBusinessPOS", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PinoyLoanManager", text, StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AssertSourceFilesAvoid(string projectRoot, params string[] forbidden)

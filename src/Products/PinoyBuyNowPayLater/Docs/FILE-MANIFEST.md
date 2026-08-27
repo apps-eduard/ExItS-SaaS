@@ -6,7 +6,7 @@
 |---|---|
 | Product | Pinoy Buy Now Pay Later |
 | Last updated | 2026-08-27 |
-| Implementation present | No |
+| Implementation present | Yes — customer foundation |
 
 ## Authoritative docs (`src/Products/PinoyBuyNowPayLater/Docs/`)
 
@@ -84,17 +84,18 @@
 
 | Path | Purpose | Implementation present |
 |---|---|---|
-| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold + access foundation + Docs |
-| `ExItS.PinoyBuyNowPayLater.Domain` | Product identity + capability catalog | Yes |
-| `ExItS.PinoyBuyNowPayLater.Application` | Access guard / context / branch scope | Yes |
-| `ExItS.PinoyBuyNowPayLater.Api` | Health + `/api/v1/bnpl/access/me` | Yes |
+| `src/Products/PinoyBuyNowPayLater/` | Product workspace root | Scaffold + access + customer persistence + Docs |
+| `ExItS.PinoyBuyNowPayLater.Domain` | Capabilities + BnplCustomer | Yes |
+| `ExItS.PinoyBuyNowPayLater.Application` | Access guard + customer use cases | Yes |
+| `ExItS.PinoyBuyNowPayLater.Infrastructure` | BnplDbContext + InitialBnplCustomerFoundation | Yes |
+| `ExItS.PinoyBuyNowPayLater.Api` | Health + access/me + customers API | Yes |
 
 ## Not present (intentionally)
 
 | Item | Reason |
 |---|---|
 | Financing / installment / repayment / settlement entities | BNPL-04+ |
-| Database / migrations | BNPL-D-00-04 OPEN |
+| Production auto-migrate | Forbidden |
 | ApiClient / Web / React Client | Deferred; PWA client later |
 | Docker / deploy for BNPL | Not authorized |
-| BNPL product-local grants | BNPL-02 / BNPL-D-00-18 |
+| BNPL grant persistence DB | Capabilities via trusted transport (D-P12-03) |

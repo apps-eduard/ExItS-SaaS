@@ -1,14 +1,16 @@
 # Role and Grant Baseline
 
-**Status:** BNPL-02 capability identifiers implemented
-**Implementation present:** Capability catalog + presets (bundles) + operational access guard
-**Related:** BNPL-D-00-18 (Provisionally Approved / Implemented in BNPL-02)
+**Status:** BNPL-02 capability identifiers implemented; BNPL-03 customer capabilities extended
+**Implementation present:** Capability catalog + presets (bundles) + operational access guard + customer CRUD authz
+**Related:** BNPL-D-00-18 (Implemented in BNPL-02; extended in BNPL-03)
 
 ## Capability identifiers (authoritative)
 
 | Capability | Purpose |
 |---|---|
 | `bnpl.config` | Product settings |
+| `bnpl.customer.read` | View / search BNPL customers |
+| `bnpl.customer.manage` | Create / update / link BNPL customers |
 | `bnpl.application.create` | Create financing request |
 | `bnpl.application.approve` | Approve / decline |
 | `bnpl.plan.read` | View plans |
@@ -25,11 +27,11 @@ Source: `ExItS.PinoyBuyNowPayLater.Domain.Access.BnplCapabilityCodes`.
 | Preset label | Bundle intent |
 |---|---|
 | Owner | All capabilities |
-| Manager | create/approve/read/repayment/collections/audit/reports (not config/settlement by default) |
-| BnplApprover | approve + plan.read |
-| Sales | create + plan.read |
-| Collector | plan.read + repayment + collections |
-| Reporting | plan.read + reports.read |
+| Manager | customer read/manage + create/approve/read/repayment/collections/audit/reports (not config/settlement by default) |
+| BnplApprover | customer.read + approve + plan.read |
+| Sales | customer read/manage + create + plan.read |
+| Collector | customer.read + plan.read + repayment + collections |
+| Reporting | customer.read + plan.read + reports.read |
 
 Source: `BnplCapabilityPresets`. Authorization checks **capabilities**, not preset labels.
 
@@ -40,4 +42,4 @@ Source: `BnplCapabilityPresets`. Authorization checks **capabilities**, not pres
 - No implicit hierarchy
 - Unknown capability → deny
 - create ≠ approve; repayment ≠ settlement
-
+- customer.manage ≠ application.approve
