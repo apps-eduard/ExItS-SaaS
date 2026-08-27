@@ -1,5 +1,5 @@
 /**
- * EXITS-V1-COMPLETENESS-02 — Operational in-app notifications + durable Personal cart (mock).
+ * EXITS-V1-COMPLETENESS-02 — Ordering readiness + notifications + durable Personal cart (mock).
  */
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -492,5 +492,22 @@ test.describe("EXITS-V1-COMPLETENESS-02", () => {
     await expect(page.getByTestId("personal-ownership-transfers-page")).toBeVisible({
       timeout: 15000,
     });
+  });
+
+  test("Story E — public landing does not falsely promise ordering", async ({ page }) => {
+    const PUBLIC_ORG = "ORG123456";
+    await page.route(`**/api/v1/public/stores/${PUBLIC_ORG}`, async (route) =>
+      json(route, {
+        publicOrganizationId: PUBLIC_ORG,
+        displayName: "Kizy Store",
+        orderingAvailable: false,
+      }),
+    );
+
+    await page.goto(`/store/${PUBLIC_ORG}`);
+    await expect(page.getByTestId("public-store-landing-page")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("public-store-name")).toHaveText("Kizy Store");
+    await expect(page.getByText(/ordering is currently unavailable/i)).toBeVisible();
+    await expect(page.getByTestId("public-store-sign-in")).toBeVisible();
   });
 });

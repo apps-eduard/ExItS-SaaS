@@ -1,19 +1,34 @@
-# EXITS-V1-COMPLETENESS-02 — Operational In-App Notifications + Durable Personal Cart
+# EXITS-V1-COMPLETENESS-02 — Ordering Readiness + Operational Notifications + Durable Personal Cart
 
-**Status:** COMPLETE  
-**Branch:** `feat/personal`  
+**Status:** COMPLETE
+**Branch:** `feat/personal`
 **Package:** EXITS-V1-COMPLETENESS-02
+**Baseline:** `31be4feec954e0a5d43ab56416c4f6b5c7a9cb05`
 
 ## Summary
 
-Delivers two v1 completeness items without a new audit package:
+Delivers three bounded v1 completeness items in one package (not an audit):
 
-1. **Operational in-app notifications** for ownership-transfer requests and customer-order lifecycle (seller + Personal buyer).
-2. **Durable Personal shopping cart** via account-namespaced `localStorage` (non-authoritative convenience state).
+1. **Public store ordering readiness correction** — `OrderingAvailable` uses Platform branch fulfillment readiness, not “active Organization ⇒ ready”.
+2. **Operational in-app notifications** for ownership-transfer requests and customer-order lifecycle (seller + Personal buyer).
+3. **Durable Personal shopping cart** via account-namespaced `localStorage` (non-authoritative convenience state).
 
-## NOTIFICATIONS
+## A. PUBLIC STORE ORDERING READINESS
 
-### New / solidified relatedTypes
+| Item | Decision |
+|---|---|
+| Hardcoded `OrderingAvailable: true` | **Removed** |
+| Source | Platform `IBranchFulfillmentReadinessEvaluator` + entitlements + Active branches |
+| True when | StoreCustomerOrdering entitlement **and** ≥1 Active branch with `CustomerOrderingEnabled`, not paused, and `CustomerOrderingReady` |
+| False when | Active org lacks entitlement, ready branch, or ordering enabled |
+| Unknown / inactive | Generic unavailable (unchanged) |
+| Cross-product | No POS DB access; no new FKs; reuses existing Platform fulfillment readiness |
+| Open-now | Not required for anonymous flag; authenticated storefront remains operational authority |
+| Landing UX | Name + Continue in ExItS; shows unavailable hint only when `orderingAvailable === false` — never falsely promises ordering |
+
+## B. NOTIFICATIONS
+
+### relatedTypes / recipients / deep links
 
 | relatedType | Inbox | Producer | Recipient | Deep link |
 |---|---|---|---|---|
@@ -35,27 +50,23 @@ Delivers two v1 completeness items without a new audit package:
 - Organization: `(RecipientUserIdentityId, RelatedType, RelatedId)` via `FindByRecipientRelatedAsync` (existing).
 - Personal ownership: same pattern on `OrganizationOwnershipTransfer` + transfer id.
 - Personal customer-order: `PublishPersonalBusinessNotification` dedupes the same way.
-- Same-organization seller publish for `CustomerOrder*` is now allowlisted (`OrganizationBusinessNotificationTypes.AllowsSameOrganization`) so seller “New customer order” can persist.
+- Same-organization seller publish for `CustomerOrder*` is allowlisted (`OrganizationBusinessNotificationTypes.AllowsSameOrganization`).
 
 ### Delivery timing / consistency
 
 - Ownership notification is created in the same Platform UoW as the transfer insert (after mutation succeeds in-memory, before `SaveChanges`).
-- POS → Platform notification publish remains **best-effort post-commit** (HTTP client swallows failures so order mutations stay authoritative). Documented convention preserved.
+- POS → Platform notification publish remains **best-effort post-commit** (HTTP client swallows failures so order mutations stay authoritative).
 
 ### Cancelled ownership
 
 - Original Personal notification remains historical/readable.
-- Deep link always opens `/personal/ownership-transfers` (current authoritative list; no pending row after cancel).
-- No physical delete of notification audit history.
+- Deep link always opens `/personal/ownership-transfers` (authoritative list; no pending row after cancel).
 
-### Intentionally deferred notification scope
+### Intentionally deferred
 
-- Push / FCM / APNS / OneSignal / SMS / email campaigns
-- Marketing / promotional notifications
-- Optional former-owner Organization notifications on Accept/Decline (not required for v1 completeness)
-- Non-customer-order product events beyond existing producers
+Push / FCM / APNS / OneSignal / SMS / email campaigns; marketing notifications.
 
-## CART
+## C. CART
 
 | Item | Decision |
 |---|---|
@@ -63,25 +74,35 @@ Delivers two v1 completeness items without a new audit package:
 | Schema version | `1` |
 | Account isolation | Namespaced by authenticated `session.userId` |
 | Persisted fields | sellerOrganizationId, organizationDisplayName, lines (productId, name, sku, unitOfMeasure, unitPrice snapshot, quantity) |
-| Authoritative price/stock | Server storefront/checkout only; snapshot is display convenience |
+| Authoritative price/stock/fulfillment | Server storefront/checkout only; snapshot is display convenience |
 | Sensitive data | Not persisted (no tokens, email, address, balances, credentials) |
 | Order success | `clearAll()` after successful place response |
-| Order failure | Cart preserved |
+| Order failure / ambiguous | Cart preserved until authoritative success |
 | Malformed storage | Fail-safe empty cart (no crash) |
 | Multi-store | Single merchant; `ensureMerchantCart` clears lines on switch |
 | Server cart | **Not** created |
 | Offline order queue | **Not** created (`NEW_PERSONAL_WEB_OUTBOX_ENQUEUE=NO`) |
 
+## Online-only boundary
+
+`PERSONAL_WEB_POLICY=ONLINE_ONLY`
+`ORGANIZATION_WEB_POLICY=ONLINE_ONLY`
+Notification list/read and order/ownership actions remain online-only. Cart durability is local convenience only.
+
+## Migrations
+
+`MIGRATION_CREATED=NO` — reuses existing notification + branch readiness persistence.
+
 ## Explicit non-goals
 
-Push notifications, SMS/email infra, server-side cart, multi-device sync, multi-store cart, offline checkout/payment, wish lists, branding polish.
+Push notifications, SMS/email infra, server-side cart, multi-device sync, multi-store cart, offline checkout/payment, public-store CMS, branding polish.
 
 ## Evidence pointers
 
-- Platform: `OwnershipTransferUseCases`, `PublishPersonalBusinessNotification`, `OrganizationBusinessNotificationTypes.AllowsSameOrganization`
-- POS: `CustomerOrderLifecycleNotifier` (Personal + Organization buyers), `PlatformPersonalBusinessNotificationClient`
-- React: `personal-notifications.ts`, `org-notifications.ts`, `personal-merchant-cart-storage.ts`, `PersonalMerchantCartProvider`
-- Tests: Platform ownership/business notification unit tests; Vitest cart storage + deep-link tests; Playwright `e2e/exits-v1-completeness-02.spec.ts`
+- Platform: `LookupPublicStoreLanding` (fulfillment readiness), `OwnershipTransferUseCases`, `PublishPersonalBusinessNotification`, `OrganizationBusinessNotificationTypes.AllowsSameOrganization`
+- POS: `CustomerOrderLifecycleNotifier`, `PlatformPersonalBusinessNotificationClient`
+- React: `personal-notifications.ts`, `org-notifications.ts`, `personal-merchant-cart-storage.ts`, `PersonalMerchantCartProvider`, `PublicStoreLandingPage`
+- Tests: `PublicStoreLandingLookupTests`; Platform ownership/business notification unit tests; Vitest cart + deep-link tests; Playwright `e2e/exits-v1-completeness-02.spec.ts`
 
 ## Next
 
