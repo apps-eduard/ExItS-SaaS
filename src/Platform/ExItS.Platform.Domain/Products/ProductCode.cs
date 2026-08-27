@@ -11,6 +11,7 @@ public sealed partial class ProductCode : IEquatable<ProductCode>
     public const string PinoyBusinessPos = "pinoy-business-pos";
     public const string PinoyLoanManager = "pinoy-loan-manager";
     public const string PinoyBuyNowPayLater = "pinoy-buy-now-pay-later";
+    public const string PinoyPawnManager = "pinoy-pawn-manager";
 
     private static readonly Regex ValidPattern = CreateValidPattern();
 

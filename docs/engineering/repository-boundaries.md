@@ -9,13 +9,15 @@ ExItS-SaaS root repository
 ├── ExItS.slnx, global.json, Directory.Build.props, Directory.Packages.props
 ├── src/Platform/* — Platform foundation (contracts, projections, catalog, auth)
 ├── src/Products/PinoyBusinessPOS/* — PinoyBusinessPOS product
+├── src/Products/PinoyLoanManager/* — PinoyLoanManager product
+├── src/Products/PinoyPawnManager/* — PinoyPawnManager (PPM-01 scaffold; no operational database)
 ├── src/Shared/* — shared DesignSystem and contracts as applicable
 ├── tests/* — Platform / POS / architecture safety tests
 ├── deploy/docker/* — Local Validation, packaging, production compose
 └── Portfolio documentation — tracked by root Git
 ```
 
-Active portfolio: **Platform** + **PinoyBusinessPOS** only. Adding another product requires explicit authorization and the same ownership and isolation rules.
+Active portfolio: **Platform** + **PinoyBusinessPOS** + **PinoyLoanManager** + **PinoyPawnManager** (PPM-01 scaffold only). Adding another product requires explicit authorization and the same ownership and isolation rules.
 
 ## Root Git responsibility
 

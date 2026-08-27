@@ -32,6 +32,12 @@
     <Project Path="src/Products/PinoyBuyNowPayLater/ExItS.PinoyBuyNowPayLater.Domain/ExItS.PinoyBuyNowPayLater.Domain.csproj" />
     <Project Path="src/Products/PinoyBuyNowPayLater/ExItS.PinoyBuyNowPayLater.Infrastructure/ExItS.PinoyBuyNowPayLater.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Products/PinoyPawnManager/">
+    <Project Path="src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Api/ExItS.PinoyPawnManager.Api.csproj" />
+    <Project Path="src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Application/ExItS.PinoyPawnManager.Application.csproj" />
+    <Project Path="src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Domain/ExItS.PinoyPawnManager.Domain.csproj" />
+    <Project Path="src/Products/PinoyPawnManager/ExItS.PinoyPawnManager.Infrastructure/ExItS.PinoyPawnManager.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/ExItS.DesignSystem/ExItS.DesignSystem.csproj" />
     <Project Path="src/Shared/ExItS.BackupRestore/ExItS.BackupRestore.csproj" />
@@ -50,6 +56,7 @@
     <Project Path="tests/ExItS.PinoyBusinessPOS.UnitTests/ExItS.PinoyBusinessPOS.UnitTests.csproj" />
     <Project Path="tests/ExItS.PinoyLoanManager.UnitTests/ExItS.PinoyLoanManager.UnitTests.csproj" />
     <Project Path="tests/ExItS.PinoyBuyNowPayLater.UnitTests/ExItS.PinoyBuyNowPayLater.UnitTests.csproj" />
+    <Project Path="tests/ExItS.PinoyPawnManager.UnitTests/ExItS.PinoyPawnManager.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.Admin.UnitTests/ExItS.Platform.Admin.UnitTests.csproj" />
     <Project Path="tests/ExItS.Platform.IntegrationTests/ExItS.Platform.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.Platform.UnitTests/ExItS.Platform.UnitTests.csproj" />

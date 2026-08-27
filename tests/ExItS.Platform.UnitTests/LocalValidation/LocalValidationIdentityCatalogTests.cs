@@ -118,7 +118,8 @@ public sealed class LocalValidationIdentityCatalogTests
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
             && i.PosLocalRoleCode == "Owner"
             && i.GrantPlmProductAccess
-            && i.GrantBnplProductAccess);
+            && i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "carlo-reyes"
@@ -126,7 +127,8 @@ public sealed class LocalValidationIdentityCatalogTests
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
             && i.PosLocalRoleCode == "Cashier"
             && i.GrantPlmProductAccess
-            && i.GrantBnplProductAccess);
+            && i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "ana-cruz"
@@ -134,7 +136,8 @@ public sealed class LocalValidationIdentityCatalogTests
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationOwner
             && i.PosLocalRoleCode == "Owner"
             && !i.GrantPlmProductAccess
-            && !i.GrantBnplProductAccess);
+            && !i.GrantBnplProductAccess
+            && i.GrantPpmProductAccess);
 
         Assert.Contains(catalog, i =>
             i.Key == "daniel-garcia"
@@ -142,7 +145,8 @@ public sealed class LocalValidationIdentityCatalogTests
             && i.OrganizationRole == OrganizationMembershipValidationRole.OrganizationMember
             && i.PosLocalRoleCode == "Cashier"
             && !i.GrantPlmProductAccess
-            && !i.GrantBnplProductAccess);
+            && !i.GrantBnplProductAccess
+            && !i.GrantPpmProductAccess);
 
         Assert.Equal(2, catalog.Count(i => i.PreferredAccountClass == AccountClass.Platform));
         Assert.Equal(4, catalog.Count(i => i.PreferredAccountClass == AccountClass.Organization));
