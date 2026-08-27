@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw } from "lucide-react";
+import { ActionButtonLoading } from "@/components/exits/loading/ActionButtonLoading";
 import { canManageRegisters, canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -543,22 +544,19 @@ export function ShiftOpenPage() {
           )}
         </div>
         <div className="catalog-form-actions__secondary">
-          <Button
+          <ActionButtonLoading
             type="button"
             className="catalog-form-actions__save min-h-11"
             disabled={startBlocked}
+            loading={saving}
             data-testid="shift-open-confirm"
             data-blocked={startBlocked ? "true" : "false"}
             title={startBlocked ? startBlockedReason : undefined}
             onClick={() => void onOpen(!showOpeningCash)}
           >
-            {saving ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <Play className="size-4 shrink-0" aria-hidden />
-            )}
+            {!saving ? <Play className="size-4 shrink-0" aria-hidden /> : null}
             {saving ? t("shift.opening") : t("shift.openConfirm")}
-          </Button>
+          </ActionButtonLoading>
         </div>
       </div>
     </div>

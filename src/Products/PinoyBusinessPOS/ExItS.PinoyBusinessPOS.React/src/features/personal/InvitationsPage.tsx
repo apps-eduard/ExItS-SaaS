@@ -20,7 +20,8 @@ import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { StatusChip } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { LoadingState } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import {
   cascadeResolveSiblingRequests,
   groupByKey,
@@ -283,8 +284,19 @@ export function InvitationsPage() {
     }
   }
 
-  if (connectionsQuery.isLoading || contactsQuery.isLoading) {
-    return <LoadingState label={t("loading.label")} />;
+  if (connectionsQuery.isLoading && !connectionsQuery.data) {
+    return (
+      <div className="personal-page invitations-page exits-page mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3">
+        <PageHeader
+          title={t("invitations.title")}
+          description={t("invitations.lede")}
+          backTo="/personal/people"
+          backLabel={t("people.backToList")}
+          backTestId="page-header-back-invitations"
+        />
+        <PageSkeleton label={t("loading.label")} />
+      </div>
+    );
   }
 
   if (connectionsQuery.error) {
@@ -327,6 +339,10 @@ export function InvitationsPage() {
           {t("invitations.title")}
         </h1>
       </header>
+
+      {(connectionsQuery.isFetching || contactsQuery.isFetching) && connectionsQuery.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("invitations.lede")}</p>
 

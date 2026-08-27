@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 @theme inline {
   --color-background: var(--exits-bg);
@@ -6844,3 +6844,132 @@ a.exits-chip--primary:hover {
   }
 }
 
+/* Shared ExItS loading system */
+.exits-loader-mark {
+  position: relative;
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.exits-loader-mark--sm {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.exits-loader-mark--lg {
+  width: 3.75rem;
+  height: 3.75rem;
+}
+
+.exits-loader-mark__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--exits-surface-muted);
+  border-top-color: var(--exits-primary);
+  animation: exits-context-switch-spin 0.9s linear infinite;
+}
+
+.exits-loader-mark--sm .exits-loader-mark__ring {
+  border-width: 2px;
+}
+
+.exits-loader-mark__core {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--exits-primary) 22%, var(--exits-surface-muted));
+  animation: exits-context-switch-pulse 1.4s ease-in-out infinite;
+}
+
+.exits-app-boot-loader {
+  background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      color-mix(in srgb, var(--exits-primary) 10%, transparent),
+      transparent 55%
+    ),
+    var(--exits-surface);
+}
+
+.exits-app-boot-loader__brand {
+  letter-spacing: -0.02em;
+}
+
+.exits-workspace-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  pointer-events: all;
+}
+
+.exits-workspace-transition__backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--exits-surface) 72%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.exits-workspace-transition__panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: min(18rem, calc(100vw - 2rem));
+  max-width: 22rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-lg);
+  background: var(--exits-surface);
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 12px 40px color-mix(in srgb, #000 12%, transparent);
+}
+
+.exits-inline-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  animation: exits-context-switch-spin 0.75s linear infinite;
+}
+
+.exits-background-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.exits-background-refresh::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--exits-primary) 30%, transparent);
+  border-top-color: var(--exits-primary);
+  animation: exits-context-switch-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exits-loader-mark__ring,
+  .exits-loader-mark__core,
+  .exits-inline-spinner,
+  .exits-background-refresh::before {
+    animation: none;
+  }
+
+  .exits-loader-mark__core {
+    opacity: 0.9;
+    transform: none;
+  }
+
+  .exits-inline-spinner,
+  .exits-background-refresh::before {
+    border-top-color: color-mix(in srgb, currentColor 55%, transparent);
+  }
+}

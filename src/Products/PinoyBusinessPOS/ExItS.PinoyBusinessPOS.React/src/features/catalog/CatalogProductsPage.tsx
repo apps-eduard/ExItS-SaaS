@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -167,6 +168,9 @@ export function CatalogProductsPage() {
       />
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+      {query.isFetching && !query.isLoading && query.data ? (
+        <BackgroundRefreshIndicator active label={t("loading.updating")} />
+      ) : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}

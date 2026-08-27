@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { LoadingState } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
+import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PeopleInfoDialog } from "@/features/personal/PeopleInfoDialog";
 import {
   parsePersonCreateKind,
@@ -62,8 +63,12 @@ export function PeoplePage() {
   const connectionsQuery = usePersonalConnectionRequestsQuery();
   const utangQuery = usePersonalUtangSummariesQuery();
 
-  const isLoading =
-    contactsQuery.isLoading || connectionsQuery.isLoading || utangQuery.isLoading;
+  const isInitialLoading =
+    (contactsQuery.isLoading || connectionsQuery.isLoading || utangQuery.isLoading) &&
+    !contactsQuery.data;
+  const isRefreshing =
+    (contactsQuery.isFetching || connectionsQuery.isFetching || utangQuery.isFetching) &&
+    Boolean(contactsQuery.data);
   const error = contactsQuery.error ?? connectionsQuery.error ?? utangQuery.error;
 
   const summary = useMemo(
@@ -83,11 +88,7 @@ export function PeoplePage() {
     });
   }, [contactsQuery.data, connectionsQuery.data, utangQuery.data]);
 
-  if (isLoading) {
-    return <LoadingState label={t("loading.label")} />;
-  }
-
-  if (error) {
+  if (error && !contactsQuery.data) {
     const detail =
       error instanceof PlatformApiError
         ? (error.problem.detail ?? error.message)
@@ -133,6 +134,10 @@ export function PeoplePage() {
         </Button>
       </header>
 
+      {isRefreshing ? <BackgroundRefreshIndicator active label={t("loading.updating")} /> : null}
+      {isInitialLoading ? <PageSkeleton label={t("loading.label")} /> : null}
+      {!isInitialLoading ? (
+        <>
       <Card className="flex flex-col gap-3" data-testid="people-add-panel">
         <button
           type="button"
@@ -208,6 +213,8 @@ export function PeoplePage() {
       </Card>
 
       <PeopleListSection rows={rows} summary={summary} />
+        </>
+      ) : null}
 
       <PeopleInfoDialog open={infoOpen} onClose={() => setInfoOpen(false)} />
     </section>

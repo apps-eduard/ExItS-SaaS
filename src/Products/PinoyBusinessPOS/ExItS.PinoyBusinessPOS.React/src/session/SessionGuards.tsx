@@ -31,7 +31,7 @@ import {
   canViewSuppliers,
 } from "@/access/pos-capabilities";
 import { canAccessClassicReport } from "@/features/reports/report-access";
-import { LoadingState } from "@/components/exits/LoadingState";
+import { AppBootLoader } from "@/components/exits/loading/AppBootLoader";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { ExperienceAccessDeniedPage } from "@/features/role/ExperienceAccessDeniedPage";
@@ -45,7 +45,13 @@ import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
 
 export function SessionLoading() {
   const { t } = useI18n();
-  return <LoadingState label={t("session.loading")} />;
+  return (
+    <AppBootLoader
+      label={t("loading.preparingWorkspace")}
+      brand={t("app.name")}
+      testId="session-checking"
+    />
+  );
 }
 
 export function RequireSession({ children }: { children: ReactNode }) {
@@ -271,9 +277,13 @@ export function WorkspaceBootGate({ children }: { children: ReactNode }) {
   if (sessionStatus === "loading") {
     return <SessionLoading />;
   }
+  // Keep shell painted during intentional bind — RootLayout shows the overlay.
+  if (sessionStatus === "authenticated" && status === "binding") {
+    return children;
+  }
   if (
     sessionStatus === "authenticated" &&
-    (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace))
+    ((status === "loading" || status === "idle") && !boundWorkspace)
   ) {
     return <SessionLoading />;
   }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
 import { RoleActionTile } from "@/components/exits/RoleActionTile";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
@@ -60,7 +60,9 @@ export function ShiftsHubPage() {
         backTestId="page-header-back-shifts"
       />
 
-      {loading ? <LoadingSkeleton label={t("loading.label")} /> : null}
+      {loading && !currentShift && !errorMessage ? (
+        <PageSkeleton label={t("loading.label")} variant="cards" rows={2} />
+      ) : null}
 
       {errorMessage ? (
         <Card>
