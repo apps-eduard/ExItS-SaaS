@@ -68,9 +68,9 @@ Catalog PUT `tracksExpiration: true` with OnHand &gt; 0 → `ExpirationInitializ
 
 Lot ledger rows use `StockMovementType.ExpirationInitialization` with authenticated `RecordedBy`. No product `stock_movements` row (avoids fake +qty business events).
 
-## Lot consistency
+## Migration note
 
-When tracking ON: sum of lot `QuantityOnHand` should equal tracked account `OnHandQuantity` after successful initialization (same org/product/branch scope as existing lot model). Reservations remain on the account projection; FEFO sellable lots exclude expired dates per existing rules.
+`20260828*_AddExpirationInitializationMovementTypeCheck` updates `ck_stock_movements_movement_type` to include `ExpirationInitialization` (enum/Codes alignment). Product `stock_movements` rows are still **not** written for initialization — only lot ledger rows.
 
 ## UI
 
