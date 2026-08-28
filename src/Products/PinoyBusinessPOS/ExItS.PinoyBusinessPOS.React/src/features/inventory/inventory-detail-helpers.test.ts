@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAddOpeningStock,
   canDisableExpirationTracking,
   computeGoodQuantity,
   sortLotsByExpiry,
@@ -59,5 +60,11 @@ describe("inventory-detail-helpers", () => {
   it("blocks expiration disable when stock remains", () => {
     expect(canDisableExpirationTracking(account({ onHandQuantity: 5 }))).toBe(false);
     expect(canDisableExpirationTracking(account({ onHandQuantity: 0 }))).toBe(true);
+  });
+
+  it("allows add opening stock only when tracked without opening movement", () => {
+    expect(canAddOpeningStock(account({ isTracked: true, hasOpeningStock: false }))).toBe(true);
+    expect(canAddOpeningStock(account({ isTracked: true, hasOpeningStock: true }))).toBe(false);
+    expect(canAddOpeningStock(account({ isTracked: false, hasOpeningStock: false }))).toBe(false);
   });
 });

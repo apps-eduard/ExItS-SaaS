@@ -145,6 +145,64 @@ public sealed class InventoryAccount
         return opening;
     }
 
+    /// <summary>
+    /// Records opening stock on an already tracked account with zero on-hand and no prior opening movement.
+    /// </summary>
+    public StockMovement RecordOpeningStock(
+        decimal openingQuantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        bool hasOpeningStockAlready,
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? openingUnitCost = null)
+    {
+        EnsureUtc(utcNow);
+
+        if (!IsTracked)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryNotTracked,
+                "Inventory is not tracked for this product.");
+        }
+
+        if (hasOpeningStockAlready)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryOpeningDuplicate,
+                "Opening stock has already been recorded for this product.");
+        }
+
+        if (OnHandQuantity != 0m || ReservedQuantity != 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryOpeningRequiresZeroOnHand,
+                "Opening stock can only be added when on-hand and reserved quantities are zero.");
+        }
+
+        if (openingQuantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryQuantity,
+                "Opening stock quantity must be greater than zero.");
+        }
+
+        UpdatedAtUtc = utcNow;
+
+        var opening = StockMovement.OpeningStock(
+            OrganizationId,
+            ProductId,
+            Id,
+            openingQuantity,
+            unitOfMeasure,
+            actorId,
+            utcNow,
+            sellingMode: sellingMode,
+            unitCost: openingUnitCost);
+        ApplyMovementEffect(opening.QuantityEffect);
+        return opening;
+    }
+
     /// <summary>Disables tracking only when currently tracked and on-hand is exactly zero.</summary>
     public void Disable(DateTimeOffset utcNow)
     {

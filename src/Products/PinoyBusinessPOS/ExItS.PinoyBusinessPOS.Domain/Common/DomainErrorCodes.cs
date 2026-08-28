@@ -200,6 +200,7 @@ public static class DomainErrorCodes
     public const string StockCountCountedQuantityRequired = "pos.stock_count.counted_quantity.required";
     public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InventoryOpeningDuplicate = "pos.inventory.opening_duplicate";
+    public const string InventoryOpeningRequiresZeroOnHand = "pos.inventory.opening.requires_zero_on_hand";
     public const string InventoryOpeningUnitCostRequired = "pos.inventory.opening.unit_cost.required";
     public const string InvalidInventoryOpeningUnitCost = "pos.inventory.opening.unit_cost.invalid";
     public const string InventoryUomChangeBlocked = "pos.inventory.uom_change_blocked";

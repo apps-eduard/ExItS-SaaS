@@ -18,3 +18,8 @@ export function formatLotBatchLabel(lotNumber?: string | null): string {
 export function canDisableExpirationTracking(account: PosInventoryAccountDto): boolean {
   return account.isTracked && account.onHandQuantity <= 0;
 }
+
+/** Tracked product with no opening stock movement yet — eligible for Inventory add-opening-stock. */
+export function canAddOpeningStock(account: PosInventoryAccountDto): boolean {
+  return account.isTracked && account.hasOpeningStock !== true;
+}

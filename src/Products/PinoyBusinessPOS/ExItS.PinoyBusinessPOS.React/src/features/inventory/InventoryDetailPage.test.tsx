@@ -22,6 +22,7 @@ function baseAccount(extra: Record<string, unknown> = {}) {
     productStatus: "Active",
     isTracked: true,
     onHandQuantity: 40,
+    hasOpeningStock: true,
     stockStatus: "InStock",
     isLowStock: false,
     tracksExpiration: false,
@@ -253,5 +254,14 @@ describe("InventoryDetailPage expiration UX", () => {
     const disableBtn = await screen.findByTestId("inventory-disable-expiration");
     expect(disableBtn).toBeDisabled();
     expect(screen.getByText(/no stock remaining/i)).toBeInTheDocument();
+  });
+
+  it("shows add opening stock panel when tracked without opening movement", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({ onHandQuantity: 0, hasOpeningStock: false }) as never,
+    );
+    renderPage();
+    await screen.findByTestId("inventory-add-opening-stock");
+    expect(screen.queryByTestId("inventory-adjust-form")).not.toBeInTheDocument();
   });
 });

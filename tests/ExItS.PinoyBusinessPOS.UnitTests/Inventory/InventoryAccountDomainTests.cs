@@ -37,6 +37,57 @@ public sealed class InventoryAccountDomainTests
     }
 
     [Fact]
+    public void RecordOpeningStock_on_tracked_zero_on_hand_adds_movement()
+    {
+        var account = InventoryAccount.CreateUntracked(Org, Product, Utc);
+        account.Enable(0m, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
+
+        var opening = account.RecordOpeningStock(
+            24m,
+            UnitOfMeasure.Piece,
+            Actor,
+            Utc.AddMinutes(1),
+            hasOpeningStockAlready: false,
+            openingUnitCost: 18m);
+
+        Assert.Equal(24m, account.OnHandQuantity);
+        Assert.Equal(StockMovementType.OpeningStock, opening.MovementType);
+        Assert.Equal(18m, opening.UnitCost);
+    }
+
+    [Fact]
+    public void RecordOpeningStock_rejects_when_opening_already_exists()
+    {
+        var account = InventoryAccount.CreateUntracked(Org, Product, Utc);
+        account.Enable(10m, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            account.RecordOpeningStock(
+                5m,
+                UnitOfMeasure.Piece,
+                Actor,
+                Utc.AddMinutes(1),
+                hasOpeningStockAlready: true));
+        Assert.Equal(DomainErrorCodes.InventoryOpeningDuplicate, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void RecordOpeningStock_requires_zero_on_hand()
+    {
+        var account = InventoryAccount.CreateUntracked(Org, Product, Utc);
+        account.Enable(10m, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
+
+        var ex = Assert.Throws<DomainException>(() =>
+            account.RecordOpeningStock(
+                5m,
+                UnitOfMeasure.Piece,
+                Actor,
+                Utc.AddMinutes(1),
+                hasOpeningStockAlready: false));
+        Assert.Equal(DomainErrorCodes.InventoryOpeningRequiresZeroOnHand, ex.ErrorCode);
+    }
+
+    [Fact]
     public void Enable_zero_opening_tracks_without_movement()
     {
         var account = InventoryAccount.CreateUntracked(Org, Product, Utc);

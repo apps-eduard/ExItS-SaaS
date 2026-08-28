@@ -5,6 +5,7 @@ import { describePosApiError } from "@/access/pos-commercial-errors";
 import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   adjustInventoryStock,
+  addOpeningStock,
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
@@ -21,10 +22,12 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
+  canAddOpeningStock,
   canDisableExpirationTracking,
   computeGoodQuantity,
   sortLotsByExpiry,
 } from "@/features/inventory/inventory-detail-helpers";
+import { computeOpeningStockValue } from "@/features/catalog/opening-stock-helpers";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
   requiresOpeningExpirationDate,
@@ -62,6 +65,7 @@ export function InventoryDetailPage() {
   const queryClient = useQueryClient();
   const { boundWorkspace } = useWorkspace();
   const [openingQty, setOpeningQty] = useState("0");
+  const [openingUnitCost, setOpeningUnitCost] = useState("");
   const [openingExpiry, setOpeningExpiry] = useState("");
   const [openingLotNumber, setOpeningLotNumber] = useState("");
   const [adjustQty, setAdjustQty] = useState("");
@@ -137,15 +141,62 @@ export function InventoryDetailPage() {
       ) {
         throw new Error(t("inventory.expirationDateRequired"));
       }
+      if (openingQuantity) {
+        const unitCost = Number(openingUnitCost);
+        if (!openingUnitCost.trim() || Number.isNaN(unitCost) || unitCost <= 0) {
+          throw new Error(t("openingStock.unitCostRequired"));
+        }
+        return enableInventoryTracking(workspace!, productId!, {
+          openingQuantity,
+          unitCost,
+          expirationDate:
+            tracksExpiration && openingExpiry.trim() ? openingExpiry.trim() : null,
+          lotNumber: tracksExpiration && openingLotNumber.trim() ? openingLotNumber.trim() : null,
+        });
+      }
       return enableInventoryTracking(workspace!, productId!, {
-        openingQuantity,
+        openingQuantity: 0,
+      });
+    },
+    onSuccess: async () => {
+      setError(null);
+      setOpeningUnitCost("");
+      setOpeningExpiry("");
+      setOpeningLotNumber("");
+      await invalidateInventory();
+    },
+    onError: (err) => {
+      setError(
+        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+      );
+    },
+  });
+
+  const addOpeningStockMutation = useMutation({
+    mutationFn: () => {
+      const quantity = Number(openingQty);
+      const unitCost = Number(openingUnitCost);
+      if (!openingQty.trim() || Number.isNaN(quantity) || quantity <= 0) {
+        throw new Error(t("openingStock.quantityRequired"));
+      }
+      if (!openingUnitCost.trim() || Number.isNaN(unitCost) || unitCost <= 0) {
+        throw new Error(t("openingStock.unitCostRequired"));
+      }
+      if (requiresOpeningExpirationDate(tracksExpiration, quantity) && !openingExpiry.trim()) {
+        throw new Error(t("inventory.expirationDateRequired"));
+      }
+      return addOpeningStock(workspace!, productId!, {
+        openingQuantity: quantity,
+        unitCost,
         expirationDate:
-          tracksExpiration && openingQuantity && openingExpiry.trim() ? openingExpiry.trim() : null,
+          tracksExpiration && openingExpiry.trim() ? openingExpiry.trim() : null,
         lotNumber: tracksExpiration && openingLotNumber.trim() ? openingLotNumber.trim() : null,
       });
     },
     onSuccess: async () => {
       setError(null);
+      setOpeningQty("");
+      setOpeningUnitCost("");
       setOpeningExpiry("");
       setOpeningLotNumber("");
       await invalidateInventory();
@@ -353,6 +404,11 @@ export function InventoryDetailPage() {
 
   const goodQuantity = computeGoodQuantity(account);
   const expirationDisableAllowed = canDisableExpirationTracking(account);
+  const showAddOpeningStock = canAddOpeningStock(account);
+  const openingStockValue = computeOpeningStockValue(
+    Number(openingQty),
+    Number(openingUnitCost),
+  );
   const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
 
   return (
@@ -431,8 +487,11 @@ export function InventoryDetailPage() {
 
       {!account.isTracked ? (
         <Card className="flex flex-col gap-3 p-3">
+          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+            {t("inventory.enableTracking")}
+          </h2>
           <Input
-            label={t("inventory.openingQuantity")}
+            label={t("inventory.openingQuantityOptional")}
             name="openingQuantity"
             inputMode="decimal"
             value={openingQty}
@@ -441,7 +500,27 @@ export function InventoryDetailPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.openingHint")}
           </p>
-          {tracksExpiration ? (
+          {Number(openingQty) > 0 ? (
+            <>
+              <Input
+                label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
+                name="openingUnitCost"
+                inputMode="decimal"
+                value={openingUnitCost}
+                onChange={(e) => setOpeningUnitCost(e.target.value)}
+                data-testid="inventory-enable-unit-cost"
+              />
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("openingStock.unitCostHelper")}
+              </p>
+              {openingStockValue !== null ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {tracksExpiration && Number(openingQty) > 0 ? (
             <>
               <Input
                 label={t("inventory.expirationDate")}
@@ -472,6 +551,81 @@ export function InventoryDetailPage() {
             {t("inventory.enable")}
           </Button>
         </Card>
+      ) : showAddOpeningStock ? (
+        <>
+          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-add-opening-stock">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("inventory.addOpeningStock")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("inventory.addOpeningStockHint")}
+            </p>
+            <Input
+              label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
+              name="openingQuantity"
+              inputMode="decimal"
+              value={openingQty}
+              onChange={(e) => setOpeningQty(e.target.value)}
+              data-testid="inventory-opening-quantity"
+            />
+            <Input
+              label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
+              name="openingUnitCost"
+              inputMode="decimal"
+              value={openingUnitCost}
+              onChange={(e) => setOpeningUnitCost(e.target.value)}
+              data-testid="inventory-opening-unit-cost"
+            />
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("openingStock.unitCostHelper")}
+            </p>
+            {openingStockValue !== null ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
+              </p>
+            ) : null}
+            {tracksExpiration ? (
+              <>
+                <Input
+                  label={t("inventory.expirationDate")}
+                  name="openingExpirationDate"
+                  type="date"
+                  value={openingExpiry}
+                  onChange={(e) => setOpeningExpiry(e.target.value)}
+                  data-testid="inventory-opening-expiry"
+                />
+                <Input
+                  label={t("inventory.batchLotNumber")}
+                  name="openingLotNumber"
+                  value={openingLotNumber}
+                  onChange={(e) => setOpeningLotNumber(e.target.value)}
+                />
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("inventory.openingExpiryHint")}
+                </p>
+              </>
+            ) : null}
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={addOpeningStockMutation.isPending}
+              onClick={() => addOpeningStockMutation.mutate()}
+              data-testid="inventory-add-opening-stock-submit"
+            >
+              {t("inventory.addOpeningStock")}
+            </Button>
+          </Card>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 w-fit"
+            disabled={disableMutation.isPending}
+            onClick={() => disableMutation.mutate()}
+            data-testid="inventory-disable"
+          >
+            {t("inventory.disable")}
+          </Button>
+        </>
       ) : (
         <>
           <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">

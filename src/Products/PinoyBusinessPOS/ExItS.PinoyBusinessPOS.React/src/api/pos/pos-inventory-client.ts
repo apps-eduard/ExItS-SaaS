@@ -25,6 +25,7 @@ export type PosInventoryAccountDto = {
   sellableQuantity?: number | null;
   expiredQuantity?: number | null;
   nearExpiryQuantity?: number | null;
+  hasOpeningStock?: boolean;
 };
 
 export type PosStockMovementDto = {
@@ -161,6 +162,26 @@ export function enableInventoryTracking(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/enable`,
+    body,
+  });
+}
+
+export function addOpeningStock(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  body: {
+    openingQuantity: number;
+    unitCost: number;
+    expirationDate?: string | null;
+    lotNumber?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<PosInventoryAccountDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/opening-stock`,
     body,
   });
 }

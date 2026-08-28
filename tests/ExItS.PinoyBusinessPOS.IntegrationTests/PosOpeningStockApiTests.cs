@@ -129,6 +129,60 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Add_opening_stock_on_tracked_zero_product_records_movement()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Deferred Opening Soap", tracksExpiration: false);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        using var addOpening = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/opening-stock", org);
+        addOpening.Content = JsonContent.Create(
+            new AddOpeningStockRequest(OpeningQuantity: 24m, UnitCost: 18m),
+            options: JsonOptions);
+        using var addResponse = await client.SendAsync(addOpening);
+        Assert.Equal(HttpStatusCode.OK, addResponse.StatusCode);
+        var account = await addResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.True(account!.HasOpeningStock);
+        Assert.Equal(24m, account.OnHandQuantity);
+
+        using var movements = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/movements?page=1&pageSize=50", org);
+        using var movementsResponse = await client.SendAsync(movements);
+        movementsResponse.EnsureSuccessStatusCode();
+        var page = await movementsResponse.Content.ReadFromJsonAsync<PagedResult<PosStockMovementDto>>(JsonOptions);
+        var movement = Assert.Single(page!.Items);
+        Assert.Equal("OpeningStock", movement.MovementType);
+        Assert.Equal(18m, movement.UnitCost);
+        Assert.Equal(432m, movement.StockValue);
+    }
+
+    [Fact]
+    public async Task Add_opening_stock_rejects_duplicate_opening()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Duplicate Opening", tracksExpiration: false);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(
+            new EnableInventoryTrackingRequest(OpeningQuantity: 10m, UnitCost: 5m),
+            options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        using var duplicate = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/opening-stock", org);
+        duplicate.Content = JsonContent.Create(
+            new AddOpeningStockRequest(OpeningQuantity: 5m, UnitCost: 5m),
+            options: JsonOptions);
+        using var duplicateResponse = await client.SendAsync(duplicate);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Update_product_does_not_add_opening_stock_movement()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

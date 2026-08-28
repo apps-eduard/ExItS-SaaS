@@ -29,6 +29,7 @@ internal static class InventoryEndpoints
         group.MapPut("/{productId:guid}/reorder", SetReorder);
         group.MapGet("/{productId:guid}/reconciliation", GetReconciliation);
         group.MapPost("/{productId:guid}/enable", Enable);
+        group.MapPost("/{productId:guid}/opening-stock", AddOpeningStock);
         group.MapPost("/{productId:guid}/disable", Disable);
         group.MapPost("/{productId:guid}/adjustments", Adjust);
         group.MapGet("/{productId:guid}/lots", ListLots);
@@ -383,6 +384,35 @@ internal static class InventoryEndpoints
                 body.ExpirationDate,
                 body.LotNumber,
                 body.UnitCost,
+                ct)
+            .ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> AddOpeningStock(
+        HttpRequest request,
+        Guid productId,
+        AddOpeningStockRequest body,
+        AddOpeningStock useCase,
+        InventoryQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await useCase
+            .ExecuteAsync(
+                organizationId,
+                productId,
+                actorId,
+                body.OpeningQuantity,
+                body.UnitCost,
+                body.ExpirationDate,
+                body.LotNumber,
                 ct)
             .ConfigureAwait(false);
         return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);

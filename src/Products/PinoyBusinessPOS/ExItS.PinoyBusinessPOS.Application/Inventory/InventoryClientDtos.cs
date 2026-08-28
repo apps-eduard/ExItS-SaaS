@@ -22,7 +22,14 @@ public sealed record PosInventoryAccountDto(
     int? ExpirationWarningDays = null,
     decimal? SellableQuantity = null,
     decimal? ExpiredQuantity = null,
-    decimal? NearExpiryQuantity = null);
+    decimal? NearExpiryQuantity = null,
+    bool HasOpeningStock = false);
+
+public sealed record AddOpeningStockRequest(
+    decimal OpeningQuantity,
+    decimal UnitCost,
+    DateOnly? ExpirationDate = null,
+    string? LotNumber = null);
 
 public sealed record PosStockMovementDto(
     Guid MovementId,

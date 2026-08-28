@@ -48,6 +48,9 @@ public sealed class InventoryQueryService
         var summary = await _inventory
             .GetMovementSummaryAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
+        var hasOpeningStock = await _inventory
+            .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+            .ConfigureAwait(false);
 
         decimal? sellable = null;
         decimal? expired = null;
@@ -64,7 +67,7 @@ public sealed class InventoryQueryService
             near = InventoryLotFefo.NearExpiryQuantity(lots, today, warning);
         }
 
-        return Map(product, account, summary.LatestAt, summary.Count, sellable, expired, near);
+        return Map(product, account, summary.LatestAt, summary.Count, sellable, expired, near, hasOpeningStock);
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListAsync(
@@ -253,7 +256,8 @@ public sealed class InventoryQueryService
         int movementCount,
         decimal? sellableQuantity = null,
         decimal? expiredQuantity = null,
-        decimal? nearExpiryQuantity = null)
+        decimal? nearExpiryQuantity = null,
+        bool hasOpeningStock = false)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
@@ -288,7 +292,8 @@ public sealed class InventoryQueryService
             product.ExpirationWarningDays,
             sellableQuantity,
             expiredQuantity,
-            nearExpiryQuantity);
+            nearExpiryQuantity,
+            hasOpeningStock);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)
@@ -442,6 +447,136 @@ public sealed class EnableInventoryTracking
                 await _inventory.AddMovementAsync(opening, cancellationToken).ConfigureAwait(false);
             }
 
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<InventoryAccount>.Success(account);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class AddOpeningStock
+{
+    private readonly IInventoryRepository _inventory;
+    private readonly ICatalogProductRepository _products;
+    private readonly InventoryLotStockService _lots;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public AddOpeningStock(
+        IInventoryRepository inventory,
+        ICatalogProductRepository products,
+        InventoryLotStockService lots,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _inventory = inventory;
+        _products = products;
+        _lots = lots;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
+        Guid organizationId,
+        Guid productId,
+        Guid actorId,
+        decimal openingQuantity,
+        decimal unitCost,
+        DateOnly? expirationDate = null,
+        string? lotNumber = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to add opening stock.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var catalogProductId = CatalogProductId.From(productId);
+        var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
+        if (product is null)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                ApplicationErrorCodes.InventoryProductNotFound,
+                "Product was not found.");
+        }
+
+        try
+        {
+            if (openingQuantity <= 0m)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InvalidInventoryQuantity,
+                    "Opening stock quantity must be greater than zero.");
+            }
+
+            if (unitCost <= 0m)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InvalidInventoryOpeningUnitCost,
+                    "Unit purchase cost must be greater than zero.");
+            }
+
+            var account = await _inventory
+                .GetByProductIdAsync(orgId, catalogProductId, cancellationToken)
+                .ConfigureAwait(false);
+            if (account is null || !account.IsTracked)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryNotTracked,
+                    "Inventory is not tracked for this product.");
+            }
+
+            var hadOpening = await _inventory
+                .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+                .ConfigureAwait(false);
+            var utcNow = _clock.UtcNow;
+            var opening = account.RecordOpeningStock(
+                openingQuantity,
+                product.UnitOfMeasure,
+                actorId,
+                utcNow,
+                hadOpening,
+                product.SellingMode,
+                unitCost);
+
+            if (product.TracksExpiration)
+            {
+                if (expirationDate is null)
+                {
+                    return ApplicationResult<InventoryAccount>.Failure(
+                        DomainErrorCodes.InventoryExpirationRequired,
+                        "Expiration date is required for opening stock on expiration-tracked products.");
+                }
+
+                var lot = await _lots
+                    .ReceiveAsync(
+                        orgId,
+                        catalogProductId,
+                        expirationDate.Value,
+                        opening.QuantityEffect,
+                        actorId,
+                        utcNow,
+                        StockMovementType.OpeningStock,
+                        StockMovementSourceType.Opening,
+                        lotNumber: lotNumber,
+                        stockMovementId: opening.Id.Value,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                opening = opening.WithLot(lot.Id);
+            }
+
+            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
+            await _inventory.AddMovementAsync(opening, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryAccount>.Success(account);
         }

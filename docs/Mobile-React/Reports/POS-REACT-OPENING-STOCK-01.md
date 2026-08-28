@@ -22,9 +22,46 @@ Opening quantity and unit cost are always entered in the product **base inventor
 
 Package conversion entry at create time: **DEFERRED** — no package picker for opening stock in v1.
 
+## Dual entry points
+
+| Information | Owner |
+|-------------|-------|
+| Selling price | Product / Today's Prices |
+| Package selling price | Product package configuration |
+| Opening quantity | Product create (optional) **or** Inventory → Add opening stock |
+| Opening purchase cost | Opening inventory movement |
+| New purchase quantity/cost | Receiving / Direct Buy / PO |
+| Expiry / Batch-Lot | Inventory lot / Receiving |
+| On-hand stock | Inventory |
+
+### 1. Product create (convenience)
+
+Optional **Add opening stock now** when track quantity is ON. Selling price stays in the Product section.
+
+### 2. Inventory detail (after create)
+
+When a product is tracked with zero stock and no opening movement yet, Inventory shows **Add opening stock** (quantity + unit purchase cost + optional expiry/lot). After the first opening movement, the page shows normal actions (stock adjustment, etc.) — not add-opening again.
+
+## API
+
+`POST /api/v1/pos/inventory/{productId}/enable` — enable tracking; optional opening on first enable.
+
+`POST /api/v1/pos/inventory/{productId}/opening-stock` — add opening stock on an already tracked account with zero on-hand and no prior opening movement.
+
+```json
+{
+  "openingQuantity": 24,
+  "unitCost": 18,
+  "expirationDate": "2027-12-30",
+  "lotNumber": "LOT-A123"
+}
+```
+
+Account DTO includes `hasOpeningStock` so clients can switch UI modes.
+
 ## Unit cost and valuation
 
-- User-facing label: **Unit cost** — purchase cost per base inventory unit
+- User-facing label: **Unit purchase cost** — what you paid per base inventory unit (not selling price)
 - Stored on the opening `stock_movements.unit_cost` column (nullable; only set for opening stock when supplied)
 - **Stock value** = opening quantity × unit cost (projected in API/UI; not a separate persisted inventory costing layer)
 - Does **not** change catalog selling price or package sell prices
@@ -32,7 +69,7 @@ Package conversion entry at create time: **DEFERRED** — no package picker for 
 
 ## Inventory movement
 
-Opening stock uses existing `StockMovementType.OpeningStock` with `StockMovementSourceType.Opening`. On-hand is updated via `InventoryAccount.Enable` movement effect — not a direct silent `OnHand` mutation without history.
+Opening stock uses existing `StockMovementType.OpeningStock` with `StockMovementSourceType.Opening`. On-hand is updated via movement effect on `InventoryAccount.Enable` or `InventoryAccount.RecordOpeningStock` — not a direct silent `OnHand` mutation without history.
 
 When expiration tracking is ON, opening stock creates/uses `inventory_lots` via `InventoryLotStockService.ReceiveAsync`.
 
@@ -49,27 +86,14 @@ Changing name, price, warning days, or packages on an existing product does not 
 
 ## Idempotency
 
-Create form uses React Query mutation pending state to block double submit. Enable endpoint remains single-shot per product (unique opening stock index).
-
-## API
-
-`POST /api/v1/pos/inventory/{productId}/enable`
-
-```json
-{
-  "openingQuantity": 24,
-  "unitCost": 18,
-  "expirationDate": "2027-12-30",
-  "lotNumber": "LOT-A123"
-}
-```
-
-When `openingQuantity` > 0, `unitCost` is required.
+Create form uses React Query mutation pending state to block double submit. Enable and add-opening-stock endpoints remain single-shot per product (unique opening stock index).
 
 ## Tests
 
-- `PosOpeningStockApiTests` — zero opening, cost required, movement projection, expiring lot, edit does not re-open
+- `PosOpeningStockApiTests` — zero opening, cost required, movement projection, expiring lot, deferred add-opening-stock, duplicate rejection, edit does not re-open
+- `InventoryAccountDomainTests` — `RecordOpeningStock` on tracked zero account
 - `opening-stock-helpers.test.ts` — frontend validation and enable payload builder
+- `inventory-detail-helpers.test.ts` — `canAddOpeningStock`
 
 ## Next
 

@@ -273,6 +273,7 @@ builder.Services.AddScoped<ProcessSaleReturn>();
 builder.Services.AddScoped<InventoryQueryService>();
 builder.Services.AddScoped<InventoryLotQueryService>();
 builder.Services.AddScoped<EnableInventoryTracking>();
+builder.Services.AddScoped<AddOpeningStock>();
 builder.Services.AddScoped<DisableInventoryTracking>();
 builder.Services.AddScoped<AdjustInventoryStock>();
 builder.Services.AddScoped<SetInventoryReorderConfiguration>();
