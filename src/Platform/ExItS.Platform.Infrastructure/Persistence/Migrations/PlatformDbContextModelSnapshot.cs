@@ -3256,8 +3256,6 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_customer_link_requests_pending_customer")
                         .HasFilter("status = 'Pending'");
 
-                    b.HasIndex("OrganizationId");
-
                     b.HasIndex("TargetUserIdentityId")
                         .HasDatabaseName("ix_customer_link_requests_target_user_identity_id");
 
@@ -3703,7 +3701,7 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipBranchAssignmentRecord", b =>
-            {
+                {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")

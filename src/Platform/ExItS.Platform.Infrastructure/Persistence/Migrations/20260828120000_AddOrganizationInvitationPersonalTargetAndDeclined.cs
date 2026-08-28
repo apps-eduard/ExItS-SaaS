@@ -1,3 +1,5 @@
+using ExItS.Platform.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -5,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ExItS.Platform.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
+[DbContext(typeof(PlatformDbContext))]
+[Migration("20260828120000_AddOrganizationInvitationPersonalTargetAndDeclined")]
 public partial class AddOrganizationInvitationPersonalTargetAndDeclined : Migration
 {
     /// <inheritdoc />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, Contact, IdCard, Loader2, Save, UserRound, Users } from "lucide-react";
@@ -31,7 +31,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { getCachedCustomer } from "@/offline/customer-cache";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { cn } from "@/lib/cn";
 
 type Mode = "create" | "edit";
@@ -53,7 +53,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [searchParams] = useSearchParams();
   const linkPublicId = searchParams.get("linkPublicId");
   const returnTo = searchParams.get("returnTo");
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
   const lockedToExits = Boolean(linkPublicId?.trim());
@@ -74,14 +74,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [eligibilityFailed, setEligibilityFailed] = useState(false);
   const [createKind, setCreateKind] = useState<CreateKind>(() =>
     linkPublicId?.trim() ? "exits" : "walkin",
-  );
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
   );
 
   const existing = useQuery({

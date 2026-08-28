@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { describePosApiError } from "@/access/pos-commercial-errors";
+import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   adjustInventoryStock,
   disableInventoryTracking,
@@ -19,17 +20,25 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { pageBackNav } from "@/navigation/page-back-nav";
+import {
+  canDisableExpirationTracking,
+  computeGoodQuantity,
+  sortLotsByExpiry,
+} from "@/features/inventory/inventory-detail-helpers";
+import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
 } from "@/features/inventory/inventory-lot-status";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const LOT_PAGE_SIZE = 50;
+
+type DeductMode = "auto" | "manual";
 
 function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>["t"]): string {
   const label = resolveLotExpiryLabel(lot.expiryStatus, lot.expirationDate);
@@ -41,7 +50,7 @@ function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>[
     case "expiresInDays":
       return t("inventory.statusExpiresInDays").replace("{days}", String(label.days));
     case "ok":
-      return t("inventory.statusOk");
+      return t("inventory.statusGood");
     default:
       return label.status;
   }
@@ -60,8 +69,10 @@ export function InventoryDetailPage() {
   const [adjustDirection, setAdjustDirection] = useState<"In" | "Out">("In");
   const [adjustExpiry, setAdjustExpiry] = useState("");
   const [adjustLotNumber, setAdjustLotNumber] = useState("");
+  const [deductMode, setDeductMode] = useState<DeductMode>("auto");
   const [selectedLotId, setSelectedLotId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
   const movementIdRef = useRef<string | null>(null);
@@ -106,11 +117,13 @@ export function InventoryDetailPage() {
   });
 
   const lots = useMemo(
-    () => lotsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    () => sortLotsByExpiry(lotsQuery.data?.pages.flatMap((page) => page.items) ?? []),
     [lotsQuery.data],
   );
 
-  async function invalidate() {
+  const selectedLot = lots.find((lot) => lot.lotId === selectedLotId) ?? null;
+
+  async function invalidateInventory() {
     await queryClient.invalidateQueries({ queryKey: ["inventory"] });
   }
 
@@ -135,7 +148,69 @@ export function InventoryDetailPage() {
       setError(null);
       setOpeningExpiry("");
       setOpeningLotNumber("");
-      await invalidate();
+      await invalidateInventory();
+    },
+    onError: (err) => {
+      setError(
+        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+      );
+    },
+  });
+
+  const enableExpirationMutation = useMutation({
+    mutationFn: async () => {
+      const catalog = await getCatalogProduct(workspace!, productId!);
+      return updateCatalogProduct(workspace!, productId!, {
+        name: catalog.name,
+        unitOfMeasure: catalog.unitOfMeasure,
+        sellingPrice: catalog.sellingPrice,
+        description: catalog.description,
+        sku: catalog.sku,
+        barcode: catalog.barcode,
+        categoryId: catalog.categoryId,
+        sellingMode: catalog.sellingMode,
+        canBeSold: catalog.canBeSold,
+        expectedUpdatedAtUtc: catalog.updatedAtUtc,
+        tracksExpiration: true,
+        expirationWarningDays: catalog.expirationWarningDays ?? 7,
+      });
+    },
+    onSuccess: async () => {
+      setError(null);
+      setNotice(t("inventory.expirationTrackingEnabled"));
+      await invalidateInventory();
+    },
+    onError: (err) => {
+      setError(
+        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+      );
+    },
+  });
+
+  const disableExpirationMutation = useMutation({
+    mutationFn: async () => {
+      const catalog = await getCatalogProduct(workspace!, productId!);
+      return updateCatalogProduct(workspace!, productId!, {
+        name: catalog.name,
+        unitOfMeasure: catalog.unitOfMeasure,
+        sellingPrice: catalog.sellingPrice,
+        description: catalog.description,
+        sku: catalog.sku,
+        barcode: catalog.barcode,
+        categoryId: catalog.categoryId,
+        sellingMode: catalog.sellingMode,
+        canBeSold: catalog.canBeSold,
+        expectedUpdatedAtUtc: catalog.updatedAtUtc,
+        tracksExpiration: false,
+        expirationWarningDays: null,
+      });
+    },
+    onSuccess: async () => {
+      setError(null);
+      setNotice(null);
+      setDeductMode("auto");
+      setSelectedLotId("");
+      await invalidateInventory();
     },
     onError: (err) => {
       setError(
@@ -148,7 +223,7 @@ export function InventoryDetailPage() {
     mutationFn: () => disableInventoryTracking(workspace!, productId!),
     onSuccess: async () => {
       setError(null);
-      await invalidate();
+      await invalidateInventory();
     },
     onError: (err) => {
       setError(
@@ -161,27 +236,33 @@ export function InventoryDetailPage() {
     if (!workspace || !productId || statusLocked || adjusting) {
       return;
     }
+
+    const qty = Number(adjustQty);
+    if (!adjustQty.trim() || Number.isNaN(qty) || qty <= 0) {
+      setError(t("inventory.quantityRequired"));
+      return;
+    }
+
     const reason = adjustReason.trim();
     if (!reason) {
       setError(t("inventory.reasonRequired"));
       return;
     }
+
     if (tracksExpiration && adjustDirection === "In" && !adjustExpiry.trim()) {
       setError(t("inventory.expirationDateRequired"));
       return;
     }
-    if (tracksExpiration && adjustDirection === "Out" && lots.length > 0 && !selectedLotId) {
-      setError(t("inventory.lotRequired"));
-      return;
-    }
-    if (
-      tracksExpiration &&
-      adjustDirection === "Out" &&
-      lots.length === 0 &&
-      !adjustExpiry.trim()
-    ) {
-      setError(t("inventory.expirationDateRequired"));
-      return;
+
+    if (tracksExpiration && adjustDirection === "Out" && deductMode === "manual") {
+      if (!selectedLotId) {
+        setError(t("inventory.lotRequired"));
+        return;
+      }
+      if (selectedLot && qty > selectedLot.quantityOnHand) {
+        setError(t("inventory.lotQuantityExceeded"));
+        return;
+      }
     }
 
     setAdjusting(true);
@@ -198,20 +279,19 @@ export function InventoryDetailPage() {
       const movementId = movementIdRef.current;
       await adjustInventoryStock(workspace, productId, {
         direction: adjustDirection,
-        quantity: Number(adjustQty),
+        quantity: qty,
         reason,
         movementId,
         expirationDate:
-          tracksExpiration && adjustDirection === "In"
-            ? adjustExpiry.trim() || null
-            : tracksExpiration && adjustDirection === "Out" && !selectedLotId
-              ? adjustExpiry.trim() || null
-              : null,
+          tracksExpiration && adjustDirection === "In" ? adjustExpiry.trim() || null : null,
         lotNumber:
           tracksExpiration && adjustDirection === "In" && adjustLotNumber.trim()
             ? adjustLotNumber.trim()
             : null,
-        lotId: tracksExpiration && selectedLotId ? selectedLotId : null,
+        lotId:
+          tracksExpiration && adjustDirection === "Out" && deductMode === "manual" && selectedLotId
+            ? selectedLotId
+            : null,
       });
       movementIdRef.current = null;
       setStatusLocked(false);
@@ -221,7 +301,7 @@ export function InventoryDetailPage() {
       setAdjustLotNumber("");
       setSelectedLotId("");
       setError(null);
-      await invalidate();
+      await invalidateInventory();
     } catch (err) {
       const movementId = movementIdRef.current;
       if (movementId && workspace) {
@@ -239,7 +319,7 @@ export function InventoryDetailPage() {
           setAdjustLotNumber("");
           setSelectedLotId("");
           setError(null);
-          await invalidate();
+          await invalidateInventory();
           return;
         }
         if (outcome.kind === "still_unknown") {
@@ -271,6 +351,10 @@ export function InventoryDetailPage() {
     return <ErrorState title={t("error.title")} detail={t("inventory.notFound")} />;
   }
 
+  const goodQuantity = computeGoodQuantity(account);
+  const expirationDisableAllowed = canDisableExpirationTracking(account);
+  const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-detail-page">
       <PageHeader
@@ -280,86 +364,70 @@ export function InventoryDetailPage() {
         backLabel={t(pageBackNav.inventory.labelKey)}
         backTestId="page-header-back-inventory"
       />
+
+      {notice ? (
+        <p className="m-0 rounded-[var(--exits-radius-md)] bg-muted px-3 py-2 text-[length:var(--exits-text-sm)]">
+          {notice}
+        </p>
+      ) : null}
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
 
       <Card className="p-3" data-testid="inventory-status">
-        <p className="m-0 font-semibold">
-          {account.isTracked ? t("inventory.tracked") : t("inventory.notTracked")}
-        </p>
-        {account.isTracked && tracksExpiration ? (
-          <dl
-            className="mt-2 mb-0 grid gap-2 text-[length:var(--exits-text-sm)]"
-            data-testid="inventory-expiry-totals"
-          >
-            <div className="flex min-w-0 justify-between gap-3">
-              <dt className="text-muted">{t("inventory.totalOnHand")}</dt>
-              <dd className="m-0 font-semibold">
-                {account.onHandQuantity} {account.unitOfMeasure}
-              </dd>
-            </div>
-            <div className="flex min-w-0 justify-between gap-3">
-              <dt className="text-muted">{t("inventory.sellable")}</dt>
-              <dd className="m-0 font-semibold">{account.sellableQuantity ?? 0}</dd>
-            </div>
-            <div className="flex min-w-0 justify-between gap-3">
-              <dt className="text-muted">{t("inventory.expiredQty")}</dt>
-              <dd className="m-0 font-semibold">{account.expiredQuantity ?? 0}</dd>
-            </div>
-            <div className="flex min-w-0 justify-between gap-3">
-              <dt className="text-muted">{t("inventory.nearExpiryQty")}</dt>
-              <dd className="m-0 font-semibold">{account.nearExpiryQuantity ?? 0}</dd>
-            </div>
-          </dl>
+        {account.isTracked ? (
+          <>
+            <p className="m-0 font-semibold">
+              {t("inventory.onHand")}: {account.onHandQuantity} {account.unitOfMeasure}
+            </p>
+            {tracksExpiration ? (
+              <div className="mt-2 flex flex-col gap-2">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("inventory.expirationTrackingOn")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("inventory.nearExpiryWarningLabel")}:{" "}
+                  {account.expirationWarningDays ?? 7} {t("inventory.daysUnit")}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 w-fit"
+                  disabled={
+                    disableExpirationMutation.isPending || !expirationDisableAllowed
+                  }
+                  onClick={() => disableExpirationMutation.mutate()}
+                  data-testid="inventory-disable-expiration"
+                >
+                  {t("inventory.disableExpirationTracking")}
+                </Button>
+                {!expirationDisableAllowed ? (
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("inventory.disableExpirationBlocked")}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  className="min-h-11"
+                  disabled={enableExpirationMutation.isPending}
+                  onClick={() => enableExpirationMutation.mutate()}
+                  data-testid="inventory-enable-expiration"
+                >
+                  {t("inventory.enableExpirationTracking")}
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
-          <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-            {account.isTracked
-              ? `${t("inventory.onHand")}: ${account.onHandQuantity} ${account.unitOfMeasure}`
-              : t("inventory.untrackedHint")}
-          </p>
+          <>
+            <p className="m-0 font-semibold">{t("inventory.notTracked")}</p>
+            <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("inventory.untrackedHint")}
+            </p>
+          </>
         )}
       </Card>
-
-      {tracksExpiration && account.isTracked ? (
-        <div data-testid="inventory-lots">
-          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("inventory.lots")}
-          </h2>
-          {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-          {lots.length === 0 && !lotsQuery.isLoading ? (
-            <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("inventory.lotsEmpty")}
-            </p>
-          ) : (
-            <ul className="mt-2 mb-0 flex list-none flex-col gap-2 p-0">
-              {lots.map((lot) => (
-                <li key={lot.lotId}>
-                  <Card className="p-3" data-testid={`inventory-lot-${lot.lotId}`}>
-                    <p className="m-0 truncate font-semibold">
-                      {lot.expirationDate}
-                      {lot.lotNumber ? ` · ${lot.lotNumber}` : ""}
-                    </p>
-                    <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                      {t("inventory.onHand")}: {lot.quantityOnHand} · {formatLotStatus(lot, t)}
-                    </p>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-          {lotsQuery.hasNextPage ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-2 min-h-11 w-fit"
-              disabled={lotsQuery.isFetchingNextPage}
-              onClick={() => void lotsQuery.fetchNextPage()}
-              data-testid="inventory-lots-load-more"
-            >
-              {lotsQuery.isFetchingNextPage ? t("inventory.loadingMore") : t("inventory.loadMore")}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
 
       {!account.isTracked ? (
         <Card className="flex flex-col gap-3 p-3">
@@ -384,7 +452,7 @@ export function InventoryDetailPage() {
                 data-testid="inventory-opening-expiry"
               />
               <Input
-                label={t("inventory.lotNumberOptional")}
+                label={t("inventory.batchLotNumber")}
                 name="openingLotNumber"
                 value={openingLotNumber}
                 onChange={(e) => setOpeningLotNumber(e.target.value)}
@@ -406,39 +474,57 @@ export function InventoryDetailPage() {
         </Card>
       ) : (
         <>
-          <Card className="flex flex-col gap-3 p-3">
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("inventory.direction")}
-              <select
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 font-normal"
-                value={adjustDirection}
-                onChange={(e) => {
-                  setAdjustDirection(e.target.value as "In" | "Out");
-                  setSelectedLotId("");
-                }}
-                data-testid="inventory-adjust-direction"
-              >
-                <option value="In">{t("inventory.adjustIn")}</option>
-                <option value="Out">{t("inventory.adjustOut")}</option>
-              </select>
-            </label>
+          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("inventory.stockAdjustment")}
+            </h2>
+
+            <fieldset className="m-0 border-0 p-0">
+              <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("inventory.direction")}
+              </legend>
+              <div className="flex flex-wrap gap-2" data-testid="inventory-adjust-direction">
+                <label className="inventory-direction-option">
+                  <input
+                    type="radio"
+                    name="adjustDirection"
+                    value="In"
+                    checked={adjustDirection === "In"}
+                    onChange={() => {
+                      setAdjustDirection("In");
+                      setSelectedLotId("");
+                    }}
+                  />
+                  <span>{t("inventory.adjustIn")}</span>
+                </label>
+                <label className="inventory-direction-option">
+                  <input
+                    type="radio"
+                    name="adjustDirection"
+                    value="Out"
+                    checked={adjustDirection === "Out"}
+                    onChange={() => setAdjustDirection("Out")}
+                  />
+                  <span>{t("inventory.adjustOut")}</span>
+                </label>
+              </div>
+            </fieldset>
+
             <Input
-              label={t("inventory.adjustQuantity")}
+              label={t("inventory.adjustQuantityRequired")}
               name="adjustQuantity"
               inputMode="decimal"
               value={adjustQty}
               onChange={(e) => setAdjustQty(e.target.value)}
             />
-            <Input
-              label={t("inventory.reason")}
-              name="adjustReason"
-              value={adjustReason}
-              onChange={(e) => setAdjustReason(e.target.value)}
-            />
+
             {tracksExpiration && adjustDirection === "In" ? (
-              <>
+              <div className="flex flex-col gap-3" data-testid="inventory-stock-details">
+                <h3 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                  {t("inventory.stockDetails")}
+                </h3>
                 <Input
-                  label={t("inventory.expirationDate")}
+                  label={t("inventory.expirationDateRequiredLabel")}
                   name="adjustExpirationDate"
                   type="date"
                   value={adjustExpiry}
@@ -446,48 +532,81 @@ export function InventoryDetailPage() {
                   data-testid="inventory-adjust-expiry"
                 />
                 <Input
-                  label={t("inventory.lotNumberOptional")}
+                  label={t("inventory.batchLotNumber")}
                   name="adjustLotNumber"
                   value={adjustLotNumber}
                   onChange={(e) => setAdjustLotNumber(e.target.value)}
                 />
-              </>
-            ) : null}
-            {tracksExpiration && adjustDirection === "Out" ? (
-              <>
-                {lots.length > 0 ? (
-                  <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                    {t("inventory.selectLot")}
-                    <select
-                      className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 font-normal"
-                      value={selectedLotId}
-                      onChange={(e) => setSelectedLotId(e.target.value)}
-                      data-testid="inventory-adjust-lot"
-                    >
-                      <option value="">{t("inventory.selectLotPlaceholder")}</option>
-                      {lots.map((lot) => (
-                        <option key={lot.lotId} value={lot.lotId}>
-                          {lot.expirationDate} · {lot.quantityOnHand}
-                          {lot.lotNumber ? ` · ${lot.lotNumber}` : ""} · {formatLotStatus(lot, t)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <Input
-                    label={t("inventory.expirationDate")}
-                    name="adjustOutExpirationDate"
-                    type="date"
-                    value={adjustExpiry}
-                    onChange={(e) => setAdjustExpiry(e.target.value)}
-                    data-testid="inventory-adjust-expiry"
-                  />
-                )}
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.writeOffHint")}
+                  {t("inventory.stockInExpiryHint")}
                 </p>
-              </>
+              </div>
             ) : null}
+
+            {tracksExpiration && adjustDirection === "Out" ? (
+              <fieldset className="m-0 border-0 p-0" data-testid="inventory-deduct-mode">
+                <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("inventory.deductFrom")}
+                </legend>
+                <div className="flex flex-col gap-2">
+                  <label className="inventory-direction-option">
+                    <input
+                      type="radio"
+                      name="deductMode"
+                      value="auto"
+                      checked={deductMode === "auto"}
+                      onChange={() => {
+                        setDeductMode("auto");
+                        setSelectedLotId("");
+                      }}
+                      data-testid="inventory-deduct-auto"
+                    />
+                    <span>{t("inventory.deductAutoFefo")}</span>
+                  </label>
+                  <label className="inventory-direction-option">
+                    <input
+                      type="radio"
+                      name="deductMode"
+                      value="manual"
+                      checked={deductMode === "manual"}
+                      onChange={() => setDeductMode("manual")}
+                      data-testid="inventory-deduct-manual"
+                    />
+                    <span>{t("inventory.deductChooseLot")}</span>
+                  </label>
+                </div>
+                <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("inventory.deductAutoHint")}
+                </p>
+                {deductMode === "manual" && lots.length > 0 ? (
+                  <div className="mt-3">
+                    <InventoryLotList
+                      lots={lots}
+                      unitOfMeasure={account.unitOfMeasure}
+                      formatStatus={formatStatus}
+                      selectable
+                      selectedLotId={selectedLotId}
+                      onSelectLot={setSelectedLotId}
+                      namePrefix="inventory-adjust-lot"
+                    />
+                  </div>
+                ) : null}
+                {deductMode === "manual" && lots.length === 0 ? (
+                  <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("inventory.lotsEmpty")}
+                  </p>
+                ) : null}
+              </fieldset>
+            ) : null}
+
+            <Input
+              label={t("inventory.reason")}
+              name="adjustReason"
+              value={adjustReason}
+              onChange={(e) => setAdjustReason(e.target.value)}
+              placeholder={t("inventory.reasonStockCountPlaceholder")}
+            />
+
             <Button
               type="button"
               className="min-h-11"
@@ -495,9 +614,81 @@ export function InventoryDetailPage() {
               onClick={() => void onAdjust()}
               data-testid="inventory-adjust"
             >
-              {adjusting ? t("checkout.confirmingTransaction") : t("inventory.applyAdjustment")}
+              {adjusting
+                ? t("checkout.confirmingTransaction")
+                : tracksExpiration && adjustDirection === "In"
+                  ? t("inventory.addStock")
+                  : t("inventory.applyAdjustment")}
             </Button>
           </Card>
+
+          {tracksExpiration ? (
+            <>
+              <section data-testid="inventory-expiration-summary">
+                <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+                  {t("inventory.expirationInventory")}
+                </h2>
+                <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)]">
+                  {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
+                </p>
+                <dl
+                  className="inventory-expiry-summary mt-3 mb-0 grid gap-2"
+                  data-testid="inventory-expiry-totals"
+                >
+                  <div className="inventory-expiry-summary__row">
+                    <dt>{t("inventory.statusGood")}</dt>
+                    <dd>{goodQuantity}</dd>
+                  </div>
+                  <div className="inventory-expiry-summary__row">
+                    <dt>{t("inventory.nearExpiryQty")}</dt>
+                    <dd>{account.nearExpiryQuantity ?? 0}</dd>
+                  </div>
+                  <div className="inventory-expiry-summary__row">
+                    <dt>{t("inventory.expiredQty")}</dt>
+                    <dd>{account.expiredQuantity ?? 0}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section data-testid="inventory-lots">
+                <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+                  {t("inventory.stockLots")}
+                </h2>
+                {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+                {lots.length === 0 && !lotsQuery.isLoading ? (
+                  <>
+                    <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("inventory.lotsEmpty")}
+                    </p>
+                    <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("inventory.lotsEmptyHint")}
+                    </p>
+                  </>
+                ) : (
+                  <InventoryLotList
+                    lots={lots}
+                    unitOfMeasure={account.unitOfMeasure}
+                    formatStatus={formatStatus}
+                  />
+                )}
+                {lotsQuery.hasNextPage ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="mt-2 min-h-11 w-fit"
+                    disabled={lotsQuery.isFetchingNextPage}
+                    onClick={() => void lotsQuery.fetchNextPage()}
+                    data-testid="inventory-lots-load-more"
+                  >
+                    {lotsQuery.isFetchingNextPage
+                      ? t("inventory.loadingMore")
+                      : t("inventory.loadMore")}
+                  </Button>
+                ) : null}
+              </section>
+            </>
+          ) : null}
+
           <Button
             type="button"
             variant="ghost"
@@ -521,11 +712,20 @@ export function InventoryDetailPage() {
             <li key={movement.movementId}>
               <Card className="p-3">
                 <p className="m-0 font-semibold">
-                  {movement.movementType} · {movement.quantityEffect}
+                  {movement.quantityEffect > 0 ? "+" : ""}
+                  {movement.quantityEffect} {account.unitOfMeasure}
                 </p>
                 <p className="mt-1 mb-0 truncate text-[length:var(--exits-text-sm)] text-muted">
                   {movement.reason} · {new Date(movement.recordedAtUtc).toLocaleString()}
                 </p>
+                {movement.expirationDate ? (
+                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("inventory.movementExpiry")}: {movement.expirationDate}
+                    {movement.lotNumber
+                      ? ` · ${t("inventory.movementLot")}: ${movement.lotNumber}`
+                      : ""}
+                  </p>
+                ) : null}
               </Card>
             </li>
           ))}

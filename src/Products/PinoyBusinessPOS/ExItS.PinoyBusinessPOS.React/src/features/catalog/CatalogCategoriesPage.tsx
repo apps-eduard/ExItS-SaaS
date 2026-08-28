@@ -232,7 +232,10 @@ export function CatalogCategoriesPage() {
         />
       ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-categories-list">
+      <ul
+        className="catalog-categories-list m-0 grid list-none gap-2 p-0"
+        data-testid="catalog-categories-list"
+      >
         {query.data?.items.map((category) => {
           const isActive = category.status === "Active";
           const isRenaming = renamingId === category.categoryId;
@@ -288,14 +291,12 @@ export function CatalogCategoriesPage() {
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <p className="exits-list__name m-0 truncate font-semibold">{category.name}</p>
-                      <div className="catalog-category-row__status mt-1">
-                        <StatusChip tone={isActive ? "success" : "warning"}>
-                          {category.status}
-                        </StatusChip>
-                      </div>
-                    </>
+                    <div className="catalog-category-row__heading">
+                      <p className="exits-list__name m-0 min-w-0 truncate font-semibold">{category.name}</p>
+                      <StatusChip tone={isActive ? "success" : "warning"}>
+                        {category.status}
+                      </StatusChip>
+                    </div>
                   )}
                 </div>
 

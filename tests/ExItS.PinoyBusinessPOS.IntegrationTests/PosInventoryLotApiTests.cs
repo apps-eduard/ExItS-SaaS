@@ -295,6 +295,37 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(DomainErrorCodes.InventoryLotMismatch, await ReadErrorCodeAsync(crossResponse));
     }
 
+    [Fact]
+    public async Task Manual_decrease_without_lot_uses_FEFO_on_sellable_lots()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Bread", tracksExpiration: true);
+
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+
+        var earlier = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10));
+        var later = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
+        await ReceiveAsync(client, org, product.ProductId, 10m, earlier, "EARLY");
+        await ReceiveAsync(client, org, product.ProductId, 20m, later, "LATE");
+
+        using var fefoOut = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org);
+        fefoOut.Content = JsonContent.Create(new AdjustInventoryRequest("Out", 5m, "Sample"), options: JsonOptions);
+        using var fefoResponse = await client.SendAsync(fefoOut);
+        Assert.Equal(HttpStatusCode.OK, fefoResponse.StatusCode);
+
+        using var lotsRequest = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}/lots", org);
+        using var lotsResponse = await client.SendAsync(lotsRequest);
+        var lots = await lotsResponse.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
+        var earlyLot = lots!.Items.Single(l => l.LotNumber == "EARLY");
+        var lateLot = lots.Items.Single(l => l.LotNumber == "LATE");
+        Assert.Equal(5m, earlyLot.QuantityOnHand);
+        Assert.Equal(20m, lateLot.QuantityOnHand);
+    }
+
     private static async Task ReceiveAsync(
         HttpClient client,
         Guid org,

@@ -278,7 +278,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         const validation = validateUnitDrafts(unitDrafts);
 
         if (validation) {
-          throw new Error(validation);
+          throw new Error(t(validation));
         }
 
         unitsPayload = draftsToUnitInputs(unitDrafts);
@@ -618,6 +618,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               onChange={(e) => setSellingPrice(e.target.value)}
             />
 
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("catalog.baseSellingPriceHint")}
+            </p>
+
             <FormCheck
               label={t("catalog.canBeSold")}
 
@@ -642,6 +646,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               onChange={setTracksExpiration}
             />
 
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("catalog.tracksExpirationHint")}
+            </p>
+
             {tracksExpiration ? (
               <Input
                 label={t("catalog.expirationWarningDays")}
@@ -659,9 +667,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             ) : null}
 
             {tracksExpiration ? (
-              <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("catalog.expirationWarningHint")}
-              </p>
+              <>
+                <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("catalog.expirationReceivingHint")}
+                </p>
+
+                <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("catalog.expirationBehaviorHint")}
+                </p>
+              </>
             ) : null}
           </div>
         </section>
@@ -758,15 +772,21 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   ) : null}
 
                   {draft.kind === "Sell" ? (
-                    <FormCheck
-                      label={t("catalog.allowsCustomQuantity")}
+                    <>
+                      <FormCheck
+                        label={t("catalog.allowsCustomQuantity")}
 
-                      checked={draft.allowsCustomQuantity}
+                        checked={draft.allowsCustomQuantity}
 
-                      onChange={(checked) =>
-                        updateDraft(draft.key, { allowsCustomQuantity: checked })
-                      }
-                    />
+                        onChange={(checked) =>
+                          updateDraft(draft.key, { allowsCustomQuantity: checked })
+                        }
+                      />
+
+                      <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("catalog.allowsCustomQuantityHint")}
+                      </p>
+                    </>
                   ) : null}
                 </div>
               ))}

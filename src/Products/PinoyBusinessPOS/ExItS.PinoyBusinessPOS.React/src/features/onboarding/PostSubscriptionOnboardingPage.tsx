@@ -232,8 +232,8 @@ export function PostSubscriptionOnboardingPage() {
           {startSetupMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
           {t("onboarding.startSetup")}
         </Button>
-        <Button type="button" variant="ghost" className="min-h-11 w-full" onClick={() => navigate("/sell", { replace: true })}>
-          {t("onboarding.ready.startSelling")}
+        <Button type="button" variant="ghost" className="min-h-11 w-full" onClick={() => navigate("/org", { replace: true })}>
+          {t("onboarding.ready.finishLater")}
         </Button>
         {startSetupMutation.isError ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]" role="alert">
@@ -321,7 +321,7 @@ export function PostSubscriptionOnboardingPage() {
           organizationId={organizationId}
           bindDestination={bindDestination}
           workspaces={workspaces}
-          onDone={() => navigate("/sell", { replace: true })}
+          onDone={(route) => navigate(route, { replace: true })}
           onFinishLater={() => navigate("/org", { replace: true })}
         />
       ) : null}
@@ -850,16 +850,17 @@ function ReadyStep({
     displayName: string;
     branches: Array<{ branchId: string; name: string }>;
   }>;
-  onDone: () => void;
+  onDone: (route: "/sell" | "/org/branches") => void;
   onFinishLater: () => void;
 }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const orgName =
-    workspaces.find((item) => item.organizationId === organizationId)?.displayName ??
-    t("onboarding.ready.businessFallback");
+  const orgWorkspace = workspaces.find((item) => item.organizationId === organizationId);
+  const orgName = orgWorkspace?.displayName ?? t("onboarding.ready.businessFallback");
+  const firstBranch = orgWorkspace?.branches[0] ?? null;
+  const hasBranch = firstBranch != null;
 
   async function startSelling() {
     if (busy) return;
@@ -869,21 +870,19 @@ function ReadyStep({
       try {
         await updateOnboardingProgress(workspace, { overallStatus: "Completed" });
       } catch {
-        // Already completed / transient failure — still enter Sell.
+        // Already completed / transient failure — still leave the wizard.
       }
       clearPendingPostSubscriptionOnboarding();
 
-      const ws = workspaces.find((item) => item.organizationId === organizationId);
-      const branch = ws?.branches[0] ?? null;
-      // Prefer a selling bind when a branch exists, but never block leaving the wizard
-      // if org-context/bind fails (common on first-run Local Validation).
-      if (ws && branch) {
+      // Prefer a selling bind when a branch exists; otherwise open branch setup —
+      // never dump the owner on "Choose a branch" with nothing to pick.
+      if (orgWorkspace && firstBranch) {
         try {
           await bindDestination({
             organizationId,
-            organizationDisplayName: ws.displayName,
-            branchId: branch.branchId,
-            branchName: branch.name,
+            organizationDisplayName: orgWorkspace.displayName,
+            branchId: firstBranch.branchId,
+            branchName: firstBranch.name,
             experience: "start_selling",
             route: "/sell",
             labelKey: "experience.startSelling",
@@ -891,8 +890,10 @@ function ReadyStep({
         } catch {
           // Keep current org bind and continue.
         }
+        onDone("/sell");
+      } else {
+        onDone("/org/branches");
       }
-      onDone();
     } catch {
       setActionError(t("onboarding.ready.actionFailed"));
     } finally {
@@ -976,11 +977,11 @@ function ReadyStep({
           type="button"
           className="min-h-11 w-full"
           disabled={busy}
-          data-testid="onboarding-start-selling"
+          data-testid={hasBranch ? "onboarding-start-selling" : "onboarding-open-branches"}
           onClick={() => void startSelling()}
         >
           {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-          {t("onboarding.ready.startSelling")}
+          {hasBranch ? t("onboarding.ready.startSelling") : t("onboarding.ready.setUpBranch")}
           <ChevronRight className="size-4" aria-hidden />
         </Button>
         <Button
@@ -993,13 +994,15 @@ function ReadyStep({
         >
           {t("onboarding.ready.finishLater")}
         </Button>
-        <Link
-          to="/catalog/products"
-          className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
-          data-testid="onboarding-add-products"
-        >
-          {t("onboarding.ready.addProducts")}
-        </Link>
+        {hasBranch ? (
+          <Link
+            to="/catalog/products"
+            className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+            data-testid="onboarding-add-products"
+          >
+            {t("onboarding.ready.addProducts")}
+          </Link>
+        ) : null}
       </div>
     </section>
   );

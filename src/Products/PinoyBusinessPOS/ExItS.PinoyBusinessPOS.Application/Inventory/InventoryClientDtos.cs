@@ -34,7 +34,9 @@ public sealed record PosStockMovementDto(
     string SourceType,
     Guid? SourceId,
     DateTimeOffset RecordedAtUtc,
-    Guid RecordedBy);
+    Guid RecordedBy,
+    DateOnly? ExpirationDate = null,
+    string? LotNumber = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,

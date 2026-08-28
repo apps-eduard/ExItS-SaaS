@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {
   canAccessReportsHub,
@@ -47,6 +47,10 @@ import { personalWebAllowsOfflineSession } from "@/runtime/personal-web-runtime-
 import { organizationWebAllowsOfflineSession } from "@/runtime/organization-web-runtime-policy";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { workspaceRouteForOutcome } from "@/workspace/workspace-resolver";
+import {
+  workingExperienceRoute,
+  type WorkingExperience,
+} from "@/workspace/working-experience";
 
 export function SessionLoading() {
   const { t } = useI18n();
@@ -279,9 +283,56 @@ export function RequireWorkspaceBound({ children }: { children: ReactNode }) {
  * Branch-scoped org surfaces (Catalog Sell floor, Inventory, Shifts, …).
  * Manage Business binds org-only (no branch) — never leave the user on endless
  * "Checking session…" when they open these tabs.
+ *
+ * Start a Business creates a Main Branch while the owner often stays on Manage Business.
+ * Opening Sell/Catalog with exactly one branch auto-binds it instead of "Choose a branch".
  */
 export function RequireBranchBound({ children }: { children: ReactNode }) {
-  const { status, boundWorkspace, routingPlan } = useWorkspace();
+  const { status, boundWorkspace, routingPlan, workspaces, bindDestination } = useWorkspace();
+  const location = useLocation();
+  const autoBindKeyRef = useRef<string | null>(null);
+
+  const orgWorkspace = boundWorkspace
+    ? workspaces.find(
+        (item) =>
+          item.organizationId.localeCompare(boundWorkspace.organizationId, undefined, {
+            sensitivity: "accent",
+          }) === 0,
+      )
+    : undefined;
+  const availableBranches = orgWorkspace?.branches ?? [];
+  const singleBranch =
+    boundWorkspace && !boundWorkspace.branchId && availableBranches.length === 1
+      ? availableBranches[0]
+      : null;
+
+  useEffect(() => {
+    if (!boundWorkspace || !singleBranch) {
+      return;
+    }
+    const experience: WorkingExperience = location.pathname.startsWith("/sell")
+      ? "start_selling"
+      : "operations";
+    const key = `${boundWorkspace.organizationId}:${singleBranch.branchId}:${experience}`;
+    if (autoBindKeyRef.current === key) {
+      return;
+    }
+    autoBindKeyRef.current = key;
+    void bindDestination({
+      organizationId: boundWorkspace.organizationId,
+      organizationDisplayName: boundWorkspace.organizationDisplayName,
+      branchId: singleBranch.branchId,
+      branchName: singleBranch.name,
+      experience,
+      route: workingExperienceRoute(experience),
+      labelKey:
+        experience === "start_selling" ? "experience.startSelling" : "experience.operations",
+    }).then((ok) => {
+      if (!ok) {
+        autoBindKeyRef.current = null;
+      }
+    });
+  }, [bindDestination, boundWorkspace, location.pathname, singleBranch]);
 
   if (status === "binding" || ((status === "loading" || status === "idle") && !boundWorkspace)) {
     return <SessionLoading />;
@@ -290,6 +341,13 @@ export function RequireBranchBound({ children }: { children: ReactNode }) {
     return children;
   }
   if (boundWorkspace) {
+    if (availableBranches.length === 0) {
+      return <Navigate to="/org/branches" replace />;
+    }
+    if (singleBranch) {
+      // Auto-bind in flight (Start a Business Main Branch while still on Manage Business).
+      return <SessionLoading />;
+    }
     return <BranchRequiredPanel />;
   }
   if (routingPlan?.outcome === "AutoSelect" || routingPlan?.outcome === "AutoDestination") {

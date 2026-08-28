@@ -38,6 +38,8 @@ export type PosStockMovementDto = {
   sourceId?: string | null;
   recordedAtUtc: string;
   recordedBy: string;
+  expirationDate?: string | null;
+  lotNumber?: string | null;
 };
 
 export type PosInventoryLotDto = {

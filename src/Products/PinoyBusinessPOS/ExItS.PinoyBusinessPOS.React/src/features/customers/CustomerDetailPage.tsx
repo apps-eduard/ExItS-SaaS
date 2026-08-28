@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
@@ -51,13 +51,15 @@ import {
 import { onlineRequiredDetailKey, ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 export function CustomerDetailPage() {
   const { t } = useI18n();
   const { customerId } = useParams<{ customerId: string }>();
   const [searchParams] = useSearchParams();
   const pendingLinkHint = searchParams.get("pendingLink") === "1";
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { sessionGrant } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
@@ -66,14 +68,6 @@ export function CustomerDetailPage() {
   const [afterCreateHintDismissed, setAfterCreateHintDismissed] = useState(false);
   const [cachedCustomer, setCachedCustomer] = useState<PosCustomerListItem | null>(null);
   const [cachedOwed, setCachedOwed] = useState<number | null>(null);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const allowEdit = canEditCustomer(sessionGrant);
   const allowRepay = canRecordRepayment(sessionGrant);

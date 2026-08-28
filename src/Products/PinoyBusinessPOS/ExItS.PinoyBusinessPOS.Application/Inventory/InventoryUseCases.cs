@@ -137,8 +137,10 @@ public sealed class InventoryQueryService
             .ListMovementsAsync(orgId, catalogProductId, filter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
+        var lotById = await LoadMovementLotsAsync(orgId, items, cancellationToken).ConfigureAwait(false);
+
         return new PagedResult<PosStockMovementDto>(
-            items.Select(MapMovement).ToList(),
+            items.Select(m => MapMovement(m, ResolveMovementLot(m, lotById))).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -149,13 +151,64 @@ public sealed class InventoryQueryService
         Guid movementId,
         CancellationToken cancellationToken = default)
     {
+        var orgId = PosOrganizationId.From(organizationId);
         var movement = await _inventory
-            .GetMovementByIdAsync(
-                PosOrganizationId.From(organizationId),
-                StockMovementId.From(movementId),
-                cancellationToken)
+            .GetMovementByIdAsync(orgId, StockMovementId.From(movementId), cancellationToken)
             .ConfigureAwait(false);
-        return movement is null ? null : MapMovement(movement);
+        if (movement is null)
+        {
+            return null;
+        }
+
+        InventoryLot? lot = null;
+        if (movement.InventoryLotId is InventoryLotId lotId)
+        {
+            lot = await _lots.GetByIdAsync(orgId, lotId, cancellationToken).ConfigureAwait(false);
+        }
+
+        return MapMovement(movement, lot);
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, InventoryLot>> LoadMovementLotsAsync(
+        PosOrganizationId orgId,
+        IReadOnlyList<StockMovement> items,
+        CancellationToken cancellationToken)
+    {
+        var lotIds = items
+            .Where(m => m.InventoryLotId is not null)
+            .Select(m => m.InventoryLotId!.Value)
+            .Distinct()
+            .ToList();
+        if (lotIds.Count == 0)
+        {
+            return new Dictionary<Guid, InventoryLot>();
+        }
+
+        var lotById = new Dictionary<Guid, InventoryLot>(lotIds.Count);
+        foreach (var lotId in lotIds)
+        {
+            var lot = await _lots
+                .GetByIdAsync(orgId, InventoryLotId.From(lotId), cancellationToken)
+                .ConfigureAwait(false);
+            if (lot is not null)
+            {
+                lotById[lotId] = lot;
+            }
+        }
+
+        return lotById;
+    }
+
+    private static InventoryLot? ResolveMovementLot(
+        StockMovement movement,
+        IReadOnlyDictionary<Guid, InventoryLot> lotById)
+    {
+        if (movement.InventoryLotId is not InventoryLotId lotId)
+        {
+            return null;
+        }
+
+        return lotById.TryGetValue(lotId.Value, out var lot) ? lot : null;
     }
 
     private async Task<PagedResult<PosInventoryAccountDto>> MapPageAsync(
@@ -238,7 +291,7 @@ public sealed class InventoryQueryService
             nearExpiryQuantity);
     }
 
-    public static PosStockMovementDto MapMovement(StockMovement movement) =>
+    public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null) =>
         new(
             movement.Id.Value,
             movement.ProductId.Value,
@@ -249,7 +302,9 @@ public sealed class InventoryQueryService
             StockMovementSourceTypes.ToCode(movement.SourceType),
             movement.SourceId,
             movement.RecordedAtUtc,
-            movement.RecordedBy);
+            movement.RecordedBy,
+            lot?.ExpirationDate,
+            lot?.LotNumber);
 }
 
 public sealed class EnableInventoryTracking
@@ -660,7 +715,7 @@ public sealed class AdjustInventoryStock
                 }
                 else
                 {
-                    InventoryLot target;
+                    InventoryLot? target = null;
                     if (lotId is Guid specifiedLot)
                     {
                         var found = await _lotRepository
@@ -700,24 +755,44 @@ public sealed class AdjustInventoryStock
                     }
                     else
                     {
-                        return ApplicationResult<InventoryAccount>.Failure(
-                            DomainErrorCodes.InventoryLotMismatch,
-                            "A lot is required when decreasing expiration-tracked stock.");
+                        var today = InventoryLot.BusinessDateOf(utcNow);
+                        var allocations = await _lots
+                            .ConsumeFefoAsync(
+                                orgId,
+                                catalogProductId,
+                                quantity,
+                                today,
+                                actorId,
+                                utcNow,
+                                movement.MovementType,
+                                StockMovementSourceType.Manual,
+                                branch,
+                                stockMovementId: movement.Id.Value,
+                                cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
+                        var primaryLot = allocations.FirstOrDefault()?.Lot;
+                        if (primaryLot is not null)
+                        {
+                            movement = movement.WithLot(primaryLot.Id);
+                        }
                     }
 
-                    await _lots
-                        .ConsumeSpecificAsync(
-                            orgId,
-                            target,
-                            quantity,
-                            actorId,
-                            utcNow,
-                            movement.MovementType,
-                            StockMovementSourceType.Manual,
-                            stockMovementId: movement.Id.Value,
-                            cancellationToken: cancellationToken)
-                        .ConfigureAwait(false);
-                    movement = movement.WithLot(target.Id);
+                    if (target is not null)
+                    {
+                        await _lots
+                            .ConsumeSpecificAsync(
+                                orgId,
+                                target,
+                                quantity,
+                                actorId,
+                                utcNow,
+                                movement.MovementType,
+                                StockMovementSourceType.Manual,
+                                stockMovementId: movement.Id.Value,
+                                cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
+                        movement = movement.WithLot(target.Id);
+                    }
                 }
             }
 

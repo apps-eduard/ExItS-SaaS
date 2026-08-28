@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createEmptyUnitDraft,
   draftsToUnitInputs,
+  isUnitDraftBlank,
   validateUnitDrafts,
 } from "@/features/catalog/product-unit-drafts";
 
@@ -30,7 +31,22 @@ describe("product-unit-drafts", () => {
     draft.displayName = "Box";
     draft.shortLabel = "box";
     draft.multiplierToBase = "0";
-    expect(validateUnitDrafts([draft])).toMatch(/greater than zero/i);
+    expect(validateUnitDrafts([draft])).toBe("catalog.unitValidationMultiplier");
+  });
+
+  it("rejects blank package rows", () => {
+    const blank = createEmptyUnitDraft("Purchase");
+    expect(isUnitDraftBlank(blank)).toBe(true);
+    expect(validateUnitDrafts([blank])).toBe("catalog.unitValidationBlankRow");
+  });
+
+  it("rejects sell packages without a positive price", () => {
+    const sell = createEmptyUnitDraft("Sell");
+    sell.displayName = "Piece";
+    sell.shortLabel = "pc";
+    sell.multiplierToBase = "1";
+    sell.sellingPrice = "0";
+    expect(validateUnitDrafts([sell])).toBe("catalog.unitValidationSellPrice");
   });
 
   it("maps piece to box of 12", () => {

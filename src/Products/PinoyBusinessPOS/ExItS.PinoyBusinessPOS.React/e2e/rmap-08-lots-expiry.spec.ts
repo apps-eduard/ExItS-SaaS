@@ -250,13 +250,6 @@ async function mockInventoryLotsApi(page: Page, harness: LotHarness) {
           body: JSON.stringify({ detail: "Expiration date is required for stock in." }),
         });
       }
-      if (harness.tracksExpiration && body.direction === "Out" && !body.lotId) {
-        return route.fulfill({
-          status: 400,
-          contentType: "application/json",
-          body: JSON.stringify({ detail: "Lot is required for stock out." }),
-        });
-      }
       const effect = body.direction === "Out" ? -Number(body.quantity) : Number(body.quantity);
       harness.onHand += effect;
       if (body.direction === "Out" && body.reason === "Expired") {
@@ -331,15 +324,15 @@ test.describe("RMAP-08 lots / expiry", () => {
 
     await page.getByTestId(`expiring-lot-${LOT_EXPIRED_ID}`).click();
     await expect(page.getByTestId("inventory-detail-page")).toBeVisible();
-    await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Sellable");
-    await expect(page.getByTestId("inventory-expiry-totals")).toContainText("20");
+    await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Good");
+    await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Near expiry");
     await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Expired");
     await expect(page.getByTestId("inventory-lots")).toContainText("NEAR-1");
     await expect(page.getByTestId("inventory-lots")).toContainText("Expired");
 
-    await page.getByTestId("inventory-adjust-direction").selectOption("In");
-    await page.getByRole("textbox", { name: "Quantity" }).fill("3");
-    await page.getByRole("textbox", { name: "Reason" }).fill("Delivery");
+    await page.getByLabel("Increase (In)").check();
+    await page.getByLabel("Quantity").fill("3");
+    await page.getByLabel("Reason").fill("Delivery");
     await page.getByTestId("inventory-adjust").click();
     await expect(page.getByText(/Expiration date is required/i)).toBeVisible();
 
@@ -347,10 +340,11 @@ test.describe("RMAP-08 lots / expiry", () => {
     await page.getByTestId("inventory-adjust").click();
     await expect(page.getByTestId("inventory-movements")).toContainText("3");
 
-    await page.getByTestId("inventory-adjust-direction").selectOption("Out");
-    await page.getByRole("textbox", { name: "Quantity" }).fill("2");
-    await page.getByRole("textbox", { name: "Reason" }).fill("Expired");
-    await page.getByTestId("inventory-adjust-lot").selectOption(LOT_EXPIRED_ID);
+    await page.getByLabel("Decrease (Out)").check();
+    await page.getByLabel("Quantity").fill("2");
+    await page.getByLabel("Reason").fill("Expired");
+    await page.getByTestId("inventory-deduct-manual").check();
+    await page.getByTestId(`inventory-adjust-lot-${LOT_EXPIRED_ID}`).getByRole("radio").check();
     await page.getByTestId("inventory-adjust").click();
     await expect(page.getByTestId("inventory-movements")).toContainText("Expired");
   });
@@ -431,9 +425,15 @@ test.describe("RMAP-08 lots / expiry", () => {
     await expect(page.getByTestId(`inventory-lot-${manyLots[50]!.lotId}`)).toHaveCount(0);
     await page.getByTestId("inventory-lots-load-more").click();
     await expect(page.getByTestId(`inventory-lot-${manyLots[50]!.lotId}`)).toBeVisible();
-    await page.getByTestId("inventory-adjust-direction").selectOption("Out");
-    await page.getByTestId("inventory-adjust-lot").selectOption(manyLots[50]!.lotId);
-    await expect(page.getByTestId("inventory-adjust-lot")).toHaveValue(manyLots[50]!.lotId);
+    await page.getByLabel("Decrease (Out)").check();
+    await page.getByTestId("inventory-deduct-manual").check();
+    await page
+      .getByTestId(`inventory-adjust-lot-${manyLots[50]!.lotId}`)
+      .getByRole("radio")
+      .check();
+    await expect(
+      page.getByTestId(`inventory-adjust-lot-${manyLots[50]!.lotId}`).getByRole("radio"),
+    ).toBeChecked();
   });
 
   for (const viewport of VIEWPORTS) {

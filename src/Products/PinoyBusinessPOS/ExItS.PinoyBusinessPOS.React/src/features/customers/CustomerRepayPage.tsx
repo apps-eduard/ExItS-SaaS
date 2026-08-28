@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,7 +25,7 @@ import {
 } from "@/offline/customer-cache";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
-import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 function parsePaymentAmount(raw: string): number | null {
   const trimmed = raw.trim();
@@ -43,7 +43,7 @@ export function CustomerRepayPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { customerId } = useParams<{ customerId: string }>();
-  const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -54,14 +54,6 @@ export function CustomerRepayPage() {
   const [cachedName, setCachedName] = useState<string | null>(null);
   const [cachedOwed, setCachedOwed] = useState<number | null>(null);
   const repaymentIdRef = useRef<string | null>(null);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],

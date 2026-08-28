@@ -10,6 +10,7 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 function defaultPeriod() {
   const end = new Date();
@@ -23,17 +24,10 @@ export function CustomerStatementPage() {
   const { t } = useI18n();
   const { customerId } = useParams<{ customerId: string }>();
   const { boundWorkspace } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const defaults = useMemo(() => defaultPeriod(), []);
   const [periodStart, setPeriodStart] = useState(defaults.periodStart);
   const [periodEnd, setPeriodEnd] = useState(defaults.periodEnd);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],

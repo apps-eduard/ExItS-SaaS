@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Plus } from "lucide-react";
@@ -21,6 +21,7 @@ import {
 } from "@/offline/customer-cache";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { CustomerListConnectionBadges } from "@/features/customers/CustomerListConnectionBadges";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
@@ -43,6 +44,7 @@ function customerStatusTone(status: string): "success" | "warning" {
 export function CustomersListPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const online = useBrowserOnline();
   const customerLinkOverlay = useOrganizationCustomerLinkOverlay(boundWorkspace?.organizationId);
   const offlineContext = useOrganizationOfflineContext();
@@ -55,14 +57,6 @@ export function CustomersListPage() {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
-
-  const workspace = useMemo(
-    () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
-        : null,
-    [boundWorkspace],
-  );
 
   const allowCreate = canCreateCustomer(sessionGrant);
 

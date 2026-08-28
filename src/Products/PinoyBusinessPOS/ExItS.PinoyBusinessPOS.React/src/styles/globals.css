@@ -4574,6 +4574,95 @@ a.dashboard-metric-card:focus-visible {
   line-height: 1.35;
 }
 
+.inventory-direction-option {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  font-size: var(--exits-text-sm);
+  cursor: pointer;
+}
+
+.inventory-direction-option:has(input:checked) {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.inventory-expiry-summary {
+  font-size: var(--exits-text-sm);
+}
+
+.inventory-expiry-summary__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.inventory-expiry-summary__row dt {
+  color: var(--exits-text-muted);
+}
+
+.inventory-expiry-summary__row dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.inventory-lot-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.inventory-lot-table__grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--exits-text-sm);
+}
+
+.inventory-lot-table__grid th,
+.inventory-lot-table__grid td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--exits-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inventory-lot-table__grid th {
+  color: var(--exits-text-muted);
+  font-weight: 600;
+}
+
+.inventory-lot-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--exits-radius-sm);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+}
+
+.inventory-lot-badge--expired {
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger) 12%, var(--exits-surface));
+}
+
+.inventory-lot-badge--near {
+  color: var(--exits-warning);
+  background: color-mix(in srgb, var(--exits-warning) 12%, var(--exits-surface));
+}
+
+.inventory-lot-badge--good {
+  color: var(--exits-text-muted);
+  background: var(--exits-surface-muted);
+}
+
+.inventory-lot-card--selected {
+  border-color: var(--exits-primary);
+}
+
 /* Catalog template import */
 .catalog-import-toolbar {
   width: 100%;
@@ -4843,6 +4932,24 @@ a.dashboard-metric-card:focus-visible {
 .catalog-category-row__main {
   min-width: 0;
   flex: 1;
+}
+
+.catalog-category-row__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.catalog-category-row__heading .exits-list__name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Category cards carry actions — keep one column so names are not squeezed on wide screens. */
+.catalog-categories-list {
+  grid-template-columns: 1fr;
 }
 
 .catalog-category-row__rename {

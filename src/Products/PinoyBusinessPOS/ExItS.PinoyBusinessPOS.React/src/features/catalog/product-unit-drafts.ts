@@ -15,6 +15,12 @@ export type ProductUnitDraft = {
   sortOrder: number;
 };
 
+export type UnitDraftValidationKey =
+  | "catalog.unitValidationBlankRow"
+  | "catalog.unitValidationNameLabel"
+  | "catalog.unitValidationMultiplier"
+  | "catalog.unitValidationSellPrice";
+
 let draftKey = 0;
 
 export function createEmptyUnitDraft(kind: PosProductUnitKind): ProductUnitDraft {
@@ -29,6 +35,21 @@ export function createEmptyUnitDraft(kind: PosProductUnitKind): ProductUnitDraft
     allowsCustomQuantity: false,
     sortOrder: 0,
   };
+}
+
+export function isUnitDraftBlank(draft: ProductUnitDraft): boolean {
+  const nameEmpty = !draft.displayName.trim();
+  const labelEmpty = !draft.shortLabel.trim();
+  const multiplier = draft.multiplierToBase.trim();
+  const multiplierDefault = multiplier === "" || multiplier === "1";
+
+  if (draft.kind === "Purchase") {
+    return nameEmpty && labelEmpty && multiplierDefault;
+  }
+
+  const price = draft.sellingPrice.trim();
+  const priceDefault = price === "" || price === "0";
+  return nameEmpty && labelEmpty && multiplierDefault && priceDefault && !draft.allowsCustomQuantity;
 }
 
 export function unitsFromDto(
@@ -77,21 +98,34 @@ export function draftsToUnitInputs(drafts: ProductUnitDraft[]): PosCatalogProduc
   });
 }
 
-export function validateUnitDrafts(drafts: ProductUnitDraft[]): string | null {
+export function validateUnitDrafts(drafts: ProductUnitDraft[]): UnitDraftValidationKey | null {
+  if (drafts.length === 0) {
+    return "catalog.unitValidationBlankRow";
+  }
+
+  for (const draft of drafts) {
+    if (isUnitDraftBlank(draft)) {
+      return "catalog.unitValidationBlankRow";
+    }
+  }
+
   for (const draft of drafts) {
     if (!draft.displayName.trim() || !draft.shortLabel.trim()) {
-      return "Each package needs a display name and short label.";
+      return "catalog.unitValidationNameLabel";
     }
+
     const multiplier = Number(draft.multiplierToBase);
     if (!(multiplier > 0) || Number.isNaN(multiplier)) {
-      return "Multiplier to base must be greater than zero.";
+      return "catalog.unitValidationMultiplier";
     }
+
     if (draft.kind === "Sell") {
       const price = Number(draft.sellingPrice === "" ? "0" : draft.sellingPrice);
-      if (Number.isNaN(price) || price < 0) {
-        return "Sell unit price must be a non-negative number.";
+      if (Number.isNaN(price) || price <= 0) {
+        return "catalog.unitValidationSellPrice";
       }
     }
   }
+
   return null;
 }
