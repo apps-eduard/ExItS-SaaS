@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { describePosApiError } from "@/access/pos-commercial-errors";
-import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   adjustInventoryStock,
   addOpeningStock,
@@ -24,7 +23,6 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
   canAddOpeningStock,
-  canDisableExpirationTracking,
   computeGoodQuantity,
   sortLotsByExpiry,
 } from "@/features/inventory/inventory-detail-helpers";
@@ -244,38 +242,6 @@ export function InventoryDetailPage() {
     },
   });
 
-  const disableExpirationMutation = useMutation({
-    mutationFn: async () => {
-      const catalog = await getCatalogProduct(workspace!, productId!);
-      return updateCatalogProduct(workspace!, productId!, {
-        name: catalog.name,
-        unitOfMeasure: catalog.unitOfMeasure,
-        sellingPrice: catalog.sellingPrice,
-        description: catalog.description,
-        sku: catalog.sku,
-        barcode: catalog.barcode,
-        categoryId: catalog.categoryId,
-        brandId: catalog.brandId ?? null,
-        sellingMode: catalog.sellingMode,
-        canBeSold: catalog.canBeSold,
-        expectedUpdatedAtUtc: catalog.updatedAtUtc,
-        tracksExpiration: false,
-        expirationWarningDays: null,
-      });
-    },
-    onSuccess: async () => {
-      setError(null);
-      setDeductMode("auto");
-      setSelectedLotId("");
-      await invalidateInventory();
-    },
-    onError: (err) => {
-      setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
-      );
-    },
-  });
-
   const disableMutation = useMutation({
     mutationFn: () => disableInventoryTracking(workspace!, productId!),
     onSuccess: async () => {
@@ -418,13 +384,18 @@ export function InventoryDetailPage() {
   }
 
   const goodQuantity = computeGoodQuantity(account);
-  const expirationDisableAllowed = canDisableExpirationTracking(account);
   const showAddOpeningStock = canAddOpeningStock(account);
   const openingStockValue = computeOpeningStockValue(
     Number(openingQty),
     Number(openingUnitCost),
   );
   const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
+  const lotTotal = lots.reduce((sum, lot) => sum + (lot.quantityOnHand ?? 0), 0);
+  const needsExpirationSetup =
+    tracksExpiration &&
+    account.onHandQuantity > 0 &&
+    !lotsQuery.isLoading &&
+    lotTotal === 0;
 
   const lotsSection =
     tracksExpiration && !showAddOpeningStock ? (
@@ -517,41 +488,41 @@ export function InventoryDetailPage() {
               data-testid="inventory-expiration-status"
             >
               {tracksExpiration
-                ? t("inventory.expirationTrackingOn")
+                ? t("inventory.expirationTrackingOnWithWarning").replace(
+                    "{days}",
+                    String(account.expirationWarningDays ?? 7),
+                  )
                 : t("inventory.expirationTrackingOff")}
             </p>
-            {tracksExpiration ? (
-              <div className="mt-2 flex flex-col gap-2">
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.nearExpiryWarningLabel")}:{" "}
-                  {account.expirationWarningDays ?? 7} {t("inventory.daysUnit")}
+            {needsExpirationSetup ? (
+              <div
+                className="mt-2 flex flex-col gap-2"
+                data-testid="inventory-expiration-setup-required"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("inventory.expirationSetupRequired")}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    to={`/catalog/products/${productId}/edit`}
-                    className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
-                    data-testid="inventory-manage-expiration"
-                  >
-                    {t("inventory.manageExpirationSettings")}
-                  </Link>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-11 w-fit"
-                    disabled={
-                      disableExpirationMutation.isPending || !expirationDisableAllowed
-                    }
-                    onClick={() => disableExpirationMutation.mutate()}
-                    data-testid="inventory-disable-expiration"
-                  >
-                    {t("inventory.disableExpirationTracking")}
-                  </Button>
-                </div>
-                {!expirationDisableAllowed ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.disableExpirationBlocked")}
-                  </p>
-                ) : null}
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("inventory.expirationSetupRequiredDetail")}
+                </p>
+                <Link
+                  to={`/inventory/${productId}/expiration`}
+                  className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
+                  data-testid="inventory-expiration-setup-link"
+                >
+                  {t("inventory.assignExpirationDates")}
+                </Link>
+              </div>
+            ) : null}
+            {tracksExpiration ? (
+              <div className="mt-2">
+                <Link
+                  to={`/inventory/${productId}/expiration`}
+                  className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
+                  data-testid="inventory-manage-expiration"
+                >
+                  {t("inventory.manageExpirationSettings")}
+                </Link>
               </div>
             ) : (
               <div className="mt-2">

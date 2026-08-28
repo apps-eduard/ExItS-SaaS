@@ -289,6 +289,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.expirationWarningDays": "Near-expiry warning (adlaw)",
   "catalog.expirationBehaviorHint":
     "Ti near-expiry stock agtalinaed a mailako. Saan a mailako ti expired stock. Ti earliest-expiring stock ti umuna a mausar (FEFO).",
+  "catalog.expirationManagedInSettings":
+    "I-manage ti expiration tracking ken near-expiry warning manipud iti Inventory expiration settings.",
   "catalog.expirationReceivingHint":
     "Ti expiry dates ket isurat no madawat ti stock. Mabalin a naiduma ti expiry date iti tunggal stock lot.",
   "catalog.globalCatalog": "Sangalubongan a katalogo",
@@ -1053,8 +1055,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.disableExpirationTracking": "I-disable ti tracking",
   "inventory.expirationTrackingOn": "Expiration tracking ON",
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON · {days}-day warning",
   "inventory.expirationTrackingEnabled": "Na-enable ti expiration tracking.",
+  "inventory.expirationTrackingDisabled": "Na-disable ti expiration tracking.",
   "inventory.manageExpirationSettings": "I-manage ti expiration settings",
+  "inventory.expirationSettingsTitle": "Expiration settings",
+  "inventory.expirationSettingsEnableHint":
+    "I-on ti expiration tracking tapno mairekord ti expiry dates dagiti stock lots ken near-expiry warnings.",
+  "inventory.expirationSetupRequired": "Masapul ti expiration setup",
+  "inventory.expirationSetupRequiredDetail":
+    "Matrack ti expiration daytoy a product ken adda stock on hand, ngem awan pay ti assigned a stock lots. Mag-assign ti expiry dates tapno agtugma iti agdama nga on-hand quantity.",
+  "inventory.assignExpirationDates": "Mag-assign ti expiration dates",
+  "inventory.viewStockLots": "Kitaen ti stock lots",
+  "inventory.saveNearExpiryWarning": "I-save ti near-expiry warning",
+  "inventory.expirationWarningSaved": "Na-save ti near-expiry warning.",
+  "inventory.expirationWarningDaysInvalid": "Iserrek ti near-expiry warning a saan a bumaba iti 1 nga aldaw.",
   "inventory.enableExpirationCopy":
     "Daytoy a product ket addaanen ti {qty} {uom} on hand. I-assign nga umuna dagiti expiry dates iti existing stock sakbay nga i-enable ti tracking.",
   "inventory.enableExpirationCurrentStock": "Agdama a stock",

@@ -2484,8 +2484,21 @@ export const en = {
   "inventory.disableExpirationTracking": "Disable tracking",
   "inventory.expirationTrackingOn": "Expiration tracking ON",
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON · {days}-day warning",
   "inventory.expirationTrackingEnabled": "Expiration tracking enabled.",
+  "inventory.expirationTrackingDisabled": "Expiration tracking disabled.",
   "inventory.manageExpirationSettings": "Manage expiration settings",
+  "inventory.expirationSettingsTitle": "Expiration settings",
+  "inventory.expirationSettingsEnableHint":
+    "Turn on expiration tracking to record expiry dates for stock lots and near-expiry warnings.",
+  "inventory.expirationSetupRequired": "Expiration setup required",
+  "inventory.expirationSetupRequiredDetail":
+    "This product tracks expiration and has stock on hand, but no stock lots are assigned yet. Assign expiry dates to match the current on-hand quantity.",
+  "inventory.assignExpirationDates": "Assign expiration dates",
+  "inventory.viewStockLots": "View stock lots",
+  "inventory.saveNearExpiryWarning": "Save near-expiry warning",
+  "inventory.expirationWarningSaved": "Near-expiry warning saved.",
+  "inventory.expirationWarningDaysInvalid": "Enter a near-expiry warning of at least 1 day.",
   "inventory.enableExpirationCopy":
     "This product already has {qty} {uom} on hand. Assign expiry dates to existing stock before enabling tracking.",
   "inventory.enableExpirationCurrentStock": "Current stock",
@@ -2560,6 +2573,8 @@ export const en = {
     "Expiry dates are entered when stock is received. Each stock lot can have a different expiry date.",
   "catalog.expirationBehaviorHint":
     "Near-expiry stock remains sellable. Expired stock cannot be sold. Earliest-expiring stock is used first (FEFO).",
+  "catalog.expirationManagedInSettings":
+    "Manage expiration tracking and near-expiry warning from Inventory expiration settings.",
   "customers.title": "Customers",
   "customers.lede": "Search customers, review Business Utang, and record payments.",
   "customers.open": "Customers",

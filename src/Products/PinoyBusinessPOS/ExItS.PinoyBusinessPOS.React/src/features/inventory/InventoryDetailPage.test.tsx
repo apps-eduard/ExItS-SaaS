@@ -289,14 +289,41 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(await screen.findByText(/Select a lot/i)).toBeInTheDocument();
   });
 
-  it("blocks disable expiration when stock remains", async () => {
+  it("links manage expiration to settings page and hides disable on detail", async () => {
     vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
-      baseAccount({ tracksExpiration: true, onHandQuantity: 12 }) as never,
+      baseAccount({ tracksExpiration: true, onHandQuantity: 12, expirationWarningDays: 7 }) as never,
     );
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [lotA],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    });
     renderPage();
-    const disableBtn = await screen.findByTestId("inventory-disable-expiration");
-    expect(disableBtn).toBeDisabled();
-    expect(screen.getByText(/no stock remaining/i)).toBeInTheDocument();
+    const manage = await screen.findByTestId("inventory-manage-expiration");
+    expect(manage).toHaveAttribute("href", `/inventory/${productId}/expiration`);
+    expect(screen.getByTestId("inventory-expiration-status")).toHaveTextContent(
+      /Expiration tracking ON · 7-day warning/i,
+    );
+    expect(screen.queryByTestId("inventory-disable-expiration")).not.toBeInTheDocument();
+  });
+
+  it("shows setup required banner when tracking is on without lots", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({ tracksExpiration: true, onHandQuantity: 12, expirationWarningDays: 7 }) as never,
+    );
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    renderPage();
+    await screen.findByTestId("inventory-expiration-setup-required");
+    expect(screen.getByTestId("inventory-expiration-setup-link")).toHaveAttribute(
+      "href",
+      `/inventory/${productId}/expiration`,
+    );
   });
 
   it("shows add opening stock panel when tracked without opening movement", async () => {

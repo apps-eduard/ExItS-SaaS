@@ -290,6 +290,46 @@ public sealed class EnableExpirationTrackingUseCaseTests
     }
 
     [Fact]
+    public async Task Already_enabled_with_zero_lots_repairs_without_changing_on_hand()
+    {
+        var fx = Seed(onHand: 10m, tracksExpiration: true);
+        Assert.Empty(fx.Lots.Items);
+
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            expirationWarningDays: 7,
+            [
+                new ExistingStockLotInput(6m, ExpiryA, "A101"),
+                new ExistingStockLotInput(4m, ExpiryB, "B202")
+            ],
+            expectedOnHandQuantity: 10m);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value!.TracksExpiration);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.ProductId));
+        Assert.Empty(fx.Inventory.Movements);
+        Assert.Equal(2, fx.Lots.Items.Count);
+        Assert.Equal(10m, fx.Lots.Items.Sum(l => l.QuantityOnHand));
+        Assert.Equal(2, fx.Lots.Movements.Count);
+        Assert.All(fx.Lots.Movements, m => Assert.Equal(StockMovementType.ExpirationInitialization, m.MovementType));
+    }
+
+    [Fact]
+    public async Task Already_enabled_with_zero_lots_without_allocation_requires_init()
+    {
+        var fx = Seed(onHand: 10m, tracksExpiration: true);
+
+        var result = await fx.Enable.ExecuteAsync(OrgId, fx.ProductId, Actor, null, null);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExpirationInitializationRequired, result.ErrorCode);
+        Assert.Empty(fx.Lots.Items);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.ProductId));
+    }
+
+    [Fact]
     public async Task Does_not_create_product_level_stock_movement()
     {
         var fx = Seed(onHand: 15m, tracksExpiration: false);

@@ -289,6 +289,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.expirationWarningDays": "Near-expiry warning (adlaw)",
   "catalog.expirationBehaviorHint":
     "Ang near-expiry stock magpabilin nga mabaligya. Indi mabaligya ang expired stock. Ang earliest-expiring stock ang una nga gamiton (FEFO).",
+  "catalog.expirationManagedInSettings":
+    "I-manage ang expiration tracking kag near-expiry warning hali sa Inventory expiration settings.",
   "catalog.expirationReceivingHint":
     "Ang expiry dates ibutang kon madawat ang stock. Mahimo magkalain ang expiry date sa tagsa ka stock lot.",
   "catalog.globalCatalog": "Sangkalibutan nga katalogo",
@@ -1053,8 +1055,21 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.disableExpirationTracking": "I-disable ang tracking",
   "inventory.expirationTrackingOn": "Expiration tracking ON",
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON · {days}-day warning",
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
+  "inventory.expirationTrackingDisabled": "Na-disable ang expiration tracking.",
   "inventory.manageExpirationSettings": "I-manage ang expiration settings",
+  "inventory.expirationSettingsTitle": "Expiration settings",
+  "inventory.expirationSettingsEnableHint":
+    "I-on ang expiration tracking para ma-record ang expiry dates sang stock lots kag near-expiry warnings.",
+  "inventory.expirationSetupRequired": "Kinahanglan ang expiration setup",
+  "inventory.expirationSetupRequiredDetail":
+    "Naka-track ang expiration sini nga product kag may stock on hand, pero wala pa sing assigned nga stock lots. Mag-assign sang expiry dates para magtugma sa subong nga on-hand quantity.",
+  "inventory.assignExpirationDates": "Mag-assign sang expiration dates",
+  "inventory.viewStockLots": "Tan-awa ang stock lots",
+  "inventory.saveNearExpiryWarning": "I-save ang near-expiry warning",
+  "inventory.expirationWarningSaved": "Na-save ang near-expiry warning.",
+  "inventory.expirationWarningDaysInvalid": "Magbutang sang near-expiry warning nga indi mag-ubos sa 1 ka adlaw.",
   "inventory.enableExpirationCopy":
     "Ini nga product may ara na sang {qty} {uom} on hand. I-assign anay ang expiry dates sa existing stock antes i-enable ang tracking.",
   "inventory.enableExpirationCurrentStock": "Karon nga stock",

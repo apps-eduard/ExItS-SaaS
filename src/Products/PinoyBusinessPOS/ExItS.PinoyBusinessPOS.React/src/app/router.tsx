@@ -84,6 +84,7 @@ import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/Custo
 import { CustomerRepayPage } from "@/features/customers/CustomerRepayPage";
 import { CustomerStatementPage } from "@/features/customers/CustomerStatementPage";
 import { CustomersListPage } from "@/features/customers/CustomersListPage";
+import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsPage";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
@@ -538,6 +539,7 @@ export const appRoutes = [
               { index: true, element: <InventoryListPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
               { path: ":productId", element: <InventoryDetailPage /> },
+              { path: ":productId/expiration", element: <ExpirationSettingsPage /> },
             ],
           },
           {

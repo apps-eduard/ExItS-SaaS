@@ -82,11 +82,15 @@ public sealed class EnableExpirationTracking
 
                         if (product.TracksExpiration)
                         {
-                            return await BuildIdempotentOrConflictAsync(
+                            return await BuildAlreadyEnabledAsync(
                                     orgId,
                                     product,
                                     account,
                                     onHand,
+                                    actorId,
+                                    expirationWarningDays,
+                                    lines,
+                                    expectedOnHandQuantity,
                                     ct)
                                 .ConfigureAwait(false);
                         }
@@ -184,11 +188,19 @@ public sealed class EnableExpirationTracking
         }
     }
 
-    private async Task<ApplicationResult<EnableExpirationTrackingResponse>> BuildIdempotentOrConflictAsync(
+    /// <summary>
+    /// Already tracking: idempotent when lots match on-hand; allow one-time repair when
+    /// OnHand &gt; 0 and lot total is still 0 (legacy enable-without-init).
+    /// </summary>
+    private async Task<ApplicationResult<EnableExpirationTrackingResponse>> BuildAlreadyEnabledAsync(
         PosOrganizationId orgId,
         CatalogProduct product,
         InventoryAccount? account,
         decimal onHand,
+        Guid actorId,
+        int? expirationWarningDays,
+        IReadOnlyList<ExistingStockLotInput> lines,
+        decimal? expectedOnHandQuantity,
         CancellationToken cancellationToken)
     {
         var lots = await _lots
@@ -198,6 +210,80 @@ public sealed class EnableExpirationTracking
 
         if (onHand == 0m || lotTotal == onHand)
         {
+            if (expirationWarningDays is not null
+                && expirationWarningDays != product.ExpirationWarningDays)
+            {
+                product.SetExpirationTracking(true, expirationWarningDays, _clock.UtcNow);
+                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<EnableExpirationTrackingResponse>.Success(
+                await MapResponseAsync(orgId, product, account, cancellationToken).ConfigureAwait(false));
+        }
+
+        // Legacy: tracking ON, positive on-hand, no (or zero) lot coverage — allocate without flipping tracking.
+        if (lotTotal == 0m && onHand > 0m)
+        {
+            if (expectedOnHandQuantity is decimal expected && expected != onHand)
+            {
+                return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                    ApplicationErrorCodes.ExpirationAllocationStockChanged,
+                    "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+            }
+
+            if (account is null || !account.IsTracked)
+            {
+                return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                    DomainErrorCodes.InventoryNotTracked,
+                    "Inventory is not tracked for this product; cannot allocate existing on-hand into lots.");
+            }
+
+            if (lines.Count == 0)
+            {
+                return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                    ApplicationErrorCodes.ExpirationInitializationRequired,
+                    "Existing stock must be allocated into lots before expiration setup is complete.");
+            }
+
+            var allocatedSum = lines.Sum(l => l.Quantity);
+            if (allocatedSum != onHand)
+            {
+                return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                    ApplicationErrorCodes.ExpirationAllocationMismatch,
+                    $"Existing-stock lot quantities ({allocatedSum}) must sum exactly to on-hand ({onHand}).");
+            }
+
+            account = await _inventory
+                .GetByProductIdAsync(orgId, product.Id, cancellationToken)
+                .ConfigureAwait(false);
+            var reloadedOnHand = ResolveAuthoritativeOnHand(account);
+            if (reloadedOnHand != onHand || reloadedOnHand != allocatedSum)
+            {
+                return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
+                    ApplicationErrorCodes.ExpirationAllocationStockChanged,
+                    "On-hand quantity changed before expiration lots could be allocated. Reload and retry.");
+            }
+
+            var utcNow = _clock.UtcNow;
+            await _lotStock
+                .AllocateExistingOnHandLotsAsync(
+                    orgId,
+                    product.Id,
+                    lines,
+                    actorId,
+                    utcNow,
+                    branchId: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (expirationWarningDays is not null)
+            {
+                product.SetExpirationTracking(true, expirationWarningDays, utcNow);
+                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
                 await MapResponseAsync(orgId, product, account, cancellationToken).ConfigureAwait(false));
         }
