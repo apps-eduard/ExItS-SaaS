@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { buildReceivePlan, parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -28,6 +29,7 @@ type LineEdit = {
   orderedQty: number;
   receivedQty: number;
   outstandingQty: number;
+  unitPurchaseCost: number;
   tracksExpiration: boolean;
   goodText: string;
   damagedText: string;
@@ -73,6 +75,7 @@ export function PurchaseOrderReceivePage() {
           orderedQty: line.orderedQty,
           receivedQty: line.receivedQty,
           outstandingQty: line.outstandingQty,
+          unitPurchaseCost: line.unitPurchaseCost,
           tracksExpiration: line.tracksExpiration === true,
           goodText: line.outstandingQty > 0 ? String(line.outstandingQty) : "",
           damagedText: "",
@@ -275,7 +278,16 @@ export function PurchaseOrderReceivePage() {
               <div className="font-medium">{line.name}</div>
               <p className="mt-1 mb-2 text-[length:var(--exits-text-sm)] text-muted">
                 {t("purchasing.ordered")}: {line.orderedQty} · {t("purchasing.received")}:{" "}
-                {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty} {line.uom}
+                {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty}{" "}
+                {line.uom}
+              </p>
+              <p
+                className="mt-0 mb-2 flex flex-wrap items-baseline gap-1 text-[length:var(--exits-text-sm)]"
+                data-testid={`receive-line-unit-cost-${line.productId}`}
+              >
+                <span className="text-muted">{t("purchasing.unitPurchaseCost")}:</span>
+                <MoneyDisplay amount={line.unitPurchaseCost} />
+                {line.uom ? <span className="text-muted">/ {line.uom}</span> : null}
               </p>
               {reviewing ? (
                 <dl className="m-0 grid grid-cols-2 gap-1 text-[length:var(--exits-text-sm)]">

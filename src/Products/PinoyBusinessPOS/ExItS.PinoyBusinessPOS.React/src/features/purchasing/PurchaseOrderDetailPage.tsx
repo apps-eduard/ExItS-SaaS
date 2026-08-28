@@ -10,19 +10,158 @@ import {
   isPurchaseOrderReceivable,
   listGoodsReceiptsForPurchaseOrder,
   submitPurchaseOrder,
+  type PosGoodsReceiptDto,
+  type PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import {
+  sumGoodsReceiptValue,
+  sumPurchaseOrderLineTotals,
+} from "@/features/purchasing/purchase-cost-display";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function resolveOrderTotal(po: PosPurchaseOrderDto): {
+  amount: number;
+  labelKey: "purchasing.orderTotal" | "purchasing.confirmedTotal" | "purchasing.proposedTotal";
+} {
+  if (po.confirmedTotalAmount != null) {
+    return { amount: po.confirmedTotalAmount, labelKey: "purchasing.confirmedTotal" };
+  }
+  if (po.proposedTotalAmount != null && po.displayStatus === "ChangesNeedApproval") {
+    return { amount: po.proposedTotalAmount, labelKey: "purchasing.proposedTotal" };
+  }
+  return {
+    amount: sumPurchaseOrderLineTotals(po.lines),
+    labelKey: "purchasing.orderTotal",
+  };
+}
+
+function GoodsReceiptCard({
+  receipt,
+  resolveActor,
+  isResolving,
+}: {
+  receipt: PosGoodsReceiptDto;
+  resolveActor: ReturnType<typeof useActorDirectory>["resolve"];
+  isResolving: boolean;
+}) {
+  const { t } = useI18n();
+  const receiptValue = sumGoodsReceiptValue(receipt.lines);
+  const delivery = receipt.deliveryReference?.trim();
+  const notes = receipt.notes?.trim();
+
+  return (
+    <Card className="flex flex-col gap-3 p-3" data-testid={`po-receipt-${receipt.grnNumber}`}>
+      <p className="m-0 font-medium">{receipt.grnNumber}</p>
+      <ActorAttribution
+        labelKey="common.receivedBy"
+        actorId={receipt.receivedBy}
+        occurredAtUtc={receipt.receivedAtUtc}
+        resolved={resolveActor(receipt.receivedBy)}
+        isLoading={isResolving}
+        testId={`po-receipt-received-by-${receipt.goodsReceiptId}`}
+      />
+      {delivery ? (
+        <div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("purchasing.deliveryReference")}
+          </p>
+          <p className="mt-0.5 mb-0 text-[length:var(--exits-text-sm)]">{delivery}</p>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-[length:var(--exits-text-sm)]">
+        <span className="text-muted">{t("purchasing.receiptValue")}</span>
+        <MoneyDisplay amount={receiptValue} testId={`po-receipt-value-${receipt.goodsReceiptId}`} />
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-3 border-t border-border pt-3 p-0">
+        {receipt.lines.map((line) => {
+          const goodQty = line.quantityReceived;
+          const damaged = line.damagedQty ?? 0;
+          const rejected = line.rejectedQty ?? 0;
+          const shortClosed = line.shortClosedQty ?? 0;
+          const discrepancyNote = line.discrepancyNote?.trim();
+          const showExpiryLot = Boolean(line.expiryDate) || Boolean(line.lotNumber);
+          return (
+            <li
+              key={line.lineId}
+              className="text-[length:var(--exits-text-sm)]"
+              data-testid={`po-receipt-line-${line.lineId}`}
+            >
+              <p className="m-0 font-medium">{line.nameSnapshot}</p>
+              <p className="mt-1 mb-0 text-muted">
+                {t("purchasing.receivedGood")}: {goodQty} {line.uomSnapshot}
+              </p>
+              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-muted">{t("purchasing.unitPurchaseCost")}</span>
+                <span>
+                  <MoneyDisplay amount={line.unitPurchaseCostSnapshot} />
+                  <span className="text-muted"> / {line.uomSnapshot}</span>
+                </span>
+              </p>
+              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-muted">{t("purchasing.lineTotal")}</span>
+                <MoneyDisplay amount={line.lineTotalSnapshot} />
+              </p>
+              {showExpiryLot ? (
+                <>
+                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
+                    <span className="text-muted">{t("purchasing.expiryDate")}</span>
+                    <span>{line.expiryDate ?? "—"}</span>
+                  </p>
+                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
+                    <span className="text-muted">{t("purchasing.lotNumber")}</span>
+                    <span>{line.lotNumber?.trim() || "—"}</span>
+                  </p>
+                </>
+              ) : null}
+              {damaged > 0 ? (
+                <p className="mt-1 mb-0 text-muted">
+                  {t("purchasing.damaged")}: {damaged} {line.uomSnapshot}
+                </p>
+              ) : null}
+              {rejected > 0 ? (
+                <p className="mt-1 mb-0 text-muted">
+                  {t("purchasing.rejected")}: {rejected} {line.uomSnapshot}
+                </p>
+              ) : null}
+              {shortClosed > 0 ? (
+                <p className="mt-1 mb-0 text-muted">
+                  {t("purchasing.shortClosed")}: {shortClosed} {line.uomSnapshot}
+                </p>
+              ) : null}
+              {line.discrepancyKind && line.discrepancyKind !== "None" ? (
+                <p className="mt-1 mb-0 text-muted">
+                  {t("purchasing.discrepancy")}: {line.discrepancyKind}
+                </p>
+              ) : null}
+              {discrepancyNote ? (
+                <p className="mt-1 mb-0 text-muted">
+                  {t("purchasing.discrepancyNote")}: {discrepancyNote}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      {notes ? (
+        <p className="m-0 border-t border-border pt-2 text-[length:var(--exits-text-sm)] text-muted">
+          {t("purchasing.notes")}: {notes}
+        </p>
+      ) : null}
+    </Card>
+  );
+}
 
 export function PurchaseOrderDetailPage() {
   const { t } = useI18n();
@@ -70,6 +209,7 @@ export function PurchaseOrderDetailPage() {
   const canReceive =
     allowManage && online && po != null && isPurchaseOrderReceivable(po) && !needsApproval;
   const canAcceptChanges = allowManage && online && needsApproval;
+  const orderTotal = po ? resolveOrderTotal(po) : null;
 
   async function runAction(
     action: () => Promise<unknown>,
@@ -204,6 +344,16 @@ export function PurchaseOrderDetailPage() {
           </dt>
           <dd className="m-0">{po.supplierName ?? t("purchasing.unknownSupplier")}</dd>
         </div>
+        {orderTotal ? (
+          <div>
+            <dt className="text-[length:var(--exits-text-sm)] text-muted">
+              {t(orderTotal.labelKey)}
+            </dt>
+            <dd className="m-0" data-testid="po-order-total">
+              <MoneyDisplay amount={orderTotal.amount} />
+            </dd>
+          </div>
+        ) : null}
       </dl>
 
       {po.orderedAtUtc || po.orderedBy ? (
@@ -222,15 +372,49 @@ export function PurchaseOrderDetailPage() {
           {t("purchasing.lines")}
         </h2>
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {po.lines.map((line) => (
-            <li key={line.lineId} className="rounded-md border border-border p-3">
-              <div className="font-medium">{line.nameSnapshot ?? line.productId}</div>
-              <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("purchasing.ordered")}: {line.orderedQty} · {t("purchasing.received")}:{" "}
-                {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty}
-              </p>
-            </li>
-          ))}
+          {po.lines.map((line) => {
+            const uom = line.uomSnapshot ?? "";
+            return (
+              <li key={line.lineId}>
+                <Card className="flex flex-col gap-2 p-3" data-testid={`po-line-${line.lineId}`}>
+                  <p className="m-0 font-medium">{line.nameSnapshot ?? line.productId}</p>
+                  <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)]">
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.ordered")}</dt>
+                      <dd className="m-0">
+                        {line.orderedQty} {uom}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.unitPurchaseCost")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={line.unitPurchaseCost} />
+                        {uom ? <span className="text-muted"> / {uom}</span> : null}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.orderedValue")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={line.lineTotal} />
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.received")}</dt>
+                      <dd className="m-0">
+                        {line.receivedQty} {uom}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.outstanding")}</dt>
+                      <dd className="m-0">
+                        {line.outstandingQty} {uom}
+                      </dd>
+                    </div>
+                  </dl>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -248,37 +432,15 @@ export function PurchaseOrderDetailPage() {
           </p>
         ) : null}
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {receipts.map((receipt) => {
-            const lineSummary = receipt.lines
-              .slice(0, 3)
-              .map(
-                (line) =>
-                  `${line.nameSnapshot} × ${line.quantityReceived} ${line.uomSnapshot}`,
-              )
-              .join(" · ");
-            const extra = receipt.lines.length > 3 ? ` · +${receipt.lines.length - 3}` : "";
-            return (
-              <li key={receipt.goodsReceiptId}>
-                <Card className="flex flex-col gap-2 p-3" data-testid={`po-receipt-${receipt.grnNumber}`}>
-                  <p className="m-0 font-medium">{receipt.grnNumber}</p>
-                  <ActorAttribution
-                    labelKey="common.receivedBy"
-                    actorId={receipt.receivedBy}
-                    occurredAtUtc={receipt.receivedAtUtc}
-                    resolved={actors.resolve(receipt.receivedBy)}
-                    isLoading={actors.isResolving}
-                    testId={`po-receipt-received-by-${receipt.goodsReceiptId}`}
-                  />
-                  {lineSummary ? (
-                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                      {lineSummary}
-                      {extra}
-                    </p>
-                  ) : null}
-                </Card>
-              </li>
-            );
-          })}
+          {receipts.map((receipt) => (
+            <li key={receipt.goodsReceiptId}>
+              <GoodsReceiptCard
+                receipt={receipt}
+                resolveActor={actors.resolve}
+                isResolving={actors.isResolving}
+              />
+            </li>
+          ))}
         </ul>
       </section>
 
