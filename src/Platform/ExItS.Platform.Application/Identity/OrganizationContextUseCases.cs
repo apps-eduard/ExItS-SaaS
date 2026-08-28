@@ -207,7 +207,17 @@ public sealed class SetSessionOrganizationContext
             await _preferences
                 .UpsertLastActiveOrganizationAsync(session.UserId, null, _clock.UtcNow, cancellationToken)
                 .ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (PersistenceConflictException)
+            {
+                return ApplicationResult<OrganizationContextResultDto>.Failure(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Organization context was updated concurrently. Retry the request.");
+            }
+
             await WriteAuditAsync(session, null, cancellationToken).ConfigureAwait(false);
             return ApplicationResult<OrganizationContextResultDto>.Success(
                 await MapResultAsync(session, cancellationToken).ConfigureAwait(false));
@@ -246,7 +256,50 @@ public sealed class SetSessionOrganizationContext
         await _preferences
             .UpsertLastActiveOrganizationAsync(session.UserId, orgId, _clock.UtcNow, cancellationToken)
             .ConfigureAwait(false);
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException)
+        {
+            // Concurrent organization-context / session sliding renewal races on xmin.
+            // Selection is idempotent for the same org — reload and confirm rather than 500.
+            var reloaded = await _sessions
+                .GetByTokenHashAsync(_tokens.HashToken(opaqueToken), cancellationToken)
+                .ConfigureAwait(false);
+            if (reloaded is null || reloaded.RevokedAtUtc is not null)
+            {
+                return ApplicationResult<OrganizationContextResultDto>.Failure(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Session is invalid.");
+            }
+
+            if (reloaded.SelectedOrganizationId != orgId)
+            {
+                reloaded.SelectOrganization(orgId);
+                await _sessions.UpdateAsync(reloaded, cancellationToken).ConfigureAwait(false);
+                await _preferences
+                    .UpsertLastActiveOrganizationAsync(reloaded.UserId, orgId, _clock.UtcNow, cancellationToken)
+                    .ConfigureAwait(false);
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (PersistenceConflictException)
+                {
+                    return ApplicationResult<OrganizationContextResultDto>.Failure(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "Organization context was updated concurrently. Retry the request.");
+                }
+
+                session = reloaded;
+            }
+            else
+            {
+                session = reloaded;
+            }
+        }
+
         await WriteAuditAsync(session, organization.DisplayName, cancellationToken).ConfigureAwait(false);
 
         return ApplicationResult<OrganizationContextResultDto>.Success(
