@@ -38,7 +38,10 @@ public sealed class StockMovement
     public Guid RecordedBy { get; }
     public Guid? BranchId { get; }
     public InventoryLotId? InventoryLotId { get; }
-    /// <summary>Purchase cost per base inventory unit when recorded (opening stock only).</summary>
+    /// <summary>
+    /// Purchase/acquisition cost per base inventory unit when known
+    /// (opening stock, direct purchase, PO goods receipt). Null for corrections and non-purchase movements.
+    /// </summary>
     public decimal? UnitCost { get; }
 
     private StockMovement(
@@ -285,7 +288,8 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -297,6 +301,7 @@ public sealed class StockMovement
         }
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = NormalizeAcquisitionUnitCost(unitCost, allowZero: true);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -308,7 +313,8 @@ public sealed class StockMovement
             StockMovementSourceType.PurchaseReceipt,
             goodsReceiptId,
             utcNow,
-            actorId);
+            actorId,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement DirectPurchaseReceipt(
@@ -321,7 +327,8 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -333,6 +340,7 @@ public sealed class StockMovement
         }
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -344,7 +352,8 @@ public sealed class StockMovement
             StockMovementSourceType.DirectPurchase,
             directPurchaseReceiptId,
             utcNow,
-            actorId);
+            actorId,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement StockCountVarianceIncrease(
@@ -602,14 +611,32 @@ public sealed class StockMovement
             inventoryLotId,
             unitCost);
 
-    public static decimal? NormalizeOpeningUnitCost(decimal? unitCost)
+    /// <summary>Opening stock requires a positive unit purchase cost when supplied.</summary>
+    public static decimal? NormalizeOpeningUnitCost(decimal? unitCost) =>
+        NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+
+    /// <summary>
+    /// Normalizes acquisition cost per base inventory unit.
+    /// When <paramref name="allowZero"/> is false (opening / direct buy), cost must be &gt; 0.
+    /// When true (PO receipt), zero is preserved as a known free-goods cost; null means unknown/not set.
+    /// </summary>
+    public static decimal? NormalizeAcquisitionUnitCost(decimal? unitCost, bool allowZero = false)
     {
         if (unitCost is null)
         {
             return null;
         }
 
-        if (unitCost.Value <= 0m)
+        if (allowZero)
+        {
+            if (unitCost.Value < 0m)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseUnitCost,
+                    "Unit purchase cost cannot be negative.");
+            }
+        }
+        else if (unitCost.Value <= 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryOpeningUnitCost,

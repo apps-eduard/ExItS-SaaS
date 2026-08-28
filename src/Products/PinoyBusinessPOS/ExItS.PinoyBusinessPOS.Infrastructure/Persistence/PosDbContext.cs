@@ -2894,6 +2894,10 @@ public sealed class PosDbContext : DbContext
                 .HasPrecision(18, 3)
                 .IsRequired()
                 .HasDefaultValue(1m);
+            entity.Property(e => e.ExpiryDate).HasColumnName("expiry_date");
+            entity.Property(e => e.LotNumber)
+                .HasColumnName("lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
 
             entity.HasIndex(e => new { e.GoodsReceiptId, e.LineNumber })
                 .IsUnique()

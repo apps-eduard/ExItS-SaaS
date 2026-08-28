@@ -36,6 +36,7 @@ export const posPurchaseOrderLineDtoSchema = z.object({
   outstandingQty: z.number(),
   lineNotes: z.string().nullable().optional(),
   closedShortQty: z.number().optional(),
+  tracksExpiration: z.boolean().optional(),
 });
 
 export const connectedPurchaseOrderLineDtoSchema = z
@@ -104,6 +105,8 @@ export const posGoodsReceiptLineDtoSchema = z.object({
   discrepancyKind: z.string().optional(),
   discrepancyNote: z.string().nullable().optional(),
   receivedQty: z.number().optional(),
+  expiryDate: z.string().nullable().optional(),
+  lotNumber: z.string().nullable().optional(),
 });
 
 export const posGoodsReceiptDtoSchema = z.object({
@@ -164,6 +167,8 @@ export type ReceivePurchaseOrderLineRequest = {
   shortClosedQty?: number;
   discrepancyKind?: string | null;
   discrepancyNote?: string | null;
+  expiryDate?: string | null;
+  lotNumber?: string | null;
 };
 
 export type ReceivePurchaseOrderRequest = {
@@ -269,6 +274,14 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
       const note = trimOrUndef(line.discrepancyNote);
       if (note) {
         entry.discrepancyNote = note;
+      }
+      const expiry = trimOrUndef(line.expiryDate);
+      if (expiry) {
+        entry.expiryDate = expiry;
+      }
+      const lot = trimOrUndef(line.lotNumber);
+      if (lot) {
+        entry.lotNumber = lot;
       }
       return entry;
     }),

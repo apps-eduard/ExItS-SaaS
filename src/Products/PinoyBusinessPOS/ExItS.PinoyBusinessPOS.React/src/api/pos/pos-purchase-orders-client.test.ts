@@ -183,7 +183,14 @@ describe("RMAP-17 purchasing clients", () => {
 
     await receivePurchaseOrder(workspace, poId, {
       goodsReceiptId: grnId,
-      lines: [{ productId, receiveQty: 4 }],
+      lines: [
+        {
+          productId,
+          receiveQty: 4,
+          expiryDate: "2027-12-30",
+          lotNumber: "LOT-A123",
+        },
+      ],
     });
 
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
@@ -192,8 +199,14 @@ describe("RMAP-17 purchasing clients", () => {
     const headers = new Headers(init.headers);
     expect(headers.get(IDEMPOTENCY_KEY_HEADER)).toBe(grnId.replace(/-/g, ""));
     expect(headers.get(OPERATION_TYPE_HEADER)).toBe(OFFLINE_OPERATION_TYPES.PurchaseOrderReceive);
-    const body = JSON.parse(String(init.body)) as { goodsReceiptId: string };
+    const body = JSON.parse(String(init.body)) as {
+      goodsReceiptId: string;
+      lines: Array<{ expiryDate?: string; lotNumber?: string; receiveQty: number }>;
+    };
     expect(body.goodsReceiptId).toBe(grnId);
+    expect(body.lines[0]?.receiveQty).toBe(4);
+    expect(body.lines[0]?.expiryDate).toBe("2027-12-30");
+    expect(body.lines[0]?.lotNumber).toBe("LOT-A123");
   });
 
   it("direct purchase create sends body idempotencyKey", async () => {

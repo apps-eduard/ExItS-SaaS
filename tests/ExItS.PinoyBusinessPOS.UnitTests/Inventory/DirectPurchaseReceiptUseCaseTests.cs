@@ -82,7 +82,15 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             {
                 Assert.Equal(StockMovementSourceType.DirectPurchase, m.SourceType);
                 Assert.Equal(result.Value!.DirectPurchaseReceiptId, m.SourceId);
+                Assert.NotNull(m.UnitCost);
+                Assert.True(m.UnitCost > 0m);
             });
+        Assert.Contains(
+            fx.Inventory.Movements,
+            m => m.ProductId.Value == fx.CokeId && m.UnitCost == 10m && m.QuantityEffect == 3m);
+        Assert.Contains(
+            fx.Inventory.Movements,
+            m => m.ProductId.Value == fx.SpriteId && m.UnitCost == 8m && m.QuantityEffect == 2m);
     }
 
     [Fact]

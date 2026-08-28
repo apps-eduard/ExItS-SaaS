@@ -89,4 +89,6 @@ internal sealed class GoodsReceiptLineRecord
     public Guid? PurchaseUnitId { get; set; }
     public string? PurchaseUnitNameSnapshot { get; set; }
     public decimal MultiplierToBaseSnapshot { get; set; } = 1m;
+    public DateOnly? ExpiryDate { get; set; }
+    public string? LotNumber { get; set; }
 }

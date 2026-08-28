@@ -37,4 +37,6 @@ public sealed record PurchaseOrderReceiveLineDraft(
     decimal RejectedQty = 0m,
     decimal ShortClosedQty = 0m,
     ConnectedPoReceivingDiscrepancyKind DiscrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
-    string? DiscrepancyNote = null);
+    string? DiscrepancyNote = null,
+    DateOnly? ExpiryDate = null,
+    string? LotNumber = null);

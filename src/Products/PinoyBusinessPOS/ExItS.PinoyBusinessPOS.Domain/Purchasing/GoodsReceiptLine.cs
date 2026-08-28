@@ -11,6 +11,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 /// One immutable line on a goods receipt. <see cref="QuantityReceived"/> is good/usable qty in purchase-unit terms
 /// and is the only quantity that may create inventory movements. Damaged/rejected/short-closed quantities are
 /// recorded for discrepancy visibility and do not enter sellable stock.
+/// Expiry/lot belong to the receipt (actual delivery), not the purchase order.
 /// </summary>
 public sealed class GoodsReceiptLine
 {
@@ -33,6 +34,8 @@ public sealed class GoodsReceiptLine
     public decimal UnitPurchaseCostSnapshot { get; }
     public decimal LineTotalSnapshot { get; }
     public decimal MultiplierToBaseSnapshot { get; }
+    public DateOnly? ExpiryDate { get; }
+    public string? LotNumber { get; }
     public Guid? InventoryMovementId { get; private set; }
 
     /// <summary>Alias for persistence/DTO mapping compatibility.</summary>
@@ -41,6 +44,10 @@ public sealed class GoodsReceiptLine
     /// <summary>Base inventory quantity = purchase-unit good qty × multiplier.</summary>
     public decimal BaseQuantity =>
         ProductUnitConversion.ToBaseQuantity(QuantityReceived, MultiplierToBaseSnapshot);
+
+    /// <summary>Acquisition cost per base inventory unit (purchase-unit cost ÷ multiplier).</summary>
+    public decimal BaseUnitCost =>
+        ProductUnitConversion.ToBaseUnitCost(UnitPurchaseCostSnapshot, MultiplierToBaseSnapshot);
 
     private GoodsReceiptLine(
         GoodsReceiptLineId id,
@@ -60,7 +67,9 @@ public sealed class GoodsReceiptLine
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
         decimal multiplierToBaseSnapshot,
-        Guid? inventoryMovementId)
+        Guid? inventoryMovementId,
+        DateOnly? expiryDate,
+        string? lotNumber)
     {
         Id = id;
         GoodsReceiptId = goodsReceiptId;
@@ -80,6 +89,8 @@ public sealed class GoodsReceiptLine
         LineTotalSnapshot = lineTotalSnapshot;
         MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
         InventoryMovementId = inventoryMovementId;
+        ExpiryDate = expiryDate;
+        LotNumber = lotNumber;
     }
 
     internal static GoodsReceiptLine Create(
@@ -119,6 +130,8 @@ public sealed class GoodsReceiptLine
 
         var multiplier = CatalogProductUnit.NormalizeMultiplier(poLine.MultiplierToBaseSnapshot);
         var cost = poLine.UnitPurchaseCost;
+        var lotNumber = good > 0m ? NormalizeLotNumber(receive.LotNumber) : null;
+        var expiry = good > 0m ? receive.ExpiryDate : null;
         return new GoodsReceiptLine(
             id ?? GoodsReceiptLineId.New(),
             goodsReceiptId,
@@ -137,7 +150,9 @@ public sealed class GoodsReceiptLine
             cost,
             SaleMoney.RoundMoney(cost * good),
             multiplier,
-            inventoryMovementId: null);
+            inventoryMovementId: null,
+            expiry,
+            lotNumber);
     }
 
     public void AttachInventoryMovement(StockMovementId movementId)
@@ -177,7 +192,9 @@ public sealed class GoodsReceiptLine
         decimal rejectedQty = 0m,
         decimal shortClosedQty = 0m,
         ConnectedPoReceivingDiscrepancyKind discrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
-        string? discrepancyNote = null) =>
+        string? discrepancyNote = null,
+        DateOnly? expiryDate = null,
+        string? lotNumber = null) =>
         new(
             id,
             goodsReceiptId,
@@ -196,7 +213,9 @@ public sealed class GoodsReceiptLine
             unitPurchaseCostSnapshot,
             lineTotalSnapshot,
             multiplierToBaseSnapshot,
-            inventoryMovementId);
+            inventoryMovementId,
+            expiryDate,
+            lotNumber);
 
     private static string? NormalizeNote(string? note)
     {
@@ -214,5 +233,11 @@ public sealed class GoodsReceiptLine
         }
 
         return trimmed;
+    }
+
+    private static string? NormalizeLotNumber(string? lotNumber)
+    {
+        var (display, _) = InventoryLot.NormalizeLotNumber(lotNumber);
+        return display;
     }
 }

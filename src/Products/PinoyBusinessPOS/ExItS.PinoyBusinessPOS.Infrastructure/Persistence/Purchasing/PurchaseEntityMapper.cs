@@ -132,7 +132,9 @@ internal static class PurchaseEntityMapper
                 Enum.TryParse<ConnectedPoReceivingDiscrepancyKind>(l.DiscrepancyKind, true, out var kind)
                     ? kind
                     : ConnectedPoReceivingDiscrepancyKind.None,
-                l.DiscrepancyNote))
+                l.DiscrepancyNote,
+                l.ExpiryDate,
+                l.LotNumber))
             .ToList();
 
         return GoodsReceipt.Rehydrate(
@@ -184,7 +186,9 @@ internal static class PurchaseEntityMapper
             UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
             LineTotalSnapshot = line.LineTotalSnapshot,
             InventoryMovementId = line.InventoryMovementId,
-            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
+            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot,
+            ExpiryDate = line.ExpiryDate,
+            LotNumber = line.LotNumber
         };
 
     public static void ApplyMovementId(GoodsReceiptLine line, GoodsReceiptLineRecord record)

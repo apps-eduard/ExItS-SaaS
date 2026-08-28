@@ -254,7 +254,8 @@ public sealed class CreateDirectPurchaseReceipt
                                 receipt.Id.Value,
                                 actorId,
                                 utcNow,
-                                sellingMode: product.SellingMode);
+                                sellingMode: product.SellingMode,
+                                unitCost: line.UnitCost);
 
                             if (product.TracksExpiration)
                             {

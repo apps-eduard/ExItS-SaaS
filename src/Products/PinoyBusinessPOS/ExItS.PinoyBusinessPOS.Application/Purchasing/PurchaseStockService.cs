@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -26,11 +27,16 @@ public sealed class PurchaseStockService : IPurchaseStockService
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly InventoryLotStockService _lots;
 
-    public PurchaseStockService(IInventoryRepository inventory, ICatalogProductRepository products)
+    public PurchaseStockService(
+        IInventoryRepository inventory,
+        ICatalogProductRepository products,
+        InventoryLotStockService lots)
     {
         _inventory = inventory;
         _products = products;
+        _lots = lots;
     }
 
     public async Task ApplyReceiptAsync(
@@ -50,7 +56,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
         var catalogProducts = await _products
             .ListByIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
-        var sellingModeByProduct = catalogProducts.ToDictionary(p => p.Id.Value, p => p.SellingMode);
+        var productsById = catalogProducts.ToDictionary(p => p.Id.Value);
 
         foreach (var line in receipt.Lines.OrderBy(l => l.LineNumber))
         {
@@ -72,12 +78,24 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 continue;
             }
 
-            var sellingMode = sellingModeByProduct.TryGetValue(line.ProductId.Value, out var mode)
-                ? mode
-                : SellingMode.PerItem;
+            if (!productsById.TryGetValue(line.ProductId.Value, out var product))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidGoodsReceiptLine,
+                    "Product was not found for goods receipt stock apply.");
+            }
+
+            if (product.TracksExpiration && line.ExpiryDate is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InventoryExpirationRequired,
+                    "Expiry date is required when receiving expiration-tracked stock.");
+            }
+
+            var sellingMode = product.SellingMode;
 
             // Inventory ledger is always in base units. Purchase-unit receipts convert via
-            // GoodsReceiptLine.BaseQuantity (QuantityReceived × MultiplierToBaseSnapshot).
+            // GoodsReceiptLine.BaseQuantity; UnitCost is cost per base unit (snapshot ÷ multiplier).
             var movement = StockMovement.PurchaseReceipt(
                 organizationId,
                 line.ProductId,
@@ -87,7 +105,30 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 receipt.Id.Value,
                 actorId,
                 utcNow,
-                sellingMode: sellingMode);
+                sellingMode: sellingMode,
+                unitCost: line.BaseUnitCost);
+
+            if (product.TracksExpiration)
+            {
+                var receivedLot = await _lots
+                    .ReceiveAsync(
+                        organizationId,
+                        line.ProductId,
+                        line.ExpiryDate!.Value,
+                        line.BaseQuantity,
+                        actorId,
+                        utcNow,
+                        StockMovementType.PurchaseReceipt,
+                        StockMovementSourceType.PurchaseReceipt,
+                        branchId: null,
+                        lotNumber: line.LotNumber,
+                        sourceId: receipt.Id.Value,
+                        stockMovementId: movement.Id.Value,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                movement = movement.WithLot(receivedLot.Id);
+            }
+
             line.AttachInventoryMovement(movement.Id);
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);

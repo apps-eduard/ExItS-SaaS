@@ -116,7 +116,7 @@ export function ReceiveStockPage() {
     }
     const qty = Number(qtyText);
     const cost = Number(costText);
-    if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(cost) || cost < 0) {
+    if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(cost) || cost <= 0) {
       setError(t("purchasing.invalidLine"));
       return;
     }

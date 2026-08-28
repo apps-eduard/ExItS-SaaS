@@ -26,7 +26,8 @@ public sealed record PosPurchaseOrderLineDto(
     decimal ReceivedQty,
     decimal OutstandingQty,
     string? LineNotes,
-    decimal ClosedShortQty = 0m);
+    decimal ClosedShortQty = 0m,
+    bool TracksExpiration = false);
 
 public sealed record PosPurchaseOrderDto(
     Guid PurchaseOrderId,
@@ -79,7 +80,9 @@ public sealed record PosGoodsReceiptLineDto(
     decimal RejectedQty = 0m,
     decimal ShortClosedQty = 0m,
     string DiscrepancyKind = "None",
-    string? DiscrepancyNote = null)
+    string? DiscrepancyNote = null,
+    DateOnly? ExpiryDate = null,
+    string? LotNumber = null)
 {
     /// <summary>Alias for clients that still expect ReceivedQty.</summary>
     public decimal ReceivedQty => QuantityReceived;
@@ -132,7 +135,9 @@ public sealed record ReceivePurchaseOrderLineRequest(
     decimal RejectedQty = 0m,
     decimal ShortClosedQty = 0m,
     string? DiscrepancyKind = null,
-    string? DiscrepancyNote = null);
+    string? DiscrepancyNote = null,
+    DateOnly? ExpiryDate = null,
+    string? LotNumber = null);
 
 public sealed record ReceivePurchaseOrderRequest(
     IReadOnlyList<ReceivePurchaseOrderLineRequest> Lines,
@@ -229,7 +234,8 @@ public static class PurchaseMapper
             line.ReceivedQty,
             line.OutstandingQty,
             line.LineNotes,
-            line.ClosedShortQty);
+            line.ClosedShortQty,
+            product?.TracksExpiration ?? false);
     }
 
     public static PosGoodsReceiptDto Map(GoodsReceipt receipt) =>
@@ -259,7 +265,9 @@ public static class PurchaseMapper
                 l.RejectedQty,
                 l.ShortClosedQty,
                 l.DiscrepancyKind.ToString(),
-                l.DiscrepancyNote)).ToList());
+                l.DiscrepancyNote,
+                l.ExpiryDate,
+                l.LotNumber)).ToList());
 }
 
 public sealed class PurchaseOrderQueryService
@@ -1514,6 +1522,13 @@ public sealed class ReceivePurchaseOrder
                         kind = parsed;
                     }
 
+                    if (product.TracksExpiration && l.ReceiveQty > 0m && l.ExpiryDate is null)
+                    {
+                        throw new DomainException(
+                            DomainErrorCodes.InventoryExpirationRequired,
+                            "Expiry date is required when receiving expiration-tracked stock.");
+                    }
+
                     return new PurchaseOrderReceiveLineDraft(
                         CatalogProductId.From(l.ProductId),
                         l.ReceiveQty,
@@ -1522,7 +1537,9 @@ public sealed class ReceivePurchaseOrder
                         l.RejectedQty,
                         l.ShortClosedQty,
                         kind,
-                        l.DiscrepancyNote);
+                        l.DiscrepancyNote,
+                        l.ExpiryDate,
+                        l.LotNumber);
                 })
                 .ToList();
 

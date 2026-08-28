@@ -28,9 +28,12 @@ type LineEdit = {
   orderedQty: number;
   receivedQty: number;
   outstandingQty: number;
+  tracksExpiration: boolean;
   goodText: string;
   damagedText: string;
   closeRemaining: boolean;
+  expiryDate: string;
+  lotNumber: string;
 };
 
 export function PurchaseOrderReceivePage() {
@@ -70,9 +73,12 @@ export function PurchaseOrderReceivePage() {
           orderedQty: line.orderedQty,
           receivedQty: line.receivedQty,
           outstandingQty: line.outstandingQty,
+          tracksExpiration: line.tracksExpiration === true,
           goodText: line.outstandingQty > 0 ? String(line.outstandingQty) : "",
           damagedText: "",
           closeRemaining: false,
+          expiryDate: "",
+          lotNumber: "",
         })),
       );
       return po;
@@ -106,6 +112,13 @@ export function PurchaseOrderReceivePage() {
       setError(t("purchasing.invalidReceiveQty"));
       return null;
     }
+    const missingExpiry = parsed.find(
+      ({ line, good }) => line.tracksExpiration && (good ?? 0) > 0 && !line.expiryDate.trim(),
+    );
+    if (missingExpiry) {
+      setError(t("purchasing.expiryRequired"));
+      return null;
+    }
     const result = buildReceivePlan(
       parsed.map(({ line, good, damaged }) => ({
         productId: line.productId,
@@ -137,7 +150,7 @@ export function PurchaseOrderReceivePage() {
   }
 
   async function onConfirm() {
-    if (!workspace || !purchaseOrderId || !canReceive || busy || statusLocked) {
+    if (!workspace || !purchaseOrderId || !canReceive || busy || statusLocked || !lines) {
       return;
     }
     const planned = tryPlan();
@@ -160,14 +173,26 @@ export function PurchaseOrderReceivePage() {
         goodsReceiptId,
         deliveryReference: deliveryReference.trim() || null,
         notes: notes.trim() || null,
-        lines: planned.map((line) => ({
-          productId: line.productId,
-          receiveQty: line.receiveQty,
-          damagedQty: line.damagedQty,
-          shortClosedQty: line.shortClosedQty,
-          discrepancyKind: line.discrepancyKind,
-          discrepancyNote: line.discrepancyKind && notes.trim() ? notes.trim() : null,
-        })),
+        lines: planned.map((line) => {
+          const edit = lines.find((l) => l.productId === line.productId);
+          const goodQty = line.receiveQty;
+          return {
+            productId: line.productId,
+            receiveQty: line.receiveQty,
+            damagedQty: line.damagedQty,
+            shortClosedQty: line.shortClosedQty,
+            discrepancyKind: line.discrepancyKind,
+            discrepancyNote: line.discrepancyKind && notes.trim() ? notes.trim() : null,
+            expiryDate:
+              edit?.tracksExpiration && goodQty > 0 && edit.expiryDate.trim()
+                ? edit.expiryDate.trim()
+                : null,
+            lotNumber:
+              edit?.tracksExpiration && goodQty > 0 && edit.lotNumber.trim()
+                ? edit.lotNumber.trim()
+                : null,
+          };
+        }),
       });
       goodsReceiptIdRef.current = null;
       navigate(`/purchasing/${purchaseOrderId}`, { replace: true });
@@ -238,68 +263,116 @@ export function PurchaseOrderReceivePage() {
       ) : null}
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
-        {lines.map((line) => (
-          <li
-            key={line.productId}
-            className="rounded-md border border-border p-3"
-            data-testid={`receive-line-${line.productId}`}
-          >
-            <div className="font-medium">{line.name}</div>
-            <p className="mt-1 mb-2 text-[length:var(--exits-text-sm)] text-muted">
-              {t("purchasing.ordered")}: {line.orderedQty} · {t("purchasing.received")}:{" "}
-              {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty} {line.uom}
-            </p>
-            {reviewing ? (
-              <dl className="m-0 grid grid-cols-2 gap-1 text-[length:var(--exits-text-sm)]">
-                <div>
-                  <dt className="text-muted">{t("purchasing.goodReceived")}</dt>
-                  <dd className="m-0">{line.goodText || "0"}</dd>
+        {lines.map((line) => {
+          const goodQty = parseNonNegativeQty(line.goodText) ?? 0;
+          const showExpiry = line.tracksExpiration && goodQty > 0;
+          return (
+            <li
+              key={line.productId}
+              className="rounded-md border border-border p-3"
+              data-testid={`receive-line-${line.productId}`}
+            >
+              <div className="font-medium">{line.name}</div>
+              <p className="mt-1 mb-2 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.ordered")}: {line.orderedQty} · {t("purchasing.received")}:{" "}
+                {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty} {line.uom}
+              </p>
+              {reviewing ? (
+                <dl className="m-0 grid grid-cols-2 gap-1 text-[length:var(--exits-text-sm)]">
+                  <div>
+                    <dt className="text-muted">{t("purchasing.goodReceived")}</dt>
+                    <dd className="m-0">
+                      {line.goodText || "0"} {line.uom}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">{t("purchasing.damaged")}</dt>
+                    <dd className="m-0">{line.damagedText || "0"}</dd>
+                  </div>
+                  {showExpiry ? (
+                    <>
+                      <div>
+                        <dt className="text-muted">{t("purchasing.expiryDate")}</dt>
+                        <dd className="m-0">{line.expiryDate || "—"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("purchasing.lotNumber")}</dt>
+                        <dd className="m-0">{line.lotNumber.trim() || "—"}</dd>
+                      </div>
+                    </>
+                  ) : null}
+                </dl>
+              ) : canReceive && line.outstandingQty > 0 ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    {t("purchasing.goodReceived")}
+                    <input
+                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      value={line.goodText}
+                      onChange={(e) => updateLine(line.productId, { goodText: e.target.value })}
+                      data-testid={`receive-good-${line.productId}`}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    {t("purchasing.damaged")}
+                    <input
+                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      value={line.damagedText}
+                      onChange={(e) => updateLine(line.productId, { damagedText: e.target.value })}
+                      data-testid={`receive-damaged-${line.productId}`}
+                    />
+                  </label>
+                  {showExpiry ? (
+                    <>
+                      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                        {t("purchasing.expiryDate")} *
+                        <input
+                          type="date"
+                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          value={line.expiryDate}
+                          onChange={(e) =>
+                            updateLine(line.productId, { expiryDate: e.target.value })
+                          }
+                          data-testid={`receive-expiry-${line.productId}`}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                        {t("purchasing.lotNumber")}
+                        <input
+                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          value={line.lotNumber}
+                          onChange={(e) =>
+                            updateLine(line.productId, { lotNumber: e.target.value })
+                          }
+                          data-testid={`receive-lot-${line.productId}`}
+                        />
+                      </label>
+                      <p className="col-span-full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("purchasing.receiveExpiryHelper")}
+                      </p>
+                    </>
+                  ) : null}
+                  <label className="col-span-full flex items-start gap-2 text-[length:var(--exits-text-sm)]">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={line.closeRemaining}
+                      onChange={(e) =>
+                        updateLine(line.productId, { closeRemaining: e.target.checked })
+                      }
+                      data-testid={`receive-short-${line.productId}`}
+                    />
+                    <span>
+                      <strong>{t("purchasing.closeAsShort")}</strong>
+                      <br />
+                      <span className="text-muted">{t("purchasing.closeRemainingHelp")}</span>
+                    </span>
+                  </label>
                 </div>
-                <div>
-                  <dt className="text-muted">{t("purchasing.damaged")}</dt>
-                  <dd className="m-0">{line.damagedText || "0"}</dd>
-                </div>
-              </dl>
-            ) : canReceive && line.outstandingQty > 0 ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  {t("purchasing.goodReceived")}
-                  <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
-                    value={line.goodText}
-                    onChange={(e) => updateLine(line.productId, { goodText: e.target.value })}
-                    data-testid={`receive-good-${line.productId}`}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  {t("purchasing.damaged")}
-                  <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
-                    value={line.damagedText}
-                    onChange={(e) => updateLine(line.productId, { damagedText: e.target.value })}
-                    data-testid={`receive-damaged-${line.productId}`}
-                  />
-                </label>
-                <label className="col-span-full flex items-start gap-2 text-[length:var(--exits-text-sm)]">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={line.closeRemaining}
-                    onChange={(e) =>
-                      updateLine(line.productId, { closeRemaining: e.target.checked })
-                    }
-                    data-testid={`receive-short-${line.productId}`}
-                  />
-                  <span>
-                    <strong>{t("purchasing.closeAsShort")}</strong>
-                    <br />
-                    <span className="text-muted">{t("purchasing.closeRemainingHelp")}</span>
-                  </span>
-                </label>
-              </div>
-            ) : null}
-          </li>
-        ))}
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
 
       {!reviewing && canReceive ? (
