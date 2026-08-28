@@ -281,6 +281,7 @@ builder.Services.AddScoped<EnableInventoryTracking>();
 builder.Services.AddScoped<AddOpeningStock>();
 builder.Services.AddScoped<DisableInventoryTracking>();
 builder.Services.AddScoped<AdjustInventoryStock>();
+builder.Services.AddScoped<EnableExpirationTracking>();
 builder.Services.AddScoped<SetInventoryReorderConfiguration>();
 builder.Services.AddScoped<DirectPurchaseReceiptQueryService>();
 builder.Services.AddScoped<CreateDirectPurchaseReceipt>();

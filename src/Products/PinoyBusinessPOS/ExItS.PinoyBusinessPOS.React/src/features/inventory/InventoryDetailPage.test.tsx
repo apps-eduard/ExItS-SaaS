@@ -114,6 +114,14 @@ describe("InventoryDetailPage expiration UX", () => {
       updatedAtUtc: "2026-01-01T00:00:00Z",
     } as never);
     vi.spyOn(catalogClient, "updateCatalogProduct").mockResolvedValue({} as never);
+    vi.spyOn(inventoryClient, "enableExpirationTracking").mockResolvedValue({
+      productId,
+      organizationId: workspace.organizationId,
+      tracksExpiration: true,
+      isTracked: true,
+      onHandQuantity: 40,
+      lots: [],
+    } as never);
   });
 
   afterEach(() => {
@@ -160,6 +168,41 @@ describe("InventoryDetailPage expiration UX", () => {
       ).toBeGreaterThan(0);
     });
     expect(screen.getByTestId("inventory-adjust-expiry")).toBeInTheDocument();
+
+    const lots = screen.getByTestId("inventory-lots");
+    const adjust = screen.getByTestId("inventory-adjust-form");
+    expect(lots.compareDocumentPosition(adjust) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("opens allocation dialog when enabling expiration with on-hand stock", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByTestId("inventory-enable-expiration");
+    await user.click(screen.getByTestId("inventory-enable-expiration"));
+    expect(await screen.findByTestId("enable-expiration-tracking-dialog")).toBeInTheDocument();
+    expect(inventoryClient.enableExpirationTracking).not.toHaveBeenCalled();
+    expect(catalogClient.updateCatalogProduct).not.toHaveBeenCalled();
+  });
+
+  it("enables expiration directly when on-hand is zero", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({ onHandQuantity: 0, hasOpeningStock: true }) as never,
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByTestId("inventory-enable-expiration");
+    await user.click(screen.getByTestId("inventory-enable-expiration"));
+
+    await waitFor(() =>
+      expect(inventoryClient.enableExpirationTracking).toHaveBeenCalledWith(
+        workspace,
+        productId,
+        expect.objectContaining({
+          existingStockLots: [],
+          expectedOnHandQuantity: 0,
+        }),
+      ),
+    );
   });
 
   it("requires expiry on increase and refreshes after successful adjust", async () => {

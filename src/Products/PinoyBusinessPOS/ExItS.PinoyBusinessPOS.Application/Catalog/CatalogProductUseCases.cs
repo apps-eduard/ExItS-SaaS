@@ -546,6 +546,25 @@ public sealed class UpdateCatalogProduct
 
             if (tracksExpiration is not null)
             {
+                var account = await _inventory
+                    .GetByProductIdAsync(orgId, product.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                var onHand = account is { IsTracked: true } ? account.OnHandQuantity : 0m;
+
+                if (tracksExpiration.Value && !product.TracksExpiration && onHand > 0m)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        ApplicationErrorCodes.ExpirationInitializationRequired,
+                        "Existing stock must be allocated into lots via enable expiration tracking before turning expiration on.");
+                }
+
+                if (!tracksExpiration.Value && product.TracksExpiration && onHand > 0m)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        ApplicationErrorCodes.ExpirationDisableRequiresZeroOnHand,
+                        "Expiration tracking cannot be disabled while on-hand quantity is greater than zero.");
+                }
+
                 product.SetExpirationTracking(
                     tracksExpiration.Value,
                     expirationWarningDays,

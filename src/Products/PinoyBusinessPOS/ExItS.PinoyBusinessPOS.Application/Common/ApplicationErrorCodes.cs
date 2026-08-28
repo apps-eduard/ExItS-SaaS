@@ -94,6 +94,19 @@ public static class ApplicationErrorCodes
     public const string InventoryTransferAlreadyReceived = "pos.inventory.transfer.already_received";
     public const string InventoryTransferBranchForbidden = "pos.inventory.transfer.branch.forbidden";
 
+    /// <summary>On-hand stock must be allocated into lots via enable-expiration-tracking.</summary>
+    public const string ExpirationInitializationRequired = "pos.inventory.expiration.initialization_required";
+    /// <summary>Submitted lot quantities do not sum exactly to authoritative on-hand.</summary>
+    public const string ExpirationAllocationMismatch = "pos.inventory.expiration.allocation_mismatch";
+    /// <summary>On-hand changed concurrently during expiration lot allocation.</summary>
+    public const string ExpirationAllocationStockChanged = "pos.inventory.expiration.allocation_stock_changed";
+    /// <summary>Expiration tracking is already enabled with an inconsistent lot/on-hand state.</summary>
+    public const string ExpirationTrackingAlreadyEnabled = "pos.inventory.expiration.already_enabled";
+    /// <summary>Cannot disable expiration tracking while on-hand quantity is greater than zero.</summary>
+    public const string ExpirationDisableRequiresZeroOnHand = "pos.inventory.expiration.disable_requires_zero_on_hand";
+    /// <summary>An existing-stock lot line has invalid quantity (must be &gt; 0).</summary>
+    public const string ExpirationLotQuantityInvalid = "pos.inventory.expiration.lot_quantity_invalid";
+
     public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";
     public const string ExpenseCategoryNameConflict = "pos.expense_category.name.conflict";
     public const string ExpenseCategoryNotAssignable = "pos.expense_category.not_assignable";

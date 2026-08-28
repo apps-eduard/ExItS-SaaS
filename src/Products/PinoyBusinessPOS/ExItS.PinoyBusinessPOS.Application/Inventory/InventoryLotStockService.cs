@@ -163,6 +163,82 @@ public sealed class InventoryLotStockService
         return allocations;
     }
 
+    /// <summary>
+    /// Allocates existing product on-hand into new expiration lots without changing
+    /// <see cref="InventoryAccount.OnHandQuantity"/>. Creates lots at full line quantity and
+    /// records lot-ledger <see cref="StockMovementType.ExpirationInitialization"/> only
+    /// (no product-level stock movement, no <c>ApplyMovementEffect</c>).
+    /// Requires no existing positive on-hand lots for the product.
+    /// </summary>
+    public async Task<IReadOnlyList<InventoryLot>> AllocateExistingOnHandLotsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyList<ExistingStockLotInput> lines,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        PosBranchId? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        var existing = await _lots
+            .ListOnHandAsync(organizationId, productId, branchId, includeDepleted: false, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing.Any(l => l.QuantityOnHand > 0m))
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.ExpirationTrackingAlreadyEnabled,
+                "Cannot allocate existing on-hand into lots while positive lot quantities already exist.");
+        }
+
+        foreach (var line in lines)
+        {
+            if (line.Quantity <= 0m)
+            {
+                throw new DomainException(
+                    ApplicationErrorCodes.ExpirationLotQuantityInvalid,
+                    "Each existing-stock lot quantity must be greater than zero.");
+            }
+
+            if (line.ExpiryDate is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InventoryExpirationRequired,
+                    "Expiration date is required for each existing-stock lot.");
+            }
+        }
+
+        var created = new List<InventoryLot>(lines.Count);
+        foreach (var line in lines)
+        {
+            var lot = InventoryLot.Create(
+                organizationId,
+                productId,
+                line.ExpiryDate!.Value,
+                line.Quantity,
+                utcNow,
+                branchId,
+                line.LotNumber);
+            await _lots.AddAsync(lot, cancellationToken).ConfigureAwait(false);
+            await AddMovementAsync(
+                    organizationId,
+                    lot.Id,
+                    productId,
+                    StockMovementType.ExpirationInitialization,
+                    line.Quantity,
+                    StockMovementSourceType.Manual,
+                    actorId,
+                    utcNow,
+                    sourceId: null,
+                    stockMovementId: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            created.Add(lot);
+        }
+
+        return created;
+    }
+
     public async Task RestoreSourceAsync(
         PosOrganizationId organizationId,
         Guid sourceId,

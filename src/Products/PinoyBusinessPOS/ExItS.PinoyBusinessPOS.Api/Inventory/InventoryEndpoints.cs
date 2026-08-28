@@ -32,6 +32,7 @@ internal static class InventoryEndpoints
         group.MapPost("/{productId:guid}/opening-stock", AddOpeningStock);
         group.MapPost("/{productId:guid}/disable", Disable);
         group.MapPost("/{productId:guid}/adjustments", Adjust);
+        group.MapPost("/products/{productId:guid}/expiration-tracking/enable", EnableExpirationTracking);
         group.MapGet("/{productId:guid}/lots", ListLots);
         group.MapGet("/{productId:guid}/movements", ListMovements);
 
@@ -481,6 +482,34 @@ internal static class InventoryEndpoints
                 Results.Ok,
                 ct)
             .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> EnableExpirationTracking(
+        HttpRequest request,
+        Guid productId,
+        EnableExpirationTrackingRequest? body,
+        EnableExpirationTracking useCase,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+        {
+            return problem!;
+        }
+
+        body ??= new EnableExpirationTrackingRequest();
+        var result = await useCase
+            .ExecuteAsync(
+                organizationId,
+                productId,
+                actorId,
+                body.ExpirationWarningDays,
+                body.ExistingStockLots,
+                body.ExpectedOnHandQuantity,
+                ct)
+            .ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
     }
 
     private static async Task<IResult> GetMovementById(

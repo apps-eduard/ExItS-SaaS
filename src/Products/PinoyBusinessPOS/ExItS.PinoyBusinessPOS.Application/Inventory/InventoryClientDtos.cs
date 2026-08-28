@@ -54,6 +54,26 @@ public sealed record EnableInventoryTrackingRequest(
     string? LotNumber = null,
     decimal? UnitCost = null);
 
+/// <summary>One lot line when enabling expiration tracking over existing on-hand stock.</summary>
+public sealed record ExistingStockLotInput(
+    decimal Quantity,
+    DateOnly? ExpiryDate,
+    string? LotNumber = null);
+
+public sealed record EnableExpirationTrackingRequest(
+    IReadOnlyList<ExistingStockLotInput>? ExistingStockLots = null,
+    int? ExpirationWarningDays = null,
+    decimal? ExpectedOnHandQuantity = null);
+
+public sealed record EnableExpirationTrackingResponse(
+    Guid ProductId,
+    Guid OrganizationId,
+    bool TracksExpiration,
+    int? ExpirationWarningDays,
+    bool IsTracked,
+    decimal OnHandQuantity,
+    IReadOnlyList<PosInventoryLotDto> Lots);
+
 public sealed record AdjustInventoryRequest(
     string Direction,
     decimal Quantity,

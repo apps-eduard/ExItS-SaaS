@@ -35,6 +35,7 @@ public static class StockMovementPresentation
             StockMovementType.TransferIn => "Transfer in",
             StockMovementType.TransferCancelRestore => "Transfer cancelled",
             StockMovementType.DirectPurchaseReceipt => "Direct purchase",
+            StockMovementType.ExpirationInitialization => "Expiration initialization",
             _ => type.ToString()
         };
     }

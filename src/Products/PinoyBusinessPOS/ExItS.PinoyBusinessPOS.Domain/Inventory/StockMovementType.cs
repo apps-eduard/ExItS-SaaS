@@ -19,7 +19,13 @@ public enum StockMovementType
     TransferOut = 9,
     TransferIn = 10,
     TransferCancelRestore = 11,
-    DirectPurchaseReceipt = 12
+    DirectPurchaseReceipt = 12,
+    /// <summary>
+    /// Lot-ledger-only allocation of existing on-hand into expiration lots.
+    /// Does not change product <see cref="InventoryAccount.OnHandQuantity"/>;
+    /// never written as a product-level <see cref="StockMovement"/>.
+    /// </summary>
+    ExpirationInitialization = 13
 }
 
 public static class StockMovementTypes
@@ -40,7 +46,8 @@ public static class StockMovementTypes
         nameof(StockMovementType.TransferOut),
         nameof(StockMovementType.TransferIn),
         nameof(StockMovementType.TransferCancelRestore),
-        nameof(StockMovementType.DirectPurchaseReceipt)
+        nameof(StockMovementType.DirectPurchaseReceipt),
+        nameof(StockMovementType.ExpirationInitialization)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

@@ -109,6 +109,11 @@ internal static class PosApiResults
             or ApplicationErrorCodes.InventoryTransferAlreadyReceived
             or ApplicationErrorCodes.InventoryTransferNumberConflict
             or ApplicationErrorCodes.InventoryTransferConcurrencyConflict
+            or ApplicationErrorCodes.ExpirationAllocationStockChanged
+            or ApplicationErrorCodes.ExpirationTrackingAlreadyEnabled
+            or ApplicationErrorCodes.ExpirationDisableRequiresZeroOnHand
+            or ApplicationErrorCodes.ExpirationInitializationRequired
+            or ApplicationErrorCodes.ExpirationAllocationMismatch
             or DomainErrorCodes.InventoryInsufficientStock
             or DomainErrorCodes.InventoryDisableRequiresZero
             or DomainErrorCodes.InventoryOpeningDuplicate

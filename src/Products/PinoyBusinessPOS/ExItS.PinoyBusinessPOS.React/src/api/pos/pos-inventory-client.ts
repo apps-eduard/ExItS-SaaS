@@ -102,6 +102,28 @@ export type PosExpiringLotPagedResult = {
 
 export type PosExpiryWindow = "Expired" | "Days7" | "Days14" | "Days30" | "Custom";
 
+export type ExistingStockLotInput = {
+  quantity: number;
+  expiryDate: string;
+  lotNumber?: string | null;
+};
+
+export type EnableExpirationTrackingRequest = {
+  expirationWarningDays?: number | null;
+  expectedOnHandQuantity?: number | null;
+  existingStockLots: ExistingStockLotInput[];
+};
+
+export type EnableExpirationTrackingResponse = {
+  productId: string;
+  organizationId: string;
+  tracksExpiration: boolean;
+  expirationWarningDays?: number | null;
+  isTracked: boolean;
+  onHandQuantity: number;
+  lots: PosInventoryLotDto[];
+};
+
 function appendQuery(
   path: string,
   params: Record<string, string | number | boolean | undefined>,
@@ -196,6 +218,22 @@ export function disableInventoryTracking(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/disable`,
+  });
+}
+
+/** POST /api/v1/pos/inventory/products/{productId}/expiration-tracking/enable — online-only. */
+export function enableExpirationTracking(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  body: EnableExpirationTrackingRequest,
+  signal?: AbortSignal,
+): Promise<EnableExpirationTrackingResponse> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/products/${productId}/expiration-tracking/enable`,
+    body,
   });
 }
 

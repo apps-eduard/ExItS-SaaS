@@ -17,7 +17,7 @@ import {
   uploadCatalogProductImage,
 } from "@/api/pos/pos-catalog-client";
 
-import type { PosProductBrandDto } from "@/api/pos/pos-catalog-types";
+import type { PosCatalogProductDto, PosProductBrandDto } from "@/api/pos/pos-catalog-types";
 
 import {
   DEFAULT_CATALOG_SELLING_MODE,
@@ -59,7 +59,13 @@ import {
   validateOpeningStockInput,
 } from "@/features/catalog/opening-stock-helpers";
 
-import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
+import {
+  enableExpirationTracking,
+  enableInventoryTracking,
+  getInventoryProduct,
+} from "@/api/pos/pos-inventory-client";
+
+import { EnableExpirationTrackingDialog } from "@/features/inventory/EnableExpirationTrackingDialog";
 
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -222,6 +228,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [newBrandName, setNewBrandName] = useState("");
 
+  const [enableExpirationOpen, setEnableExpirationOpen] = useState(false);
+
+  const [pendingExpirationInit, setPendingExpirationInit] = useState<{
+    onHandQuantity: number;
+    unitOfMeasure: string;
+    warningDays: number | null;
+  } | null>(null);
+
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", workspace?.organizationId, workspace?.branchId],
 
@@ -323,8 +337,18 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     Number(openingUnitCost),
   );
 
+  type SaveResult =
+    | { kind: "saved"; product: PosCatalogProductDto }
+    | {
+        kind: "needsExpirationInit";
+        product: PosCatalogProductDto;
+        onHandQuantity: number;
+        unitOfMeasure: string;
+        warningDays: number | null;
+      };
+
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<SaveResult> => {
       if (!workspace) {
         throw new Error("Workspace required");
       }
@@ -359,6 +383,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       }
 
       const warningDays = Number(expirationWarningDays);
+      const resolvedWarningDays =
+        trackStockQuantity && tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0
+          ? warningDays
+          : null;
+
+      const wantsExpiration = trackStockQuantity && tracksExpiration;
+      const wasTrackingExpiration = productQuery.data?.tracksExpiration === true;
+      const enablingExpiration = mode === "edit" && wantsExpiration && !wasTrackingExpiration;
 
       const body = {
         name: name.trim(),
@@ -383,12 +415,11 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         units: unitsPayload,
 
-        tracksExpiration: trackStockQuantity ? tracksExpiration : false,
+        tracksExpiration: enablingExpiration
+          ? false
+          : wantsExpiration,
 
-        expirationWarningDays:
-          trackStockQuantity && tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0
-            ? warningDays
-            : null,
+        expirationWarningDays: enablingExpiration ? null : resolvedWarningDays,
       };
 
       if (mode === "create") {
@@ -402,33 +433,106 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           );
         }
 
-        return product;
+        return { kind: "saved", product };
       }
 
-      return updateCatalogProduct(workspace, productId!, {
+      if (enablingExpiration) {
+        let onHandQuantity = 0;
+        try {
+          const inventory = await getInventoryProduct(workspace, productId!);
+          onHandQuantity = inventory.onHandQuantity ?? 0;
+        } catch (err) {
+          if (!(err instanceof PosApiError) || err.status !== 404) {
+            throw err;
+          }
+        }
+
+        const product = await updateCatalogProduct(workspace, productId!, {
+          ...body,
+          expectedUpdatedAtUtc,
+          units: configurePackages ? unitsPayload : undefined,
+        });
+
+        if (onHandQuantity > 0) {
+          return {
+            kind: "needsExpirationInit",
+            product,
+            onHandQuantity,
+            unitOfMeasure: product.unitOfMeasure,
+            warningDays: resolvedWarningDays,
+          };
+        }
+
+        await enableExpirationTracking(workspace, productId!, {
+          existingStockLots: [],
+          expectedOnHandQuantity: onHandQuantity,
+          expirationWarningDays: resolvedWarningDays,
+        });
+
+        const refreshed = await getCatalogProduct(workspace, productId!);
+        return { kind: "saved", product: refreshed };
+      }
+
+      const product = await updateCatalogProduct(workspace, productId!, {
         ...body,
 
         expectedUpdatedAtUtc,
 
         units: configurePackages ? unitsPayload : undefined,
       });
+
+      return { kind: "saved", product };
     },
 
-    onSuccess: async (product) => {
+    onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ["catalog"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
 
-      setExpectedUpdatedAtUtc(product.updatedAtUtc);
+      setExpectedUpdatedAtUtc(result.product.updatedAtUtc);
 
       setError(null);
 
+      if (result.kind === "needsExpirationInit") {
+        setPendingExpirationInit({
+          onHandQuantity: result.onHandQuantity,
+          unitOfMeasure: result.unitOfMeasure,
+          warningDays: result.warningDays,
+        });
+        setEnableExpirationOpen(true);
+        return;
+      }
+
       if (mode === "create") {
-        navigate(`/catalog/products/${product.productId}/edit`, { replace: true });
+        navigate(`/catalog/products/${result.product.productId}/edit`, { replace: true });
       }
     },
 
     onError: (err) => {
       if (err instanceof PosApiError) {
+        if (
+          err.errorCode === "pos.inventory.expiration.initialization_required" ||
+          err.problem.detail?.toLowerCase().includes("allocated into lots")
+        ) {
+          const warningDays =
+            !Number.isNaN(Number(expirationWarningDays)) && Number(expirationWarningDays) > 0
+              ? Number(expirationWarningDays)
+              : 7;
+          void getInventoryProduct(workspace!, productId!)
+            .then((inventory) => {
+              setPendingExpirationInit({
+                onHandQuantity: inventory.onHandQuantity,
+                unitOfMeasure: inventory.unitOfMeasure,
+                warningDays,
+              });
+              setEnableExpirationOpen(true);
+              setError(null);
+            })
+            .catch(() => {
+              setError(err.problem.detail ?? err.message);
+            });
+          return;
+        }
+
         if (err.status === 409) {
           setError(err.problem.detail ?? t("catalog.conflict"));
 
@@ -1243,6 +1347,34 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           ) : null}
         </div>
       </form>
+
+      {workspace && productId && pendingExpirationInit ? (
+        <EnableExpirationTrackingDialog
+          open={enableExpirationOpen}
+          workspace={workspace}
+          productId={productId}
+          productName={name.trim() || productQuery.data?.name || ""}
+          onHandQuantity={pendingExpirationInit.onHandQuantity}
+          unitOfMeasure={pendingExpirationInit.unitOfMeasure}
+          expirationWarningDays={pendingExpirationInit.warningDays}
+          onClose={() => {
+            setEnableExpirationOpen(false);
+            setPendingExpirationInit(null);
+            setTracksExpiration(false);
+          }}
+          onSuccess={async () => {
+            setEnableExpirationOpen(false);
+            setPendingExpirationInit(null);
+            setError(null);
+            await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+            await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+            const refreshed = await getCatalogProduct(workspace, productId);
+            setExpectedUpdatedAtUtc(refreshed.updatedAtUtc);
+            setTracksExpiration(refreshed.tracksExpiration === true);
+            setExpirationWarningDays(String(refreshed.expirationWarningDays ?? 7));
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,7 @@ public sealed class StockMovementPresentationTests
     [InlineData(nameof(StockMovementType.ManualIncrease), "Stock added")]
     [InlineData(nameof(StockMovementType.ManualDecrease), "Stock removed")]
     [InlineData(nameof(StockMovementType.DirectPurchaseReceipt), "Direct purchase")]
+    [InlineData(nameof(StockMovementType.ExpirationInitialization), "Expiration initialization")]
     public void Maps_manual_adjustment_codes_to_friendly_labels(string code, string expected)
     {
         Assert.Equal(expected, StockMovementPresentation.ToFriendlyLabel(code));
