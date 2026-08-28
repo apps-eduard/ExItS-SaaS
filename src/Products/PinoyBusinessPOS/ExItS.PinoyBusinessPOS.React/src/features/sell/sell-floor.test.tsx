@@ -231,7 +231,7 @@ describe("SellFloorPage", () => {
     expect(screen.getByTestId("sell-products")).toBeInTheDocument();
     expect(screen.getByTestId("sell-cart-landscape")).toBeInTheDocument();
     expect(screen.queryByTestId("sell-cart-bar")).not.toBeInTheDocument();
-    expect(screen.getByTestId("sell-cart-sheet")).toBeInTheDocument();
+    expect(screen.queryByTestId("sell-cart-sheet")).not.toBeInTheDocument();
     expect(screen.queryByTestId("checkout-readiness")).not.toBeInTheDocument();
 
     await waitFor(() => {

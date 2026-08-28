@@ -22,7 +22,6 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -274,12 +273,12 @@ export function CatalogProductsPage() {
                 <span className="catalog-product-row__main min-w-0">
                   <span className="exits-list__name block truncate font-semibold">{product.name}</span>
                   {secondaryMeta ? (
-                    <span className="catalog-product-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                    <span className="catalog-product-row__meta mt-1 block truncate text-muted">
                       {secondaryMeta}
                     </span>
                   ) : null}
                   {idsMeta ? (
-                    <span className="catalog-product-row__meta mt-0.5 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                    <span className="catalog-product-row__ids mt-0.5 block truncate text-muted">
                       {idsMeta}
                     </span>
                   ) : null}
@@ -288,8 +287,14 @@ export function CatalogProductsPage() {
                   {product.sellingPrice != null ? (
                     <span className="catalog-product-row__price">{formatPeso(product.sellingPrice)}</span>
                   ) : null}
-                  <span className="catalog-product-row__status">
-                    <StatusChip tone={isActive ? "success" : "warning"}>{product.status}</StatusChip>
+                  <span
+                    className={
+                      isActive
+                        ? "catalog-product-row__badge catalog-product-row__badge--active"
+                        : "catalog-product-row__badge catalog-product-row__badge--inactive"
+                    }
+                  >
+                    {product.status}
                   </span>
                 </span>
               </Link>

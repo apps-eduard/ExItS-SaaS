@@ -48,7 +48,7 @@ export function OrgBottomNav() {
     <nav
       data-testid="org-bottom-nav"
       aria-label={t("org.nav.aria")}
-      className="org-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="org-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="org-bottom-nav-inner mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1 sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
         {tabs.map((tab) => {

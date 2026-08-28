@@ -1110,38 +1110,32 @@ export function SellFloorPage() {
         </button>
       ) : null}
 
-      {!sideCartLayout ? (
-        <div
-          className={cn(
-            "sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40 transition-opacity duration-[var(--exits-motion-normal)]",
-            cartSheetOpen ? "opacity-100" : "pointer-events-none opacity-0",
-          )}
-          role="presentation"
-          aria-hidden={!cartSheetOpen}
-          onClick={() => setCartSheetOpen(false)}
-        />
-      ) : null}
-
-      {!sideCartLayout ? (
-        <div
-          id="sell-cart-sheet-panel"
-          data-testid="sell-cart-sheet"
-          className={cn(
-            "sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[min(92dvh,100dvh)] flex-col gap-2 border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)] transition-transform duration-[var(--exits-motion-normal)] ease-[var(--exits-ease-emphasized)]",
-            cartSheetOpen ? "translate-y-0" : "pointer-events-none translate-y-full",
-          )}
-          aria-hidden={!cartSheetOpen}
-        >
-        <div className="sell-cart-sheet__handle" aria-hidden>
-          <span className="sell-cart-sheet__handle-bar" />
-        </div>
-        <SellCartPanel
-          {...cartPanelProps}
-          panelId="sheet"
-          showClose
-          onClose={() => setCartSheetOpen(false)}
-        />
-      </div>
+      {/* Unmount when closed — a persistent opacity-0 full-screen layer at z-30
+          competed with bottom nav and could leave clicks dead after rapid tab switches. */}
+      {!sideCartLayout && cartSheetOpen ? (
+        <>
+          <div
+            className="sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40"
+            role="presentation"
+            onClick={() => setCartSheetOpen(false)}
+          />
+          <div
+            id="sell-cart-sheet-panel"
+            data-testid="sell-cart-sheet"
+            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[min(92dvh,100dvh)] flex-col gap-2 border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+            aria-hidden={false}
+          >
+            <div className="sell-cart-sheet__handle" aria-hidden>
+              <span className="sell-cart-sheet__handle-bar" />
+            </div>
+            <SellCartPanel
+              {...cartPanelProps}
+              panelId="sheet"
+              showClose
+              onClose={() => setCartSheetOpen(false)}
+            />
+          </div>
+        </>
       ) : null}
 
       <SellUnitEntryDialog

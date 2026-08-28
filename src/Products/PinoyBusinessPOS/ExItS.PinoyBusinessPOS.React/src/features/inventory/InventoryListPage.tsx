@@ -149,48 +149,66 @@ export function InventoryListPage() {
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
           {items.map((item) => {
             const tracked = item.isTracked;
+            const lowStock = tracked && item.isLowStock;
+            const stockStatus = tracked ? item.stockStatus?.trim() ?? "" : "";
+            const stockStatusKey = stockStatus.toLowerCase();
+            const outOfStock = stockStatusKey.includes("out");
+            const showStockChip =
+              tracked &&
+              Boolean(stockStatus) &&
+              (lowStock || outOfStock || stockStatusKey.includes("low"));
+            const tracksExpiry = tracked && item.tracksExpiration === true;
+
             return (
               <li key={item.productId}>
                 <Link
                   className={cn(
                     "exits-list__card inventory-row block min-w-0 text-foreground no-underline",
                     !tracked && "inventory-row--untracked",
+                    lowStock && "inventory-row--low",
+                    outOfStock && "inventory-row--out",
                   )}
                   to={`/inventory/${item.productId}`}
                   data-testid={`inventory-row-${item.productId}`}
                 >
                   <div className="inventory-row__main min-w-0">
                     <span className="exits-list__name block truncate font-semibold">{item.name}</span>
-                    <span className="inventory-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {tracked
-                        ? `${t("inventory.onHand")}: ${item.onHandQuantity} ${item.unitOfMeasure}`
-                        : t("inventory.notTracked")}
-                      {tracked && item.tracksExpiration
-                        ? ` · ${t("inventory.tracksExpirationShort")}`
-                        : ""}
-                    </span>
-                    <div className="inventory-row__chips mt-2 flex flex-wrap gap-1.5">
-                      <StatusChip tone={tracked ? "success" : "info"}>
-                        {tracked ? t("inventory.tracked") : t("inventory.notTracked")}
-                      </StatusChip>
-                      {tracked && item.isLowStock ? (
-                        <StatusChip tone="warning">{t("inventory.lowStock")}</StatusChip>
-                      ) : null}
-                      {tracked && item.stockStatus ? (
-                        <StatusChip tone={stockTone(item.stockStatus, item.isLowStock)}>
-                          {item.stockStatus}
-                        </StatusChip>
-                      ) : null}
-                    </div>
+                    {!tracked || tracksExpiry || showStockChip ? (
+                      <div className="inventory-row__chips mt-1.5 flex flex-wrap gap-1">
+                        {!tracked ? (
+                          <span className="inventory-row__badge inventory-row__badge--untracked">
+                            {t("inventory.notTracked")}
+                          </span>
+                        ) : null}
+                        {tracksExpiry ? (
+                          <span className="inventory-row__badge inventory-row__badge--expiry">
+                            {t("inventory.tracksExpirationShort")}
+                          </span>
+                        ) : null}
+                        {showStockChip ? (
+                          <StatusChip tone={stockTone(stockStatus, lowStock)}>
+                            {lowStock && !outOfStock ? t("inventory.lowStock") : stockStatus}
+                          </StatusChip>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="inventory-row__aside">
                     {tracked ? (
-                      <span className="inventory-row__qty tabular-nums">
+                      <span
+                        className={cn(
+                          "inventory-row__qty tabular-nums",
+                          lowStock && "inventory-row__qty--warn",
+                          outOfStock && "inventory-row__qty--danger",
+                        )}
+                      >
                         {item.onHandQuantity}
                         <span className="inventory-row__uom">{item.unitOfMeasure}</span>
                       </span>
                     ) : (
-                      <span className="inventory-row__qty inventory-row__qty--muted">—</span>
+                      <span className="inventory-row__qty inventory-row__qty--muted" aria-hidden>
+                        —
+                      </span>
                     )}
                     <ChevronRight className="inventory-row__chevron size-4 shrink-0 text-muted" aria-hidden />
                   </div>
