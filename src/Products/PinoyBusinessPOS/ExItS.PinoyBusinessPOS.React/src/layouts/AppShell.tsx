@@ -6,11 +6,17 @@ export function AppShell({
   children,
   header,
   withOrgBottomNav = false,
+  sellFloor = false,
 }: {
   children: ReactNode;
   header?: ReactNode;
   /** Reserve space for fixed org bottom nav. */
   withOrgBottomNav?: boolean;
+  /**
+   * Sell floor uses a near-fullscreen shell. Prefer an explicit class over CSS `:has()`
+   * so desktop style recalculation does not thrash on every DOM mutation.
+   */
+  sellFloor?: boolean;
 }) {
   const { t } = useI18n();
 
@@ -18,6 +24,7 @@ export function AppShell({
     <div
       className={cn(
         "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        sellFloor && "app-shell--sell-floor",
         withOrgBottomNav
           ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))]"
           : "pb-[max(2rem,env(safe-area-inset-bottom))]",

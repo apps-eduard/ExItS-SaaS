@@ -25,6 +25,8 @@ export function RootLayout() {
     boundWorkspace != null;
 
   const showWorkspaceTransition = workspaceStatus === "binding";
+  const isSellFloor =
+    location.pathname === "/sell" || location.pathname.startsWith("/sell/");
 
   return (
     <>
@@ -33,6 +35,7 @@ export function RootLayout() {
         <AppShell
           header={isPersonal ? undefined : <AppTopBar />}
           withOrgBottomNav={showOrgBottomNav}
+          sellFloor={isSellFloor}
         >
           <Outlet />
         </AppShell>

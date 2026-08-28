@@ -361,6 +361,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const loadGenerationRef = useRef(0);
   const loadInFlightRef = useRef<Promise<void> | null>(null);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   const loadWorkspaces = useCallback(async (currentSession: BrowserSessionSnapshot | null) => {
     const generation = ++loadGenerationRef.current;
@@ -402,8 +404,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const organizations = Array.isArray(organizationsResult.organizations)
+      ? organizationsResult.organizations
+      : [];
     const branchesByOrganizationId = new Map<string, PlatformBranch[]>();
-    for (const organization of organizationsResult.organizations) {
+    for (const organization of organizations) {
       const branchesResult = await listOrganizationBranches(organization.organizationId);
       if (generation !== loadGenerationRef.current) {
         return;
@@ -414,13 +419,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       );
     }
 
-    const accessible = buildAccessibleWorkspaces(
-      organizationsResult.organizations,
-      branchesByOrganizationId,
-      { includeManagementOrgsWithoutBranches: true },
-    );
+    const accessible = buildAccessibleWorkspaces(organizations, branchesByOrganizationId, {
+      includeManagementOrgsWithoutBranches: true,
+    });
     const plan = resolveWorkspaceRoutingPlan({
-      organizationCount: organizationsResult.organizations.length,
+      organizationCount: organizations.length,
       workspaces: accessible,
       accountClass,
     });
@@ -530,14 +533,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       await existing;
       return;
     }
-    const run = loadWorkspaces(session).finally(() => {
+    // Read session from a ref so isomorphic session object replacements do not
+    // recreate this callback and re-trigger the bootstrap effect on every nav.
+    const run = loadWorkspaces(sessionRef.current).finally(() => {
       if (loadInFlightRef.current === run) {
         loadInFlightRef.current = null;
       }
     });
     loadInFlightRef.current = run;
     await run;
-  }, [loadWorkspaces, session]);
+  }, [loadWorkspaces]);
 
   const ensureOrganizationGrantHint = useCallback(
     async (organizationId: string, options?: { force?: boolean }) => {

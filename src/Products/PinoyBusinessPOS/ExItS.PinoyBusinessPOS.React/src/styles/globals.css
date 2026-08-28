@@ -627,15 +627,17 @@ body {
   }
 }
 
-/* Sell floor uses nearly full viewport; other pages keep max-w-5xl */
-.app-shell:has(.sell-floor-root) {
+/* Sell floor uses nearly full viewport; other pages keep max-w-5xl.
+   Class is set from the router (AppShell sellFloor) — avoid CSS :has() which
+   forces expensive ancestor style invalidation on every desktop DOM change. */
+.app-shell--sell-floor {
   max-width: min(100%, 100rem); /* ~1600px ceiling for ultra-wide */
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
 }
 
 @media (min-width: 900px) {
-  .app-shell:has(.sell-floor-root) {
+  .app-shell--sell-floor {
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
     height: 100dvh;
@@ -643,7 +645,7 @@ body {
     overflow: hidden;
   }
 
-  .app-shell:has(.sell-floor-root) #main-content {
+  .app-shell--sell-floor #main-content {
     min-height: 0;
     overflow: hidden;
   }

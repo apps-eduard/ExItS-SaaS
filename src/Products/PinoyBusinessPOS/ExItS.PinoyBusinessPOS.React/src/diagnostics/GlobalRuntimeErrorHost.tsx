@@ -46,17 +46,20 @@ export function GlobalRuntimeErrorHost({ children }: { children: ReactNode }) {
       {children}
       {report ? (
         <div
-          className="fixed inset-0 z-[1000] flex items-start justify-center overflow-auto bg-black/40 p-4"
+          className="pointer-events-none fixed inset-0 z-[1000] flex items-start justify-center overflow-auto p-4"
           data-testid="client-error-overlay"
         >
-          <ClientErrorPanel
-            input={report}
-            onReload={() => window.location.reload()}
-            onDismiss={() => setReport(null)}
-          />
+          {/* Backdrop is non-blocking so bottom nav / shell stay clickable (freeze audit). */}
+          <div className="pointer-events-none absolute inset-0 bg-black/40" aria-hidden />
+          <div className="pointer-events-auto relative z-[1] w-full max-w-2xl">
+            <ClientErrorPanel
+              input={report}
+              onReload={() => window.location.reload()}
+              onDismiss={() => setReport(null)}
+            />
+          </div>
         </div>
       ) : null}
     </>
   );
 }
-

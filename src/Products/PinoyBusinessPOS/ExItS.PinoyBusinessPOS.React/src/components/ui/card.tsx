@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
+import { createElement, forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type CardProps = {
@@ -11,16 +11,16 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   { className, children, as: Comp = "section", ...props },
   ref,
 ) {
-  return (
-    <Comp
-      ref={ref}
-      className={cn(
+  return createElement(
+    Comp,
+    {
+      ...props,
+      ref,
+      className: cn(
         "rounded-[var(--exits-radius-md)] border border-border bg-surface px-4 py-4",
         className,
-      )}
-      {...props}
-    >
-      {children}
-    </Comp>
+      ),
+    },
+    children,
   );
 });

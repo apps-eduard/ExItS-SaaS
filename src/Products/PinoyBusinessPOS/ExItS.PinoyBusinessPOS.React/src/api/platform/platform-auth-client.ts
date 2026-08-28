@@ -275,8 +275,32 @@ export async function listEligibleOrganizations(): Promise<
   | { ok: false; status: number; body: PlatformProblem | null }
 > {
   try {
-    const body = await platformRequest<EligibleOrganization[]>({ path: AUTH_ORGANIZATIONS_PATH });
-    return { ok: true, organizations: body };
+    const body = await platformRequest<unknown>({ path: AUTH_ORGANIZATIONS_PATH });
+    // Runtime payloads must be an array. Non-array bodies previously threw
+    // "organizations is not iterable" inside WorkspaceProvider and left the
+    // GlobalRuntimeErrorHost overlay blocking the desktop shell.
+    if (Array.isArray(body)) {
+      return { ok: true, organizations: body as EligibleOrganization[] };
+    }
+    if (
+      body &&
+      typeof body === "object" &&
+      Array.isArray((body as { organizations?: unknown }).organizations)
+    ) {
+      return {
+        ok: true,
+        organizations: (body as { organizations: EligibleOrganization[] }).organizations,
+      };
+    }
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        title: "Invalid organizations payload",
+        detail: "Eligible organizations response was not an array.",
+        status: 502,
+      },
+    };
   } catch (error) {
     if (error instanceof PlatformApiError) {
       return { ok: false, status: error.status, body: error.problem };

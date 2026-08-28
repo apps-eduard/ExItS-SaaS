@@ -14,9 +14,11 @@ export function useStorefrontProductImageUrl(
   imageVersion?: number | null,
 ): string | null {
   const [url, setUrl] = useState<string | null>(null);
+  const organizationId = workspace?.organizationId ?? null;
+  const branchId = workspace?.branchId ?? null;
 
   useEffect(() => {
-    if (!workspace || !sellerOrganizationId || !productId || !hasImage) {
+    if (!organizationId || !branchId || !sellerOrganizationId || !productId || !hasImage) {
       setUrl(null);
       return;
     }
@@ -24,9 +26,10 @@ export function useStorefrontProductImageUrl(
     let cancelled = false;
     let objectUrl: string | null = null;
     const controller = new AbortController();
+    const scope: PosWorkspaceScope = { organizationId, branchId };
 
     void getCustomerStorefrontProductImage(
-      workspace,
+      scope,
       sellerOrganizationId,
       productId,
       "thumb",
@@ -37,6 +40,11 @@ export function useStorefrontProductImageUrl(
           return;
         }
         objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+          return;
+        }
         setUrl(objectUrl);
       })
       .catch(() => {
@@ -52,7 +60,7 @@ export function useStorefrontProductImageUrl(
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [workspace, sellerOrganizationId, productId, hasImage, imageVersion]);
+  }, [organizationId, branchId, sellerOrganizationId, productId, hasImage, imageVersion]);
 
   return url;
 }

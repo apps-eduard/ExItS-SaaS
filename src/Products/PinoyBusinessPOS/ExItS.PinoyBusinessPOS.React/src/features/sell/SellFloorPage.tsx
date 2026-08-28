@@ -1049,10 +1049,14 @@ export function SellFloorPage() {
 
         <aside
           data-testid="sell-cart-landscape"
-          className="sell-cart-landscape sell-cart-shell hidden min-h-0 min-w-0 flex-col overflow-hidden"
+          className={cn(
+            "sell-cart-landscape sell-cart-shell min-h-0 min-w-0 flex-col overflow-hidden",
+            !sideCartLayout && "hidden",
+          )}
           aria-label={t("sell.cartLabel")}
+          aria-hidden={!sideCartLayout}
         >
-          <SellCartPanel {...cartPanelProps} panelId="landscape" />
+          {sideCartLayout ? <SellCartPanel {...cartPanelProps} panelId="landscape" /> : null}
         </aside>
       </div>
 

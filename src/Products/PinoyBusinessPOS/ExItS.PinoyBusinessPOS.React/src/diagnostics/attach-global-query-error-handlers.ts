@@ -16,8 +16,14 @@ function readMeta(meta: Record<string, unknown> | undefined): QueryMeta {
 }
 
 /**
- * Reports uncaught React Query failures to the global copyable error overlay.
- * Set query/mutation meta.suppressGlobalError when the screen handles the error inline.
+ * Reports selected React Query failures to the global copyable error overlay.
+ *
+ * Default: do **not** escalate query failures. List/detail screens render ErrorState
+ * inline; a full-screen overlay was trapping bottom-nav clicks and felt like a freeze
+ * (especially after a few navigations hit an unmocked/404 endpoint).
+ *
+ * Opt in with meta.reportGlobalError when a screen has no inline error UI.
+ * Set meta.suppressGlobalError to force silence even when reportGlobalError is set.
  */
 export function attachGlobalQueryErrorHandlers(queryClient: QueryClient): void {
   queryClient.getQueryCache().subscribe((event) => {
@@ -31,17 +37,12 @@ export function attachGlobalQueryErrorHandlers(queryClient: QueryClient): void {
     }
 
     const meta = readMeta(query.meta as Record<string, unknown> | undefined);
-    if (meta.suppressGlobalError) {
+    if (meta.suppressGlobalError || !meta.reportGlobalError) {
       return;
     }
 
     const error = query.state.error;
     if (isAbortError(error) || isAuthenticationLostError(error)) {
-      return;
-    }
-
-    const isInitialFailure = query.state.data === undefined && query.state.errorUpdateCount <= 1;
-    if (!meta.reportGlobalError && !isInitialFailure) {
       return;
     }
 
