@@ -234,16 +234,22 @@ export const mockCatalogProducts = [
 export function filterMockProducts(url: string) {
   const parsed = new URL(url, "http://127.0.0.1");
   const categoryId = parsed.searchParams.get("categoryId");
+  const brandId = parsed.searchParams.get("brandId");
   const search = parsed.searchParams.get("search")?.toLowerCase();
 
   let items = [...mockCatalogProducts];
   if (categoryId) {
     items = items.filter((product) => product.categoryId === categoryId);
   }
+  if (brandId) {
+    items = items.filter((product) => (product as { brandId?: string }).brandId === brandId);
+  }
   if (search) {
     items = items.filter(
       (product) =>
-        product.name.toLowerCase().includes(search) || product.sku?.toLowerCase().includes(search),
+        product.name.toLowerCase().includes(search) ||
+        product.sku?.toLowerCase().includes(search) ||
+        (product as { brandName?: string }).brandName?.toLowerCase().includes(search),
     );
   }
 

@@ -209,7 +209,7 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
                 latest.Sku,
                 latest.Barcode,
                 latest.CategoryId,
-                latest.UpdatedAtUtc),
+                ExpectedUpdatedAtUtc: latest.UpdatedAtUtc),
             options: JsonOptions);
         using var updateResponse = await client.SendAsync(update);
         updateResponse.EnsureSuccessStatusCode();

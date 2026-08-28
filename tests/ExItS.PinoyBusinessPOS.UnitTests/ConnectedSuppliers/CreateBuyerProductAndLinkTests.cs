@@ -319,6 +319,7 @@ public sealed class CreateBuyerProductAndLinkTests
             new InMemoryProducts(),
             new InMemoryUnits(),
             new InMemoryCategories(),
+            new InMemoryBrands(),
             new FakeUow(),
             new FakeAccess(),
             new FixedClock(Now.AddMinutes(5)),
@@ -353,13 +354,14 @@ public sealed class CreateBuyerProductAndLinkTests
         InMemoryProducts Products,
         InMemoryUnits Units,
         InMemoryCategories Categories,
+        InMemoryBrands Brands,
         FakeUow Uow,
         FakeAccess Access,
         FixedClock Clock,
         FixedTimeProvider Time)
     {
         public CreateBuyerProductAndLink CreateQuickCreate() =>
-            new(Relationships, Exposures, Shares, Links, Products, Units, Categories, Uow, Access, Clock, Time);
+            new(Relationships, Exposures, Shares, Links, Products, Units, Categories, Brands, Uow, Access, Clock, Time);
 
         public LinkProduct CreateLinkProduct() =>
             new(Relationships, Exposures, Links, Products, Units, Uow, Access, Shares, Time);
@@ -826,6 +828,57 @@ public sealed class CreateBuyerProductAndLinkTests
         }
 
         public Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class InMemoryBrands : IProductBrandRepository
+    {
+        private readonly List<ProductBrand> _items = [];
+
+        public Task<ProductBrand?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            ProductBrandId brandId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(x =>
+                x.OrganizationId == organizationId && x.Id == brandId));
+
+        public Task<ProductBrand?> FindActiveByNormalizedNameAsync(
+            PosOrganizationId organizationId,
+            string normalizedName,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(x =>
+                x.OrganizationId == organizationId
+                && x.NormalizedName == normalizedName
+                && x.Status == ProductBrandStatus.Active));
+
+        public Task<(IReadOnlyList<ProductBrand> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            ProductBrandStatus? status,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var items = _items.Where(x => x.OrganizationId == organizationId).ToList();
+            return Task.FromResult<(IReadOnlyList<ProductBrand>, int)>(
+                (items.Skip(skip).Take(take).ToList(), items.Count));
+        }
+
+        public Task<IReadOnlyList<ProductBrand>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<ProductBrandId> brandIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ProductBrand>>(
+                _items.Where(x =>
+                    x.OrganizationId == organizationId && brandIds.Contains(x.Id)).ToList());
+
+        public Task AddAsync(ProductBrand brand, CancellationToken cancellationToken = default)
+        {
+            _items.Add(brand);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(ProductBrand brand, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 

@@ -58,6 +58,7 @@ public sealed class PosCatalogScopeArchitectureTests
             PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
 
         Assert.Contains("\"product_categories\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"product_brands\"", context, StringComparison.Ordinal);
         Assert.Contains("\"products\"", context, StringComparison.Ordinal);
 
         // Sales tables are owned by the P8-WP02 slice; inventory tables by P8-WP04; suppliers by P10-WP01.

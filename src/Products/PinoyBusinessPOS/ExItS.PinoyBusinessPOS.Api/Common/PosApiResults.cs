@@ -86,12 +86,15 @@ internal static class PosApiResults
             or DomainErrorCodes.CreditDueDateNotAllowedOnReversed
             or DomainErrorCodes.CreditDueDateUnchanged
             or ApplicationErrorCodes.CategoryNameConflict
+            or ApplicationErrorCodes.BrandNameConflict
             or ApplicationErrorCodes.ProductSkuConflict
             or ApplicationErrorCodes.ProductBarcodeConflict
             or ApplicationErrorCodes.CatalogConcurrencyConflict
             or DomainErrorCodes.InvalidCategoryStatusTransition
+            or DomainErrorCodes.InvalidBrandStatusTransition
             or DomainErrorCodes.InvalidProductStatusTransition
             or DomainErrorCodes.CategoryNotActive
+            or DomainErrorCodes.BrandNotActive
             or DomainErrorCodes.ProductNotActive
             or ApplicationErrorCodes.SaleNumberConflict
             or ApplicationErrorCodes.SaleProductNotActive
@@ -154,6 +157,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ActorRequired
             or ApplicationErrorCodes.StatementInvalidPeriod
             or ApplicationErrorCodes.CategoryNotAssignable
+            or ApplicationErrorCodes.BrandNotAssignable
             or ApplicationErrorCodes.ExpenseCategoryNotAssignable => StatusCodes.Status400BadRequest,
 
         ApplicationErrorCodes.ReportInvalidDateRange

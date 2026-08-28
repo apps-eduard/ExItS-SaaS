@@ -10,7 +10,8 @@ public sealed record CatalogProductFilter(
     UnitOfMeasure? UnitOfMeasure = null,
     string? Search = null,
     bool? CanExposeToConnectedBuyers = null,
-    bool UncategorizedOnly = false);
+    bool UncategorizedOnly = false,
+    ProductBrandId? BrandId = null);
 
 public interface ICatalogProductRepository
 {

@@ -39,6 +39,36 @@ internal static class CatalogEntityMapper
         record.UpdatedAtUtc = category.UpdatedAtUtc;
     }
 
+    public static ProductBrand ToDomain(ProductBrandRecord record) =>
+        ProductBrand.Rehydrate(
+            ProductBrandId.From(record.Id),
+            PosOrganizationId.From(record.OrganizationId),
+            record.Name,
+            record.NormalizedName,
+            Enum.Parse<ProductBrandStatus>(record.Status, ignoreCase: true),
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    public static ProductBrandRecord ToRecord(ProductBrand brand) =>
+        new()
+        {
+            Id = brand.Id.Value,
+            OrganizationId = brand.OrganizationId.Value,
+            Name = brand.Name,
+            NormalizedName = brand.NormalizedName,
+            Status = brand.Status.ToString(),
+            CreatedAtUtc = brand.CreatedAtUtc,
+            UpdatedAtUtc = brand.UpdatedAtUtc
+        };
+
+    public static void ApplyToRecord(ProductBrand brand, ProductBrandRecord record)
+    {
+        record.Name = brand.Name;
+        record.NormalizedName = brand.NormalizedName;
+        record.Status = brand.Status.ToString();
+        record.UpdatedAtUtc = brand.UpdatedAtUtc;
+    }
+
     public static CatalogProduct ToDomain(CatalogProductRecord record) =>
         CatalogProduct.Rehydrate(
             CatalogProductId.From(record.Id),
@@ -74,7 +104,8 @@ internal static class CatalogEntityMapper
             canExposeToConnectedBuyers: record.CanExposeToConnectedBuyers,
             defaultConnectedPoPrice: record.DefaultConnectedPoPrice,
             platformBarcode: record.PlatformBarcode,
-            platformImageVersion: record.PlatformImageVersion);
+            platformImageVersion: record.PlatformImageVersion,
+            brandId: record.BrandId is null ? null : ProductBrandId.From(record.BrandId.Value));
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -87,6 +118,7 @@ internal static class CatalogEntityMapper
             NormalizedSku = product.NormalizedSku,
             Barcode = product.Barcode,
             CategoryId = product.CategoryId?.Value,
+            BrandId = product.BrandId?.Value,
             UnitOfMeasure = UnitOfMeasures.ToCode(product.UnitOfMeasure),
             SellingMode = SellingModes.ToCode(product.SellingMode),
             SellingPrice = product.SellingPrice,
@@ -121,6 +153,7 @@ internal static class CatalogEntityMapper
         record.NormalizedSku = product.NormalizedSku;
         record.Barcode = product.Barcode;
         record.CategoryId = product.CategoryId?.Value;
+        record.BrandId = product.BrandId?.Value;
         record.UnitOfMeasure = UnitOfMeasures.ToCode(product.UnitOfMeasure);
         record.SellingMode = SellingModes.ToCode(product.SellingMode);
         record.SellingPrice = product.SellingPrice;

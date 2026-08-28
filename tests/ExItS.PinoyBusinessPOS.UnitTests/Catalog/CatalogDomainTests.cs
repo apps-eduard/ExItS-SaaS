@@ -265,6 +265,7 @@ public sealed class CatalogDomainTests
             null,
             null,
             null,
+            null,
             UnitOfMeasure.Kilogram,
             60m,
             Now.AddMinutes(2)));
@@ -333,6 +334,17 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void Brand_normalizes_name_for_uniqueness_with_uppercase_invariant_trim()
+    {
+        var brand = ProductBrand.Create(OrgA, "  Nestle  ", Now);
+
+        Assert.Equal("Nestle", brand.Name);
+        Assert.Equal("NESTLE", brand.NormalizedName);
+        Assert.Equal(ProductBrandStatus.Active, brand.Status);
+        Assert.Equal(brand.NormalizedName, ProductBrand.NormalizeForLookup("nestle"));
+    }
+
+    [Fact]
     public void Category_requires_name_and_enforces_max_length()
     {
         var blank = Assert.Throws<DomainException>(() => ProductCategory.Create(OrgA, " ", Now));
@@ -341,6 +353,17 @@ public sealed class CatalogDomainTests
         var tooLong = Assert.Throws<DomainException>(() =>
             ProductCategory.Create(OrgA, new string('x', ProductCategory.NameMaxLength + 1), Now));
         Assert.Equal(DomainErrorCodes.InvalidCategoryName, tooLong.ErrorCode);
+    }
+
+    [Fact]
+    public void Brand_requires_name_and_enforces_max_length()
+    {
+        var blank = Assert.Throws<DomainException>(() => ProductBrand.Create(OrgA, " ", Now));
+        Assert.Equal(DomainErrorCodes.InvalidBrandName, blank.ErrorCode);
+
+        var tooLong = Assert.Throws<DomainException>(() =>
+            ProductBrand.Create(OrgA, new string('x', ProductBrand.NameMaxLength + 1), Now));
+        Assert.Equal(DomainErrorCodes.InvalidBrandName, tooLong.ErrorCode);
     }
 
     [Fact]
@@ -360,10 +383,27 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void Inactive_brand_cannot_be_renamed_and_transitions_are_guarded()
+    {
+        var brand = ProductBrand.Create(OrgA, "Nestle", Now);
+        brand.Deactivate(Now.AddMinutes(1));
+
+        var rename = Assert.Throws<DomainException>(() => brand.Rename("Unilever", Now.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.BrandNotActive, rename.ErrorCode);
+
+        var repeat = Assert.Throws<DomainException>(() => brand.Deactivate(Now.AddMinutes(3)));
+        Assert.Equal(DomainErrorCodes.InvalidBrandStatusTransition, repeat.ErrorCode);
+
+        brand.Reactivate(Now.AddMinutes(4));
+        Assert.Equal(ProductBrandStatus.Active, brand.Status);
+    }
+
+    [Fact]
     public void Identity_value_objects_reject_empty_guids()
     {
         Assert.Throws<DomainException>(() => CatalogProductId.From(Guid.Empty));
         Assert.Throws<DomainException>(() => ProductCategoryId.From(Guid.Empty));
+        Assert.Throws<DomainException>(() => ProductBrandId.From(Guid.Empty));
         Assert.Throws<DomainException>(() => ProductUnitId.From(Guid.Empty));
     }
 }

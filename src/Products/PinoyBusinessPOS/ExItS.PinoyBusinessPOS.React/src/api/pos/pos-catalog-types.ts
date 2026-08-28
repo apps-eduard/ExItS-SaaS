@@ -48,6 +48,8 @@ export type PosCatalogProductDto = {
   sku?: string | null;
   barcode?: string | null;
   categoryId?: string | null;
+  brandId?: string | null;
+  brandName?: string | null;
   unitOfMeasure: string;
   sellingMode: string;
   sellingPrice: number;
@@ -76,6 +78,15 @@ export type PosProductCategoryDto = {
   updatedAtUtc: string;
 };
 
+export type PosProductBrandDto = {
+  brandId: string;
+  organizationId: string;
+  name: string;
+  status: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
 export type PosCatalogProductPagedResult = {
   items: PosCatalogProductDto[];
   totalCount: number;
@@ -85,6 +96,13 @@ export type PosCatalogProductPagedResult = {
 
 export type PosProductCategoryPagedResult = {
   items: PosProductCategoryDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+export type PosProductBrandPagedResult = {
+  items: PosProductBrandDto[];
   totalCount: number;
   page: number;
   pageSize: number;
@@ -100,6 +118,16 @@ export type UpdatePosProductCategoryRequest = {
   expectedUpdatedAtUtc?: string | null;
 };
 
+export type CreatePosProductBrandRequest = {
+  name: string;
+  brandId?: string | null;
+};
+
+export type UpdatePosProductBrandRequest = {
+  name: string;
+  expectedUpdatedAtUtc?: string | null;
+};
+
 export type CreatePosCatalogProductRequest = {
   name: string;
   unitOfMeasure: PosUnitOfMeasureCode | string;
@@ -108,6 +136,7 @@ export type CreatePosCatalogProductRequest = {
   sku?: string | null;
   barcode?: string | null;
   categoryId?: string | null;
+  brandId?: string | null;
   productId?: string | null;
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
@@ -124,6 +153,7 @@ export type UpdatePosCatalogProductRequest = {
   sku?: string | null;
   barcode?: string | null;
   categoryId?: string | null;
+  brandId?: string | null;
   expectedUpdatedAtUtc?: string | null;
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;

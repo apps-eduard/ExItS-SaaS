@@ -283,7 +283,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
                 latest.Sku,
                 latest.Barcode,
                 latest.CategoryId,
-                latest.UpdatedAtUtc),
+                ExpectedUpdatedAtUtc: latest.UpdatedAtUtc),
             options: JsonOptions);
         using var response = await client.SendAsync(update);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);

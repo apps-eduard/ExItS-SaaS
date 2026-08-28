@@ -39,6 +39,13 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
+        if (constraint.Contains("ux_product_brands_org_active_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.BrandNameConflict;
+            message = "An active brand with this name already exists in this organization.";
+            return true;
+        }
+
         if (constraint.Contains("ux_sales_org_sale_number", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.SaleNumberConflict;

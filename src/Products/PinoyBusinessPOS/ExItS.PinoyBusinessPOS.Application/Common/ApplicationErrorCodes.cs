@@ -27,6 +27,9 @@ public static class ApplicationErrorCodes
 
     public const string CategoryNotFound = "pos.category.not_found";
     public const string CategoryNameConflict = "pos.category.name.conflict";
+    public const string BrandNotFound = "pos.brand.not_found";
+    public const string BrandNameConflict = "pos.brand.name.conflict";
+    public const string BrandNotAssignable = "pos.brand.not_assignable";
     public const string CategoryNotAssignable = "pos.category.not_assignable";
     public const string ProductNotFound = "pos.product.not_found";
     public const string ProductSkuConflict = "pos.product.sku.conflict";

@@ -47,6 +47,7 @@ public static class DomainErrorCodes
 
     public const string InvalidCatalogProductId = "pos.catalog.product.id.invalid";
     public const string InvalidProductCategoryId = "pos.catalog.category.id.invalid";
+    public const string InvalidProductBrandId = "pos.catalog.brand.id.invalid";
     public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";
     public const string InvalidSellingMode = "pos.catalog.selling_mode.invalid";
     public const string InvalidSellingModeUnit = "pos.catalog.selling_mode.unit.invalid";
@@ -57,6 +58,11 @@ public static class DomainErrorCodes
     public const string InvalidCategoryStatus = "pos.category.status.invalid";
     public const string InvalidCategoryStatusTransition = "pos.category.status.invalid_transition";
     public const string CategoryNotActive = "pos.category.not_active";
+
+    public const string InvalidBrandName = "pos.brand.name.invalid";
+    public const string InvalidBrandStatus = "pos.brand.status.invalid";
+    public const string InvalidBrandStatusTransition = "pos.brand.status.invalid_transition";
+    public const string BrandNotActive = "pos.brand.not_active";
 
     public const string InvalidProductName = "pos.product.name.invalid";
     public const string InvalidProductDescription = "pos.product.description.invalid";

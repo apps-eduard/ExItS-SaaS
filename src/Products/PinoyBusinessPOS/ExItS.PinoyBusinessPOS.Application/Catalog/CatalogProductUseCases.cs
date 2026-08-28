@@ -17,6 +17,7 @@ public sealed class CatalogProductQueryService
     private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductImageRepository _images;
+    private readonly IProductBrandRepository _brands;
     private readonly IPlatformMerchantCatalogClient? _platform;
 
     public CatalogProductQueryService(
@@ -24,12 +25,14 @@ public sealed class CatalogProductQueryService
         ICatalogProductUnitRepository units,
         IInventoryRepository inventory,
         ICatalogProductImageRepository images,
+        IProductBrandRepository brands,
         IPlatformMerchantCatalogClient? platform = null)
     {
         _products = products;
         _units = units;
         _inventory = inventory;
         _images = images;
+        _brands = brands;
         _platform = platform;
     }
 
@@ -55,7 +58,8 @@ public sealed class CatalogProductQueryService
         var liveVersion = await CatalogPlatformImageMeta
             .TryGetVersionAsync(_platform, product, image, cancellationToken)
             .ConfigureAwait(false);
-        return Map(product, account, units, image, liveVersion);
+        var brandName = await ResolveBrandNameAsync(orgId, product.BrandId, cancellationToken).ConfigureAwait(false);
+        return Map(product, account, units, image, liveVersion, brandName);
     }
 
     public async Task<PagedResult<PosCatalogProductDto>> ListAsync(
@@ -82,6 +86,11 @@ public sealed class CatalogProductQueryService
             .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
             .ConfigureAwait(false);
         var imagesByProduct = images.ToDictionary(i => i.ProductId.Value);
+        var brandNames = await ResolveBrandNamesAsync(
+                orgId,
+                items.Select(p => p.BrandId).Where(b => b is not null).Cast<ProductBrandId>().ToList(),
+                cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosCatalogProductDto>(
             items.Select(p => Map(
@@ -89,7 +98,10 @@ public sealed class CatalogProductQueryService
                     accountsByProduct.GetValueOrDefault(p.Id.Value),
                     unitsByProduct.GetValueOrDefault(p.Id.Value),
                     imagesByProduct.GetValueOrDefault(p.Id.Value),
-                    livePlatformImageVersion: null))
+                    livePlatformImageVersion: null,
+                    brandName: p.BrandId is null
+                        ? null
+                        : brandNames.GetValueOrDefault(p.BrandId.Value)))
                 .ToList(),
             total,
             Math.Max(page ?? 1, 1),
@@ -181,7 +193,9 @@ public sealed class CatalogProductQueryService
         var liveVersion = await CatalogPlatformImageMeta
             .TryGetVersionAsync(_platform, product, image, cancellationToken)
             .ConfigureAwait(false);
-        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units, image, liveVersion));
+        var brandName = await ResolveBrandNameAsync(organizationId, product.BrandId, cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units, image, liveVersion, brandName));
     }
 
     public static PosCatalogProductDto Map(
@@ -189,7 +203,8 @@ public sealed class CatalogProductQueryService
         InventoryAccount? account = null,
         IReadOnlyList<CatalogProductUnit>? units = null,
         CatalogProductImage? image = null,
-        int? livePlatformImageVersion = null)
+        int? livePlatformImageVersion = null,
+        string? brandName = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
@@ -235,7 +250,37 @@ public sealed class CatalogProductQueryService
             resolved.ImageVersion,
             resolved.Source,
             resolved.HasMerchantOverride,
-            product.PlatformBarcode);
+            product.PlatformBarcode,
+            product.BrandId?.Value,
+            brandName);
+    }
+
+    private async Task<string?> ResolveBrandNameAsync(
+        PosOrganizationId organizationId,
+        ProductBrandId? brandId,
+        CancellationToken cancellationToken)
+    {
+        if (brandId is null)
+        {
+            return null;
+        }
+
+        var names = await ResolveBrandNamesAsync(organizationId, [brandId], cancellationToken).ConfigureAwait(false);
+        return names.GetValueOrDefault(brandId.Value);
+    }
+
+    private async Task<Dictionary<Guid, string>> ResolveBrandNamesAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<ProductBrandId> brandIds,
+        CancellationToken cancellationToken)
+    {
+        if (brandIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var brands = await _brands.ListByIdsAsync(organizationId, brandIds, cancellationToken).ConfigureAwait(false);
+        return brands.ToDictionary(b => b.Id.Value, b => b.Name);
     }
 }
 
@@ -244,6 +289,7 @@ public sealed class CreateCatalogProduct
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
+    private readonly IProductBrandRepository _brands;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly ISupplierProductExposureRepository? _exposures;
@@ -252,6 +298,7 @@ public sealed class CreateCatalogProduct
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
+        IProductBrandRepository brands,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         ISupplierProductExposureRepository? exposures = null)
@@ -259,6 +306,7 @@ public sealed class CreateCatalogProduct
         _products = products;
         _units = units;
         _categories = categories;
+        _brands = brands;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _exposures = exposures;
@@ -273,6 +321,7 @@ public sealed class CreateCatalogProduct
         string? sku = null,
         string? barcode = null,
         Guid? categoryId = null,
+        Guid? brandId = null,
         Guid? clientProductId = null,
         string? sellingMode = null,
         bool tracksExpiration = false,
@@ -293,6 +342,7 @@ public sealed class CreateCatalogProduct
                 _products,
                 _units,
                 _categories,
+                _brands,
                 _clock,
                 _exposures,
                 organizationId,
@@ -303,6 +353,7 @@ public sealed class CreateCatalogProduct
                 sku,
                 barcode,
                 categoryId,
+                brandId,
                 clientProductId,
                 sellingMode,
                 tracksExpiration,
@@ -340,6 +391,7 @@ public sealed class UpdateCatalogProduct
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
+    private readonly IProductBrandRepository _brands;
     private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -349,6 +401,7 @@ public sealed class UpdateCatalogProduct
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
+        IProductBrandRepository brands,
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock,
@@ -357,6 +410,7 @@ public sealed class UpdateCatalogProduct
         _products = products;
         _units = units;
         _categories = categories;
+        _brands = brands;
         _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -373,6 +427,7 @@ public sealed class UpdateCatalogProduct
         string? sku = null,
         string? barcode = null,
         Guid? categoryId = null,
+        Guid? brandId = null,
         DateTimeOffset? expectedUpdatedAtUtc = null,
         string? sellingMode = null,
         bool? tracksExpiration = null,
@@ -448,6 +503,24 @@ public sealed class UpdateCatalogProduct
                 category = ProductCategoryId.From(categoryId.Value);
             }
 
+            ProductBrandId? brand = null;
+            if (brandId is not null)
+            {
+                var isUnchanged = product.BrandId is not null && product.BrandId.Value == brandId.Value;
+                if (!isUnchanged)
+                {
+                    var assignable = await CatalogAssignment
+                        .EnsureAssignableBrandAsync(_brands, orgId, brandId.Value, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!assignable.IsSuccess)
+                    {
+                        return ApplicationResult<CatalogProduct>.Failure(assignable.ErrorCode!, assignable.ErrorMessage!);
+                    }
+                }
+
+                brand = ProductBrandId.From(brandId.Value);
+            }
+
             var (_, normalizedSku) = CatalogProduct.NormalizeOptionalSku(sku);
             var normalizedBarcode = CatalogProduct.NormalizeOptionalBarcode(barcode);
             var conflict = await CatalogAssignment
@@ -465,6 +538,7 @@ public sealed class UpdateCatalogProduct
                 sku,
                 barcode,
                 category,
+                brand,
                 unit,
                 sellingPrice,
                 now,
@@ -890,6 +964,7 @@ internal static class CatalogProductCreateCore
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
+        IProductBrandRepository brands,
         IClock clock,
         ISupplierProductExposureRepository? exposures,
         Guid organizationId,
@@ -900,6 +975,7 @@ internal static class CatalogProductCreateCore
         string? sku,
         string? barcode,
         Guid? categoryId,
+        Guid? brandId,
         Guid? clientProductId,
         string? sellingMode,
         bool tracksExpiration,
@@ -949,6 +1025,20 @@ internal static class CatalogProductCreateCore
             category = ProductCategoryId.From(categoryId.Value);
         }
 
+        ProductBrandId? brand = null;
+        if (brandId is not null)
+        {
+            var assignable = await CatalogAssignment
+                .EnsureAssignableBrandAsync(brands, orgId, brandId.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (!assignable.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(assignable.ErrorCode!, assignable.ErrorMessage!);
+            }
+
+            brand = ProductBrandId.From(brandId.Value);
+        }
+
         var now = clock.UtcNow;
         var product = CatalogProduct.Create(
             orgId,
@@ -960,6 +1050,7 @@ internal static class CatalogProductCreateCore
             sku,
             barcode,
             category,
+            brand,
             clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
             mode,
             tracksExpiration,
@@ -1040,6 +1131,32 @@ internal static class CatalogAssignment
             return ApplicationResult.Failure(
                 ApplicationErrorCodes.CategoryNotAssignable,
                 "Only active categories can be assigned to a product.");
+        }
+
+        return ApplicationResult.Success();
+    }
+
+    public static async Task<ApplicationResult> EnsureAssignableBrandAsync(
+        IProductBrandRepository brands,
+        PosOrganizationId organizationId,
+        Guid brandId,
+        CancellationToken cancellationToken)
+    {
+        var brand = await brands
+            .GetByIdAsync(organizationId, ProductBrandId.From(brandId), cancellationToken)
+            .ConfigureAwait(false);
+        if (brand is null)
+        {
+            return ApplicationResult.Failure(
+                ApplicationErrorCodes.BrandNotFound,
+                "Brand was not found.");
+        }
+
+        if (brand.Status != ProductBrandStatus.Active)
+        {
+            return ApplicationResult.Failure(
+                ApplicationErrorCodes.BrandNotAssignable,
+                "Only active brands can be assigned to a product.");
         }
 
         return ApplicationResult.Success();

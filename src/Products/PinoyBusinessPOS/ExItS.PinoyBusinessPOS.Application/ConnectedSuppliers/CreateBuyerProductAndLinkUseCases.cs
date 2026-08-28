@@ -249,6 +249,7 @@ public sealed class CreateBuyerProductAndLink
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
+    private readonly IProductBrandRepository _brands;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
@@ -262,6 +263,7 @@ public sealed class CreateBuyerProductAndLink
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
+        IProductBrandRepository brands,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IClock clock,
@@ -274,6 +276,7 @@ public sealed class CreateBuyerProductAndLink
         _products = products;
         _units = units;
         _categories = categories;
+        _brands = brands;
         _uow = uow;
         _access = access;
         _clock = clock;
@@ -385,6 +388,7 @@ public sealed class CreateBuyerProductAndLink
             _products,
             _units,
             _categories,
+            _brands,
             _clock,
             exposures: null,
             orgId,
@@ -395,6 +399,7 @@ public sealed class CreateBuyerProductAndLink
             request.Sku,
             barcode: null,
             request.CategoryId,
+            brandId: null,
             request.ClientProductId,
             sellingMode: null,
             tracksExpiration: false,

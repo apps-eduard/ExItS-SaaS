@@ -110,6 +110,7 @@ public sealed class SellingModeDomainTests
             null,
             null,
             null,
+            null,
             UnitOfMeasure.Kilogram,
             130m,
             Now.AddMinutes(1),
@@ -122,6 +123,7 @@ public sealed class SellingModeDomainTests
         var ex = Assert.Throws<DomainException>(() =>
             product.UpdateDetails(
                 "Tomato Local",
+                null,
                 null,
                 null,
                 null,

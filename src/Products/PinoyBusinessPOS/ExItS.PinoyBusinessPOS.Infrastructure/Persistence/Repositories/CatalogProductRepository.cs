@@ -184,7 +184,7 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         return rows.Select(x => ((Guid?)x.CategoryId, x.Count)).ToList();
     }
 
-    private static IQueryable<CatalogProductRecord> ApplyFilter(
+    private IQueryable<CatalogProductRecord> ApplyFilter(
         IQueryable<CatalogProductRecord> query,
         CatalogProductFilter filter)
     {
@@ -202,6 +202,12 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         else if (filter.UncategorizedOnly)
         {
             query = query.Where(p => p.CategoryId == null);
+        }
+
+        if (filter.BrandId is not null)
+        {
+            var brandId = filter.BrandId.Value;
+            query = query.Where(p => p.BrandId == brandId);
         }
 
         if (filter.UnitOfMeasure is not null)
@@ -225,7 +231,11 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
             query = query.Where(p =>
                 p.Name.ToUpper().Contains(upper)
                 || (p.NormalizedSku != null && p.NormalizedSku.Contains(upper))
-                || (digits.Length > 0 && p.Barcode != null && p.Barcode.Contains(digits)));
+                || (digits.Length > 0 && p.Barcode != null && p.Barcode.Contains(digits))
+                || (p.BrandId != null && _db.ProductBrands.Any(b =>
+                    b.Id == p.BrandId
+                    && b.OrganizationId == p.OrganizationId
+                    && b.NormalizedName.Contains(upper))));
         }
 
         return query;

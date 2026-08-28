@@ -247,6 +247,7 @@ public sealed class CatalogImportProcessTests
             "ORG-SKU",
             "036000291452",
             local.CategoryId,
+            local.BrandId,
             local.UnitOfMeasure,
             local.SellingPrice,
             clock.UtcNow.AddMinutes(1));

@@ -50,6 +50,7 @@ public sealed class CreateCatalogProductDefaultPoTests
             products,
             new MemoryUnits(),
             new MemoryCategories(),
+            new MemoryBrands(),
             new ImmediateUnitOfWork(),
             new FixedClock(Now));
 
@@ -67,6 +68,42 @@ public sealed class CreateCatalogProductDefaultPoTests
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
+    }
+
+    private sealed class MemoryBrands : IProductBrandRepository
+    {
+        public Task<ProductBrand?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            ProductBrandId brandId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductBrand?>(null);
+
+        public Task<ProductBrand?> FindActiveByNormalizedNameAsync(
+            PosOrganizationId organizationId,
+            string normalizedName,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductBrand?>(null);
+
+        public Task<(IReadOnlyList<ProductBrand> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            ProductBrandStatus? status,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<ProductBrand>, int)>(([], 0));
+
+        public Task<IReadOnlyList<ProductBrand>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<ProductBrandId> brandIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ProductBrand>>([]);
+
+        public Task AddAsync(ProductBrand brand, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(ProductBrand brand, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class MemoryCategories : IProductCategoryRepository

@@ -17,6 +17,7 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private const string Categories = "/api/v1/pos/catalog/categories";
+    private const string Brands = "/api/v1/pos/catalog/brands";
     private const string Products = "/api/v1/pos/catalog/products";
 
     [Fact]
@@ -86,7 +87,7 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
             "kop-blk-3in1",
             "4006381333931",
             beverages.CategoryId,
-            persisted!.UpdatedAtUtc));
+            ExpectedUpdatedAtUtc: persisted!.UpdatedAtUtc));
         using var updateResponse = await client.SendAsync(update);
         updateResponse.EnsureSuccessStatusCode();
         var updated = await updateResponse.Content.ReadFromJsonAsync<PosCatalogProductDto>(JsonOptions);
@@ -103,7 +104,7 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
             "kop-blk-3in1",
             "4006381333931",
             beverages.CategoryId,
-            persisted.UpdatedAtUtc.AddSeconds(-30)));
+            ExpectedUpdatedAtUtc: persisted.UpdatedAtUtc.AddSeconds(-30)));
         using var staleResponse = await client.SendAsync(staleUpdate);
         Assert.Equal(HttpStatusCode.Conflict, staleResponse.StatusCode);
         Assert.Equal(
@@ -326,6 +327,84 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Brand_lifecycle_enforces_active_name_uniqueness_and_assignment_rules()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var otherOrg = Guid.NewGuid();
+
+        var nestle = await CreateBrandAsync(client, org, "Nestle");
+
+        using var duplicate = Scoped(HttpMethod.Post, Brands, org);
+        duplicate.Content = JsonContent.Create(new CreatePosProductBrandRequest("  nestle  "));
+        using var duplicateResponse = await client.SendAsync(duplicate);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.BrandNameConflict, await ReadErrorCodeAsync(duplicateResponse));
+
+        using var deactivate = Scoped(HttpMethod.Post, $"{Brands}/{nestle.BrandId:D}/deactivate", org);
+        using var deactivateResponse = await client.SendAsync(deactivate);
+        deactivateResponse.EnsureSuccessStatusCode();
+
+        // Names are only unique among active brands, so the name frees up.
+        var nestleAgain = await CreateBrandAsync(client, org, "Nestle");
+        Assert.NotEqual(nestle.BrandId, nestleAgain.BrandId);
+
+        using var assignInactive = Scoped(HttpMethod.Post, Products, org);
+        assignInactive.Content = JsonContent.Create(new CreatePosCatalogProductRequest(
+            "Milo", "Pack", 12m, BrandId: nestle.BrandId));
+        using var assignInactiveResponse = await client.SendAsync(assignInactive);
+        Assert.Equal(HttpStatusCode.BadRequest, assignInactiveResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.BrandNotAssignable, await ReadErrorCodeAsync(assignInactiveResponse));
+
+        using var assignMissing = Scoped(HttpMethod.Post, Products, org);
+        assignMissing.Content = JsonContent.Create(new CreatePosCatalogProductRequest(
+            "Milo", "Pack", 12m, BrandId: Guid.NewGuid()));
+        using var assignMissingResponse = await client.SendAsync(assignMissing);
+        Assert.Equal(HttpStatusCode.NotFound, assignMissingResponse.StatusCode);
+
+        var foreignBrand = await CreateBrandAsync(client, otherOrg, "Foreign Brand");
+        using var assignCrossOrg = Scoped(HttpMethod.Post, Products, org);
+        assignCrossOrg.Content = JsonContent.Create(new CreatePosCatalogProductRequest(
+            "Milo", "Pack", 12m, BrandId: foreignBrand.BrandId));
+        using var assignCrossOrgResponse = await client.SendAsync(assignCrossOrg);
+        Assert.Equal(HttpStatusCode.NotFound, assignCrossOrgResponse.StatusCode);
+
+        var product = await CreateProductAsync(client, org, new CreatePosCatalogProductRequest(
+            "Milo", "Pack", 12m, BrandId: nestleAgain.BrandId));
+        Assert.Equal(nestleAgain.BrandId, product.BrandId);
+        Assert.Equal("Nestle", product.BrandName);
+
+        using var filter = Scoped(HttpMethod.Get, $"{Products}?brandId={nestleAgain.BrandId:D}", org);
+        using var filterResponse = await client.SendAsync(filter);
+        filterResponse.EnsureSuccessStatusCode();
+        var filtered = await filterResponse.Content.ReadFromJsonAsync<PagedResult<PosCatalogProductDto>>(JsonOptions);
+        Assert.Contains(filtered!.Items, i => i.ProductId == product.ProductId);
+
+        using var search = Scoped(HttpMethod.Get, $"{Products}?search=nestle", org);
+        using var searchResponse = await client.SendAsync(search);
+        searchResponse.EnsureSuccessStatusCode();
+        var searched = await searchResponse.Content.ReadFromJsonAsync<PagedResult<PosCatalogProductDto>>(JsonOptions);
+        Assert.Contains(searched!.Items, i => i.ProductId == product.ProductId);
+
+        // Deactivating a brand keeps its products; the assignment simply survives.
+        using var deactivateAssigned = Scoped(HttpMethod.Post, $"{Brands}/{nestleAgain.BrandId:D}/deactivate", org);
+        (await client.SendAsync(deactivateAssigned)).EnsureSuccessStatusCode();
+
+        using var reread = Scoped(HttpMethod.Get, $"{Products}/{product.ProductId:D}", org);
+        using var rereadResponse = await client.SendAsync(reread);
+        rereadResponse.EnsureSuccessStatusCode();
+        var survivor = await rereadResponse.Content.ReadFromJsonAsync<PosCatalogProductDto>(JsonOptions);
+        Assert.Equal(nestleAgain.BrandId, survivor!.BrandId);
+        Assert.Equal("Nestle", survivor.BrandName);
+        Assert.Equal("Active", survivor.Status);
+
+        using var reactivate = Scoped(HttpMethod.Post, $"{Brands}/{nestleAgain.BrandId:D}/reactivate", org);
+        using var reactivateResponse = await client.SendAsync(reactivate);
+        Assert.Equal(HttpStatusCode.OK, reactivateResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Product_pagination_is_stable_by_name_then_id()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
@@ -438,6 +517,17 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
         var category = await response.Content.ReadFromJsonAsync<PosProductCategoryDto>(JsonOptions);
         Assert.NotNull(category);
         return category!;
+    }
+
+    private static async Task<PosProductBrandDto> CreateBrandAsync(HttpClient client, Guid org, string name)
+    {
+        using var request = Scoped(HttpMethod.Post, Brands, org);
+        request.Content = JsonContent.Create(new CreatePosProductBrandRequest(name));
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var brand = await response.Content.ReadFromJsonAsync<PosProductBrandDto>(JsonOptions);
+        Assert.NotNull(brand);
+        return brand!;
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(

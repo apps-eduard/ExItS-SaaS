@@ -1,14 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Award,
   CircleDollarSign,
   Globe,
   LayoutTemplate,
   Plus,
   Tags,
 } from "lucide-react";
-import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
+import {
+  listCatalogBrands,
+  listCatalogCategories,
+  listCatalogProducts,
+} from "@/api/pos/pos-catalog-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -43,6 +48,8 @@ export function CatalogProductsPage() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
+  const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -52,7 +59,31 @@ export function CatalogProductsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debounced, status]);
+  }, [debounced, status, categoryId, brandId]);
+
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog", "categories", "filter", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace),
+    staleTime: 60_000,
+    queryFn: ({ signal }) =>
+      listCatalogCategories(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
+  const brandsQuery = useQuery({
+    queryKey: ["catalog", "brands", "filter", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace),
+    staleTime: 60_000,
+    queryFn: ({ signal }) =>
+      listCatalogBrands(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const category of categoriesQuery.data?.items ?? []) {
+      map.set(category.categoryId, category.name);
+    }
+    return map;
+  }, [categoriesQuery.data?.items]);
 
   const query = useQuery({
     queryKey: [
@@ -62,6 +93,8 @@ export function CatalogProductsPage() {
       workspace?.branchId,
       debounced,
       status,
+      categoryId,
+      brandId,
       page,
     ],
     enabled: Boolean(workspace),
@@ -73,6 +106,8 @@ export function CatalogProductsPage() {
         {
           search: debounced || undefined,
           status: status || undefined,
+          categoryId: categoryId || undefined,
+          brandId: brandId || undefined,
           page,
           pageSize: PAGE_SIZE,
         },
@@ -135,6 +170,13 @@ export function CatalogProductsPage() {
             testId: "catalog-open-categories",
           },
           {
+            key: "brands",
+            label: t("catalog.brandsTitle"),
+            icon: <Award />,
+            href: "/catalog/brands",
+            testId: "catalog-open-brands",
+          },
+          {
             key: "prices",
             label: t("prices.title"),
             icon: <CircleDollarSign />,
@@ -153,6 +195,41 @@ export function CatalogProductsPage() {
         data-testid="catalog-search"
         containerClassName="catalog-page__search exits-page__search"
       />
+
+      <div className="catalog-page__filters flex flex-wrap gap-2">
+        <label className="catalog-form-field flex min-w-[10rem] flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+          {t("catalog.category")}
+          <select
+            className="catalog-form-select"
+            data-testid="catalog-filter-category"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+          >
+            <option value="">{t("catalog.allCategories")}</option>
+            {(categoriesQuery.data?.items ?? []).map((category) => (
+              <option key={category.categoryId} value={category.categoryId}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="catalog-form-field flex min-w-[10rem] flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+          {t("catalog.brand")}
+          <select
+            className="catalog-form-select"
+            data-testid="catalog-filter-brand"
+            value={brandId}
+            onChange={(event) => setBrandId(event.target.value)}
+          >
+            <option value="">{t("catalog.allBrands")}</option>
+            {(brandsQuery.data?.items ?? []).map((brand) => (
+              <option key={brand.brandId} value={brand.brandId}>
+                {brand.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <ExitsChipBar
         variant="filter"
@@ -180,7 +257,11 @@ export function CatalogProductsPage() {
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-products-list">
         {query.data?.items.map((product) => {
-          const meta = [product.sku, product.barcode].filter(Boolean).join(" · ");
+          const categoryName = product.categoryId
+            ? categoryNameById.get(product.categoryId)
+            : undefined;
+          const secondaryMeta = [product.brandName, categoryName].filter(Boolean).join(" · ");
+          const idsMeta = [product.sku, product.barcode].filter(Boolean).join(" · ");
           const isActive = product.status.toLowerCase() === "active";
 
           return (
@@ -192,9 +273,14 @@ export function CatalogProductsPage() {
               >
                 <span className="catalog-product-row__main min-w-0">
                   <span className="exits-list__name block truncate font-semibold">{product.name}</span>
-                  {meta ? (
+                  {secondaryMeta ? (
                     <span className="catalog-product-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {meta}
+                      {secondaryMeta}
+                    </span>
+                  ) : null}
+                  {idsMeta ? (
+                    <span className="catalog-product-row__meta mt-0.5 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {idsMeta}
                     </span>
                   ) : null}
                 </span>

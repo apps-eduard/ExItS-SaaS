@@ -52,6 +52,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
+    internal DbSet<ProductBrandRecord> ProductBrands => Set<ProductBrandRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
     internal DbSet<CatalogProductUnitRecord> CatalogProductUnits => Set<CatalogProductUnitRecord>();
     internal DbSet<CatalogProductImageRecord> CatalogProductImages => Set<CatalogProductImageRecord>();
@@ -563,6 +564,45 @@ public sealed class PosDbContext : DbContext
                 .HasFilter("source_global_category_id IS NOT NULL");
         });
 
+        modelBuilder.Entity<ProductBrandRecord>(entity =>
+        {
+            entity.ToTable("product_brands", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_product_brands_status",
+                    "status IN ('Active', 'Inactive')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(ProductBrand.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(ProductBrand.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            // Only Active brand names are unique — an inactive name can be reused.
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_product_brands_org_active_name")
+                .HasFilter($"status = '{nameof(ProductBrandStatus.Active)}'");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Name })
+                .HasDatabaseName("ix_product_brands_org_name");
+        });
+
         modelBuilder.Entity<CatalogProductRecord>(entity =>
         {
             entity.ToTable("products", tb =>
@@ -614,6 +654,7 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("barcode")
                 .HasMaxLength(CatalogProduct.BarcodeMaxLength);
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.BrandId).HasColumnName("brand_id");
             entity.Property(e => e.UnitOfMeasure)
                 .HasColumnName("unit_of_measure")
                 .HasMaxLength(UnitOfMeasures.CodeMaxLength)
@@ -704,6 +745,9 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.CategoryId })
                 .HasDatabaseName("ix_products_org_category");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.BrandId })
+                .HasDatabaseName("ix_products_org_brand");
+
             entity.HasIndex(e => new { e.OrganizationId, e.Status })
                 .HasDatabaseName("ix_products_org_status");
 
@@ -718,6 +762,13 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_products_product_categories");
+
+            // Restrict: deactivating or removing a brand must never cascade into products.
+            entity.HasOne<ProductBrandRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BrandId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_products_product_brands");
         });
 
         modelBuilder.Entity<CatalogProductUnitRecord>(entity =>

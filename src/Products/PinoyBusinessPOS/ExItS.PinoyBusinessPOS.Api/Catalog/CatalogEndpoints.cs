@@ -17,6 +17,7 @@ internal static class CatalogEndpoints
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         MapCategoryEndpoints(app.MapGroup("/api/v1/pos/catalog/categories"));
+        MapBrandEndpoints(app.MapGroup("/api/v1/pos/catalog/brands"));
         MapProductEndpoints(app.MapGroup("/api/v1/pos/catalog/products"));
         return app;
     }
@@ -146,12 +147,138 @@ internal static class CatalogEndpoints
         });
     }
 
+    private static void MapBrandEndpoints(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (
+            HttpRequest request,
+            string? status,
+            string? search,
+            int? page,
+            int? pageSize,
+            ProductBrandQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!TryParseBrandStatus(status, out var parsedStatus, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await queries
+                .ListAsync(organizationId, parsedStatus, search, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        group.MapPost("/", async (
+            HttpRequest request,
+            CreatePosProductBrandRequest body,
+            CreateProductBrand useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, body.Name, body.BrandId, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(
+                result,
+                b =>
+                {
+                    var dto = ProductBrandQueryService.Map(b);
+                    return Results.Created($"/api/v1/pos/catalog/brands/{dto.BrandId:D}", dto);
+                });
+        });
+
+        group.MapGet("/{brandId:guid}", async (
+            HttpRequest request,
+            Guid brandId,
+            ProductBrandQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var brand = await queries.GetByIdAsync(organizationId, brandId, ct).ConfigureAwait(false);
+            return brand is null
+                ? PosApiResults.Problem(
+                    ApplicationErrorCodes.BrandNotFound,
+                    "Brand was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(brand);
+        });
+
+        group.MapPut("/{brandId:guid}", async (
+            HttpRequest request,
+            Guid brandId,
+            UpdatePosProductBrandRequest body,
+            UpdateProductBrand useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, brandId, body.Name, body.ExpectedUpdatedAtUtc, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, b => Results.Ok(ProductBrandQueryService.Map(b)));
+        });
+
+        group.MapPost("/{brandId:guid}/deactivate", async (
+            HttpRequest request,
+            Guid brandId,
+            DeactivateProductBrand useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, brandId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, b => Results.Ok(ProductBrandQueryService.Map(b)));
+        });
+
+        group.MapPost("/{brandId:guid}/reactivate", async (
+            HttpRequest request,
+            Guid brandId,
+            ReactivateProductBrand useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, brandId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, b => Results.Ok(ProductBrandQueryService.Map(b)));
+        });
+    }
+
     private static void MapProductEndpoints(RouteGroupBuilder group)
     {
         group.MapGet("/", async (
             HttpRequest request,
             string? status,
             Guid? categoryId,
+            Guid? brandId,
             string? unitOfMeasure,
             string? search,
             int? page,
@@ -198,7 +325,26 @@ internal static class CatalogEndpoints
                 parsedCategory = ProductCategoryId.From(categoryId.Value);
             }
 
-            var filter = new CatalogProductFilter(parsedStatus, parsedCategory, parsedUnit, search);
+            ProductBrandId? parsedBrand = null;
+            if (brandId is not null)
+            {
+                if (brandId.Value == Guid.Empty)
+                {
+                    return PosApiResults.Problem(
+                        DomainErrorCodes.InvalidProductBrandId,
+                        "Brand id must be a non-empty GUID.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                parsedBrand = ProductBrandId.From(brandId.Value);
+            }
+
+            var filter = new CatalogProductFilter(
+                parsedStatus,
+                parsedCategory,
+                parsedUnit,
+                search,
+                BrandId: parsedBrand);
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -207,6 +353,7 @@ internal static class CatalogEndpoints
             HttpRequest request,
             CreatePosCatalogProductRequest body,
             CreateCatalogProduct useCase,
+            CatalogProductQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -225,6 +372,7 @@ internal static class CatalogEndpoints
                     body.Sku,
                     body.Barcode,
                     body.CategoryId,
+                    body.BrandId,
                     body.ProductId,
                     body.SellingMode,
                     body.TracksExpiration,
@@ -240,13 +388,19 @@ internal static class CatalogEndpoints
                     ct)
                 .ConfigureAwait(false);
 
-            return PosApiResults.FromResult(
-                result,
-                p =>
-                {
-                    var dto = CatalogProductQueryService.Map(p);
-                    return Results.Created($"/api/v1/pos/catalog/products/{dto.ProductId:D}", dto);
-                });
+            if (!result.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    result.ErrorCode!,
+                    result.ErrorMessage!,
+                    PosApiResults.MapStatusCode(result.ErrorCode!),
+                    result.ErrorDetails);
+            }
+
+            var dto = await queries
+                .GetByIdAsync(organizationId, result.Value!.Id.Value, ct)
+                .ConfigureAwait(false);
+            return Results.Created($"/api/v1/pos/catalog/products/{dto!.ProductId:D}", dto);
         });
 
         // Today's Prices — narrow bulk current-price update (ManageCatalog; partial success).
@@ -372,6 +526,7 @@ internal static class CatalogEndpoints
             Guid productId,
             UpdatePosCatalogProductRequest body,
             UpdateCatalogProduct useCase,
+            CatalogProductQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -391,6 +546,7 @@ internal static class CatalogEndpoints
                     body.Sku,
                     body.Barcode,
                     body.CategoryId,
+                    body.BrandId,
                     body.ExpectedUpdatedAtUtc,
                     body.SellingMode,
                     body.TracksExpiration,
@@ -406,7 +562,19 @@ internal static class CatalogEndpoints
                     ct)
                 .ConfigureAwait(false);
 
-            return PosApiResults.FromResult(result, p => Results.Ok(CatalogProductQueryService.Map(p)));
+            if (!result.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    result.ErrorCode!,
+                    result.ErrorMessage!,
+                    PosApiResults.MapStatusCode(result.ErrorCode!),
+                    result.ErrorDetails);
+            }
+
+            var dto = await queries
+                .GetByIdAsync(organizationId, result.Value!.Id.Value, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(dto);
         });
 
         group.MapPost("/{productId:guid}/deactivate", async (
@@ -619,6 +787,31 @@ internal static class CatalogEndpoints
             problem = PosApiResults.Problem(
                 DomainErrorCodes.InvalidCategoryStatus,
                 $"Unrecognized category status '{status}'.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        parsed = value;
+        return true;
+    }
+
+    private static bool TryParseBrandStatus(
+        string? status,
+        out ProductBrandStatus? parsed,
+        out IResult? problem)
+    {
+        parsed = null;
+        problem = null;
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return true;
+        }
+
+        if (!Enum.TryParse<ProductBrandStatus>(status, ignoreCase: true, out var value))
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.InvalidBrandStatus,
+                $"Unrecognized brand status '{status}'.",
                 StatusCodes.Status400BadRequest);
             return false;
         }

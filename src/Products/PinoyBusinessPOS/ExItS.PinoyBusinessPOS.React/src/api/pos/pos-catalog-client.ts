@@ -1,19 +1,24 @@
 import type {
   CatalogProductImageVariant,
   CreatePosCatalogProductRequest,
+  CreatePosProductBrandRequest,
   CreatePosProductCategoryRequest,
   PosCatalogProductDto,
   PosCatalogProductPagedResult,
+  PosProductBrandDto,
+  PosProductBrandPagedResult,
   PosProductCategoryDto,
   PosProductCategoryPagedResult,
   UpdatePosCatalogProductPricesRequest,
   UpdatePosCatalogProductPricesResponse,
   UpdatePosCatalogProductRequest,
+  UpdatePosProductBrandRequest,
   UpdatePosProductCategoryRequest,
 } from "@/api/pos/pos-catalog-types";
 import { posRequest, posRequestBlob, type PosWorkspaceScope } from "@/api/pos/pos-http";
 
 const CATEGORIES_PATH = "/api/v1/pos/catalog/categories";
+const BRANDS_PATH = "/api/v1/pos/catalog/brands";
 const PRODUCTS_PATH = "/api/v1/pos/catalog/products";
 
 export const CATALOG_BROWSE_PAGE_SIZE = 24;
@@ -23,11 +28,19 @@ export type ListCatalogProductsOptions = {
   search?: string;
   status?: string;
   categoryId?: string;
+  brandId?: string | null;
   page?: number;
   pageSize?: number;
 };
 
 export type ListCatalogCategoriesOptions = {
+  search?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ListCatalogBrandsOptions = {
   search?: string;
   status?: string;
   page?: number;
@@ -131,6 +144,92 @@ export function reactivateCatalogCategory(
   });
 }
 
+export function listCatalogBrands(
+  workspace: PosWorkspaceScope,
+  options: ListCatalogBrandsOptions = {},
+  signal?: AbortSignal,
+): Promise<PosProductBrandPagedResult> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(BRANDS_PATH, {
+      search: options.search,
+      status: options.status ?? "Active",
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? CATALOG_ADMIN_PAGE_SIZE,
+    }),
+  });
+}
+
+export function getCatalogBrand(
+  workspace: PosWorkspaceScope,
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<PosProductBrandDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${BRANDS_PATH}/${brandId}`,
+  });
+}
+
+export function createCatalogBrand(
+  workspace: PosWorkspaceScope,
+  body: CreatePosProductBrandRequest,
+  signal?: AbortSignal,
+): Promise<PosProductBrandDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: BRANDS_PATH,
+    body,
+  });
+}
+
+export function updateCatalogBrand(
+  workspace: PosWorkspaceScope,
+  brandId: string,
+  body: UpdatePosProductBrandRequest,
+  signal?: AbortSignal,
+): Promise<PosProductBrandDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${BRANDS_PATH}/${brandId}`,
+    body,
+  });
+}
+
+export function deactivateCatalogBrand(
+  workspace: PosWorkspaceScope,
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<PosProductBrandDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${BRANDS_PATH}/${brandId}/deactivate`,
+  });
+}
+
+export function reactivateCatalogBrand(
+  workspace: PosWorkspaceScope,
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<PosProductBrandDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${BRANDS_PATH}/${brandId}/reactivate`,
+  });
+}
+
 export function listCatalogProducts(
   workspace: PosWorkspaceScope,
   options: ListCatalogProductsOptions = {},
@@ -144,6 +243,7 @@ export function listCatalogProducts(
       search: options.search,
       status: options.status ?? "Active",
       categoryId: options.categoryId,
+      brandId: options.brandId ?? undefined,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? CATALOG_BROWSE_PAGE_SIZE,
     }),

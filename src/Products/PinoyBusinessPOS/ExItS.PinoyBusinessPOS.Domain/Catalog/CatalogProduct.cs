@@ -25,6 +25,7 @@ public sealed class CatalogProduct
     public string? NormalizedSku { get; private set; }
     public string? Barcode { get; private set; }
     public ProductCategoryId? CategoryId { get; private set; }
+    public ProductBrandId? BrandId { get; private set; }
     public UnitOfMeasure UnitOfMeasure { get; private set; }
     public SellingMode SellingMode { get; private set; }
     public decimal SellingPrice { get; private set; }
@@ -80,6 +81,7 @@ public sealed class CatalogProduct
         string? normalizedSku,
         string? barcode,
         ProductCategoryId? categoryId,
+        ProductBrandId? brandId,
         UnitOfMeasure unitOfMeasure,
         SellingMode sellingMode,
         decimal sellingPrice,
@@ -113,6 +115,7 @@ public sealed class CatalogProduct
         NormalizedSku = normalizedSku;
         Barcode = barcode;
         CategoryId = categoryId;
+        BrandId = brandId;
         UnitOfMeasure = unitOfMeasure;
         SellingMode = sellingMode;
         SellingPrice = sellingPrice;
@@ -155,6 +158,7 @@ public sealed class CatalogProduct
         string? sku = null,
         string? barcode = null,
         ProductCategoryId? categoryId = null,
+        ProductBrandId? brandId = null,
         CatalogProductId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
         bool tracksExpiration = false,
@@ -176,6 +180,7 @@ public sealed class CatalogProduct
             normalizedSku,
             NormalizeOptionalBarcode(barcode),
             categoryId,
+            brandId,
             unitOfMeasure,
             sellingMode,
             NormalizeSellingPrice(sellingPrice),
@@ -215,6 +220,7 @@ public sealed class CatalogProduct
         ProductCategoryId? categoryId = null,
         Guid? platformTemplateId = null,
         Guid? sourceGlobalCategoryId = null,
+        ProductBrandId? brandId = null,
         int snapshotVersion = CatalogImportRules.SnapshotVersion,
         CatalogProductId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
@@ -251,6 +257,7 @@ public sealed class CatalogProduct
             normalizedSku,
             NormalizeOptionalBarcode(barcode),
             categoryId,
+            brandId,
             unitOfMeasure,
             sellingMode,
             NormalizeSellingPrice(sellingPrice),
@@ -304,7 +311,8 @@ public sealed class CatalogProduct
         bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null,
         string? platformBarcode = null,
-        int? platformImageVersion = null) =>
+        int? platformImageVersion = null,
+        ProductBrandId? brandId = null) =>
         new(
             id,
             organizationId,
@@ -314,6 +322,7 @@ public sealed class CatalogProduct
             normalizedSku,
             barcode,
             categoryId,
+            brandId,
             unitOfMeasure,
             sellingMode,
             sellingPrice,
@@ -365,6 +374,7 @@ public sealed class CatalogProduct
         string? sku,
         string? barcode,
         ProductCategoryId? categoryId,
+        ProductBrandId? brandId,
         UnitOfMeasure unitOfMeasure,
         decimal sellingPrice,
         DateTimeOffset utcNow,
@@ -386,6 +396,7 @@ public sealed class CatalogProduct
         NormalizedSku = normalizedSku;
         Barcode = NormalizeOptionalBarcode(barcode);
         CategoryId = categoryId;
+        BrandId = brandId;
         UnitOfMeasure = unitOfMeasure;
         SellingMode = sellingMode;
         SellingPrice = NormalizeSellingPrice(sellingPrice);

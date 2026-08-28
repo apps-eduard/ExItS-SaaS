@@ -167,6 +167,7 @@ public sealed class CatalogImportJobTests
             "ORG-SKU",
             "036000291452",
             null,
+            null,
             UnitOfMeasure.Piece,
             30m,
             now.AddMinutes(1));

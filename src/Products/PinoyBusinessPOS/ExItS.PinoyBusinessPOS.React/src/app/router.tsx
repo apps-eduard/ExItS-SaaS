@@ -69,6 +69,7 @@ import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
 import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
+import { CatalogBrandsPage } from "@/features/catalog/CatalogBrandsPage";
 import { CatalogGlobalBrowsePage } from "@/features/catalog/CatalogGlobalBrowsePage";
 import { CatalogImportJobPage } from "@/features/catalog/CatalogImportJobPage";
 import {
@@ -505,6 +506,7 @@ export const appRoutes = [
               // Stale path used by older CTAs; product list lives at /catalog.
               { path: "products", element: <Navigate to="/catalog" replace /> },
               { path: "categories", element: <CatalogCategoriesPage /> },
+              { path: "brands", element: <CatalogBrandsPage /> },
               { path: "todays-prices", element: <TodaysPricesPage /> },
               { path: "templates", element: <CatalogTemplateImportPage /> },
               { path: "global-catalog", element: <CatalogGlobalBrowsePage /> },

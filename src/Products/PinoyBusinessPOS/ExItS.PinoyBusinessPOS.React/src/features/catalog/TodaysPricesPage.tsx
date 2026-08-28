@@ -21,6 +21,7 @@ import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 type PriceDraft = {
   productId: string;
   name: string;
+  brandName?: string | null;
   currentPrice: number;
   draftPrice: string;
   expectedUpdatedAtUtc: string;
@@ -31,6 +32,7 @@ function toDrafts(products: PosCatalogProductDto[]): PriceDraft[] {
   return products.map((product) => ({
     productId: product.productId,
     name: product.name,
+    brandName: product.brandName,
     currentPrice: product.sellingPrice,
     draftPrice: String(product.sellingPrice),
     expectedUpdatedAtUtc: product.updatedAtUtc,
@@ -189,6 +191,11 @@ export function TodaysPricesPage() {
               >
                 <div className="catalog-prices-row__main min-w-0">
                   <p className="exits-list__name m-0 truncate font-semibold">{row.name}</p>
+                  {row.brandName ? (
+                    <p className="m-0 mt-0.5 truncate text-[length:var(--exits-text-sm)] text-muted">
+                      {row.brandName}
+                    </p>
+                  ) : null}
                   <div className="catalog-prices-row__meta mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-[length:var(--exits-text-sm)] text-muted">
                       {t("prices.current")}: {formatPeso(row.currentPrice)}

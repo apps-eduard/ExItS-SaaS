@@ -8,6 +8,14 @@ public sealed record PosProductCategoryDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record PosProductBrandDto(
+    Guid BrandId,
+    Guid OrganizationId,
+    string Name,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
 public sealed record PosCatalogProductUnitDto(
     Guid UnitId,
     Guid ProductId,
@@ -75,11 +83,19 @@ public sealed record PosCatalogProductDto(
     int? ImageVersion = null,
     string ImageSource = CatalogProductImageSources.None,
     bool HasMerchantImageOverride = false,
-    string? PlatformBarcode = null);
+    string? PlatformBarcode = null,
+    Guid? BrandId = null,
+    string? BrandName = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
 public sealed record UpdatePosProductCategoryRequest(
+    string Name,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CreatePosProductBrandRequest(string Name, Guid? BrandId = null);
+
+public sealed record UpdatePosProductBrandRequest(
     string Name,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
@@ -91,6 +107,7 @@ public sealed record CreatePosCatalogProductRequest(
     string? Sku = null,
     string? Barcode = null,
     Guid? CategoryId = null,
+    Guid? BrandId = null,
     Guid? ProductId = null,
     string? SellingMode = null,
     bool TracksExpiration = false,
@@ -112,6 +129,7 @@ public sealed record UpdatePosCatalogProductRequest(
     string? Sku = null,
     string? Barcode = null,
     Guid? CategoryId = null,
+    Guid? BrandId = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null,
     string? SellingMode = null,
     bool? TracksExpiration = null,
@@ -150,6 +168,12 @@ public sealed record UpdatePosCatalogProductPricesResponse(
 
 public sealed record PosProductCategoryPagedResult(
     List<PosProductCategoryDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
+
+public sealed record PosProductBrandPagedResult(
+    List<PosProductBrandDto> Items,
     int TotalCount,
     int Page,
     int PageSize);

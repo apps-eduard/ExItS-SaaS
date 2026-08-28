@@ -5,15 +5,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  createCatalogBrand,
   createCatalogCategory,
   createCatalogProduct,
   deactivateCatalogProduct,
   getCatalogProduct,
+  listCatalogBrands,
   listCatalogCategories,
   reactivateCatalogProduct,
   updateCatalogProduct,
   uploadCatalogProductImage,
 } from "@/api/pos/pos-catalog-client";
+
+import type { PosProductBrandDto } from "@/api/pos/pos-catalog-types";
 
 import {
   DEFAULT_CATALOG_SELLING_MODE,
@@ -178,6 +182,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [categoryId, setCategoryId] = useState("");
 
+  const [brandId, setBrandId] = useState("");
+
   const [canBeSold, setCanBeSold] = useState(true);
 
   const [tracksExpiration, setTracksExpiration] = useState(false);
@@ -214,12 +220,22 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [newCategoryName, setNewCategoryName] = useState("");
 
+  const [newBrandName, setNewBrandName] = useState("");
+
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", workspace?.organizationId, workspace?.branchId],
 
     enabled: Boolean(workspace),
 
     queryFn: ({ signal }) => listCatalogCategories(workspace!, { status: "Active" }, signal),
+  });
+
+  const brandsQuery = useQuery({
+    queryKey: ["catalog", "brands", workspace?.organizationId, workspace?.branchId],
+
+    enabled: Boolean(workspace),
+
+    queryFn: ({ signal }) => listCatalogBrands(workspace!, { status: "Active" }, signal),
   });
 
   const productQuery = useQuery({
@@ -246,6 +262,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     setBarcode(product.barcode ?? "");
 
     setCategoryId(product.categoryId ?? "");
+
+    setBrandId(product.brandId ?? "");
 
     setCanBeSold(product.canBeSold !== false);
 
@@ -352,6 +370,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         barcode: barcode.trim() || null,
 
         categoryId: categoryId || null,
+
+        brandId: brandId || null,
 
         unitOfMeasure,
 
@@ -470,6 +490,42 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     },
   });
 
+  const createBrandMutation = useMutation({
+    mutationFn: async () => {
+      if (!workspace || !newBrandName.trim()) {
+        throw new Error("Brand name required");
+      }
+      return createCatalogBrand(workspace, { name: newBrandName.trim() });
+    },
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
+      setBrandId(created.brandId);
+      setNewBrandName("");
+      setError(null);
+    },
+    onError: (err) => {
+      const isConflict =
+        err instanceof PosApiError &&
+        (err.errorCode?.includes("brand.name.conflict") ||
+          /brand.*already exists/i.test(err.problem.detail ?? err.message));
+      if (isConflict) {
+        const normalized = newBrandName.trim().toLowerCase();
+        const match = brandsQuery.data?.items.find(
+          (brand) => brand.name.trim().toLowerCase() === normalized,
+        );
+        if (match) {
+          setBrandId(match.brandId);
+          setNewBrandName("");
+        }
+        setError(t("catalog.brandAlreadyExists"));
+        return;
+      }
+      setError(
+        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+      );
+    },
+  });
+
   function updateDraft(key: string, patch: Partial<ProductUnitDraft>) {
     setUnitDrafts((current) =>
       current.map((draft) => (draft.key === key ? { ...draft, ...patch } : draft)),
@@ -483,6 +539,29 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const productStatus = productQuery.data?.status;
 
   const isActive = productStatus?.toLowerCase() === "active";
+
+  const brandOptions: PosProductBrandDto[] = (() => {
+    const active = brandsQuery.data?.items ?? [];
+    const currentBrandId = productQuery.data?.brandId;
+    const currentBrandName = productQuery.data?.brandName;
+    if (
+      !currentBrandId ||
+      active.some((brand) => brand.brandId === currentBrandId)
+    ) {
+      return active;
+    }
+    return [
+      ...active,
+      {
+        brandId: currentBrandId,
+        organizationId: productQuery.data?.organizationId ?? workspace.organizationId,
+        name: currentBrandName?.trim() || currentBrandId,
+        status: "Inactive",
+        createdAtUtc: productQuery.data?.createdAtUtc ?? "",
+        updatedAtUtc: productQuery.data?.updatedAtUtc ?? "",
+      },
+    ];
+  })();
 
   return (
     <div
@@ -587,7 +666,29 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 </option>
               ))}
             </FormSelect>
+
+            <FormSelect
+              label={t("catalog.brand")}
+
+              name="productBrand"
+
+              testId="catalog-product-brand"
+
+              value={brandId}
+
+              onChange={setBrandId}
+            >
+              <option value="">{t("catalog.noBrand")}</option>
+
+              {brandOptions.map((brand) => (
+                <option key={brand.brandId} value={brand.brandId}>
+                  {brand.name}
+                </option>
+              ))}
+            </FormSelect>
           </div>
+
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("catalog.brandOptional")}</p>
 
           <div className="catalog-form-quick-add">
             <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
@@ -626,6 +727,46 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 {createCategoryMutation.isPending
                   ? t("catalog.addingCategory")
                   : t("catalog.addCategory")}
+              </Button>
+            </div>
+          </div>
+
+          <div className="catalog-form-quick-add">
+            <p className="catalog-form-quick-add__label">{t("catalog.sectionBrandQuickAdd")}</p>
+            <div className="catalog-form-quick-add__row">
+              <div className="catalog-form-quick-add__field">
+                <Input
+                  label={t("catalog.newBrandPlaceholder")}
+                  name="inlineBrandName"
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  placeholder={t("catalog.newBrandPlaceholder")}
+                  data-testid="catalog-inline-brand-name"
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") {
+                      return;
+                    }
+                    event.preventDefault();
+                    if (newBrandName.trim() && !createBrandMutation.isPending) {
+                      createBrandMutation.mutate();
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="catalog-form-quick-add__button"
+                data-testid="catalog-add-brand"
+                disabled={!newBrandName.trim() || createBrandMutation.isPending}
+                onClick={() => createBrandMutation.mutate()}
+              >
+                {createBrandMutation.isPending ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                ) : (
+                  <Plus className="size-4 shrink-0" aria-hidden />
+                )}
+                {createBrandMutation.isPending ? t("catalog.addingBrand") : t("catalog.addBrand")}
               </Button>
             </div>
           </div>
