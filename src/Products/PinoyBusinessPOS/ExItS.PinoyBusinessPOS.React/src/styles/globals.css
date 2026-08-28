@@ -4499,6 +4499,12 @@ a.dashboard-metric-card:focus-visible {
   background: color-mix(in srgb, var(--exits-warning) 10%, var(--exits-surface));
 }
 
+.inventory-expiry-counts__stat--good {
+  border-color: color-mix(in srgb, var(--exits-success, #2f6f4e) 45%, var(--exits-border));
+  color: var(--exits-success, #2f6f4e);
+  background: color-mix(in srgb, var(--exits-success, #2f6f4e) 10%, var(--exits-surface));
+}
+
 .inventory-expiring-lot {
   padding: 0.75rem 0.875rem;
   border: 1px solid var(--exits-border);

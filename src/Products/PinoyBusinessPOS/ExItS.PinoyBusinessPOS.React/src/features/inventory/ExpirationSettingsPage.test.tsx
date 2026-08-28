@@ -50,10 +50,10 @@ vi.mock("@/offline/organization-offline-context", () => ({
   useOrganizationOfflineContext: () => null,
 }));
 
-function renderPage() {
+function renderPage(initialEntry = `/inventory/${productId}/expiration`) {
   return render(
     <AppProviders>
-      <MemoryRouter initialEntries={[`/inventory/${productId}/expiration`]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/inventory/:productId/expiration" element={<ExpirationSettingsPage />} />
           <Route path="/inventory/:productId" element={<div data-testid="inventory-detail-stub" />} />
@@ -116,9 +116,29 @@ describe("ExpirationSettingsPage", () => {
     renderPage();
     await screen.findByTestId("expiration-settings-repair-banner");
     expect(screen.getByText(/Expiration setup required/i)).toBeInTheDocument();
-    expect(screen.getByTestId("expiration-settings-repair")).toBeInTheDocument();
+    expect(screen.getByTestId("assign-expiration-lots-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("expiration-settings-repair")).not.toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByTestId("expiration-settings-save")).toBeDisabled();
     });
+  });
+
+  it("highlights repair banner when opened with assign focus", async () => {
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+
+    renderPage(`/inventory/${productId}/expiration?focus=assign`);
+    const banner = await screen.findByTestId("expiration-settings-repair-banner");
+    expect(banner).toHaveAttribute("data-highlighted", "true");
+  });
+
+  it("highlights warning card when opened with warning focus", async () => {
+    renderPage(`/inventory/${productId}/expiration?focus=warning`);
+    const card = await screen.findByTestId("expiration-settings-warning-card");
+    expect(card).toHaveAttribute("data-highlighted", "true");
   });
 });

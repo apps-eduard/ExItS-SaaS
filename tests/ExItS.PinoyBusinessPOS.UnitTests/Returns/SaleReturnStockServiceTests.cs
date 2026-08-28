@@ -384,6 +384,7 @@ public sealed class SaleReturnStockServiceTests
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(PosOrganizationId organizationId, CatalogProductId productId, PosBranchId? branchId, bool includeDepleted, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(PosOrganizationId organizationId, PosBranchId? branchId, DateOnly expireOnOrBefore, DateOnly? expireOnOrAfter, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(PosOrganizationId organizationId, DateOnly today, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task AdoptOrgLevelLotsForBranchAsync(PosOrganizationId organizationId, CatalogProductId productId, PosBranchId branchId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task AddMovementAsync(InventoryLotMovement movement, CancellationToken cancellationToken = default)

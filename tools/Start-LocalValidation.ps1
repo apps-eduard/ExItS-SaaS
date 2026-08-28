@@ -156,27 +156,7 @@ function Wait-TcpPort([string]$Label, [string]$HostName, [int]$Port, [int]$Timeo
 }
 
 function Get-RepoScopedAppProcesses([string]$RepoRoot) {
-    $markers = @(
-        'ExItS.Platform.Api',
-        'ExItS.PinoyBusinessPOS.Api',
-        'ExItS.Platform.Admin',
-        'ExItS.PinoyBusinessPOS.Web',
-        'ExItS.Personal.Web'
-    )
-    $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
-    $results = @()
-    foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue) {
-        $cmd = [string]$p.CommandLine
-        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
-        if ($cmd.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
-        foreach ($m in $markers) {
-            if ($cmd.IndexOf($m, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                $results += $p
-                break
-            }
-        }
-    }
-    return $results
+    return @(Get-LocalValidationRepoScopedAppProcesses -RepoRoot $RepoRoot)
 }
 
 function Stop-RepoScopedApps([string]$RepoRoot) {
@@ -472,6 +452,24 @@ $null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
 # React POS is Vite/node (not dotnet AppMarkers). Free :5177 so restart is reliable.
 Write-Step "Freeing React POS port $reactPosPortEarly if still held by Vite/node..."
 $null = Stop-LocalValidationPortListeners -Port $reactPosPortEarly -Label 'React POS'
+
+# Apphosts (ExItS.*.Api.exe) can survive after parent dotnet.exe exits and keep ports/DLLs locked.
+Write-Step 'Freeing Local Validation host app ports if still held by leftover apphosts...'
+foreach ($port in @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort, $adminWebReactPort)) {
+    $owner = Get-LocalValidationListeningOwner -Port $port
+    if ($null -eq $owner) { continue }
+    $name = [string]$owner.ProcessName
+    $isAppMarker = $false
+    foreach ($marker in $LocalValidationStack.AppMarkers) {
+        if ($name.Equals($marker, [StringComparison]::OrdinalIgnoreCase)) {
+            $isAppMarker = $true
+            break
+        }
+    }
+    if ($isAppMarker -or $name.Equals('dotnet', [StringComparison]::OrdinalIgnoreCase)) {
+        $null = Stop-LocalValidationPortListeners -Port $port -Label $appPortLabels[$port]
+    }
+}
 
 $conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
 if ($conflicts.Count -gt 0) {

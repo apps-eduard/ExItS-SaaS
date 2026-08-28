@@ -275,19 +275,50 @@ function Get-LocalValidationRepoScopedAppProcesses {
     param([Parameter(Mandatory)][string]$RepoRoot)
 
     $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
-    $results = @()
+    $byPid = @{}
+
+    function Add-RepoScopedProcess {
+        param([Parameter(Mandatory)]$Process)
+
+        if ($null -eq $Process -or $byPid.ContainsKey([int]$Process.ProcessId)) {
+            return
+        }
+
+        $commandLine = [string]$Process.CommandLine
+        $executablePath = [string]$Process.ExecutablePath
+        $haystack = ("{0}|{1}" -f $commandLine, $executablePath).Replace('/', '\')
+        if ([string]::IsNullOrWhiteSpace($haystack)) {
+            return
+        }
+        if ($haystack.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
+            return
+        }
+
+        $byPid[[int]$Process.ProcessId] = $Process
+    }
+
+    # Parent hosts: "dotnet run" / "dotnet watch --project ...Api"
     foreach ($process in Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue) {
         $commandLine = [string]$process.CommandLine
         if ([string]::IsNullOrWhiteSpace($commandLine)) { continue }
         if ($commandLine.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
         foreach ($marker in $LocalValidationStack.AppMarkers) {
             if ($commandLine.IndexOf($marker, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                $results += $process
+                Add-RepoScopedProcess -Process $process
                 break
             }
         }
     }
-    return $results
+
+    # Child apphosts: ExItS.*.Api.exe hold bin\Debug DLLs open (MSB3027 / inventory hang when stale).
+    foreach ($marker in $LocalValidationStack.AppMarkers) {
+        $exeName = "$marker.exe"
+        foreach ($process in Get-CimInstance Win32_Process -Filter "Name = '$exeName'" -ErrorAction SilentlyContinue) {
+            Add-RepoScopedProcess -Process $process
+        }
+    }
+
+    return @($byPid.Values)
 }
 
 function Stop-LocalValidationRepoScopedHostApps {

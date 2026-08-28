@@ -499,6 +499,7 @@ internal static class InventoryEndpoints
         }
 
         body ??= new EnableExpirationTrackingRequest();
+        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
         var result = await useCase
             .ExecuteAsync(
                 organizationId,
@@ -507,6 +508,7 @@ internal static class InventoryEndpoints
                 body.ExpirationWarningDays,
                 body.ExistingStockLots,
                 body.ExpectedOnHandQuantity,
+                branchId,
                 ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);

@@ -56,6 +56,16 @@ public interface IInventoryLotRepository
 
     Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// When operational branch is bound and lots were created org-wide (BranchId null),
+    /// reassign them to the branch so branch-scoped queries match allocation.
+    /// </summary>
+    Task AdoptOrgLevelLotsForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default);
+
     Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default);
 
     Task AddMovementAsync(InventoryLotMovement movement, CancellationToken cancellationToken = default);

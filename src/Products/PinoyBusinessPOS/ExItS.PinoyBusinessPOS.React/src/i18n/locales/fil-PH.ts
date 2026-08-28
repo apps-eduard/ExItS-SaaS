@@ -1065,7 +1065,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.expirationSetupRequired": "Kailangan ang expiration setup",
   "inventory.expirationSetupRequiredDetail":
     "Naka-track ang expiration ng product na ito at may stock on hand, pero wala pang assigned na stock lots. Mag-assign ng expiry dates para tumugma sa kasalukuyang on-hand quantity.",
+  "inventory.expirationPendingSummary":
+    "{qty} {uom} on hand ang kailangan ng expiry dates bago maipakita ang Good / Near expiry / Expired.",
   "inventory.assignExpirationDates": "Mag-assign ng expiration dates",
+  "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
   "inventory.viewStockLots": "Tingnan ang stock lots",
   "inventory.saveNearExpiryWarning": "I-save ang near-expiry warning",
   "inventory.expirationWarningSaved": "Na-save ang near-expiry warning.",
@@ -1079,7 +1082,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.enableExpirationAddRow": "Magdagdag ng isa pang expiry/batch",
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Natitira: {remaining}",
-  "inventory.enableExpirationSubmit": "I-enable ang tracking",
+  "inventory.enableExpirationOverAllocated":
+    "Ang allocated na {allocated} ay lumampas sa on-hand ({onHand}). Bawasan ang lot quantities.",
+  "inventory.enableExpirationQuantityMax": "Max {max} para sa row na ito",
+  "inventory.enableExpirationSubmitHint":
+    "Maglagay ng expiry dates at i-allocate ang eksaktong {onHand} {uom} para ma-save.",
+  "inventory.enableExpirationExpiryRequiredHint":
+    "Kumpleto na ang quantity. Maglagay ng expiry date sa bawat lot para ma-save.",
+  "inventory.enableExpirationAddDisabledHint":
+    "Na-allocate na ang lahat ng on-hand stock. Bawasan muna ang quantity ng isang lot para magdagdag ng isa pang expiry/batch.",
+  "inventory.enableExpirationSubmit": "Mag-assign ng expiration dates",
   "inventory.enableExpirationCancel": "Cancel",
   "inventory.enableExpirationPastWarning": "Nakaraan na ang expiry date na ito.",
   "inventory.enableExpirationRemoveRow": "Alisin",

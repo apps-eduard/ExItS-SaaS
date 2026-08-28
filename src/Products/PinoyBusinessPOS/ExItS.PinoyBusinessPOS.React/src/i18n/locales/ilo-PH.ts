@@ -1065,7 +1065,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.expirationSetupRequired": "Masapul ti expiration setup",
   "inventory.expirationSetupRequiredDetail":
     "Matrack ti expiration daytoy a product ken adda stock on hand, ngem awan pay ti assigned a stock lots. Mag-assign ti expiry dates tapno agtugma iti agdama nga on-hand quantity.",
+  "inventory.expirationPendingSummary":
+    "{qty} {uom} on hand ket masapul ti expiry dates sakbay a maipakita ti Good / Near expiry / Expired.",
   "inventory.assignExpirationDates": "Mag-assign ti expiration dates",
+  "inventory.expirationLotsAssigned": "Na-assign ti expiration dates.",
   "inventory.viewStockLots": "Kitaen ti stock lots",
   "inventory.saveNearExpiryWarning": "I-save ti near-expiry warning",
   "inventory.expirationWarningSaved": "Na-save ti near-expiry warning.",
@@ -1079,7 +1082,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.enableExpirationAddRow": "Agnayon iti sabali nga expiry/batch",
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Natda: {remaining}",
-  "inventory.enableExpirationSubmit": "I-enable ti tracking",
+  "inventory.enableExpirationOverAllocated":
+    "Ti allocated a {allocated} ket nalablabas iti on-hand ({onHand}). Ibabaan dagiti lot quantities.",
+  "inventory.enableExpirationQuantityMax": "Max {max} para iti daytoy a row",
+  "inventory.enableExpirationSubmitHint":
+    "Isurat dagiti expiry dates ken i-allocate ti eksakto a {onHand} {uom} tapno ma-save.",
+  "inventory.enableExpirationExpiryRequiredHint":
+    "Kompletoen ti quantity. Isurat ti expiry date iti tunggal lot tapno ma-save.",
+  "inventory.enableExpirationAddDisabledHint":
+    "Na-allocateen amin a on-hand stock. Ibabaan nga umuna ti quantity ti maysa a lot tapno makainayon iti sabali nga expiry/batch.",
+  "inventory.enableExpirationSubmit": "Mag-assign ti expiration dates",
   "inventory.enableExpirationCancel": "Cancel",
   "inventory.enableExpirationPastWarning": "Napalabasen daytoy nga expiry date.",
   "inventory.enableExpirationRemoveRow": "Ikkatén",

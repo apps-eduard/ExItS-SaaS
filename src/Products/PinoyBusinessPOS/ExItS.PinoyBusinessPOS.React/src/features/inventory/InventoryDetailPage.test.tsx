@@ -174,35 +174,21 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(lots.compareDocumentPosition(adjust) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("opens allocation dialog when enabling expiration with on-hand stock", async () => {
-    const user = userEvent.setup();
+  it("links to expiration settings when enabling expiration tracking", async () => {
     renderPage();
-    await screen.findByTestId("inventory-enable-expiration");
-    await user.click(screen.getByTestId("inventory-enable-expiration"));
-    expect(await screen.findByTestId("enable-expiration-tracking-dialog")).toBeInTheDocument();
+    const enable = await screen.findByTestId("inventory-enable-expiration");
+    expect(enable).toHaveAttribute("href", `/inventory/${productId}/expiration`);
     expect(inventoryClient.enableExpirationTracking).not.toHaveBeenCalled();
-    expect(catalogClient.updateCatalogProduct).not.toHaveBeenCalled();
   });
 
-  it("enables expiration directly when on-hand is zero", async () => {
+  it("links to expiration settings when on-hand is zero", async () => {
     vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
       baseAccount({ onHandQuantity: 0, hasOpeningStock: true }) as never,
     );
-    const user = userEvent.setup();
     renderPage();
-    await screen.findByTestId("inventory-enable-expiration");
-    await user.click(screen.getByTestId("inventory-enable-expiration"));
-
-    await waitFor(() =>
-      expect(inventoryClient.enableExpirationTracking).toHaveBeenCalledWith(
-        workspace,
-        productId,
-        expect.objectContaining({
-          existingStockLots: [],
-          expectedOnHandQuantity: 0,
-        }),
-      ),
-    );
+    const enable = await screen.findByTestId("inventory-enable-expiration");
+    expect(enable).toHaveAttribute("href", `/inventory/${productId}/expiration`);
+    expect(inventoryClient.enableExpirationTracking).not.toHaveBeenCalled();
   });
 
   it("requires expiry on increase and refreshes after successful adjust", async () => {
@@ -301,7 +287,7 @@ describe("InventoryDetailPage expiration UX", () => {
     });
     renderPage();
     const manage = await screen.findByTestId("inventory-manage-expiration");
-    expect(manage).toHaveAttribute("href", `/inventory/${productId}/expiration`);
+    expect(manage).toHaveAttribute("href", `/inventory/${productId}/expiration?focus=warning`);
     expect(screen.getByTestId("inventory-expiration-status")).toHaveTextContent(
       /Expiration tracking ON · 7-day warning/i,
     );
@@ -320,10 +306,33 @@ describe("InventoryDetailPage expiration UX", () => {
     });
     renderPage();
     await screen.findByTestId("inventory-expiration-setup-required");
-    expect(screen.getByTestId("inventory-expiration-setup-link")).toHaveAttribute(
+    expect(screen.getByTestId("inventory-expiration-setup-assign")).toHaveAttribute(
       "href",
-      `/inventory/${productId}/expiration`,
+      `/inventory/${productId}/expiration?focus=assign`,
     );
+    expect(screen.getByTestId("inventory-manage-expiration")).toHaveAttribute(
+      "href",
+      `/inventory/${productId}/expiration?focus=warning`,
+    );
+    expect(screen.getByTestId("inventory-expiration-pending")).toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-expiry-totals")).not.toBeInTheDocument();
+    expect(screen.queryByText(/No lots on hand yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("enable-expiration-tracking-dialog")).not.toBeInTheDocument();
+  });
+
+  it("disables inventory disable tracking when on hand is positive", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({ onHandQuantity: 12, isTracked: true }) as never,
+    );
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [lotA],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    });
+    renderPage();
+    const disable = await screen.findByTestId("inventory-disable");
+    expect(disable).toBeDisabled();
   });
 
   it("shows add opening stock panel when tracked without opening movement", async () => {

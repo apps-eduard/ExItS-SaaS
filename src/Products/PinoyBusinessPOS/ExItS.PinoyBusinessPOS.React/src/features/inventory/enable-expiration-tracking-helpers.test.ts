@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   canSubmitExpirationAllocation,
+  clampLotDraftQuantity,
   createExpirationLotDraft,
   isExpiryDateInPast,
+  isOverAllocated,
+  maxQuantityForRow,
   quantitiesMatchOnHand,
   remainingToAllocate,
   sumAllocatedQuantity,
@@ -64,5 +67,16 @@ describe("enable-expiration-tracking-helpers", () => {
     expect(isExpiryDateInPast("2026-08-28", "2026-08-28")).toBe(false);
     expect(isExpiryDateInPast("2027-01-01", "2026-08-28")).toBe(false);
     expect(isExpiryDateInPast("", "2026-08-28")).toBe(false);
+  });
+
+  it("caps row quantity to remaining on-hand", () => {
+    const drafts = [
+      { ...createExpirationLotDraft("5", "a"), expiryDate: "2027-01-01" },
+      createExpirationLotDraft("", "b"),
+    ];
+    expect(maxQuantityForRow(10, drafts, "b")).toBe(5);
+    expect(clampLotDraftQuantity(10, drafts, "b", "20")).toBe("5");
+    expect(isOverAllocated(25, 10)).toBe(true);
+    expect(isOverAllocated(10, 10)).toBe(false);
   });
 });

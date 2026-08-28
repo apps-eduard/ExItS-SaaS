@@ -6,7 +6,6 @@ import {
   adjustInventoryStock,
   addOpeningStock,
   disableInventoryTracking,
-  enableExpirationTracking,
   enableInventoryTracking,
   getInventoryProduct,
   getStockMovement,
@@ -23,11 +22,12 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
   canAddOpeningStock,
+  canDisableExpirationTracking,
   computeGoodQuantity,
   sortLotsByExpiry,
 } from "@/features/inventory/inventory-detail-helpers";
 import { computeOpeningStockValue } from "@/features/catalog/opening-stock-helpers";
-import { EnableExpirationTrackingDialog } from "@/features/inventory/EnableExpirationTrackingDialog";
+import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
   requiresOpeningExpirationDate,
@@ -85,7 +85,6 @@ export function InventoryDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
-  const [enableExpirationOpen, setEnableExpirationOpen] = useState(false);
   const movementIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
@@ -222,26 +221,6 @@ export function InventoryDetailPage() {
     },
   });
 
-  const enableExpirationMutation = useMutation({
-    mutationFn: async () => {
-      const warningDays = accountQuery.data?.expirationWarningDays ?? 7;
-      return enableExpirationTracking(workspace!, productId!, {
-        existingStockLots: [],
-        expectedOnHandQuantity: accountQuery.data?.onHandQuantity ?? 0,
-        expirationWarningDays: warningDays,
-      });
-    },
-    onSuccess: async () => {
-      setError(null);
-      await invalidateInventory();
-    },
-    onError: (err) => {
-      setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
-      );
-    },
-  });
-
   const disableMutation = useMutation({
     mutationFn: () => disableInventoryTracking(workspace!, productId!),
     onSuccess: async () => {
@@ -254,15 +233,6 @@ export function InventoryDetailPage() {
       );
     },
   });
-
-  function onEnableExpirationClick() {
-    const onHand = accountQuery.data?.onHandQuantity ?? 0;
-    if (onHand > 0) {
-      setEnableExpirationOpen(true);
-      return;
-    }
-    enableExpirationMutation.mutate();
-  }
 
   async function onAdjust() {
     if (!workspace || !productId || statusLocked || adjusting) {
@@ -385,6 +355,7 @@ export function InventoryDetailPage() {
 
   const goodQuantity = computeGoodQuantity(account);
   const showAddOpeningStock = canAddOpeningStock(account);
+  const canDisableInventory = canDisableExpirationTracking(account);
   const openingStockValue = computeOpeningStockValue(
     Number(openingQty),
     Number(openingUnitCost),
@@ -399,70 +370,78 @@ export function InventoryDetailPage() {
 
   const lotsSection =
     tracksExpiration && !showAddOpeningStock ? (
-      <>
-        <section data-testid="inventory-expiration-summary">
+      needsExpirationSetup ? (
+        <Card
+          className="flex flex-col gap-3 p-3"
+          data-testid="inventory-expiration-pending"
+        >
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.expirationInventory")}
           </h2>
-          <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)]">
-            {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("inventory.expirationPendingSummary")
+              .replace("{qty}", String(account.onHandQuantity))
+              .replace("{uom}", account.unitOfMeasure)}
           </p>
-          <dl
-            className="inventory-expiry-summary mt-3 mb-0 grid gap-2"
-            data-testid="inventory-expiry-totals"
-          >
-            <div className="inventory-expiry-summary__row">
-              <dt>{t("inventory.statusGood")}</dt>
-              <dd>{goodQuantity}</dd>
+        </Card>
+      ) : (
+        <>
+          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-expiration-summary">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("inventory.expirationInventory")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
+            </p>
+            <div
+              className="inventory-expiry-counts flex min-w-0 flex-wrap gap-2"
+              data-testid="inventory-expiry-totals"
+            >
+              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--good">
+                {t("inventory.statusGood")}: {goodQuantity}
+              </span>
+              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
+                {t("inventory.nearExpiryQty")}: {account.nearExpiryQuantity ?? 0}
+              </span>
+              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
+                {t("inventory.expiredQty")}: {account.expiredQuantity ?? 0}
+              </span>
             </div>
-            <div className="inventory-expiry-summary__row">
-              <dt>{t("inventory.nearExpiryQty")}</dt>
-              <dd>{account.nearExpiryQuantity ?? 0}</dd>
-            </div>
-            <div className="inventory-expiry-summary__row">
-              <dt>{t("inventory.expiredQty")}</dt>
-              <dd>{account.expiredQuantity ?? 0}</dd>
-            </div>
-          </dl>
-        </section>
+          </Card>
 
-        <section data-testid="inventory-lots">
-          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("inventory.stockLots")}
-          </h2>
-          {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-          {lots.length === 0 && !lotsQuery.isLoading ? (
-            <>
-              <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("inventory.lotsEmpty")}
-              </p>
-              <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-lots">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("inventory.stockLots")}
+            </h2>
+            {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+            {lots.length === 0 && !lotsQuery.isLoading ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("inventory.lotsEmptyHint")}
               </p>
-            </>
-          ) : (
-            <InventoryLotList
-              lots={lots}
-              unitOfMeasure={account.unitOfMeasure}
-              formatStatus={formatStatus}
-            />
-          )}
-          {lotsQuery.hasNextPage ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-2 min-h-11 w-fit"
-              disabled={lotsQuery.isFetchingNextPage}
-              onClick={() => void lotsQuery.fetchNextPage()}
-              data-testid="inventory-lots-load-more"
-            >
-              {lotsQuery.isFetchingNextPage
-                ? t("inventory.loadingMore")
-                : t("inventory.loadMore")}
-            </Button>
-          ) : null}
-        </section>
-      </>
+            ) : (
+              <InventoryLotList
+                lots={lots}
+                unitOfMeasure={account.unitOfMeasure}
+                formatStatus={formatStatus}
+              />
+            )}
+            {lotsQuery.hasNextPage ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 w-fit"
+                disabled={lotsQuery.isFetchingNextPage}
+                onClick={() => void lotsQuery.fetchNextPage()}
+                data-testid="inventory-lots-load-more"
+              >
+                {lotsQuery.isFetchingNextPage
+                  ? t("inventory.loadingMore")
+                  : t("inventory.loadMore")}
+              </Button>
+            ) : null}
+          </Card>
+        </>
+      )
     ) : null;
 
   return (
@@ -496,7 +475,7 @@ export function InventoryDetailPage() {
             </p>
             {needsExpirationSetup ? (
               <div
-                className="mt-2 flex flex-col gap-2"
+                className="mt-3 flex flex-col gap-2"
                 data-testid="inventory-expiration-setup-required"
               >
                 <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
@@ -505,35 +484,54 @@ export function InventoryDetailPage() {
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("inventory.expirationSetupRequiredDetail")}
                 </p>
-                <Link
-                  to={`/inventory/${productId}/expiration`}
-                  className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
-                  data-testid="inventory-expiration-setup-link"
-                >
-                  {t("inventory.assignExpirationDates")}
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    asChild
+                    type="button"
+                    className="min-h-11"
+                  >
+                    <Link
+                      to={expirationSettingsPath(productId!, "assign")}
+                      data-testid="inventory-expiration-setup-assign"
+                    >
+                      {t("inventory.assignExpirationDates")}
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                  >
+                    <Link
+                      to={expirationSettingsPath(productId!, "warning")}
+                      data-testid="inventory-manage-expiration"
+                    >
+                      {t("inventory.manageExpirationSettings")}
+                    </Link>
+                  </Button>
+                </div>
               </div>
-            ) : null}
-            {tracksExpiration ? (
-              <div className="mt-2">
-                <Link
-                  to={`/inventory/${productId}/expiration`}
-                  className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
-                  data-testid="inventory-manage-expiration"
-                >
-                  {t("inventory.manageExpirationSettings")}
-                </Link>
+            ) : tracksExpiration ? (
+              <div className="mt-3">
+                <Button asChild type="button" variant="outline" className="min-h-11">
+                  <Link
+                    to={expirationSettingsPath(productId!, "warning")}
+                    data-testid="inventory-manage-expiration"
+                  >
+                    {t("inventory.manageExpirationSettings")}
+                  </Link>
+                </Button>
               </div>
             ) : (
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  className="min-h-11"
-                  disabled={enableExpirationMutation.isPending}
-                  onClick={onEnableExpirationClick}
-                  data-testid="inventory-enable-expiration"
-                >
-                  {t("inventory.enableExpirationTracking")}
+              <div className="mt-3">
+                <Button asChild type="button" className="min-h-11">
+                  <Link
+                    to={expirationSettingsPath(productId!)}
+                    data-testid="inventory-enable-expiration"
+                  >
+                    {t("inventory.enableExpirationTracking")}
+                  </Link>
                 </Button>
               </div>
             )}
@@ -682,7 +680,7 @@ export function InventoryDetailPage() {
             type="button"
             variant="ghost"
             className="min-h-11 w-fit"
-            disabled={disableMutation.isPending}
+            disabled={disableMutation.isPending || !canDisableInventory}
             onClick={() => disableMutation.mutate()}
             data-testid="inventory-disable"
           >
@@ -845,7 +843,7 @@ export function InventoryDetailPage() {
             type="button"
             variant="ghost"
             className="min-h-11 w-fit"
-            disabled={disableMutation.isPending}
+            disabled={disableMutation.isPending || !canDisableInventory}
             onClick={() => disableMutation.mutate()}
             data-testid="inventory-disable"
           >
@@ -915,24 +913,6 @@ export function InventoryDetailPage() {
           ))}
         </ul>
       </div>
-
-      {workspace && productId ? (
-        <EnableExpirationTrackingDialog
-          open={enableExpirationOpen}
-          workspace={workspace}
-          productId={productId}
-          productName={account.name}
-          onHandQuantity={account.onHandQuantity}
-          unitOfMeasure={account.unitOfMeasure}
-          expirationWarningDays={account.expirationWarningDays ?? 7}
-          onClose={() => setEnableExpirationOpen(false)}
-          onSuccess={async () => {
-            setEnableExpirationOpen(false);
-            setError(null);
-            await invalidateInventory();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

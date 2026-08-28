@@ -211,6 +211,13 @@ public sealed class InventoryLotSaleReturnRestoreTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task AdoptOrgLevelLotsForBranchAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
         {
             Lots.Add(lot);

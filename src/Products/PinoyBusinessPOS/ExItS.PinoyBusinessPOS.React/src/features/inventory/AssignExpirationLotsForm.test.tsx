@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppProviders } from "@/app/providers";
 import * as inventoryClient from "@/api/pos/pos-inventory-client";
-import { EnableExpirationTrackingDialog } from "@/features/inventory/EnableExpirationTrackingDialog";
+import { AssignExpirationLotsForm } from "@/features/inventory/AssignExpirationLotsForm";
 
 const workspace = {
   organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -30,28 +30,25 @@ vi.mock("@/offline/organization-offline-context", () => ({
   useOrganizationOfflineContext: () => null,
 }));
 
-function renderDialog(onHandQuantity = 40) {
-  const onClose = vi.fn();
+function renderForm(onHandQuantity = 40) {
   const onSuccess = vi.fn();
   render(
     <AppProviders>
-      <EnableExpirationTrackingDialog
-        open
+      <AssignExpirationLotsForm
         workspace={workspace}
         productId={productId}
         productName="Milk 1L"
         onHandQuantity={onHandQuantity}
         unitOfMeasure="Piece"
         expirationWarningDays={7}
-        onClose={onClose}
         onSuccess={onSuccess}
       />
     </AppProviders>,
   );
-  return { onClose, onSuccess };
+  return { onSuccess };
 }
 
-describe("EnableExpirationTrackingDialog", () => {
+describe("AssignExpirationLotsForm", () => {
   beforeEach(() => {
     vi.spyOn(inventoryClient, "enableExpirationTracking").mockResolvedValue({
       productId,
@@ -68,14 +65,16 @@ describe("EnableExpirationTrackingDialog", () => {
     vi.restoreAllMocks();
   });
 
-  it("defaults first row quantity to on-hand and disables submit when under-allocated", async () => {
+  it("defaults first row quantity to on-hand and keeps submit disabled until complete", async () => {
     const user = userEvent.setup();
-    renderDialog(40);
-    await screen.findByTestId("enable-expiration-tracking-dialog");
+    renderForm(40);
+    await screen.findByTestId("assign-expiration-lots-form");
 
     expect(screen.getByTestId("enable-expiration-qty-0")).toHaveValue("40");
     expect(screen.getByTestId("enable-expiration-allocated")).toHaveTextContent("40");
-    expect(screen.getByTestId("enable-expiration-submit")).toBeDisabled();
+    const submit = screen.getByTestId("enable-expiration-submit");
+    expect(submit).toBeDisabled();
+    expect(screen.getByTestId("enable-expiration-submit-hint")).toBeInTheDocument();
 
     await user.clear(screen.getByTestId("enable-expiration-qty-0"));
     await user.type(screen.getByTestId("enable-expiration-qty-0"), "30");
@@ -83,13 +82,41 @@ describe("EnableExpirationTrackingDialog", () => {
 
     expect(screen.getByTestId("enable-expiration-allocated")).toHaveTextContent("30");
     expect(screen.getByTestId("enable-expiration-remaining")).toHaveTextContent("10");
-    expect(screen.getByTestId("enable-expiration-submit")).toBeDisabled();
+    expect(submit).toBeDisabled();
   });
 
-  it("enables submit on exact allocation and posts expected payload", async () => {
+  it("disables add-row when allocation already matches on-hand", async () => {
+    renderForm(10);
+    await screen.findByTestId("assign-expiration-lots-form");
+
+    expect(screen.getByTestId("enable-expiration-qty-0")).toHaveValue("10");
+    expect(screen.getByTestId("enable-expiration-add-row")).toBeDisabled();
+    expect(screen.getByTestId("enable-expiration-add-hint")).toBeInTheDocument();
+    expect(screen.getByTestId("enable-expiration-submit-hint")).toHaveTextContent(
+      /enter an expiry date/i,
+    );
+  });
+
+  it("clamps row quantity so total cannot exceed on-hand", async () => {
     const user = userEvent.setup();
-    const { onSuccess } = renderDialog(40);
-    await screen.findByTestId("enable-expiration-tracking-dialog");
+    renderForm(10);
+    await screen.findByTestId("assign-expiration-lots-form");
+
+    await user.clear(screen.getByTestId("enable-expiration-qty-0"));
+    await user.type(screen.getByTestId("enable-expiration-qty-0"), "5");
+    expect(screen.getByTestId("enable-expiration-add-row")).toBeEnabled();
+    await user.click(screen.getByTestId("enable-expiration-add-row"));
+    await user.type(screen.getByTestId("enable-expiration-qty-1"), "20");
+
+    expect(screen.getByTestId("enable-expiration-qty-1")).toHaveValue("5");
+    expect(screen.getByTestId("enable-expiration-allocated")).toHaveTextContent("10");
+    expect(screen.getByTestId("enable-expiration-add-row")).toBeDisabled();
+  });
+
+  it("shows assign submit on exact allocation and posts expected payload", async () => {
+    const user = userEvent.setup();
+    const { onSuccess } = renderForm(40);
+    await screen.findByTestId("assign-expiration-lots-form");
 
     await user.clear(screen.getByTestId("enable-expiration-qty-0"));
     await user.type(screen.getByTestId("enable-expiration-qty-0"), "25");
@@ -100,8 +127,10 @@ describe("EnableExpirationTrackingDialog", () => {
     await user.type(screen.getByTestId("enable-expiration-expiry-1"), "2027-06-01");
     await user.type(screen.getByTestId("enable-expiration-lot-1"), "LOT-B");
 
-    expect(screen.getByTestId("enable-expiration-submit")).toBeEnabled();
-    await user.click(screen.getByTestId("enable-expiration-submit"));
+    const submit = screen.getByTestId("enable-expiration-submit");
+    expect(submit).toBeEnabled();
+    expect(submit).toHaveTextContent(/assign expiration dates/i);
+    await user.click(submit);
 
     await waitFor(() =>
       expect(inventoryClient.enableExpirationTracking).toHaveBeenCalledWith(

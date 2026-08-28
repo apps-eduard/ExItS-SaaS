@@ -1065,7 +1065,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.expirationSetupRequired": "Gikinahanglan ang expiration setup",
   "inventory.expirationSetupRequiredDetail":
     "Naka-track ang expiration niini nga product ug adunay stock on hand, apan wala pay assigned nga stock lots. Mag-assign og expiry dates aron mohaum sa kasamtangang on-hand quantity.",
+  "inventory.expirationPendingSummary":
+    "{qty} {uom} on hand nanginahanglan og expiry dates sa wala pa makita ang Good / Near expiry / Expired.",
   "inventory.assignExpirationDates": "Mag-assign og expiration dates",
+  "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
   "inventory.viewStockLots": "Tan-awa ang stock lots",
   "inventory.saveNearExpiryWarning": "I-save ang near-expiry warning",
   "inventory.expirationWarningSaved": "Na-save ang near-expiry warning.",
@@ -1079,7 +1082,16 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.enableExpirationAddRow": "Pagdagdag og laing expiry/batch",
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Nahabilin: {remaining}",
-  "inventory.enableExpirationSubmit": "I-enable ang tracking",
+  "inventory.enableExpirationOverAllocated":
+    "Ang allocated nga {allocated} milapas sa on-hand ({onHand}). Kuhaa ang lot quantities.",
+  "inventory.enableExpirationQuantityMax": "Max {max} niining row",
+  "inventory.enableExpirationSubmitHint":
+    "Isulod ang expiry dates ug i-allocate ang eksaktong {onHand} {uom} aron ma-save.",
+  "inventory.enableExpirationExpiryRequiredHint":
+    "Kompleto na ang quantity. Isulod ang expiry date sa matag lot aron ma-save.",
+  "inventory.enableExpirationAddDisabledHint":
+    "Na-allocate na ang tanang on-hand stock. Pakunhuri una ang quantity sa usa ka lot aron makadugang og laing expiry/batch.",
+  "inventory.enableExpirationSubmit": "Mag-assign og expiration dates",
   "inventory.enableExpirationCancel": "Cancel",
   "inventory.enableExpirationPastWarning": "Kaniadto na kini nga expiry date.",
   "inventory.enableExpirationRemoveRow": "Kuhaa",

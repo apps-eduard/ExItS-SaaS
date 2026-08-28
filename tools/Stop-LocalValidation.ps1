@@ -42,27 +42,7 @@ function Get-RepoRoot {
 }
 
 function Get-RepoScopedAppProcesses([string]$RepoRoot) {
-    $markers = @(
-        'ExItS.Platform.Api',
-        'ExItS.PinoyBusinessPOS.Api',
-        'ExItS.Platform.Admin',
-        'ExItS.PinoyBusinessPOS.Web',
-        'ExItS.Personal.Web'
-    )
-    $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
-    $results = @()
-    foreach ($p in Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue) {
-        $cmd = [string]$p.CommandLine
-        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
-        if ($cmd.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
-        foreach ($m in $markers) {
-            if ($cmd.IndexOf($m, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-                $results += $p
-                break
-            }
-        }
-    }
-    return $results
+    return @(Get-LocalValidationRepoScopedAppProcesses -RepoRoot $RepoRoot)
 }
 
 $repoRoot = Get-LocalValidationRepoRoot

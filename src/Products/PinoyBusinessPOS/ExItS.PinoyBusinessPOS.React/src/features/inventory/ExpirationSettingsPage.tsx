@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Package } from "lucide-react";
 import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   enableExpirationTracking,
@@ -15,7 +16,12 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { canDisableExpirationTracking } from "@/features/inventory/inventory-detail-helpers";
-import { EnableExpirationTrackingDialog } from "@/features/inventory/EnableExpirationTrackingDialog";
+import { AssignExpirationLotsForm } from "@/features/inventory/AssignExpirationLotsForm";
+import {
+  expirationSettingsHighlightClass,
+  parseExpirationSettingsFocus,
+} from "@/features/inventory/expiration-settings-routes";
+import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -24,12 +30,14 @@ const LOT_PAGE_SIZE = 50;
 export function ExpirationSettingsPage() {
   const { t } = useI18n();
   const { productId } = useParams();
+  const { search } = useLocation();
   const queryClient = useQueryClient();
   const { boundWorkspace } = useWorkspace();
+  const repairCardRef = useRef<HTMLElement>(null);
+  const warningCardRef = useRef<HTMLElement>(null);
   const [warningDays, setWarningDays] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [okMessage, setOkMessage] = useState<string | null>(null);
-  const [enableDialogOpen, setEnableDialogOpen] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -82,8 +90,26 @@ export function ExpirationSettingsPage() {
   const needsRepair =
     tracksExpiration && onHand > 0 && lotsReady && lotTotal === 0 && !lotsQuery.isFetching;
 
+  const focus = parseExpirationSettingsFocus(search);
+  const highlightAssign = focus === "assign" && needsRepair;
+  const highlightWarning = focus === "warning" && tracksExpiration;
+
+  useEffect(() => {
+    const target =
+      highlightAssign ? repairCardRef.current : highlightWarning ? warningCardRef.current : null;
+    if (!target?.scrollIntoView) {
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [highlightAssign, highlightWarning, needsRepair, tracksExpiration]);
+
   const displayWarningDays =
     warningDays ?? String(accountQuery.data?.expirationWarningDays ?? 7);
+
+  const resolvedWarningDays =
+    !Number.isNaN(Number(displayWarningDays)) && Number(displayWarningDays) > 0
+      ? Number(displayWarningDays)
+      : (accountQuery.data?.expirationWarningDays ?? 7);
 
   async function invalidateInventory() {
     await queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -182,18 +208,16 @@ export function ExpirationSettingsPage() {
     },
   });
 
-  function onEnableClick() {
-    setOkMessage(null);
-    if (onHand > 0) {
-      setEnableDialogOpen(true);
-      return;
-    }
-    enableMutation.mutate();
+  function onLotsAssigned() {
+    setError(null);
+    setOkMessage(t("inventory.expirationLotsAssigned"));
+    void invalidateInventory();
   }
 
-  function onRepairClick() {
-    setOkMessage(null);
-    setEnableDialogOpen(true);
+  function onExpirationEnabled() {
+    setError(null);
+    setOkMessage(t("inventory.expirationTrackingEnabled"));
+    void invalidateInventory();
   }
 
   if (!workspace || accountQuery.isLoading) {
@@ -217,7 +241,15 @@ export function ExpirationSettingsPage() {
         backTestId="expiration-settings-back"
       />
 
-      {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
+      {error ? (
+        <p
+          className="m-0 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 text-[length:var(--exits-text-sm)] text-destructive"
+          data-testid="expiration-settings-error"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
       {okMessage ? (
         <p
           className="m-0 rounded-[var(--exits-radius-md)] bg-muted px-3 py-2 text-[length:var(--exits-text-sm)]"
@@ -247,8 +279,13 @@ export function ExpirationSettingsPage() {
 
       {needsRepair ? (
         <Card
-          className="flex flex-col gap-3 border-border p-3"
+          ref={repairCardRef}
+          className={cn(
+            "flex flex-col gap-3 p-3",
+            highlightAssign && expirationSettingsHighlightClass,
+          )}
           data-testid="expiration-settings-repair-banner"
+          data-highlighted={highlightAssign ? "true" : undefined}
         >
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
             {t("inventory.expirationSetupRequired")}
@@ -256,14 +293,16 @@ export function ExpirationSettingsPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.expirationSetupRequiredDetail")}
           </p>
-          <Button
-            type="button"
-            className="min-h-11 w-fit"
-            onClick={onRepairClick}
-            data-testid="expiration-settings-repair"
-          >
-            {t("inventory.assignExpirationDates")}
-          </Button>
+          <AssignExpirationLotsForm
+            workspace={workspace}
+            productId={productId}
+            productName={account.name}
+            onHandQuantity={account.onHandQuantity}
+            unitOfMeasure={account.unitOfMeasure}
+            expirationWarningDays={resolvedWarningDays}
+            intent="assign"
+            onSuccess={onLotsAssigned}
+          />
         </Card>
       ) : null}
 
@@ -272,18 +311,39 @@ export function ExpirationSettingsPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.expirationSettingsEnableHint")}
           </p>
-          <Button
-            type="button"
-            className="min-h-11 w-fit"
-            disabled={enableMutation.isPending}
-            onClick={onEnableClick}
-            data-testid="expiration-settings-enable"
-          >
-            {t("inventory.enableExpirationTracking")}
-          </Button>
+          {onHand > 0 ? (
+            <AssignExpirationLotsForm
+              workspace={workspace}
+              productId={productId}
+              productName={account.name}
+              onHandQuantity={account.onHandQuantity}
+              unitOfMeasure={account.unitOfMeasure}
+              expirationWarningDays={resolvedWarningDays}
+              intent="enable"
+              onSuccess={onExpirationEnabled}
+            />
+          ) : (
+            <Button
+              type="button"
+              className="min-h-11 w-fit"
+              disabled={enableMutation.isPending}
+              onClick={() => enableMutation.mutate()}
+              data-testid="expiration-settings-enable"
+            >
+              {t("inventory.enableExpirationTracking")}
+            </Button>
+          )}
         </Card>
       ) : (
-        <Card className="flex flex-col gap-3 p-3">
+        <Card
+          ref={warningCardRef}
+          className={cn(
+            "flex flex-col gap-3 p-3",
+            highlightWarning && expirationSettingsHighlightClass,
+          )}
+          data-testid="expiration-settings-warning-card"
+          data-highlighted={highlightWarning ? "true" : undefined}
+        >
           <Input
             label={t("catalog.expirationWarningDays")}
             name="expirationWarningDays"
@@ -305,7 +365,7 @@ export function ExpirationSettingsPage() {
           <div className="flex flex-col gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               className="min-h-11 w-fit"
               disabled={disableMutation.isPending || !disableAllowed}
               onClick={() => disableMutation.mutate()}
@@ -324,34 +384,12 @@ export function ExpirationSettingsPage() {
 
       <Link
         to={`/inventory/${productId}`}
-        className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
+        className="inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold underline underline-offset-2"
         data-testid="expiration-settings-view-lots"
       >
+        <Package className="size-4 shrink-0" aria-hidden />
         {t("inventory.viewStockLots")}
       </Link>
-
-      {workspace && productId ? (
-        <EnableExpirationTrackingDialog
-          open={enableDialogOpen}
-          workspace={workspace}
-          productId={productId}
-          productName={account.name}
-          onHandQuantity={account.onHandQuantity}
-          unitOfMeasure={account.unitOfMeasure}
-          expirationWarningDays={
-            !Number.isNaN(Number(displayWarningDays)) && Number(displayWarningDays) > 0
-              ? Number(displayWarningDays)
-              : (account.expirationWarningDays ?? 7)
-          }
-          onClose={() => setEnableDialogOpen(false)}
-          onSuccess={async () => {
-            setEnableDialogOpen(false);
-            setError(null);
-            setOkMessage(t("inventory.expirationTrackingEnabled"));
-            await invalidateInventory();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

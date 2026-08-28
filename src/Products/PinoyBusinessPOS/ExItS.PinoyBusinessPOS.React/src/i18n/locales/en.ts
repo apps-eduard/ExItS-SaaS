@@ -2494,7 +2494,10 @@ export const en = {
   "inventory.expirationSetupRequired": "Expiration setup required",
   "inventory.expirationSetupRequiredDetail":
     "This product tracks expiration and has stock on hand, but no stock lots are assigned yet. Assign expiry dates to match the current on-hand quantity.",
+  "inventory.expirationPendingSummary":
+    "{qty} {uom} on hand need expiry dates before Good / Near expiry / Expired totals can be shown.",
   "inventory.assignExpirationDates": "Assign expiration dates",
+  "inventory.expirationLotsAssigned": "Expiration dates assigned.",
   "inventory.viewStockLots": "View stock lots",
   "inventory.saveNearExpiryWarning": "Save near-expiry warning",
   "inventory.expirationWarningSaved": "Near-expiry warning saved.",
@@ -2508,7 +2511,16 @@ export const en = {
   "inventory.enableExpirationAddRow": "Add another expiry/batch",
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Remaining: {remaining}",
-  "inventory.enableExpirationSubmit": "Enable tracking",
+  "inventory.enableExpirationOverAllocated":
+    "Allocated {allocated} exceeds on-hand ({onHand}). Reduce lot quantities to match.",
+  "inventory.enableExpirationQuantityMax": "Max {max} for this row",
+  "inventory.enableExpirationSubmitHint":
+    "Enter expiry dates and allocate exactly {onHand} {uom} to save.",
+  "inventory.enableExpirationExpiryRequiredHint":
+    "Quantity is fully allocated. Enter an expiry date for each lot to save.",
+  "inventory.enableExpirationAddDisabledHint":
+    "All on-hand stock is already allocated. Reduce a lot quantity first to add another expiry/batch.",
+  "inventory.enableExpirationSubmit": "Assign expiration dates",
   "inventory.enableExpirationCancel": "Cancel",
   "inventory.enableExpirationPastWarning": "This expiry date is in the past.",
   "inventory.enableExpirationRemoveRow": "Remove",

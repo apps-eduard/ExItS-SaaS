@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -11,15 +12,18 @@ public sealed class InventoryLotQueryService
 {
     private readonly IInventoryLotRepository _lots;
     private readonly ICatalogProductRepository _products;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public InventoryLotQueryService(
         IInventoryLotRepository lots,
         ICatalogProductRepository products,
+        IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _lots = lots;
         _products = products;
+        _unitOfWork = unitOfWork;
         _clock = clock;
     }
 
@@ -44,6 +48,14 @@ public sealed class InventoryLotQueryService
         // Match OnHandQuery: when branch is bound, only that branch's lots (exact BranchId match;
         // org-level null-branch lots are not included — same as inventory on-hand semantics).
         PosBranchId? branch = branchId is { } id && id != Guid.Empty ? PosBranchId.From(id) : null;
+        if (branch is not null)
+        {
+            await _lots
+                .AdoptOrgLevelLotsForBranchAsync(orgId, catalogProductId, branch, cancellationToken)
+                .ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         var (items, total) = await _lots
             .ListPagedAsync(orgId, catalogProductId, branch, includeDepleted, skip, take, cancellationToken)
             .ConfigureAwait(false);

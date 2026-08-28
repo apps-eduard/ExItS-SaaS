@@ -18,6 +18,7 @@ public sealed class EnableExpirationTrackingUseCaseTests
 {
     private static readonly Guid OrgId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid BranchId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static readonly DateTimeOffset Utc = new(2026, 8, 28, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateOnly ExpiryA = new(2026, 9, 15);
     private static readonly DateOnly ExpiryB = new(2026, 10, 1);
@@ -346,6 +347,51 @@ public sealed class EnableExpirationTrackingUseCaseTests
             fx.Lots.Movements,
             m => m.MovementType is StockMovementType.OpeningStock or StockMovementType.ManualIncrease);
         Assert.Equal(15m, fx.Inventory.GetOnHand(fx.ProductId));
+    }
+
+    [Fact]
+    public async Task Branch_scoped_enable_adopts_org_level_lots_for_operational_branch()
+    {
+        var fx = Seed(onHand: 10m, tracksExpiration: true);
+        fx.Lots.Items.Add(InventoryLot.Create(
+            PosOrganizationId.From(OrgId),
+            CatalogProductId.From(fx.ProductId),
+            ExpiryA,
+            10m,
+            Utc,
+            branchId: null,
+            lotNumber: "LEGACY"));
+
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            null,
+            null,
+            branchId: BranchId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(fx.Lots.Items);
+        Assert.Equal(PosBranchId.From(BranchId), fx.Lots.Items[0].BranchId);
+        Assert.Equal(10m, fx.Lots.Items[0].QuantityOnHand);
+    }
+
+    [Fact]
+    public async Task Branch_scoped_allocate_creates_lots_on_branch()
+    {
+        var fx = Seed(onHand: 10m, tracksExpiration: false);
+        var result = await fx.Enable.ExecuteAsync(
+            OrgId,
+            fx.ProductId,
+            Actor,
+            expirationWarningDays: 7,
+            [new ExistingStockLotInput(10m, ExpiryA, "LOT-1")],
+            expectedOnHandQuantity: 10m,
+            branchId: BranchId);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(fx.Lots.Items);
+        Assert.Equal(PosBranchId.From(BranchId), fx.Lots.Items[0].BranchId);
     }
 
     private static Fixture Seed(decimal onHand, bool tracksExpiration)
@@ -750,6 +796,49 @@ public sealed class EnableExpirationTrackingUseCaseTests
             DateOnly today,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public Task AdoptOrgLevelLotsForBranchAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId branchId,
+            CancellationToken cancellationToken = default)
+        {
+            var hasBranchLots = Items.Any(l =>
+                l.OrganizationId == organizationId
+                && l.ProductId == productId
+                && l.BranchId == branchId
+                && l.QuantityOnHand > 0m);
+            if (hasBranchLots)
+            {
+                return Task.CompletedTask;
+            }
+
+            for (var i = 0; i < Items.Count; i++)
+            {
+                var lot = Items[i];
+                if (lot.OrganizationId != organizationId
+                    || lot.ProductId != productId
+                    || lot.BranchId is not null
+                    || lot.QuantityOnHand <= 0m)
+                {
+                    continue;
+                }
+
+                Items[i] = InventoryLot.Rehydrate(
+                    lot.Id,
+                    lot.OrganizationId,
+                    lot.ProductId,
+                    branchId,
+                    lot.LotNumber,
+                    lot.NormalizedLotNumber,
+                    lot.ExpirationDate,
+                    lot.QuantityOnHand,
+                    lot.CreatedAtUtc,
+                    lot.UpdatedAtUtc);
+            }
+
+            return Task.CompletedTask;
+        }
 
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
         {

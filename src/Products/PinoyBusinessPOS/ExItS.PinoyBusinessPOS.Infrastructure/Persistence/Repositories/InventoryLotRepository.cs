@@ -217,6 +217,40 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         return query;
     }
 
+    public async Task AdoptOrgLevelLotsForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var org = organizationId.Value;
+        var product = productId.Value;
+        var branch = branchId.Value;
+
+        var hasBranchLots = await _db.InventoryLots.AnyAsync(
+            l => l.OrganizationId == org
+                && l.ProductId == product
+                && l.BranchId == branch
+                && l.QuantityOnHand > 0m,
+            cancellationToken).ConfigureAwait(false);
+        if (hasBranchLots)
+        {
+            return;
+        }
+
+        var orphans = await _db.InventoryLots
+            .Where(l => l.OrganizationId == org
+                && l.ProductId == product
+                && l.BranchId == null
+                && l.QuantityOnHand > 0m)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var lot in orphans)
+        {
+            lot.BranchId = branch;
+        }
+    }
+
     private IQueryable<InventoryLotRecord> ExpiringQuery(
         PosOrganizationId organizationId,
         PosBranchId? branchId,

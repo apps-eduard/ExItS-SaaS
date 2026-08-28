@@ -1065,7 +1065,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.expirationSetupRequired": "Kinahanglan ang expiration setup",
   "inventory.expirationSetupRequiredDetail":
     "Naka-track ang expiration sini nga product kag may stock on hand, pero wala pa sing assigned nga stock lots. Mag-assign sang expiry dates para magtugma sa subong nga on-hand quantity.",
+  "inventory.expirationPendingSummary":
+    "{qty} {uom} on hand kinahanglan sang expiry dates antes makita ang Good / Near expiry / Expired.",
   "inventory.assignExpirationDates": "Mag-assign sang expiration dates",
+  "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
   "inventory.viewStockLots": "Tan-awa ang stock lots",
   "inventory.saveNearExpiryWarning": "I-save ang near-expiry warning",
   "inventory.expirationWarningSaved": "Na-save ang near-expiry warning.",
@@ -1079,7 +1082,16 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.enableExpirationAddRow": "Magdugang sang isa pa ka expiry/batch",
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
   "inventory.enableExpirationRemaining": "Nabilin: {remaining}",
-  "inventory.enableExpirationSubmit": "I-enable ang tracking",
+  "inventory.enableExpirationOverAllocated":
+    "Ang allocated nga {allocated} sobra sa on-hand ({onHand}). Bawasan ang lot quantities.",
+  "inventory.enableExpirationQuantityMax": "Max {max} para sa sini nga row",
+  "inventory.enableExpirationSubmitHint":
+    "Magbutang sang expiry dates kag i-allocate ang eksakto nga {onHand} {uom} para ma-save.",
+  "inventory.enableExpirationExpiryRequiredHint":
+    "Kumpleto na ang quantity. Magbutang sang expiry date sa tagsa ka lot para ma-save.",
+  "inventory.enableExpirationAddDisabledHint":
+    "Na-allocate na ang tanan nga on-hand stock. Bawasan anay ang quantity sang isa ka lot para makadugang sang isa pa ka expiry/batch.",
+  "inventory.enableExpirationSubmit": "Mag-assign sang expiration dates",
   "inventory.enableExpirationCancel": "Cancel",
   "inventory.enableExpirationPastWarning": "Nagligad na ini nga expiry date.",
   "inventory.enableExpirationRemoveRow": "Kuhaon",

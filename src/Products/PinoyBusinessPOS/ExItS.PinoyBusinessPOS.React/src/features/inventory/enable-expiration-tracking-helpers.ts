@@ -47,6 +47,53 @@ export function remainingToAllocate(onHand: number, allocated: number): number {
   return onHand - allocated;
 }
 
+export function isOverAllocated(allocated: number, onHand: number): boolean {
+  return allocated - onHand > QUANTITY_EPSILON;
+}
+
+export function overAllocatedAmount(allocated: number, onHand: number): number {
+  return Math.max(0, allocated - onHand);
+}
+
+export function maxQuantityForRow(
+  onHand: number,
+  drafts: ExpirationLotDraft[],
+  rowId: string,
+): number {
+  const rows = parseExpirationLotRows(drafts);
+  let otherAllocated = 0;
+  for (let index = 0; index < drafts.length; index += 1) {
+    if (drafts[index].id === rowId) {
+      continue;
+    }
+    const quantity = rows[index]?.quantity;
+    if (Number.isFinite(quantity) && quantity > 0) {
+      otherAllocated += quantity;
+    }
+  }
+  return Math.max(0, onHand - otherAllocated);
+}
+
+export function clampLotDraftQuantity(
+  onHand: number,
+  drafts: ExpirationLotDraft[],
+  rowId: string,
+  raw: string,
+): string {
+  const parsed = parseLotDraftQuantity(raw);
+  if (parsed === null) {
+    return raw;
+  }
+  const max = maxQuantityForRow(onHand, drafts, rowId);
+  if (parsed <= max + QUANTITY_EPSILON) {
+    return raw;
+  }
+  if (max <= 0) {
+    return "";
+  }
+  return String(max);
+}
+
 export function quantitiesMatchOnHand(allocated: number, onHand: number): boolean {
   return Math.abs(allocated - onHand) < QUANTITY_EPSILON;
 }

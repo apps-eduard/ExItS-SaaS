@@ -46,6 +46,7 @@ public sealed class EnableExpirationTracking
         int? expirationWarningDays,
         IReadOnlyList<ExistingStockLotInput>? existingStockLots,
         decimal? expectedOnHandQuantity = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -57,6 +58,7 @@ public sealed class EnableExpirationTracking
 
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
+        var branch = ResolveBranch(branchId);
         var lines = existingStockLots ?? [];
 
         try
@@ -80,6 +82,13 @@ public sealed class EnableExpirationTracking
                             .ConfigureAwait(false);
                         var onHand = ResolveAuthoritativeOnHand(account);
 
+                        if (branch is not null)
+                        {
+                            await _lots
+                                .AdoptOrgLevelLotsForBranchAsync(orgId, catalogProductId, branch, ct)
+                                .ConfigureAwait(false);
+                        }
+
                         if (product.TracksExpiration)
                         {
                             return await BuildAlreadyEnabledAsync(
@@ -91,6 +100,7 @@ public sealed class EnableExpirationTracking
                                     expirationWarningDays,
                                     lines,
                                     expectedOnHandQuantity,
+                                    branch,
                                     ct)
                                 .ConfigureAwait(false);
                         }
@@ -117,7 +127,7 @@ public sealed class EnableExpirationTracking
                             await _products.UpdateAsync(product, ct).ConfigureAwait(false);
                             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                                await MapResponseAsync(orgId, product, account, ct).ConfigureAwait(false));
+                                await MapResponseAsync(orgId, product, account, branch, ct).ConfigureAwait(false));
                         }
 
                         // OnHand > 0 requires tracked inventory account and exact lot allocation.
@@ -162,7 +172,7 @@ public sealed class EnableExpirationTracking
                                 lines,
                                 actorId,
                                 utcNow,
-                                branchId: null,
+                                branch,
                                 ct)
                             .ConfigureAwait(false);
 
@@ -171,7 +181,7 @@ public sealed class EnableExpirationTracking
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
                         return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                            await MapResponseAsync(orgId, product, account, ct).ConfigureAwait(false));
+                            await MapResponseAsync(orgId, product, account, branch, ct).ConfigureAwait(false));
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -201,10 +211,11 @@ public sealed class EnableExpirationTracking
         int? expirationWarningDays,
         IReadOnlyList<ExistingStockLotInput> lines,
         decimal? expectedOnHandQuantity,
+        PosBranchId? branch,
         CancellationToken cancellationToken)
     {
         var lots = await _lots
-            .ListOnHandAsync(orgId, product.Id, branchId: null, includeDepleted: false, cancellationToken)
+            .ListOnHandAsync(orgId, product.Id, branch, includeDepleted: false, cancellationToken)
             .ConfigureAwait(false);
         var lotTotal = InventoryLotFefo.TotalOnHand(lots);
 
@@ -219,7 +230,7 @@ public sealed class EnableExpirationTracking
             }
 
             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                await MapResponseAsync(orgId, product, account, cancellationToken).ConfigureAwait(false));
+                await MapResponseAsync(orgId, product, account, branch, cancellationToken).ConfigureAwait(false));
         }
 
         // Legacy: tracking ON, positive on-hand, no (or zero) lot coverage — allocate without flipping tracking.
@@ -273,7 +284,7 @@ public sealed class EnableExpirationTracking
                     lines,
                     actorId,
                     utcNow,
-                    branchId: null,
+                    branch,
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -285,7 +296,7 @@ public sealed class EnableExpirationTracking
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<EnableExpirationTrackingResponse>.Success(
-                await MapResponseAsync(orgId, product, account, cancellationToken).ConfigureAwait(false));
+                await MapResponseAsync(orgId, product, account, branch, cancellationToken).ConfigureAwait(false));
         }
 
         return ApplicationResult<EnableExpirationTrackingResponse>.Failure(
@@ -297,13 +308,14 @@ public sealed class EnableExpirationTracking
         PosOrganizationId orgId,
         CatalogProduct product,
         InventoryAccount? account,
+        PosBranchId? branch,
         CancellationToken cancellationToken)
     {
         var utcNow = _clock.UtcNow;
         var today = InventoryLot.BusinessDateOf(utcNow);
         var warning = product.EffectiveExpirationWarningDays;
         var lots = await _lots
-            .ListOnHandAsync(orgId, product.Id, branchId: null, includeDepleted: true, cancellationToken)
+            .ListOnHandAsync(orgId, product.Id, branch, includeDepleted: true, cancellationToken)
             .ConfigureAwait(false);
 
         return new EnableExpirationTrackingResponse(
@@ -318,4 +330,7 @@ public sealed class EnableExpirationTracking
 
     private static decimal ResolveAuthoritativeOnHand(InventoryAccount? account) =>
         account is { IsTracked: true } ? account.OnHandQuantity : 0m;
+
+    private static PosBranchId? ResolveBranch(Guid? branchId) =>
+        branchId is { } id && id != Guid.Empty ? PosBranchId.From(id) : null;
 }

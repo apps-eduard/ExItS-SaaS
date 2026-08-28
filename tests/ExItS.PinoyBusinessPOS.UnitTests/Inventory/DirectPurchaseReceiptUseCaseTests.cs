@@ -573,6 +573,13 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult((0, 0));
 
+        public Task AdoptOrgLevelLotsForBranchAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
         {
             Items.Add(lot);

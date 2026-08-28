@@ -23,4 +23,24 @@
     <InternalsVisibleTo Include="ExItS.PinoyBusinessPOS.IntegrationTests" />
   </ItemGroup>
 
+  <!--
+    Windows locks Application/Infrastructure DLLs in this project's output while the apphost
+    (ExItS.PinoyBusinessPOS.Api.exe) is running. Concurrent Debug builds (dotnet test, watch
+    sibling, agents) then fail with MSB3027 and leave inventory on a stale process.
+    Unlock before copy on Debug only; SkipLocalValidationApiUnlock=true disables.
+  -->
+  <Target Name="UnlockPosApiBuildLocks"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(Configuration)' == 'Debug' AND '$(OS)' == 'Windows_NT' AND '$(SkipLocalValidationApiUnlock)' != 'true'">
+    <PropertyGroup>
+      <_UnlockPosApiScript>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..\tools\Unlock-PosApiBuild.ps1'))</_UnlockPosApiScript>
+      <_UnlockPosApiRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..\..'))</_UnlockPosApiRepoRoot>
+    </PropertyGroup>
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(_UnlockPosApiScript)&quot; -RepoRoot &quot;$(_UnlockPosApiRepoRoot)&quot;"
+          IgnoreExitCode="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          Condition="Exists('$(_UnlockPosApiScript)')" />
+  </Target>
+
 </Project>
