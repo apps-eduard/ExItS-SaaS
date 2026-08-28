@@ -62,9 +62,18 @@ describe("inventory-detail-helpers", () => {
     expect(canDisableExpirationTracking(account({ onHandQuantity: 0 }))).toBe(true);
   });
 
-  it("allows add opening stock only when tracked without opening movement", () => {
-    expect(canAddOpeningStock(account({ isTracked: true, hasOpeningStock: false }))).toBe(true);
-    expect(canAddOpeningStock(account({ isTracked: true, hasOpeningStock: true }))).toBe(false);
-    expect(canAddOpeningStock(account({ isTracked: false, hasOpeningStock: false }))).toBe(false);
+  it("allows add opening stock only when tracked, zero on-hand, and no opening movement", () => {
+    expect(
+      canAddOpeningStock(account({ isTracked: true, hasOpeningStock: false, onHandQuantity: 0 })),
+    ).toBe(true);
+    expect(
+      canAddOpeningStock(account({ isTracked: true, hasOpeningStock: false, onHandQuantity: 5 })),
+    ).toBe(false);
+    expect(
+      canAddOpeningStock(account({ isTracked: true, hasOpeningStock: true, onHandQuantity: 0 })),
+    ).toBe(false);
+    expect(
+      canAddOpeningStock(account({ isTracked: false, hasOpeningStock: false, onHandQuantity: 0 })),
+    ).toBe(false);
   });
 });

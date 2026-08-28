@@ -19,7 +19,14 @@ export function canDisableExpirationTracking(account: PosInventoryAccountDto): b
   return account.isTracked && account.onHandQuantity <= 0;
 }
 
-/** Tracked product with no opening stock movement yet — eligible for Inventory add-opening-stock. */
+/**
+ * Tracked product with zero on-hand and no opening movement yet —
+ * eligible for Inventory add-opening-stock (parity with domain RecordOpeningStock).
+ */
 export function canAddOpeningStock(account: PosInventoryAccountDto): boolean {
-  return account.isTracked && account.hasOpeningStock !== true;
+  return (
+    account.isTracked &&
+    account.hasOpeningStock !== true &&
+    account.onHandQuantity <= 0
+  );
 }
