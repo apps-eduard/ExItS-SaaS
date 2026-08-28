@@ -75,6 +75,11 @@ export const customerOrderSchema = z.object({
   createdAtUtc: z.string(),
   submittedAtUtc: z.string().nullable().optional(),
   acceptedAtUtc: z.string().nullable().optional(),
+  acceptedBy: guidSchema.nullable().optional(),
+  rejectedAtUtc: z.string().nullable().optional(),
+  rejectedBy: guidSchema.nullable().optional(),
+  cancelledAtUtc: z.string().nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
   readyAtUtc: z.string().nullable().optional(),
   readyBy: guidSchema.nullable().optional(),
   outForDeliveryAtUtc: z.string().nullable().optional(),
@@ -84,6 +89,7 @@ export const customerOrderSchema = z.object({
   collectedAtUtc: z.string().nullable().optional(),
   collectedBy: guidSchema.nullable().optional(),
   completedAtUtc: z.string().nullable().optional(),
+  completedBy: guidSchema.nullable().optional(),
   updatedAtUtc: z.string(),
 });
 

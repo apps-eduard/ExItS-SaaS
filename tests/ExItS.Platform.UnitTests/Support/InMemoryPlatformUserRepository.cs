@@ -20,6 +20,20 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         return Task.FromResult(user);
     }
 
+    public Task<IReadOnlyList<PlatformUser>> ListByIdsAsync(
+        IReadOnlyCollection<PlatformUserId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var items = ids
+            .Select(id => id.Value)
+            .Distinct()
+            .Select(id => _byId.TryGetValue(id, out var user) ? user : null)
+            .Where(u => u is not null)
+            .Cast<PlatformUser>()
+            .ToList();
+        return Task.FromResult<IReadOnlyList<PlatformUser>>(items);
+    }
+
     public Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default)
     {
         if (!PublicUserIdRules.TryNormalize(publicUserId, out var normalized))

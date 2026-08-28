@@ -5,6 +5,8 @@ import { getDirectPurchaseReceipt } from "@/api/pos/pos-direct-purchase-receipts
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -28,6 +30,8 @@ export function DirectPurchaseDetailPage() {
     enabled: Boolean(workspace) && Boolean(receiptId) && online,
     queryFn: ({ signal }) => getDirectPurchaseReceipt(workspace!, receiptId!, signal),
   });
+
+  const actors = useActorDirectory(workspace?.organizationId, [query.data?.createdByUserId]);
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -85,6 +89,14 @@ export function DirectPurchaseDetailPage() {
           <dd className="m-0">{receipt.totalCost}</dd>
         </div>
       </dl>
+      <ActorAttribution
+        labelKey="common.recordedBy"
+        actorId={receipt.createdByUserId}
+        occurredAtUtc={receipt.createdAtUtc}
+        resolved={actors.resolve(receipt.createdByUserId)}
+        isLoading={actors.isResolving}
+        testId="direct-purchase-recorded-by"
+      />
       <section>
         <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium">
           {t("purchasing.lines")}

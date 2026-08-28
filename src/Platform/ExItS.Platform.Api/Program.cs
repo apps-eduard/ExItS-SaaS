@@ -389,6 +389,7 @@ builder.Services.AddScoped<SkipRecoveryEmailPrompt>();
 builder.Services.AddScoped<ClearRecoveryEmail>();
 
 builder.Services.AddScoped<MembershipQueryService>();
+builder.Services.AddScoped<ResolveOrganizationActorDisplayNames>();
 builder.Services.AddScoped<AddOrganizationMembership>();
 builder.Services.AddScoped<ChangeOrganizationRole>();
 builder.Services.AddScoped<SuspendOrganizationMembership>();

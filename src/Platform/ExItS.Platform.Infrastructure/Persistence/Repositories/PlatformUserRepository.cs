@@ -22,6 +22,23 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<PlatformUser>> ListByIdsAsync(
+        IReadOnlyCollection<PlatformUserId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return Array.Empty<PlatformUser>();
+        }
+
+        var values = ids.Select(id => id.Value).Distinct().ToList();
+        var records = await _db.PlatformUsers.AsNoTracking()
+            .Where(u => values.Contains(u.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default)
     {
         var normalized = PublicUserIdRules.Normalize(publicUserId);

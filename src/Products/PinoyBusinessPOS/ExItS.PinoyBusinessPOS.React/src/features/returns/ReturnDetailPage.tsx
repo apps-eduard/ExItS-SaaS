@@ -12,6 +12,8 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -34,6 +36,8 @@ export function ReturnDetailPage() {
     enabled: Boolean(workspace && returnId),
     queryFn: ({ signal }) => getSaleReturn(workspace!, returnId!, signal),
   });
+
+  const actors = useActorDirectory(workspace?.organizationId, [detailQuery.data?.createdBy]);
 
   if (!returnId) {
     return (
@@ -115,6 +119,17 @@ export function ReturnDetailPage() {
             </dd>
           </div>
         </dl>
+
+        <div className="mt-3 border-t border-border pt-3">
+          <ActorAttribution
+            labelKey="common.processedBy"
+            actorId={detail.createdBy}
+            occurredAtUtc={detail.createdAtUtc}
+            resolved={actors.resolve(detail.createdBy)}
+            isLoading={actors.isResolving}
+            testId="return-processed-by"
+          />
+        </div>
 
         {isCashRefundMethod(detail.refundMethod) ? (
           <p

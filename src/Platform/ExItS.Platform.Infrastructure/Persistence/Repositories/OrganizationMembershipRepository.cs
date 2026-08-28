@@ -96,6 +96,25 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
         return (records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<OrganizationMembership>> ListByOrganizationAndUserIdsAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<PlatformUserId> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (userIds.Count == 0)
+        {
+            return Array.Empty<OrganizationMembership>();
+        }
+
+        var values = userIds.Select(id => id.Value).Distinct().ToList();
+        var records = await _db.OrganizationMemberships.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value && values.Contains(m.UserId))
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList();
+    }
+
     public async Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByUserAsync(
         PlatformUserId userId,
         MembershipStatus? status,

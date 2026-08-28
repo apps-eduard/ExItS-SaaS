@@ -8,6 +8,11 @@ public interface IPlatformUserRepository
 {
     Task<PlatformUser?> GetByIdAsync(PlatformUserId id, CancellationToken cancellationToken = default);
 
+    /// <summary>Batch load by id. Missing ids are omitted from the result.</summary>
+    Task<IReadOnlyList<PlatformUser>> ListByIdsAsync(
+        IReadOnlyCollection<PlatformUserId> ids,
+        CancellationToken cancellationToken = default);
+
     Task<PlatformUser?> GetByPublicUserIdAsync(string publicUserId, CancellationToken cancellationToken = default);
 
     Task<PlatformUser?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default);

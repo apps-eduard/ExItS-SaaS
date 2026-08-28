@@ -74,6 +74,19 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
             (ordered.Skip(skip).Take(take).ToList(), ordered.Count));
     }
 
+    public Task<IReadOnlyList<OrganizationMembership>> ListByOrganizationAndUserIdsAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<PlatformUserId> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        var idSet = userIds.Select(id => id.Value).ToHashSet();
+        var items = _byId.Values
+            .Where(m => m.OrganizationId == organizationId && idSet.Contains(m.UserId.Value))
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<OrganizationMembership>>(items);
+    }
+
     public Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByUserAsync(
         PlatformUserId userId,
         MembershipStatus? status,

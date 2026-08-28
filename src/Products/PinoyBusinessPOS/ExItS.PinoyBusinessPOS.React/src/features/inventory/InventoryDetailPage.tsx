@@ -33,6 +33,8 @@ import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
 } from "@/features/inventory/inventory-lot-status";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -124,6 +126,12 @@ export function InventoryDetailPage() {
     () => sortLotsByExpiry(lotsQuery.data?.pages.flatMap((page) => page.items) ?? []),
     [lotsQuery.data],
   );
+
+  const movementActorIds = useMemo(
+    () => (movementsQuery.data?.items ?? []).map((movement) => movement.recordedBy),
+    [movementsQuery.data],
+  );
+  const actors = useActorDirectory(workspace?.organizationId, movementActorIds);
 
   const selectedLot = lots.find((lot) => lot.lotId === selectedLotId) ?? null;
 
@@ -872,6 +880,17 @@ export function InventoryDetailPage() {
                 <p className="mt-1 mb-0 truncate text-[length:var(--exits-text-sm)] text-muted">
                   {movement.reason} · {new Date(movement.recordedAtUtc).toLocaleString()}
                 </p>
+                <div className="mt-2">
+                  <ActorAttribution
+                    labelKey="common.recordedBy"
+                    actorId={movement.recordedBy}
+                    occurredAtUtc={movement.recordedAtUtc}
+                    resolved={actors.resolve(movement.recordedBy)}
+                    isLoading={actors.isResolving}
+                    hideTimestamp
+                    testId={`inventory-movement-actor-${movement.movementId}`}
+                  />
+                </div>
                 {movement.expirationDate ? (
                   <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
                     {t("inventory.movementExpiry")}: {movement.expirationDate}

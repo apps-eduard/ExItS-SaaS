@@ -65,6 +65,11 @@ public sealed record CustomerOrderDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? SubmittedAtUtc,
     DateTimeOffset? AcceptedAtUtc,
+    Guid? AcceptedBy,
+    DateTimeOffset? RejectedAtUtc,
+    Guid? RejectedBy,
+    DateTimeOffset? CancelledAtUtc,
+    Guid? CancelledBy,
     DateTimeOffset? ReadyAtUtc,
     Guid? ReadyBy,
     DateTimeOffset? OutForDeliveryAtUtc,
@@ -74,6 +79,7 @@ public sealed record CustomerOrderDto(
     DateTimeOffset? CollectedAtUtc,
     Guid? CollectedBy,
     DateTimeOffset? CompletedAtUtc,
+    Guid? CompletedBy,
     DateTimeOffset UpdatedAtUtc);
 
 public sealed record CustomerOrderListItemDto(
@@ -211,6 +217,11 @@ public static class CustomerOrderMaps
             order.CreatedAtUtc,
             order.SubmittedAtUtc,
             order.AcceptedAtUtc,
+            order.AcceptedBy,
+            order.RejectedAtUtc,
+            order.RejectedBy,
+            order.CancelledAtUtc,
+            order.CancelledBy,
             order.ReadyAtUtc,
             order.ReadyBy,
             order.OutForDeliveryAtUtc,
@@ -220,6 +231,7 @@ public static class CustomerOrderMaps
             order.CollectedAtUtc,
             order.CollectedBy,
             order.CompletedAtUtc,
+            order.CompletedBy,
             order.UpdatedAtUtc);
 
     public static CustomerOrderListItemDto MapListItem(CustomerOrder order) =>

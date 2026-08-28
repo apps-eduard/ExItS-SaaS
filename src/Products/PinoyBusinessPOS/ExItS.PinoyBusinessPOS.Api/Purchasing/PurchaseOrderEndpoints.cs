@@ -224,6 +224,32 @@ internal static class PurchaseOrderEndpoints
 
     private static void MapGoodsReceipts(RouteGroupBuilder group)
     {
+        group.MapGet("/", async (
+            HttpRequest request,
+            Guid? purchaseOrderId,
+            GoodsReceiptQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewPurchasing, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (purchaseOrderId is null || purchaseOrderId == Guid.Empty)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "purchaseOrderId is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var receipts = await queries
+                .ListForPurchaseOrderAsync(organizationId, purchaseOrderId.Value, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(receipts);
+        });
+
         group.MapGet("/{goodsReceiptId:guid}", async (
             HttpRequest request,
             Guid goodsReceiptId,

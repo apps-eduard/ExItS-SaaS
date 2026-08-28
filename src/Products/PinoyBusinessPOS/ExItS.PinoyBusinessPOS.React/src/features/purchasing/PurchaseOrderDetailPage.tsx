@@ -8,6 +8,7 @@ import {
   cancelPurchaseOrder,
   getPurchaseOrder,
   isPurchaseOrderReceivable,
+  listGoodsReceiptsForPurchaseOrder,
   submitPurchaseOrder,
 } from "@/api/pos/pos-purchase-orders-client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
@@ -46,7 +49,19 @@ export function PurchaseOrderDetailPage() {
     queryFn: ({ signal }) => getPurchaseOrder(workspace!, purchaseOrderId!, signal),
   });
 
+  const receiptsQuery = useQuery({
+    queryKey: ["purchase-order-receipts", workspace?.organizationId, purchaseOrderId],
+    enabled: Boolean(workspace) && Boolean(purchaseOrderId) && online,
+    queryFn: ({ signal }) =>
+      listGoodsReceiptsForPurchaseOrder(workspace!, purchaseOrderId!, signal),
+  });
+
   const po = query.data;
+  const receipts = receiptsQuery.data ?? [];
+  const actors = useActorDirectory(workspace?.organizationId, [
+    po?.orderedBy,
+    ...receipts.map((receipt) => receipt.receivedBy),
+  ]);
   const displayStatus = po?.displayStatus || po?.status || "";
   const needsApproval = displayStatus === "ChangesNeedApproval";
   const canSubmit = allowManage && online && po?.status === "Draft";
@@ -191,6 +206,17 @@ export function PurchaseOrderDetailPage() {
         </div>
       </dl>
 
+      {po.orderedAtUtc || po.orderedBy ? (
+        <ActorAttribution
+          labelKey="common.orderedBy"
+          actorId={po.orderedBy}
+          occurredAtUtc={po.orderedAtUtc}
+          resolved={actors.resolve(po.orderedBy)}
+          isLoading={actors.isResolving}
+          testId="po-ordered-by"
+        />
+      ) : null}
+
       <section aria-labelledby="po-lines">
         <h2 id="po-lines" className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium">
           {t("purchasing.lines")}
@@ -205,6 +231,54 @@ export function PurchaseOrderDetailPage() {
               </p>
             </li>
           ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="po-receipt-history" data-testid="po-receipt-history">
+        <h2
+          id="po-receipt-history"
+          className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
+        >
+          {t("purchasing.receiptHistory")}
+        </h2>
+        {receiptsQuery.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
+        {!receiptsQuery.isLoading && receipts.length === 0 ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("purchasing.receiptHistoryEmpty")}
+          </p>
+        ) : null}
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {receipts.map((receipt) => {
+            const lineSummary = receipt.lines
+              .slice(0, 3)
+              .map(
+                (line) =>
+                  `${line.nameSnapshot} × ${line.quantityReceived} ${line.uomSnapshot}`,
+              )
+              .join(" · ");
+            const extra = receipt.lines.length > 3 ? ` · +${receipt.lines.length - 3}` : "";
+            return (
+              <li key={receipt.goodsReceiptId}>
+                <Card className="flex flex-col gap-2 p-3" data-testid={`po-receipt-${receipt.grnNumber}`}>
+                  <p className="m-0 font-medium">{receipt.grnNumber}</p>
+                  <ActorAttribution
+                    labelKey="common.receivedBy"
+                    actorId={receipt.receivedBy}
+                    occurredAtUtc={receipt.receivedAtUtc}
+                    resolved={actors.resolve(receipt.receivedBy)}
+                    isLoading={actors.isResolving}
+                    testId={`po-receipt-received-by-${receipt.goodsReceiptId}`}
+                  />
+                  {lineSummary ? (
+                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {lineSummary}
+                      {extra}
+                    </p>
+                  ) : null}
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

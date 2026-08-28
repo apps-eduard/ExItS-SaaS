@@ -9,6 +9,7 @@ import {
   assertNotStockTouchingUrl,
   cancelPurchaseOrder,
   createPurchaseOrder,
+  listGoodsReceiptsForPurchaseOrder,
   NON_STOCK_PURCHASE_ORDER_METHODS,
   receivePurchaseOrder,
   STOCK_TOUCHING_PURCHASE_ORDER_METHODS,
@@ -207,6 +208,44 @@ describe("RMAP-17 purchasing clients", () => {
     expect(body.lines[0]?.receiveQty).toBe(4);
     expect(body.lines[0]?.expiryDate).toBe("2027-12-30");
     expect(body.lines[0]?.lotNumber).toBe("LOT-A123");
+  });
+
+  it("lists goods receipts for a purchase order", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse([
+        {
+          goodsReceiptId: grnId,
+          organizationId: workspace.organizationId,
+          purchaseOrderId: poId,
+          supplierId,
+          grnNumber: "GRN-1",
+          receivedDate: "2026-08-21",
+          receivedAtUtc: "2026-08-21T01:00:00Z",
+          receivedBy: "99999999-9999-4999-8999-999999999999",
+          lines: [
+            {
+              lineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              purchaseOrderLineId: lineId,
+              productId,
+              lineNumber: 1,
+              nameSnapshot: "Rice",
+              uomSnapshot: "kg",
+              quantityReceived: 4,
+              unitPurchaseCostSnapshot: 50,
+              lineTotalSnapshot: 200,
+            },
+          ],
+        },
+      ]),
+    );
+
+    const receipts = await listGoodsReceiptsForPurchaseOrder(workspace, poId);
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]?.grnNumber).toBe("GRN-1");
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain(
+      `purchaseOrderId=${poId}`,
+    );
+    expect(NON_STOCK_PURCHASE_ORDER_METHODS).toContain("listGoodsReceiptsForPurchaseOrder");
   });
 
   it("direct purchase create sends body idempotencyKey", async () => {

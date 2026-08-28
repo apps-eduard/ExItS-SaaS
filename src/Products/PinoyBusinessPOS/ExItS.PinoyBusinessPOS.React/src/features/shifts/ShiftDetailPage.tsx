@@ -34,6 +34,8 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
 import { ShiftCashHistoryPanel } from "@/features/shifts/ShiftCashHistoryPanel";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -91,6 +93,12 @@ export function ShiftDetailPage() {
     () => mapEnabledCashDenominations(denomsQuery.data),
     [denomsQuery.data],
   );
+
+  const shiftActors = useActorDirectory(workspaceScope?.organizationId, [
+    shiftQuery.data?.openedBy,
+    shiftQuery.data?.closedBy,
+    shiftQuery.data?.cancelledBy,
+  ]);
 
   if (!canView) {
     return (
@@ -216,6 +224,37 @@ export function ShiftDetailPage() {
         <StatusChip tone={open ? "success" : "info"}>
           {open ? t("shift.statusOpen") : shift.status}
         </StatusChip>
+      </div>
+
+      <div className="flex flex-col gap-3" data-testid="shift-actor-attribution">
+        <ActorAttribution
+          labelKey="common.openedBy"
+          actorId={shift.openedBy}
+          occurredAtUtc={shift.openedAtUtc}
+          resolved={shiftActors.resolve(shift.openedBy)}
+          isLoading={shiftActors.isResolving}
+          testId="shift-opened-by"
+        />
+        {shift.closedAtUtc || shift.closedBy ? (
+          <ActorAttribution
+            labelKey="common.closedBy"
+            actorId={shift.closedBy}
+            occurredAtUtc={shift.closedAtUtc}
+            resolved={shiftActors.resolve(shift.closedBy)}
+            isLoading={shiftActors.isResolving}
+            testId="shift-closed-by"
+          />
+        ) : null}
+        {shift.cancelledAtUtc || shift.cancelledBy ? (
+          <ActorAttribution
+            labelKey="common.cancelledBy"
+            actorId={shift.cancelledBy}
+            occurredAtUtc={shift.cancelledAtUtc}
+            resolved={shiftActors.resolve(shift.cancelledBy)}
+            isLoading={shiftActors.isResolving}
+            testId="shift-cancelled-by"
+          />
+        ) : null}
       </div>
 
       <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />

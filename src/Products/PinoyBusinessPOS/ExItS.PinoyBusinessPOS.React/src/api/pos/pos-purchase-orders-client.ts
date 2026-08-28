@@ -497,6 +497,20 @@ export async function getGoodsReceipt(
   return posGoodsReceiptDtoSchema.parse(raw);
 }
 
+export async function listGoodsReceiptsForPurchaseOrder(
+  workspace: PosWorkspaceScope,
+  purchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<PosGoodsReceiptDto[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(GOODS_RECEIPTS_PATH, { purchaseOrderId }),
+  });
+  return z.array(posGoodsReceiptDtoSchema).parse(raw);
+}
+
 /** Client methods that must never be treated as stock-increasing. */
 export const NON_STOCK_PURCHASE_ORDER_METHODS = [
   "listPurchaseOrders",
@@ -507,6 +521,7 @@ export const NON_STOCK_PURCHASE_ORDER_METHODS = [
   "cancelPurchaseOrder",
   "acceptConnectedPurchaseOrderChanges",
   "getGoodsReceipt",
+  "listGoodsReceiptsForPurchaseOrder",
 ] as const;
 
 export const STOCK_TOUCHING_PURCHASE_ORDER_METHODS = ["receivePurchaseOrder"] as const;

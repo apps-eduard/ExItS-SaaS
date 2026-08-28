@@ -52,6 +52,29 @@ internal static class MembershipEndpoints
             return Results.Ok(result);
         });
 
+        // Org-scoped operational actor names for detail/history UI.
+        // Any active org member may resolve — not ManageMemberships (cashiers view sales).
+        app.MapPost("/api/v1/platform/organizations/{organizationId:guid}/actor-display-names", async (
+            Guid organizationId,
+            ResolveOrganizationActorDisplayNamesRequest? body,
+            ResolveOrganizationActorDisplayNames useCase,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var request = body ?? new ResolveOrganizationActorDisplayNamesRequest(Array.Empty<Guid>());
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, request, ct).ConfigureAwait(false),
+                items => Results.Ok(new { items }));
+        });
+
         app.MapPost("/api/v1/platform/organizations/{organizationId:guid}/members", async (
             Guid organizationId,
             AddMemberRequest body,

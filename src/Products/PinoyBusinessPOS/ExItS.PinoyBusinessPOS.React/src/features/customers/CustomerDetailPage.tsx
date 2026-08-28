@@ -41,6 +41,8 @@ import {
   mapOrgLinkStatusToRelationship,
 } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
@@ -196,6 +198,12 @@ export function CustomerDetailPage() {
     queryFn: ({ signal }) =>
       listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
   });
+
+  const repaymentActorIds = (repaymentsQuery.data?.items ?? []).flatMap((payment) => [
+    payment.recordedBy,
+    payment.reversedBy,
+  ]);
+  const actors = useActorDirectory(workspace?.organizationId, repaymentActorIds);
 
   useEffect(() => {
     if (!offlineContext || !online) {
@@ -555,6 +563,33 @@ export function CustomerDetailPage() {
                   <span className="text-[length:var(--exits-text-xs)] text-muted">
                     {payment.status}
                   </span>
+                </div>
+                <div className="mt-2 flex flex-col gap-2">
+                  <ActorAttribution
+                    labelKey="common.recordedBy"
+                    actorId={payment.recordedBy}
+                    occurredAtUtc={payment.recordedAtUtc}
+                    resolved={actors.resolve(payment.recordedBy)}
+                    isLoading={actors.isResolving}
+                    testId={`customer-payment-recorded-by-${payment.repaymentId}`}
+                  />
+                  {payment.reversedAtUtc || payment.reversedBy ? (
+                    <>
+                      <ActorAttribution
+                        labelKey="common.reversedBy"
+                        actorId={payment.reversedBy}
+                        occurredAtUtc={payment.reversedAtUtc}
+                        resolved={actors.resolve(payment.reversedBy)}
+                        isLoading={actors.isResolving}
+                        testId={`customer-payment-reversed-by-${payment.repaymentId}`}
+                      />
+                      {payment.reversalReason ? (
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("common.reason")}: {payment.reversalReason}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
                 </div>
               </Card>
             </li>

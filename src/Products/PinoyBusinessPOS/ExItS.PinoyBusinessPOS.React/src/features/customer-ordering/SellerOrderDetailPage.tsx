@@ -27,6 +27,8 @@ import {
   displayOrderStatusKey,
   type SellerOrderAction,
 } from "@/features/customer-ordering/seller-order-actions";
+import { ActorName } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -42,6 +44,107 @@ const REJECT_REASONS = [
   "UnableToFulfill",
   "Other",
 ] as const;
+
+type OrderActivityEvent = {
+  key: string;
+  labelKey: MessageKey;
+  atUtc: string;
+  actorId?: string | null;
+};
+
+function buildOrderActivityEvents(order: {
+  createdAtUtc: string;
+  acceptedAtUtc?: string | null;
+  acceptedBy?: string | null;
+  rejectedAtUtc?: string | null;
+  rejectedBy?: string | null;
+  cancelledAtUtc?: string | null;
+  cancelledBy?: string | null;
+  readyAtUtc?: string | null;
+  readyBy?: string | null;
+  outForDeliveryAtUtc?: string | null;
+  outForDeliveryBy?: string | null;
+  deliveredAtUtc?: string | null;
+  deliveredBy?: string | null;
+  collectedAtUtc?: string | null;
+  collectedBy?: string | null;
+  completedAtUtc?: string | null;
+  completedBy?: string | null;
+}): OrderActivityEvent[] {
+  const candidates: Array<OrderActivityEvent | null> = [
+    {
+      key: "received",
+      labelKey: "orders.activityReceived",
+      atUtc: order.createdAtUtc,
+      actorId: null,
+    },
+    order.acceptedAtUtc
+      ? {
+          key: "accepted",
+          labelKey: "orders.activityAccepted",
+          atUtc: order.acceptedAtUtc,
+          actorId: order.acceptedBy,
+        }
+      : null,
+    order.rejectedAtUtc
+      ? {
+          key: "rejected",
+          labelKey: "orders.activityRejected",
+          atUtc: order.rejectedAtUtc,
+          actorId: order.rejectedBy,
+        }
+      : null,
+    order.cancelledAtUtc
+      ? {
+          key: "cancelled",
+          labelKey: "orders.activityCancelled",
+          atUtc: order.cancelledAtUtc,
+          actorId: order.cancelledBy,
+        }
+      : null,
+    order.readyAtUtc
+      ? {
+          key: "ready",
+          labelKey: "orders.activityReady",
+          atUtc: order.readyAtUtc,
+          actorId: order.readyBy,
+        }
+      : null,
+    order.outForDeliveryAtUtc
+      ? {
+          key: "out-for-delivery",
+          labelKey: "orders.activityOutForDelivery",
+          atUtc: order.outForDeliveryAtUtc,
+          actorId: order.outForDeliveryBy,
+        }
+      : null,
+    order.deliveredAtUtc
+      ? {
+          key: "delivered",
+          labelKey: "orders.activityDelivered",
+          atUtc: order.deliveredAtUtc,
+          actorId: order.deliveredBy,
+        }
+      : null,
+    order.collectedAtUtc
+      ? {
+          key: "collected",
+          labelKey: "orders.activityCollected",
+          atUtc: order.collectedAtUtc,
+          actorId: order.collectedBy,
+        }
+      : null,
+    order.completedAtUtc
+      ? {
+          key: "completed",
+          labelKey: "orders.activityCompleted",
+          atUtc: order.completedAtUtc,
+          actorId: order.completedBy,
+        }
+      : null,
+  ];
+  return candidates.filter((event): event is OrderActivityEvent => event != null);
+}
 
 export function SellerOrderDetailPage() {
   const { t } = useI18n();
@@ -67,6 +170,15 @@ export function SellerOrderDetailPage() {
     enabled: Boolean(workspace) && Boolean(orderId),
     queryFn: ({ signal }) => getSellerCustomerOrder(workspace!, orderId, signal),
   });
+
+  const activityEvents = useMemo(
+    () => (query.data ? buildOrderActivityEvents(query.data) : []),
+    [query.data],
+  );
+  const actors = useActorDirectory(
+    workspace?.organizationId,
+    activityEvents.map((event) => event.actorId),
+  );
 
   async function runAction(action: SellerOrderAction) {
     if (!workspace || !canManage || busy) return;
@@ -224,6 +336,37 @@ export function SellerOrderDetailPage() {
             <MoneyDisplay amount={order.total} />
           </strong>
         </div>
+      </section>
+
+      <section
+        className="catalog-form-section exits-animate-panel gap-2"
+        data-testid="seller-order-activity"
+      >
+        <h2 className="catalog-form-section__title">{t("orders.activity")}</h2>
+        <ol className="m-0 list-none space-y-2 p-0">
+          {activityEvents.map((event) => (
+            <li
+              key={event.key}
+              className="text-[length:var(--exits-text-sm)]"
+              data-testid={`seller-order-activity-${event.key}`}
+            >
+              <p className="m-0 font-medium">{t(event.labelKey)}</p>
+              <p className="mb-0 mt-0.5 text-muted">
+                {new Date(event.atUtc).toLocaleString()}
+                {event.actorId ? (
+                  <>
+                    {" · "}
+                    <ActorName
+                      actorId={event.actorId}
+                      resolved={actors.resolve(event.actorId)}
+                      isLoading={actors.isResolving}
+                    />
+                  </>
+                ) : null}
+              </p>
+            </li>
+          ))}
+        </ol>
       </section>
 
       {showReject ? (

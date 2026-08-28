@@ -16,6 +16,8 @@ import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { ActorAttribution } from "@/features/actors/ActorAttribution";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -52,6 +54,11 @@ export function TransactionSummaryPage() {
     enabled: Boolean(workspaceScope && saleId),
     queryFn: ({ signal }) => getSale(workspaceScope!, saleId!, signal),
   });
+
+  const saleActors = useActorDirectory(workspaceScope?.organizationId, [
+    saleQuery.data?.recordedBy,
+    saleQuery.data?.voidedBy,
+  ]);
 
   if (!saleId) {
     return (
@@ -224,6 +231,30 @@ export function TransactionSummaryPage() {
             </div>
           ) : null}
         </dl>
+
+        <div
+          className="mt-3 flex flex-col gap-3 border-t border-border pt-3"
+          data-testid="summary-actor-attribution"
+        >
+          <ActorAttribution
+            labelKey="common.soldBy"
+            actorId={sale.recordedBy}
+            occurredAtUtc={sale.recordedAtUtc}
+            resolved={saleActors.resolve(sale.recordedBy)}
+            isLoading={saleActors.isResolving}
+            testId="summary-sold-by"
+          />
+          {isVoided ? (
+            <ActorAttribution
+              labelKey="common.voidedBy"
+              actorId={sale.voidedBy}
+              occurredAtUtc={sale.voidedAtUtc}
+              resolved={saleActors.resolve(sale.voidedBy)}
+              isLoading={saleActors.isResolving}
+              testId="summary-voided-by"
+            />
+          ) : null}
+        </div>
 
         <ul className="mb-0 mt-4 list-none space-y-2 border-t border-border pt-3 p-0">
           {sale.lines.map((line) => {

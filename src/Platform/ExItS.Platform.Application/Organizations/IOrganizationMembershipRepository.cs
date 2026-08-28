@@ -29,6 +29,15 @@ public interface IOrganizationMembershipRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Memberships for the given users in one organization (any status, including Removed).
+    /// Used for operational actor display-name resolution — not a staff-management roster.
+    /// </summary>
+    Task<IReadOnlyList<OrganizationMembership>> ListByOrganizationAndUserIdsAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<PlatformUserId> userIds,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<OrganizationMembership> Items, int TotalCount)> ListByUserAsync(
         PlatformUserId userId,
         MembershipStatus? status,
