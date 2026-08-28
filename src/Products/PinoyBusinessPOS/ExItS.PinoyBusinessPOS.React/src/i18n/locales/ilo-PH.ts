@@ -649,6 +649,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.transactionStatusUnknown": "Saan a makumpirma ti status ti transaksyon. Saan mo nga isumite manen agingga a ma-verify ti status.",
   "customers.add": "Manginayon iti customer",
   "customers.address": "Address",
+  "customers.linkElig.checking": "Checking if this person can be linked…",
+  "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
+  "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+  "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+  "customers.linkElig.alreadyLinked": "This person is already in your customers.",
+  "customers.linkElig.pendingInvitation": "An invitation has already been sent to this person.",
+  "customers.linkElig.unavailable": "This ExItS account isn't available for linking.",
   "customers.alreadyInContacts":
     "Nainayonen ni {name} kadagiti contactsmo. Lukatam dayta a customer, saan a mangipatulod iti baro a link.",
   "customers.amountOwed": "Amount owed",

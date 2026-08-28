@@ -649,6 +649,13 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.transactionStatusUnknown": "Hindi makumpirma ang status ng transaksyon. Huwag isumite muli hanggang ma-verify ang status.",
   "customers.add": "Magdagdag ng customer",
   "customers.address": "Address",
+  "customers.linkElig.checking": "Checking if this person can be linked…",
+  "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
+  "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+  "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+  "customers.linkElig.alreadyLinked": "This person is already in your customers.",
+  "customers.linkElig.pendingInvitation": "An invitation has already been sent to this person.",
+  "customers.linkElig.unavailable": "This ExItS account isn't available for linking.",
   "customers.alreadyInContacts":
     "Nasa contacts na si {name}. Buksan ang customer na iyon, huwag magpadala ng bagong link.",
   "customers.amountOwed": "Halagang utang",

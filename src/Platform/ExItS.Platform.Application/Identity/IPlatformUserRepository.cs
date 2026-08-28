@@ -23,6 +23,14 @@ public interface IPlatformUserRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Active organization-scoped staff for the home org whose LinkedPersonalUserId matches the Personal identity.
+    /// </summary>
+    Task<PlatformUser?> FindActiveStaffByHomeOrgAndLinkedPersonalUserIdAsync(
+        PlatformOrganizationId homeOrganizationId,
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Users whose NormalizedContactEmail matches (staff identities). Contact email is not unique.
     /// </summary>
     Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(

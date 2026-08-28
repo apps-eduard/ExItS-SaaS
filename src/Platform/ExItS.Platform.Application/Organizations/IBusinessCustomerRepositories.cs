@@ -54,6 +54,11 @@ public interface ICustomerLinkRequestRepository
         BusinessCustomerId businessCustomerId,
         CancellationToken cancellationToken = default);
 
+    Task<CustomerLinkRequest?> FindPendingByOrganizationAndTargetUserAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId targetUserIdentityId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<CustomerLinkRequest> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         CustomerLinkRequestStatus? status,

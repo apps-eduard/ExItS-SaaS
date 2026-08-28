@@ -63,6 +63,22 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
     }
 
+    public async Task<PlatformUser?> FindActiveStaffByHomeOrgAndLinkedPersonalUserIdAsync(
+        PlatformOrganizationId homeOrganizationId,
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(AccountStatus.Active);
+        var record = await _db.PlatformUsers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                u => u.HomeOrganizationId == homeOrganizationId.Value
+                    && u.LinkedPersonalUserId == linkedPersonalUserId.Value
+                    && u.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
+    }
+
     public async Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
         string normalizedContactEmail,
         CancellationToken cancellationToken = default)

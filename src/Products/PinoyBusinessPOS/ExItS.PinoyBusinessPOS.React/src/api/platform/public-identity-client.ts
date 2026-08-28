@@ -50,6 +50,30 @@ export type ResolvedPublicUserDto = z.infer<typeof resolvedPublicUserSchema>;
 export type ResolvedPublicOrganizationDto = z.infer<typeof resolvedPublicOrganizationSchema>;
 export type BusinessCustomerLinkResultDto = z.infer<typeof businessCustomerLinkResultSchema>;
 
+export const customerLinkEligibilityStatuses = [
+  "Eligible",
+  "OwnerOfOrganization",
+  "OrganizationStaff",
+  "AlreadyLinked",
+  "PendingInvitation",
+  "BlockedOrUnavailable",
+  "InvalidTarget",
+] as const;
+
+export type CustomerLinkEligibilityStatus = (typeof customerLinkEligibilityStatuses)[number];
+
+export const customerLinkEligibilitySchema = z.object({
+  status: z.enum(customerLinkEligibilityStatuses),
+  message: z.string(),
+  publicUserId: z.string().nullable().optional().default(null),
+  displayName: z.string().nullable().optional().default(null),
+  userIdentityId: guidSchema.nullable().optional().default(null),
+  existingBusinessCustomerId: guidSchema.nullable().optional().default(null),
+  existingPendingRequestId: guidSchema.nullable().optional().default(null),
+});
+
+export type CustomerLinkEligibilityDto = z.infer<typeof customerLinkEligibilitySchema>;
+
 export async function getMyPublicIdentity(signal?: AbortSignal): Promise<PublicIdentityDto> {
   const raw = await platformRequest<unknown>({ path: "/api/v1/me/public-identity", signal });
   const r = (raw ?? {}) as Record<string, unknown>;
@@ -96,6 +120,37 @@ export async function resolvePublicUserId(
     maskedEmail: pick(r, "maskedEmail", "MaskedEmail") ?? null,
     status: pick(r, "status", "Status"),
     isSelf: Boolean(pick(r, "isSelf", "IsSelf")),
+  });
+}
+
+export async function evaluateCustomerLinkEligibility(
+  organizationId: string,
+  body: {
+    publicUserIdOrQrPayload: string;
+    businessCustomerId?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<CustomerLinkEligibilityDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: `/api/v1/organizations/${organizationId}/customers/link-eligibility`,
+    body: {
+      publicUserIdOrQrPayload: body.publicUserIdOrQrPayload,
+      businessCustomerId: body.businessCustomerId ?? null,
+    },
+    signal,
+  });
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return customerLinkEligibilitySchema.parse({
+    status: pick(r, "status", "Status"),
+    message: pick(r, "message", "Message") ?? "",
+    publicUserId: pick(r, "publicUserId", "PublicUserId") ?? null,
+    displayName: pick(r, "displayName", "DisplayName") ?? null,
+    userIdentityId: pick(r, "userIdentityId", "UserIdentityId") ?? null,
+    existingBusinessCustomerId:
+      pick(r, "existingBusinessCustomerId", "ExistingBusinessCustomerId") ?? null,
+    existingPendingRequestId:
+      pick(r, "existingPendingRequestId", "ExistingPendingRequestId") ?? null,
   });
 }
 

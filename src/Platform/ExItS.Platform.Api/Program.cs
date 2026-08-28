@@ -450,6 +450,7 @@ builder.Services.AddScoped<CustomerLinkRequestQueryService>();
 builder.Services.AddScoped<LinkedCustomerAppUserQueryService>();
 builder.Services.AddScoped<CustomerLinkRequestStatsQuery>();
 builder.Services.AddScoped<GetCustomerLinkStatusForBusinessCustomer>();
+builder.Services.AddScoped<EvaluateCustomerLinkEligibility>();
 builder.Services.AddScoped<CreateCustomerLinkRequest>();
 builder.Services.AddScoped<CreateBusinessCustomerWithPersonalLink>();
 builder.Services.AddScoped<ResendCustomerLinkRequest>();

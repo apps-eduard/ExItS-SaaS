@@ -136,23 +136,8 @@ public sealed class CustomerLinkConsentFlowTests
         Assert.True(pendingListed.IsSuccess, pendingListed.ErrorMessage);
         Assert.Empty(pendingListed.Value!);
 
-        var acceptCustomer = BusinessCustomer.Create(
-            harness.Org.Id,
-            "Accept History Customer",
-            T0,
-            email: "accept-history@example.com");
-        await harness.Customers.AddAsync(acceptCustomer);
-        var toAccept = await harness.CreateRequest.ExecuteAsync(
-            harness.Org.Id,
-            acceptCustomer.Id,
-            email: null,
-            harness.Inviter.Id,
-            harness.Personal.Id,
-            harness.Personal.PublicUserId);
-        Assert.True(toAccept.IsSuccess, toAccept.ErrorMessage);
-
         var accepted = await harness.Accept.ExecuteByIdAsync(
-            CustomerLinkRequestId.From(toAccept.Value!.Id),
+            CustomerLinkRequestId.From(pendingOnly.Value!.Id),
             harness.Personal.Id,
             AccountClass.Personal);
         Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
@@ -162,9 +147,8 @@ public sealed class CustomerLinkConsentFlowTests
             AccountClass.Personal);
         Assert.True(history.IsSuccess, history.ErrorMessage);
         Assert.Single(history.Value!);
-        Assert.Equal(toAccept.Value.Id, history.Value![0].Id);
+        Assert.Equal(pendingOnly.Value.Id, history.Value![0].Id);
         Assert.Equal(nameof(CustomerLinkRequestStatus.Active), history.Value[0].Status);
-        Assert.DoesNotContain(history.Value, r => r.Id == pendingOnly.Value!.Id);
 
         var other = PlatformUser.Create("other.history", "Other History", "other.history@example.com", T0);
         other.AssignPublicUserId("EX-7777-6666", T0);
@@ -588,7 +572,15 @@ public sealed class CustomerLinkConsentFlowTests
             harness.Users,
             harness.Orgs,
             settings,
-            harness.PersonalNotifications);
+            harness.PersonalNotifications,
+            blocks: null,
+            links: harness.Links,
+            eligibility: new EvaluateCustomerLinkEligibility(
+                harness.Users,
+                harness.Memberships,
+                harness.Requests,
+                harness.Links,
+                harness.Clock));
 
         var orchestration = new CreateBusinessCustomerWithPersonalLink(
             harness.Orgs,
@@ -775,7 +767,9 @@ public sealed class CustomerLinkConsentFlowTests
                 personalSettings,
                 personalNotifications,
                 blocks: null,
-                links: links);
+                links: links,
+                eligibility: new EvaluateCustomerLinkEligibility(
+                    users, memberships, requests, links, clock));
             var accept = new AcceptCustomerLinkRequest(
                 requests,
                 customers,

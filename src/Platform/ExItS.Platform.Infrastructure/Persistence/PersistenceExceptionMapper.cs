@@ -68,11 +68,20 @@ public static class PersistenceExceptionMapper
         }
 
         if (detail.Contains("ux_organization_invitations_pending_email", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_organization_invitations_pending_target_user", StringComparison.OrdinalIgnoreCase)
             || (detail.Contains("organization_invitations", StringComparison.OrdinalIgnoreCase)
                 && detail.Contains("pending", StringComparison.OrdinalIgnoreCase)))
         {
             errorCode = ApplicationErrorCodes.InvitationConflict;
             message = "A pending invitation already exists for this email in the organization.";
+            return true;
+        }
+
+        if (detail.Contains("ux_customer_link_requests_pending_org_target", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_customer_link_requests_pending_customer", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.CustomerLinkPendingExists;
+            message = "An invitation has already been sent to this person.";
             return true;
         }
 

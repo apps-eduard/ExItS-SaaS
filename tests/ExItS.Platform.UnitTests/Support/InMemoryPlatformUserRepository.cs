@@ -64,6 +64,18 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         return Task.FromResult(match);
     }
 
+    public Task<PlatformUser?> FindActiveStaffByHomeOrgAndLinkedPersonalUserIdAsync(
+        PlatformOrganizationId homeOrganizationId,
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var match = _byId.Values.FirstOrDefault(u =>
+            u.Status == AccountStatus.Active
+            && u.HomeOrganizationId == homeOrganizationId
+            && u.LinkedPersonalUserId == linkedPersonalUserId);
+        return Task.FromResult(match);
+    }
+
     public Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
         string normalizedContactEmail,
         CancellationToken cancellationToken = default)

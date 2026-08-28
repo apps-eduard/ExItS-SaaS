@@ -3265,6 +3265,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_customer_link_requests_token_hash");
 
+                    b.HasIndex("OrganizationId", "TargetUserIdentityId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_link_requests_pending_org_target")
+                        .HasFilter("status = 'Pending' AND target_user_identity_id IS NOT NULL");
+
                     b.ToTable("customer_link_requests", "platform");
                 });
 

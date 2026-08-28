@@ -344,6 +344,7 @@ public sealed class CreateCustomerLinkRequest
     private readonly IPersonalInAppNotificationRepository? _personalNotifications;
     private readonly IPersonalOrganizationConnectionBlockRepository? _blocks;
     private readonly ILinkedCustomerAppUserRepository? _links;
+    private readonly EvaluateCustomerLinkEligibility? _eligibility;
 
     public CreateCustomerLinkRequest(
         IBusinessCustomerRepository customers,
@@ -355,7 +356,8 @@ public sealed class CreateCustomerLinkRequest
         IPersonalAccountSettingsRepository? personalSettings = null,
         IPersonalInAppNotificationRepository? personalNotifications = null,
         IPersonalOrganizationConnectionBlockRepository? blocks = null,
-        ILinkedCustomerAppUserRepository? links = null)
+        ILinkedCustomerAppUserRepository? links = null,
+        EvaluateCustomerLinkEligibility? eligibility = null)
     {
         _customers = customers;
         _requests = requests;
@@ -367,6 +369,7 @@ public sealed class CreateCustomerLinkRequest
         _personalNotifications = personalNotifications;
         _blocks = blocks;
         _links = links;
+        _eligibility = eligibility;
     }
 
     public Task<ApplicationResult<CustomerLinkRequestDto>> ExecuteAsync(
@@ -431,26 +434,60 @@ public sealed class CreateCustomerLinkRequest
 
             var (resolvedEmail, targetId, targetPublicId) = resolved.Value!;
 
-            if (targetId is not null
-                && _blocks is not null
-                && await CustomerConnectionBlockSupport
-                    .IsBlockedAsync(_blocks, targetId, organizationId, cancellationToken)
-                    .ConfigureAwait(false))
+            if (targetId is not null && _eligibility is not null && _users is not null)
             {
-                return CustomerConnectionBlockSupport.UnavailableFailure<CustomerLinkRequestDto>();
-            }
-
-            // Same organization must not create another actively-linked customer for the same Personal.
-            if (targetId is not null && _links is not null)
-            {
-                var existingActiveLink = await _links
-                    .FindActiveByUserAndOrganizationAsync(targetId, organizationId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (existingActiveLink is not null)
+                var targetUser = await _users.GetByIdAsync(targetId, cancellationToken).ConfigureAwait(false);
+                if (targetUser is null)
                 {
                     return ApplicationResult<CustomerLinkRequestDto>.Failure(
-                        ApplicationErrorCodes.CustomerLinkRequestConflict,
-                        "This ExItS account is already linked to a customer in this organization.");
+                        ApplicationErrorCodes.UserNotFound,
+                        "Target ExItS user was not found.");
+                }
+
+                var eligibility = await _eligibility
+                    .EvaluateResolvedAsync(
+                        organizationId,
+                        targetUser,
+                        businessCustomerId,
+                        invitedByUserId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!eligibility.IsSuccess)
+                {
+                    return ApplicationResult<CustomerLinkRequestDto>.Failure(
+                        eligibility.ErrorCode!,
+                        eligibility.ErrorMessage!);
+                }
+
+                if (eligibility.Value!.Status != CustomerLinkEligibilityStatuses.Eligible)
+                {
+                    return EvaluateCustomerLinkEligibility.ToCreateFailure<CustomerLinkRequestDto>(
+                        eligibility.Value);
+                }
+            }
+            else
+            {
+                if (targetId is not null
+                    && _blocks is not null
+                    && await CustomerConnectionBlockSupport
+                        .IsBlockedAsync(_blocks, targetId, organizationId, cancellationToken)
+                        .ConfigureAwait(false))
+                {
+                    return CustomerConnectionBlockSupport.UnavailableFailure<CustomerLinkRequestDto>();
+                }
+
+                // Same organization must not create another actively-linked customer for the same Personal.
+                if (targetId is not null && _links is not null)
+                {
+                    var existingActiveLink = await _links
+                        .FindActiveByUserAndOrganizationAsync(targetId, organizationId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (existingActiveLink is not null)
+                    {
+                        return ApplicationResult<CustomerLinkRequestDto>.Failure(
+                            ApplicationErrorCodes.CustomerLinkRequestConflict,
+                            "This ExItS account is already linked to a customer in this organization.");
+                    }
                 }
             }
 
@@ -491,7 +528,16 @@ public sealed class CreateCustomerLinkRequest
 
             if (persist)
             {
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (PersistenceConflictException)
+                {
+                    return ApplicationResult<CustomerLinkRequestDto>.Failure(
+                        ApplicationErrorCodes.CustomerLinkPendingExists,
+                        "An invitation has already been sent to this person.");
+                }
             }
 
             return ApplicationResult<CustomerLinkRequestDto>.Success(
@@ -500,6 +546,12 @@ public sealed class CreateCustomerLinkRequest
         catch (DomainException ex)
         {
             return ApplicationResult<CustomerLinkRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException)
+        {
+            return ApplicationResult<CustomerLinkRequestDto>.Failure(
+                ApplicationErrorCodes.CustomerLinkPendingExists,
+                "An invitation has already been sent to this person.");
         }
     }
 

@@ -13,6 +13,7 @@ vi.mock("@/api/platform/public-identity-client", async (importOriginal) => {
     ...actual,
     resolvePublicUserId: vi.fn(),
     createBusinessCustomerWithPersonalLink: vi.fn(),
+    evaluateCustomerLinkEligibility: vi.fn(),
   };
 });
 
@@ -111,6 +112,15 @@ describe("CustomerFormPage save vs resolve link", () => {
       maskedEmail: "r***@example.com",
       status: "Active",
       isSelf: false,
+    });
+    vi.mocked(publicIdentityClient.evaluateCustomerLinkEligibility).mockResolvedValue({
+      status: "Eligible",
+      message: "Eligible to invite.",
+      publicUserId: "EX-1234-5678",
+      displayName: "Rosa Personal",
+      userIdentityId,
+      existingBusinessCustomerId: null,
+      existingPendingRequestId: null,
     });
   });
 
@@ -274,6 +284,53 @@ describe("CustomerFormPage save vs resolve link", () => {
     await user.click(screen.getByTestId("qr-manual-clear"));
     await waitFor(() => {
       expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
+  });
+
+  it("hides Save when eligibility reports owner self", async () => {
+    const user = userEvent.setup();
+    vi.mocked(publicIdentityClient.evaluateCustomerLinkEligibility).mockResolvedValue({
+      status: "OwnerOfOrganization",
+      message: "You're already the owner of this business.",
+      publicUserId: "EX-1234-5678",
+      displayName: "Rosa Personal",
+      userIdentityId,
+      existingBusinessCustomerId: null,
+      existingPendingRequestId: null,
+    });
+    renderCreate();
+
+    await user.click(screen.getByTestId("customer-create-kind-exits"));
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-eligibility-OwnerOfOrganization")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
+    expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
+  });
+
+  it("hides Save when eligibility reports organization staff", async () => {
+    const user = userEvent.setup();
+    vi.mocked(publicIdentityClient.evaluateCustomerLinkEligibility).mockResolvedValue({
+      status: "OrganizationStaff",
+      message: "staff",
+      publicUserId: "EX-1234-5678",
+      displayName: "Rosa Personal",
+      userIdentityId,
+      existingBusinessCustomerId: null,
+      existingPendingRequestId: null,
+    });
+    renderCreate();
+
+    await user.click(screen.getByTestId("customer-create-kind-exits"));
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-eligibility-OrganizationStaff")).toBeInTheDocument();
     });
     expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
   });

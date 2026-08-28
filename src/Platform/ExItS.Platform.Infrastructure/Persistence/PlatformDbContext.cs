@@ -2113,6 +2113,10 @@ public sealed class PlatformDbContext : DbContext
                 .HasDatabaseName("ux_customer_link_requests_pending_customer");
             entity.HasIndex(e => e.TargetUserIdentityId)
                 .HasDatabaseName("ix_customer_link_requests_target_user_identity_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.TargetUserIdentityId })
+                .IsUnique()
+                .HasFilter("status = 'Pending' AND target_user_identity_id IS NOT NULL")
+                .HasDatabaseName("ux_customer_link_requests_pending_org_target");
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()

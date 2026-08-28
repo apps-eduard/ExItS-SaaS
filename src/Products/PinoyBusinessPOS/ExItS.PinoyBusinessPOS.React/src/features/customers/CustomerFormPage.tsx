@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, Contact, IdCard, Loader2, Save, UserRound, Users } from "lucide-react";
 import {
   createBusinessCustomerWithPersonalLink,
+  evaluateCustomerLinkEligibility,
+  type CustomerLinkEligibilityDto,
   type ResolvedPublicUserDto,
 } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -67,6 +69,9 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [foundIdentity, setFoundIdentity] = useState<ResolvedPublicUserDto | null>(null);
   const [existingContact, setExistingContact] = useState<CheckoutCustomerSearchItem | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(false);
+  const [linkEligibility, setLinkEligibility] = useState<CustomerLinkEligibilityDto | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+  const [eligibilityFailed, setEligibilityFailed] = useState(false);
   const [createKind, setCreateKind] = useState<CreateKind>(() =>
     linkPublicId?.trim() ? "exits" : "walkin",
   );
@@ -218,8 +223,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       }
       if (mode === "create") {
         if (createKind === "exits") {
-          if (!selectedIdentity) {
-            setError(t("customers.personalLink.selectRequired"));
+          if (!selectedIdentity || !linkEligible) {
+            setError(
+              eligibilityFailed
+                ? t("customers.linkElig.failed")
+                : t("customers.personalLink.selectRequired"),
+            );
             return;
           }
           await createWithLinkRequest(name, selectedIdentity);
@@ -249,19 +258,22 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
   }
 
+  const linkEligible =
+    linkEligibility?.status === "Eligible" && !eligibilityLoading && !eligibilityFailed;
+
   const showCustomerInfo =
     mode === "edit" ||
     createKind === "walkin" ||
-    (Boolean(foundIdentity) && !existingContact) ||
-    (Boolean(selectedIdentity) && !existingContact);
+    (Boolean(foundIdentity) && !existingContact && linkEligible) ||
+    (Boolean(selectedIdentity) && !existingContact && linkEligible);
 
   const showSave =
     mode === "edit" ||
     createKind === "walkin" ||
-    ((Boolean(foundIdentity) || Boolean(selectedIdentity)) && !existingContact);
+    (linkEligible && (Boolean(foundIdentity) || Boolean(selectedIdentity)) && !existingContact);
 
   const primarySaveLabel =
-    mode === "create" && createKind === "exits" && foundIdentity
+    mode === "create" && createKind === "exits" && foundIdentity && linkEligible
       ? t("customers.saveAndSendLink")
       : t("customers.save");
 
@@ -287,7 +299,28 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     setFoundIdentity(null);
     setExistingContact(null);
     setCheckingExisting(false);
+    setLinkEligibility(null);
+    setEligibilityLoading(false);
+    setEligibilityFailed(false);
     setError(null);
+  }
+
+  function eligibilityMessage(status: string): string {
+    switch (status) {
+      case "OwnerOfOrganization":
+        return t("customers.linkElig.ownerSelf");
+      case "OrganizationStaff":
+        return t("customers.linkElig.organizationStaff");
+      case "AlreadyLinked":
+        return t("customers.linkElig.alreadyLinked");
+      case "PendingInvitation":
+        return t("customers.linkElig.pendingInvitation");
+      case "BlockedOrUnavailable":
+      case "InvalidTarget":
+        return t("customers.linkElig.unavailable");
+      default:
+        return t("customers.linkElig.unavailable");
+    }
   }
 
   return (
@@ -412,23 +445,57 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           checkingExisting={checkingExisting}
           onResolved={(user) => {
             setCheckingExisting(true);
+            setEligibilityLoading(true);
+            setEligibilityFailed(false);
+            setLinkEligibility(null);
             setExistingContact(null);
             setFoundIdentity(null);
             setSelectedIdentity(null);
-            void findExistingCheckoutCustomerForPersonalId(workspace, user.publicUserId)
-              .then((existing) => {
-                setCheckingExisting(false);
+            void (async () => {
+              try {
+                const existing = await findExistingCheckoutCustomerForPersonalId(
+                  workspace,
+                  user.publicUserId,
+                );
                 setExistingContact(existing);
                 if (existing) {
+                  setCheckingExisting(false);
+                  setEligibilityLoading(false);
+                  setLinkEligibility({
+                    status: "AlreadyLinked",
+                    message: t("customers.linkElig.alreadyLinked"),
+                    publicUserId: user.publicUserId,
+                    displayName: user.displayName,
+                    userIdentityId: user.userIdentityId,
+                    existingBusinessCustomerId: null,
+                    existingPendingRequestId: null,
+                  });
                   return;
                 }
-                applyFoundIdentity(user);
-              })
-              .catch(() => {
+
+                const eligibility = await evaluateCustomerLinkEligibility(
+                  workspace.organizationId,
+                  { publicUserIdOrQrPayload: user.publicUserId },
+                );
+                setLinkEligibility(eligibility);
                 setCheckingExisting(false);
+                setEligibilityLoading(false);
+                if (eligibility.status === "Eligible") {
+                  applyFoundIdentity(user);
+                } else {
+                  setFoundIdentity(user);
+                  setSelectedIdentity(null);
+                }
+              } catch {
+                setCheckingExisting(false);
+                setEligibilityLoading(false);
+                setEligibilityFailed(true);
+                setLinkEligibility(null);
                 setExistingContact(null);
-                applyFoundIdentity(user);
-              });
+                setFoundIdentity(null);
+                setSelectedIdentity(null);
+              }
+            })();
           }}
           onCleared={() => {
             resetExitsLookup();
@@ -439,6 +506,56 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           }}
         />
       ) : null}
+
+      {mode === "create" &&
+      createKind === "exits" &&
+      (eligibilityLoading || checkingExisting) &&
+      !existingContact ? (
+        <p
+          className="m-0 inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="customer-link-eligibility-loading"
+        >
+          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          {t("customers.linkElig.checking")}
+        </p>
+      ) : null}
+
+      {mode === "create" && createKind === "exits" && eligibilityFailed ? (
+        <div
+          className="exits-alert exits-alert--error"
+          data-testid="customer-link-eligibility-failed"
+          role="alert"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("customers.linkElig.failed")}</p>
+        </div>
+      ) : null}
+
+      {mode === "create" &&
+      createKind === "exits" &&
+      linkEligibility &&
+      linkEligibility.status !== "Eligible" &&
+      !eligibilityLoading ? (
+        <div
+          className="exits-alert exits-alert--warning"
+          data-testid={`customer-link-eligibility-${linkEligibility.status}`}
+          role="alert"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {eligibilityMessage(linkEligibility.status)}
+          </p>
+          {existingContact ? (
+            <Button asChild className="mt-2 min-h-11 w-full sm:w-auto">
+              <Link
+                to={`/customers/${existingContact.customerId}`}
+                data-testid="customer-link-view-existing"
+              >
+                {t("customers.openExisting")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {mode === "create" && !online ? (
         <section
           className="catalog-form-section exits-animate-panel"

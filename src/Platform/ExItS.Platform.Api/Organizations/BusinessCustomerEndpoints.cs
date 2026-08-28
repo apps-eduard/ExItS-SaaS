@@ -141,6 +141,39 @@ internal static class BusinessCustomerEndpoints
             return Results.Ok(result);
         });
 
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/customers/link-eligibility", async (
+            Guid organizationId,
+            CustomerLinkEligibilityBody body,
+            EvaluateCustomerLinkEligibility useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CustomerLinkRequest),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Evaluate customer link eligibility.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var customerId = body.BusinessCustomerId is Guid cid && cid != Guid.Empty
+                ? BusinessCustomerId.From(cid)
+                : null;
+            var result = await useCase
+                .ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    body.PublicUserIdOrQrPayload ?? string.Empty,
+                    customerId,
+                    membershipAuthz.Inner.CurrentActor.PlatformUserId,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         app.MapPost("/api/v1/organizations/{organizationId:guid}/customers/with-personal-link", async (
             Guid organizationId,
             CreateBusinessCustomerWithPersonalLinkBody body,
@@ -1062,6 +1095,10 @@ internal sealed record CreateCustomerLinkBody(
     string? Email = null,
     string? PublicUserId = null,
     Guid? TargetUserIdentityId = null);
+
+internal sealed record CustomerLinkEligibilityBody(
+    string? PublicUserIdOrQrPayload = null,
+    Guid? BusinessCustomerId = null);
 
 internal sealed record CreateBusinessCustomerWithPersonalLinkBody(
     string? DisplayName,

@@ -412,7 +412,11 @@ public sealed class CustomerLinkCompletenessTests
                     users,
                     orgs,
                     personalSettings,
-                    personalNotifications),
+                    personalNotifications,
+                    blocks: null,
+                    links: links,
+                    eligibility: new EvaluateCustomerLinkEligibility(
+                        users, memberships, requests, links, clock)),
                 new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users),
                 new AuthorizeLinkedCustomerAccess(users, links, customers),
                 new GetLinkedMerchantOrderingCapability(links, entitlements, orgs));
@@ -494,6 +498,15 @@ public sealed class CustomerLinkCompletenessTests
             Task.FromResult(_items.FirstOrDefault(r =>
                 r.BusinessCustomerId == businessCustomerId && r.Status == CustomerLinkRequestStatus.Pending));
 
+        public Task<CustomerLinkRequest?> FindPendingByOrganizationAndTargetUserAsync(
+            PlatformOrganizationId organizationId,
+            PlatformUserId targetUserIdentityId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(r =>
+                r.OrganizationId == organizationId
+                && r.TargetUserIdentityId == targetUserIdentityId
+                && r.Status == CustomerLinkRequestStatus.Pending));
+
         public Task<(IReadOnlyList<CustomerLinkRequest> Items, int TotalCount)> ListByOrganizationAsync(
             PlatformOrganizationId organizationId,
             CustomerLinkRequestStatus? status,
@@ -561,6 +574,19 @@ public sealed class CustomerLinkCompletenessTests
 
         public Task AddAsync(CustomerLinkRequest request, CancellationToken cancellationToken = default)
         {
+            if (request.Status == CustomerLinkRequestStatus.Pending
+                && request.TargetUserIdentityId is not null
+                && _items.Any(r =>
+                    r.OrganizationId == request.OrganizationId
+                    && r.TargetUserIdentityId == request.TargetUserIdentityId
+                    && r.Status == CustomerLinkRequestStatus.Pending
+                    && r.Id != request.Id))
+            {
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.CustomerLinkPendingExists,
+                    "An invitation has already been sent to this person.");
+            }
+
             _items.Add(request);
             return Task.CompletedTask;
         }

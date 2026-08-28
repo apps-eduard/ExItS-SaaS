@@ -649,6 +649,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.transactionStatusUnknown": "Dili makumpirma ang status sa transaksyon. Ayaw isumite pag-usab hangtod ma-verify ang status.",
   "customers.add": "Pagdugang og customer",
   "customers.address": "Address",
+  "customers.linkElig.checking": "Checking if this person can be linked…",
+  "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
+  "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+  "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+  "customers.linkElig.alreadyLinked": "This person is already in your customers.",
+  "customers.linkElig.pendingInvitation": "An invitation has already been sent to this person.",
+  "customers.linkElig.unavailable": "This ExItS account isn't available for linking.",
   "customers.alreadyInContacts":
     "Na-add na si {name} sa imong contacts. Ablihi kana nga customer, ayaw pagpadala og bag-ong link.",
   "customers.amountOwed": "Amount owed",

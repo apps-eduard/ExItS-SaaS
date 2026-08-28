@@ -350,7 +350,10 @@ public sealed class CustomerConnectionConsentCycleTests
                 orgs,
                 personalSettings,
                 personalNotifications,
-                blocks);
+                blocks,
+                links,
+                eligibility: new EvaluateCustomerLinkEligibility(
+                    users, memberships, requests, links, clock, blocks));
 
             return new Harness(
                 clock,
