@@ -2,6 +2,8 @@ import { PlatformApiError, PlatformNetworkError } from "@/api/platform-http";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth-types";
 
 export type SignInFailureKind =
+  | "user_not_found"
+  | "invalid_password"
   | "invalid_credentials"
   | "sign_in_denied"
   | "account_locked"
@@ -39,6 +41,12 @@ export function classifySignInFailure(error: unknown): SignInFailureKind {
   }
 
   const code = error.problem.errorCode;
+  if (code === AUTH_ERROR_CODES.userNotFound) {
+    return "user_not_found";
+  }
+  if (code === AUTH_ERROR_CODES.passwordInvalid) {
+    return "invalid_password";
+  }
   if (code === AUTH_ERROR_CODES.credentialLockedOut) {
     return "account_locked";
   }
@@ -109,6 +117,8 @@ export function isSessionInvalidError(error: unknown): boolean {
   }
   if (
     code === AUTH_ERROR_CODES.loginFailed ||
+    code === AUTH_ERROR_CODES.userNotFound ||
+    code === AUTH_ERROR_CODES.passwordInvalid ||
     code === AUTH_ERROR_CODES.credentialTokenInvalid ||
     code === AUTH_ERROR_CODES.credentialTokenExpired ||
     code === AUTH_ERROR_CODES.credentialLockedOut ||

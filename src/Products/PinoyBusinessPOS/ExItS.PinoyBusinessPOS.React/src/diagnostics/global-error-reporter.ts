@@ -5,7 +5,7 @@ import {
 import type { NormalizePosErrorInput } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 
-type GlobalErrorListener = (report: PosErrorReportInput) => void;
+type GlobalErrorListener = (report: PosErrorReportInput | null) => void;
 
 const listeners = new Set<GlobalErrorListener>();
 let lastReportKey = "";
@@ -31,7 +31,16 @@ function shouldEmit(report: PosErrorReportInput): boolean {
   return true;
 }
 
-function emit(report: PosErrorReportInput): void {
+function emit(report: PosErrorReportInput | null): void {
+  if (report === null) {
+    lastReportKey = "";
+    lastReportAt = 0;
+    for (const listener of listeners) {
+      listener(null);
+    }
+    return;
+  }
+
   if (!shouldEmit(report)) {
     return;
   }
@@ -40,7 +49,11 @@ function emit(report: PosErrorReportInput): void {
   }
 }
 
-/** Subscribe to global client error reports (overlay host). Returns unsubscribe. */
+/** Dismiss the global client error overlay (for example after session expiry redirect). */
+export function clearGlobalClientErrorOverlay(): void {
+  emit(null);
+}
+
 export function subscribeGlobalClientErrors(listener: GlobalErrorListener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

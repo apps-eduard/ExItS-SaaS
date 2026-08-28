@@ -337,7 +337,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
       {mode === "create" ? (
         <section
-          className="catalog-form-section exits-animate-panel customer-create-kind"
+          className="catalog-form-section exits-animate-panel customer-create-kind customer-create-kind--compact"
           data-testid="customer-create-kind"
         >
           <h2 className="catalog-form-section__title catalog-form-section__heading">
@@ -346,9 +346,6 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             </span>
             {t("customers.createKindTitle")}
           </h2>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-            {t("customers.createKindLede")}
-          </p>
           <div
             className="customer-create-kind__grid"
             role="group"
@@ -365,12 +362,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 resetExitsLookup();
               }}
             >
-              <span className="customer-create-kind__icon" aria-hidden>
-                <UserRound className="size-5" />
-              </span>
-              <span className="customer-create-kind__label">{t("customers.createKindWalkIn")}</span>
-              <span className="customer-create-kind__hint">
-                {t("customers.createKindWalkInHint")}
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <UserRound className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("customers.createKindWalkIn")}</span>
               </span>
             </button>
             <button
@@ -390,12 +386,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                 setCreateKind("exits");
               }}
             >
-              <span className="customer-create-kind__icon" aria-hidden>
-                <IdCard className="size-5" />
-              </span>
-              <span className="customer-create-kind__label">{t("customers.createKindExits")}</span>
-              <span className="customer-create-kind__hint">
-                {t("customers.createKindExitsHint")}
+              <span className="customer-create-kind__header">
+                <span className="customer-create-kind__icon" aria-hidden>
+                  <IdCard className="size-4" />
+                </span>
+                <span className="customer-create-kind__label">{t("customers.createKindExits")}</span>
               </span>
             </button>
           </div>

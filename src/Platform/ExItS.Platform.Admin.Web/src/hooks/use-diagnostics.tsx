@@ -9,6 +9,8 @@ import {
 } from "react";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { usePreferences } from "@/hooks/use-preferences";
+import { isAuthenticationLostFailure } from "@/api/auth/session-expiry";
+import { PlatformApiError } from "@/api/platform-http";
 import { isAbortError } from "@/lib/diagnostics/diagnostic-redaction";
 import { normalizeDiagnosticError } from "@/lib/diagnostics/normalize-diagnostic-error";
 import type { DiagnosticCategory, DiagnosticRecord } from "@/lib/diagnostics/diagnostic-types";
@@ -62,6 +64,12 @@ export function DiagnosticsProvider({ children }: { children: ReactNode }) {
   const report = useCallback(
     (error: unknown, options?: ReportOptions): DiagnosticRecord | null => {
       if (isAbortError(error) || wasHandled(error)) {
+        return null;
+      }
+      if (
+        error instanceof PlatformApiError &&
+        isAuthenticationLostFailure(error.status, error.problem.errorCode)
+      ) {
         return null;
       }
       markHandled(error);

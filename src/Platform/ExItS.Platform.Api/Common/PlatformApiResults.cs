@@ -61,6 +61,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.BusinessTypeInactive => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
+            or ApplicationErrorCodes.PasswordInvalid
             or ApplicationErrorCodes.SessionInvalid
             or ApplicationErrorCodes.SessionExpired
             or ApplicationErrorCodes.CurrentPasswordInvalid

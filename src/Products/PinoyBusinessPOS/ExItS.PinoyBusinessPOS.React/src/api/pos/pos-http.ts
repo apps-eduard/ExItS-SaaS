@@ -1,5 +1,6 @@
 import { getPosAccessToken } from "@/api/platform/pos-access-token";
 import { createCorrelationId } from "@/api/platform/platform-http";
+import { maybeNotifyAuthenticationLost } from "@/session/session-expiry";
 import { getDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 
 export const POS_API_BASE_PATH = "/pos-api";
@@ -117,7 +118,11 @@ function buildPosHeaders(
   return headers;
 }
 
-async function throwIfNotOk(response: Response, requestCorrelationId: string): Promise<void> {
+async function throwIfNotOk(
+  response: Response,
+  requestCorrelationId: string,
+  path: string,
+): Promise<void> {
   if (response.ok) {
     return;
   }
@@ -127,6 +132,11 @@ async function throwIfNotOk(response: Response, requestCorrelationId: string): P
   } catch {
     // Non-JSON error bodies still surface as a status-only problem.
   }
+  maybeNotifyAuthenticationLost({
+    status: response.status,
+    errorCode: problem.errorCode,
+    path,
+  });
   throw new PosApiError(response.status, problem, requestCorrelationId);
 }
 
@@ -161,7 +171,7 @@ export async function posRequest<T>(options: PosRequestOptions): Promise<T> {
     signal: options.signal,
   });
 
-  await throwIfNotOk(response, requestCorrelationId);
+  await throwIfNotOk(response, requestCorrelationId, options.path);
 
   if (response.status === 204) {
     return undefined as T;
@@ -184,6 +194,6 @@ export async function posRequestBlob(options: PosRequestOptions): Promise<Blob> 
     signal: options.signal,
   });
 
-  await throwIfNotOk(response, requestCorrelationId);
+  await throwIfNotOk(response, requestCorrelationId, options.path);
   return response.blob();
 }

@@ -25,6 +25,7 @@ import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StaffGrant = {
@@ -74,6 +75,28 @@ function initials(name: string): string {
   return `${parts[0]!.slice(0, 1)}${parts[1]!.slice(0, 1)}`.toUpperCase();
 }
 
+export function isOrganizationOwnerMembershipRole(role: string): boolean {
+  return (
+    role.trim().localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0
+  );
+}
+
+function staffPosRoleLabel(grant: StaffGrant): string {
+  const label = friendlyPosRoleLabel(
+    grant.mappedPosRoleCode,
+    grant.roleCode,
+    grant.roleDisplay,
+  );
+  const code = (grant.mappedPosRoleCode || grant.roleCode || "").trim().toLowerCase();
+  if (
+    (code === "owner" || code === "posowner") &&
+    label.localeCompare("Owner", undefined, { sensitivity: "accent" }) === 0
+  ) {
+    return "POS Owner";
+  }
+  return label;
+}
+
 function buildRows(
   members: OrganizationMemberWire[],
   grants: ProductLocalRoleGrantWire[],
@@ -111,8 +134,10 @@ function buildRows(
 export function OrgStaffPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const { session } = useSession();
   const { boundWorkspace } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const currentUserId = session?.userId ?? null;
   const [actionError, setActionError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingAction | null>(null);
 
@@ -297,15 +322,26 @@ export function OrgStaffPage() {
           aria-label={t("staffManage.title")}
         >
           {rows.map((row) => {
+            const isOwner = isOrganizationOwnerMembershipRole(row.membershipRole);
+            const isSelf = Boolean(currentUserId && row.userId === currentUserId);
             const isActive =
               row.membershipStatus.localeCompare("Active", undefined, {
                 sensitivity: "accent",
               }) === 0;
+            const canMutateMembership = !isOwner && !isSelf && isActive;
+            const canRevokePosRole = !isOwner && !isSelf;
+            const canAssignPosRole = !isOwner;
+
             return (
               <li key={row.membershipId}>
                 <article
-                  className="exits-list__card staff-row min-w-0"
+                  className={
+                    isOwner
+                      ? "exits-list__card staff-row staff-row--owner min-w-0"
+                      : "exits-list__card staff-row min-w-0"
+                  }
                   data-testid={`org-staff-row-${row.membershipId}`}
+                  data-owner-protected={isOwner ? "true" : undefined}
                 >
                   <span className="staff-row__avatar" aria-hidden>
                     {initials(row.displayName)}
@@ -327,84 +363,107 @@ export function OrgStaffPage() {
                       data-testid={`org-staff-roles-${row.membershipId}`}
                       aria-label={t("staffAssign.roleSection")}
                     >
-                      {row.posGrants.length === 0 ? (
+                      {isOwner ? (
+                        <span className="staff-role-chip staff-role-chip--readonly">
+                          <span>{t("staffManage.organizationOwnerRole")}</span>
+                        </span>
+                      ) : null}
+                      {row.posGrants.length === 0 && !isOwner ? (
                         <span className="staff-row__roles-empty">{t("staffManage.noPosRoles")}</span>
                       ) : (
                         row.posGrants.map((grant) => {
-                          const label = friendlyPosRoleLabel(
-                            grant.mappedPosRoleCode,
-                            grant.roleCode,
-                            grant.roleDisplay,
-                          );
+                          const label = staffPosRoleLabel(grant);
                           return (
-                            <span key={grant.id} className="staff-role-chip">
+                            <span
+                              key={grant.id}
+                              className={
+                                canRevokePosRole
+                                  ? "staff-role-chip"
+                                  : "staff-role-chip staff-role-chip--readonly"
+                              }
+                            >
                               <span>{label}</span>
-                              <button
-                                type="button"
-                                className="staff-role-chip__revoke"
-                                disabled={busyMutation.isPending}
-                                aria-label={`${t("staffManage.revokeRole")} ${label}`}
-                                onClick={() =>
-                                  setPending({
-                                    kind: "revokeRole",
-                                    grantId: grant.id,
-                                    roleLabel: label,
-                                    name: row.displayName,
-                                  })
-                                }
-                              >
-                                ×
-                              </button>
+                              {canRevokePosRole ? (
+                                <button
+                                  type="button"
+                                  className="staff-role-chip__revoke"
+                                  disabled={busyMutation.isPending}
+                                  aria-label={`${t("staffManage.revokeRole")} ${label}`}
+                                  onClick={() =>
+                                    setPending({
+                                      kind: "revokeRole",
+                                      grantId: grant.id,
+                                      roleLabel: label,
+                                      name: row.displayName,
+                                    })
+                                  }
+                                >
+                                  ×
+                                </button>
+                              ) : null}
                             </span>
                           );
                         })
                       )}
                     </div>
 
-                    <div className="staff-row__actions">
-                      <Button asChild variant="outline" className="staff-row__action">
-                        <Link
-                          to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
-                          data-testid={`org-staff-assign-${row.membershipId}`}
-                        >
-                          {t("staffManage.assignRole")}
-                        </Link>
-                      </Button>
-                      {isActive ? (
-                        <>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="staff-row__action"
-                            disabled={busyMutation.isPending}
-                            onClick={() =>
-                              setPending({
-                                kind: "suspend",
-                                membershipId: row.membershipId,
-                                name: row.displayName,
-                              })
-                            }
-                          >
-                            {t("staffManage.suspend")}
+                    {isOwner ? (
+                      <p
+                        className="staff-row__owner-note m-0"
+                        data-testid={`org-staff-owner-note-${row.membershipId}`}
+                      >
+                        {t("staffManage.ownerProtectedNote")}
+                      </p>
+                    ) : (
+                      <div className="staff-row__actions">
+                        {canAssignPosRole ? (
+                          <Button asChild variant="outline" className="staff-row__action">
+                            <Link
+                              to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
+                              data-testid={`org-staff-assign-${row.membershipId}`}
+                            >
+                              {t("staffManage.assignRole")}
+                            </Link>
                           </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            className="staff-row__action"
-                            disabled={busyMutation.isPending}
-                            onClick={() =>
-                              setPending({
-                                kind: "remove",
-                                membershipId: row.membershipId,
-                                name: row.displayName,
-                              })
-                            }
-                          >
-                            {t("staffManage.remove")}
-                          </Button>
-                        </>
-                      ) : null}
-                    </div>
+                        ) : null}
+                        {canMutateMembership ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="staff-row__action"
+                              disabled={busyMutation.isPending}
+                              data-testid={`org-staff-suspend-${row.membershipId}`}
+                              onClick={() =>
+                                setPending({
+                                  kind: "suspend",
+                                  membershipId: row.membershipId,
+                                  name: row.displayName,
+                                })
+                              }
+                            >
+                              {t("staffManage.suspend")}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              className="staff-row__action"
+                              disabled={busyMutation.isPending}
+                              data-testid={`org-staff-remove-${row.membershipId}`}
+                              onClick={() =>
+                                setPending({
+                                  kind: "remove",
+                                  membershipId: row.membershipId,
+                                  name: row.displayName,
+                                })
+                              }
+                            >
+                              {t("staffManage.remove")}
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </article>
               </li>

@@ -45,6 +45,11 @@ import {
   buildAuthLoginFailure,
   type AuthLoginFailureDiagnostic,
 } from "@/diagnostics/auth-login-failure";
+import { clearGlobalClientErrorOverlay } from "@/diagnostics/global-error-reporter";
+import {
+  resetAuthenticationLostLatch,
+  setAuthenticationLostHandler,
+} from "@/session/session-expiry";
 
 export type SessionStatus =
   | "loading"
@@ -245,6 +250,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [coldStartGrant, setColdStartGrant] = useState<StoredOfflineOperatingGrant | null>(null);
   const [coldStartDenial, setColdStartDenial] = useState<ColdStartGrantDenialReason | null>(null);
 
+  const markSessionExpired = useCallback(() => {
+    setSession(null);
+    setStatus("expired");
+    setColdStartGrant(null);
+    setColdStartDenial(null);
+    clearClientSessionArtifacts(queryClient);
+    clearUnlockedDek();
+    clearGlobalClientErrorOverlay();
+  }, [queryClient]);
+
+  useEffect(() => {
+    setAuthenticationLostHandler(() => {
+      markSessionExpired();
+    });
+    return () => setAuthenticationLostHandler(null);
+  }, [markSessionExpired]);
+
   useEffect(() => {
     void prefetchPlatformAntiforgeryToken();
     let cancelled = false;
@@ -308,6 +330,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         clearPosCredentialArtifacts();
         clearUnlockedDek();
         clearPendingRemoteLogout();
+        resetAuthenticationLostLatch();
         const result = await loginWithPassword(usernameOrEmail, password);
         if (!result.ok) {
           return result;

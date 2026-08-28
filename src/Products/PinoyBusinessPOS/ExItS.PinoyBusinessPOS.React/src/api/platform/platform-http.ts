@@ -1,4 +1,5 @@
 import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
+import { maybeNotifyAuthenticationLost } from "@/session/session-expiry";
 
 export const PLATFORM_API_BASE_PATH = "/platform-api";
 
@@ -66,6 +67,14 @@ function readStringField(record: Record<string, unknown>, key: string): string |
   return typeof value === "string" ? value : undefined;
 }
 
+async function readJsonResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text.trim()) {
+    return undefined;
+  }
+  return JSON.parse(text) as unknown;
+}
+
 function parseProblem(payload: unknown): PlatformProblemDetails {
   if (typeof payload !== "object" || payload === null) {
     return {};
@@ -96,6 +105,8 @@ export type PlatformRequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
   skipAntiforgery?: boolean;
+  /** When true, 401 responses do not trigger the central session-expiry transition. */
+  skipSessionExpiry?: boolean;
 };
 
 type AntiforgeryBootstrap = {
@@ -181,14 +192,24 @@ async function bootstrapAntiforgeryToken(signal?: AbortSignal): Promise<Antiforg
   if (!response.ok) {
     let problem: PlatformProblemDetails = { status: response.status };
     try {
-      problem = { ...problem, ...parseProblem(await response.json()) };
+      const payload = await readJsonResponseBody(response);
+      if (payload !== undefined) {
+        problem = { ...problem, ...parseProblem(payload) };
+      }
     } catch {
       // Non-JSON bootstrap failures still surface as status-only problems.
     }
     throw new PlatformApiError(response.status, problem);
   }
 
-  const payload = (await response.json()) as AntiforgeryBootstrap;
+  const payload = (await readJsonResponseBody(response)) as AntiforgeryBootstrap | undefined;
+  if (!payload) {
+    throw new PlatformApiError(response.status, {
+      status: response.status,
+      detail: "Browser antiforgery bootstrap returned an empty body.",
+      errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
+    });
+  }
   if (!payload.token?.trim()) {
     throw new PlatformApiError(response.status, {
       status: response.status,
@@ -250,11 +271,21 @@ async function executePlatformRequest<T>(
   if (!response.ok) {
     let problem: PlatformProblemDetails = { status: response.status };
     try {
-      problem = { ...problem, ...parseProblem(await response.json()) };
+      const payload = await readJsonResponseBody(response);
+      if (payload !== undefined) {
+        problem = { ...problem, ...parseProblem(payload) };
+      }
     } catch {
       // Non-JSON error bodies still surface as a status-only problem.
     }
     const apiError = new PlatformApiError(response.status, problem, requestCorrelationId);
+    maybeNotifyAuthenticationLost({
+      status: response.status,
+      errorCode: problem.errorCode,
+      detail: problem.detail,
+      path: options.path,
+      skipSessionExpiry: options.skipSessionExpiry,
+    });
     if (
       !state.csrfRetried &&
       isMutationMethod(method) &&
@@ -272,7 +303,8 @@ async function executePlatformRequest<T>(
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const payload = await readJsonResponseBody(response);
+  return payload as T;
 }
 
 export async function platformRequest<T>(options: PlatformRequestOptions): Promise<T> {

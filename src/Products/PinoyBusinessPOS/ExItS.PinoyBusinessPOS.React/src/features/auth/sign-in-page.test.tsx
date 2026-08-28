@@ -119,7 +119,57 @@ describe("SignInPage LOGIN-UX-01", () => {
     });
   });
 
-  it("shows sign-in ErrorState with diagnostics instead of generic-only failure", async () => {
+  it("shows inline credential error without diagnostics for invalid login", async () => {
+    signInMock.mockResolvedValueOnce({
+      ok: false,
+      failure: {
+        failureStage: "platform.auth.login",
+        httpMethod: "POST",
+        path: "/api/v1/platform/auth/login",
+        status: 404,
+        errorCode: "application.user.not_found",
+        detail: "No account found for that email or username.",
+      },
+    });
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "missing@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-error")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/couldn't find an account/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("error-state")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("copy-error-details")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+  });
+
+  it("shows inline password error without diagnostics for wrong password", async () => {
+    signInMock.mockResolvedValueOnce({
+      ok: false,
+      failure: {
+        failureStage: "platform.auth.login",
+        httpMethod: "POST",
+        path: "/api/v1/platform/auth/login",
+        status: 401,
+        errorCode: "application.credential.password_invalid",
+        detail: "Incorrect password.",
+      },
+    });
+    const user = userEvent.setup();
+    renderSignInPage();
+    await user.type(screen.getByLabelText("Email or staff login"), "owner@example.com");
+    await user.type(screen.getByLabelText("Password"), "wrong");
+    await user.click(screen.getByTestId("sign-in-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("auth-error")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/password isn't correct/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("error-state")).not.toBeInTheDocument();
+  });
+
+  it("shows sign-in ErrorState with diagnostics for upstream failures", async () => {
     signInMock.mockResolvedValueOnce({
       ok: false,
       failure: {
@@ -144,19 +194,17 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(screen.getByText("Sign in failed.")).toBeInTheDocument();
     expect(screen.getByText("Platform API gateway timeout.")).toBeInTheDocument();
     expect(screen.getByTestId("copy-error-details")).toBeInTheDocument();
-    expect(screen.queryByText(/check your credentials/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/couldn't find an account/i)).not.toBeInTheDocument();
   });
 
-  it("shows inline sign-in error instead of crashing when login fails with server error", async () => {
+  it("shows sign-in ErrorState with diagnostics for network failures", async () => {
     signInMock.mockResolvedValueOnce({
       ok: false,
       failure: {
         failureStage: "platform.auth.login",
         httpMethod: "POST",
         path: "/api/v1/platform/auth/login",
-        status: 401,
-        errorCode: "application.auth.login_failed",
-        detail: "Invalid username or password.",
+        detail: "Failed to fetch",
       },
     });
     const user = userEvent.setup();
@@ -168,8 +216,7 @@ describe("SignInPage LOGIN-UX-01", () => {
       expect(screen.getByTestId("error-state")).toBeInTheDocument();
     });
     expect(screen.getByTestId("copy-error-details")).toBeInTheDocument();
-    expect(screen.queryByText(/check your credentials/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("sign-in-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("auth-error")).not.toBeInTheDocument();
   });
 
   it("routes to offline PIN unlock from the alternate sign-in action", async () => {

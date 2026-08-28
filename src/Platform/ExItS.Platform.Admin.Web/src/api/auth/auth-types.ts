@@ -1,5 +1,6 @@
 export const AUTH_ERROR_CODES = {
   loginFailed: "application.auth.login_failed",
+  userNotFound: "application.user.not_found",
   sessionInvalid: "application.auth.session_invalid",
   sessionExpired: "application.auth.session_expired",
   accountNotEligible: "application.auth.account_not_eligible",

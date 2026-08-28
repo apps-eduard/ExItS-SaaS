@@ -100,14 +100,22 @@ public sealed class LoginPlatformUser
         }
         catch (DomainException)
         {
-            await WriteLoginFailedAsync(null, cancellationToken).ConfigureAwait(false);
-            return LoginFailedResult();
+            await WriteLoginFailedAsync(
+                null,
+                cancellationToken,
+                ApplicationErrorCodes.UserNotFound,
+                "No account found for that email or username.").ConfigureAwait(false);
+            return UserNotFoundResult();
         }
 
         if (user is null)
         {
-            await WriteLoginFailedAsync(null, cancellationToken).ConfigureAwait(false);
-            return LoginFailedResult();
+            await WriteLoginFailedAsync(
+                null,
+                cancellationToken,
+                ApplicationErrorCodes.UserNotFound,
+                "No account found for that email or username.").ConfigureAwait(false);
+            return UserNotFoundResult();
         }
 
         if (user.Status is not AccountStatus.Active)
@@ -175,7 +183,7 @@ public sealed class LoginPlatformUser
                     "Credential is locked out.");
             }
 
-            return LoginFailedResult();
+            return PasswordIncorrectResult();
         }
 
         if (verification == PlatformPasswordVerificationResult.SuccessRehashNeeded)
@@ -266,6 +274,16 @@ public sealed class LoginPlatformUser
         ApplicationResult<PlatformLoginResultDto>.Failure(
             ApplicationErrorCodes.LoginFailed,
             "Invalid email or password.");
+
+    private static ApplicationResult<PlatformLoginResultDto> UserNotFoundResult() =>
+        ApplicationResult<PlatformLoginResultDto>.Failure(
+            ApplicationErrorCodes.UserNotFound,
+            "No account found for that email or username.");
+
+    private static ApplicationResult<PlatformLoginResultDto> PasswordIncorrectResult() =>
+        ApplicationResult<PlatformLoginResultDto>.Failure(
+            ApplicationErrorCodes.PasswordInvalid,
+            "Incorrect password.");
 
     private async Task WriteLoginFailedAsync(
         PlatformUserId? userId,

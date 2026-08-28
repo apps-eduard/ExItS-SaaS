@@ -12,6 +12,19 @@ import {
 } from "@/api/platform/platform-http";
 
 describe("platformRequest antiforgery", () => {
+  function jsonResponse(
+    body: unknown,
+    init: { ok?: boolean; status?: number } = {},
+  ): Response {
+    const text = body === undefined ? "" : JSON.stringify(body);
+    return {
+      ok: init.ok ?? true,
+      status: init.status ?? 200,
+      text: async () => text,
+      json: async () => (text ? JSON.parse(text) : null),
+    } as Response;
+  }
+
   afterEach(() => {
     vi.unstubAllGlobals();
     clearPlatformAntiforgeryToken();
@@ -22,20 +35,12 @@ describe("platformRequest antiforgery", () => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
         expect(init?.credentials).toBe("include");
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        } as Response;
+        return jsonResponse({ headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
       if (url.endsWith("/api/v1/platform/auth/logout")) {
         expect(init?.method).toBe("POST");
         expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
-        return {
-          ok: true,
-          status: 204,
-          json: async () => null,
-        } as Response;
+        return jsonResponse(undefined, { status: 204 });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -57,11 +62,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.method).toBe("POST");
       expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBeNull();
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ sessionId: "s1", username: "cashier" }),
-      } as Response;
+      return jsonResponse({ sessionId: "s1", username: "cashier" });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -79,17 +80,9 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        } as Response;
+        return jsonResponse({ headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
-      return {
-        ok: true,
-        status: 204,
-        json: async () => null,
-      } as Response;
+      return jsonResponse(undefined, { status: 204 });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -107,15 +100,14 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: false,
-          status: 403,
-          json: async () => ({
+        return jsonResponse(
+          {
             status: 403,
             errorCode: "application.auth.account_scope_denied",
             detail: "Account class 'Organization' is not allowed.",
-          }),
-        } as Response;
+          },
+          { ok: false, status: 403 },
+        );
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -135,11 +127,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: false,
-          status: 404,
-          json: async () => ({ status: 404, title: "Not Found" }),
-        } as Response;
+        return jsonResponse({ status: 404, title: "Not Found" }, { ok: false, status: 404 });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -155,11 +143,7 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: false,
-          status: 500,
-          json: async () => ({ status: 500, detail: "bootstrap failed" }),
-        } as Response;
+        return jsonResponse({ status: 500, detail: "bootstrap failed" }, { ok: false, status: 500 });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -177,34 +161,25 @@ describe("platformRequest antiforgery", () => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
         tokenBootstrapCount += 1;
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            headerName: "X-XSRF-TOKEN",
-            token: `csrf-${tokenBootstrapCount}`,
-          }),
-        } as Response;
+        return jsonResponse({
+          headerName: "X-XSRF-TOKEN",
+          token: `csrf-${tokenBootstrapCount}`,
+        });
       }
       if (url.endsWith("/api/v1/platform/auth/organization-context")) {
         orgContextAttempts += 1;
         if (orgContextAttempts === 1) {
-          return {
-            ok: false,
-            status: 400,
-            json: async () => ({
+          return jsonResponse(
+            {
               status: 400,
               errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
               detail: "A valid browser antiforgery token is required for this request.",
-            }),
-          } as Response;
+            },
+            { ok: false, status: 400 },
+          );
         }
         expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-2");
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ selectedOrganizationId: "org-1" }),
-        } as Response;
+        return jsonResponse({ selectedOrganizationId: "org-1" });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -224,23 +199,18 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        } as Response;
+        return jsonResponse({ headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
       if (url.endsWith("/api/v1/platform/organizations/org-1/customer-link-requests")) {
         expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
-        return {
-          ok: false,
-          status: 403,
-          json: async () => ({
+        return jsonResponse(
+          {
             status: 403,
             errorCode: "application.auth.account_scope_denied",
             detail: "Forbidden",
-          }),
-        } as Response;
+          },
+          { ok: false, status: 403 },
+        );
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -265,15 +235,14 @@ describe("platformRequest antiforgery", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: false,
-          status: 403,
-          json: async () => ({
+        return jsonResponse(
+          {
             status: 403,
             errorCode: "application.auth.account_scope_denied",
             detail: "Account class 'Organization' is not allowed.",
-          }),
-        } as Response;
+          },
+          { ok: false, status: 403 },
+        );
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -289,14 +258,10 @@ describe("platformRequest antiforgery", () => {
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
         bootstrapCount += 1;
         expect(init?.credentials).toBe("include");
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            headerName: "X-XSRF-TOKEN",
-            token: `csrf-${bootstrapCount}`,
-          }),
-        } as Response;
+        return jsonResponse({
+          headerName: "X-XSRF-TOKEN",
+          token: `csrf-${bootstrapCount}`,
+        });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -314,6 +279,17 @@ describe("platformRequest antiforgery", () => {
       detail: "A valid browser antiforgery token is required for this request.",
     });
     expect(isPlatformAntiforgeryValidationError(error)).toBe(true);
+  });
+
+  it("treats 200 responses with empty bodies as undefined", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse(undefined, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await platformRequest<null>({
+      path: "/api/v1/platform/organizations/org-1/ownership-transfer/pending",
+    });
+
+    expect(result).toBeUndefined();
   });
 
   it("createCorrelationId falls back to getRandomValues when randomUUID is missing", () => {

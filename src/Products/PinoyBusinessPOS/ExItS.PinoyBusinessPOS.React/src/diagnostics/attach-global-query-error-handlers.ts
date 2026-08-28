@@ -3,6 +3,7 @@ import {
   isAbortError,
   reportGlobalClientError,
 } from "@/diagnostics/global-error-reporter";
+import { isAuthenticationLostError } from "@/session/session-expiry";
 
 type QueryMeta = {
   suppressGlobalError?: boolean;
@@ -35,7 +36,7 @@ export function attachGlobalQueryErrorHandlers(queryClient: QueryClient): void {
     }
 
     const error = query.state.error;
-    if (isAbortError(error)) {
+    if (isAbortError(error) || isAuthenticationLostError(error)) {
       return;
     }
 
@@ -70,7 +71,7 @@ export function attachGlobalQueryErrorHandlers(queryClient: QueryClient): void {
     }
 
     const error = mutation.state.error;
-    if (isAbortError(error)) {
+    if (isAbortError(error) || isAuthenticationLostError(error)) {
       return;
     }
 

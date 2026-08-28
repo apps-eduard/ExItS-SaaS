@@ -5,6 +5,7 @@ import {
   AUTH_LOGIN_FAILURE_STAGE,
   authLoginFailureToPosErrorReport,
   buildAuthLoginFailure,
+  isHandledSignInFailure,
   isInvalidCredentialsFailure,
   resolveAuthLoginFailurePresentation,
 } from "@/diagnostics/auth-login-failure";
@@ -125,6 +126,26 @@ describe("auth login failure diagnostics", () => {
     expect(report).toContain("trace-copy-001");
     expect(report).toContain("platform.auth.login");
     expect(report).toContain("ExItS POS Error Report");
+  });
+
+  it("treats credential failures as handled sign-in feedback", () => {
+    const userMissing = buildAuthLoginFailure(
+      new PlatformApiError(404, { errorCode: "application.user.not_found" }),
+    );
+    const wrongPassword = buildAuthLoginFailure(
+      new PlatformApiError(401, { errorCode: "application.credential.password_invalid" }),
+    );
+    const upstream = buildAuthLoginFailure(
+      new PlatformApiError(502, { errorCode: "application.upstream_error" }),
+    );
+    const network = buildAuthLoginFailure(new TypeError("Failed to fetch"));
+
+    expect(isHandledSignInFailure(userMissing)).toBe(true);
+    expect(isHandledSignInFailure(wrongPassword)).toBe(true);
+    expect(isHandledSignInFailure(upstream)).toBe(false);
+    expect(isHandledSignInFailure(network)).toBe(false);
+    expect(resolveAuthLoginFailurePresentation(userMissing, t).title).toBe("signIn.userNotFound");
+    expect(resolveAuthLoginFailurePresentation(wrongPassword, t).title).toBe("signIn.passwordIncorrect");
   });
 
   it("does not classify client runtime errors as network failures", () => {

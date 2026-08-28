@@ -172,13 +172,13 @@ export function LiveQrCameraScanner({
     setUiState("requesting");
     stopCamera();
 
-    if (!isCameraApiAvailable()) {
-      setUiState("unsupported");
+    if (!isCameraSecureContext()) {
+      setUiState("insecure");
       return;
     }
 
-    if (!isCameraSecureContext()) {
-      setUiState("insecure");
+    if (!isCameraApiAvailable()) {
+      setUiState("unsupported");
       return;
     }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Loader2, WifiOff } from "lucide-react";
+import { Building2, Loader2, UserPlus, WifiOff } from "lucide-react";
 import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { resolvePublicOrganizationId } from "@/api/platform/public-identity-client";
 import { lookupPublicStoreLanding } from "@/api/platform/public-store-client";
@@ -231,24 +231,45 @@ export function PublicStoreLandingPage() {
         ) : null}
 
         {!isAuthenticated ? (
-          <div className="flex flex-col gap-2">
-            <Button asChild className="min-h-11" data-testid="public-store-sign-in">
-              <Link to={buildSignInHrefForStore(store.publicOrganizationId)}>
-                {t("store.landing.signIn")}
+          <Card
+            className="flex flex-col items-center gap-3 p-5 text-center"
+            data-testid="public-store-guest-actions"
+          >
+            <div
+              className="flex size-14 items-center justify-center rounded-full bg-primary/10"
+              aria-hidden
+            >
+              <UserPlus className="size-7 text-primary" />
+            </div>
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-bold">
+              {t("store.landing.createAccount")}
+            </h2>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted"
+              data-testid="public-store-invite-message"
+            >
+              {t("store.landing.newVisitorInvite").replace("{storeName}", store.displayName)}
+            </p>
+            <Button asChild className="min-h-11 w-full" data-testid="public-store-create-account">
+              <Link to={buildSignUpHrefForStore(store.publicOrganizationId)}>
+                {t("store.landing.createAccount")}
               </Link>
             </Button>
             <Button
               asChild
               variant="ghost"
-              className="min-h-11"
-              data-testid="public-store-create-account"
+              className="min-h-11 w-full"
+              data-testid="public-store-sign-in"
             >
-              <Link to={buildSignUpHrefForStore(store.publicOrganizationId)}>
-                {t("store.landing.createAccount")}
+              <Link to={buildSignInHrefForStore(store.publicOrganizationId)}>
+                {t("store.landing.signInExisting")}
               </Link>
             </Button>
+            <p className="m-0 text-[length:var(--exits-text-xs)] leading-relaxed text-muted">
+              {t("store.landing.linkConsentHint")}
+            </p>
             <InstallExitsOffer />
-          </div>
+          </Card>
         ) : null}
       </div>
     </PublicShell>

@@ -24,6 +24,14 @@ const INVALID_CREDENTIAL_ERROR_CODES = new Set([
   "application.credential.password_invalid",
 ]);
 
+const HANDLED_SIGN_IN_ERROR_CODES = new Set([
+  ...INVALID_CREDENTIAL_ERROR_CODES,
+  "application.user.not_found",
+  "application.auth.account_not_eligible",
+  "application.credential.locked_out",
+  "application.auth.account_scope_denied",
+]);
+
 function sanitizeDetail(value: string | undefined): string | undefined {
   if (!value) {
     return undefined;
@@ -71,6 +79,30 @@ export function isInvalidCredentialsFailure(failure: AuthLoginFailureDiagnostic)
   return INVALID_CREDENTIAL_ERROR_CODES.has(failure.errorCode);
 }
 
+export function isHandledSignInFailure(failure: AuthLoginFailureDiagnostic): boolean {
+  if (isLikelyNetworkFailure(failure)) {
+    return false;
+  }
+
+  if (failure.status === 502 || failure.status === 503 || failure.status === 504 || failure.status === 500) {
+    return false;
+  }
+
+  if (failure.errorCode && HANDLED_SIGN_IN_ERROR_CODES.has(failure.errorCode)) {
+    return true;
+  }
+
+  if (failure.status === 401 && !failure.errorCode) {
+    return true;
+  }
+
+  if (failure.status === 429) {
+    return true;
+  }
+
+  return false;
+}
+
 function isLikelyNetworkFailure(failure: AuthLoginFailureDiagnostic): boolean {
   if (failure.status !== undefined) {
     return false;
@@ -91,8 +123,32 @@ export function resolveAuthLoginFriendlyMessageKey(
     return "signIn.networkError";
   }
 
+  if (failure.errorCode === "application.user.not_found") {
+    return "signIn.userNotFound";
+  }
+
+  if (failure.errorCode === "application.credential.password_invalid") {
+    return "signIn.passwordIncorrect";
+  }
+
   if (failure.status === 403) {
     return "signIn.denied";
+  }
+
+  if (failure.errorCode === "application.credential.locked_out") {
+    return "signIn.accountLocked";
+  }
+
+  if (failure.errorCode === "application.auth.account_not_eligible") {
+    return "signIn.accountDisabled";
+  }
+
+  if (failure.status === 429) {
+    return "signIn.rateLimited";
+  }
+
+  if (isInvalidCredentialsFailure(failure)) {
+    return "signIn.error";
   }
 
   return "signIn.failed";
@@ -124,6 +180,10 @@ export function resolveAuthLoginFailurePresentation(
       detail: sanitizeDetail(failure.detail) ?? title,
       friendlyMessage,
     };
+  }
+
+  if (isHandledSignInFailure(failure)) {
+    return { title, detail: title, friendlyMessage };
   }
 
   if (isInvalidCredentialsFailure(failure)) {

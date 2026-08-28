@@ -28,6 +28,7 @@ import type { AuthLoginFailureDiagnostic } from "@/diagnostics/auth-login-failur
 import {
   authLoginFailureToPosErrorReport,
   buildAuthLoginFailure,
+  isHandledSignInFailure,
   resolveAuthLoginFailurePresentation,
 } from "@/diagnostics/auth-login-failure";
 type AuthTab = "sign-in" | "sign-up";
@@ -165,18 +166,30 @@ export function SignInPage() {
     try {
       const result = await signIn(usernameOrEmail.trim(), password);
       if (!result.ok) {
+        const presentation = resolveAuthLoginFailurePresentation(result.failure, t);
+        if (isHandledSignInFailure(result.failure)) {
+          setError(presentation.friendlyMessage);
+          setPassword("");
+          return;
+        }
         setSignInFailure({
           failure: result.failure,
-          ...resolveAuthLoginFailurePresentation(result.failure, t),
+          ...presentation,
         });
         return;
       }
       navigate(continueTarget ?? "/", { replace: true });
     } catch (caught) {
       const failure = buildAuthLoginFailure(caught);
+      const presentation = resolveAuthLoginFailurePresentation(failure, t);
+      if (isHandledSignInFailure(failure)) {
+        setError(presentation.friendlyMessage);
+        setPassword("");
+        return;
+      }
       setSignInFailure({
         failure,
-        ...resolveAuthLoginFailurePresentation(failure, t),
+        ...presentation,
       });
     } finally {
       setSubmitting(false);

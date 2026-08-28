@@ -25,6 +25,10 @@ type SignInValues = {
 
 function failureMessageKey(kind: SignInFailureKind) {
   switch (kind) {
+    case "user_not_found":
+      return "auth.error.userNotFound" as const;
+    case "invalid_password":
+      return "auth.error.invalidPassword" as const;
     case "invalid_credentials":
       return "auth.error.invalidCredentials" as const;
     case "sign_in_denied":
@@ -46,6 +50,8 @@ function failureMessageKey(kind: SignInFailureKind) {
 
 function isHandledSignInAlert(kind: SignInFailureKind): boolean {
   return (
+    kind === "user_not_found" ||
+    kind === "invalid_password" ||
     kind === "invalid_credentials" ||
     kind === "sign_in_denied" ||
     kind === "account_locked" ||
@@ -97,6 +103,8 @@ export function SignInPage() {
       if (isHandledSignInAlert(kind)) {
         setFormError(kind);
         if (
+          kind === "user_not_found" ||
+          kind === "invalid_password" ||
           kind === "invalid_credentials" ||
           kind === "sign_in_denied" ||
           kind === "account_locked" ||

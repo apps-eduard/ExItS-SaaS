@@ -4,6 +4,19 @@ import { AUTH_ERROR_CODES } from "@/api/auth/auth-types";
 import { PlatformApiError } from "@/api/platform-http";
 
 describe("classifySignInFailure", () => {
+  it("maps user_not_found and password_invalid separately", () => {
+    expect(
+      classifySignInFailure(
+        new PlatformApiError(404, { errorCode: AUTH_ERROR_CODES.userNotFound, detail: "missing" }),
+      ),
+    ).toBe("user_not_found");
+    expect(
+      classifySignInFailure(
+        new PlatformApiError(401, { errorCode: AUTH_ERROR_CODES.passwordInvalid, detail: "wrong" }),
+      ),
+    ).toBe("invalid_password");
+  });
+
   it("maps login_failed and 401 to invalid credentials", () => {
     expect(
       classifySignInFailure(

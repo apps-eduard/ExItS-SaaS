@@ -86,6 +86,10 @@ export function OrgOwnershipTransferPage() {
       : ["org", "ownership-transfer", "pending", "none"],
     enabled: organizationId !== null,
     queryFn: ({ signal }) => getPendingOwnershipTransferForOrg(organizationId!, signal),
+    meta: {
+      suppressGlobalError: true,
+      operation: "get pending ownership transfer",
+    },
   });
 
   const resolveMutation = useMutation({
