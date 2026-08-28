@@ -726,6 +726,14 @@ export function InventoryDetailPage() {
                       : ""}
                   </p>
                 ) : null}
+                {movement.unitCost != null ? (
+                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("inventory.movementUnitCost")}: ₱{movement.unitCost.toFixed(2)}
+                    {movement.stockValue != null
+                      ? ` · ${t("inventory.movementStockValue")}: ₱${movement.stockValue.toFixed(2)}`
+                      : ""}
+                  </p>
+                ) : null}
               </Card>
             </li>
           ))}

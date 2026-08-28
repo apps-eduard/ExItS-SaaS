@@ -185,7 +185,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
     private static async Task EnableInventoryAsync(HttpClient client, Guid org, Guid productId)
     {
         using var request = PosIntegrationRequest.Scoped(HttpMethod.Post, $"/api/v1/pos/inventory/{productId:D}/enable", org, Actor);
-        request.Content = JsonContent.Create(new EnableInventoryTrackingRequest(100m), options: JsonOptions);
+        request.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 100m, UnitCost: 1m), options: JsonOptions);
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }

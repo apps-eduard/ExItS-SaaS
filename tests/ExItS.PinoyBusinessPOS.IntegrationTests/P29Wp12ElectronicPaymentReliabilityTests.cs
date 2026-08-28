@@ -380,7 +380,11 @@ public sealed class P29Wp12ElectronicPaymentReliabilityTests(PosPostgreSqlFixtur
     {
         var product = await CreateProductAsync(client, org, name, "Piece", 25m);
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(openingStock), options: JsonOptions);
+        enable.Content = JsonContent.Create(
+            openingStock > 0m
+                ? new EnableInventoryTrackingRequest(OpeningQuantity: openingStock, UnitCost: 1m)
+                : new EnableInventoryTrackingRequest(OpeningQuantity: openingStock),
+            options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
         return product;
     }

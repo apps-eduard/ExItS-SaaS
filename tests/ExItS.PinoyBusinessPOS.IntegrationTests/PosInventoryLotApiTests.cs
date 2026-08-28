@@ -37,7 +37,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Milk 1L", tracksExpiration: true);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         using var missingExpiry = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org);
@@ -106,7 +106,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Yogurt", tracksExpiration: true);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var expiredDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2));
@@ -162,7 +162,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         var saleId = Guid.NewGuid();
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var expiry = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(14));
@@ -198,7 +198,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         Assert.False(product.TracksExpiration);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(4m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 4m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/adjustments", org);
@@ -236,7 +236,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(14, product!.ExpirationWarningDays);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         // Day +10 is outside DefaultWarningDays (7) but inside product warning (14).
@@ -264,7 +264,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Branch Milk", tracksExpiration: true);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var expiry = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(20));
@@ -304,7 +304,7 @@ public sealed class PosInventoryLotApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Bread", tracksExpiration: true);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(0m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var earlier = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10));

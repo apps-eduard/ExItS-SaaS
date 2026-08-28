@@ -238,7 +238,11 @@ public sealed class PosCustomerOrderUtangLedgerApiTests(PosPostgreSqlFixture fix
     private static async Task EnableInventoryAsync(HttpClient client, Guid orgId, Guid productId, decimal qty)
     {
         using var request = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", orgId, SellerActor);
-        request.Content = JsonContent.Create(new EnableInventoryTrackingRequest(qty), options: JsonOptions);
+        request.Content = JsonContent.Create(
+            qty > 0m
+                ? new EnableInventoryTrackingRequest(OpeningQuantity: qty, UnitCost: 1m)
+                : new EnableInventoryTrackingRequest(OpeningQuantity: qty),
+            options: JsonOptions);
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }

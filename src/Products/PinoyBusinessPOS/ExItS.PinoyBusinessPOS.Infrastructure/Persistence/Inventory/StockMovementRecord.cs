@@ -15,4 +15,5 @@ internal sealed class StockMovementRecord
     public Guid RecordedBy { get; set; }
     public Guid? BranchId { get; set; }
     public Guid? InventoryLotId { get; set; }
+    public decimal? UnitCost { get; set; }
 }

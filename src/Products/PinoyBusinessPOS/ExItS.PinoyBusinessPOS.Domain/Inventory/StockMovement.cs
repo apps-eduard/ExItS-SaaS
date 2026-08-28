@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -37,6 +38,8 @@ public sealed class StockMovement
     public Guid RecordedBy { get; }
     public Guid? BranchId { get; }
     public InventoryLotId? InventoryLotId { get; }
+    /// <summary>Purchase cost per base inventory unit when recorded (opening stock only).</summary>
+    public decimal? UnitCost { get; }
 
     private StockMovement(
         StockMovementId id,
@@ -51,7 +54,8 @@ public sealed class StockMovement
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         Guid? branchId = null,
-        InventoryLotId? inventoryLotId = null)
+        InventoryLotId? inventoryLotId = null,
+        decimal? unitCost = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -66,6 +70,7 @@ public sealed class StockMovement
         RecordedBy = recordedBy;
         BranchId = branchId;
         InventoryLotId = inventoryLotId;
+        UnitCost = unitCost;
     }
 
     public static StockMovement OpeningStock(
@@ -77,11 +82,13 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = NormalizeOpeningUnitCost(unitCost);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -93,7 +100,8 @@ public sealed class StockMovement
             StockMovementSourceType.Opening,
             sourceId: null,
             utcNow,
-            actorId);
+            actorId,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement ManualIncrease(
@@ -560,7 +568,8 @@ public sealed class StockMovement
             RecordedAtUtc,
             RecordedBy,
             BranchId,
-            lotId);
+            lotId,
+            UnitCost);
 
     public static StockMovement Rehydrate(
         StockMovementId id,
@@ -575,7 +584,8 @@ public sealed class StockMovement
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
         Guid? branchId = null,
-        InventoryLotId? inventoryLotId = null) =>
+        InventoryLotId? inventoryLotId = null,
+        decimal? unitCost = null) =>
         new(
             id,
             organizationId,
@@ -589,7 +599,32 @@ public sealed class StockMovement
             recordedAtUtc,
             recordedBy,
             branchId,
-            inventoryLotId);
+            inventoryLotId,
+            unitCost);
+
+    public static decimal? NormalizeOpeningUnitCost(decimal? unitCost)
+    {
+        if (unitCost is null)
+        {
+            return null;
+        }
+
+        if (unitCost.Value <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryOpeningUnitCost,
+                "Unit cost must be greater than zero.");
+        }
+
+        if (unitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryOpeningUnitCost,
+                "Unit cost is too large.");
+        }
+
+        return SaleMoney.RoundMoney(unitCost.Value);
+    }
 
     private static string NormalizeAdjustmentReason(string reason)
     {

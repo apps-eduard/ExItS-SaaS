@@ -267,7 +267,11 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
     private static async Task EnableAsync(HttpClient client, Guid org, Guid productId, decimal opening)
     {
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", org, BranchA);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(opening), options: JsonOptions);
+        enable.Content = JsonContent.Create(
+            opening > 0m
+                ? new EnableInventoryTrackingRequest(OpeningQuantity: opening, UnitCost: 1m)
+                : new EnableInventoryTrackingRequest(OpeningQuantity: opening),
+            options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
     }
 

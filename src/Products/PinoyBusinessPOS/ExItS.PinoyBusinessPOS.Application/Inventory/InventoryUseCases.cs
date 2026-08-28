@@ -291,8 +291,13 @@ public sealed class InventoryQueryService
             nearExpiryQuantity);
     }
 
-    public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null) =>
-        new(
+    public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)
+    {
+        decimal? stockValue = movement.UnitCost is { } cost
+            ? SaleMoney.RoundMoney(cost * movement.QuantityEffect)
+            : null;
+
+        return new PosStockMovementDto(
             movement.Id.Value,
             movement.ProductId.Value,
             movement.InventoryAccountId.Value,
@@ -304,7 +309,10 @@ public sealed class InventoryQueryService
             movement.RecordedAtUtc,
             movement.RecordedBy,
             lot?.ExpirationDate,
-            lot?.LotNumber);
+            lot?.LotNumber,
+            movement.UnitCost,
+            stockValue);
+    }
 }
 
 public sealed class EnableInventoryTracking
@@ -337,6 +345,7 @@ public sealed class EnableInventoryTracking
         decimal? reorderLevel = null,
         DateOnly? expirationDate = null,
         string? lotNumber = null,
+        decimal? unitCost = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -358,6 +367,13 @@ public sealed class EnableInventoryTracking
 
         try
         {
+            if (openingQuantity is > 0m && unitCost is null)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryOpeningUnitCostRequired,
+                    "Unit cost is required when opening stock quantity is greater than zero.");
+            }
+
             var account = await _inventory
                 .GetByProductIdAsync(orgId, catalogProductId, cancellationToken)
                 .ConfigureAwait(false);
@@ -378,7 +394,8 @@ public sealed class EnableInventoryTracking
                 actorId,
                 utcNow,
                 hadOpening,
-                product.SellingMode);
+                product.SellingMode,
+                unitCost);
 
             if (reorderLevel is not null)
             {

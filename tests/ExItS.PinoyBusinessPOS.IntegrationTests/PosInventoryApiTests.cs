@@ -47,7 +47,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", orgA);
         enable.Content = JsonContent.Create(
-            new EnableInventoryTrackingRequest(OpeningQuantity: 5m, ReorderLevel: 3m),
+            new EnableInventoryTrackingRequest(OpeningQuantity: 5m, UnitCost: 1m, ReorderLevel: 3m),
             options: JsonOptions);
         using var enableResponse = await client.SendAsync(enable);
         Assert.Equal(HttpStatusCode.OK, enableResponse.StatusCode);
@@ -91,7 +91,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
             org,
             status: PosSubscriptionStatuses.Active,
             grants: PosFeatureCodes.StoreInventoryView);
-        denied.Content = JsonContent.Create(new EnableInventoryTrackingRequest(2m), options: JsonOptions);
+        denied.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 2m, UnitCost: 1m), options: JsonOptions);
         using var deniedResponse = await client.SendAsync(denied);
         Assert.Equal(HttpStatusCode.Forbidden, deniedResponse.StatusCode);
 
@@ -114,7 +114,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Soap", "Piece", 40m, "inv-soap-1");
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 10m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
@@ -153,7 +153,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Eggs", "Piece", 8m, "inv-eggs-1");
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(1m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 1m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
@@ -184,7 +184,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var saleId = Guid.NewGuid();
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(5m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 5m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
@@ -225,7 +225,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var customer = await customerResponse.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(8m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 8m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor);
@@ -265,7 +265,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var product = await CreateProductAsync(client, org, "Rice", "Kilogram", 60m, "inv-rice-uom");
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(2m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 2m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         using var getProduct = Scoped(HttpMethod.Get, $"{Products}/{product.ProductId:D}", org);
@@ -300,7 +300,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         var movementId = Guid.NewGuid();
 
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 10m, UnitCost: 1m), options: JsonOptions);
         using var enableResponse = await client.SendAsync(enable);
         Assert.Equal(HttpStatusCode.OK, enableResponse.StatusCode);
 

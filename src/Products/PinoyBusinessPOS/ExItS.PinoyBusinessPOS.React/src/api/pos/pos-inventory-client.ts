@@ -40,6 +40,8 @@ export type PosStockMovementDto = {
   recordedBy: string;
   expirationDate?: string | null;
   lotNumber?: string | null;
+  unitCost?: number | null;
+  stockValue?: number | null;
 };
 
 export type PosInventoryLotDto = {
@@ -148,6 +150,7 @@ export function enableInventoryTracking(
   productId: string,
   body: {
     openingQuantity?: number | null;
+    unitCost?: number | null;
     expirationDate?: string | null;
     lotNumber?: string | null;
   } = {},

@@ -1945,6 +1945,9 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.InventoryLotId).HasColumnName("inventory_lot_id");
+            entity.Property(e => e.UnitCost)
+                .HasColumnName("unit_cost")
+                .HasPrecision(18, 2);
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.RecordedAtUtc })
                 .HasDatabaseName("ix_stock_movements_org_product_recorded");

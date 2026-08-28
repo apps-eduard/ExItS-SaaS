@@ -675,7 +675,11 @@ public sealed class PosSaleReturnConcurrencyTests(PosPostgreSqlFixture fixture)
         decimal opening)
     {
         using var request = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", org);
-        request.Content = JsonContent.Create(new EnableInventoryTrackingRequest(opening), options: JsonOptions);
+        request.Content = JsonContent.Create(
+            opening > 0m
+                ? new EnableInventoryTrackingRequest(OpeningQuantity: opening, UnitCost: 1m)
+                : new EnableInventoryTrackingRequest(OpeningQuantity: opening),
+            options: JsonOptions);
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }

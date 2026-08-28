@@ -377,7 +377,7 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
             HttpMethod.Post,
             $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
             org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(10m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 10m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var sale = await CheckoutAsync(
@@ -465,7 +465,7 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
             HttpMethod.Post,
             $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
             org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(20m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 20m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         var sale = await CheckoutAsync(
@@ -557,7 +557,7 @@ public sealed class PosSaleCommercialDiscountApiTests(PosPostgreSqlFixture fixtu
             HttpMethod.Post,
             $"/api/v1/pos/inventory/{product.ProductId:D}/enable",
             org);
-        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(5m), options: JsonOptions);
+        enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 5m, UnitCost: 1m), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
 
         using var rejected = await PostAsync(

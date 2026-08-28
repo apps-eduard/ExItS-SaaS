@@ -106,7 +106,8 @@ public sealed class InventoryAccount
         Guid actorId,
         DateTimeOffset utcNow,
         bool hasOpeningStockAlready,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? openingUnitCost = null)
     {
         EnsureUtc(utcNow);
 
@@ -138,7 +139,8 @@ public sealed class InventoryAccount
             unitOfMeasure,
             actorId,
             utcNow,
-            sellingMode: sellingMode);
+            sellingMode: sellingMode,
+            unitCost: openingUnitCost);
         ApplyMovementEffect(opening.QuantityEffect);
         return opening;
     }

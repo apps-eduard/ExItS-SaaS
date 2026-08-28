@@ -36,13 +36,16 @@ public sealed record PosStockMovementDto(
     DateTimeOffset RecordedAtUtc,
     Guid RecordedBy,
     DateOnly? ExpirationDate = null,
-    string? LotNumber = null);
+    string? LotNumber = null,
+    decimal? UnitCost = null,
+    decimal? StockValue = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,
     decimal? ReorderLevel = null,
     DateOnly? ExpirationDate = null,
-    string? LotNumber = null);
+    string? LotNumber = null,
+    decimal? UnitCost = null);
 
 public sealed record AdjustInventoryRequest(
     string Direction,

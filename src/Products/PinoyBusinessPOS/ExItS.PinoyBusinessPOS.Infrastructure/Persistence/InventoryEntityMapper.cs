@@ -59,7 +59,8 @@ internal static class InventoryEntityMapper
             record.RecordedAtUtc,
             record.RecordedBy,
             record.BranchId,
-            record.InventoryLotId is null ? null : InventoryLotId.From(record.InventoryLotId.Value));
+            record.InventoryLotId is null ? null : InventoryLotId.From(record.InventoryLotId.Value),
+            record.UnitCost);
 
     public static StockMovementRecord ToRecord(StockMovement movement) =>
         new()
@@ -76,7 +77,8 @@ internal static class InventoryEntityMapper
             RecordedAtUtc = movement.RecordedAtUtc,
             RecordedBy = movement.RecordedBy,
             BranchId = movement.BranchId,
-            InventoryLotId = movement.InventoryLotId?.Value
+            InventoryLotId = movement.InventoryLotId?.Value,
+            UnitCost = movement.UnitCost
         };
 
     public static InventoryLot ToDomain(InventoryLotRecord record) =>

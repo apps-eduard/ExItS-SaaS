@@ -49,6 +49,14 @@ import {
   type ProductUnitDraft,
 } from "@/features/catalog/product-unit-drafts";
 
+import {
+  buildEnableInventoryBody,
+  computeOpeningStockValue,
+  validateOpeningStockInput,
+} from "@/features/catalog/opening-stock-helpers";
+
+import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
+
 import { useI18n } from "@/i18n/I18nProvider";
 
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -116,6 +124,8 @@ function FormCheck({
 
   testId,
 
+  disabled,
+
   onChange,
 }: {
   label: string;
@@ -123,6 +133,8 @@ function FormCheck({
   checked: boolean;
 
   testId?: string;
+
+  disabled?: boolean;
 
   onChange: (checked: boolean) => void;
 }) {
@@ -134,6 +146,8 @@ function FormCheck({
         data-testid={testId}
 
         checked={checked}
+
+        disabled={disabled}
 
         onChange={(event) => onChange(event.target.checked)}
       />
@@ -167,6 +181,18 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [canBeSold, setCanBeSold] = useState(true);
 
   const [tracksExpiration, setTracksExpiration] = useState(false);
+
+  const [trackStockQuantity, setTrackStockQuantity] = useState(mode === "create");
+
+  const [addOpeningStock, setAddOpeningStock] = useState(false);
+
+  const [openingQuantity, setOpeningQuantity] = useState("");
+
+  const [openingUnitCost, setOpeningUnitCost] = useState("");
+
+  const [openingExpiryDate, setOpeningExpiryDate] = useState("");
+
+  const [openingBatchLot, setOpeningBatchLot] = useState("");
 
   const [expirationWarningDays, setExpirationWarningDays] = useState("7");
 
@@ -225,6 +251,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
     setTracksExpiration(product.tracksExpiration === true);
 
+    setTrackStockQuantity(product.isTracked !== false);
+
     setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
 
     setUnitOfMeasure(
@@ -256,6 +284,27 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     }
   }, [sellingMode]);
 
+  useEffect(() => {
+    if (!trackStockQuantity && tracksExpiration) {
+      setTracksExpiration(false);
+    }
+  }, [trackStockQuantity, tracksExpiration]);
+
+  const openingStockState = {
+    trackStockQuantity,
+    addOpeningStock,
+    openingQuantity,
+    unitCost: openingUnitCost,
+    expiryDate: openingExpiryDate,
+    batchLot: openingBatchLot,
+    tracksExpiration,
+  };
+
+  const openingStockValue = computeOpeningStockValue(
+    Number(openingQuantity),
+    Number(openingUnitCost),
+  );
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!workspace) {
@@ -270,6 +319,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
       if (sellingMode === "ByWeight" && unitOfMeasure !== "Kilogram") {
         throw new Error(t("catalog.byWeightRequiresKg"));
+      }
+
+      if (mode === "create") {
+        const openingValidation = validateOpeningStockInput(openingStockState);
+        if (openingValidation) {
+          throw new Error(t(openingValidation));
+        }
       }
 
       let unitsPayload = undefined as ReturnType<typeof draftsToUnitInputs> | undefined;
@@ -307,14 +363,26 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         units: unitsPayload,
 
-        tracksExpiration,
+        tracksExpiration: trackStockQuantity ? tracksExpiration : false,
 
         expirationWarningDays:
-          tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0 ? warningDays : null,
+          trackStockQuantity && tracksExpiration && !Number.isNaN(warningDays) && warningDays > 0
+            ? warningDays
+            : null,
       };
 
       if (mode === "create") {
-        return createCatalogProduct(workspace, body);
+        const product = await createCatalogProduct(workspace, body);
+
+        if (trackStockQuantity) {
+          await enableInventoryTracking(
+            workspace,
+            product.productId,
+            buildEnableInventoryBody(openingStockState),
+          );
+        }
+
+        return product;
       }
 
       return updateCatalogProduct(workspace, productId!, {
@@ -328,6 +396,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
     onSuccess: async (product) => {
       await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      await queryClient.invalidateQueries({ queryKey: ["inventory"] });
 
       setExpectedUpdatedAtUtc(product.updatedAtUtc);
 
@@ -633,6 +702,115 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         </section>
 
         <section className="catalog-form-section exits-animate-panel">
+          <h2 className="catalog-form-section__title">{t("catalog.sectionInventory")}</h2>
+
+          <div className="catalog-form-section__grid">
+            <FormCheck
+              label={t("catalog.trackStockQuantity")}
+              checked={trackStockQuantity}
+              testId="catalog-track-stock-quantity"
+              onChange={(next) => {
+                setTrackStockQuantity(next);
+                if (!next) {
+                  setAddOpeningStock(false);
+                }
+              }}
+              disabled={mode === "edit"}
+            />
+
+            {trackStockQuantity && mode === "create" ? (
+              <>
+                <div className="catalog-form-field--full">
+                  <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                    {t("openingStock.title")}{" "}
+                    <span className="font-normal text-muted">{t("openingStock.optional")}</span>
+                  </p>
+                  <FormCheck
+                    label={t("openingStock.addNow")}
+                    checked={addOpeningStock}
+                    testId="catalog-add-opening-stock"
+                    onChange={setAddOpeningStock}
+                  />
+                  <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("openingStock.helper")}
+                  </p>
+                </div>
+
+                {addOpeningStock ? (
+                  <>
+                    <Input
+                      label={`${t("openingStock.quantity")} (${unitOfMeasure})`}
+                      name="openingQuantity"
+                      inputMode="decimal"
+                      value={openingQuantity}
+                      onChange={(e) => setOpeningQuantity(e.target.value)}
+                      data-testid="catalog-opening-quantity"
+                    />
+
+                    <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("openingStock.baseUnitHelper").replace("{unit}", unitOfMeasure)}
+                    </p>
+
+                    <Input
+                      label={`${t("openingStock.unitCost")} (₱ / ${unitOfMeasure})`}
+                      name="openingUnitCost"
+                      inputMode="decimal"
+                      value={openingUnitCost}
+                      onChange={(e) => setOpeningUnitCost(e.target.value)}
+                      data-testid="catalog-opening-unit-cost"
+                    />
+
+                    <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("openingStock.unitCostHelper")}
+                    </p>
+
+                    {openingStockValue !== null ? (
+                      <p
+                        className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)]"
+                        data-testid="catalog-opening-stock-value"
+                      >
+                        {t("openingStock.value")}: ₱{openingStockValue.toFixed(2)}
+                      </p>
+                    ) : null}
+
+                    {tracksExpiration ? (
+                      <>
+                        <Input
+                          label={t("openingStock.expiry")}
+                          name="openingExpiryDate"
+                          type="date"
+                          value={openingExpiryDate}
+                          onChange={(e) => setOpeningExpiryDate(e.target.value)}
+                          data-testid="catalog-opening-expiry"
+                        />
+
+                        <Input
+                          label={t("openingStock.batch")}
+                          name="openingBatchLot"
+                          value={openingBatchLot}
+                          onChange={(e) => setOpeningBatchLot(e.target.value)}
+                          data-testid="catalog-opening-batch"
+                        />
+
+                        <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                          {t("openingStock.expiryHelper")}
+                        </p>
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+              </>
+            ) : null}
+
+            {mode === "edit" && trackStockQuantity ? (
+              <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("openingStock.editHint")}
+              </p>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionExpiration")}</h2>
 
           <div className="catalog-form-section__grid">
@@ -642,6 +820,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               checked={tracksExpiration}
 
               testId="catalog-tracks-expiration"
+
+              disabled={!trackStockQuantity}
 
               onChange={setTracksExpiration}
             />
