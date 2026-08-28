@@ -9,6 +9,7 @@ namespace ExItS.Platform.Domain.Organizations;
 /// Organization Staff Invitation. Stores only a token hash — never plaintext secrets.
 /// Accepting creates an Organization membership + staff role only; never grants platform-wide roles,
 /// product-local roles, Business Customer records, or Customer Links.
+/// ExItS-native invites may target a Personal user (EX-ID / Personal QR); email-only invites remain supported.
 /// </summary>
 public sealed class OrganizationInvitation
 {
@@ -27,12 +28,17 @@ public sealed class OrganizationInvitation
     public DateTimeOffset ExpiresAtUtc { get; private set; }
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
     public DateTimeOffset? RevokedAtUtc { get; private set; }
+    public DateTimeOffset? DeclinedAtUtc { get; private set; }
     public PlatformUserId? AcceptedByUserId { get; private set; }
     public string? InviteeDisplayName { get; private set; }
     public string? FirstName { get; private set; }
     public string? LastName { get; private set; }
     public string? Branch { get; private set; }
     public string? ProductRole { get; private set; }
+    /// <summary>Personal PlatformUser targeted by ExItS-native invite (null for legacy email-only).</summary>
+    public PlatformUserId? TargetPersonalUserId { get; private set; }
+    /// <summary>Public EX-ID of the Personal target (safe display / correlation).</summary>
+    public string? TargetPublicUserId { get; private set; }
 
     private OrganizationInvitation(
         OrganizationInvitationId id,
@@ -47,12 +53,15 @@ public sealed class OrganizationInvitation
         DateTimeOffset expiresAtUtc,
         DateTimeOffset? acceptedAtUtc,
         DateTimeOffset? revokedAtUtc,
+        DateTimeOffset? declinedAtUtc,
         PlatformUserId? acceptedByUserId,
         string? inviteeDisplayName,
         string? firstName,
         string? lastName,
         string? branch,
-        string? productRole)
+        string? productRole,
+        PlatformUserId? targetPersonalUserId,
+        string? targetPublicUserId)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -66,12 +75,15 @@ public sealed class OrganizationInvitation
         ExpiresAtUtc = expiresAtUtc;
         AcceptedAtUtc = acceptedAtUtc;
         RevokedAtUtc = revokedAtUtc;
+        DeclinedAtUtc = declinedAtUtc;
         AcceptedByUserId = acceptedByUserId;
         InviteeDisplayName = inviteeDisplayName;
         FirstName = firstName;
         LastName = lastName;
         Branch = branch;
         ProductRole = productRole;
+        TargetPersonalUserId = targetPersonalUserId;
+        TargetPublicUserId = targetPublicUserId;
     }
 
     /// <summary>Creates a pending invitation and returns the plaintext accept token (show once).</summary>
@@ -87,7 +99,9 @@ public sealed class OrganizationInvitation
         string? firstName = null,
         string? lastName = null,
         string? branch = null,
-        string? productRole = null)
+        string? productRole = null,
+        PlatformUserId? targetPersonalUserId = null,
+        string? targetPublicUserId = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         EnsureUtc(utcNow);
@@ -108,11 +122,14 @@ public sealed class OrganizationInvitation
             null,
             null,
             null,
+            null,
             NormalizeOptional(inviteeDisplayName, 256),
             NormalizeOptional(firstName, 100),
             NormalizeOptional(lastName, 100),
             NormalizeOptional(branch, 128),
-            NormalizeOptional(productRole, 64));
+            NormalizeOptional(productRole, 64),
+            targetPersonalUserId,
+            NormalizeOptional(targetPublicUserId, 32));
         return (invitation, acceptToken);
     }
 
@@ -134,7 +151,10 @@ public sealed class OrganizationInvitation
         string? firstName = null,
         string? lastName = null,
         string? branch = null,
-        string? productRole = null) =>
+        string? productRole = null,
+        PlatformUserId? targetPersonalUserId = null,
+        string? targetPublicUserId = null,
+        DateTimeOffset? declinedAtUtc = null) =>
         new(
             id,
             organizationId,
@@ -148,12 +168,15 @@ public sealed class OrganizationInvitation
             expiresAtUtc,
             acceptedAtUtc,
             revokedAtUtc,
+            declinedAtUtc,
             acceptedByUserId,
             inviteeDisplayName,
             firstName,
             lastName,
             branch,
-            productRole);
+            productRole,
+            targetPersonalUserId,
+            targetPublicUserId);
 
     /// <summary>Rotates the accept token and extends expiry for a still-pending invitation.</summary>
     public string Resend(DateTimeOffset utcNow, TimeSpan? lifetime = null)
@@ -170,7 +193,7 @@ public sealed class OrganizationInvitation
     public void Revoke(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
-        if (Status is InvitationStatus.Accepted or InvitationStatus.Revoked)
+        if (Status is InvitationStatus.Accepted or InvitationStatus.Revoked or InvitationStatus.Declined)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInvitationStatusTransition,
@@ -179,6 +202,32 @@ public sealed class OrganizationInvitation
 
         Status = InvitationStatus.Revoked;
         RevokedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Invitee Personal declines an ExItS-native invitation (not used for inviter cancel).</summary>
+    public void Decline(PlatformUserId actorPersonalUserId, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(actorPersonalUserId);
+        EnsureUtc(utcNow);
+        EnsurePendingUsable(utcNow);
+
+        if (TargetPersonalUserId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.AuthorizationDenied,
+                "This invitation cannot be declined in-app. Use the accept link flow or ask the business to cancel it.");
+        }
+
+        if (actorPersonalUserId != TargetPersonalUserId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.AuthorizationDenied,
+                "Only the invited Personal account can decline this invitation.");
+        }
+
+        Status = InvitationStatus.Declined;
+        DeclinedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
     }
 
@@ -199,6 +248,29 @@ public sealed class OrganizationInvitation
         Status = InvitationStatus.Accepted;
         AcceptedAtUtc = utcNow;
         AcceptedByUserId = acceptedByUserId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Accept when the invite is bound to a Personal target — email still stamps contact on staff identity.
+    /// </summary>
+    public void AcceptForPersonalTarget(PlatformUserId staffUserId, PlatformUserId personalUserId, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(staffUserId);
+        ArgumentNullException.ThrowIfNull(personalUserId);
+        EnsureUtc(utcNow);
+        EnsurePendingUsable(utcNow);
+
+        if (TargetPersonalUserId is null || personalUserId != TargetPersonalUserId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.AuthorizationDenied,
+                "Only the invited Personal account can accept this invitation.");
+        }
+
+        Status = InvitationStatus.Accepted;
+        AcceptedAtUtc = utcNow;
+        AcceptedByUserId = staffUserId;
         UpdatedAtUtc = utcNow;
     }
 
@@ -223,6 +295,8 @@ public sealed class OrganizationInvitation
 
     public bool IsExpired(DateTimeOffset utcNow) =>
         Status == InvitationStatus.Pending && utcNow >= ExpiresAtUtc;
+
+    public bool IsExItsNativePersonalInvite => TargetPersonalUserId is not null;
 
     public static string HashToken(string acceptToken)
     {

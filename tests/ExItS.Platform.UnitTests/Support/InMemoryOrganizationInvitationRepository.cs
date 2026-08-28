@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Organizations;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.UnitTests.Support;
@@ -28,6 +29,15 @@ internal sealed class InMemoryOrganizationInvitationRepository : IOrganizationIn
             && i.Status == InvitationStatus.Pending
             && string.Equals(i.NormalizedEmail, normalizedEmail, StringComparison.Ordinal)));
 
+    public Task<OrganizationInvitation?> FindPendingByOrganizationAndTargetUserAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId targetPersonalUserId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(_byId.Values.FirstOrDefault(i =>
+            i.OrganizationId == organizationId
+            && i.Status == InvitationStatus.Pending
+            && i.TargetPersonalUserId == targetPersonalUserId));
+
     public Task<IReadOnlyList<OrganizationInvitation>> ListPendingByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default) =>
@@ -39,6 +49,16 @@ internal sealed class InMemoryOrganizationInvitationRepository : IOrganizationIn
                 .OrderByDescending(i => i.CreatedAtUtc)
                 .ToList());
 
+    public Task<IReadOnlyList<OrganizationInvitation>> ListPendingByTargetPersonalUserIdAsync(
+        PlatformUserId targetPersonalUserId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<OrganizationInvitation>>(
+            _byId.Values
+                .Where(i =>
+                    i.Status == InvitationStatus.Pending
+                    && i.TargetPersonalUserId == targetPersonalUserId)
+                .OrderByDescending(i => i.CreatedAtUtc)
+                .ToList());
     public Task<(IReadOnlyList<OrganizationInvitation> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         InvitationStatus? status,

@@ -60,14 +60,10 @@ internal static class InvitationEndpoints
             Guid organizationId,
             CreateInvitationRequest body,
             CreateOrganizationInvitation useCase,
+            CreateOrganizationInvitationForPersonal nativeInvite,
             PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
-            if (!TryParseRole(body.Role, out var role, out var error))
-            {
-                return error!;
-            }
-
             var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
                 PlatformAuditActions.InvitationCreated,
                 nameof(OrganizationInvitation),
@@ -83,24 +79,54 @@ internal static class InvitationEndpoints
                 .ResolveActorMembershipAuthorityAsync(organizationId, ct)
                 .ConfigureAwait(false);
 
-            var result = await useCase
-                .ExecuteAsync(
-                    PlatformOrganizationId.From(organizationId),
-                    body.Email ?? string.Empty,
-                    role,
-                    membershipAuthz.Inner.CurrentActor.PlatformUserId,
-                    authority.ActorMembershipRole,
-                    authority.HasPlatformManageMemberships,
-                    body.DisplayName,
-                    body.FirstName,
-                    body.LastName,
-                    body.Phone,
-                    body.EmployeeCode,
-                    body.Branch,
-                    body.ProductRole,
-                    body.RequireEmailVerification ?? true,
-                    ct)
-                .ConfigureAwait(false);
+            ApplicationResult<OrganizationInvitationDto> result;
+            var publicTarget = body.PublicUserIdOrQrPayload?.Trim();
+            if (!string.IsNullOrWhiteSpace(publicTarget))
+            {
+                if (authority.ActorMembershipRole != OrganizationRole.OrganizationOwner)
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.AuthorizationDenied,
+                        "Only the Organization Owner can invite staff.",
+                        StatusCodes.Status403Forbidden);
+                }
+
+                result = await nativeInvite
+                    .ExecuteAsync(
+                        PlatformOrganizationId.From(organizationId),
+                        publicTarget,
+                        membershipAuthz.Inner.CurrentActor.PlatformUserId,
+                        body.ProductRole,
+                        body.Branch,
+                        ct)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                if (!TryParseRole(body.Role, out var role, out var error))
+                {
+                    return error!;
+                }
+
+                result = await useCase
+                    .ExecuteAsync(
+                        PlatformOrganizationId.From(organizationId),
+                        body.Email ?? string.Empty,
+                        role,
+                        membershipAuthz.Inner.CurrentActor.PlatformUserId,
+                        authority.ActorMembershipRole,
+                        authority.HasPlatformManageMemberships,
+                        body.DisplayName,
+                        body.FirstName,
+                        body.LastName,
+                        body.Phone,
+                        body.EmployeeCode,
+                        body.Branch,
+                        body.ProductRole,
+                        body.RequireEmailVerification ?? true,
+                        ct)
+                    .ConfigureAwait(false);
+            }
             if (result.IsSuccess)
             {
                 await membershipAuthz.Inner.AuditSucceededAsync(
@@ -117,6 +143,107 @@ internal static class InvitationEndpoints
                 dto => Results.Created(
                     $"/api/v1/platform/organizations/{organizationId}/invitations/{dto.Id}",
                     dto));
+        });
+
+        app.MapPost("/api/v1/platform/organizations/{organizationId:guid}/invitations/resolve-target", async (
+            Guid organizationId,
+            ResolveStaffInviteTargetRequest body,
+            ResolveStaffInviteTarget useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationInvitation),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Resolve staff invite target.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var authority = await membershipAuthz
+                .ResolveActorMembershipAuthorityAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (authority.ActorMembershipRole != OrganizationRole.OrganizationOwner)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Only the Organization Owner can invite staff.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            var result = await useCase.ExecuteAsync(body.Input ?? string.Empty, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapGet("/api/v1/platform/invitations/my-pending", async (
+            ListPendingOrganizationInvitationsForPersonalUser useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapPost("/api/v1/platform/invitations/{invitationId:guid}/decline", async (
+            Guid invitationId,
+            DeclineOrganizationInvitationForPersonal useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(OrganizationInvitationId.From(invitationId), PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto with { AcceptToken = null }));
+        });
+
+        app.MapPost("/api/v1/platform/invitations/{invitationId:guid}/accept-as-personal", async (
+            Guid invitationId,
+            AcceptInvitationByIdRequest body,
+            AcceptOrganizationInvitation useCase,
+            HttpContext http,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var result = await useCase
+                .ExecuteAcceptByIdForPersonalAsync(
+                    PlatformUserId.From(userId),
+                    OrganizationInvitationId.From(invitationId),
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         app.MapPost("/api/v1/platform/invitations/{invitationId:guid}/resend", async (
@@ -314,9 +441,16 @@ internal sealed record CreateInvitationRequest(
     string? EmployeeCode = null,
     string? Branch = null,
     string? ProductRole = null,
-    bool? RequireEmailVerification = null);
+    bool? RequireEmailVerification = null,
+    string? PublicUserIdOrQrPayload = null);
+internal sealed record ResolveStaffInviteTargetRequest(string? Input);
 internal sealed record AcceptInvitationRequest(
     string? Token,
+    string? Password,
+    string? DisplayName = null,
+    string? FirstName = null,
+    string? LastName = null);
+internal sealed record AcceptInvitationByIdRequest(
     string? Password,
     string? DisplayName = null,
     string? FirstName = null,

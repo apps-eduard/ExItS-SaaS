@@ -51,6 +51,22 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<OrganizationInvitation?> FindPendingByOrganizationAndTargetUserAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId targetPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = nameof(InvitationStatus.Pending);
+        var record = await _db.OrganizationInvitations.AsNoTracking()
+            .FirstOrDefaultAsync(
+                i => i.OrganizationId == organizationId.Value
+                     && i.TargetPersonalUserId == targetPersonalUserId.Value
+                     && i.Status == pending,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public async Task<IReadOnlyList<OrganizationInvitation>> ListPendingByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default)
@@ -58,6 +74,19 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
         var pending = nameof(InvitationStatus.Pending);
         var records = await _db.OrganizationInvitations.AsNoTracking()
             .Where(i => i.NormalizedEmail == normalizedEmail && i.Status == pending)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<OrganizationInvitation>> ListPendingByTargetPersonalUserIdAsync(
+        PlatformUserId targetPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = nameof(InvitationStatus.Pending);
+        var records = await _db.OrganizationInvitations.AsNoTracking()
+            .Where(i => i.TargetPersonalUserId == targetPersonalUserId.Value && i.Status == pending)
             .OrderByDescending(i => i.CreatedAtUtc)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -127,7 +156,10 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
             record.FirstName,
             record.LastName,
             record.Branch,
-            record.ProductRole);
+            record.ProductRole,
+            record.TargetPersonalUserId is Guid target ? PlatformUserId.From(target) : null,
+            record.TargetPublicUserId,
+            record.DeclinedAtUtc);
 
     private static OrganizationInvitationRecord ToRecord(OrganizationInvitation invitation) =>
         new()
@@ -144,12 +176,15 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
             ExpiresAtUtc = invitation.ExpiresAtUtc,
             AcceptedAtUtc = invitation.AcceptedAtUtc,
             RevokedAtUtc = invitation.RevokedAtUtc,
+            DeclinedAtUtc = invitation.DeclinedAtUtc,
             AcceptedByUserId = invitation.AcceptedByUserId?.Value,
             InviteeDisplayName = invitation.InviteeDisplayName,
             FirstName = invitation.FirstName,
             LastName = invitation.LastName,
             Branch = invitation.Branch,
-            ProductRole = invitation.ProductRole
+            ProductRole = invitation.ProductRole,
+            TargetPersonalUserId = invitation.TargetPersonalUserId?.Value,
+            TargetPublicUserId = invitation.TargetPublicUserId
         };
 
     private static void Apply(OrganizationInvitation invitation, OrganizationInvitationRecord record)
@@ -162,11 +197,14 @@ internal sealed class OrganizationInvitationRepository : IOrganizationInvitation
         record.ExpiresAtUtc = invitation.ExpiresAtUtc;
         record.AcceptedAtUtc = invitation.AcceptedAtUtc;
         record.RevokedAtUtc = invitation.RevokedAtUtc;
+        record.DeclinedAtUtc = invitation.DeclinedAtUtc;
         record.AcceptedByUserId = invitation.AcceptedByUserId?.Value;
         record.InviteeDisplayName = invitation.InviteeDisplayName;
         record.FirstName = invitation.FirstName;
         record.LastName = invitation.LastName;
         record.Branch = invitation.Branch;
         record.ProductRole = invitation.ProductRole;
+        record.TargetPersonalUserId = invitation.TargetPersonalUserId?.Value;
+        record.TargetPublicUserId = invitation.TargetPublicUserId;
     }
 }

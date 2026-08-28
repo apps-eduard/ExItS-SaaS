@@ -13,6 +13,7 @@ import { PersonalHomePage } from "@/features/personal/PersonalHomePage";
 import { PersonalGuidePage } from "@/features/personal/guide/PersonalGuidePage";
 import { PersonalMorePage, PersonalUtangHubPage } from "@/features/personal/PersonalHubPages";
 import { PersonalOwnershipTransfersPage } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
+import { PersonalStaffInvitationsPage } from "@/features/personal/staff/PersonalStaffInvitationsPage";
 import { PersonalProfilePage } from "@/features/personal/PersonalProfilePage";
 import { PersonalExplorePosPage } from "@/features/personal/start-business/PersonalExplorePosPage";
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
@@ -308,6 +309,10 @@ export const appRoutes = [
               {
                 path: "ownership-transfers",
                 element: <PersonalOwnershipTransfersPage />,
+              },
+              {
+                path: "staff-invitations",
+                element: <PersonalStaffInvitationsPage />,
               },
               { path: "profile", element: <PersonalProfilePage /> },
               { path: "explore-pos", element: <PersonalExplorePosPage /> },

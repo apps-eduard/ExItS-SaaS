@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Application.Organizations;
 
@@ -17,8 +18,17 @@ public interface IOrganizationInvitationRepository
         string normalizedEmail,
         CancellationToken cancellationToken = default);
 
+    Task<OrganizationInvitation?> FindPendingByOrganizationAndTargetUserAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId targetPersonalUserId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<OrganizationInvitation>> ListPendingByNormalizedEmailAsync(
         string normalizedEmail,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<OrganizationInvitation>> ListPendingByTargetPersonalUserIdAsync(
+        PlatformUserId targetPersonalUserId,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<OrganizationInvitation> Items, int TotalCount)> ListByOrganizationAsync(

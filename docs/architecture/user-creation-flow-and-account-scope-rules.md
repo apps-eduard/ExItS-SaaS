@@ -522,17 +522,32 @@ The system must not create a duplicate identity.
 
 Organization staff invitations create a **distinct** org-scoped staff PlatformUser. They do **not** attach membership to an existing Personal/Owner identity.
 
+**Normal ExItS-native path (EXITS-ORG-STAFF-INVITE-01):**
+
+```text
+Organization Owner
+→ Personal EX-ID or Personal QR
+→ resolve safe public Personal profile
+→ pending OrganizationInvitation (TargetPersonalUserId + Staff role + optional product role)
+→ Personal in-app notification (OrganizationStaffInvitation)
+→ invitee Accept / Decline in Personal
+→ on Accept: new PlatformUser staff login local@ORG###### (server-generated)
+→ NormalizedContactEmail from Personal contact/email
+→ HomeOrganizationId = inviting organization (immutable)
+→ LinkedPersonalUserId = Personal principal (correlation only)
+→ Organization account profile + membership (+ optional product-local role)
+```
+
+**Legacy/compatibility email path** (API still available; not primary React Owner UX):
+
 ```text
 Owner/admin invites contact email
 → pending OrganizationInvitation (org + contact email + token)
 → invitee accepts with token + password
-→ new PlatformUser staff login: local@ORG###### (NormalizedEmail)
-→ NormalizedContactEmail = invited contact email
-→ HomeOrganizationId = inviting organization (immutable)
-→ Organization account profile + membership (+ optional product role)
+→ same org-scoped staff creation as above
 ```
 
-The same contact email may correspond to multiple staff logins across employers. Personal/Owner identity (`maria@gmail.com`) remains separate. See [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md).
+The same contact email may correspond to multiple staff logins across employers. Personal/Owner identity (`maria@gmail.com`) remains separate. See [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md) and [EXITS-ORG-STAFF-INVITE-01](../Mobile-React/Authoritative/EXITS-ORG-STAFF-INVITE-01.md).
 
 Obsolete pre-production compatibility that attached org staff membership to an existing Personal identity was intentionally removed before production. New invites always create org-scoped staff logins. Owner Start-a-Business membership on a Personal identity remains the target Owner model.
 

@@ -14,11 +14,14 @@ internal sealed class OrganizationInvitationRecord
     public DateTimeOffset ExpiresAtUtc { get; set; }
     public DateTimeOffset? AcceptedAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }
+    public DateTimeOffset? DeclinedAtUtc { get; set; }
     public Guid? AcceptedByUserId { get; set; }
     public string? InviteeDisplayName { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Branch { get; set; }
     public string? ProductRole { get; set; }
+    public Guid? TargetPersonalUserId { get; set; }
+    public string? TargetPublicUserId { get; set; }
     public uint Xmin { get; set; }
 }

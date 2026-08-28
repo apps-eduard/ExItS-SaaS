@@ -140,4 +140,47 @@ public sealed class OrganizationInvitationTests
         Assert.Equal("Cashier", invitation.ProductRole);
         Assert.NotEqual(invitation.Role.ToString(), invitation.ProductRole);
     }
+
+    [Fact]
+    public void ExIts_native_decline_and_accept_require_target_personal_user()
+    {
+        var personalId = PlatformUserId.New();
+        var (invitation, _) = OrganizationInvitation.Create(
+            PlatformOrganizationId.New(),
+            "maria@example.com",
+            OrganizationRole.OrganizationMember,
+            T0,
+            inviteeDisplayName: "Maria Santos",
+            productRole: "Cashier",
+            targetPersonalUserId: personalId,
+            targetPublicUserId: "EX-1234-5678");
+
+        Assert.True(invitation.IsExItsNativePersonalInvite);
+        Assert.Equal(personalId, invitation.TargetPersonalUserId);
+
+        var wrongDecline = Assert.Throws<DomainException>(() =>
+            invitation.Decline(PlatformUserId.New(), T0.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.AuthorizationDenied, wrongDecline.ErrorCode);
+
+        invitation.Decline(personalId, T0.AddMinutes(1));
+        Assert.Equal(InvitationStatus.Declined, invitation.Status);
+        Assert.NotNull(invitation.DeclinedAtUtc);
+
+        var (pending, _) = OrganizationInvitation.Create(
+            PlatformOrganizationId.New(),
+            "maria@example.com",
+            OrganizationRole.OrganizationMember,
+            T0,
+            targetPersonalUserId: personalId,
+            targetPublicUserId: "EX-1234-5678");
+
+        var wrongAccept = Assert.Throws<DomainException>(() =>
+            pending.AcceptForPersonalTarget(PlatformUserId.New(), PlatformUserId.New(), T0.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.AuthorizationDenied, wrongAccept.ErrorCode);
+
+        var staffId = PlatformUserId.New();
+        pending.AcceptForPersonalTarget(staffId, personalId, T0.AddMinutes(2));
+        Assert.Equal(InvitationStatus.Accepted, pending.Status);
+        Assert.Equal(staffId, pending.AcceptedByUserId);
+    }
 }

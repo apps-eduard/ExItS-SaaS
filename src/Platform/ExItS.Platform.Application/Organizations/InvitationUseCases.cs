@@ -35,7 +35,11 @@ public sealed record OrganizationInvitationDto(
     string? Branch = null,
     string? ProductRole = null,
     string? ProductRoleDisplay = null,
-    string? InvitationStatus = null);
+    string? InvitationStatus = null,
+    Guid? TargetPersonalUserId = null,
+    string? TargetPublicUserId = null,
+    DateTimeOffset? DeclinedAtUtc = null,
+    string? OrganizationDisplayName = null);
 
 public sealed record AcceptOrganizationInvitationResultDto(
     Guid UserId,
@@ -135,7 +139,10 @@ public sealed class OrganizationInvitationQueryService
             invitation.Branch,
             productRole,
             string.IsNullOrWhiteSpace(productRole) ? null : ProductRoleDisplay.ToDisplayLabel(productRole),
-            invitationStatus);
+            invitationStatus,
+            invitation.TargetPersonalUserId?.Value,
+            invitation.TargetPublicUserId,
+            invitation.DeclinedAtUtc);
     }
 }
 
@@ -535,6 +542,37 @@ public sealed class AcceptOrganizationInvitation
             lastName,
             cancellationToken);
 
+    public async Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> ExecuteAcceptByIdForPersonalAsync(
+        PlatformUserId authenticatedPersonalUserId,
+        OrganizationInvitationId invitationId,
+        string password,
+        string? displayName = null,
+        string? firstName = null,
+        string? lastName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var invitation = await _invitations.GetByIdAsync(invitationId, cancellationToken).ConfigureAwait(false);
+        if (invitation is null
+            || invitation.Status != InvitationStatus.Pending
+            || invitation.TargetPersonalUserId is null
+            || invitation.TargetPersonalUserId != authenticatedPersonalUserId)
+        {
+            return ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                ApplicationErrorCodes.InvitationNotFound,
+                "Invitation was not found or is no longer pending.");
+        }
+
+        return await CompleteWithTokenHashAsync(
+                invitation.TokenHash,
+                password,
+                authenticatedPersonalUserId,
+                displayName,
+                firstName,
+                lastName,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     private async Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> CompleteAsync(
         string acceptToken,
         string password,
@@ -551,6 +589,26 @@ public sealed class AcceptOrganizationInvitation
                 "Invitation token is required.");
         }
 
+        return await CompleteWithTokenHashAsync(
+                OrganizationInvitation.HashToken(acceptToken),
+                password,
+                authenticatedPersonalUserId,
+                displayName,
+                firstName,
+                lastName,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<ApplicationResult<AcceptOrganizationInvitationResultDto>> CompleteWithTokenHashAsync(
+        string tokenHash,
+        string password,
+        PlatformUserId? authenticatedPersonalUserId,
+        string? displayName,
+        string? firstName,
+        string? lastName,
+        CancellationToken cancellationToken)
+    {
         var policyError = PlatformPasswordPolicy.Validate(password, _passwordOptions);
         if (policyError is not null)
         {
@@ -559,8 +617,7 @@ public sealed class AcceptOrganizationInvitation
                 policyError);
         }
 
-        var hash = OrganizationInvitation.HashToken(acceptToken);
-        var preliminary = await _invitations.FindPendingByTokenHashAsync(hash, cancellationToken)
+        var preliminary = await _invitations.FindPendingByTokenHashAsync(tokenHash, cancellationToken)
             .ConfigureAwait(false);
         if (preliminary is null)
         {
@@ -580,7 +637,7 @@ public sealed class AcceptOrganizationInvitation
                     async ct =>
                     {
                         var locked = await ExecuteLockedAsync(
-                                hash,
+                                tokenHash,
                                 password,
                                 authenticatedPersonalUserId,
                                 displayName,
@@ -700,7 +757,7 @@ public sealed class AcceptOrganizationInvitation
         {
             var personalProof = await ProveEligiblePersonalForInvitationAsync(
                     authenticatedPersonalUserId,
-                    contactEmail,
+                    invitation,
                     cancellationToken)
                 .ConfigureAwait(false);
             if (personalProof.Failure is not null)
@@ -709,6 +766,14 @@ public sealed class AcceptOrganizationInvitation
             }
 
             linkedPersonalUserId = personalProof.PersonalUserId;
+        }
+        else if (invitation.IsExItsNativePersonalInvite)
+        {
+            return new LockedAcceptOutcome(
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationRequiresAuthenticatedPersonal,
+                    "Sign in with your Personal account to accept this invitation."),
+                Outbound: null);
         }
         else if (existingLoginPrincipal is not null
                  && await HasActivePersonalAccountProfileAsync(existingLoginPrincipal.Id, cancellationToken)
@@ -799,7 +864,14 @@ public sealed class AcceptOrganizationInvitation
                 .ConfigureAwait(false);
         }
 
-        invitation.Accept(staffUser.Id, contactEmail, utcNow);
+        if (invitation.IsExItsNativePersonalInvite && linkedPersonalUserId is not null)
+        {
+            invitation.AcceptForPersonalTarget(staffUser.Id, linkedPersonalUserId, utcNow);
+        }
+        else
+        {
+            invitation.Accept(staffUser.Id, contactEmail, utcNow);
+        }
         await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
 
         var staffLoginDisplay = StaffLoginNameRules.FormatForDisplay(staffUser.NormalizedEmail);
@@ -864,7 +936,7 @@ public sealed class AcceptOrganizationInvitation
     private async Task<(ApplicationResult<AcceptOrganizationInvitationResultDto>? Failure, PlatformUserId? PersonalUserId)>
         ProveEligiblePersonalForInvitationAsync(
             PlatformUserId authenticatedPersonalUserId,
-            string invitationContactEmail,
+            OrganizationInvitation invitation,
             CancellationToken cancellationToken)
     {
         var personal = await _users
@@ -873,10 +945,28 @@ public sealed class AcceptOrganizationInvitation
         if (personal is null
             || personal.IsOrganizationScopedStaff
             || personal.Status != AccountStatus.Active
-            || !string.Equals(personal.NormalizedEmail, invitationContactEmail, StringComparison.Ordinal)
             || !await HasActivePersonalAccountProfileAsync(personal.Id, cancellationToken).ConfigureAwait(false))
         {
-            // Generic not-found: do not leak whether another Personal account exists.
+            return (
+                ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                    ApplicationErrorCodes.InvitationNotFound,
+                    "Invitation was not found or is no longer pending."),
+                null);
+        }
+
+        if (invitation.TargetPersonalUserId is not null)
+        {
+            if (personal.Id != invitation.TargetPersonalUserId)
+            {
+                return (
+                    ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
+                        ApplicationErrorCodes.InvitationNotFound,
+                        "Invitation was not found or is no longer pending."),
+                    null);
+            }
+        }
+        else if (!string.Equals(personal.NormalizedEmail, invitation.NormalizedEmail, StringComparison.Ordinal))
+        {
             return (
                 ApplicationResult<AcceptOrganizationInvitationResultDto>.Failure(
                     ApplicationErrorCodes.InvitationNotFound,

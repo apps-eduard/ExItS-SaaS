@@ -15,6 +15,11 @@ import {
   revokeProductLocalRole,
   type ProductLocalRoleGrantWire,
 } from "@/api/platform/product-local-roles-client";
+import {
+  listOrganizationInvitations,
+  revokeStaffInvitation,
+  type OrganizationInvitationWire,
+} from "@/api/platform/staff-invitation-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -23,6 +28,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -48,7 +54,8 @@ type StaffRow = {
 type PendingAction =
   | { kind: "suspend"; membershipId: string; name: string }
   | { kind: "remove"; membershipId: string; name: string }
-  | { kind: "revokeRole"; grantId: string; roleLabel: string; name: string };
+  | { kind: "revokeRole"; grantId: string; roleLabel: string; name: string }
+  | { kind: "cancelInvite"; invitationId: string; name: string };
 
 function statusTone(status: string): "success" | "warning" | "danger" | "info" {
   const normalized = status.trim().toLowerCase();
@@ -131,9 +138,19 @@ function buildRows(
   });
 }
 
+function pendingInviteLabel(invitation: OrganizationInvitationWire, fallback: string): string {
+  return (
+    invitation.inviteeDisplayName?.trim() ||
+    invitation.targetPublicUserId?.trim() ||
+    invitation.email?.trim() ||
+    fallback
+  );
+}
+
 export function OrgStaffPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const online = useBrowserOnline();
   const { session } = useSession();
   const { boundWorkspace } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -162,6 +179,22 @@ export function OrgStaffPage() {
     },
   });
 
+  const pendingInvitesQuery = useQuery({
+    queryKey: ["org-staff-pending-invites", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async ({ signal }) => {
+      if (!organizationId) {
+        throw new Error("missing organization");
+      }
+      return listOrganizationInvitations({
+        organizationId,
+        status: "Pending",
+        signal,
+      });
+    },
+    meta: { suppressGlobalError: true, operation: "list pending staff invitations" },
+  });
+
   const busyMutation = useMutation({
     mutationFn: async (action: PendingAction) => {
       if (!organizationId) {
@@ -187,6 +220,16 @@ export function OrgStaffPage() {
         }
         return;
       }
+      if (action.kind === "cancelInvite") {
+        if (!online) {
+          throw new Error(t("staffInvite.onlineRequired"));
+        }
+        const result = await revokeStaffInvitation(action.invitationId);
+        if (!result.ok) {
+          throw new Error(result.body?.detail ?? t("staffManage.actionError"));
+        }
+        return;
+      }
       const result = await revokeProductLocalRole({
         organizationId,
         grantId: action.grantId,
@@ -196,10 +239,15 @@ export function OrgStaffPage() {
         throw new Error(result.body?.detail ?? t("staffManage.actionError"));
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, action) => {
       setPending(null);
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: ["org-staff", organizationId] });
+      if (action.kind === "cancelInvite") {
+        await queryClient.invalidateQueries({
+          queryKey: ["org-staff-pending-invites", organizationId],
+        });
+      }
     },
     onError: (error: Error) => {
       setActionError(error.message);
@@ -208,6 +256,7 @@ export function OrgStaffPage() {
   });
 
   const rows = staffQuery.data ?? [];
+  const pendingInvites = pendingInvitesQuery.data ?? [];
   const confirmCopy = useMemo(() => {
     if (!pending) {
       return null;
@@ -224,6 +273,13 @@ export function OrgStaffPage() {
         title: t("staffManage.removeConfirmTitle"),
         detail: t("staffManage.removeConfirmDetail").replace("{name}", pending.name),
         confirmLabel: t("staffManage.remove"),
+      };
+    }
+    if (pending.kind === "cancelInvite") {
+      return {
+        title: t("staffManage.cancelInvite"),
+        detail: t("staffManage.cancelInviteConfirm").replace("{name}", pending.name),
+        confirmLabel: t("staffManage.cancelInvite"),
       };
     }
     return {
@@ -470,6 +526,69 @@ export function OrgStaffPage() {
             );
           })}
         </ul>
+      ) : null}
+
+      {pendingInvitesQuery.isSuccess && pendingInvites.length > 0 ? (
+        <section
+          className="catalog-form-section exits-animate-panel flex flex-col gap-2"
+          data-testid="org-staff-pending-invites"
+          aria-label={t("staffManage.pendingInvites")}
+        >
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+            {t("staffManage.pendingInvites")}
+          </h2>
+          <ul className="exits-list m-0 grid list-none gap-2 p-0">
+            {pendingInvites.map((invitation) => {
+              const name = pendingInviteLabel(invitation, t("staffInvite.thisBusiness"));
+              const posRole =
+                invitation.productRoleDisplay ??
+                invitation.productRole ??
+                t("staffInvite.orgRoleStaff");
+              return (
+                <li key={invitation.id}>
+                  <article
+                    className="exits-list__card staff-row min-w-0"
+                    data-testid={`org-staff-pending-invite-${invitation.id}`}
+                  >
+                    <span className="staff-row__avatar" aria-hidden>
+                      {initials(name)}
+                    </span>
+                    <div className="staff-row__main min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="exits-list__name m-0 truncate font-semibold">{name}</p>
+                        <StatusChip tone="warning">{t("staffManage.invitationPending")}</StatusChip>
+                      </div>
+                      <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                        {posRole}
+                        {invitation.targetPublicUserId
+                          ? ` · ${invitation.targetPublicUserId}`
+                          : null}
+                      </p>
+                      <div className="staff-row__actions">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="staff-row__action"
+                          disabled={busyMutation.isPending || !online}
+                          data-testid={`org-staff-cancel-invite-${invitation.id}`}
+                          onClick={() =>
+                            setPending({
+                              kind: "cancelInvite",
+                              invitationId: invitation.id,
+                              name,
+                            })
+                          }
+                        >
+                          {t("staffManage.cancelInvite")}
+                        </Button>
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       <p className="staff-page__footnote exits-animate-panel m-0 text-[length:var(--exits-text-sm)] text-muted">

@@ -3592,6 +3592,10 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<DateTimeOffset?>("DeclinedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("declined_at_utc");
+
                     b.Property<DateTimeOffset>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at_utc");
@@ -3646,6 +3650,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("status");
 
+                    b.Property<Guid?>("TargetPersonalUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_personal_user_id");
+
+                    b.Property<string>("TargetPublicUserId")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("target_public_user_id");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -3664,6 +3677,9 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TargetPersonalUserId")
+                        .HasDatabaseName("ix_organization_invitations_target_personal_user_id");
+
                     b.HasIndex("TokenHash")
                         .IsUnique()
                         .HasDatabaseName("ux_organization_invitations_token_hash");
@@ -3673,11 +3689,16 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_organization_invitations_pending_email")
                         .HasFilter("status = 'Pending'");
 
+                    b.HasIndex("OrganizationId", "TargetPersonalUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_invitations_pending_target_user")
+                        .HasFilter("status = 'Pending' AND target_personal_user_id IS NOT NULL");
+
                     b.ToTable("organization_invitations", "platform");
                 });
 
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.OrganizationMembershipBranchAssignmentRecord", b =>
-                {
+            {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")

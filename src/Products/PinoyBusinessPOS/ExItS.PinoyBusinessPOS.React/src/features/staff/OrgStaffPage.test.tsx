@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as membersClient from "@/api/platform/organization-members-client";
 import * as rolesClient from "@/api/platform/product-local-roles-client";
+import * as inviteClient from "@/api/platform/staff-invitation-client";
 import {
   isOrganizationOwnerMembershipRole,
   OrgStaffPage,
@@ -30,6 +31,19 @@ vi.mock("@/api/platform/product-local-roles-client", async (importOriginal) => {
     revokeProductLocalRole: vi.fn(),
   };
 });
+
+vi.mock("@/api/platform/staff-invitation-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof inviteClient>();
+  return {
+    ...actual,
+    listOrganizationInvitations: vi.fn(),
+    revokeStaffInvitation: vi.fn(),
+  };
+});
+
+vi.mock("@/connectivity/browser-online", () => ({
+  useBrowserOnline: () => true,
+}));
 
 const sessionMock = vi.hoisted(() => ({
   userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" as string | null,
@@ -148,6 +162,7 @@ describe("OrgStaffPage owner protection", () => {
         },
       ],
     });
+    vi.mocked(inviteClient.listOrganizationInvitations).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -185,5 +200,28 @@ describe("OrgStaffPage owner protection", () => {
     expect(within(staffRow).queryByTestId(`org-staff-suspend-${staffMembershipId}`)).not.toBeInTheDocument();
     expect(within(staffRow).queryByTestId(`org-staff-remove-${staffMembershipId}`)).not.toBeInTheDocument();
     expect(within(staffRow).queryByLabelText(/Revoke role/i)).not.toBeInTheDocument();
+  });
+
+  it("lists pending invitations with cancel action", async () => {
+    const inviteId = "55555555-5555-4555-8555-555555555555";
+    vi.mocked(inviteClient.listOrganizationInvitations).mockResolvedValue([
+      {
+        id: inviteId,
+        organizationId: orgId,
+        email: "maria@example.com",
+        role: "OrganizationMember",
+        status: "Pending",
+        inviteeDisplayName: "Maria Santos",
+        productRole: "Cashier",
+        targetPublicUserId: "EX-1234-5678",
+      },
+    ]);
+
+    renderPage();
+
+    const pending = await screen.findByTestId("org-staff-pending-invites");
+    expect(within(pending).getByText("Maria Santos")).toBeInTheDocument();
+    expect(within(pending).getByText("Invitation pending")).toBeInTheDocument();
+    expect(within(pending).getByTestId(`org-staff-cancel-invite-${inviteId}`)).toBeInTheDocument();
   });
 });

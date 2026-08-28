@@ -212,6 +212,12 @@ public static class OwnershipTransferNotificationTypes
     public const string Requested = "OrganizationOwnershipTransfer";
 }
 
+/// <summary>Personal inbox RelatedType for Organization staff invitations (EX-ID / Personal QR).</summary>
+public static class OrganizationStaffInvitationNotificationTypes
+{
+    public const string PersonalPendingInvite = "OrganizationStaffInvitation";
+}
+
 /// <summary>RelatedType values for customer-order lifecycle organization inbox events.</summary>
 public static class CustomerOrderNotificationTypes
 {

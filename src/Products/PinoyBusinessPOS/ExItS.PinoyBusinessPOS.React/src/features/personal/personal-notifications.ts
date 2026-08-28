@@ -247,6 +247,13 @@ export function resolveNotificationDeepLink(
   ) {
     return "/personal/ownership-transfers";
   }
+  if (
+    type === "organizationstaffinvitation" ||
+    type.includes("staffinvitation") ||
+    type.includes("staff_invitation")
+  ) {
+    return "/personal/staff-invitations";
+  }
   if (type.startsWith("customerorder") && id) {
     return `/personal/orders/${id}`;
   }

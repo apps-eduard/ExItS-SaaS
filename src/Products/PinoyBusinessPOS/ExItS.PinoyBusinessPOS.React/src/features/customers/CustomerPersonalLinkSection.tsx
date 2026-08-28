@@ -79,8 +79,7 @@ export function CustomerPersonalLinkSection({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="min-h-8 shrink-0"
+              className="min-h-8 shrink-0 px-2 text-[length:var(--exits-text-sm)]"
               data-testid="customer-link-dismiss-after-create"
               onClick={onDismissAfterCreateHint}
             >

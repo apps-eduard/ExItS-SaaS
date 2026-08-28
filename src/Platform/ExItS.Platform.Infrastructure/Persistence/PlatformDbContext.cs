@@ -1332,12 +1332,15 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
             entity.Property(e => e.AcceptedAtUtc).HasColumnName("accepted_at_utc");
             entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.DeclinedAtUtc).HasColumnName("declined_at_utc");
             entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
             entity.Property(e => e.InviteeDisplayName).HasColumnName("invitee_display_name").HasMaxLength(256);
             entity.Property(e => e.FirstName).HasColumnName("first_name").HasMaxLength(100);
             entity.Property(e => e.LastName).HasColumnName("last_name").HasMaxLength(100);
             entity.Property(e => e.Branch).HasColumnName("branch").HasMaxLength(128);
             entity.Property(e => e.ProductRole).HasColumnName("product_role").HasMaxLength(64);
+            entity.Property(e => e.TargetPersonalUserId).HasColumnName("target_personal_user_id");
+            entity.Property(e => e.TargetPublicUserId).HasColumnName("target_public_user_id").HasMaxLength(32);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -1349,6 +1352,12 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("status = 'Pending'")
                 .HasDatabaseName("ux_organization_invitations_pending_email");
+            entity.HasIndex(e => e.TargetPersonalUserId)
+                .HasDatabaseName("ix_organization_invitations_target_personal_user_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.TargetPersonalUserId })
+                .IsUnique()
+                .HasFilter("status = 'Pending' AND target_personal_user_id IS NOT NULL")
+                .HasDatabaseName("ux_organization_invitations_pending_target_user");
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
