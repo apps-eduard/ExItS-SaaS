@@ -11,20 +11,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateOnly>(
-                name: "expiry_date",
-                schema: "pos",
-                table: "goods_receipt_lines",
-                type: "date",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "lot_number",
-                schema: "pos",
-                table: "goods_receipt_lines",
-                type: "character varying(64)",
-                maxLength: 64,
-                nullable: true);
+            // Idempotent: local DBs may already have these columns from a renamed
+            // precursor migration (e.g. 20260828152338_AddGoodsReceiptLineExpiryLot).
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE pos.goods_receipt_lines
+                    ADD COLUMN IF NOT EXISTS expiry_date date NULL;
+                ALTER TABLE pos.goods_receipt_lines
+                    ADD COLUMN IF NOT EXISTS lot_number character varying(64) NULL;
+                """);
         }
 
         /// <inheritdoc />

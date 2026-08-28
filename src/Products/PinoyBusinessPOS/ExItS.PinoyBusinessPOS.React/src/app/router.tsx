@@ -502,6 +502,8 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <CatalogProductsPage /> },
+              // Stale path used by older CTAs; product list lives at /catalog.
+              { path: "products", element: <Navigate to="/catalog" replace /> },
               { path: "categories", element: <CatalogCategoriesPage /> },
               { path: "todays-prices", element: <TodaysPricesPage /> },
               { path: "templates", element: <CatalogTemplateImportPage /> },
