@@ -435,6 +435,12 @@ public sealed class PersonalStorefrontAuthorizationTests
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<bool> HasAnyMovementAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

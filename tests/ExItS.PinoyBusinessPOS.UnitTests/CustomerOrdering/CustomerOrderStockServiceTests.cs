@@ -210,6 +210,14 @@ public sealed class CustomerOrderStockServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockMovement?>(
+                _movements.FirstOrDefault(m =>
+                    m.OrganizationId == organizationId && m.Id == movementId));
+
         public Task<bool> HasCustomerOrderDeductionAsync(
             PosOrganizationId organizationId,
             CustomerOrderId orderId,

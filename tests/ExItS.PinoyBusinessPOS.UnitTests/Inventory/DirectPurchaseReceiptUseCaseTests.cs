@@ -468,6 +468,14 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             return Task.CompletedTask;
         }
 
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockMovement?>(
+                Movements.FirstOrDefault(m =>
+                    m.OrganizationId == organizationId && m.Id == movementId));
+
         public Task<bool> HasDirectPurchaseReceiptAsync(
             PosOrganizationId organizationId,
             DirectPurchaseReceiptId receiptId,

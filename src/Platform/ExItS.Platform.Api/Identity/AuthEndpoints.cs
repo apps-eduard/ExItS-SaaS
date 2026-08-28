@@ -823,7 +823,7 @@ internal static class AuthEndpoints
         IHostEnvironment env,
         IConfiguration configuration)
     {
-        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
+        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
         http.Response.Cookies.Append(
             options.CookieName,
             sessionToken,
@@ -841,7 +841,7 @@ internal static class AuthEndpoints
     internal static void DeleteSessionCookie(HttpContext http, PlatformSessionOptions options, IHostEnvironment env)
     {
         var configuration = http.RequestServices.GetRequiredService<IConfiguration>();
-        var secure = PlatformAuthCookiePolicy.SessionCookieSecure(http.Request, env, configuration);
+        var secure = PlatformSessionCookiePolicy.IsSecure(env, configuration, http.Request.IsHttps);
         http.Response.Cookies.Delete(
             options.CookieName,
             new CookieOptions

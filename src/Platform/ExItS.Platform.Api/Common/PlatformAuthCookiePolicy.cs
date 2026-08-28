@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace ExItS.Platform.Api.Common;
 
@@ -25,5 +27,5 @@ internal static class PlatformAuthCookiePolicy
         HttpRequest request,
         IHostEnvironment environment,
         IConfiguration configuration) =>
-        AllowHttpAuthCookies(environment, configuration) ? request.IsHttps : true;
+        Identity.PlatformSessionCookiePolicy.IsSecure(environment, configuration, request.IsHttps);
 }

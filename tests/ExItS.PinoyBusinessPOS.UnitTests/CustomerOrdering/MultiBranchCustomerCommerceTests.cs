@@ -171,6 +171,12 @@ public sealed class MultiBranchCustomerCommerceTests
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockMovement?>(null);
+
         public Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();

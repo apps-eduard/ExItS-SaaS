@@ -487,6 +487,14 @@ public sealed class InventoryTransferUseCaseTests
             return Task.CompletedTask;
         }
 
+        public Task<StockMovement?> GetMovementByIdAsync(
+            PosOrganizationId organizationId,
+            StockMovementId movementId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockMovement?>(
+                Movements.FirstOrDefault(m =>
+                    m.OrganizationId == organizationId && m.Id == movementId));
+
         public Task<bool> HasInventoryTransferMovementAsync(
             PosOrganizationId organizationId,
             InventoryTransferId transferId,
