@@ -143,21 +143,21 @@ describe("CustomerFormPage save vs resolve link", () => {
     renderCreate();
 
     await user.click(screen.getByTestId("customer-create-kind-exits"));
+    expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-display-name")).not.toBeInTheDocument();
     await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
     await user.click(screen.getByTestId("qr-manual-submit"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("customer-personal-link-confirm")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-info-section")).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId("customer-personal-link-confirm-btn"));
-    await waitFor(() => {
-      expect(screen.getByTestId("customer-personal-link-selected")).toBeInTheDocument();
-    });
-
-    const displayName = screen.getByTestId("customer-display-name") as HTMLInputElement;
-    if (!displayName.value.trim()) {
-      await user.type(displayName, "Rosa Personal");
-    }
+    expect(screen.queryByTestId("customer-personal-link-confirm")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-display-name")).toHaveValue("Rosa Personal");
+    expect(screen.getByTestId("customer-exits-id")).toHaveValue("EX-1234-5678");
+    expect(screen.getByTestId("customer-exits-id")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("customer-email")).toHaveValue("r***@example.com");
+    expect(screen.getByTestId("customer-email")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("customer-save")).toHaveTextContent("Save and invite");
 
     await user.click(screen.getByTestId("customer-save"));
 
@@ -182,8 +182,10 @@ describe("CustomerFormPage save vs resolve link", () => {
       expect.anything(),
       expect.objectContaining({
         platformBusinessCustomerId: platformBusinessCustomerId,
+        linkedPersonalPublicUserId: "EX-1234-5678",
       }),
     );
+    expect(screen.queryByTestId("customer-save-local-instead")).not.toBeInTheDocument();
   });
 
   it("CustomerPersonalLinkPanel resolve alone does not call createBusinessCustomerWithPersonalLink", async () => {
@@ -196,8 +198,9 @@ describe("CustomerFormPage save vs resolve link", () => {
 
     await waitFor(() => {
       expect(publicIdentityClient.resolvePublicUserId).toHaveBeenCalled();
-      expect(screen.getByTestId("customer-personal-link-confirm")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-info-section")).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("customer-personal-link-confirm")).not.toBeInTheDocument();
 
     expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
     expect(customersClient.createCustomer).not.toHaveBeenCalled();
@@ -220,12 +223,58 @@ describe("CustomerFormPage save vs resolve link", () => {
     await waitFor(() => {
       expect(screen.getByTestId("customer-already-in-contacts")).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-personal-link-confirm-btn")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-already-in-contacts")).toHaveAttribute("role", "alert");
     expect(screen.getByTestId("customer-already-in-contacts-open")).toHaveAttribute(
       "href",
       `/customers/${posCustomerId}`,
     );
-    expect(screen.getByTestId("customer-save")).toBeDisabled();
     expect(publicIdentityClient.createBusinessCustomerWithPersonalLink).not.toHaveBeenCalled();
     expect(customersClient.createCustomer).not.toHaveBeenCalled();
+  });
+
+  it("does not offer save as local when creating with an ExItS ID", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+
+    await user.click(screen.getByTestId("customer-create-kind-exits"));
+    expect(screen.queryByTestId("customer-save-local-instead")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-create-kind-change")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-create-kind-exits")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-display-name")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-personal-link-panel")).toBeInTheDocument();
+  });
+
+  it("shows and fills customer info after an ExItS ID search finds the person", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+
+    await user.click(screen.getByTestId("customer-create-kind-exits"));
+    expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId("qr-manual-id"), "EX-1234-5678");
+    await user.click(screen.getByTestId("qr-manual-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-info-section")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-display-name")).toHaveValue("Rosa Personal");
+    expect(screen.getByTestId("customer-exits-id")).toHaveValue("EX-1234-5678");
+    expect(screen.getByTestId("customer-exits-id")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("customer-email")).toHaveValue("r***@example.com");
+    expect(screen.getByTestId("customer-email")).toHaveAttribute("readonly");
+    expect(screen.getByTestId("customer-address")).toBeInTheDocument();
+    expect(screen.getByTestId("customer-notes")).toBeInTheDocument();
+    expect(screen.getByTestId("customer-save")).toHaveTextContent("Save and invite");
+    expect(screen.getByTestId("customer-exits-invite-hint")).toHaveAttribute("role", "status");
+
+    await user.click(screen.getByTestId("qr-manual-clear"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
   });
 });

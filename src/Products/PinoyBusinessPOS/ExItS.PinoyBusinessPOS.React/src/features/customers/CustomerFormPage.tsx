@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { IdCard, Loader2, Save, UserRound } from "lucide-react";
-import { createBusinessCustomerWithPersonalLink } from "@/api/platform/public-identity-client";
+import { CircleCheck, Contact, IdCard, Loader2, Save, UserRound, Users } from "lucide-react";
+import {
+  createBusinessCustomerWithPersonalLink,
+  type ResolvedPublicUserDto,
+} from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   createCustomer,
@@ -10,6 +13,7 @@ import {
   updateCustomer,
   type CheckoutCustomerSearchItem,
 } from "@/api/pos/pos-customers-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { findExistingCheckoutCustomerForPersonalId } from "@/features/checkout/find-existing-checkout-customer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +54,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const { boundWorkspace } = useWorkspace();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
+  const lockedToExits = Boolean(linkPublicId?.trim());
 
   const [displayName, setDisplayName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -59,9 +64,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIdentity, setSelectedIdentity] = useState<SelectedPersonalIdentity | null>(null);
+  const [foundIdentity, setFoundIdentity] = useState<ResolvedPublicUserDto | null>(null);
   const [existingContact, setExistingContact] = useState<CheckoutCustomerSearchItem | null>(null);
-  const [createKind, setCreateKind] = useState<CreateKind | null>(() =>
-    linkPublicId?.trim() ? "exits" : null,
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const [createKind, setCreateKind] = useState<CreateKind>(() =>
+    linkPublicId?.trim() ? "exits" : "walkin",
   );
 
   const workspace = useMemo(
@@ -122,6 +129,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     if (!online) {
       setCreateKind("walkin");
       setSelectedIdentity(null);
+      setFoundIdentity(null);
       return;
     }
     if (linkPublicId?.trim()) {
@@ -183,6 +191,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       address,
       notes: taggedNotes,
       platformBusinessCustomerId: linkResult.customerId,
+      linkedPersonalPublicUserId: identity.publicUserId,
     });
     if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
       navigate(returnTo, { replace: true });
@@ -191,7 +200,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     navigate(`/customers/${created.customerId}?pendingLink=1`, { replace: true });
   }
 
-  async function onSubmit(options?: { localOnly?: boolean }) {
+  async function onSubmit() {
     if (!workspace) {
       return;
     }
@@ -208,8 +217,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         return;
       }
       if (mode === "create") {
-        const wantLink = createKind === "exits" && !options?.localOnly;
-        if (wantLink) {
+        if (createKind === "exits") {
           if (!selectedIdentity) {
             setError(t("customers.personalLink.selectRequired"));
             return;
@@ -230,7 +238,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       navigate(`/customers/${updated.customerId}`, { replace: true });
     } catch (err) {
       setError(
-        err instanceof PlatformApiError
+        err instanceof PlatformApiError || err instanceof PosApiError
           ? err.message
           : err instanceof Error
             ? err.message
@@ -241,10 +249,46 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
   }
 
+  const showCustomerInfo =
+    mode === "edit" ||
+    createKind === "walkin" ||
+    (Boolean(foundIdentity) && !existingContact) ||
+    (Boolean(selectedIdentity) && !existingContact);
+
+  const showSave =
+    mode === "edit" ||
+    createKind === "walkin" ||
+    ((Boolean(foundIdentity) || Boolean(selectedIdentity)) && !existingContact);
+
   const primarySaveLabel =
-    mode === "create" && createKind === "exits" && selectedIdentity
+    mode === "create" && createKind === "exits" && foundIdentity
       ? t("customers.saveAndSendLink")
       : t("customers.save");
+
+  function fillFromFoundIdentity(user: ResolvedPublicUserDto) {
+    if (user.displayName.trim()) {
+      setDisplayName(user.displayName.trim());
+    }
+  }
+
+  function applyFoundIdentity(user: ResolvedPublicUserDto) {
+    setFoundIdentity(user);
+    setSelectedIdentity({
+      publicUserId: user.publicUserId,
+      userIdentityId: user.userIdentityId,
+      displayName: user.displayName.trim(),
+      maskedEmail: user.maskedEmail ?? null,
+    });
+    fillFromFoundIdentity(user);
+  }
+
+  function resetExitsLookup() {
+    setSelectedIdentity(null);
+    setFoundIdentity(null);
+    setExistingContact(null);
+    setCheckingExisting(false);
+    setError(null);
+  }
 
   return (
     <form
@@ -261,9 +305,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           mode === "create"
             ? createKind === "exits"
               ? t("customers.formLedeExits")
-              : createKind === "walkin"
-                ? t("customers.formLedeWalkIn")
-                : t("customers.createKindLede")
+              : t("customers.formLedeWalkIn")
             : t("customers.formLede")
         }
         backTo={
@@ -293,12 +335,17 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         </div>
       ) : null}
 
-      {mode === "create" && online && createKind === null ? (
+      {mode === "create" ? (
         <section
           className="catalog-form-section exits-animate-panel customer-create-kind"
           data-testid="customer-create-kind"
         >
-          <h2 className="catalog-form-section__title">{t("customers.createKindTitle")}</h2>
+          <h2 className="catalog-form-section__title catalog-form-section__heading">
+            <span className="catalog-form-section__icon" aria-hidden>
+              <Users className="size-4" />
+            </span>
+            {t("customers.createKindTitle")}
+          </h2>
           <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
             {t("customers.createKindLede")}
           </p>
@@ -311,9 +358,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
               type="button"
               className="customer-create-kind__card"
               data-testid="customer-create-kind-walkin"
+              aria-pressed={createKind === "walkin"}
+              disabled={saving || !online || lockedToExits}
               onClick={() => {
                 setCreateKind("walkin");
-                setSelectedIdentity(null);
+                resetExitsLookup();
               }}
             >
               <span className="customer-create-kind__icon" aria-hidden>
@@ -328,7 +377,18 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
               type="button"
               className="customer-create-kind__card"
               data-testid="customer-create-kind-exits"
-              onClick={() => setCreateKind("exits")}
+              aria-pressed={createKind === "exits"}
+              disabled={saving || !online}
+              onClick={() => {
+                if (createKind !== "exits") {
+                  resetExitsLookup();
+                  setDisplayName("");
+                  setMobileNumber("");
+                  setAddress("");
+                  setNotes("");
+                }
+                setCreateKind("exits");
+              }}
             >
               <span className="customer-create-kind__icon" aria-hidden>
                 <IdCard className="size-5" />
@@ -342,182 +402,189 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         </section>
       ) : null}
 
-      {mode === "edit" || createKind !== null ? (
-        <>
-          {mode === "create" && online && createKind !== null ? (
-            <div className="customer-create-kind__chosen exits-animate-toolbar">
-              <p className="m-0 min-w-0 text-[length:var(--exits-text-sm)]">
-                <span className="font-semibold">
-                  {createKind === "exits"
-                    ? t("customers.createKindExits")
-                    : t("customers.createKindWalkIn")}
-                </span>
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-9 shrink-0"
-                data-testid="customer-create-kind-change"
-                disabled={saving || Boolean(linkPublicId?.trim())}
-                onClick={() => {
-                  setCreateKind(null);
-                  setSelectedIdentity(null);
-                  setExistingContact(null);
-                }}
-              >
-                {t("customers.createKindChange")}
-              </Button>
-            </div>
-          ) : null}
-
-          <section className="catalog-form-section exits-animate-panel">
-            <h2 className="catalog-form-section__title">{t("customers.sectionBasics")}</h2>
-            <div className="catalog-form-section__grid">
-              <Input
-                label={t("customers.displayName")}
-                id="customer-display-name"
-                name="customerDisplayName"
-                data-testid="customer-display-name"
-                autoComplete="name"
-                value={displayName}
-                disabled={saving}
-                onChange={(event) => setDisplayName(event.target.value)}
-              />
-              <Input
-                label={t("customers.mobile")}
-                id="customer-mobile"
-                name="customerMobile"
-                data-testid="customer-mobile"
-                inputMode="tel"
-                autoComplete="tel"
-                value={mobileNumber}
-                disabled={saving}
-                onChange={(event) => setMobileNumber(event.target.value)}
-              />
-            </div>
-          </section>
-
-          <section className="catalog-form-section exits-animate-panel">
-            <h2 className="catalog-form-section__title">{t("customers.sectionDetails")}</h2>
-            <div className="catalog-form-section__grid">
-              <Input
-                label={t("customers.address")}
-                id="customer-address"
-                name="customerAddress"
-                data-testid="customer-address"
-                autoComplete="street-address"
-                value={address}
-                disabled={saving}
-                onChange={(event) => setAddress(event.target.value)}
-              />
-              <label
-                className="catalog-form-field--full flex min-w-0 flex-col gap-1.5"
-                htmlFor="customer-notes"
-              >
-                <span className="text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("customers.notes")}
-                </span>
-                <textarea
-                  id="customer-notes"
-                  name="customerNotes"
-                  data-testid="customer-notes"
-                  className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
-                  value={notes}
-                  disabled={saving}
-                  onChange={(event) => setNotes(event.target.value)}
-                />
-              </label>
-            </div>
-          </section>
-
-          {existingContact ? (
-            <div className="exits-alert" data-testid="customer-already-in-contacts" role="status">
-              <p className="m-0 text-[length:var(--exits-text-sm)]">
-                {t("customers.alreadyInContacts").replace("{name}", existingContact.displayName)}
-              </p>
-              <Link
-                className="mt-2 inline-flex min-h-11 items-center font-semibold"
-                to={`/customers/${existingContact.customerId}`}
-                data-testid="customer-already-in-contacts-open"
-              >
-                {t("customers.openExisting")}
-              </Link>
-            </div>
-          ) : null}
-          {mode === "create" && online && workspace && createKind === "exits" ? (
-            <CustomerPersonalLinkPanel
-              disabled={saving}
-              initialSubject={linkPublicId}
-              selected={selectedIdentity}
-              onResolved={(user) => {
-                if (!displayName.trim() && user.displayName.trim()) {
-                  setDisplayName(user.displayName.trim());
+      {mode === "create" && online && workspace && createKind === "exits" ? (
+        <CustomerPersonalLinkPanel
+          disabled={saving}
+          initialSubject={linkPublicId}
+          existingMatch={
+            existingContact
+              ? {
+                  customerId: existingContact.customerId,
+                  displayName: existingContact.displayName,
                 }
-                void findExistingCheckoutCustomerForPersonalId(workspace, user.publicUserId).then(
-                  (existing) => {
-                    setExistingContact(existing);
-                  },
-                );
-              }}
-              onSelected={(identity) => {
-                setSelectedIdentity(identity);
-                if (!displayName.trim() && identity.displayName.trim()) {
-                  setDisplayName(identity.displayName.trim());
+              : null
+          }
+          checkingExisting={checkingExisting}
+          onResolved={(user) => {
+            setCheckingExisting(true);
+            setExistingContact(null);
+            setFoundIdentity(null);
+            setSelectedIdentity(null);
+            void findExistingCheckoutCustomerForPersonalId(workspace, user.publicUserId)
+              .then((existing) => {
+                setCheckingExisting(false);
+                setExistingContact(existing);
+                if (existing) {
+                  return;
                 }
-              }}
-              onCleared={() => {
-                setSelectedIdentity(null);
+                applyFoundIdentity(user);
+              })
+              .catch(() => {
+                setCheckingExisting(false);
                 setExistingContact(null);
-              }}
-            />
-          ) : null}
-          {mode === "create" && !online ? (
-            <section
-              className="catalog-form-section exits-animate-panel"
-              data-testid="customer-personal-link-offline"
-            >
-              <h2 className="catalog-form-section__title">{t("customers.personalLink.title")}</h2>
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("customers.personalLink.requiresOnline")}
-              </p>
-            </section>
-          ) : null}
+                applyFoundIdentity(user);
+              });
+          }}
+          onCleared={() => {
+            resetExitsLookup();
+            setDisplayName("");
+            setMobileNumber("");
+            setAddress("");
+            setNotes("");
+          }}
+        />
+      ) : null}
+      {mode === "create" && !online ? (
+        <section
+          className="catalog-form-section exits-animate-panel"
+          data-testid="customer-personal-link-offline"
+        >
+          <h2 className="catalog-form-section__title catalog-form-section__heading">
+            <span className="catalog-form-section__icon" aria-hidden>
+              <IdCard className="size-4" />
+            </span>
+            {t("customers.personalLink.title")}
+          </h2>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("customers.personalLink.requiresOnline")}
+          </p>
+        </section>
+      ) : null}
 
-          <div className={cn("catalog-form-actions", "customer-form-actions")}>
-            <div className="catalog-form-actions__primary flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="submit"
-                className="catalog-form-actions__save"
-                data-testid="customer-save"
-                disabled={saving || Boolean(existingContact)}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                    {t("customers.saving")}
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4 shrink-0" aria-hidden />
-                    {primarySaveLabel}
-                  </>
-                )}
-              </Button>
-              {mode === "create" && createKind === "exits" && online ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11"
-                  data-testid="customer-save-local-instead"
-                  disabled={saving || Boolean(existingContact)}
-                  onClick={() => void onSubmit({ localOnly: true })}
-                >
-                  {t("customers.saveAsLocalInstead")}
-                </Button>
-              ) : null}
-            </div>
+      {showCustomerInfo ? (
+      <section
+        className="catalog-form-section exits-animate-panel"
+        data-testid="customer-info-section"
+      >
+        <h2 className="catalog-form-section__title catalog-form-section__heading">
+          <span className="catalog-form-section__icon" aria-hidden>
+            <Contact className="size-4" />
+          </span>
+          {t("customers.sectionInfo")}
+        </h2>
+        {createKind === "exits" && foundIdentity ? (
+          <div
+            className="exits-alert exits-alert--success"
+            data-testid="customer-exits-invite-hint"
+            role="status"
+          >
+            <CircleCheck className="exits-alert__icon size-5 shrink-0 text-[var(--exits-success)]" aria-hidden />
+            <p className="exits-alert__content m-0 text-[length:var(--exits-text-sm)]">
+              {t("customers.personalLink.confirmHint").replace(
+                "{name}",
+                displayName.trim() || foundIdentity.displayName,
+              )}
+            </p>
           </div>
-        </>
+        ) : null}
+        <div className="catalog-form-section__grid">
+          <Input
+            label={t("customers.displayName")}
+            id="customer-display-name"
+            name="customerDisplayName"
+            data-testid="customer-display-name"
+            autoComplete="name"
+            value={displayName}
+            disabled={saving}
+            onChange={(event) => setDisplayName(event.target.value)}
+          />
+          {createKind === "exits" && foundIdentity ? (
+            <>
+              <Input
+                label={t("customers.exItsIdLabel")}
+                id="customer-exits-id"
+                name="customerExitsId"
+                data-testid="customer-exits-id"
+                value={foundIdentity.publicUserId}
+                readOnly
+                className="bg-[var(--exits-surface-muted)]"
+              />
+              <Input
+                label={t("customers.email")}
+                id="customer-email"
+                name="customerEmail"
+                data-testid="customer-email"
+                value={foundIdentity.maskedEmail?.trim() || t("customers.exItsIdNone")}
+                readOnly
+                className="bg-[var(--exits-surface-muted)]"
+              />
+            </>
+          ) : null}
+          <Input
+            label={t("customers.mobile")}
+            id="customer-mobile"
+            name="customerMobile"
+            data-testid="customer-mobile"
+            inputMode="tel"
+            autoComplete="tel"
+            value={mobileNumber}
+            disabled={saving}
+            onChange={(event) => setMobileNumber(event.target.value)}
+          />
+          <Input
+            label={t("customers.address")}
+            id="customer-address"
+            name="customerAddress"
+            data-testid="customer-address"
+            autoComplete="street-address"
+            value={address}
+            disabled={saving}
+            onChange={(event) => setAddress(event.target.value)}
+          />
+          <label
+            className="catalog-form-field--full flex min-w-0 flex-col gap-1.5"
+            htmlFor="customer-notes"
+          >
+            <span className="text-[length:var(--exits-text-sm)] font-semibold">
+              {t("customers.notes")}
+            </span>
+            <textarea
+              id="customer-notes"
+              name="customerNotes"
+              data-testid="customer-notes"
+              className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+              value={notes}
+              disabled={saving}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+      ) : null}
+
+      {showSave ? (
+      <div className={cn("catalog-form-actions", "customer-form-actions")}>
+        <div className="catalog-form-actions__primary flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="submit"
+            className="catalog-form-actions__save"
+            data-testid="customer-save"
+            disabled={saving || Boolean(existingContact)}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                {t("customers.saving")}
+              </>
+            ) : (
+              <>
+                <Save className="size-4 shrink-0" aria-hidden />
+                {primarySaveLabel}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
       ) : null}
     </form>
   );

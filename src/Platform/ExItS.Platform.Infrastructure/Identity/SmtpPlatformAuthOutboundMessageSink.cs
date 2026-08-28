@@ -2,6 +2,8 @@ using System.Text;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Settings;
 using ExItS.Platform.Domain.Settings;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -14,6 +16,8 @@ namespace ExItS.Platform.Infrastructure.Identity;
 internal sealed class SmtpPlatformAuthOutboundMessageSink(
     IPlatformEmailDeliveryResolver deliveryResolver,
     IOptions<PlatformEmailDeliveryOptions> emailOptions,
+    IHttpContextAccessor httpContextAccessor,
+    IConfiguration configuration,
     ILogger<SmtpPlatformAuthOutboundMessageSink> logger) : IPlatformAuthOutboundMessageSink
 {
     public async Task PublishAsync(PlatformAuthOutboundMessage message, CancellationToken cancellationToken = default)
@@ -32,13 +36,34 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
         }
 
         var opts = emailOptions.Value;
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        var requestOrigin = PlatformAuthCallbackResolver.ReadBrowserPublicOrigin(
+            httpContextAccessor.HttpContext?.Request.Headers.Origin.ToString(),
+            httpContextAccessor.HttpContext?.Request.Headers.Referer.ToString());
+        var adminBase = PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+            delivery.AdminPublicBaseUrl,
+            requestOrigin,
+            allowedOrigins,
+            opts.AllowHttpLoopbackPublicUrls) ?? delivery.AdminPublicBaseUrl!;
+        var loanManagerBase = PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+            opts.PinoyLoanManagerPublicBaseUrl,
+            requestOrigin,
+            allowedOrigins,
+            opts.AllowHttpLoopbackPublicUrls);
+        var posBase = PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+            opts.PinoyBusinessPosPublicBaseUrl,
+            requestOrigin,
+            allowedOrigins,
+            opts.AllowHttpLoopbackPublicUrls);
+
         var (subject, body) = PlatformAuthOutboundEmailComposer.Compose(
             message,
-            delivery.AdminPublicBaseUrl!,
-            opts.PinoyLoanManagerPublicBaseUrl,
+            adminBase,
+            loanManagerBase,
             opts.AllowHttpLoopbackPublicUrls,
             opts.LinkGuidanceHtml,
-            opts.PinoyBusinessPosPublicBaseUrl);
+            posBase,
+            allowedOrigins);
         using var client = Settings.PlatformEmailTestSender.CreateClient(delivery);
         using var mail = new System.Net.Mail.MailMessage
         {

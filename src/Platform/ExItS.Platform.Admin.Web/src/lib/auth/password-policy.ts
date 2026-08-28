@@ -11,18 +11,34 @@ export type AuthPasswordValidationMessages = {
 };
 
 export function buildAuthPasswordFieldSchema(messages: AuthPasswordValidationMessages) {
-  const required = z.string().min(1, messages.passwordRequired);
+  return z.string().superRefine((value, ctx) => {
+    if (!value) {
+      ctx.addIssue({ code: "custom", message: messages.passwordRequired });
+      return;
+    }
 
-  if (isLocalValidationToolsEnabled()) {
-    return required;
-  }
+    // Read the Local Validation flag at parse time so a stale schema (config.js loaded
+    // after first render) cannot keep production 12-character rules.
+    if (isLocalValidationToolsEnabled()) {
+      return;
+    }
 
-  return required
-    .min(12, messages.passwordMinLength)
-    .refine((value) => /[A-Z]/.test(value), { message: messages.passwordUppercase })
-    .refine((value) => /[a-z]/.test(value), { message: messages.passwordLowercase })
-    .refine((value) => /\d/.test(value), { message: messages.passwordDigit })
-    .refine((value) => /[^A-Za-z0-9]/.test(value), { message: messages.passwordSpecial });
+    if (value.length < 12) {
+      ctx.addIssue({ code: "custom", message: messages.passwordMinLength });
+    }
+    if (!/[A-Z]/.test(value)) {
+      ctx.addIssue({ code: "custom", message: messages.passwordUppercase });
+    }
+    if (!/[a-z]/.test(value)) {
+      ctx.addIssue({ code: "custom", message: messages.passwordLowercase });
+    }
+    if (!/\d/.test(value)) {
+      ctx.addIssue({ code: "custom", message: messages.passwordDigit });
+    }
+    if (!/[^A-Za-z0-9]/.test(value)) {
+      ctx.addIssue({ code: "custom", message: messages.passwordSpecial });
+    }
+  });
 }
 
 export function buildAuthNewPasswordSchema(

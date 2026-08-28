@@ -172,6 +172,8 @@ export type CreatePosCustomerInput = {
   customerId?: string;
   /** Platform BusinessCustomer correlation after with-personal-link. */
   platformBusinessCustomerId?: string | null;
+  /** POS-local Personal ExItS ID (EX-####-####). Required when creating with an ExItS identity. */
+  linkedPersonalPublicUserId?: string | null;
 };
 
 export type UpdatePosCustomerInput = CreatePosCustomerInput & {
@@ -218,6 +220,9 @@ export function buildCreateCustomerPayload(input: CreatePosCustomerInput) {
     ...(input.customerId ? { customerId: input.customerId } : {}),
     ...(input.platformBusinessCustomerId
       ? { platformBusinessCustomerId: input.platformBusinessCustomerId }
+      : {}),
+    ...(input.linkedPersonalPublicUserId?.trim()
+      ? { linkedPersonalPublicUserId: input.linkedPersonalPublicUserId.trim() }
       : {}),
   };
 }

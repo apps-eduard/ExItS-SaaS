@@ -38,6 +38,7 @@ import {
 } from "@/features/checkout/CheckoutCustomerDirectory";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import { checkoutCustomerTitle } from "@/features/customers/format-pos-customer-label";
+import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 import {
   CHECKOUT_PAYMENT_ICONS,
@@ -60,6 +61,7 @@ import {
   type PriceAuthorityLookup,
 } from "@/offline/price-authority-cache";
 import { organizationWebAllowsOfflineQueueing } from "@/runtime/organization-web-runtime-policy";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DiscountScope = CommercialDiscountIntentRequest["scope"];
@@ -68,12 +70,9 @@ type UiPaymentChoice = CheckoutUiPaymentChoice;
 
 type AppliedDiscount = CommercialDiscountIntentRequest & { localId: string };
 
-function newSaleId(): string {
-  return crypto.randomUUID();
-}
-
-function newLocalId(): string {
-  return crypto.randomUUID();
+function allocateSecureId(): string | null {
+  const generated = createSecureMutationId();
+  return generated.ok ? generated.id : null;
 }
 
 function parseCashTender(raw: string): number | null {
@@ -145,7 +144,7 @@ export function CheckoutCashPage() {
   const [quote, setQuote] = useState<PosSaleQuoteDto | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const attemptSaleIdRef = useRef<string>(newSaleId());
+  const attemptSaleIdRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
   const completedRef = useRef(false);
   const lastSeededTotalRef = useRef<number | null>(null);
@@ -454,7 +453,10 @@ export function CheckoutCashPage() {
               displayName: c.displayName,
               mobileNumber: c.mobileNumber,
               status: c.status,
-              linkedPersonalPublicUserId: c.linkedPersonalPublicUserId ?? null,
+              linkedPersonalPublicUserId: resolveDisplayedPersonalExItsId({
+                linkedPersonalPublicUserId: c.linkedPersonalPublicUserId,
+                notes: c.notes,
+              }),
               platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
             })),
           )
@@ -513,8 +515,14 @@ export function CheckoutCashPage() {
       }
     }
 
+    const localId = allocateSecureId();
+    if (!localId) {
+      setDiscountFormError(t("checkout.errorSecureId"));
+      return;
+    }
+
     const intent: AppliedDiscount = {
-      localId: newLocalId(),
+      localId,
       scope: discountScope,
       method: discountMethod,
       value,
@@ -650,7 +658,16 @@ export function CheckoutCashPage() {
     setSaving(true);
     setSubmitError(null);
 
+    if (!attemptSaleIdRef.current) {
+      attemptSaleIdRef.current = allocateSecureId();
+    }
     const saleId = attemptSaleIdRef.current;
+    if (!saleId) {
+      setSubmitError(t("checkout.errorSecureId"));
+      submittingRef.current = false;
+      setSaving(false);
+      return;
+    }
     const lines = mapCartLinesToCheckoutRequest(cart.lines);
 
     if (!online) {
@@ -683,7 +700,7 @@ export function CheckoutCashPage() {
         await refreshCounts();
         completedRef.current = true;
         cart.clear();
-        attemptSaleIdRef.current = newSaleId();
+        attemptSaleIdRef.current = allocateSecureId();
         navigate(`/sell/offline-queued/${saleId}`, { replace: true });
       } catch (error) {
         const leaseRejected =
@@ -722,7 +739,7 @@ export function CheckoutCashPage() {
       });
       completedRef.current = true;
       cart.clear();
-      attemptSaleIdRef.current = newSaleId();
+      attemptSaleIdRef.current = allocateSecureId();
       navigate(`/sell/sales/${sale.saleId}/summary`, { replace: true });
     } catch (error) {
       if (isLikelyNetworkFailure(error) && workspaceScope) {
@@ -733,7 +750,7 @@ export function CheckoutCashPage() {
           const confirmed = await getSale(workspaceScope, saleId);
           completedRef.current = true;
           cart.clear();
-          attemptSaleIdRef.current = newSaleId();
+          attemptSaleIdRef.current = allocateSecureId();
           navigate(`/sell/sales/${confirmed.saleId}/summary`, { replace: true });
           return;
         } catch (lookupError) {

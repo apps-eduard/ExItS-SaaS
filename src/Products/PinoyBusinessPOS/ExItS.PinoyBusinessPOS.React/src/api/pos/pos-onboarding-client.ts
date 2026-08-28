@@ -28,6 +28,12 @@ function pick(raw: Record<string, unknown>, camel: string, pascal: string): unkn
   return raw[camel] ?? raw[pascal];
 }
 
+function emptyToNull(value: unknown): unknown {
+  if (value == null) return null;
+  if (typeof value === "string" && value.trim().length === 0) return null;
+  return value;
+}
+
 function normalizeProgress(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
@@ -37,7 +43,7 @@ function normalizeProgress(raw: unknown): unknown {
     businessSetupStatus: pick(r, "businessSetupStatus", "BusinessSetupStatus"),
     productTemplateStatus: pick(r, "productTemplateStatus", "ProductTemplateStatus"),
     overallStatus: pick(r, "overallStatus", "OverallStatus"),
-    primaryBusinessTypeId: pick(r, "primaryBusinessTypeId", "PrimaryBusinessTypeId") ?? null,
+    primaryBusinessTypeId: emptyToNull(pick(r, "primaryBusinessTypeId", "PrimaryBusinessTypeId")),
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
     createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
   };

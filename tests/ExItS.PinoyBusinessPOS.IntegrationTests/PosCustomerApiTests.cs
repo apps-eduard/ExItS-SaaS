@@ -232,6 +232,34 @@ public sealed class PosCustomerApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task Personal_exits_id_is_org_scoped_unique_on_create()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        const string personalId = "EX-4827-1936";
+
+        var created = await PostCustomerAsync(
+            client,
+            OrgA,
+            new CreateCustomerRequest("Rosa", null, null, null, LinkedPersonalPublicUserId: personalId));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var rosa = await created.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.Equal(personalId, rosa!.LinkedPersonalPublicUserId);
+
+        var duplicate = await PostCustomerAsync(
+            client,
+            OrgA,
+            new CreateCustomerRequest("Clone", null, null, null, LinkedPersonalPublicUserId: "ex-4827-1936"));
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+
+        var otherOrg = await PostCustomerAsync(
+            client,
+            OrgB,
+            new CreateCustomerRequest("Other Org", null, null, null, LinkedPersonalPublicUserId: personalId));
+        Assert.Equal(HttpStatusCode.Created, otherOrg.StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> PostCustomerAsync(
         HttpClient client,
         Guid organizationId,

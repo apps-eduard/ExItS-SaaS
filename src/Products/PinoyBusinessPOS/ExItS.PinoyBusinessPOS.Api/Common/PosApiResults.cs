@@ -72,6 +72,7 @@ internal static class PosApiResults
         ApplicationErrorCodes.MobileConflict
             or ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict
             or DomainErrorCodes.PlatformBusinessCustomerCorrelationConflict
+            or DomainErrorCodes.CustomerExItsIdentityLinkConflict
             or DomainErrorCodes.InvalidPlatformBusinessCustomerId
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.CustomerConcurrencyConflict

@@ -180,6 +180,122 @@ public sealed class PlatformAuthCallbackResolverTests
         Assert.Equal(PlatformAuthPublicSurfaces.PinoyBusinessPos, pos.Value);
     }
 
+    [Fact]
+    public void ReadBrowserPublicOrigin_prefers_origin_and_strips_referer_path()
+    {
+        Assert.Equal(
+            "http://100.64.1.8:5177",
+            PlatformAuthCallbackResolver.ReadBrowserPublicOrigin(
+                "http://100.64.1.8:5177",
+                "http://127.0.0.1:5177/sign-in"));
+        Assert.Equal(
+            "http://127.0.0.1:5177",
+            PlatformAuthCallbackResolver.ReadBrowserPublicOrigin(
+                null,
+                "http://127.0.0.1:5177/sign-in?continue=/onboarding"));
+        Assert.Null(PlatformAuthCallbackResolver.ReadBrowserPublicOrigin(null, null));
+        Assert.Null(PlatformAuthCallbackResolver.ReadBrowserPublicOrigin("http://evil.example/callback?token=x", null));
+    }
+
+    [Fact]
+    public void Align_swaps_loopback_host_for_allowed_tailscale_origin_on_same_port()
+    {
+        var allowed = new[]
+        {
+            "http://localhost:5177",
+            "http://127.0.0.1:5177",
+            "http://100.64.1.8:5177",
+            "http://localhost:8095",
+            "http://100.64.1.8:8095",
+        };
+
+        Assert.Equal(
+            "http://100.64.1.8:5177",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://localhost:5177",
+                "http://100.64.1.8:5177",
+                allowed,
+                allowHttpLoopbackPublicUrls: true));
+        Assert.Equal(
+            "http://localhost:5177",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://127.0.0.1:5177",
+                "http://localhost:5177",
+                allowed,
+                allowHttpLoopbackPublicUrls: true));
+        Assert.Equal(
+            "http://100.64.1.8:8095",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://127.0.0.1:8095",
+                "http://100.64.1.8:8095",
+                allowed,
+                allowHttpLoopbackPublicUrls: true));
+    }
+
+    [Fact]
+    public void Align_does_not_mix_ports_or_unlisted_origins_or_production()
+    {
+        var allowed = new[] { "http://localhost:5177", "http://100.64.1.8:5177", "http://100.64.1.8:8095" };
+
+        Assert.Equal(
+            "http://localhost:5177",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://localhost:5177",
+                "http://100.64.1.8:8095",
+                allowed,
+                allowHttpLoopbackPublicUrls: true));
+        Assert.Equal(
+            "http://localhost:5177",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://localhost:5177",
+                "http://203.0.113.9:5177",
+                allowed,
+                allowHttpLoopbackPublicUrls: true));
+        Assert.Equal(
+            "http://localhost:5177",
+            PlatformAuthCallbackResolver.AlignPublicBaseUrlWithRequestOrigin(
+                "http://localhost:5177",
+                "http://100.64.1.8:5177",
+                allowed,
+                allowHttpLoopbackPublicUrls: false));
+    }
+
+    [Fact]
+    public void Tailscale_http_pos_origin_is_allowed_only_when_listed()
+    {
+        var allowed = new[] { "http://100.64.1.8:5177" };
+        Assert.True(PlatformAuthCallbackResolver.IsAllowedPublicBaseUrl(
+            "http://100.64.1.8:5177",
+            allowHttpLoopbackPublicUrls: true,
+            allowed));
+        Assert.False(PlatformAuthCallbackResolver.IsAllowedPublicBaseUrl(
+            "http://100.64.1.8:5177",
+            allowHttpLoopbackPublicUrls: true));
+        Assert.False(PlatformAuthCallbackResolver.IsAllowedPublicBaseUrl(
+            "http://100.64.1.8:5177",
+            allowHttpLoopbackPublicUrls: false,
+            allowed));
+    }
+
+    [Fact]
+    public void Pinoy_business_pos_surface_uses_aligned_tailscale_base()
+    {
+        var verification = Message(
+            PlatformAuthOutboundMessageKinds.EmailVerification,
+            PlatformAuthPublicSurfaces.PinoyBusinessPos);
+        var allowed = new[] { "http://100.64.1.8:5177" };
+
+        Assert.True(PlatformAuthCallbackResolver.TryCreateLink(
+            verification,
+            "http://127.0.0.1:8095",
+            pinoyLoanManagerPublicBaseUrl: null,
+            allowHttpLoopbackPublicUrls: true,
+            out var activate,
+            pinoyBusinessPosPublicBaseUrl: "http://100.64.1.8:5177",
+            allowedHttpOrigins: allowed));
+        Assert.Equal("http://100.64.1.8:5177/activate-account?token=opaque%2Ftoken", activate);
+    }
+
     private static PlatformAuthOutboundMessage Message(string kind, string? publicSurface) =>
         new(kind, Guid.Empty, "user@example.com", "opaque/token", Expires, PublicSurface: publicSurface);
 }

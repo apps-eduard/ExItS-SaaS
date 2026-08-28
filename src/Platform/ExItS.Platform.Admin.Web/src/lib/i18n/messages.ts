@@ -56,7 +56,7 @@ export const enMessages = {
   "auth.error.serviceUnavailable": "Authentication service unavailable",
   "auth.error.rateLimited": "Too many attempts",
   "auth.localValidation.weakPasswordNotice":
-    "Local Validation: simplified password policy enabled.",
+    "Local Validation: a 1-character password is enough. Ignore the browser if it asks for 12 characters.",
   "auth.error.unknown": "Unable to sign in. Please try again.",
   "auth.notice.sessionExpired": "Your session has expired. Please sign in again.",
   "auth.devTools": "Development Test User",
@@ -2433,7 +2433,7 @@ export const filPhMessages: Record<MessageKey, string> = {
   "auth.error.serviceUnavailable": "Hindi available ang authentication service",
   "auth.error.rateLimited": "Masyadong maraming pagtatangka",
   "auth.localValidation.weakPasswordNotice":
-    "Local Validation: pinapayagan ang pinasimpleng password policy.",
+    "Local Validation: sapat na ang 1-character na password. Huwag pansinin ang browser kung humihingi ito ng 12 karakter.",
   "auth.error.unknown": "Hindi makapag-sign in. Subukan ulit.",
   "auth.notice.sessionExpired": "Nag-expire na ang session. Mag-sign in ulit.",
   "auth.devTools": "Development Test User",

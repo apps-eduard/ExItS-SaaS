@@ -599,6 +599,7 @@ test.describe("RMAP-14 returns / refunds", () => {
     await signInOwnerOperations(page);
     await completePartialReturn(page);
     await clientNavigate(page, `/sell/sales/${SALE_ID}/summary`);
+    await page.getByTestId("summary-void-trigger").click();
     await page.getByTestId("summary-void-reason").fill("Should fail");
     await page.getByTestId("summary-void-confirm").click();
     await expect(page.getByTestId("summary-void-error")).toBeVisible();

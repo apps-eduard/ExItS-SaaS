@@ -105,6 +105,13 @@ async function mockPersonalResolve(page: import("@playwright/test").Page) {
       }),
     });
   });
+  await page.route("**/pos-api/**/customers/checkout-search**", async (route) => {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], totalCount: 0, page: 1, pageSize: 20 }),
+    });
+  });
 }
 
 test.describe("POS-LIVE-QR-01 mocked live camera", () => {
@@ -124,7 +131,7 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await expect(page.getByTestId("live-qr-requesting")).toHaveCount(0);
   });
 
-  test("decodes Personal QR and requires explicit link confirmation", async ({ page }) => {
+  test("decodes Personal QR and fills customer info for invite", async ({ page }) => {
     await installMockCamera(page, { decodePayload: PERSONAL_QR_PAYLOAD });
     await openCustomerLinkScanner(page, { mockResolve: true });
 
@@ -133,11 +140,12 @@ test.describe("POS-LIVE-QR-01 mocked live camera", () => {
     await page.getByTestId("live-qr-open-camera").click();
     await expect(page.getByTestId("live-qr-preview")).toBeVisible();
 
-    await expect(page.getByTestId("customer-personal-link-confirm")).toBeVisible({
+    await expect(page.getByTestId("customer-info-section")).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.getByText(PERSONAL_PUBLIC_ID)).toBeVisible();
-    await expect(page.getByTestId("customer-personal-link-confirm-btn")).toBeVisible();
+    await expect(page.getByTestId("customer-exits-id")).toHaveValue(PERSONAL_PUBLIC_ID);
+    await expect(page.getByTestId("customer-personal-link-confirm")).toHaveCount(0);
+    await expect(page.getByTestId("customer-save")).toBeVisible();
     await expect(page.getByTestId("customer-personal-link-sent")).toHaveCount(0);
   });
 

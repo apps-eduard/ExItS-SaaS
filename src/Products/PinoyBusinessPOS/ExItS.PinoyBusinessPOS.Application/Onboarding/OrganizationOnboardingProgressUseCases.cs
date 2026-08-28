@@ -108,6 +108,21 @@ public sealed class EnsureOrganizationOnboardingProgress
             return ApplicationResult<OrganizationOnboardingProgressDto>.Success(
                 OrganizationOnboardingProgressMapper.Map(created));
         }
+        catch (PersistenceConflictException)
+        {
+            var raced = await _repository
+                .GetByOrganizationIdAsync(orgId, cancellationToken)
+                .ConfigureAwait(false);
+            if (raced is not null)
+            {
+                return ApplicationResult<OrganizationOnboardingProgressDto>.Success(
+                    OrganizationOnboardingProgressMapper.Map(raced));
+            }
+
+            return ApplicationResult<OrganizationOnboardingProgressDto>.Failure(
+                ApplicationErrorCodes.OnboardingProgressConcurrencyConflict,
+                "Organization onboarding progress could not be created because of a concurrent request. Retry.");
+        }
         catch (DomainException ex)
         {
             return ApplicationResult<OrganizationOnboardingProgressDto>.Failure(ex.ErrorCode, ex.Message);

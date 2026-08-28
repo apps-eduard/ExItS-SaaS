@@ -1,4 +1,4 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { buildAuthNewPasswordSchema } from "@/lib/auth/password-policy";
 
 const messages = {
@@ -13,6 +13,7 @@ const messages = {
 describe("buildAuthNewPasswordSchema", () => {
   afterEach(() => {
     delete window.__EXITS_PLATFORM_ADMIN_WEB__;
+    vi.unstubAllEnvs();
   });
 
   it("accepts single-character passwords when Local Validation tools are enabled", () => {
@@ -29,9 +30,18 @@ describe("buildAuthNewPasswordSchema", () => {
   });
 
   it("rejects single-character passwords in production mode", () => {
+    vi.stubEnv("VITE_LOCAL_VALIDATION_TOOLS", "");
     window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: false };
     const schema = buildAuthNewPasswordSchema(messages, "Passwords do not match.", "Confirm your password.");
     expect(schema.safeParse({ password: "1", confirmPassword: "1" }).success).toBe(false);
+  });
+
+  it("reads Local Validation tools at parse time, not schema build time", () => {
+    vi.stubEnv("VITE_LOCAL_VALIDATION_TOOLS", "");
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: false };
+    const schema = buildAuthNewPasswordSchema(messages, "Passwords do not match.", "Confirm your password.");
+    window.__EXITS_PLATFORM_ADMIN_WEB__ = { localValidationToolsEnabled: true };
+    expect(schema.safeParse({ password: "1", confirmPassword: "1" }).success).toBe(true);
   });
 
   it("rejects confirmation mismatches", () => {

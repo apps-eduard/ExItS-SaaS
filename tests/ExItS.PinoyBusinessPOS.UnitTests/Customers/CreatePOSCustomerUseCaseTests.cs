@@ -105,6 +105,38 @@ public sealed class CreatePOSCustomerUseCaseTests
     }
 
     [Fact]
+    public async Task Create_rejects_duplicate_personal_exits_id_in_same_organization()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var repo = new InMemoryCustomerRepository();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+
+        var first = await create.ExecuteAsync(org, "One", null, null, null, linkedPersonalPublicUserId: "EX-4827-1936");
+        Assert.True(first.IsSuccess);
+        Assert.Equal("EX-4827-1936", first.Value!.LinkedPersonalPublicUserId);
+
+        var second = await create.ExecuteAsync(org, "Two", null, null, null, linkedPersonalPublicUserId: "ex-4827-1936");
+        Assert.False(second.IsSuccess);
+        Assert.Equal(DomainErrorCodes.CustomerExItsIdentityLinkConflict, second.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Create_rejects_personal_exits_id_already_tagged_in_notes()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var repo = new InMemoryCustomerRepository();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+
+        var legacy = await create.ExecuteAsync(org, "Eduardo", null, null, "exits-id:EX-4827-1936");
+        Assert.True(legacy.IsSuccess);
+        Assert.Null(legacy.Value!.LinkedPersonalPublicUserId);
+
+        var second = await create.ExecuteAsync(org, "Clone", null, null, null, linkedPersonalPublicUserId: "EX-4827-1936");
+        Assert.False(second.IsSuccess);
+        Assert.Equal(DomainErrorCodes.CustomerExItsIdentityLinkConflict, second.ErrorCode);
+    }
+
+    [Fact]
     public async Task Correlate_is_idempotent_and_rejects_conflicts()
     {
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -201,8 +233,13 @@ public sealed class CreatePOSCustomerUseCaseTests
         public Task<POSCustomer?> FindByLinkedPersonalPublicUserIdAsync(
             PosOrganizationId organizationId,
             string linkedPersonalPublicUserId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<POSCustomer?>(null);
+            CancellationToken cancellationToken = default)
+        {
+            var normalized = linkedPersonalPublicUserId.Trim().ToUpperInvariant();
+            return Task.FromResult(_items.FirstOrDefault(c =>
+                c.OrganizationId == organizationId
+                && c.LinkedPersonalPublicUserId == normalized));
+        }
 
         public Task<POSCustomer?> FindByLinkedBuyerOrganizationIdAsync(
             PosOrganizationId organizationId,
@@ -235,6 +272,17 @@ public sealed class CreatePOSCustomerUseCaseTests
             }
 
             var list = query.OrderBy(c => c.DisplayName).ThenBy(c => c.Id.Value).ToList();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                list = list.Where(c =>
+                        c.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                        || (c.Notes is not null && c.Notes.Contains(term, StringComparison.OrdinalIgnoreCase))
+                        || (c.LinkedPersonalPublicUserId is not null
+                            && c.LinkedPersonalPublicUserId.Contains(term, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
         }
 

@@ -163,8 +163,23 @@ describe("CustomerDetailPage Platform link status", () => {
     await expectStatus(/Request sent/i);
     expect(screen.getByTestId("customer-link-pending-banner")).toBeInTheDocument();
     expect(screen.getByTestId("customer-exits-id")).toHaveTextContent("EX-1234-5678");
+    expect(screen.getByTestId("customer-link-exits-id-panel")).toBeInTheDocument();
     expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Linked$/);
     expect(screen.queryByText(platformBusinessCustomerId)).not.toBeInTheDocument();
+  });
+
+  it("shows after-create success hint when pendingLink=1 and request is pending", async () => {
+    vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
+      linkStatus({
+        latestLinkRequestId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        latestLinkRequestStatus: "Pending",
+        invitationSentAtUtc: "2026-08-28T00:26:00Z",
+      }),
+    );
+    renderDetail(`/customers/${customerId}?pendingLink=1`);
+    await expectStatus(/Request sent/i);
+    expect(screen.getByTestId("customer-link-after-create-success")).toBeInTheDocument();
+    expect(screen.getByText(/What happens next/i)).toBeInTheDocument();
   });
 
   it("shows Linked from Platform", async () => {

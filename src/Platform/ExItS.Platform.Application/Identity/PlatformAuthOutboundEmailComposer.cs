@@ -14,7 +14,8 @@ public static class PlatformAuthOutboundEmailComposer
         string? pinoyLoanManagerPublicBaseUrl = null,
         bool allowHttpLoopbackPublicUrls = false,
         string? linkGuidanceHtml = null,
-        string? pinoyBusinessPosPublicBaseUrl = null)
+        string? pinoyBusinessPosPublicBaseUrl = null,
+        IReadOnlyCollection<string>? allowedHttpOrigins = null)
     {
         var baseUrl = adminPublicBaseUrl.TrimEnd('/');
         var encodedToken = WebUtility.UrlEncode(message.OpaqueToken ?? string.Empty);
@@ -30,6 +31,7 @@ public static class PlatformAuthOutboundEmailComposer
                     pinoyLoanManagerPublicBaseUrl,
                     pinoyBusinessPosPublicBaseUrl,
                     allowHttpLoopbackPublicUrls,
+                    allowedHttpOrigins,
                     """
                     <p>Welcome to ExItS.</p>
                     <p>Confirm your email and create your password to activate your account.</p>
@@ -47,6 +49,7 @@ public static class PlatformAuthOutboundEmailComposer
                     pinoyLoanManagerPublicBaseUrl,
                     pinoyBusinessPosPublicBaseUrl,
                     allowHttpLoopbackPublicUrls,
+                    allowedHttpOrigins,
                     "<p>A password reset was requested for your ExItS account.</p>",
                     "Reset password") + guidance),
             PlatformAuthOutboundMessageKinds.RecoveryEmailVerification => (
@@ -79,6 +82,7 @@ public static class PlatformAuthOutboundEmailComposer
         string? pinoyLoanManagerPublicBaseUrl,
         string? pinoyBusinessPosPublicBaseUrl,
         bool allowHttpLoopbackPublicUrls,
+        IReadOnlyCollection<string>? allowedHttpOrigins,
         string introHtml,
         string linkText)
     {
@@ -88,7 +92,8 @@ public static class PlatformAuthOutboundEmailComposer
                 pinoyLoanManagerPublicBaseUrl,
                 allowHttpLoopbackPublicUrls,
                 out var href,
-                pinoyBusinessPosPublicBaseUrl))
+                pinoyBusinessPosPublicBaseUrl,
+                allowedHttpOrigins))
         {
             return $"""
                     {introHtml}

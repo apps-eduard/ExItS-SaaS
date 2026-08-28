@@ -258,7 +258,9 @@ export const en = {
   "auth.activateTitle": "Activate your account",
   "auth.createPassword": "Create a password to finish activating your Personal account.",
   "auth.passwordRequirements":
-    "Use at least 12 characters with upper and lower case letters, a number, and a symbol (Local Validation may allow a shorter password).",
+    "Use at least 12 characters with upper and lower case letters, a number, and a symbol.",
+  "auth.passwordRequirementsLocalValidation":
+    "Local Validation: any non-empty password works (one character is enough). Ignore the browser if it asks for 12 characters.",
   "auth.newPassword": "New password",
   "auth.confirmPassword": "Confirm password",
   "auth.passwordsMustMatch": "Passwords must match.",
@@ -999,7 +1001,7 @@ export const en = {
   "qr.personalNotAllowedHere":
     "This is a personal ExItS ID (EX-…). Only an organization ExItS ID (ORG…) is allowed here.",
   "customers.personalLink.title": "Link ExItS Personal user",
-  "customers.personalLink.lede": "Linking is optional. The customer must accept before their ExItS account is connected.",
+  "customers.personalLink.lede": "An ExItS Personal ID is required for this type. The customer must accept before their ExItS account is connected.",
   "customers.personalLink.confirmHint": "This account will not be linked until {name} accepts your request.",
   "customers.personalLink.confirm": "Confirm and send link request",
 
@@ -1007,8 +1009,8 @@ export const en = {
   "customers.personalLink.selectedTitle": "ExItS account selected",
   "customers.personalLink.useAccount": "Use this account",
   "customers.personalLink.changeAccount": "Change account",
-  "customers.personalLink.selectRequired": "Resolve and select an ExItS account, or save as a local customer instead.",
-  "customers.saveAndSendLink": "Save and send link request",
+  "customers.personalLink.selectRequired": "Resolve and select an ExItS Personal ID before saving.",
+  "customers.saveAndSendLink": "Save and invite",
   "customers.saveAsLocalInstead": "Save as local customer instead",
   "customers.personalLink.sending": "Sending…",
   "customers.personalLink.sent": "Link request sent. The Personal user must Accept.",
@@ -1643,6 +1645,8 @@ export const en = {
     "This device is not registered or not authorized for the selected branch. Register it before posting a sale.",
   "checkout.blockedShift": "An open cashier shift with a register is required before checkout.",
   "checkout.blockedGeneric": "Checkout is not ready. Resolve shift and device readiness first.",
+  "checkout.errorSecureId":
+    "This browser could not create a secure transaction ID. Reload the app or use a supported browser before checkout.",
   "checkout.registerDevice": "Register this device",
   "checkout.backToCart": "Back to cart",
   "checkout.orderPreview": "Sale preview",
@@ -2335,7 +2339,7 @@ export const en = {
   "customers.formLedeWalkIn":
     "Walk-in customer — name required. No ExItS Personal link. Mobile, address, and notes are optional.",
   "customers.formLedeExits":
-    "Link an ExItS Personal ID after entering the display name. The Personal user must Accept the link request.",
+    "Enter customer details and their ExItS Personal ID. The Personal user must Accept the link request.",
   "customers.createKindTitle": "Customer type",
   "customers.createKindLede":
     "Choose walk-in (no ExItS ID) or link a Personal ExItS identity.",
@@ -2346,8 +2350,10 @@ export const en = {
   "customers.createKindChange": "Change type",
   "customers.sectionBasics": "Basics",
   "customers.sectionDetails": "Details",
+  "customers.sectionInfo": "Customer info",
   "customers.displayName": "Display name",
   "customers.displayNameRequired": "Display name is required.",
+  "customers.email": "Email",
   "customers.mobile": "Mobile",
   "customers.address": "Address",
   "customers.notes": "Notes",
@@ -2389,6 +2395,7 @@ export const en = {
   "customers.linkRemindersCount": "Reminders: {count}",
   "customers.linkLastReminder": "Last reminder: {date}",
   "customers.linkInvitationSent": "Invitation sent: {date}",
+  "customers.linkInvitationSentLabel": "Invitation sent",
   "customers.linkCancelInvitation": "Revoke request",
   "customers.linkInviteAgain": "Invite again",
   "customers.linkSendNewInvite": "Send new invite",
@@ -2397,6 +2404,17 @@ export const en = {
     "Waiting for the Personal user to accept this customer connection request.",
   "customers.linkPendingAfterCreate":
     "Customer added. Personal link request sent — waiting for acceptance.",
+  "customers.linkAfterCreateSuccess": "Invitation sent",
+  "customers.linkPendingDismissSuccess": "Got it",
+  "customers.linkPendingNextStepsTitle": "What happens next",
+  "customers.linkPendingStep1":
+    "Ask {name} to sign in to ExItS Personal on their phone or browser.",
+  "customers.linkPendingStep2":
+    "They open More → Customer link requests, or check Notifications for your store name.",
+  "customers.linkPendingStep3":
+    "They tap Accept to link their Personal account to your store customer record.",
+  "customers.linkPendingExItsHint":
+    "Confirm this Personal ExItS ID belongs to the customer before they accept.",
   "customers.creditsTitle": "Utang charges",
   "customers.creditsEmpty": "No charges yet",
   "customers.creditsEmptyDetail": "Utang sales for this customer appear here.",
@@ -3358,6 +3376,7 @@ export const en = {
   "onboarding.loading": "Loading setup�",
   "onboarding.retry": "Try again",
   "onboarding.skipForNow": "Skip for now",
+  "onboarding.startSetup": "Start setup",
   "onboarding.missingOrgTitle": "Business context required",
   "onboarding.missingOrgDetail": "Sign in to your organization account to continue setup.",
   "onboarding.loadErrorTitle": "Could not load setup",

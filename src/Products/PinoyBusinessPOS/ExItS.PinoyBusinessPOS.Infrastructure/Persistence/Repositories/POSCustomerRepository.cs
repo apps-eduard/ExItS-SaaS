@@ -128,6 +128,8 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
                     && (c.NormalizedMobile.Contains(normalizedDigits)
                         || (phCanonical != null && c.NormalizedMobile.Contains(phCanonical))))
                 || (c.MobileNumber != null && c.MobileNumber.ToLower().Contains(term))
+                || (c.LinkedPersonalPublicUserId != null
+                    && c.LinkedPersonalPublicUserId.ToLower().Contains(term))
                 // ExItS ID is tagged in notes as "exits-id:EX-####-####" on create-from-resolve.
                 || (c.Notes != null && c.Notes.ToLower().Contains(term)));
         }

@@ -206,6 +206,7 @@ public sealed class CreatePOSCustomer
         string? notes,
         Guid? clientCustomerId = null,
         Guid? platformBusinessCustomerId = null,
+        string? linkedPersonalPublicUserId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -231,7 +232,8 @@ public sealed class CreatePOSCustomer
                     mobileNumber,
                     address,
                     notes,
-                    platformBusinessCustomerId: platformBusinessCustomerId)
+                    platformBusinessCustomerId: platformBusinessCustomerId,
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId)
                 : POSCustomer.Create(
                     orgId,
                     displayName,
@@ -240,7 +242,8 @@ public sealed class CreatePOSCustomer
                     address,
                     notes,
                     id: POSCustomerId.From(clientCustomerId.Value),
-                    platformBusinessCustomerId: platformBusinessCustomerId);
+                    platformBusinessCustomerId: platformBusinessCustomerId,
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId);
 
             if (customer.PlatformBusinessCustomerId is not null)
             {
@@ -255,6 +258,39 @@ public sealed class CreatePOSCustomer
                     return ApplicationResult<POSCustomer>.Failure(
                         ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict,
                         "Another POS customer in this organization is already correlated to that Platform BusinessCustomer.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(customer.LinkedPersonalPublicUserId))
+            {
+                var existingPersonal = await _customers
+                    .FindByLinkedPersonalPublicUserIdAsync(
+                        orgId,
+                        customer.LinkedPersonalPublicUserId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingPersonal is not null)
+                {
+                    return ApplicationResult<POSCustomer>.Failure(
+                        DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                        "Another POS customer in this organization is already linked to that Personal ExItS identity.");
+                }
+
+                var notesTag = "exits-id:" + customer.LinkedPersonalPublicUserId;
+                var (searchHits, _) = await _customers
+                    .ListAsync(orgId, CustomerStatus.Active, customer.LinkedPersonalPublicUserId, 0, 20, cancellationToken)
+                    .ConfigureAwait(false);
+                if (searchHits.Any(c =>
+                    string.Equals(
+                        c.LinkedPersonalPublicUserId,
+                        customer.LinkedPersonalPublicUserId,
+                        StringComparison.OrdinalIgnoreCase)
+                    || (c.Notes is not null
+                        && c.Notes.Contains(notesTag, StringComparison.OrdinalIgnoreCase))))
+                {
+                    return ApplicationResult<POSCustomer>.Failure(
+                        DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                        "Another POS customer in this organization is already linked to that Personal ExItS identity.");
                 }
             }
 

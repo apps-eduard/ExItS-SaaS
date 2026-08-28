@@ -43,6 +43,19 @@ public sealed class PlatformPasswordPolicyTests
         Assert.Null(PlatformPasswordPolicy.Validate(password, localValidation));
     }
 
+    [Fact]
+    public void ApplyLocalValidationRelaxation_then_Validate_accepts_single_character()
+    {
+        var options = new PlatformPasswordOptions();
+        PlatformPasswordOptions.ApplyLocalValidationRelaxation(options);
+        Assert.Equal(1, options.MinimumLength);
+        Assert.False(options.RequireUppercase);
+        Assert.False(options.RequireLowercase);
+        Assert.False(options.RequireDigit);
+        Assert.False(options.RequireNonAlphanumeric);
+        Assert.Null(PlatformPasswordPolicy.Validate("1", options));
+    }
+
     [Theory]
   [InlineData("")]
   public void Validate_rejects_empty_password_even_with_local_validation_options(string password)

@@ -9,6 +9,7 @@ import {
   startBusiness,
 } from "@/api/platform/start-business-client";
 import { ensureOnboardingProgress } from "@/api/pos/pos-onboarding-client";
+import { writePendingPostSubscriptionOnboarding } from "@/features/onboarding/post-subscription-onboarding";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -135,6 +136,17 @@ export function PersonalStartBusinessPage() {
       });
     },
     onSuccess: async (result) => {
+      const orgId = result.organizationId;
+      const selectedType = typesQuery.data?.find((item) => item.id === primaryBusinessTypeId);
+      // Set before session refresh so auto-destination cannot send the new org to Sell.
+      writePendingPostSubscriptionOnboarding({
+        organizationId: orgId,
+        primaryBusinessTypeId: result.primaryBusinessTypeId,
+        businessTypeCode: selectedType?.code ?? null,
+        businessTypeName: selectedType?.name ?? null,
+        businessTypeDescription: selectedType?.description ?? null,
+      });
+
       clearBoundWorkspace();
       const sessionStatus = await refreshSession();
       if (sessionStatus !== "authenticated") {
@@ -142,18 +154,8 @@ export function PersonalStartBusinessPage() {
         return;
       }
 
-      const orgId = result.organizationId;
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
       const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
-      const selectedType = typesQuery.data?.find((item) => item.id === primaryBusinessTypeId);
-      const pendingPayload = JSON.stringify({
-        organizationId: orgId,
-        primaryBusinessTypeId: result.primaryBusinessTypeId,
-        businessTypeCode: selectedType?.code ?? null,
-        businessTypeName: selectedType?.name ?? null,
-        businessTypeDescription: selectedType?.description ?? null,
-      });
-      sessionStorage.setItem("exits.postSubscriptionOnboarding", pendingPayload);
       // Leave Personal-only routes before bind awaits (session is now Organization).
       navigate("/onboarding", { replace: true });
 

@@ -6,6 +6,7 @@ import {
   activatePersonalAccount,
   platformProblemDetail,
 } from "@/api/platform/platform-auth-client";
+import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthExperienceLayout } from "@/features/auth/AuthExperienceLayout";
@@ -90,7 +91,11 @@ export function ActivateAccountPage() {
             {t("auth.createPassword")}
           </p>
           <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("auth.passwordRequirements")}
+            {t(
+              isFrontendLocalValidationMode()
+                ? "auth.passwordRequirementsLocalValidation"
+                : "auth.passwordRequirements",
+            )}
           </p>
         </div>
         <form

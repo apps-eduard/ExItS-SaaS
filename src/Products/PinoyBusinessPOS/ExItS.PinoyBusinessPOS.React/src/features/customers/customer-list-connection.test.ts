@@ -27,6 +27,10 @@ describe("customerHasExItsId", () => {
     expect(customerHasExItsId({ linkedBuyerPublicOrganizationId: "ORG000001" })).toBe(true);
     expect(customerHasExItsId({ resolvedPersonalDisplayName: "Rosa Santos" })).toBe(true);
   });
+
+  it("is true when the ExItS ID was only tagged in notes", () => {
+    expect(customerHasExItsId({ notes: "Neighbor\nexits-id:EX-4827-1936" })).toBe(true);
+  });
 });
 
 describe("resolveCustomerListConnectionBadge", () => {

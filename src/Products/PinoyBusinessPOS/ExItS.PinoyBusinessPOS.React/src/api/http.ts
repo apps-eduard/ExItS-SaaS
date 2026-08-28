@@ -1,3 +1,5 @@
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+
 export type ApiProblemDetails = {
   title?: string;
   status?: number;
@@ -36,7 +38,11 @@ export class ApiClientError extends Error {
 }
 
 export function createCorrelationId(): string {
-  return crypto.randomUUID();
+  const generated = createSecureMutationId();
+  if (!generated.ok) {
+    throw new Error("Secure randomness is unavailable for POS API correlation ids.");
+  }
+  return generated.id;
 }
 
 function parseProblem(payload: unknown): ApiProblemDetails {

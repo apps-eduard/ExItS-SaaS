@@ -12,7 +12,6 @@ import {
 } from "@/api/platform/merchant-catalog-client";
 import {
   ensureOnboardingProgress,
-  getOnboardingProgress,
   updateOnboardingProgress,
   type OrganizationOnboardingProgressDto,
 } from "@/api/pos/pos-onboarding-client";
@@ -33,6 +32,11 @@ import {
   resolveOnboardingWizardStep,
   type OnboardingWizardStep,
 } from "@/features/onboarding/onboarding-steps";
+import {
+  clearPendingPostSubscriptionOnboarding,
+  loadPostSubscriptionOnboardingProgress,
+  readPendingPostSubscriptionOnboarding,
+} from "@/features/onboarding/post-subscription-onboarding";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -73,6 +77,11 @@ export function PostSubscriptionOnboardingPage() {
   );
 
   const hasPosGrant = Boolean(sessionGrant?.accessToken);
+  const canWriteOnboarding =
+    hasPosGrant &&
+    (boundWorkspace
+      ? boundWorkspace.experience === "manage_business"
+      : sessionGrant?.organizationManagementAuthority === true);
   const bindAttemptedRef = useRef<string | null>(null);
 
   const requestOnboardingGrant = useCallback(() => {
@@ -102,7 +111,7 @@ export function PostSubscriptionOnboardingPage() {
   ]);
 
   useEffect(() => {
-    if (!organizationId || hasPosGrant) {
+    if (!organizationId || canWriteOnboarding) {
       return;
     }
     if (workspaceStatus === "loading" || workspaceStatus === "binding") {
@@ -115,46 +124,26 @@ export function PostSubscriptionOnboardingPage() {
       return;
     }
     requestOnboardingGrant();
-  }, [hasPosGrant, organizationId, requestOnboardingGrant, workspaceStatus]);
+  }, [canWriteOnboarding, organizationId, requestOnboardingGrant, workspaceStatus]);
 
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId],
-    enabled: Boolean(workspaceScope && hasPosGrant),
+    enabled: Boolean(workspaceScope && canWriteOnboarding),
     meta: { suppressGlobalError: true, operation: "onboarding progress" },
-    queryFn: async ({ signal }) => {
-      try {
-        return await getOnboardingProgress(workspaceScope!, signal);
-      } catch (error) {
-        if (!(error instanceof PosApiError) || error.status !== 404) {
-          throw error;
-        }
-        // Existing orgs have no progress row — never backfill from a casual visit.
-        // Only ensure when Start Business left a pending flag for this org.
-        const pendingRaw = sessionStorage.getItem("exits.postSubscriptionOnboarding");
-        if (!pendingRaw || !organizationId) {
-          return null;
-        }
-        try {
-          const pending = JSON.parse(pendingRaw) as {
-            organizationId?: string;
-            primaryBusinessTypeId?: string | null;
-          };
-          if (pending.organizationId !== organizationId) {
-            return null;
-          }
-          const created = await ensureOnboardingProgress(
-            workspaceScope!,
-            { primaryBusinessTypeId: pending.primaryBusinessTypeId ?? null },
-            signal,
-          );
-          sessionStorage.removeItem("exits.postSubscriptionOnboarding");
-          return created;
-        } catch {
-          return null;
-        }
-      }
-    },
+    queryFn: ({ signal }) => loadPostSubscriptionOnboardingProgress(workspaceScope!, signal),
     retry: false,
+  });
+
+  const startSetupMutation = useMutation({
+    mutationFn: () => {
+      const pending = readPendingPostSubscriptionOnboarding();
+      return ensureOnboardingProgress(workspaceScope!, {
+        primaryBusinessTypeId: pending?.primaryBusinessTypeId ?? null,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["pos", "onboarding", "progress", organizationId] });
+    },
   });
 
   const [stepOverride, setStepOverride] = useState<OnboardingWizardStep | null>(null);
@@ -196,7 +185,7 @@ export function PostSubscriptionOnboardingPage() {
     );
   }
 
-  if (!hasPosGrant) {
+  if (!canWriteOnboarding) {
     return <LoadingSkeleton label={t("onboarding.loading")} />;
   }
 
@@ -211,7 +200,15 @@ export function PostSubscriptionOnboardingPage() {
           title={t("onboarding.loadErrorTitle")}
           detail={t("onboarding.loadErrorDetail")}
         />
-        <Button type="button" className="min-h-11 w-full" onClick={() => void progressQuery.refetch()}>
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          onClick={() => {
+            bindAttemptedRef.current = null;
+            requestOnboardingGrant();
+            void progressQuery.refetch();
+          }}
+        >
           {t("onboarding.retry")}
         </Button>
       </div>
@@ -225,9 +222,24 @@ export function PostSubscriptionOnboardingPage() {
           title={t("onboarding.notRequiredTitle")}
           detail={t("onboarding.notRequiredDetail")}
         />
-        <Button type="button" className="min-h-11 w-full" onClick={() => navigate("/sell", { replace: true })}>
+        <Button
+          type="button"
+          className="min-h-11 w-full"
+          disabled={startSetupMutation.isPending}
+          data-testid="onboarding-start-setup"
+          onClick={() => void startSetupMutation.mutateAsync()}
+        >
+          {startSetupMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+          {t("onboarding.startSetup")}
+        </Button>
+        <Button type="button" variant="ghost" className="min-h-11 w-full" onClick={() => navigate("/sell", { replace: true })}>
           {t("onboarding.ready.startSelling")}
         </Button>
+        {startSetupMutation.isError ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]" role="alert">
+            {t("onboarding.loadErrorDetail")}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -544,22 +556,15 @@ function readPendingBusinessTypeHint(): {
   name: string | null;
   description: string | null;
 } {
-  try {
-    const raw = sessionStorage.getItem("exits.postSubscriptionOnboarding");
-    if (!raw) return { code: null, name: null, description: null };
-    const pending = JSON.parse(raw) as {
-      businessTypeCode?: string | null;
-      businessTypeName?: string | null;
-      businessTypeDescription?: string | null;
-    };
-    return {
-      code: pending.businessTypeCode?.trim() || null,
-      name: pending.businessTypeName?.trim() || null,
-      description: pending.businessTypeDescription?.trim() || null,
-    };
-  } catch {
+  const pending = readPendingPostSubscriptionOnboarding();
+  if (!pending) {
     return { code: null, name: null, description: null };
   }
+  return {
+    code: pending.businessTypeCode?.trim() || null,
+    name: pending.businessTypeName?.trim() || null,
+    description: pending.businessTypeDescription?.trim() || null,
+  };
 }
 
 function BusinessSetupStep({
@@ -866,6 +871,7 @@ function ReadyStep({
       } catch {
         // Already completed / transient failure — still enter Sell.
       }
+      clearPendingPostSubscriptionOnboarding();
 
       const ws = workspaces.find((item) => item.organizationId === organizationId);
       const branch = ws?.branches[0] ?? null;
@@ -906,6 +912,7 @@ function ReadyStep({
           // Still leave the wizard — setup remains available from More.
         }
       }
+      clearPendingPostSubscriptionOnboarding();
       onFinishLater();
     } catch {
       setActionError(t("onboarding.ready.actionFailed"));

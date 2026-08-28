@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { Ban, ChevronDown, Plus, RotateCcw } from "lucide-react";
 import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
@@ -32,6 +33,7 @@ export function TransactionSummaryPage() {
   const [voidReason, setVoidReason] = useState("");
   const [voidError, setVoidError] = useState<string | null>(null);
   const [voiding, setVoiding] = useState(false);
+  const [voidSheetOpen, setVoidSheetOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   const workspaceScope =
@@ -101,6 +103,7 @@ export function TransactionSummaryPage() {
         updated,
       );
       setVoidReason("");
+      setVoidSheetOpen(false);
     } catch (error) {
       setVoidError(describeCheckoutSaleError(error, t));
     } finally {
@@ -108,11 +111,28 @@ export function TransactionSummaryPage() {
     }
   }
 
+  const showReturnAction = !isVoided && allowProcessReturn;
+
   return (
     <div data-testid="transaction-summary-page" className="flex min-w-0 flex-col gap-4">
       <PageHeader
         title={t("summary.title")}
         description={`${t("summary.subtitle")} · ${sale.saleNumber}`}
+        trailing={
+          !isVoided && allowVoid ? (
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+              data-testid="summary-void-trigger"
+              aria-haspopup="dialog"
+              onClick={() => setVoidSheetOpen(true)}
+            >
+              <Ban className="size-4 shrink-0" aria-hidden />
+              {t("summary.voidSection")}
+            </Button>
+          ) : undefined
+        }
       />
 
       {isVoided ? (
@@ -268,13 +288,21 @@ export function TransactionSummaryPage() {
       </Card>
 
       {!isVoided && allowVoid ? (
-        <Card data-testid="summary-void-panel">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("summary.voidSection")}
-          </h2>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("summary.voidLede")}
-          </p>
+        <BottomSheet
+          open={voidSheetOpen}
+          onClose={() => {
+            if (voiding) {
+              return;
+            }
+            setVoidSheetOpen(false);
+            setVoidError(null);
+          }}
+          title={t("summary.voidSection")}
+          panelId="summary-void-sheet"
+          testId="summary-void-panel"
+          closeLabel={t("sell.cancel")}
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("summary.voidLede")}</p>
           <label
             className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
             htmlFor="summary-void-reason"
@@ -301,14 +329,15 @@ export function TransactionSummaryPage() {
           ) : null}
           <Button
             type="button"
-            className="mt-3 min-h-11"
+            variant="destructive"
+            className="mt-3 min-h-11 w-full"
             data-testid="summary-void-confirm"
             disabled={voiding}
             onClick={() => void onVoid()}
           >
             {voiding ? t("summary.voiding") : t("summary.voidConfirm")}
           </Button>
-        </Card>
+        </BottomSheet>
       ) : null}
 
       {!isVoided && !allowVoid ? (
@@ -320,15 +349,30 @@ export function TransactionSummaryPage() {
         </p>
       ) : null}
 
-      {!isVoided && allowProcessReturn ? (
-        <Button asChild className="min-h-11 w-fit" data-testid="summary-return-items">
-          <Link to={`/returns/sale/${sale.saleId}`}>{t("returns.returnItems")}</Link>
+      <div
+        className={cn("grid gap-2", showReturnAction ? "grid-cols-2" : "grid-cols-1")}
+        data-testid="summary-footer-actions"
+      >
+        <Button asChild className="min-h-11 w-full gap-2" data-testid="summary-new-sale">
+          <Link to="/sell">
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {t("summary.newSale")}
+          </Link>
         </Button>
-      ) : null}
-
-      <Button asChild className="min-h-11 w-fit" data-testid="summary-new-sale">
-        <Link to="/sell">{t("summary.newSale")}</Link>
-      </Button>
+        {showReturnAction ? (
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-11 w-full gap-2"
+            data-testid="summary-return-items"
+          >
+            <Link to={`/returns/sale/${sale.saleId}`}>
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("returns.returnItems")}
+            </Link>
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

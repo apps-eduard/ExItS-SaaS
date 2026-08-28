@@ -18,9 +18,15 @@ type Props = {
   expectedPurpose: ExItsQrPurpose;
   onResolvedPayload: (payload: string) => void;
   disabled?: boolean;
+  onManualCleared?: () => void;
 };
 
-export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: Props) {
+export function QrScanOrEnter({
+  expectedPurpose,
+  onResolvedPayload,
+  disabled,
+  onManualCleared,
+}: Props) {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -159,6 +165,7 @@ export function QrScanOrEnter({ expectedPurpose, onResolvedPayload, disabled }: 
                     onClick={() => {
                       setManual("");
                       setError(null);
+                      onManualCleared?.();
                       window.setTimeout(() => manualInputRef.current?.focus(), 0);
                     }}
                   >

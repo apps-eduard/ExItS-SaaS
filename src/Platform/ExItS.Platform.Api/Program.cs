@@ -581,6 +581,14 @@ builder.Services.AddScoped<PlatformMembershipAuthz>();
 builder.Services.AddScoped<PlatformOrganizationAuthz>();
 
 builder.Services.Configure<LocalValidationOptions>(builder.Configuration.GetSection(LocalValidationOptions.SectionName));
+builder.Services.AddOptions<PlatformPasswordOptions>()
+    .PostConfigure<IOptions<LocalValidationOptions>>((password, localValidation) =>
+    {
+        if (localValidation.Value.Enabled)
+        {
+            PlatformPasswordOptions.ApplyLocalValidationRelaxation(password);
+        }
+    });
 builder.Services.AddScoped<InitializeLocalValidationDataset>();
 builder.Services.AddScoped<InitializeLocalValidationPersonalUtangSeed>();
 builder.Services.AddScoped<ListLocalValidationIdentities>();

@@ -43,12 +43,15 @@ import type { MessageKey } from "@/i18n/messages";
 import { useSession } from "@/session/SessionProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
+
 function money(n: number): string {
   return `₱${n.toFixed(2)}`;
 }
 
-function newClientOrderId(): string {
-  return crypto.randomUUID();
+function newClientOrderId(): string | null {
+  const generated = createSecureMutationId();
+  return generated.ok ? generated.id : null;
 }
 
 function paymentLabel(code: string, t: (key: MessageKey) => string): string {
@@ -217,6 +220,12 @@ export function MerchantCheckoutPage() {
     setBusy(true);
     setError(null);
     setStockConflict(false);
+    const clientOrderId = newClientOrderId();
+    if (!clientOrderId) {
+      setError(t("checkout.errorSecureId"));
+      setBusy(false);
+      return;
+    }
     try {
       const order = await placeCustomerOrder(workspace, organizationId, {
         fulfillmentType: selection.fulfillmentType,
@@ -242,7 +251,7 @@ export function MerchantCheckoutPage() {
               destinationLongitude: lngNum,
             }
           : null,
-        clientOrderId: newClientOrderId(),
+        clientOrderId,
         paymentMethod,
       });
       clearAll();

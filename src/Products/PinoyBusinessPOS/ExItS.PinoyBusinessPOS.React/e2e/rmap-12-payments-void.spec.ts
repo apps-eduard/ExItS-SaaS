@@ -462,6 +462,7 @@ test.describe("RMAP-12 payments + void", () => {
     await addCokeAndOpenCheckout(page);
     await fillCheckoutCashExact(page);
     await page.getByTestId("checkout-confirm").click();
+    await page.getByTestId("summary-void-trigger").click();
     await expect(page.getByTestId("summary-void-panel")).toBeVisible();
     await page.getByTestId("summary-void-reason").fill("Wrong tender");
     await page.getByTestId("summary-void-confirm").click();

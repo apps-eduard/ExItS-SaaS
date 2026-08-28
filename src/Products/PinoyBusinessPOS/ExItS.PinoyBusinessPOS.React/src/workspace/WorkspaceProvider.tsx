@@ -66,6 +66,7 @@ import {
   type WorkspaceDestination,
 } from "@/workspace/workspace-destinations";
 import type { WorkingExperience } from "@/workspace/working-experience";
+import { hasPendingPostSubscriptionOnboarding } from "@/features/onboarding/post-subscription-onboarding";
 
 export type WorkspaceGrantProbeFailure = {
   status: number;
@@ -900,7 +901,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      if (sessionStorage.getItem("exits.postSubscriptionOnboarding")) {
+      if (hasPendingPostSubscriptionOnboarding()) {
         return;
       }
     } catch {

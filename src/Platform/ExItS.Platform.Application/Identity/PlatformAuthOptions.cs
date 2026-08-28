@@ -10,6 +10,20 @@ public sealed class PlatformPasswordOptions
     public bool RequireLowercase { get; set; } = true;
     public bool RequireDigit { get; set; } = true;
     public bool RequireNonAlphanumeric { get; set; } = true;
+
+    /// <summary>
+    /// Local Validation operator loop: any non-empty password is enough.
+    /// Production must keep LocalValidation disabled so this never runs.
+    /// </summary>
+    public static void ApplyLocalValidationRelaxation(PlatformPasswordOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.MinimumLength = 1;
+        options.RequireUppercase = false;
+        options.RequireLowercase = false;
+        options.RequireDigit = false;
+        options.RequireNonAlphanumeric = false;
+    }
 }
 
 public sealed class PlatformLockoutOptions
@@ -99,13 +113,15 @@ public sealed class PlatformEmailDeliveryOptions
 
     /// <summary>
     /// Explicit Pinoy Loan Manager Browser/PWA public origin for EmailVerification and PasswordReset only.
-    /// Never derived from request Host/Origin/Referer.
+    /// Production never derives this from request Host/Origin/Referer.
+    /// Local Validation may swap the host to match the browser Origin when that origin is in Cors:AllowedOrigins.
     /// </summary>
     public string? PinoyLoanManagerPublicBaseUrl { get; set; }
 
     /// <summary>
     /// Explicit Pinoy Business POS / Personal React public origin for EmailVerification and PasswordReset only.
-    /// Never derived from request Host/Origin/Referer.
+    /// Production never derives this from request Host/Origin/Referer.
+    /// Local Validation may swap the host to match the browser Origin when that origin is in Cors:AllowedOrigins.
     /// </summary>
     public string? PinoyBusinessPosPublicBaseUrl { get; set; }
 

@@ -9,6 +9,8 @@
  * on the customer-detail link-status API; the overlay does not include that fact.
  */
 
+import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
+
 export type CustomerListConnectionBadgeKind =
   | "no-exits"
   | "exits-id"
@@ -26,6 +28,7 @@ export type CustomerListConnectionInput = {
   linkedBuyerPublicOrganizationId?: string | null;
   resolvedPersonalDisplayName?: string | null;
   platformBusinessCustomerId?: string | null;
+  notes?: string | null;
 };
 
 export const EMPTY_CUSTOMER_LIST_CONNECTION_OVERLAY: CustomerListConnectionOverlay = {
@@ -41,7 +44,7 @@ export function normalizeCustomerLinkId(id: string | null | undefined): string |
 
 export function customerHasExItsId(customer: CustomerListConnectionInput): boolean {
   return Boolean(
-    customer.linkedPersonalPublicUserId?.trim() ||
+    resolveDisplayedPersonalExItsId(customer)?.trim() ||
       customer.linkedBuyerPublicOrganizationId?.trim() ||
       customer.resolvedPersonalDisplayName?.trim(),
   );

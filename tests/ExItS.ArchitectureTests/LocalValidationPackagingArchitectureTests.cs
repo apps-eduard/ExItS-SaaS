@@ -233,6 +233,31 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.DoesNotContain("IsDevelopment()", source, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Local_validation_relaxes_password_policy_and_aligns_mailpit_links_to_request_origin()
+    {
+        var root = FindRepoRoot();
+        var program = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Api", "Program.cs"));
+        var options = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "Identity", "PlatformAuthOptions.cs"));
+        var resolver = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Application", "Identity", "PlatformAuthCallbackResolver.cs"));
+        var sink = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Infrastructure", "Identity", "SmtpPlatformAuthOutboundMessageSink.cs"));
+
+        Assert.Contains("ApplyLocalValidationRelaxation", program, StringComparison.Ordinal);
+        Assert.Contains("ApplyLocalValidationRelaxation", options, StringComparison.Ordinal);
+        Assert.Contains("AlignPublicBaseUrlWithRequestOrigin", resolver, StringComparison.Ordinal);
+        Assert.Contains("AlignPublicBaseUrlWithRequestOrigin", sink, StringComparison.Ordinal);
+        Assert.Contains("ReadBrowserPublicOrigin", sink, StringComparison.Ordinal);
+        Assert.Contains("Headers.Origin", sink, StringComparison.Ordinal);
+        Assert.DoesNotContain("Request.Host", sink, StringComparison.Ordinal);
+        Assert.Contains("Cors:AllowedOrigins", sink, StringComparison.Ordinal);
+        Assert.Contains("allowHttpLoopbackPublicUrls", resolver, StringComparison.Ordinal);
+        Assert.Contains("never rewrites", resolver, StringComparison.Ordinal);
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
