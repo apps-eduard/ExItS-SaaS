@@ -462,6 +462,13 @@ public static class OfflineOperationTypes
     /// </summary>
     public const string InventoryAdjustment = "inventory.adjustment";
 
+    /// <summary>
+    /// Server-side idempotency operation type for stock use (internal consumption). Online-only:
+    /// no offline dispatcher or queue handler. Names the server idempotency scope so a retried
+    /// create request replays instead of double-consuming stock.
+    /// </summary>
+    public const string StockUse = "inventory.stock_use";
+
     /// <summary>Server-side idempotency for inventory transfer create. Online-only.</summary>
     public const string InventoryTransferCreate = "inventory_transfer.create";
 

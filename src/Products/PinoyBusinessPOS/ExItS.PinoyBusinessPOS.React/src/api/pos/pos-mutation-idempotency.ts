@@ -22,6 +22,7 @@ export const OFFLINE_OPERATION_TYPES = {
   PurchaseOrderSubmit: "purchase_order.submit",
   PurchaseOrderReceive: "purchase_order.receive",
   InventoryAdjustment: "inventory.adjustment",
+  StockUse: "inventory.stock_use",
   CustomerOrderPlace: "customer_order.place",
   CustomerOrderAccept: "customer_order.accept",
   CustomerOrderReject: "customer_order.reject",

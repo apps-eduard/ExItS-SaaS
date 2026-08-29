@@ -292,6 +292,20 @@ public static class DomainErrorCodes
     public const string InvalidDirectPurchaseNotes = "pos.direct_purchase_receipt.notes.invalid";
     public const string InvalidDirectPurchaseIdempotencyKey = "pos.direct_purchase_receipt.idempotency_key.invalid";
 
+    public const string InvalidStockUseId = "pos.stock_use.id.invalid";
+    public const string InvalidStockUseLineId = "pos.stock_use.line.id.invalid";
+    public const string InvalidStockUseNumber = "pos.stock_use.number.invalid";
+    public const string StockUseRequiresLines = "pos.stock_use.lines.required";
+    public const string InvalidStockUseQuantity = "pos.stock_use.quantity.invalid";
+    public const string InvalidStockUseUnitCost = "pos.stock_use.unit_cost.invalid";
+    public const string InvalidStockUseLine = "pos.stock_use.line.invalid";
+    public const string InvalidStockUseReason = "pos.stock_use.reason.invalid";
+    public const string InvalidStockUseStatus = "pos.stock_use.status.invalid";
+    public const string InvalidStockUseStatusTransition = "pos.stock_use.status.invalid_transition";
+    public const string InvalidStockUseReference = "pos.stock_use.reference.invalid";
+    public const string InvalidStockUseNotes = "pos.stock_use.notes.invalid";
+    public const string InvalidStockUseIdempotencyKey = "pos.stock_use.idempotency_key.invalid";
+
     public const string InvalidCashierShiftId = "pos.cashier_shift.id.invalid";
     public const string InvalidCashierShiftMovementId = "pos.cashier_shift_movement.id.invalid";
     public const string InvalidCashierShiftNumber = "pos.cashier_shift.number.invalid";

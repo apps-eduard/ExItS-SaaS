@@ -84,6 +84,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
     internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
+    internal DbSet<StockUseRecord> StockUses => Set<StockUseRecord>();
+    internal DbSet<StockUseLineRecord> StockUseLines => Set<StockUseLineRecord>();
+    internal DbSet<StockUseNumberSequenceRecord> StockUseNumberSequences => Set<StockUseNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
@@ -2007,8 +2010,9 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_stock_movements_org_recorded");
 
             // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
-            // EF Core snapshots only the last filtered unique on this identical column set.
-            // Earlier indexes (sale/purchase/count/return) remain from prior migrations and must not be dropped.
+            // EF Core snapshots only the last filtered unique on this identical column set
+            // (currently inventory_transfer_source). Earlier indexes (sale/purchase/count/return/stock_use)
+            // remain from prior migrations and must not be dropped.
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
                 .HasDatabaseName("ux_stock_movements_sale_source")
@@ -2032,6 +2036,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_stock_movements_sale_return_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.SaleReturn)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_stock_use_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.StockUse)}' AND source_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -2448,6 +2458,145 @@ public sealed class PosDbContext : DbContext
 
             entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_direct_purchase_receipt_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<StockUseRecord>(entity =>
+        {
+            entity.ToTable("stock_uses", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_uses_reason",
+                    $"reason IN ({string.Join(", ", StockUseReasons.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_stock_uses_status",
+                    $"status IN ({string.Join(", ", StockUseStatuses.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.StockUseNumber)
+                .HasColumnName("stock_use_number")
+                .HasMaxLength(StockUseNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.ReferenceNumber)
+                .HasColumnName("reference_number")
+                .HasMaxLength(StockUse.ReferenceNumberMaxLength);
+            entity.Property(e => e.OccurredAtUtc).HasColumnName("occurred_at_utc");
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(StockUseReasons.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(StockUse.NotesMaxLength);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(StockUseStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.VoidedByUserId).HasColumnName("voided_by_user_id");
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(StockUse.IdempotencyKeyMaxLength);
+
+            entity.HasIndex(e => new { e.OrganizationId, e.StockUseNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_uses_org_stock_use_number");
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_uses_org_idempotency_key")
+                .HasFilter("idempotency_key IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.OccurredAtUtc })
+                .HasDatabaseName("ix_stock_uses_org_occurred_at");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_stock_uses_org_status");
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_stock_uses_org_branch_id");
+        });
+
+        modelBuilder.Entity<StockUseLineRecord>(entity =>
+        {
+            entity.ToTable("stock_use_lines", tb =>
+            {
+                tb.HasCheckConstraint("ck_stock_use_lines_quantity_entered_positive", "quantity_entered > 0");
+                tb.HasCheckConstraint("ck_stock_use_lines_multiplier_positive", "multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_stock_use_lines_base_quantity_positive", "base_quantity > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.StockUseId).HasColumnName("stock_use_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.ProductUnitId).HasColumnName("product_unit_id");
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.QuantityEntered)
+                .HasColumnName("quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.MultiplierToBase)
+                .HasColumnName("multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.BaseQuantity)
+                .HasColumnName("base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitLabelSnapshot)
+                .HasColumnName("unit_label_snapshot")
+                .HasMaxLength(StockUseLine.UnitLabelMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitCostSnapshot)
+                .HasColumnName("unit_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.LineCostSnapshot)
+                .HasColumnName("line_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+
+            entity.HasIndex(e => new { e.StockUseId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_use_lines_stock_use_line_number");
+            entity.HasIndex(e => e.InventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_stock_use_lines_inventory_movement_id")
+                .HasFilter("inventory_movement_id IS NOT NULL");
+
+            entity.HasOne<StockUseRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StockUseId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_stock_use_lines_stock_uses");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_use_lines_products");
+        });
+
+        modelBuilder.Entity<StockUseNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("stock_use_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_use_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_stock_use_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();

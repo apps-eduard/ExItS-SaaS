@@ -695,6 +695,12 @@ public sealed class EnableExpirationTrackingUseCaseTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<bool> HasStockUseAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+        public Task<bool> HasStockUseVoidRestorationAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+        public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<decimal?>(null);
         public Task<bool> HasSaleReturnRestockAsync(
             PosOrganizationId organizationId,
             SaleReturnId saleReturnId,

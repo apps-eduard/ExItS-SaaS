@@ -30,6 +30,10 @@ export function inventoryMovementTypeLabelKey(movementType: string): MessageKey 
       return "inventory.movementType.stockCountIncrease";
     case "StockCountVarianceDecrease":
       return "inventory.movementType.stockCountDecrease";
+    case "StockUse":
+      return "inventory.movementType.stockUse";
+    case "StockUseVoidRestoration":
+      return "inventory.movementType.stockUseVoid";
     default:
       return "inventory.movementType.other";
   }

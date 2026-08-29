@@ -89,6 +89,9 @@ import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsP
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
+import { StockUseCreatePage } from "@/features/inventory/StockUseCreatePage";
+import { StockUseDetailPage } from "@/features/inventory/StockUseDetailPage";
+import { StockUseListPage } from "@/features/inventory/StockUseListPage";
 import {
   CashierRoleHomePage,
   ManagerRoleHomePage,
@@ -540,6 +543,9 @@ export const appRoutes = [
             children: [
               { index: true, element: <InventoryListPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
+              { path: "stock-use", element: <StockUseListPage /> },
+              { path: "stock-use/new", element: <StockUseCreatePage /> },
+              { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },
               { path: ":productId", element: <InventoryDetailPage /> },
               { path: ":productId/expiration", element: <ExpirationSettingsPage /> },
             ],

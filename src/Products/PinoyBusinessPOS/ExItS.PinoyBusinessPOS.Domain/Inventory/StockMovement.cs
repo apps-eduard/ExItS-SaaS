@@ -24,6 +24,8 @@ public sealed class StockMovement
     public const string TransferOutReasonPrefix = "Transfer out";
     public const string TransferInReasonPrefix = "Transfer in";
     public const string TransferCancelRestoreReasonPrefix = "Transfer cancelled";
+    public const string StockUseConsumptionReason = "Stock use";
+    public const string StockUseVoidRestorationReason = "Stock use void restoration";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -563,6 +565,84 @@ public sealed class StockMovement
             branchId.Value);
     }
 
+    public static StockMovement StockUse(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid stockUseId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureStockUseId(stockUseId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var movementReason = string.IsNullOrWhiteSpace(reason)
+            ? StockUseConsumptionReason
+            : NormalizeOptionalReason(reason);
+        // Optional acquisition cost snapshot only — never invent from selling price.
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.StockUse,
+            -absolute,
+            movementReason,
+            StockMovementSourceType.StockUse,
+            stockUseId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
+    }
+
+    public static StockMovement StockUseVoidRestoration(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid stockUseId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureStockUseId(stockUseId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var restoredReason = string.IsNullOrWhiteSpace(reason)
+            ? StockUseVoidRestorationReason
+            : NormalizeOptionalReason(reason);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.StockUseVoidRestoration,
+            absolute,
+            restoredReason,
+            StockMovementSourceType.StockUse,
+            stockUseId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
     public StockMovement WithLot(InventoryLotId lotId) =>
         new(
             Id,
@@ -703,6 +783,16 @@ public sealed class StockMovement
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferId,
                 "TransferId cannot be an empty GUID.");
+        }
+    }
+
+    private static void EnsureStockUseId(Guid stockUseId)
+    {
+        if (stockUseId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockUseId,
+                "StockUseId cannot be an empty GUID.");
         }
     }
 

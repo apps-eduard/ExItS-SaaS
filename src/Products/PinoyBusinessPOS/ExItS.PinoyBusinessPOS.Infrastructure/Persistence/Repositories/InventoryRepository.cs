@@ -531,6 +531,54 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.DirectPurchaseReceipt),
             cancellationToken);
 
+    public Task<bool> HasStockUseAsync(
+        PosOrganizationId organizationId,
+        StockUseId stockUseId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == stockUseId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.StockUse)
+                && m.MovementType == nameof(StockMovementType.StockUse),
+            cancellationToken);
+
+    public Task<bool> HasStockUseVoidRestorationAsync(
+        PosOrganizationId organizationId,
+        StockUseId stockUseId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == stockUseId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.StockUse)
+                && m.MovementType == nameof(StockMovementType.StockUseVoidRestoration),
+            cancellationToken);
+
+    public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default)
+    {
+        var opening = nameof(StockMovementType.OpeningStock);
+        var purchase = nameof(StockMovementType.PurchaseReceipt);
+        var direct = nameof(StockMovementType.DirectPurchaseReceipt);
+        return await _db.StockMovements.AsNoTracking()
+            .Where(m =>
+                m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.UnitCost != null
+                && (m.MovementType == opening
+                    || m.MovementType == purchase
+                    || m.MovementType == direct))
+            .OrderByDescending(m => m.RecordedAtUtc)
+            .Select(m => m.UnitCost)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,
         SaleReturnId saleReturnId,

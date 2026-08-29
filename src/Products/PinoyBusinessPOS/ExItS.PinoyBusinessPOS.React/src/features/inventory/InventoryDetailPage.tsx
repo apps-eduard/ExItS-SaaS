@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { canManageInventory } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   adjustInventoryStock,
@@ -70,7 +71,8 @@ export function InventoryDetailPage() {
   const { t } = useI18n();
   const { productId } = useParams();
   const queryClient = useQueryClient();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const allowManageInventory = canManageInventory(sessionGrant);
   const [openingQty, setOpeningQty] = useState("0");
   const [openingUnitCost, setOpeningUnitCost] = useState("");
   const [openingExpiry, setOpeningExpiry] = useState("");
@@ -545,6 +547,19 @@ export function InventoryDetailPage() {
           </>
         )}
       </Card>
+
+      {account.isTracked && allowManageInventory ? (
+        <div className="flex flex-wrap gap-2">
+          <Button asChild type="button" variant="outline" className="min-h-11">
+            <Link
+              to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
+              data-testid="inventory-record-stock-use"
+            >
+              {t("inventory.recordStockUse")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       {!account.isTracked ? (
         <Card className="flex flex-col gap-3 p-3">

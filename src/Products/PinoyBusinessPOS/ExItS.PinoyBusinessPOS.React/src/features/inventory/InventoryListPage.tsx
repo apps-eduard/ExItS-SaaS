@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, ChevronRight } from "lucide-react";
+import { CalendarClock, ChevronRight, PackageMinus } from "lucide-react";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -92,6 +92,13 @@ export function InventoryListPage() {
             href: "/inventory/expiration",
             testId: "open-expiring-stock",
             emphasis: "primary",
+          },
+          {
+            key: "stock-use",
+            label: t("inventory.openStockUse"),
+            icon: <PackageMinus />,
+            href: "/inventory/stock-use",
+            testId: "open-stock-use",
           },
         ]}
       />

@@ -11,195 +11,232 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
-using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
-public sealed class DirectPurchaseReceiptUseCaseTests
+public sealed class StockUseUseCaseTests
 {
     private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    private static readonly Guid OrgB = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
-    private static readonly DateTimeOffset Utc = new(2026, 8, 17, 8, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Utc = new(2026, 8, 29, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Create_with_supplier_ad_hoc_and_no_source_succeeds()
-    {
-        var fx = await SeedAsync();
-        var withSupplier = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 2m, 12.5m)],
-                SupplierId: fx.SupplierId),
-            Actor);
-        Assert.True(withSupplier.IsSuccess);
-        Assert.Equal(fx.SupplierId, withSupplier.Value!.SupplierId);
-        Assert.Equal("Acme Trading", withSupplier.Value.SourceNameSnapshot);
-        Assert.Equal(25m, withSupplier.Value.TotalCost);
-
-        var adHoc = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 10m)],
-                SourceName: "Wet market"),
-            Actor);
-        Assert.True(adHoc.IsSuccess);
-        Assert.Null(adHoc.Value!.SupplierId);
-        Assert.Equal("Wet market", adHoc.Value.SourceNameSnapshot);
-
-        var noSource = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 10m)]),
-            Actor);
-        Assert.True(noSource.IsSuccess);
-        Assert.Null(noSource.Value!.SourceNameSnapshot);
-    }
-
-    [Fact]
-    public async Task Multi_line_increases_stock_atomically_and_records_DirectPurchase_movements()
-    {
-        var fx = await SeedAsync(cokeOnHand: 10m, spriteOnHand: 5m);
-        var result = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [
-                    new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 3m, 10m),
-                    new CreateDirectPurchaseReceiptLineRequest(fx.SpriteId, 2m, 8m)
-                ]),
-            Actor);
-        Assert.True(result.IsSuccess);
-        Assert.Equal(13m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(7m, fx.Inventory.GetOnHand(fx.SpriteId));
-        Assert.Equal(2, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.DirectPurchaseReceipt));
-        Assert.All(
-            fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.DirectPurchaseReceipt),
-            m =>
-            {
-                Assert.Equal(StockMovementSourceType.DirectPurchase, m.SourceType);
-                Assert.Equal(result.Value!.DirectPurchaseReceiptId, m.SourceId);
-                Assert.NotNull(m.UnitCost);
-                Assert.True(m.UnitCost > 0m);
-            });
-        Assert.Contains(
-            fx.Inventory.Movements,
-            m => m.ProductId.Value == fx.CokeId && m.UnitCost == 10m && m.QuantityEffect == 3m);
-        Assert.Contains(
-            fx.Inventory.Movements,
-            m => m.ProductId.Value == fx.SpriteId && m.UnitCost == 8m && m.QuantityEffect == 2m);
-    }
-
-    [Fact]
-    public async Task Invalid_line_qty_or_cost_fails_without_stock_change()
-    {
-        var fx = await SeedAsync(cokeOnHand: 4m);
-        var before = fx.Inventory.GetOnHand(fx.CokeId);
-        var zeroQty = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 0m, 10m)]),
-            Actor);
-        Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseQuantity, zeroQty.ErrorCode);
-        Assert.Equal(before, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.DirectPurchaseReceipt);
-
-        var zeroCost = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 0m)]),
-            Actor);
-        Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseUnitCost, zeroCost.ErrorCode);
-        Assert.Equal(before, fx.Inventory.GetOnHand(fx.CokeId));
-    }
-
-    [Fact]
-    public async Task Cross_tenant_product_and_supplier_are_rejected()
-    {
-        var fx = await SeedAsync();
-        var otherProduct = CatalogProduct.Create(
-            PosOrganizationId.From(OrgB),
-            "Other",
-            UnitOfMeasure.Piece,
-            1m,
-            Utc);
-        fx.Products.Items.Add(otherProduct);
-
-        var productCross = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(otherProduct.Id.Value, 1m, 5m)]),
-            Actor);
-        Assert.Equal(ApplicationErrorCodes.PurchaseProductNotFound, productCross.ErrorCode);
-
-        var supplierCross = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 5m)],
-                SupplierId: Guid.NewGuid()),
-            Actor);
-        Assert.Equal(ApplicationErrorCodes.SupplierNotFound, supplierCross.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Idempotency_key_replays_without_double_stock_increase()
+    public async Task Create_decreases_tracked_stock_for_internal_operations()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
-        var request = new CreateDirectPurchaseReceiptRequest(
-            DateOnly.FromDateTime(Utc.UtcDateTime),
-            [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 4m, 9m)],
-            IdempotencyKey: "dpr-key-1");
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.InternalOperations),
+                [new CreateStockUseLineRequest(fx.CokeId, 3m)]),
+            Actor);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(7m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(StockUseStatuses.ToCode(StockUseStatus.Posted), result.Value!.Status);
+        Assert.Contains(
+            fx.Inventory.Movements,
+            m => m.MovementType == StockMovementType.StockUse
+                && m.SourceType == StockMovementSourceType.StockUse
+                && m.QuantityEffect == -3m);
+        Assert.Equal(5m, result.Value.Lines[0].UnitCostSnapshot);
+    }
+
+    [Fact]
+    public async Task Insufficient_stock_rejects_without_partial_decrease()
+    {
+        var fx = await SeedAsync(cokeOnHand: 2m, spriteOnHand: 5m);
+        var beforeCoke = fx.Inventory.GetOnHand(fx.CokeId);
+        var beforeSprite = fx.Inventory.GetOnHand(fx.SpriteId);
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.StaffUse),
+                [
+                    new CreateStockUseLineRequest(fx.CokeId, 3m),
+                    new CreateStockUseLineRequest(fx.SpriteId, 1m)
+                ]),
+            Actor);
+
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Equal(beforeCoke, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(beforeSprite, fx.Inventory.GetOnHand(fx.SpriteId));
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.StockUse);
+        Assert.Empty(fx.StockUses.Items);
+    }
+
+    [Fact]
+    public async Task Multi_line_decreases_atomically()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m, spriteOnHand: 8m);
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.SampleOrTesting),
+                [
+                    new CreateStockUseLineRequest(fx.CokeId, 2m),
+                    new CreateStockUseLineRequest(fx.SpriteId, 3m)
+                ]),
+            Actor);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(5m, fx.Inventory.GetOnHand(fx.SpriteId));
+        Assert.Equal(2, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.StockUse));
+    }
+
+    [Fact]
+    public async Task Unit_conversion_uses_multiplier_to_base()
+    {
+        var fx = await SeedAsync(cokeOnHand: 24m);
+        var unit = CatalogProductUnit.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            ProductUnitKind.Purchase,
+            "Case of 12",
+            "Case",
+            12m,
+            Utc);
+        fx.Units.Items.Add(unit);
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.Other),
+                [new CreateStockUseLineRequest(fx.CokeId, 1m, unit.Id.Value)]),
+            Actor);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(1m, result.Value!.Lines[0].QuantityEntered);
+        Assert.Equal(12m, result.Value.Lines[0].MultiplierToBase);
+        Assert.Equal(12m, result.Value.Lines[0].BaseQuantity);
+    }
+
+    [Fact]
+    public async Task Void_restores_stock_with_compensating_movement()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.InternalOperations),
+                [new CreateStockUseLineRequest(fx.CokeId, 4m)]),
+            Actor);
+        Assert.True(created.IsSuccess);
+        Assert.Equal(6m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var voided = await fx.Void.ExecuteAsync(OrgA, created.Value!.StockUseId, Actor);
+        Assert.True(voided.IsSuccess);
+        Assert.Equal(StockUseStatuses.ToCode(StockUseStatus.Voided), voided.Value!.Status);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Contains(
+            fx.Inventory.Movements,
+            m => m.MovementType == StockMovementType.StockUseVoidRestoration && m.QuantityEffect == 4m);
+    }
+
+    [Fact]
+    public async Task Client_stock_use_id_replays_without_double_decrease()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var clientId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var request = new CreateStockUseRequest(
+            nameof(StockUseReason.StaffUse),
+            [new CreateStockUseLineRequest(fx.CokeId, 2m)],
+            StockUseId: clientId);
 
         var first = await fx.Create.ExecuteAsync(OrgA, request, Actor);
         Assert.True(first.IsSuccess);
-        Assert.Equal(14m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.DirectPurchaseReceipt));
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
 
         var second = await fx.Create.ExecuteAsync(OrgA, request, Actor);
         Assert.True(second.IsSuccess);
-        Assert.Equal(first.Value!.DirectPurchaseReceiptId, second.Value!.DirectPurchaseReceiptId);
-        Assert.Equal(14m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.DirectPurchaseReceipt));
+        Assert.Equal(first.Value!.StockUseId, second.Value!.StockUseId);
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.StockUse));
     }
 
     [Fact]
-    public async Task Untracked_product_is_rejected()
-    {
-        var fx = await SeedAsync(trackCoke: false);
-        var result = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateDirectPurchaseReceiptRequest(
-                DateOnly.FromDateTime(Utc.UtcDateTime),
-                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 5m)]),
-            Actor);
-        Assert.Equal(DomainErrorCodes.InventoryNotTracked, result.ErrorCode);
-    }
-
-    private static async Task<Fixture> SeedAsync(
-        decimal cokeOnHand = 0m,
-        decimal spriteOnHand = 0m,
-        bool trackCoke = true)
+    public async Task Fractional_quantity_decreases_base_stock()
     {
         var fx = new Fixture();
-        await fx.AddProductAsync(fx.CokeId, "Coke", cokeOnHand, trackCoke);
-        if (spriteOnHand > 0m)
+        await fx.AddProductAsync(fx.CokeId, "Cleaning Liquid", 5.0m, track: true, UnitOfMeasure.Liter);
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.SampleOrTesting),
+                [new CreateStockUseLineRequest(fx.CokeId, 0.75m)]),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
+        Assert.Equal(4.25m, fx.Inventory.GetOnHand(fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Cross_org_product_is_rejected()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var foreignOrg = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        var result = await fx.Create.ExecuteAsync(
+            foreignOrg,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.InternalOperations),
+                [new CreateStockUseLineRequest(fx.CokeId, 1m)]),
+            Actor);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Empty(fx.StockUses.Items);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.StockUse);
+    }
+
+    [Fact]
+    public async Task Stock_use_does_not_change_product_business_usage()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        product.UpdateUsage(ProductUsageCapabilities.InternalUse, Utc);
+        Assert.False(product.CanBeSold);
+        Assert.Equal(
+            ProductBusinessUsage.InternalUse,
+            ProductBusinessUsages.Classify(
+                ProductUsageCapabilities.Create(
+                    product.CanBePurchased,
+                    product.CanBeSold,
+                    product.CanBeUsedAsIngredient,
+                    product.IsProduced,
+                    product.UsagePreset)));
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateStockUseRequest(
+                nameof(StockUseReason.InternalOperations),
+                [new CreateStockUseLineRequest(fx.CokeId, 1m)]),
+            Actor);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(product.CanBeSold);
+        Assert.Equal(ProductUsageCapabilities.InternalUseCode, product.UsagePreset);
+        Assert.Equal(
+            ProductBusinessUsage.InternalUse,
+            ProductBusinessUsages.Classify(
+                ProductUsageCapabilities.Create(
+                    product.CanBePurchased,
+                    product.CanBeSold,
+                    product.CanBeUsedAsIngredient,
+                    product.IsProduced,
+                    product.UsagePreset)));
+    }
+
+    private static async Task<Fixture> SeedAsync(decimal cokeOnHand = 0m, decimal? spriteOnHand = null)
+    {
+        var fx = new Fixture();
+        await fx.AddProductAsync(fx.CokeId, "Coke", cokeOnHand, track: true);
+        if (spriteOnHand is decimal sprite)
         {
-            await fx.AddProductAsync(fx.SpriteId, "Sprite", spriteOnHand, track: true);
+            await fx.AddProductAsync(fx.SpriteId, "Sprite", sprite, track: true);
         }
 
-        fx.Suppliers.Items.Add(Supplier.Create(
-            PosOrganizationId.From(OrgA),
-            "SUP-000001",
-            "Acme Trading",
-            Utc,
-            id: SupplierId.From(fx.SupplierId)));
         return fx;
     }
 
@@ -207,34 +244,50 @@ public sealed class DirectPurchaseReceiptUseCaseTests
     {
         public Guid CokeId { get; } = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         public Guid SpriteId { get; } = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-        public Guid SupplierId { get; } = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
         public InMemoryCatalog Products { get; } = new();
+        public InMemoryUnits Units { get; } = new();
         public InMemoryInventory Inventory { get; } = new();
-        public InMemoryReceipts Receipts { get; } = new();
-        public InMemorySuppliers Suppliers { get; } = new();
+        public InMemoryStockUses StockUses { get; } = new();
+        public InMemoryBranchBalances Branches { get; } = new();
         public InMemoryLots Lots { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
-        public CreateDirectPurchaseReceipt Create { get; }
+        public CreateStockUse Create { get; }
+        public VoidStockUse Void { get; }
 
         public Fixture()
         {
-            Create = new CreateDirectPurchaseReceipt(
-                Receipts,
+            var lots = new InventoryLotStockService(Lots);
+            Create = new CreateStockUse(
+                StockUses,
                 Products,
-                Suppliers,
+                Units,
                 Inventory,
-                new InventoryLotStockService(Lots),
+                Branches,
+                lots,
+                UnitOfWork,
+                Clock);
+            Void = new VoidStockUse(
+                StockUses,
+                Products,
+                Inventory,
+                Branches,
+                lots,
                 UnitOfWork,
                 Clock);
         }
 
-        public Task AddProductAsync(Guid productId, string name, decimal opening, bool track)
+        public Task AddProductAsync(
+            Guid productId,
+            string name,
+            decimal opening,
+            bool track,
+            UnitOfMeasure unitOfMeasure = UnitOfMeasure.Piece)
         {
             var product = CatalogProduct.Create(
                 PosOrganizationId.From(OrgA),
                 name,
-                UnitOfMeasure.Piece,
+                unitOfMeasure,
                 10m,
                 Utc,
                 id: CatalogProductId.From(productId));
@@ -245,7 +298,13 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                     PosOrganizationId.From(OrgA),
                     CatalogProductId.From(productId),
                     Utc);
-                var movement = account.Enable(opening, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
+                var movement = account.Enable(
+                    opening,
+                    unitOfMeasure,
+                    Actor,
+                    Utc,
+                    hasOpeningStockAlready: false,
+                    openingUnitCost: 5m);
                 Inventory.Accounts.Add(account);
                 if (movement is not null)
                 {
@@ -340,88 +399,92 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class InMemorySuppliers : ISupplierRepository
+    private sealed class InMemoryUnits : ICatalogProductUnitRepository
     {
-        public List<Supplier> Items { get; } = [];
+        public List<CatalogProductUnit> Items { get; } = [];
 
-        public Task<Supplier?> GetByIdAsync(PosOrganizationId organizationId, SupplierId supplierId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Items.FirstOrDefault(s => s.OrganizationId == organizationId && s.Id == supplierId));
-
-        public Task<(IReadOnlyList<Supplier> Items, int TotalCount)> ListAsync(
+        public Task<CatalogProductUnit?> GetByIdAsync(
             PosOrganizationId organizationId,
-            SupplierFilter filter,
-            int skip,
-            int take,
+            ProductUnitId unitId,
             CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
+            Task.FromResult(Items.FirstOrDefault(u => u.OrganizationId == organizationId && u.Id == unitId));
 
-        public Task<Supplier?> FindActiveByNormalizedNameAsync(PosOrganizationId organizationId, string normalizedName, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Supplier?>(null);
+        public Task<IReadOnlyList<CatalogProductUnit>> ListByProductAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CatalogProductUnit>>(
+                Items.Where(u => u.OrganizationId == organizationId && u.ProductId == productId).ToList());
 
-        public Task<Supplier?> FindActiveByNormalizedEmailAsync(PosOrganizationId organizationId, string normalizedEmail, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Supplier?>(null);
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>>(
+                Items.Where(u => u.OrganizationId == organizationId && productIds.Any(id => id == u.ProductId))
+                    .GroupBy(u => u.ProductId.Value)
+                    .ToDictionary(g => g.Key, g => (IReadOnlyList<CatalogProductUnit>)g.ToList()));
 
-        public Task<Supplier?> FindActiveByNormalizedMobileAsync(PosOrganizationId organizationId, string normalizedMobile, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Supplier?>(null);
-
-        public Task<Supplier?> FindActiveByNormalizedTaxAsync(PosOrganizationId organizationId, string normalizedTax, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Supplier?>(null);
-
-        public Task<string> AllocateNextSupplierCodeAsync(PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
-            Task.FromResult("SUP-0002");
-
-        public Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default)
+        public Task AddAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default)
         {
-            Items.Add(supplier);
+            Items.Add(unit);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task ReplaceActiveUnitsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            ProductUnitKind kind,
+            IReadOnlyList<CatalogProductUnit> units,
+            DateTimeOffset utcNow,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
-    private sealed class InMemoryReceipts : IDirectPurchaseReceiptRepository
+    private sealed class InMemoryStockUses : IStockUseRepository
     {
-        private readonly List<DirectPurchaseReceipt> _items = [];
+        public List<StockUse> Items { get; } = [];
         private long _sequence;
 
-        public Task<DirectPurchaseReceipt?> GetByIdAsync(
+        public Task<StockUse?> GetByIdAsync(
             PosOrganizationId organizationId,
-            DirectPurchaseReceiptId receiptId,
+            StockUseId stockUseId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == receiptId));
+            Task.FromResult(Items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == stockUseId));
 
-        public Task<DirectPurchaseReceipt?> FindByIdempotencyKeyAsync(
+        public Task<StockUse?> FindByIdempotencyKeyAsync(
             PosOrganizationId organizationId,
             string idempotencyKey,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(r =>
+            Task.FromResult(Items.FirstOrDefault(r =>
                 r.OrganizationId == organizationId
                 && string.Equals(r.IdempotencyKey, idempotencyKey, StringComparison.Ordinal)));
 
-        public Task<(IReadOnlyList<DirectPurchaseReceipt> Items, int TotalCount)> ListAsync(
+        public Task<(IReadOnlyList<StockUse> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
-            DirectPurchaseReceiptFilter filter,
+            StockUseFilter filter,
             int skip,
             int take,
             CancellationToken cancellationToken = default)
         {
-            var query = _items.Where(r => r.OrganizationId == organizationId).AsEnumerable();
-            var list = query.Skip(skip).Take(take).ToList();
-            return Task.FromResult<(IReadOnlyList<DirectPurchaseReceipt>, int)>((list, query.Count()));
+            var list = Items.Where(r => r.OrganizationId == organizationId).Skip(skip).Take(take).ToList();
+            return Task.FromResult<(IReadOnlyList<StockUse>, int)>((list, Items.Count));
         }
 
-        public Task AddAsync(DirectPurchaseReceipt receipt, CancellationToken cancellationToken = default)
+        public Task AddAsync(StockUse stockUse, CancellationToken cancellationToken = default)
         {
-            _items.Add(receipt);
+            Items.Add(stockUse);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(DirectPurchaseReceipt receipt, CancellationToken cancellationToken = default)
+        public Task UpdateAsync(StockUse stockUse, CancellationToken cancellationToken = default)
         {
-            var idx = _items.FindIndex(r => r.Id == receipt.Id);
+            var idx = Items.FindIndex(r => r.Id == stockUse.Id);
             if (idx >= 0)
             {
-                _items[idx] = receipt;
+                Items[idx] = stockUse;
             }
 
             return Task.CompletedTask;
@@ -433,8 +496,27 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             CancellationToken cancellationToken = default)
         {
             _sequence++;
-            return Task.FromResult(DirectPurchaseReceiptNumbers.Format(businessDateUtc, _sequence));
+            return Task.FromResult(StockUseNumbers.Format(businessDateUtc, _sequence));
         }
+    }
+
+    private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
+    {
+        public Task<InventoryBranchBalance?> GetAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<InventoryBranchBalance?>(null);
+
+        public Task<IReadOnlyList<InventoryBranchBalance>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>([]);
+
+        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class InMemoryInventory : IInventoryRepository
@@ -468,7 +550,9 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             IReadOnlyCollection<CatalogProductId> productIds,
             Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
             CancellationToken cancellationToken = default) =>
-            action(Accounts.Where(a => a.OrganizationId == organizationId).ToList(), cancellationToken);
+            action(
+                Accounts.Where(a => a.OrganizationId == organizationId && productIds.Any(id => id == a.ProductId)).ToList(),
+                cancellationToken);
 
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
         {
@@ -480,20 +564,48 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             PosOrganizationId organizationId,
             StockMovementId movementId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<StockMovement?>(
-                Movements.FirstOrDefault(m =>
-                    m.OrganizationId == organizationId && m.Id == movementId));
+            Task.FromResult(Movements.FirstOrDefault(m => m.OrganizationId == organizationId && m.Id == movementId));
 
-        public Task<bool> HasDirectPurchaseReceiptAsync(
+        public Task<bool> HasStockUseAsync(
             PosOrganizationId organizationId,
-            DirectPurchaseReceiptId receiptId,
+            StockUseId stockUseId,
             CatalogProductId productId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Movements.Any(m =>
                 m.OrganizationId == organizationId
                 && m.ProductId == productId
-                && m.SourceId == receiptId.Value
-                && m.MovementType == StockMovementType.DirectPurchaseReceipt));
+                && m.SourceId == stockUseId.Value
+                && m.MovementType == StockMovementType.StockUse));
+
+        public Task<bool> HasStockUseVoidRestorationAsync(
+            PosOrganizationId organizationId,
+            StockUseId stockUseId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.ProductId == productId
+                && m.SourceId == stockUseId.Value
+                && m.MovementType == StockMovementType.StockUseVoidRestoration));
+
+        public Task<decimal?> GetLatestAcquisitionUnitCostAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default)
+        {
+            var cost = Movements
+                .Where(m =>
+                    m.OrganizationId == organizationId
+                    && m.ProductId == productId
+                    && m.UnitCost is not null
+                    && m.MovementType is StockMovementType.OpeningStock
+                        or StockMovementType.PurchaseReceipt
+                        or StockMovementType.DirectPurchaseReceipt)
+                .OrderByDescending(m => m.RecordedAtUtc)
+                .Select(m => m.UnitCost)
+                .FirstOrDefault();
+            return Task.FromResult(cost);
+        }
 
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListLowStockAsync(PosOrganizationId organizationId, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -510,12 +622,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public Task<bool> HasCustomerOrderDeductionAsync(PosOrganizationId organizationId, CustomerOrderId orderId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> HasSaleVoidRestorationAsync(PosOrganizationId organizationId, SaleId saleId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> HasPurchaseReceiptAsync(PosOrganizationId organizationId, GoodsReceiptId goodsReceiptId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<bool> HasStockUseAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(false);
-        public Task<bool> HasStockUseVoidRestorationAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(false);
-        public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<decimal?>(null);
+        public Task<bool> HasDirectPurchaseReceiptAsync(PosOrganizationId organizationId, DirectPurchaseReceiptId receiptId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> HasSaleReturnRestockAsync(PosOrganizationId organizationId, SaleReturnId saleReturnId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> HasInventoryTransferMovementAsync(PosOrganizationId organizationId, InventoryTransferId transferId, CatalogProductId productId, StockMovementType movementType, InventoryLotId? lotId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -537,12 +644,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             string normalizedLotNumber,
             PosBranchId? branchId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(Items.FirstOrDefault(l =>
-                l.OrganizationId == organizationId
-                && l.ProductId == productId
-                && l.ExpirationDate == expirationDate
-                && l.NormalizedLotNumber == normalizedLotNumber
-                && l.BranchId == branchId));
+            Task.FromResult<InventoryLot?>(null);
 
         public Task<IReadOnlyList<InventoryLot>> ListOnHandAsync(
             PosOrganizationId organizationId,
@@ -550,7 +652,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             PosBranchId? branchId,
             bool includeDepleted,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InventoryLot>>(Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId).ToList());
+            Task.FromResult<IReadOnlyList<InventoryLot>>([]);
 
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,
@@ -600,6 +702,17 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             return Task.CompletedTask;
         }
 
+        public Task<IReadOnlyList<InventoryLotMovement>> ListBySourceAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLotMovement>>(
+                Movements.Where(m =>
+                    m.OrganizationId == organizationId
+                    && m.SourceId == sourceId
+                    && m.MovementType == movementType).ToList());
+
         public Task<bool> HasMovementAsync(
             PosOrganizationId organizationId,
             Guid sourceId,
@@ -611,13 +724,5 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 && m.SourceId == sourceId
                 && m.LotId == lotId
                 && m.MovementType == movementType));
-
-        public Task<IReadOnlyList<InventoryLotMovement>> ListBySourceAsync(
-            PosOrganizationId organizationId,
-            Guid sourceId,
-            StockMovementType movementType,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InventoryLotMovement>>(
-                Movements.Where(m => m.OrganizationId == organizationId && m.SourceId == sourceId && m.MovementType == movementType).ToList());
     }
 }

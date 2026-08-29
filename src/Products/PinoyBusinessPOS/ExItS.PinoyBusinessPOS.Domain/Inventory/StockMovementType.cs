@@ -25,7 +25,11 @@ public enum StockMovementType
     /// Does not change product <see cref="InventoryAccount.OnHandQuantity"/>;
     /// never written as a product-level <see cref="StockMovement"/>.
     /// </summary>
-    ExpirationInitialization = 13
+    ExpirationInitialization = 13,
+    /// <summary>Internal / non-sale stock consumption (stock use document).</summary>
+    StockUse = 14,
+    /// <summary>Compensating restoration when a stock use document is voided.</summary>
+    StockUseVoidRestoration = 15
 }
 
 public static class StockMovementTypes
@@ -47,7 +51,9 @@ public static class StockMovementTypes
         nameof(StockMovementType.TransferIn),
         nameof(StockMovementType.TransferCancelRestore),
         nameof(StockMovementType.DirectPurchaseReceipt),
-        nameof(StockMovementType.ExpirationInitialization)
+        nameof(StockMovementType.ExpirationInitialization),
+        nameof(StockMovementType.StockUse),
+        nameof(StockMovementType.StockUseVoidRestoration)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();
