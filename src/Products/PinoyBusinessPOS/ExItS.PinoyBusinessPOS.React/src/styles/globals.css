@@ -2372,18 +2372,32 @@ body {
   color: var(--exits-text-muted);
 }
 
-/* Expiry tracking = warning family (same as Near expiry). */
+/* Expiry tracking = warning/amber (attention, not urgent). */
 .inventory-row__badge--expiry {
   border-color: color-mix(in srgb, var(--exits-warning) 45%, var(--exits-border));
   color: var(--exits-warning);
   background: color-mix(in srgb, var(--exits-warning) 10%, var(--exits-surface));
 }
 
-/* Not tracked = muted/neutral (inactive), not danger or success. */
+/* Not tracked = muted/neutral (inactive capability). */
 .inventory-row__badge--untracked {
   border-color: color-mix(in srgb, var(--exits-text-muted) 35%, var(--exits-border));
   color: var(--exits-text-muted);
   background: color-mix(in srgb, var(--exits-text-muted) 8%, var(--exits-surface));
+}
+
+/* Low stock = warning/amber (needs restock soon). */
+.inventory-row__badge--low {
+  border-color: color-mix(in srgb, var(--exits-warning) 45%, var(--exits-border));
+  color: var(--exits-warning);
+  background: color-mix(in srgb, var(--exits-warning) 10%, var(--exits-surface));
+}
+
+/* Out of stock = danger/red (cannot sell). */
+.inventory-row__badge--out {
+  border-color: color-mix(in srgb, var(--exits-danger) 45%, var(--exits-border));
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger) 10%, var(--exits-surface));
 }
 
 .inventory-row__chevron {

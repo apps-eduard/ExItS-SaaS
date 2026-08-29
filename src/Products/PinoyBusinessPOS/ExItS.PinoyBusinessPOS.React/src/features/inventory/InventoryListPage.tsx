@@ -9,7 +9,6 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -28,14 +27,6 @@ const TRACKING_FILTERS: Array<{
   { value: "tracked", key: "tracked", labelKey: "inventory.filterTracked" },
   { value: "untracked", key: "untracked", labelKey: "inventory.filterUntracked" },
 ];
-
-function stockTone(stockStatus: string, isLowStock: boolean): "success" | "warning" | "danger" | "info" {
-  const status = stockStatus.trim().toLowerCase();
-  if (status.includes("out")) return "danger";
-  if (isLowStock || status.includes("low")) return "warning";
-  if (status.includes("ok") || status.includes("in")) return "success";
-  return "info";
-}
 
 export function InventoryListPage() {
   const { t } = useI18n();
@@ -186,9 +177,15 @@ export function InventoryListPage() {
                           </span>
                         ) : null}
                         {showStockChip ? (
-                          <StatusChip tone={stockTone(stockStatus, lowStock)}>
-                            {lowStock && !outOfStock ? t("inventory.lowStock") : stockStatus}
-                          </StatusChip>
+                          <span
+                            className={
+                              outOfStock
+                                ? "inventory-row__badge inventory-row__badge--out"
+                                : "inventory-row__badge inventory-row__badge--low"
+                            }
+                          >
+                            {outOfStock ? stockStatus : t("inventory.lowStock")}
+                          </span>
                         ) : null}
                       </div>
                     ) : null}
