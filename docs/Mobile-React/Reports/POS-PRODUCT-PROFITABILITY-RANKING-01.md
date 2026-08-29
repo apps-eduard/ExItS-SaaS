@@ -1,4 +1,4 @@
-﻿# POS-PRODUCT-PROFITABILITY-RANKING-01
+# POS-PRODUCT-PROFITABILITY-RANKING-01
 
 ## Summary
 
@@ -9,15 +9,15 @@ Authoritative **product profitability ranking** from immutable Sale/SaleLine com
 | TASK | POS-PRODUCT-PROFITABILITY-RANKING-01 |
 | START_SHA | `d3ff54f16c1252c1f8dc18bf81d5e1e6aa2df7c2` |
 | FEATURE_SHA | `1e08f2d08f12cbf4c47752e7c036e7367bc27478` |
-| HARDEN_SHA | `a22d8e3d` (TotalCogs + summary/mobile cards) |
-| FINAL_SHA | `c620faf7807cff2cfd276e151c945b8ff9e8468c` |
+| HARDEN_SHA | `a22d8e3d` (TotalCogs + summary/mobile; full `a22d8e3d` commit on branch) |
+| FINAL_SHA | `00fc8ac9d1ae763d1ecf5a27316d6e50fee3ea14` |
 | EXISTING_COST_MODEL | SaleLine UnitCostSnapshot / LineCostSnapshot; Sale CostStatus |
 | EXISTING_DISCOUNT_MODEL | SaleLine GrossLineTotal / TotalLineDiscount / LineTotal |
 | PRODUCT_PROFITABILITY_SOURCE_OF_TRUTH | Completed sale + return line snapshots (SQL aggregates) |
-| PRODUCT_NET_SALES_FORMULA | Σ LineTotal − product RefundAmount (merchandise; no invented tax allocation) |
-| PRODUCT_COGS_FORMULA | Σ known LineCostSnapshot − return qty × original UnitCostSnapshot |
-| PRODUCT_GP_FORMULA | NetSales − TotalCogs **only when CogsStatus=Complete** |
-| PRODUCT_MARGIN_FORMULA | GrossProfit / NetSales × 100 when NetSales > 0 and Complete |
+| PRODUCT_NET_SALES_FORMULA | S LineTotal - product RefundAmount (merchandise; no invented tax allocation) |
+| PRODUCT_COGS_FORMULA | S known LineCostSnapshot - return qty � original UnitCostSnapshot |
+| PRODUCT_GP_FORMULA | NetSales - TotalCogs **only when CogsStatus=Complete** |
+| PRODUCT_MARGIN_FORMULA | GrossProfit / NetSales � 100 when NetSales > 0 and Complete |
 | RETURN_POLICY | Period returns reduce NetSales + COGS via original sold-line cost |
 | VOID_POLICY | Completed sales only |
 | UTANG_POLICY | Completed Utang same as Cash/ManualGCash |
@@ -30,7 +30,7 @@ Authoritative **product profitability ranking** from immutable Sale/SaleLine com
 | BRANCH_SCOPE | Optional branchId; omit = org-wide |
 | ALL_BRANCHES_SCOPE | Omit branchId |
 | CROSS_ORG_GUARD | ValidateReportBranchAsync fail closed |
-| QUERY_MODEL | SQL group-by sale lines + return×sale-line cost join |
+| QUERY_MODEL | SQL group-by sale lines + return�sale-line cost join |
 | N_PLUS_ONE_STATUS | PASS |
 | MOBILE_UX | Summary cards + per-product cards |
 | TABLET_UX | Summary grid + cards / table breakpoint |
