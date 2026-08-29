@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
-import { setPosSessionGrant } from "@/api/platform/pos-session-grant";
 import {
   filterMockProducts,
   mockCatalogCategories,
@@ -15,211 +14,61 @@ import {
 } from "@/test/mock-pos-catalog";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
+import {
+  createOrganizationSellReadyFetch,
+  createPersonalPlatformFetch,
+  seedOrganizationSellReadyLocalState,
+} from "@/test/session-context";
 
-const orgId = "11111111-1111-1111-1111-111111111111";
-const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-const installId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
-const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
-const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
-
-function mockBoundCashierApis() {
-  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = init?.method ?? "GET";
-
-    if (url.includes("/pos-api/")) {
-      if (url.includes("/operational-branch") && method === "PUT") {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            organizationId: orgId,
-            branchId,
-            name: "Main Branch",
-            deviceMatchesSelectedBranch: true,
-            deviceBoundBranchId: branchId,
-            openCashierShiftPresent: true,
-          }),
-          text: async () => "",
-        } as Response;
-      }
-
-      if (url.includes("/cashier-shifts/current") && method === "GET") {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            shiftId,
-            organizationId: orgId,
-            shiftNumber: "S-1",
-            status: "Open",
-            actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-            registerId,
-            registerCode: "REG-1",
-            registerName: "Front",
-            businessDate: "2026-08-21",
-            openingCashAmount: 100,
-            openingCashCounted: true,
-            effectiveCashCountMode: "Required",
-            openedAtUtc: "2026-08-21T01:00:00Z",
-            openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-            createdAtUtc: "2026-08-21T01:00:00Z",
-            updatedAtUtc: "2026-08-21T01:00:00Z",
-          }),
-          text: async () => "",
-        } as Response;
-      }
-
-      if (url.includes("/catalog/categories")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => mockCatalogCategories,
-          text: async () => "",
-        } as Response;
-      }
-
-      if (url.includes("/catalog/products")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => filterMockProducts(url),
-          text: async () => "",
-        } as Response;
-      }
-
+/** Sell Floor landscape cart (and sell-pay) mounts at min-width 900px. */
+function stubViewport(minWidthPx: number) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => {
+      const match = String(query).match(/min-width:\s*(\d+)px/);
+      const required = match ? Number(match[1]) : 0;
       return {
-        ok: false,
-        status: 404,
-        json: async () => ({ detail: "not mocked" }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/pos-devices/authorize") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          posDeviceId: deviceId,
-          branchId,
-          installationDeviceId: installId,
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/me")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          sessionId: "11111111-1111-1111-1111-111111111111",
-          username: "cashier",
-          displayName: "Cashier One",
-          selectedOrganizationId: orgId,
-          accountClass: "Organization",
-          homeOrganizationId: orgId,
-          organizationContextLocked: true,
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/organizations") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
-          {
-            organizationId: orgId,
-            displayName: "Kizy Store",
-            slug: "kizy-store",
-          },
-        ],
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes(`/organizations/${orgId}/branches`) && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
-          {
-            id: branchId,
-            organizationId: orgId,
-            code: "MAIN",
-            name: "Main Branch",
-            isPrimary: true,
-            status: "Active",
-          },
-        ],
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/antiforgery/token")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
-    }
-
-    if (url.includes(`/organizations/${orgId}/branch-context`) && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/token") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          accessToken: "in-memory-only",
-          productAccessAllowed: true,
-          mappedPosRoleCode: "Cashier",
-          productLocalRoleCode: "Cashier",
-          membershipRole: "OrganizationMember",
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    return {
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: "not mocked" }),
-      text: async () => "",
-    } as Response;
+        matches: minWidthPx >= required,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      };
+    }),
   });
+}
+
+function renderSellFloor(options: { viewportMinWidth?: number } = {}) {
+  seedOrganizationSellReadyLocalState({ role: "Cashier" });
+  stubViewport(options.viewportMinWidth ?? 1024);
+  vi.stubGlobal(
+    "fetch",
+    createOrganizationSellReadyFetch({
+      role: "Cashier",
+      catalogCategories: mockCatalogCategories,
+      catalogProducts: filterMockProducts,
+    }),
+  );
+  const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+  return render(
+    <AppProviders>
+      <RouterProvider router={memoryRouter} />
+    </AppProviders>,
+  );
 }
 
 describe("SellFloorPage", () => {
   beforeEach(() => {
-    window.localStorage.setItem("exits.pos-client.installation-device-id.v1", installId);
-    setPosSessionGrant({
-      accessToken: "in-memory-only",
-      productAccessAllowed: true,
-      mappedPosRoleCode: "Cashier",
-      productLocalRoleCode: "Cashier",
-    });
-    vi.stubGlobal("fetch", mockBoundCashierApis());
+    seedOrganizationSellReadyLocalState({ role: "Cashier" });
+    stubViewport(1024);
   });
 
   it("renders sell-floor regions with disabled pay and catalog products", async () => {
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
@@ -247,12 +96,7 @@ describe("SellFloorPage", () => {
 
   it("shows floating cart bar after adding a line", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor({ viewportMinWidth: 390 });
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -266,12 +110,7 @@ describe("SellFloorPage", () => {
 
   it("adds to cart and keeps lines when switching category", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -296,12 +135,7 @@ describe("SellFloorPage", () => {
 
   it("opens sell-unit picker for multi-UOM products and adds sack line", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_RICE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -325,12 +159,7 @@ describe("SellFloorPage", () => {
 
   it("opens weight entry for ByWeight products and clears cart with confirmation", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
@@ -365,12 +194,7 @@ describe("SellFloorPage", () => {
 
   it("shows New Sale heading and toggles info panel", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
@@ -403,12 +227,7 @@ describe("SellFloorPage", () => {
 
   it("hides out-of-stock products until the cashier shows them", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -452,12 +271,7 @@ describe("SellFloorPage", () => {
 
   it("reduces displayed on-hand when this register adds to cart and restores it on remove", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
@@ -492,12 +306,7 @@ describe("SellFloorPage", () => {
 
   it("blocks weight that exceeds available stock", async () => {
     const user = userEvent.setup();
-    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
-    render(
-      <AppProviders>
-        <RouterProvider router={memoryRouter} />
-      </AppProviders>,
-    );
+    renderSellFloor();
 
     await waitFor(() => {
       expect(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`)).toBeInTheDocument();
@@ -516,5 +325,30 @@ describe("SellFloorPage", () => {
     expect(
       screen.queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("SellFloorPage account-class gate", () => {
+  it("rejects Personal session on Organization Sell route", async () => {
+    vi.stubGlobal("fetch", createPersonalPlatformFetch());
+    const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: ["/sell"] });
+    render(
+      <AppProviders>
+        <RouterProvider router={memoryRouter} />
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("account-class-denied")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("sell-floor")).not.toBeInTheDocument();
+  });
+
+  it("allows Organization sell-ready session onto Sell floor", async () => {
+    renderSellFloor();
+    await waitFor(() => {
+      expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("account-class-denied")).not.toBeInTheDocument();
   });
 });

@@ -4,23 +4,17 @@ import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { vi } from "vitest";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
+import {
+  createOrganizationSellReadyFetch,
+  createPersonalPlatformFetch,
+  createPersonalSessionSnapshot,
+  jsonResponse,
+  seedOrganizationSellReadyLocalState,
+  type OrganizationTestContextOptions,
+  type PersonalTestContextOptions,
+} from "@/test/session-context";
 
-export function jsonResponse(status: number, body: unknown, delayMs = 0): Promise<Response> {
-  const response = {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-    text: async () => (body === null ? "" : JSON.stringify(body)),
-  } as Response;
-
-  if (delayMs === 0) {
-    return Promise.resolve(response);
-  }
-
-  return new Promise((resolve) => {
-    window.setTimeout(() => resolve(response), delayMs);
-  });
-}
+export { jsonResponse };
 
 export function stubUnauthenticatedPlatformApi() {
   return vi.fn(async (input: RequestInfo | URL) => {
@@ -32,6 +26,7 @@ export function stubUnauthenticatedPlatformApi() {
   });
 }
 
+/** Legacy helper — Personal-shaped session without explicit accountClass (omit = deny on class gates). */
 export function stubAuthenticatedPlatformApi() {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -75,6 +70,55 @@ export function renderAuthenticatedAt(path: string, options?: Omit<RenderOptions
   );
 }
 
+/** Renders full app routes under a valid Organization session (optional Sell-ready defaults). */
+export function renderOrganizationAt(
+  path: string,
+  options: OrganizationTestContextOptions & {
+    sellReady?: boolean;
+    catalogCategories?: unknown;
+    catalogProducts?: (url: string) => unknown;
+  } = {},
+  renderOptions?: Omit<RenderOptions, "wrapper">,
+) {
+  const { sellReady = true, catalogCategories, catalogProducts, ...ctx } = options;
+  seedOrganizationSellReadyLocalState(ctx);
+  vi.stubGlobal(
+    "fetch",
+    sellReady
+      ? createOrganizationSellReadyFetch({ ...ctx, catalogCategories, catalogProducts })
+      : createOrganizationSellReadyFetch({
+          ...ctx,
+          openShift: false,
+          deviceAuthorized: false,
+          catalogCategories,
+          catalogProducts,
+        }),
+  );
+  const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: [path] });
+  return render(
+    <AppProviders>
+      <RouterProvider router={memoryRouter} />
+    </AppProviders>,
+    renderOptions,
+  );
+}
+
+/** Renders full app routes under an explicit Personal session. */
+export function renderPersonalAt(
+  path: string,
+  options: PersonalTestContextOptions = {},
+  renderOptions?: Omit<RenderOptions, "wrapper">,
+) {
+  vi.stubGlobal("fetch", createPersonalPlatformFetch(options));
+  const memoryRouter = createMemoryRouter(appRoutes, { initialEntries: [path] });
+  return render(
+    <AppProviders>
+      <RouterProvider router={memoryRouter} />
+    </AppProviders>,
+    renderOptions,
+  );
+}
+
 export function renderApp(ui?: ReactElement, options?: Omit<RenderOptions, "wrapper">) {
   if (ui) {
     vi.stubGlobal("fetch", stubUnauthenticatedPlatformApi());
@@ -90,3 +134,5 @@ export function renderApp(ui?: ReactElement, options?: Omit<RenderOptions, "wrap
   }
   return renderAt("/sign-in", options);
 }
+
+export { createPersonalSessionSnapshot };

@@ -111,4 +111,51 @@ describe("SessionGuards AccountClass", () => {
     renderWithRoutes({ email: "paul@gmail.com" });
     expect(screen.getByTestId("account-class-denied")).toBeInTheDocument();
   });
+
+  it("allows Organization session on Organization-only surface", () => {
+    sessionState.status = "authenticated";
+    sessionState.session = {
+      accountClass: "Organization",
+      email: "cashier@ORG000001",
+      organizationContextLocked: true,
+      homeOrganizationId: "11111111-1111-1111-1111-111111111111",
+    };
+    render(
+      <MemoryRouter initialEntries={["/org"]}>
+        <Routes>
+          <Route
+            path="/org"
+            element={
+              <RequireOrganizationSession>
+                <div data-testid="org-ok">org-ok</div>
+              </RequireOrganizationSession>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("org-ok")).toBeInTheDocument();
+    expect(screen.queryByTestId("account-class-denied")).not.toBeInTheDocument();
+  });
+
+  it("denies Personal session on Organization-only surface", () => {
+    sessionState.status = "authenticated";
+    sessionState.session = { accountClass: "Personal", email: "paul@gmail.com" };
+    render(
+      <MemoryRouter initialEntries={["/org"]}>
+        <Routes>
+          <Route
+            path="/org"
+            element={
+              <RequireOrganizationSession>
+                <div data-testid="org-ok">org-ok</div>
+              </RequireOrganizationSession>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("account-class-denied")).toBeInTheDocument();
+    expect(screen.queryByTestId("org-ok")).not.toBeInTheDocument();
+  });
 });

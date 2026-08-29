@@ -140,19 +140,16 @@ describe("workspace grant hint regression", () => {
   });
 
   it("does not show branch-only cards while workspace grant probe is pending", async () => {
+    vi.mocked(isOfflinePinAndDekConfigured).mockReturnValueOnce(false);
     probeMock.mockReturnValue(new Promise(() => undefined));
     renderWorkspaceChooser();
     expect(screen.queryByText("Main Branch")).not.toBeInTheDocument();
     expect(screen.queryByText("2 branches")).not.toBeInTheDocument();
-    await waitFor(
-      () => {
-        expect(
-          screen.queryByText("Loading workspaces…") ??
-            screen.queryByText("Preparing workspace permissions…"),
-        ).toBeTruthy();
-      },
-      { timeout: 5000 },
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("workspace-grant-loading")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Main Branch")).not.toBeInTheDocument();
+    expect(screen.queryByText("2 branches")).not.toBeInTheDocument();
   });
 
   it("shows grant probe error with retry instead of silent branch-only cards", async () => {

@@ -5,15 +5,20 @@ import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { appRoutes } from "@/app/router";
 import { setPosAccessToken } from "@/api/platform/pos-access-token";
-import { setPosSessionGrant } from "@/api/platform/pos-session-grant";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
+import { jsonResponse } from "@/test/render";
+import {
+  TEST_BRANCH_A_ID,
+  TEST_INSTALL_ID,
+  TEST_ORG_A_ID,
+  createOrganizationSellReadyFetch,
+  createPersonalPlatformFetch,
+  seedOrganizationSellReadyLocalState,
+} from "@/test/session-context";
 
-const orgId = "11111111-1111-1111-1111-111111111111";
-const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-const installId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
-const deviceId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
-const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+const orgId = TEST_ORG_A_ID;
+const branchId = TEST_BRANCH_A_ID;
+const installId = TEST_INSTALL_ID;
 
 function createFetchMock(
   options: { longNames?: boolean; unbound?: boolean; personalSwitchable?: boolean } = {},
@@ -25,179 +30,41 @@ function createFetchMock(
     ? "Very Long Organization Name For Truncation Testing Carenderia"
     : "Kizy Store";
   const displayName = longNames ? "Olivia Extremely Long Mendoza Display" : "Olivia Mendoza";
+  const branchName = longNames ? "Main Branch With A Very Long Store Title" : "Main Branch";
 
-  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = init?.method ?? "GET";
+  if (unbound) {
+    return createPersonalPlatformFetch({
+      displayName,
+      username: "olivia",
+      email: "olivia@example.com",
+    });
+  }
 
-    if (url.includes("/pos-devices/authorize") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          posDeviceId: deviceId,
-          branchId,
-          installationDeviceId: installId,
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/cashier-shifts/current") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          shiftId,
-          organizationId: orgId,
-          shiftNumber: "S-1",
-          status: "Open",
-          actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-          registerId,
-          registerCode: "REG-1",
-          registerName: "Front",
-          businessDate: "2026-08-21",
-          openingCashAmount: 100,
-          openingCashCounted: true,
-          effectiveCashCountMode: "Required",
-          openedAtUtc: "2026-08-21T01:00:00Z",
-          openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-          createdAtUtc: "2026-08-21T01:00:00Z",
-          updatedAtUtc: "2026-08-21T01:00:00Z",
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/catalog/categories")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/catalog/products")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/antiforgery/token")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/me") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          sessionId: "11111111-1111-1111-1111-111111111111",
-          username: "olivia",
-          displayName,
-          email: "olivia@example.com",
-          selectedOrganizationId: unbound ? null : orgId,
-          accountClass: unbound ? "Personal" : "Organization",
-          homeOrganizationId: unbound ? null : orgId,
-          organizationContextLocked: personalSwitchable ? false : !unbound,
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/organizations") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () =>
-          unbound
-            ? []
-            : [
-                {
-                  organizationId: orgId,
-                  displayName: orgName,
-                  slug: "kizy-store",
-                },
-              ],
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes(`/organizations/${orgId}/branches`) && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
-          {
-            id: branchId,
-            organizationId: orgId,
-            code: "MAIN",
-            name: longNames ? "Main Branch With A Very Long Store Title" : "Main Branch",
-            isPrimary: true,
-            status: "Active",
-          },
-        ],
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
-    }
-
-    if (url.includes(`/organizations/${orgId}/branch-context`) && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/token") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          accessToken: "in-memory-only-access-token",
-          productAccessAllowed: true,
-          mappedPosRoleCode: "Cashier",
-          productLocalRoleCode: "Cashier",
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/pos-api/api/v1/pos/operational-branch") && method === "PUT") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+  return createOrganizationSellReadyFetch({
+    organizationId: orgId,
+    organizationName: orgName,
+    branchId,
+    branchName,
+    displayName,
+    username: "olivia",
+    email: "olivia@example.com",
+    role: "Cashier",
+    organizationContextLocked: personalSwitchable ? false : true,
+    catalogCategories: { items: [], totalCount: 0, page: 1, pageSize: 50 },
+    catalogProducts: () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
+    onPosRequest: async (url, method) => {
+      if (url.includes("/pos-api/api/v1/pos/operational-branch") && method === "PUT") {
+        return jsonResponse(200, {
           organizationId: orgId,
           branchId,
           name: "Main Branch",
           deviceMatchesSelectedBranch: false,
           deviceBoundBranchId: null,
           openCashierShiftPresent: false,
-        }),
-        text: async () => "",
-      } as Response;
-    }
-
-    if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
-    }
-
-    return {
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: "not mocked" }),
-      text: async () => "",
-    } as Response;
+        });
+      }
+      return null;
+    },
   });
 }
 
@@ -212,14 +79,9 @@ function renderAt(path: string) {
 
 describe("account shell", () => {
   beforeEach(() => {
+    seedOrganizationSellReadyLocalState({ role: "Cashier" });
     window.localStorage.setItem("exits.pos-client.installation-device-id.v1", installId);
     setPosAccessToken("in-memory-only-access-token");
-    setPosSessionGrant({
-      accessToken: "in-memory-only-access-token",
-      productAccessAllowed: true,
-      mappedPosRoleCode: "Cashier",
-      productLocalRoleCode: "Cashier",
-    });
   });
 
   afterEach(() => {
