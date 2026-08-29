@@ -7,6 +7,7 @@ Harden Organization POS **sales reporting** so commercial discount snapshots alr
 | Field | Value |
 |--------|--------|
 | START_SHA | `b78668b14da843fc83dc4082b58bc8176ed0a831` |
+| FEATURE_SHA | `f9985d136f7bbe6e398ceea90e38c13e13893178` |
 | DISCOUNT_MODEL | Manual commercial discount (Line + Sale scope; % / Fixed) |
 | DISCOUNT_SOURCE_OF_TRUTH | Immutable Sale/SaleLine checkout snapshots |
 | DISCOUNT_SNAPSHOT_MODEL | `GrossSubtotal` / `DiscountTotal` / `Subtotal` / `TaxAmount` / `Total`; line `GrossLineTotal` / `TotalLineDiscount` / `LineTotal` |
