@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -12,6 +12,12 @@ import {
   Smartphone,
   Wallet,
 } from "lucide-react";
+import {
+  hasOrganizationManagementAuthority,
+  isPosOperationsManager,
+  isPosOwnerRole,
+  resolveEffectivePosRoleCode,
+} from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
@@ -33,6 +39,13 @@ import {
   DashboardSparkBars,
 } from "@/features/reports/DashboardMetricCards";
 import { ReportFilters } from "@/features/reports/ReportFilters";
+import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
+import {
+  canSelectAllBranches,
+  reportScopeModeForDashboard,
+  resolveReportBranchIdQuery,
+  type ReportBranchScopeSelection,
+} from "@/features/reports/report-branch-scope";
 import {
   resolveReportDatePreset,
   type ReportDatePreset,
@@ -48,7 +61,7 @@ function shortDayLabel(date: string): string {
 
 export function ManagementDashboardPage() {
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const [preset, setPreset] = useState<ReportDatePreset>("today");
   const [custom, setCustom] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
@@ -56,6 +69,9 @@ export function ManagementDashboardPage() {
   const [applied, setApplied] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
   );
+  const [scopeSelection, setScopeSelection] = useState<ReportBranchScopeSelection>({
+    mode: "current",
+  });
 
   const workspace = useMemo(
     () =>
@@ -68,14 +84,26 @@ export function ManagementDashboardPage() {
     [boundWorkspace],
   );
 
-  const branchLabel = boundWorkspace
-    ? boundWorkspace.branchName
-      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-      : boundWorkspace.organizationDisplayName
-    : t("reports.noBranch");
+  const scopeMode = reportScopeModeForDashboard();
+  const allowAll = canSelectAllBranches({
+    hasOrgManagement: hasOrganizationManagementAuthority(sessionGrant),
+    isOwner: isPosOwnerRole(sessionGrant),
+    isManager: isPosOperationsManager(sessionGrant),
+    isReportingUser: resolveEffectivePosRoleCode(sessionGrant)?.toLowerCase() === "reportinguser",
+  });
+
+  useEffect(() => {
+    setScopeSelection({ mode: "current" });
+  }, [workspace?.organizationId]);
+
+  const reportBranchId = resolveReportBranchIdQuery(
+    scopeMode,
+    scopeSelection,
+    workspace?.branchId,
+  );
 
   const overviewQuery = useQuery({
-    queryKey: ["management-overview", workspace?.organizationId, workspace?.branchId],
+    queryKey: ["management-overview", workspace?.organizationId],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
   });
@@ -84,12 +112,12 @@ export function ManagementDashboardPage() {
     queryKey: [
       "pos-dashboard",
       workspace?.organizationId,
-      workspace?.branchId,
+      reportBranchId ?? "all",
       applied.fromDate,
       applied.toDate,
     ],
     enabled: Boolean(workspace),
-    queryFn: ({ signal }) => getDashboard(workspace!, applied, signal),
+    queryFn: ({ signal }) => getDashboard(workspace!, applied, signal, reportBranchId),
   });
 
   function onPresetChange(next: ReportDatePreset) {
@@ -102,8 +130,7 @@ export function ManagementDashboardPage() {
   }
 
   function onApply() {
-    const range = resolveReportDatePreset(preset, new Date(), custom);
-    setApplied(range);
+    setApplied(resolveReportDatePreset(preset, new Date(), custom));
   }
 
   const overviewError = overviewQuery.isError
@@ -182,7 +209,20 @@ export function ManagementDashboardPage() {
         preset={preset}
         range={applied}
         custom={custom}
-        branchLabel={branchLabel}
+        scopeSlot={
+          workspace ? (
+            <ReportScopeControls
+              scopeMode={scopeMode}
+              organizationId={workspace.organizationId}
+              currentBranchId={workspace.branchId}
+              currentBranchName={boundWorkspace?.branchName}
+              selection={scopeSelection}
+              onSelectionChange={setScopeSelection}
+              allowAllBranches={allowAll}
+              loading={dashboardQuery.isFetching}
+            />
+          ) : null
+        }
         onPresetChange={onPresetChange}
         onCustomChange={setCustom}
         onApply={onApply}
@@ -194,6 +234,9 @@ export function ManagementDashboardPage() {
         data-testid="management-overview-panel"
       >
         <h2 className="catalog-form-section__title">{t("dashboard.todayOverview")}</h2>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("reports.scope.orgOnlyNote")}
+        </p>
         {overviewQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
         {overviewError ? (
           <ErrorState title={t("reports.errorTitle")} detail={overviewError} />

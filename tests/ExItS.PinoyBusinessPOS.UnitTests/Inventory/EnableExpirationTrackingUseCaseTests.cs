@@ -651,6 +651,7 @@ public sealed class EnableExpirationTrackingUseCaseTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

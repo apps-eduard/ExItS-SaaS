@@ -351,12 +351,18 @@ function appendDates(params: URLSearchParams, range?: ReportDateQuery | null) {
   params.set("toDate", range.toDate);
 }
 
-function withQuery(path: string, range?: ReportDateQuery | null): string {
-  if (!range) {
-    return path;
-  }
+function withQuery(
+  path: string,
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
   const params = new URLSearchParams();
-  appendDates(params, range);
+  if (range) {
+    appendDates(params, range);
+  }
+  if (branchId) {
+    params.set("branchId", branchId);
+  }
   const qs = params.toString();
   return qs ? `${path}?${qs}` : path;
 }
@@ -365,12 +371,18 @@ export function managementOverviewPath(): string {
   return MANAGEMENT_OVERVIEW_PATH;
 }
 
-export function dashboardPath(range?: ReportDateQuery | null): string {
-  return withQuery(DASHBOARD_PATH, range);
+export function dashboardPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(DASHBOARD_PATH, range, branchId);
 }
 
-export function salesReportPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/sales`, range);
+export function salesReportPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/sales`, range, branchId);
 }
 
 export function inventoryReportPath(range?: ReportDateQuery | null): string {
@@ -385,24 +397,39 @@ export function expensesReportPath(range?: ReportDateQuery | null): string {
   return withQuery(`${REPORTS_PATH}/expenses`, range);
 }
 
-export function operationalOverviewPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/overview`, range);
+export function operationalOverviewPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/overview`, range, branchId);
 }
 
-export function salesSummaryPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/sales-summary`, range);
+export function salesSummaryPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/sales-summary`, range, branchId);
 }
 
-export function salesByPaymentPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/sales-by-payment`, range);
+export function salesByPaymentPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/sales-by-payment`, range, branchId);
 }
 
-export function salesByProductPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/sales-by-product`, range);
+export function salesByProductPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/sales-by-product`, range, branchId);
 }
 
-export function returnsReportPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/returns`, range);
+export function returnsReportPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/returns`, range, branchId);
 }
 
 export function shiftsSummaryPath(range?: ReportDateQuery | null): string {
@@ -417,8 +444,11 @@ export function inventoryStatusPath(): string {
   return `${REPORTS_PATH}/inventory-status`;
 }
 
-export function inventoryMovementsPath(range?: ReportDateQuery | null): string {
-  return withQuery(`${REPORTS_PATH}/inventory-movements`, range);
+export function inventoryMovementsPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  return withQuery(`${REPORTS_PATH}/inventory-movements`, range, branchId);
 }
 
 export function stockCountVariancePath(range?: ReportDateQuery | null): string {
@@ -449,16 +479,7 @@ export function profitabilityPath(
   range?: ReportDateQuery | null,
   branchId?: string | null,
 ): string {
-  if (!range) {
-    return `${REPORTS_PATH}/profitability`;
-  }
-  const params = new URLSearchParams();
-  appendDates(params, range);
-  if (branchId) {
-    params.set("branchId", branchId);
-  }
-  const qs = params.toString();
-  return qs ? `${REPORTS_PATH}/profitability?${qs}` : `${REPORTS_PATH}/profitability`;
+  return withQuery(`${REPORTS_PATH}/profitability`, range, branchId);
 }
 
 /** Paths that must never appear as tax/VAT/BIR navigation targets in this package. */
@@ -498,10 +519,11 @@ export async function getDashboard(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosDashboardDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: dashboardPath(range),
+    path: dashboardPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -512,10 +534,11 @@ export async function getSalesReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosSalesReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: salesReportPath(range),
+    path: salesReportPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -568,10 +591,11 @@ export async function getOperationalOverview(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosOperationalOverviewDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: operationalOverviewPath(range),
+    path: operationalOverviewPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -582,10 +606,11 @@ export async function getSalesSummaryReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosSalesSummaryReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: salesSummaryPath(range),
+    path: salesSummaryPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -596,10 +621,11 @@ export async function getSalesByPaymentReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosSalesByPaymentReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: salesByPaymentPath(range),
+    path: salesByPaymentPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -610,10 +636,11 @@ export async function getSalesByProductReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosSalesByProductReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: salesByProductPath(range),
+    path: salesByProductPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -624,10 +651,11 @@ export async function getReturnsReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosReturnsReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: returnsReportPath(range),
+    path: returnsReportPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -679,10 +707,11 @@ export async function getInventoryMovementsReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosInventoryMovementsReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: inventoryMovementsPath(range),
+    path: inventoryMovementsPath(range, reportBranchId),
     workspace,
     signal,
   });
@@ -776,10 +805,11 @@ export async function getProfitabilityReport(
   workspace: PosWorkspaceScope,
   range: ReportDateQuery,
   signal?: AbortSignal,
+  reportBranchId?: string | null,
 ): Promise<PosProfitabilityReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
-    path: profitabilityPath(range, workspace.branchId),
+    path: profitabilityPath(range, reportBranchId),
     workspace,
     signal,
   });

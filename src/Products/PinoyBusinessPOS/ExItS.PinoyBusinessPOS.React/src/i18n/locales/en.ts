@@ -4136,7 +4136,14 @@ export const en = {
   "reports.branchLabel": "Branch context",
   "reports.switchBranch": "Switch branch",
   "reports.branchOrgWideNote":
-    "Report totals are organization-wide. Bound branch is sent for workspace scope; the API does not branch-filter these aggregates.",
+    "Some reports remain organization-wide when branch truth is not persisted. Branch-capable reports default to the current branch.",
+  "reports.scope.label": "Report scope",
+  "reports.scope.help":
+    "Branch-capable reports default to the current branch. All branches is explicit when selected. Organization-only reports always show all-branch / org totals.",
+  "reports.scope.currentBranch": "Current branch",
+  "reports.scope.allBranches": "All branches",
+  "reports.scope.orgOnlyNote": "This report includes all branches (organization-wide).",
+  "reports.scope.noDataForBranch": "No data for this branch in the selected period.",
   "reports.noBranch": "No branch bound",
   "reports.datePresets": "Date range",
   "reports.preset.today": "Today",

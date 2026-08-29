@@ -242,6 +242,7 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -252,9 +253,10 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var saleTotals = await sales.AggregatePeriodAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
+        var saleTotals = await sales
+            .AggregatePeriodAsync(org, range.FromDate, range.ToDate, branchId: branchId, cancellationToken: ct)
             .ConfigureAwait(false);
-        var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
+        var returnRows = await ListReturnsInRangeAsync(org, range, branchId, ct).ConfigureAwait(false);
 
         var completedGross = saleTotals.CompletedTotal;
         var voidedTotal = saleTotals.VoidedTotal;
@@ -279,6 +281,7 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -289,7 +292,8 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var saleRows = await sales.ListForReportAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
+        var saleRows = await sales
+            .ListForReportAsync(org, range.FromDate, range.ToDate, branchId: branchId, cancellationToken: ct)
             .ConfigureAwait(false);
 
         var rows = saleRows
@@ -324,6 +328,7 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -335,9 +340,9 @@ public sealed class OperationalReportService(
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
         var paymentAgg = await sales
-            .AggregateCompletedByPaymentAsync(org, range.FromDate, range.ToDate, ct)
+            .AggregateCompletedByPaymentAsync(org, range.FromDate, range.ToDate, branchId, ct)
             .ConfigureAwait(false);
-        var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
+        var returnRows = await ListReturnsInRangeAsync(org, range, branchId, ct).ConfigureAwait(false);
 
         var completedByMethod = paymentAgg.ToDictionary(p => p.PaymentMethod, StringComparer.Ordinal);
         var methods = new[] { SalePaymentMethod.Cash, SalePaymentMethod.ManualGCash, SalePaymentMethod.Utang };
@@ -354,6 +359,7 @@ public sealed class OperationalReportService(
                     range.ToDate,
                     SaleStatus.Voided,
                     method,
+                    branchId: branchId,
                     cancellationToken: ct)
                 .ConfigureAwait(false);
             var voided = voidedSales.VoidedTotal;
@@ -376,6 +382,7 @@ public sealed class OperationalReportService(
         DateOnly? fromDate,
         DateOnly? toDate,
         Guid? productId,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -392,9 +399,10 @@ public sealed class OperationalReportService(
                 range.ToDate,
                 status: SaleStatus.Completed,
                 productId: productId,
+                branchId: branchId,
                 cancellationToken: ct)
             .ConfigureAwait(false);
-        var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
+        var returnRows = await ListReturnsInRangeAsync(org, range, branchId, ct).ConfigureAwait(false);
 
         var sold = new Dictionary<Guid, PosSalesByProductRowDto>();
         foreach (var sale in saleRows)
@@ -462,6 +470,7 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -472,7 +481,7 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
+        var returnRows = await ListReturnsInRangeAsync(org, range, branchId, ct).ConfigureAwait(false);
 
         var byMethod = returnRows
             .GroupBy(r => SalePaymentMethods.ToCode(r.RefundMethod))
@@ -512,9 +521,10 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
-        var summary = await GetSalesSummaryAsync(organizationId, fromDate, toDate, ct).ConfigureAwait(false);
+        var summary = await GetSalesSummaryAsync(organizationId, fromDate, toDate, branchId, ct).ConfigureAwait(false);
         if (!summary.IsSuccess)
         {
             return ApplicationResult<PosOperationalOverviewDto>.Failure(summary.ErrorCode!, summary.ErrorMessage!);
@@ -652,6 +662,7 @@ public sealed class OperationalReportService(
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, clock);
@@ -663,7 +674,7 @@ public sealed class OperationalReportService(
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
         var movements = await inventory
-            .ListMovementsForReportAsync(org, range.FromDate, range.ToDate, ct)
+            .ListMovementsForReportAsync(org, range.FromDate, range.ToDate, branchId, ct)
             .ConfigureAwait(false);
 
         var byType = movements
@@ -948,7 +959,7 @@ public sealed class OperationalReportService(
         DateOnly? toDate,
         CancellationToken ct = default)
     {
-        var byProduct = await GetSalesByProductAsync(organizationId, fromDate, toDate, productId: null, ct)
+        var byProduct = await GetSalesByProductAsync(organizationId, fromDate, toDate, productId: null, branchId: null, ct)
             .ConfigureAwait(false);
         if (!byProduct.IsSuccess)
         {
@@ -1058,12 +1069,24 @@ public sealed class OperationalReportService(
     private async Task<IReadOnlyList<Domain.Returns.SaleReturn>> ListReturnsInRangeAsync(
         PosOrganizationId org,
         ReportDateRange range,
+        Guid? branchId,
         CancellationToken ct)
     {
         var (items, _) = await returns.ListAsync(org, new SaleReturnFilter(null, null), 0, 10_000, ct)
             .ConfigureAwait(false);
-        return items
+        var inRange = items
             .Where(r => r.ReturnDate >= range.FromDate && r.ReturnDate <= range.ToDate)
             .ToList();
+
+        if (branchId is null || inRange.Count == 0)
+        {
+            return inRange;
+        }
+
+        var saleIds = inRange.Select(r => r.SaleId.Value).Distinct().ToList();
+        var branchSaleIds = await sales
+            .ListSaleIdsInBranchAsync(org, saleIds, branchId.Value, ct)
+            .ConfigureAwait(false);
+        return inRange.Where(r => branchSaleIds.Contains(r.SaleId.Value)).ToList();
     }
 }

@@ -423,13 +423,21 @@ public sealed class SaleCostProfitTests
             SalePaymentMethod? paymentMethod = null,
             Guid? productId = null,
             Guid? customerId = null,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> saleIds,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
         public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
@@ -437,6 +445,7 @@ public sealed class SaleCostProfitTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

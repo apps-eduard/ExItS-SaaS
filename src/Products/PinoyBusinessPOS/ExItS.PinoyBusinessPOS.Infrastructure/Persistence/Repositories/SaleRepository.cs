@@ -160,6 +160,7 @@ internal sealed class SaleRepository : ISaleRepository
         SalePaymentMethod? paymentMethod = null,
         Guid? productId = null,
         Guid? customerId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -187,6 +188,11 @@ internal sealed class SaleRepository : ISaleRepository
         if (customerId is not null)
         {
             query = query.Where(s => s.CustomerId == customerId.Value);
+        }
+
+        if (branchId is not null)
+        {
+            query = query.Where(s => s.BranchId == branchId.Value);
         }
 
         if (productId is not null)
@@ -222,6 +228,28 @@ internal sealed class SaleRepository : ISaleRepository
                 discounts.TryGetValue(r.Id, out var foundDiscounts) ? foundDiscounts : [],
                 priceOverrides.TryGetValue(r.Id, out var foundOverrides) ? foundOverrides : []))
             .ToList();
+    }
+
+    public async Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> saleIds,
+        Guid branchId,
+        CancellationToken cancellationToken = default)
+    {
+        if (saleIds.Count == 0)
+        {
+            return new HashSet<Guid>();
+        }
+
+        var ids = await _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.BranchId == branchId
+                        && saleIds.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return ids.ToHashSet();
     }
 
     public async Task<SalePeriodAggregate> AggregatePeriodAsync(
@@ -287,10 +315,11 @@ internal sealed class SaleRepository : ISaleRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         const string completed = nameof(SaleStatus.Completed);
-        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc)
+        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc, branchId: branchId)
             .Where(s => s.Status == completed);
 
         var rows = await query
@@ -309,10 +338,11 @@ internal sealed class SaleRepository : ISaleRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         const string completed = nameof(SaleStatus.Completed);
-        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc)
+        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc, branchId: branchId)
             .Where(s => s.Status == completed);
 
         // Project timestamps only (no lines), then aggregate in-memory by UTC calendar day.

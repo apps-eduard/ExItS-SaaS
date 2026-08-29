@@ -431,6 +431,7 @@ internal sealed class InventoryRepository : IInventoryRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -438,10 +439,19 @@ internal sealed class InventoryRepository : IInventoryRepository
             toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
             TimeSpan.Zero);
 
-        var records = await _db.StockMovements.AsNoTracking()
+        var query = _db.StockMovements.AsNoTracking()
             .Where(m => m.OrganizationId == organizationId.Value
                         && m.RecordedAtUtc >= from
-                        && m.RecordedAtUtc < exclusiveTo)
+                        && m.RecordedAtUtc < exclusiveTo);
+
+        // Branch view: only movements with proven BranchId match. Unscoped (null) movements stay
+        // organization-view only — never assigned to the acting branch.
+        if (branchId is not null)
+        {
+            query = query.Where(m => m.BranchId == branchId.Value);
+        }
+
+        var records = await query
             .OrderBy(m => m.RecordedAtUtc)
             .ThenBy(m => m.Id)
             .ToListAsync(cancellationToken)

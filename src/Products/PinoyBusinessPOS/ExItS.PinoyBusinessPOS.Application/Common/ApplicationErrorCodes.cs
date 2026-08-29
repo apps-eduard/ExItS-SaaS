@@ -191,6 +191,7 @@ public static class ApplicationErrorCodes
     public const string CustomerOrderNotFound = "pos.customer_order.not_found";
     public const string CustomerOrderNumberConflict = "pos.customer_order.number.conflict";
     public const string CustomerOrderBranchNotFound = "pos.customer_order.branch.not_found";
+    public const string ReportBranchNotFound = "pos.report.branch.not_found";
     public const string OperationalBranchSwitchBlocked = "pos.branch.switch.shift_open";
     public const string SaleBranchRequired = "pos.sale.branch_required";
     public const string CustomerOrderBranchCapability = "pos.customer_order.branch.capability";

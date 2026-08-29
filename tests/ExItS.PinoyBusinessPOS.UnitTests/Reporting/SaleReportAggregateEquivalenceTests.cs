@@ -144,6 +144,7 @@ public sealed class SaleReportAggregateEquivalenceTests
             SalePaymentMethod? paymentMethod = null,
             Guid? productId = null,
             Guid? customerId = null,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default)
         {
             var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -167,8 +168,25 @@ public sealed class SaleReportAggregateEquivalenceTests
                 q = q.Where(s => s.CustomerId?.Value == customerId);
             }
 
+            if (branchId is not null)
+            {
+                q = q.Where(s => s.BranchId?.Value == branchId);
+            }
+
             return Task.FromResult<IReadOnlyList<Sale>>(q.ToList());
         }
+
+        public Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> saleIds,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>>(
+                items.Where(s => s.OrganizationId == organizationId
+                                 && s.BranchId?.Value == branchId
+                                 && saleIds.Contains(s.Id.Value))
+                    .Select(s => s.Id.Value)
+                    .ToHashSet());
 
         public async Task<SalePeriodAggregate> AggregatePeriodAsync(
             PosOrganizationId organizationId,
@@ -181,12 +199,8 @@ public sealed class SaleReportAggregateEquivalenceTests
             CancellationToken cancellationToken = default)
         {
             var loaded = await ListForReportAsync(
-                    organizationId, fromDateUtc, toDateUtc, status, paymentMethod, null, customerId, cancellationToken)
+                    organizationId, fromDateUtc, toDateUtc, status, paymentMethod, null, customerId, branchId, cancellationToken)
                 .ConfigureAwait(false);
-            if (branchId is not null)
-            {
-                loaded = loaded.Where(s => s.BranchId?.Value == branchId).ToList();
-            }
             var completed = loaded.Where(s => s.Status == SaleStatus.Completed).ToList();
             var voided = loaded.Where(s => s.Status == SaleStatus.Voided).ToList();
             return new SalePeriodAggregate(
@@ -233,9 +247,11 @@ public sealed class SaleReportAggregateEquivalenceTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default)
         {
-            var loaded = await ListForReportAsync(organizationId, fromDateUtc, toDateUtc, cancellationToken: cancellationToken)
+            var loaded = await ListForReportAsync(
+                    organizationId, fromDateUtc, toDateUtc, branchId: branchId, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
             return loaded
                 .Where(s => s.Status == SaleStatus.Completed)
@@ -249,6 +265,7 @@ public sealed class SaleReportAggregateEquivalenceTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

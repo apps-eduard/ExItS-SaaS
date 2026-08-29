@@ -107,6 +107,7 @@ public interface IInventoryRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<StockMovement>> ListSaleDeductionsAsync(

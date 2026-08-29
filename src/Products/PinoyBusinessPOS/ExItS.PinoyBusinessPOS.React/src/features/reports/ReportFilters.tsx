@@ -1,5 +1,4 @@
-import { useId, useState } from "react";
-import { Link } from "react-router-dom";
+import { useId, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ type ReportFiltersProps = {
   preset: ReportDatePreset;
   range: ReportDateRangeValue;
   custom: ReportDateRangeValue;
-  branchLabel: string;
+  scopeSlot: ReactNode;
   onPresetChange: (preset: ReportDatePreset) => void;
   onCustomChange: (custom: ReportDateRangeValue) => void;
   onApply: () => void;
@@ -26,7 +25,7 @@ export function ReportFilters({
   preset,
   range,
   custom,
-  branchLabel,
+  scopeSlot,
   onPresetChange,
   onCustomChange,
   onApply,
@@ -94,30 +93,13 @@ export function ReportFilters({
               {t("reports.timezoneNote")}
             </p>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("reports.branchOrgWideNote")}
+              {t("reports.scope.help")}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-col gap-1.5" data-testid="report-branch-filter">
-        <span className="text-[length:var(--exits-text-sm)] font-semibold">
-          {t("reports.branchLabel")}
-        </span>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="text-[length:var(--exits-text-sm)]" data-testid="report-branch-value">
-            {branchLabel}
-          </span>
-          <Button
-            asChild
-            variant="outline"
-            className="min-h-11 w-fit"
-            data-testid="report-branch-switch"
-          >
-            <Link to="/workspace">{t("reports.switchBranch")}</Link>
-          </Button>
-        </div>
-      </div>
+      {scopeSlot}
 
       {showDates ? (
         <>

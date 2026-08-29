@@ -2,6 +2,7 @@ using System.Globalization;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Application.Reporting;
 
@@ -11,6 +12,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Reporting;
 /// Organization-scoped operational dashboard and report endpoints (P8-WP06). Read-only projections
 /// from immutable Basic Store records. Development-stage org/commercial headers; cross-org returns
 /// are concealed (fail closed). Online-only — no authoritative offline report cache.
+/// Report branch scope uses optional query <c>branchId</c> only (acting <c>X-Pos-Branch-Id</c> is ignored).
 /// </summary>
 internal static class ReportingEndpoints
 {
@@ -49,7 +51,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         DashboardQueryService dashboard,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -63,7 +67,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await dashboard.GetAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await dashboard.GetAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -91,7 +100,9 @@ internal static class ReportingEndpoints
         Guid? productId,
         Guid? categoryId,
         Guid? customerId,
+        Guid? branchId,
         SalesReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -105,8 +116,13 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
         var result = await reports
-            .GetAsync(organizationId, from, to, paymentMethod, status, productId, categoryId, customerId, ct)
+            .GetAsync(organizationId, from, to, paymentMethod, status, productId, categoryId, customerId, branchId, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
@@ -119,7 +135,9 @@ internal static class ReportingEndpoints
         Guid? productId,
         Guid? categoryId,
         Guid? customerId,
+        Guid? branchId,
         SalesReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -133,8 +151,13 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
         var result = await reports
-            .GetAsync(organizationId, from, to, paymentMethod, status: "Completed", productId, categoryId, customerId, ct)
+            .GetAsync(organizationId, from, to, paymentMethod, status: "Completed", productId, categoryId, customerId, branchId, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, dto => Results.Ok(dto.ByProduct));
     }
@@ -146,7 +169,9 @@ internal static class ReportingEndpoints
         string? paymentMethod,
         Guid? categoryId,
         Guid? customerId,
+        Guid? branchId,
         SalesReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -160,8 +185,13 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
         var result = await reports
-            .GetAsync(organizationId, from, to, paymentMethod, status: "Completed", productId: null, categoryId, customerId, ct)
+            .GetAsync(organizationId, from, to, paymentMethod, status: "Completed", productId: null, categoryId, customerId, branchId, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, dto => Results.Ok(dto.ByCategory));
     }
@@ -247,7 +277,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -261,7 +293,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetOverviewAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetOverviewAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -269,7 +306,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -283,7 +322,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetSalesSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetSalesSummaryAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -291,7 +335,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -305,7 +351,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetSalesByCashierAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetSalesByCashierAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -313,7 +364,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -327,7 +380,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetSalesByPaymentAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetSalesByPaymentAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -336,7 +394,9 @@ internal static class ReportingEndpoints
         string? fromDate,
         string? toDate,
         Guid? productId,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -350,7 +410,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetSalesByProductAsync(organizationId, from, to, productId, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetSalesByProductAsync(organizationId, from, to, productId, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -358,7 +423,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -372,7 +439,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetReturnsAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetReturnsAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -382,6 +454,7 @@ internal static class ReportingEndpoints
         string? toDate,
         Guid? branchId,
         ProfitabilityReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -393,6 +466,11 @@ internal static class ReportingEndpoints
         if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
         {
             return problem!;
+        }
+
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
         }
 
         var result = await reports
@@ -468,7 +546,9 @@ internal static class ReportingEndpoints
         HttpRequest request,
         string? fromDate,
         string? toDate,
+        Guid? branchId,
         OperationalReportService reports,
+        IOrganizationBranchDirectory branches,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -482,7 +562,12 @@ internal static class ReportingEndpoints
             return problem!;
         }
 
-        var result = await reports.GetInventoryMovementsAsync(organizationId, from, to, ct).ConfigureAwait(false);
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports.GetInventoryMovementsAsync(organizationId, from, to, branchId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
@@ -609,6 +694,23 @@ internal static class ReportingEndpoints
 
         var result = await reports.GetProductUtangSummaryAsync(organizationId, from, to, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult?> ValidateReportBranchAsync(
+        Guid organizationId,
+        Guid? branchId,
+        IOrganizationBranchDirectory branches,
+        CancellationToken ct)
+    {
+        var validation = await PosReportBranchScope
+            .ValidateOptionalAsync(branches, organizationId, branchId, ct)
+            .ConfigureAwait(false);
+        if (validation is null)
+        {
+            return null;
+        }
+
+        return PosApiResults.FromResult(validation, () => Results.Ok());
     }
 
     private static bool TryAuthorizeReport(

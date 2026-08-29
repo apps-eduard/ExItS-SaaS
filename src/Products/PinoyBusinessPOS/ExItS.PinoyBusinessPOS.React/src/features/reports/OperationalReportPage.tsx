@@ -1,6 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import {
+  hasOrganizationManagementAuthority,
+  isPosOperationsManager,
+  isPosOwnerRole,
+  resolveEffectivePosRoleCode,
+} from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
@@ -29,12 +35,19 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportFilters } from "@/features/reports/ReportFilters";
+import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import {
   canAccessOperationalReport,
   isOperationalReportKind,
   operationalReportNeedsDates,
   type OperationalReportKind,
 } from "@/features/reports/report-access";
+import {
+  canSelectAllBranches,
+  reportScopeModeForOperational,
+  resolveReportBranchIdQuery,
+  type ReportBranchScopeSelection,
+} from "@/features/reports/report-branch-scope";
 import {
   resolveReportDatePreset,
   type ReportDatePreset,
@@ -79,10 +92,11 @@ async function loadLines(
   range: ReportDateRangeValue,
   signal: AbortSignal,
   t: (key: MessageKey) => string,
+  reportBranchId?: string | null,
 ): Promise<Line[]> {
   switch (kind) {
     case "overview": {
-      const d = await getOperationalOverview(workspace, range, signal);
+      const d = await getOperationalOverview(workspace, range, signal, reportBranchId);
       return [
         {
           label: t("reports.metric.gross"),
@@ -106,7 +120,7 @@ async function loadLines(
       ];
     }
     case "sales-summary": {
-      const d = await getSalesSummaryReport(workspace, range, signal);
+      const d = await getSalesSummaryReport(workspace, range, signal, reportBranchId);
       return [
         {
           label: t("reports.metric.gross"),
@@ -129,7 +143,7 @@ async function loadLines(
       ];
     }
     case "sales-by-payment": {
-      const d = await getSalesByPaymentReport(workspace, range, signal);
+      const d = await getSalesByPaymentReport(workspace, range, signal, reportBranchId);
       return d.rows.flatMap((row) => [
         {
           label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.gross")}`,
@@ -150,14 +164,14 @@ async function loadLines(
       ]);
     }
     case "sales-by-product": {
-      const d = await getSalesByProductReport(workspace, range, signal);
+      const d = await getSalesByProductReport(workspace, range, signal, reportBranchId);
       return d.rows.slice(0, 25).map((row) => ({
         label: row.productName,
         value: <MoneyDisplay amount={row.netAmount} />,
       }));
     }
     case "returns": {
-      const d = await getReturnsReport(workspace, range, signal);
+      const d = await getReturnsReport(workspace, range, signal, reportBranchId);
       return [
         { label: t("reports.metric.returnCount"), value: String(d.returnCount) },
         { label: t("reports.metric.returnedQty"), value: String(d.returnedQuantity) },
@@ -168,7 +182,7 @@ async function loadLines(
       ];
     }
     case "profitability": {
-      const d = await getProfitabilityReport(workspace, range, signal);
+      const d = await getProfitabilityReport(workspace, range, signal, reportBranchId);
       const cogsComplete = d.cogsStatus === "Complete";
       const lines: Line[] = [
         { label: t("reports.metric.net"), value: <MoneyDisplay amount={d.netSales} /> },
@@ -273,7 +287,7 @@ async function loadLines(
       ];
     }
     case "inventory-movements": {
-      const d = await getInventoryMovementsReport(workspace, range, signal);
+      const d = await getInventoryMovementsReport(workspace, range, signal, reportBranchId);
       return [
         { label: t("reports.metric.movements"), value: String(d.movementCount) },
         ...d.byType.map((row) => ({
@@ -360,11 +374,21 @@ export function OperationalReportPage() {
   const [applied, setApplied] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
   );
+  const [scopeSelection, setScopeSelection] = useState<ReportBranchScopeSelection>({
+    mode: "current",
+  });
 
   const kindValid = Boolean(kindParam && isOperationalReportKind(kindParam));
   const kind = kindValid ? (kindParam as OperationalReportKind) : "overview";
   const allowed = kindValid && canAccessOperationalReport(sessionGrant, kind);
   const needsDates = operationalReportNeedsDates(kind);
+  const scopeMode = reportScopeModeForOperational(kind);
+  const allowAll = canSelectAllBranches({
+    hasOrgManagement: hasOrganizationManagementAuthority(sessionGrant),
+    isOwner: isPosOwnerRole(sessionGrant),
+    isManager: isPosOperationsManager(sessionGrant),
+    isReportingUser: resolveEffectivePosRoleCode(sessionGrant)?.toLowerCase() === "reportinguser",
+  });
 
   const workspace = useMemo(
     () =>
@@ -377,23 +401,27 @@ export function OperationalReportPage() {
     [boundWorkspace],
   );
 
-  const branchLabel = boundWorkspace
-    ? boundWorkspace.branchName
-      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-      : boundWorkspace.organizationDisplayName
-    : t("reports.noBranch");
+  useEffect(() => {
+    setScopeSelection({ mode: "current" });
+  }, [workspace?.organizationId]);
+
+  const reportBranchId = resolveReportBranchIdQuery(
+    scopeMode,
+    scopeSelection,
+    workspace?.branchId,
+  );
 
   const query = useQuery({
     queryKey: [
       "operational-report",
       kind,
       workspace?.organizationId,
-      workspace?.branchId,
+      reportBranchId ?? "all",
       applied.fromDate,
       applied.toDate,
     ],
     enabled: Boolean(workspace && kindValid && allowed),
-    queryFn: ({ signal }) => loadLines(kind, workspace!, applied, signal, t),
+    queryFn: ({ signal }) => loadLines(kind, workspace!, applied, signal, t, reportBranchId),
   });
 
   if (!kindValid || !allowed) {
@@ -435,7 +463,18 @@ export function OperationalReportPage() {
         preset={preset}
         range={applied}
         custom={custom}
-        branchLabel={branchLabel}
+        scopeSlot={
+          <ReportScopeControls
+            scopeMode={scopeMode}
+            organizationId={workspace.organizationId}
+            currentBranchId={workspace.branchId}
+            currentBranchName={boundWorkspace?.branchName}
+            selection={scopeSelection}
+            onSelectionChange={setScopeSelection}
+            allowAllBranches={allowAll}
+            loading={query.isFetching}
+          />
+        }
         onPresetChange={onPresetChange}
         onCustomChange={setCustom}
         onApply={() => setApplied(resolveReportDatePreset(preset, new Date(), custom))}

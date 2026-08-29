@@ -1,6 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import {
+  hasOrganizationManagementAuthority,
+  isPosOperationsManager,
+  isPosOwnerRole,
+  resolveEffectivePosRoleCode,
+} from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   formatReportPaymentMethod,
@@ -16,7 +22,14 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportFilters } from "@/features/reports/ReportFilters";
+import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import { type ClassicReportKind } from "@/features/reports/report-access";
+import {
+  canSelectAllBranches,
+  reportScopeModeForClassic,
+  resolveReportBranchIdQuery,
+  type ReportBranchScopeSelection,
+} from "@/features/reports/report-branch-scope";
 import {
   resolveReportDatePreset,
   type ReportDatePreset,
@@ -43,7 +56,7 @@ export function ClassicReportPage() {
   const location = useLocation();
   const kind = kindFromPath(location.pathname);
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const [preset, setPreset] = useState<ReportDatePreset>("today");
   const [custom, setCustom] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
@@ -51,6 +64,9 @@ export function ClassicReportPage() {
   const [applied, setApplied] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
   );
+  const [scopeSelection, setScopeSelection] = useState<ReportBranchScopeSelection>({
+    mode: "current",
+  });
 
   const workspace = useMemo(
     () =>
@@ -63,11 +79,23 @@ export function ClassicReportPage() {
     [boundWorkspace],
   );
 
-  const branchLabel = boundWorkspace
-    ? boundWorkspace.branchName
-      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-      : boundWorkspace.organizationDisplayName
-    : t("reports.noBranch");
+  const scopeMode = reportScopeModeForClassic(kind);
+  const allowAll = canSelectAllBranches({
+    hasOrgManagement: hasOrganizationManagementAuthority(sessionGrant),
+    isOwner: isPosOwnerRole(sessionGrant),
+    isManager: isPosOperationsManager(sessionGrant),
+    isReportingUser: resolveEffectivePosRoleCode(sessionGrant)?.toLowerCase() === "reportinguser",
+  });
+
+  useEffect(() => {
+    setScopeSelection({ mode: "current" });
+  }, [workspace?.organizationId]);
+
+  const reportBranchId = resolveReportBranchIdQuery(
+    scopeMode,
+    scopeSelection,
+    workspace?.branchId,
+  );
 
   const titleKeys: Record<ClassicReportKind, MessageKey> = {
     sales: "reports.classicSales",
@@ -81,14 +109,14 @@ export function ClassicReportPage() {
       "classic-report",
       kind,
       workspace?.organizationId,
-      workspace?.branchId,
+      reportBranchId ?? "all",
       applied.fromDate,
       applied.toDate,
     ],
     enabled: Boolean(workspace),
     queryFn: async ({ signal }) => {
       if (kind === "sales") {
-        const d = await getSalesReport(workspace!, applied, signal);
+        const d = await getSalesReport(workspace!, applied, signal, reportBranchId);
         return [
           {
             label: t("reports.metric.gross"),
@@ -159,13 +187,18 @@ export function ClassicReportPage() {
           label: t("reports.metric.expenses"),
           value: <MoneyDisplay amount={d.activeExpenseTotal} />,
         },
-        {
-          label: t("reports.metric.voidedExpenses"),
-          value: <MoneyDisplay amount={d.voidedExpenseTotal} />,
-        },
       ];
     },
   });
+
+  function onPresetChange(next: ReportDatePreset) {
+    setPreset(next);
+    if (next !== "custom") {
+      const range = resolveReportDatePreset(next);
+      setCustom(range);
+      setApplied(range);
+    }
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -189,37 +222,41 @@ export function ClassicReportPage() {
         preset={preset}
         range={applied}
         custom={custom}
-        branchLabel={branchLabel}
-        onPresetChange={(next) => {
-          setPreset(next);
-          if (next !== "custom") {
-            const range = resolveReportDatePreset(next);
-            setCustom(range);
-            setApplied(range);
-          }
-        }}
+        scopeSlot={
+          <ReportScopeControls
+            scopeMode={scopeMode}
+            organizationId={workspace.organizationId}
+            currentBranchId={workspace.branchId}
+            currentBranchName={boundWorkspace?.branchName}
+            selection={scopeSelection}
+            onSelectionChange={setScopeSelection}
+            allowAllBranches={allowAll}
+            loading={query.isFetching}
+          />
+        }
+        onPresetChange={onPresetChange}
         onCustomChange={setCustom}
         onApply={() => setApplied(resolveReportDatePreset(preset, new Date(), custom))}
         loading={query.isFetching}
       />
 
-      <Card data-testid="report-results">
-        {query.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
-        {errorMessage ? <ErrorState title={t("reports.errorTitle")} detail={errorMessage} /> : null}
-        {query.data ? (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {query.data.map((line, index) => (
-              <li
-                key={`${String(line.label)}-${index}`}
-                className="flex min-w-0 items-start justify-between gap-3 border-b border-border pb-2"
-              >
-                <span className="text-[length:var(--exits-text-sm)]">{line.label}</span>
-                <span className="text-right text-[length:var(--exits-text-sm)]">{line.value}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </Card>
+      {query.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
+      {errorMessage ? (
+        <ErrorState title={t("reports.errorTitle")} detail={errorMessage} />
+      ) : null}
+      {query.data ? (
+        <Card className="flex flex-col gap-2 p-4" data-testid="classic-report-results">
+          {query.data.map((row) => (
+            <div
+              key={row.label}
+              className="flex min-w-0 items-baseline justify-between gap-3 border-b border-border/60 py-2 last:border-0"
+            >
+              <span className="text-[length:var(--exits-text-sm)] text-muted">{row.label}</span>
+              <span className="text-right font-semibold">{row.value}</span>
+            </div>
+          ))}
+        </Card>
+      ) : null}
     </div>
   );
 }

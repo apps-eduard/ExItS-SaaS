@@ -65,6 +65,17 @@ public interface ISaleRepository
         SalePaymentMethod? paymentMethod = null,
         Guid? productId = null,
         Guid? customerId = null,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns sale IDs from <paramref name="saleIds"/> that belong to <paramref name="branchId"/>
+    /// within the organization (one query; used for return report branch truth via original sale).
+    /// </summary>
+    Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> saleIds,
+        Guid branchId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -87,6 +98,7 @@ public interface ISaleRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -96,6 +108,7 @@ public interface ISaleRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

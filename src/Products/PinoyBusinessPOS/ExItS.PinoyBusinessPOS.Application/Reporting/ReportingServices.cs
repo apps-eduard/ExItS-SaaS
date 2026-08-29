@@ -99,6 +99,7 @@ public sealed class DashboardQueryService
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, _clock);
@@ -110,14 +111,31 @@ public sealed class DashboardQueryService
         var range = rangeResult.Value!;
         var orgId = PosOrganizationId.From(organizationId);
 
+        // Sale metrics honor optional branchId. Expenses, utang balances, and low-stock remain
+        // organization-wide (no authoritative Expense.BranchId / ledger branch truth).
         var saleTotals = await _sales
-            .AggregatePeriodAsync(orgId, range.FromDate, range.ToDate, cancellationToken: cancellationToken)
+            .AggregatePeriodAsync(
+                orgId,
+                range.FromDate,
+                range.ToDate,
+                branchId: branchId,
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         var paymentBreakdownRows = await _sales
-            .AggregateCompletedByPaymentAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+            .AggregateCompletedByPaymentAsync(
+                orgId,
+                range.FromDate,
+                range.ToDate,
+                branchId,
+                cancellationToken)
             .ConfigureAwait(false);
         var salesDailyRows = await _sales
-            .AggregateCompletedByDayAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+            .AggregateCompletedByDayAsync(
+                orgId,
+                range.FromDate,
+                range.ToDate,
+                branchId,
+                cancellationToken)
             .ConfigureAwait(false);
         var expenses = await _expenses
             .ListForSummaryAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
@@ -154,7 +172,12 @@ public sealed class DashboardQueryService
 
         var prior = range.PrecedingEqualLengthPeriod();
         var priorSaleTotals = await _sales
-            .AggregatePeriodAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken: cancellationToken)
+            .AggregatePeriodAsync(
+                orgId,
+                prior.FromDate,
+                prior.ToDate,
+                branchId: branchId,
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         var priorExpenses = await _expenses
             .ListForSummaryAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken)
@@ -249,6 +272,7 @@ public sealed class SalesReportService
         Guid? productId = null,
         Guid? categoryId = null,
         Guid? customerId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         var rangeResult = ReportDateRange.Resolve(fromDate, toDate, _clock);
@@ -295,6 +319,7 @@ public sealed class SalesReportService
                 parsedMethod,
                 productId,
                 customerId,
+                branchId,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -680,7 +705,7 @@ public sealed class InventoryReportService
         var outOfStock = tracked.Where(r => r.IsOutOfStock).ToList();
 
         var movements = await _inventory
-            .ListMovementsForReportAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+            .ListMovementsForReportAsync(orgId, range.FromDate, range.ToDate, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         var byType = movements
             .GroupBy(m => StockMovementTypes.ToCode(m.MovementType))

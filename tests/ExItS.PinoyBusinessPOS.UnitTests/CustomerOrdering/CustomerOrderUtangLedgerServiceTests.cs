@@ -376,8 +376,16 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             SalePaymentMethod? paymentMethod = null,
             Guid? productId = null,
             Guid? customerId = null,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Sale>>(Added);
+
+        public Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> saleIds,
+            Guid branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
 
         public Task<SalePeriodAggregate> AggregatePeriodAsync(
             PosOrganizationId organizationId,
@@ -402,6 +410,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<SalePaymentAggregate>>([]);
 
@@ -409,6 +418,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<SaleDailyAggregate>>([]);
 

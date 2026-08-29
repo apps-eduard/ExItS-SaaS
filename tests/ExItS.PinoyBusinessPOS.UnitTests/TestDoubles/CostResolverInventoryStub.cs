@@ -141,6 +141,7 @@ internal sealed class CostResolverInventoryStub : IInventoryRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
