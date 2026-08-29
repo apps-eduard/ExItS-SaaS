@@ -333,6 +333,24 @@ public static class DomainErrorCodes
     public const string InvalidProductionRunMaterial = "pos.production.run_material.invalid";
     public const string ProductionVoidOutputInsufficient = "pos.production.void.output_insufficient";
 
+    public const string InvalidWasteLossId = "pos.waste_loss.id.invalid";
+    public const string InvalidWasteLossLineId = "pos.waste_loss.line.id.invalid";
+    public const string InvalidWasteLossNumber = "pos.waste_loss.number.invalid";
+    public const string WasteLossRequiresLines = "pos.waste_loss.lines.required";
+    public const string InvalidWasteLossQuantity = "pos.waste_loss.quantity.invalid";
+    public const string InvalidWasteLossUnitCost = "pos.waste_loss.unit_cost.invalid";
+    public const string InvalidWasteLossLine = "pos.waste_loss.line.invalid";
+    public const string InvalidWasteLossReason = "pos.waste_loss.reason.invalid";
+    public const string InvalidWasteLossStatus = "pos.waste_loss.status.invalid";
+    public const string InvalidWasteLossStatusTransition = "pos.waste_loss.status.invalid_transition";
+    public const string InvalidWasteLossReference = "pos.waste_loss.reference.invalid";
+    public const string InvalidWasteLossNotes = "pos.waste_loss.notes.invalid";
+    public const string InvalidWasteLossIdempotencyKey = "pos.waste_loss.idempotency_key.invalid";
+    public const string WasteLossOtherRequiresNotes = "pos.waste_loss.other.notes_required";
+    public const string WasteLossLotRequired = "pos.waste_loss.lot.required";
+    public const string WasteLossLotNotAllowed = "pos.waste_loss.lot.not_allowed";
+    public const string WasteLossLotMismatch = "pos.waste_loss.lot.mismatch";
+
     public const string InvalidCashierShiftId = "pos.cashier_shift.id.invalid";
     public const string InvalidCashierShiftMovementId = "pos.cashier_shift_movement.id.invalid";
     public const string InvalidCashierShiftNumber = "pos.cashier_shift.number.invalid";

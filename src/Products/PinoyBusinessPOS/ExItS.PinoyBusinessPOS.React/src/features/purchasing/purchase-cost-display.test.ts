@@ -34,6 +34,10 @@ describe("purchase-cost-display", () => {
       "inventory.movementType.poReceipt",
     );
     expect(inventoryMovementTypeLabelKey("StockUse")).toBe("inventory.movementType.stockUse");
+    expect(inventoryMovementTypeLabelKey("WasteLoss")).toBe("inventory.movementType.wasteLoss");
+    expect(inventoryMovementTypeLabelKey("WasteLossVoidRestoration")).toBe(
+      "inventory.movementType.wasteLossVoid",
+    );
     expect(inventoryMovementTypeLabelKey("ProductionMaterialConsumption")).toBe(
       "inventory.movementType.productionMaterial",
     );

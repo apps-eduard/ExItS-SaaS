@@ -609,6 +609,32 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.ProductionOutputReversal),
             cancellationToken);
 
+    public Task<bool> HasWasteLossAsync(
+        PosOrganizationId organizationId,
+        WasteLossId wasteLossId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == wasteLossId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.WasteLoss)
+                && m.MovementType == nameof(StockMovementType.WasteLoss),
+            cancellationToken);
+
+    public Task<bool> HasWasteLossVoidRestorationAsync(
+        PosOrganizationId organizationId,
+        WasteLossId wasteLossId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == wasteLossId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.WasteLoss)
+                && m.MovementType == nameof(StockMovementType.WasteLossVoidRestoration),
+            cancellationToken);
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

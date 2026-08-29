@@ -558,6 +558,14 @@ export function InventoryDetailPage() {
               {t("inventory.recordStockUse")}
             </Link>
           </Button>
+          <Button asChild type="button" variant="outline" className="min-h-11">
+            <Link
+              to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
+              data-testid="inventory-record-waste-loss"
+            >
+              {t("inventory.recordWasteLoss")}
+            </Link>
+          </Button>
         </div>
       ) : null}
 

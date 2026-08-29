@@ -141,6 +141,8 @@ public static class ApplicationErrorCodes
     public const string ProductionDefinitionNotFound = "pos.production.definition.not_found";
     public const string ProductionRunNotFound = "pos.production.run.not_found";
     public const string ProductionNumberConflict = "pos.production.run.number.conflict";
+    public const string WasteLossNotFound = "pos.waste_loss.not_found";
+    public const string WasteLossNumberConflict = "pos.waste_loss.number.conflict";
     public const string DirectPurchaseReceiptNumberConflict = "pos.direct_purchase_receipt.number.conflict";
     public const string DirectPurchaseProductNotPurchasable = "pos.direct_purchase_receipt.product.not_purchasable";
 

@@ -3402,6 +3402,479 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionComponentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("base_quantity");
+
+                    b.Property<Guid>("MaterialProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("material_product_id");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid?>("ProductUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_unit_id");
+
+                    b.Property<Guid>("ProductionDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("production_definition_id");
+
+                    b.Property<decimal>("QuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity_entered");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialProductId");
+
+                    b.HasIndex("ProductionDefinitionId", "MaterialProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_components_definition_material");
+
+                    b.HasIndex("ProductionDefinitionId", "SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_components_definition_sort");
+
+                    b.ToTable("production_components", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_production_components_base_positive", "base_quantity > 0");
+
+                            t.HasCheckConstraint("ck_production_components_multiplier_positive", "multiplier_to_base > 0");
+
+                            t.HasCheckConstraint("ck_production_components_quantity_positive", "quantity_entered > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionDefinitionRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal>("OutputBaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_base_quantity");
+
+                    b.Property<decimal>("OutputMultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_multiplier_to_base");
+
+                    b.Property<Guid>("OutputProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("output_product_id");
+
+                    b.Property<Guid?>("OutputProductUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("output_product_unit_id");
+
+                    b.Property<decimal>("OutputQuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_quantity_entered");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OutputProductId");
+
+                    b.HasIndex("OrganizationId", "Name")
+                        .HasDatabaseName("ix_production_definitions_org_name");
+
+                    b.HasIndex("OrganizationId", "OutputProductId")
+                        .HasDatabaseName("ix_production_definitions_org_output");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_production_definitions_org_status");
+
+                    b.ToTable("production_definitions", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_production_definitions_output_base_positive", "output_base_quantity > 0");
+
+                            t.HasCheckConstraint("ck_production_definitions_output_multiplier_positive", "output_multiplier_to_base > 0");
+
+                            t.HasCheckConstraint("ck_production_definitions_output_qty_positive", "output_quantity_entered > 0");
+
+                            t.HasCheckConstraint("ck_production_definitions_revision_positive", "revision >= 1");
+
+                            t.HasCheckConstraint("ck_production_definitions_status", "status IN ('Active', 'Inactive')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunMaterialRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualBaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("actual_base_quantity");
+
+                    b.Property<decimal>("ActualQuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("actual_quantity_entered");
+
+                    b.Property<decimal>("ExpectedBaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("expected_base_quantity");
+
+                    b.Property<decimal>("ExpectedQuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("expected_quantity_entered");
+
+                    b.Property<Guid?>("InventoryMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_movement_id");
+
+                    b.Property<decimal?>("LineCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_cost_snapshot");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<Guid>("MaterialProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("material_product_id");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid?>("ProductUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_unit_id");
+
+                    b.Property<Guid>("ProductionRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("production_run_id");
+
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_cost_snapshot");
+
+                    b.Property<string>("UnitLabelSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("unit_label_snapshot");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_run_materials_inventory_movement_id")
+                        .HasFilter("inventory_movement_id IS NOT NULL");
+
+                    b.HasIndex("MaterialProductId");
+
+                    b.HasIndex("ProductionRunId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_run_materials_run_line");
+
+                    b.ToTable("production_run_materials", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_production_run_materials_actual_base_positive", "actual_base_quantity > 0");
+
+                            t.HasCheckConstraint("ck_production_run_materials_actual_positive", "actual_quantity_entered > 0");
+
+                            t.HasCheckConstraint("ck_production_run_materials_expected_base_non_negative", "expected_base_quantity >= 0");
+
+                            t.HasCheckConstraint("ck_production_run_materials_expected_non_negative", "expected_quantity_entered >= 0");
+
+                            t.HasCheckConstraint("ck_production_run_materials_multiplier_positive", "multiplier_to_base > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_production_run_number_sequences");
+
+                    b.ToTable("production_run_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_production_run_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<string>("CostStatus")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cost_status");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal>("OutputBaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_base_quantity");
+
+                    b.Property<decimal?>("OutputBaseUnitCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("output_base_unit_cost");
+
+                    b.Property<DateOnly?>("OutputExpirationDate")
+                        .HasColumnType("date")
+                        .HasColumnName("output_expiration_date");
+
+                    b.Property<Guid?>("OutputInventoryMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("output_inventory_movement_id");
+
+                    b.Property<string>("OutputLotNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("output_lot_number");
+
+                    b.Property<decimal>("OutputMultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_multiplier_to_base");
+
+                    b.Property<string>("OutputNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("output_name_snapshot");
+
+                    b.Property<Guid>("OutputProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("output_product_id");
+
+                    b.Property<Guid?>("OutputProductUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("output_product_unit_id");
+
+                    b.Property<decimal>("OutputQuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("output_quantity_entered");
+
+                    b.Property<string>("OutputUnitLabelSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("output_unit_label_snapshot");
+
+                    b.Property<DateTimeOffset>("ProducedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("produced_at_utc");
+
+                    b.Property<Guid>("ProductionDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("production_definition_id");
+
+                    b.Property<string>("ProductionDefinitionNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("production_definition_name_snapshot");
+
+                    b.Property<int>("ProductionDefinitionRevision")
+                        .HasColumnType("integer")
+                        .HasColumnName("production_definition_revision");
+
+                    b.Property<string>("ProductionNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("production_number");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("TotalMaterialCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_material_cost");
+
+                    b.Property<DateTimeOffset?>("VoidedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at_utc");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OutputInventoryMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_runs_output_inventory_movement_id")
+                        .HasFilter("output_inventory_movement_id IS NOT NULL");
+
+                    b.HasIndex("OutputProductId");
+
+                    b.HasIndex("ProductionDefinitionId");
+
+                    b.HasIndex("OrganizationId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_runs_org_idempotency_key")
+                        .HasFilter("idempotency_key IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "OutputProductId")
+                        .HasDatabaseName("ix_production_runs_org_output");
+
+                    b.HasIndex("OrganizationId", "ProducedAtUtc")
+                        .HasDatabaseName("ix_production_runs_org_produced_at");
+
+                    b.HasIndex("OrganizationId", "ProductionDefinitionId")
+                        .HasDatabaseName("ix_production_runs_org_definition");
+
+                    b.HasIndex("OrganizationId", "ProductionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_production_runs_org_production_number");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_production_runs_org_status");
+
+                    b.ToTable("production_runs", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_production_runs_cost_status", "cost_status IN ('Complete', 'Partial', 'Unavailable')");
+
+                            t.HasCheckConstraint("ck_production_runs_output_base_positive", "output_base_quantity > 0");
+
+                            t.HasCheckConstraint("ck_production_runs_output_multiplier_positive", "output_multiplier_to_base > 0");
+
+                            t.HasCheckConstraint("ck_production_runs_output_qty_positive", "output_quantity_entered > 0");
+
+                            t.HasCheckConstraint("ck_production_runs_revision_positive", "production_definition_revision >= 1");
+
+                            t.HasCheckConstraint("ck_production_runs_status", "status IN ('Posted', 'Voided')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockCountLineRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3662,470 +4135,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("stock_movements", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal')");
+                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration')");
 
                             t.HasCheckConstraint("ck_stock_movements_quantity_effect_nonzero", "quantity_effect <> 0");
 
-                            t.HasCheckConstraint("ck_stock_movements_source_type", "source_type IN ('None', 'Sale', 'Manual', 'Opening', 'PurchaseReceipt', 'StockCount', 'SaleReturn', 'InventoryTransfer', 'CustomerOrder', 'DirectPurchase', 'StockUse', 'Production')");
-                        });
-                });
-
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionComponentRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("BaseQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("base_quantity");
-
-                    b.Property<Guid>("MaterialProductId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("material_product_id");
-
-                    b.Property<decimal>("MultiplierToBase")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("multiplier_to_base");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<Guid>("ProductionDefinitionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("production_definition_id");
-
-                    b.Property<Guid?>("ProductUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("product_unit_id");
-
-                    b.Property<decimal>("QuantityEntered")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("quantity_entered");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MaterialProductId");
-
-                    b.HasIndex("ProductionDefinitionId", "MaterialProductId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_components_definition_material");
-
-                    b.HasIndex("ProductionDefinitionId", "SortOrder")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_components_definition_sort");
-
-                    b.ToTable("production_components", "pos", t =>
-                        {
-                            t.HasCheckConstraint("ck_production_components_base_positive", "base_quantity > 0");
-                            t.HasCheckConstraint("ck_production_components_multiplier_positive", "multiplier_to_base > 0");
-                            t.HasCheckConstraint("ck_production_components_quantity_positive", "quantity_entered > 0");
-                        });
-                });
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionDefinitionRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_user_id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<decimal>("OutputBaseQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_base_quantity");
-
-                    b.Property<decimal>("OutputMultiplierToBase")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_multiplier_to_base");
-
-                    b.Property<Guid>("OutputProductId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("output_product_id");
-
-                    b.Property<Guid?>("OutputProductUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("output_product_unit_id");
-
-                    b.Property<decimal>("OutputQuantityEntered")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_quantity_entered");
-
-                    b.Property<int>("Revision")
-                        .HasColumnType("integer")
-                        .HasColumnName("revision");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("status");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<Guid?>("UpdatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by_user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OutputProductId");
-
-                    b.HasIndex("OrganizationId", "Name")
-                        .HasDatabaseName("ix_production_definitions_org_name");
-
-                    b.HasIndex("OrganizationId", "OutputProductId")
-                        .HasDatabaseName("ix_production_definitions_org_output");
-
-                    b.HasIndex("OrganizationId", "Status")
-                        .HasDatabaseName("ix_production_definitions_org_status");
-
-                    b.ToTable("production_definitions", "pos", t =>
-                        {
-                            t.HasCheckConstraint("ck_production_definitions_output_base_positive", "output_base_quantity > 0");
-                            t.HasCheckConstraint("ck_production_definitions_output_multiplier_positive", "output_multiplier_to_base > 0");
-                            t.HasCheckConstraint("ck_production_definitions_output_qty_positive", "output_quantity_entered > 0");
-                            t.HasCheckConstraint("ck_production_definitions_revision_positive", "revision >= 1");
-                            t.HasCheckConstraint("ck_production_definitions_status", "status IN ('Active', 'Inactive')");
-                        });
-                });
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunMaterialRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("ActualBaseQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("actual_base_quantity");
-
-                    b.Property<decimal>("ActualQuantityEntered")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("actual_quantity_entered");
-
-                    b.Property<decimal>("ExpectedBaseQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("expected_base_quantity");
-
-                    b.Property<decimal>("ExpectedQuantityEntered")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("expected_quantity_entered");
-
-                    b.Property<Guid?>("InventoryMovementId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("inventory_movement_id");
-
-                    b.Property<decimal?>("LineCostSnapshot")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("line_cost_snapshot");
-
-                    b.Property<int>("LineNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("line_number");
-
-                    b.Property<Guid>("MaterialProductId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("material_product_id");
-
-                    b.Property<decimal>("MultiplierToBase")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("multiplier_to_base");
-
-                    b.Property<string>("NameSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name_snapshot");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<Guid>("ProductionRunId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("production_run_id");
-
-                    b.Property<Guid?>("ProductUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("product_unit_id");
-
-                    b.Property<decimal?>("UnitCostSnapshot")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("unit_cost_snapshot");
-
-                    b.Property<string>("UnitLabelSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("unit_label_snapshot");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InventoryMovementId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_run_materials_inventory_movement_id")
-                        .HasFilter("inventory_movement_id IS NOT NULL");
-
-                    b.HasIndex("MaterialProductId");
-
-                    b.HasIndex("ProductionRunId", "LineNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_run_materials_run_line");
-
-                    b.ToTable("production_run_materials", "pos", t =>
-                        {
-                            t.HasCheckConstraint("ck_production_run_materials_actual_base_positive", "actual_base_quantity > 0");
-                            t.HasCheckConstraint("ck_production_run_materials_actual_positive", "actual_quantity_entered > 0");
-                            t.HasCheckConstraint("ck_production_run_materials_expected_base_non_negative", "expected_base_quantity >= 0");
-                            t.HasCheckConstraint("ck_production_run_materials_expected_non_negative", "expected_quantity_entered >= 0");
-                            t.HasCheckConstraint("ck_production_run_materials_multiplier_positive", "multiplier_to_base > 0");
-                        });
-                });
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunNumberSequenceRecord", b =>
-                {
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<DateOnly>("BusinessDate")
-                        .HasColumnType("date")
-                        .HasColumnName("business_date");
-
-                    b.Property<long>("LastValue")
-                        .HasColumnType("bigint")
-                        .HasColumnName("last_value");
-
-                    b.HasKey("OrganizationId", "BusinessDate")
-                        .HasName("pk_production_run_number_sequences");
-
-                    b.ToTable("production_run_number_sequences", "pos", t =>
-                        {
-                            t.HasCheckConstraint("ck_production_run_number_sequences_last_value_positive", "last_value > 0");
-                        });
-                });
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionRunRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("BranchId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("branch_id");
-
-                    b.Property<string>("CostStatus")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("cost_status");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_user_id");
-
-                    b.Property<string>("IdempotencyKey")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("idempotency_key");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("notes");
-
-                    b.Property<Guid>("OrganizationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("organization_id");
-
-                    b.Property<decimal?>("OutputBaseUnitCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("output_base_unit_cost");
-
-                    b.Property<decimal>("OutputBaseQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_base_quantity");
-
-                    b.Property<DateOnly?>("OutputExpirationDate")
-                        .HasColumnType("date")
-                        .HasColumnName("output_expiration_date");
-
-                    b.Property<Guid?>("OutputInventoryMovementId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("output_inventory_movement_id");
-
-                    b.Property<string>("OutputLotNumber")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("output_lot_number");
-
-                    b.Property<decimal>("OutputMultiplierToBase")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_multiplier_to_base");
-
-                    b.Property<string>("OutputNameSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("output_name_snapshot");
-
-                    b.Property<Guid>("OutputProductId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("output_product_id");
-
-                    b.Property<Guid?>("OutputProductUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("output_product_unit_id");
-
-                    b.Property<decimal>("OutputQuantityEntered")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("output_quantity_entered");
-
-                    b.Property<string>("OutputUnitLabelSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("output_unit_label_snapshot");
-
-                    b.Property<DateTimeOffset>("ProducedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("produced_at_utc");
-
-                    b.Property<Guid>("ProductionDefinitionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("production_definition_id");
-
-                    b.Property<string>("ProductionDefinitionNameSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("production_definition_name_snapshot");
-
-                    b.Property<int>("ProductionDefinitionRevision")
-                        .HasColumnType("integer")
-                        .HasColumnName("production_definition_revision");
-
-                    b.Property<string>("ProductionNumber")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("production_number");
-
-                    b.Property<string>("ReferenceNumber")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("reference_number");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("status");
-
-                    b.Property<decimal?>("TotalMaterialCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("total_material_cost");
-
-                    b.Property<DateTimeOffset?>("VoidedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("voided_at_utc");
-
-                    b.Property<Guid?>("VoidedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("voided_by_user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OutputInventoryMovementId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_runs_output_inventory_movement_id")
-                        .HasFilter("output_inventory_movement_id IS NOT NULL");
-
-                    b.HasIndex("OutputProductId");
-
-                    b.HasIndex("ProductionDefinitionId");
-
-                    b.HasIndex("OrganizationId", "IdempotencyKey")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_runs_org_idempotency_key")
-                        .HasFilter("idempotency_key IS NOT NULL");
-
-                    b.HasIndex("OrganizationId", "OutputProductId")
-                        .HasDatabaseName("ix_production_runs_org_output");
-
-                    b.HasIndex("OrganizationId", "ProducedAtUtc")
-                        .HasDatabaseName("ix_production_runs_org_produced_at");
-
-                    b.HasIndex("OrganizationId", "ProductionDefinitionId")
-                        .HasDatabaseName("ix_production_runs_org_definition");
-
-                    b.HasIndex("OrganizationId", "ProductionNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ux_production_runs_org_production_number");
-
-                    b.HasIndex("OrganizationId", "Status")
-                        .HasDatabaseName("ix_production_runs_org_status");
-
-                    b.ToTable("production_runs", "pos", t =>
-                        {
-                            t.HasCheckConstraint("ck_production_runs_cost_status", "cost_status IN ('Complete', 'Partial', 'Unavailable')");
-                            t.HasCheckConstraint("ck_production_runs_output_base_positive", "output_base_quantity > 0");
-                            t.HasCheckConstraint("ck_production_runs_output_multiplier_positive", "output_multiplier_to_base > 0");
-                            t.HasCheckConstraint("ck_production_runs_output_qty_positive", "output_quantity_entered > 0");
-                            t.HasCheckConstraint("ck_production_runs_revision_positive", "production_definition_revision >= 1");
-                            t.HasCheckConstraint("ck_production_runs_status", "status IN ('Posted', 'Voided')");
+                            t.HasCheckConstraint("ck_stock_movements_source_type", "source_type IN ('None', 'Sale', 'Manual', 'Opening', 'PurchaseReceipt', 'StockCount', 'SaleReturn', 'InventoryTransfer', 'CustomerOrder', 'DirectPurchase', 'StockUse', 'Production', 'WasteLoss')");
                         });
                 });
 
@@ -4336,6 +4350,233 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_stock_uses_reason", "reason IN ('InternalOperations', 'StaffUse', 'SampleOrTesting', 'Other')");
 
                             t.HasCheckConstraint("ck_stock_uses_status", "status IN ('Posted', 'Voided')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.WasteLossLineRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BaseQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("base_quantity");
+
+                    b.Property<Guid?>("InventoryLotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_lot_id");
+
+                    b.Property<Guid?>("InventoryMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_movement_id");
+
+                    b.Property<decimal?>("LineCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_cost_snapshot");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<Guid?>("ProductUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_unit_id");
+
+                    b.Property<decimal>("QuantityEntered")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity_entered");
+
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_cost_snapshot");
+
+                    b.Property<string>("UnitLabelSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("unit_label_snapshot");
+
+                    b.Property<Guid>("WasteLossId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("waste_loss_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_waste_loss_lines_inventory_movement_id")
+                        .HasFilter("inventory_movement_id IS NOT NULL");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WasteLossId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_waste_loss_lines_waste_loss_line_number");
+
+                    b.ToTable("waste_loss_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_waste_loss_lines_base_quantity_positive", "base_quantity > 0");
+
+                            t.HasCheckConstraint("ck_waste_loss_lines_multiplier_positive", "multiplier_to_base > 0");
+
+                            t.HasCheckConstraint("ck_waste_loss_lines_quantity_entered_positive", "quantity_entered > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.WasteLossNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_waste_loss_number_sequences");
+
+                    b.ToTable("waste_loss_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_waste_loss_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.WasteLossRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<string>("CostStatus")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cost_status");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal?>("TotalCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_cost_snapshot");
+
+                    b.Property<DateTimeOffset?>("VoidedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at_utc");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.Property<string>("WasteLossNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("waste_loss_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_waste_losses_org_branch_id");
+
+                    b.HasIndex("OrganizationId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_waste_losses_org_idempotency_key")
+                        .HasFilter("idempotency_key IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_waste_losses_org_occurred_at");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_waste_losses_org_status");
+
+                    b.HasIndex("OrganizationId", "WasteLossNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_waste_losses_org_waste_loss_number");
+
+                    b.ToTable("waste_losses", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_waste_losses_cost_status", "cost_status IN ('Complete', 'Partial', 'Unavailable')");
+
+                            t.HasCheckConstraint("ck_waste_losses_reason", "reason IN ('Spoiled', 'Expired', 'Damaged', 'Broken', 'Spillage', 'MissingOrShrinkage', 'Other')");
+
+                            t.HasCheckConstraint("ck_waste_losses_status", "status IN ('Posted', 'Voided')");
                         });
                 });
 
@@ -6758,46 +6999,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_inventory_transfer_lines_transfers");
                 });
 
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockCountLineRecord", b =>
-                {
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_stock_count_lines_products");
-
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockCountRecord", null)
-                        .WithMany()
-                        .HasForeignKey("StockCountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_stock_count_lines_counts");
-                });
-
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockMovementRecord", b =>
-                {
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryAccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_stock_movements_inventory_accounts");
-
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotRecord", null)
-                        .WithMany()
-                        .HasForeignKey("InventoryLotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_stock_movements_inventory_lots");
-
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_stock_movements_products");
-                });
-
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionComponentRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -6859,6 +7060,46 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_production_runs_definitions");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockCountLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_count_lines_products");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockCountRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StockCountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_count_lines_counts");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockMovementRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InventoryAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_movements_inventory_accounts");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryLotRecord", null)
+                        .WithMany()
+                        .HasForeignKey("InventoryLotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_stock_movements_inventory_lots");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_movements_products");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockUseLineRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -6874,6 +7115,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_stock_use_lines_stock_uses");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.WasteLossLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_waste_loss_lines_products");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.WasteLossRecord", null)
+                        .WithMany()
+                        .HasForeignKey("WasteLossId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_waste_loss_lines_waste_losses");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.OperationalSetup.OperationalSetupRecord", b =>

@@ -470,6 +470,13 @@ public static class OfflineOperationTypes
     public const string StockUse = "inventory.stock_use";
 
     /// <summary>
+    /// Server-side idempotency operation type for waste/loss write-off. Online-only:
+    /// no offline dispatcher or queue handler. Names the server idempotency scope so a retried
+    /// create request replays instead of double-writing-off stock.
+    /// </summary>
+    public const string WasteLoss = "inventory.waste_loss";
+
+    /// <summary>
     /// Server-side idempotency operation type for production run create. Online-only:
     /// no offline dispatcher or queue handler. Names the server idempotency scope so a retried
     /// create request replays instead of double-consuming materials / double-producing output.

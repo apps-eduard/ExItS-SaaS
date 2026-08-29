@@ -30,6 +30,8 @@ public sealed class StockMovement
     public const string ProductionMaterialRestorationReason = "Production material restored";
     public const string ProductionOutputReason = "Production output";
     public const string ProductionOutputReversalReason = "Production output reversed";
+    public const string WasteLossConsumptionReason = "Waste/loss";
+    public const string WasteLossVoidRestorationReason = "Waste/loss void restoration";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -802,6 +804,83 @@ public sealed class StockMovement
             branchId);
     }
 
+    public static StockMovement WasteLoss(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid wasteLossId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureWasteLossId(wasteLossId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var movementReason = string.IsNullOrWhiteSpace(reason)
+            ? WasteLossConsumptionReason
+            : NormalizeOptionalReason(reason);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.WasteLoss,
+            -absolute,
+            movementReason,
+            StockMovementSourceType.WasteLoss,
+            wasteLossId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
+    }
+
+    public static StockMovement WasteLossVoidRestoration(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid wasteLossId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureWasteLossId(wasteLossId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var restoredReason = string.IsNullOrWhiteSpace(reason)
+            ? WasteLossVoidRestorationReason
+            : NormalizeOptionalReason(reason);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.WasteLossVoidRestoration,
+            absolute,
+            restoredReason,
+            StockMovementSourceType.WasteLoss,
+            wasteLossId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
     public StockMovement WithLot(InventoryLotId lotId) =>
         new(
             Id,
@@ -952,6 +1031,16 @@ public sealed class StockMovement
             throw new DomainException(
                 DomainErrorCodes.InvalidStockUseId,
                 "StockUseId cannot be an empty GUID.");
+        }
+    }
+
+    private static void EnsureWasteLossId(Guid wasteLossId)
+    {
+        if (wasteLossId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidWasteLossId,
+                "WasteLossId cannot be an empty GUID.");
         }
     }
 

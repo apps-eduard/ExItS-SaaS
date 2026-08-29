@@ -180,6 +180,18 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasWasteLossAsync(
+        PosOrganizationId organizationId,
+        WasteLossId wasteLossId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasWasteLossVoidRestorationAsync(
+        PosOrganizationId organizationId,
+        WasteLossId wasteLossId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
     /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.

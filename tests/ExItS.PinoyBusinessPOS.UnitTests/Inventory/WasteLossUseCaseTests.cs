@@ -14,32 +14,55 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
-public sealed class StockUseUseCaseTests
+public sealed class WasteLossUseCaseTests
 {
     private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly DateTimeOffset Utc = new(2026, 8, 29, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Create_decreases_tracked_stock_for_internal_operations()
+    public async Task Create_decreases_tracked_stock_for_resale_damage()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
         var result = await fx.Create.ExecuteAsync(
             OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.InternalOperations),
-                [new CreateStockUseLineRequest(fx.CokeId, 3m)]),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Damaged),
+                [new CreateWasteLossLineRequest(fx.CokeId, 3m)]),
             Actor);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
         Assert.Equal(7m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(StockUseStatuses.ToCode(StockUseStatus.Posted), result.Value!.Status);
+        Assert.Equal(WasteLossStatuses.ToCode(WasteLossStatus.Posted), result.Value!.Status);
+        Assert.Equal(ProductionCostStatuses.ToCode(ProductionCostStatus.Complete), result.Value.CostStatus);
         Assert.Contains(
             fx.Inventory.Movements,
-            m => m.MovementType == StockMovementType.StockUse
-                && m.SourceType == StockMovementSourceType.StockUse
+            m => m.MovementType == StockMovementType.WasteLoss
+                && m.SourceType == StockMovementSourceType.WasteLoss
                 && m.QuantityEffect == -3m);
-        Assert.Equal(5m, result.Value.Lines[0].UnitCostSnapshot);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.StockUse);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.SaleDeduction);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.ManualDecrease);
+    }
+
+    [Fact]
+    public async Task Ingredient_spoilage_does_not_change_business_usage()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        product.UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+        Assert.False(product.CanBeSold);
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Spoiled),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m)]),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
+        Assert.False(product.CanBeSold);
+        Assert.Equal(ProductUsageCapabilities.IngredientCode, product.UsagePreset);
     }
 
     [Fact]
@@ -50,39 +73,19 @@ public sealed class StockUseUseCaseTests
         var beforeSprite = fx.Inventory.GetOnHand(fx.SpriteId);
         var result = await fx.Create.ExecuteAsync(
             OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.StaffUse),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Broken),
                 [
-                    new CreateStockUseLineRequest(fx.CokeId, 3m),
-                    new CreateStockUseLineRequest(fx.SpriteId, 1m)
+                    new CreateWasteLossLineRequest(fx.CokeId, 3m),
+                    new CreateWasteLossLineRequest(fx.SpriteId, 1m)
                 ]),
             Actor);
 
         Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
         Assert.Equal(beforeCoke, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.Equal(beforeSprite, fx.Inventory.GetOnHand(fx.SpriteId));
-        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.StockUse);
-        Assert.Empty(fx.StockUses.Items);
-    }
-
-    [Fact]
-    public async Task Multi_line_decreases_atomically()
-    {
-        var fx = await SeedAsync(cokeOnHand: 10m, spriteOnHand: 8m);
-        var result = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.SampleOrTesting),
-                [
-                    new CreateStockUseLineRequest(fx.CokeId, 2m),
-                    new CreateStockUseLineRequest(fx.SpriteId, 3m)
-                ]),
-            Actor);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(5m, fx.Inventory.GetOnHand(fx.SpriteId));
-        Assert.Equal(2, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.StockUse));
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.WasteLoss);
+        Assert.Empty(fx.WasteLosses.Items);
     }
 
     [Fact]
@@ -101,59 +104,14 @@ public sealed class StockUseUseCaseTests
 
         var result = await fx.Create.ExecuteAsync(
             OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.Other),
-                [new CreateStockUseLineRequest(fx.CokeId, 1m, unit.Id.Value)]),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Spillage),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m, unit.Id.Value)]),
             Actor);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(12m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(1m, result.Value!.Lines[0].QuantityEntered);
-        Assert.Equal(12m, result.Value.Lines[0].MultiplierToBase);
-        Assert.Equal(12m, result.Value.Lines[0].BaseQuantity);
-    }
-
-    [Fact]
-    public async Task Void_restores_stock_with_compensating_movement()
-    {
-        var fx = await SeedAsync(cokeOnHand: 10m);
-        var created = await fx.Create.ExecuteAsync(
-            OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.InternalOperations),
-                [new CreateStockUseLineRequest(fx.CokeId, 4m)]),
-            Actor);
-        Assert.True(created.IsSuccess);
-        Assert.Equal(6m, fx.Inventory.GetOnHand(fx.CokeId));
-
-        var voided = await fx.Void.ExecuteAsync(OrgA, created.Value!.StockUseId, Actor);
-        Assert.True(voided.IsSuccess);
-        Assert.Equal(StockUseStatuses.ToCode(StockUseStatus.Voided), voided.Value!.Status);
-        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Contains(
-            fx.Inventory.Movements,
-            m => m.MovementType == StockMovementType.StockUseVoidRestoration && m.QuantityEffect == 4m);
-    }
-
-    [Fact]
-    public async Task Client_stock_use_id_replays_without_double_decrease()
-    {
-        var fx = await SeedAsync(cokeOnHand: 10m);
-        var clientId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var request = new CreateStockUseRequest(
-            nameof(StockUseReason.StaffUse),
-            [new CreateStockUseLineRequest(fx.CokeId, 2m)],
-            StockUseId: clientId);
-
-        var first = await fx.Create.ExecuteAsync(OrgA, request, Actor);
-        Assert.True(first.IsSuccess);
-        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
-
-        var second = await fx.Create.ExecuteAsync(OrgA, request, Actor);
-        Assert.True(second.IsSuccess);
-        Assert.Equal(first.Value!.StockUseId, second.Value!.StockUseId);
-        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.StockUse));
+        Assert.Equal(12m, result.Value!.Lines[0].BaseQuantity);
     }
 
     [Fact]
@@ -163,13 +121,95 @@ public sealed class StockUseUseCaseTests
         await fx.AddProductAsync(fx.CokeId, "Cleaning Liquid", 5.0m, track: true, UnitOfMeasure.Liter);
         var result = await fx.Create.ExecuteAsync(
             OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.SampleOrTesting),
-                [new CreateStockUseLineRequest(fx.CokeId, 0.75m)]),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Spillage),
+                [new CreateWasteLossLineRequest(fx.CokeId, 0.75m)]),
             Actor);
 
         Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
         Assert.Equal(4.25m, fx.Inventory.GetOnHand(fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Client_waste_loss_id_replays_without_double_decrease()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var clientId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var request = new CreateWasteLossRequest(
+            nameof(WasteLossReason.Damaged),
+            [new CreateWasteLossLineRequest(fx.CokeId, 2m)],
+            WasteLossId: clientId);
+
+        var first = await fx.Create.ExecuteAsync(OrgA, request, Actor);
+        Assert.True(first.IsSuccess);
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var second = await fx.Create.ExecuteAsync(OrgA, request, Actor);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Value!.WasteLossId, second.Value!.WasteLossId);
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.WasteLoss));
+    }
+
+    [Fact]
+    public async Task Void_restores_stock_with_compensating_movement()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Damaged),
+                [new CreateWasteLossLineRequest(fx.CokeId, 4m)]),
+            Actor);
+        Assert.True(created.IsSuccess);
+        Assert.Equal(6m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var voided = await fx.Void.ExecuteAsync(OrgA, created.Value!.WasteLossId, Actor);
+        Assert.True(voided.IsSuccess);
+        Assert.Equal(WasteLossStatuses.ToCode(WasteLossStatus.Voided), voided.Value!.Status);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Contains(
+            fx.Inventory.Movements,
+            m => m.MovementType == StockMovementType.WasteLossVoidRestoration && m.QuantityEffect == 4m);
+    }
+
+    [Fact]
+    public async Task Cost_complete_partial_and_unavailable()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m, spriteOnHand: 10m);
+        // Sprite opening had cost; remove unit cost movements for sprite to simulate unknown.
+        fx.Inventory.Movements.RemoveAll(m =>
+            m.ProductId.Value == fx.SpriteId && m.MovementType == StockMovementType.OpeningStock);
+
+        var complete = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Damaged),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m)]),
+            Actor);
+        Assert.True(complete.IsSuccess);
+        Assert.Equal(ProductionCostStatuses.ToCode(ProductionCostStatus.Complete), complete.Value!.CostStatus);
+
+        var unavailable = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.MissingOrShrinkage),
+                [new CreateWasteLossLineRequest(fx.SpriteId, 1m)]),
+            Actor);
+        Assert.True(unavailable.IsSuccess, unavailable.ErrorCode + ": " + unavailable.ErrorMessage);
+        Assert.Equal(ProductionCostStatuses.ToCode(ProductionCostStatus.Unavailable), unavailable.Value!.CostStatus);
+
+        var partial = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Broken),
+                [
+                    new CreateWasteLossLineRequest(fx.CokeId, 1m),
+                    new CreateWasteLossLineRequest(fx.SpriteId, 1m)
+                ]),
+            Actor);
+        Assert.True(partial.IsSuccess);
+        Assert.Equal(ProductionCostStatuses.ToCode(ProductionCostStatus.Partial), partial.Value!.CostStatus);
     }
 
     [Fact]
@@ -179,53 +219,101 @@ public sealed class StockUseUseCaseTests
         var foreignOrg = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
         var result = await fx.Create.ExecuteAsync(
             foreignOrg,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.InternalOperations),
-                [new CreateStockUseLineRequest(fx.CokeId, 1m)]),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Damaged),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m)]),
             Actor);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
-        Assert.Empty(fx.StockUses.Items);
-        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.StockUse);
+        Assert.Empty(fx.WasteLosses.Items);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.WasteLoss);
     }
 
     [Fact]
-    public async Task Stock_use_does_not_change_product_business_usage()
+    public async Task Explicit_lot_consume_uses_consume_specific_not_fefo()
     {
         var fx = await SeedAsync(cokeOnHand: 10m);
         var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
-        product.UpdateUsage(ProductUsageCapabilities.InternalUse, Utc);
-        Assert.False(product.CanBeSold);
-        Assert.Equal(
-            ProductBusinessUsage.InternalUse,
-            ProductBusinessUsages.Classify(
-                ProductUsageCapabilities.Create(
-                    product.CanBePurchased,
-                    product.CanBeSold,
-                    product.CanBeUsedAsIngredient,
-                    product.IsProduced,
-                    product.UsagePreset)));
+        product.SetExpirationTracking(true, 7, Utc);
+
+        var lot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 9, 15),
+            10m,
+            Utc);
+        fx.Lots.Items.Add(lot);
 
         var result = await fx.Create.ExecuteAsync(
             OrgA,
-            new CreateStockUseRequest(
-                nameof(StockUseReason.InternalOperations),
-                [new CreateStockUseLineRequest(fx.CokeId, 1m)]),
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Expired),
+                [new CreateWasteLossLineRequest(fx.CokeId, 3m, InventoryLotId: lot.Id.Value)]),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
+        Assert.Equal(7m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(7m, lot.QuantityOnHand);
+        Assert.Contains(
+            fx.Lots.Movements,
+            m => m.MovementType == StockMovementType.WasteLoss
+                && m.LotId == lot.Id
+                && m.QuantityEffect == -3m);
+        Assert.Equal(lot.Id.Value, result.Value!.Lines[0].InventoryLotId);
+    }
+
+    [Fact]
+    public async Task Expiration_tracked_requires_explicit_lot()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        product.SetExpirationTracking(true, 7, Utc);
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Expired),
+                [new CreateWasteLossLineRequest(fx.CokeId, 1m)]),
+            Actor);
+
+        Assert.Equal(DomainErrorCodes.WasteLossLotRequired, result.ErrorCode);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Produced_item_waste_does_not_restore_production_materials()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var account = fx.Inventory.Accounts.Single(a => a.ProductId.Value == fx.CokeId);
+        fx.Inventory.Movements.Add(StockMovement.ProductionOutput(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            account.Id,
+            5m,
+            UnitOfMeasure.Piece,
+            Guid.Parse("99999999-9999-9999-9999-999999999999"),
+            Actor,
+            Utc.AddMinutes(1),
+            unitCost: 4m));
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateWasteLossRequest(
+                nameof(WasteLossReason.Damaged),
+                [new CreateWasteLossLineRequest(fx.CokeId, 2m)]),
             Actor);
 
         Assert.True(result.IsSuccess);
-        Assert.False(product.CanBeSold);
-        Assert.Equal(ProductUsageCapabilities.InternalUseCode, product.UsagePreset);
-        Assert.Equal(
-            ProductBusinessUsage.InternalUse,
-            ProductBusinessUsages.Classify(
-                ProductUsageCapabilities.Create(
-                    product.CanBePurchased,
-                    product.CanBeSold,
-                    product.CanBeUsedAsIngredient,
-                    product.IsProduced,
-                    product.UsagePreset)));
+        Assert.Equal(8m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.DoesNotContain(
+            fx.Inventory.Movements,
+            m => m.MovementType == StockMovementType.ProductionMaterialRestoration);
+        Assert.DoesNotContain(
+            fx.Inventory.Movements,
+            m => m.MovementType == StockMovementType.ProductionOutputReversal);
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.WasteLoss);
+        Assert.Equal(4m, result.Value!.Lines[0].UnitCostSnapshot);
     }
 
     private static async Task<Fixture> SeedAsync(decimal cokeOnHand = 0m, decimal? spriteOnHand = null)
@@ -247,28 +335,29 @@ public sealed class StockUseUseCaseTests
         public InMemoryCatalog Products { get; } = new();
         public InMemoryUnits Units { get; } = new();
         public InMemoryInventory Inventory { get; } = new();
-        public InMemoryStockUses StockUses { get; } = new();
+        public InMemoryWasteLosses WasteLosses { get; } = new();
         public InMemoryBranchBalances Branches { get; } = new();
         public InMemoryLots Lots { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
-        public CreateStockUse Create { get; }
-        public VoidStockUse Void { get; }
+        public CreateWasteLoss Create { get; }
+        public VoidWasteLoss Void { get; }
 
         public Fixture()
         {
             var lots = new InventoryLotStockService(Lots);
-            Create = new CreateStockUse(
-                StockUses,
+            Create = new CreateWasteLoss(
+                WasteLosses,
                 Products,
                 Units,
                 Inventory,
                 Branches,
+                Lots,
                 lots,
                 UnitOfWork,
                 Clock);
-            Void = new VoidStockUse(
-                StockUses,
+            Void = new VoidWasteLoss(
+                WasteLosses,
                 Products,
                 Inventory,
                 Branches,
@@ -443,18 +532,18 @@ public sealed class StockUseUseCaseTests
             throw new NotSupportedException();
     }
 
-    private sealed class InMemoryStockUses : IStockUseRepository
+    private sealed class InMemoryWasteLosses : IWasteLossRepository
     {
-        public List<StockUse> Items { get; } = [];
+        public List<WasteLoss> Items { get; } = [];
         private long _sequence;
 
-        public Task<StockUse?> GetByIdAsync(
+        public Task<WasteLoss?> GetByIdAsync(
             PosOrganizationId organizationId,
-            StockUseId stockUseId,
+            WasteLossId wasteLossId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(Items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == stockUseId));
+            Task.FromResult(Items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == wasteLossId));
 
-        public Task<StockUse?> FindByIdempotencyKeyAsync(
+        public Task<WasteLoss?> FindByIdempotencyKeyAsync(
             PosOrganizationId organizationId,
             string idempotencyKey,
             CancellationToken cancellationToken = default) =>
@@ -462,29 +551,29 @@ public sealed class StockUseUseCaseTests
                 r.OrganizationId == organizationId
                 && string.Equals(r.IdempotencyKey, idempotencyKey, StringComparison.Ordinal)));
 
-        public Task<(IReadOnlyList<StockUse> Items, int TotalCount)> ListAsync(
+        public Task<(IReadOnlyList<WasteLoss> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
-            StockUseFilter filter,
+            WasteLossFilter filter,
             int skip,
             int take,
             CancellationToken cancellationToken = default)
         {
             var list = Items.Where(r => r.OrganizationId == organizationId).Skip(skip).Take(take).ToList();
-            return Task.FromResult<(IReadOnlyList<StockUse>, int)>((list, Items.Count));
+            return Task.FromResult<(IReadOnlyList<WasteLoss>, int)>((list, Items.Count));
         }
 
-        public Task AddAsync(StockUse stockUse, CancellationToken cancellationToken = default)
+        public Task AddAsync(WasteLoss wasteLoss, CancellationToken cancellationToken = default)
         {
-            Items.Add(stockUse);
+            Items.Add(wasteLoss);
             return Task.CompletedTask;
         }
 
-        public Task UpdateAsync(StockUse stockUse, CancellationToken cancellationToken = default)
+        public Task UpdateAsync(WasteLoss wasteLoss, CancellationToken cancellationToken = default)
         {
-            var idx = Items.FindIndex(r => r.Id == stockUse.Id);
+            var idx = Items.FindIndex(r => r.Id == wasteLoss.Id);
             if (idx >= 0)
             {
-                Items[idx] = stockUse;
+                Items[idx] = wasteLoss;
             }
 
             return Task.CompletedTask;
@@ -496,7 +585,7 @@ public sealed class StockUseUseCaseTests
             CancellationToken cancellationToken = default)
         {
             _sequence++;
-            return Task.FromResult(StockUseNumbers.Format(businessDateUtc, _sequence));
+            return Task.FromResult(WasteLossNumbers.Format(businessDateUtc, _sequence));
         }
     }
 
@@ -566,71 +655,23 @@ public sealed class StockUseUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Movements.FirstOrDefault(m => m.OrganizationId == organizationId && m.Id == movementId));
 
-        public Task<bool> HasStockUseAsync(
-            PosOrganizationId organizationId,
-            StockUseId stockUseId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == stockUseId.Value
-                && m.MovementType == StockMovementType.StockUse));
+        public Task<bool> HasStockUseAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
-        public Task<bool> HasStockUseVoidRestorationAsync(
-            PosOrganizationId organizationId,
-            StockUseId stockUseId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == stockUseId.Value
-                && m.MovementType == StockMovementType.StockUseVoidRestoration));
+        public Task<bool> HasStockUseVoidRestorationAsync(PosOrganizationId organizationId, StockUseId stockUseId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
-        public Task<bool> HasProductionMaterialConsumptionAsync(
-            PosOrganizationId organizationId,
-            ProductionRunId productionRunId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == productionRunId.Value
-                && m.MovementType == StockMovementType.ProductionMaterialConsumption));
+        public Task<bool> HasProductionMaterialConsumptionAsync(PosOrganizationId organizationId, ProductionRunId productionRunId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
-        public Task<bool> HasProductionMaterialRestorationAsync(
-            PosOrganizationId organizationId,
-            ProductionRunId productionRunId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == productionRunId.Value
-                && m.MovementType == StockMovementType.ProductionMaterialRestoration));
+        public Task<bool> HasProductionMaterialRestorationAsync(PosOrganizationId organizationId, ProductionRunId productionRunId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
-        public Task<bool> HasProductionOutputAsync(
-            PosOrganizationId organizationId,
-            ProductionRunId productionRunId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == productionRunId.Value
-                && m.MovementType == StockMovementType.ProductionOutput));
+        public Task<bool> HasProductionOutputAsync(PosOrganizationId organizationId, ProductionRunId productionRunId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
-        public Task<bool> HasProductionOutputReversalAsync(
-            PosOrganizationId organizationId,
-            ProductionRunId productionRunId,
-            CatalogProductId productId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(Movements.Any(m =>
-                m.OrganizationId == organizationId
-                && m.ProductId == productId
-                && m.SourceId == productionRunId.Value
-                && m.MovementType == StockMovementType.ProductionOutputReversal));
+        public Task<bool> HasProductionOutputReversalAsync(PosOrganizationId organizationId, ProductionRunId productionRunId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
         public Task<bool> HasWasteLossAsync(
             PosOrganizationId organizationId,
@@ -719,7 +760,8 @@ public sealed class StockUseUseCaseTests
             PosBranchId? branchId,
             bool includeDepleted,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InventoryLot>>([]);
+            Task.FromResult<IReadOnlyList<InventoryLot>>(
+                Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId).ToList());
 
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,

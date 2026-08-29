@@ -92,6 +92,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ProductionRunRecord> ProductionRuns => Set<ProductionRunRecord>();
     internal DbSet<ProductionRunMaterialRecord> ProductionRunMaterials => Set<ProductionRunMaterialRecord>();
     internal DbSet<ProductionRunNumberSequenceRecord> ProductionRunNumberSequences => Set<ProductionRunNumberSequenceRecord>();
+    internal DbSet<WasteLossRecord> WasteLosses => Set<WasteLossRecord>();
+    internal DbSet<WasteLossLineRecord> WasteLossLines => Set<WasteLossLineRecord>();
+    internal DbSet<WasteLossNumberSequenceRecord> WasteLossNumberSequences => Set<WasteLossNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
@@ -2016,7 +2019,7 @@ public sealed class PosDbContext : DbContext
 
             // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
             // EF Core snapshots only the last filtered unique on this identical column set
-            // (currently inventory_transfer_source). Earlier indexes (sale/purchase/count/return/stock_use/production)
+            // (currently inventory_transfer_source). Earlier indexes (sale/purchase/count/return/stock_use/production/waste_loss)
             // remain from prior migrations and must not be dropped.
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -2053,6 +2056,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_stock_movements_production_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.Production)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_waste_loss_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.WasteLoss)}' AND source_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -2929,6 +2938,156 @@ public sealed class PosDbContext : DbContext
 
             entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_production_run_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<WasteLossRecord>(entity =>
+        {
+            entity.ToTable("waste_losses", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_waste_losses_reason",
+                    $"reason IN ({string.Join(", ", WasteLossReasons.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_waste_losses_status",
+                    $"status IN ({string.Join(", ", WasteLossStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_waste_losses_cost_status",
+                    $"cost_status IN ({string.Join(", ", ProductionCostStatuses.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.WasteLossNumber)
+                .HasColumnName("waste_loss_number")
+                .HasMaxLength(WasteLossNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.ReferenceNumber)
+                .HasColumnName("reference_number")
+                .HasMaxLength(WasteLoss.ReferenceNumberMaxLength);
+            entity.Property(e => e.OccurredAtUtc).HasColumnName("occurred_at_utc");
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(WasteLossReasons.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(WasteLoss.NotesMaxLength);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(WasteLossStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CostStatus)
+                .HasColumnName("cost_status")
+                .HasMaxLength(ProductionCostStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.TotalCostSnapshot)
+                .HasColumnName("total_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.VoidedByUserId).HasColumnName("voided_by_user_id");
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(WasteLoss.IdempotencyKeyMaxLength);
+
+            entity.HasIndex(e => new { e.OrganizationId, e.WasteLossNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_waste_losses_org_waste_loss_number");
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_waste_losses_org_idempotency_key")
+                .HasFilter("idempotency_key IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.OccurredAtUtc })
+                .HasDatabaseName("ix_waste_losses_org_occurred_at");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_waste_losses_org_status");
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_waste_losses_org_branch_id");
+        });
+
+        modelBuilder.Entity<WasteLossLineRecord>(entity =>
+        {
+            entity.ToTable("waste_loss_lines", tb =>
+            {
+                tb.HasCheckConstraint("ck_waste_loss_lines_quantity_entered_positive", "quantity_entered > 0");
+                tb.HasCheckConstraint("ck_waste_loss_lines_multiplier_positive", "multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_waste_loss_lines_base_quantity_positive", "base_quantity > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.WasteLossId).HasColumnName("waste_loss_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.ProductUnitId).HasColumnName("product_unit_id");
+            entity.Property(e => e.InventoryLotId).HasColumnName("inventory_lot_id");
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.QuantityEntered)
+                .HasColumnName("quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.MultiplierToBase)
+                .HasColumnName("multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.BaseQuantity)
+                .HasColumnName("base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitLabelSnapshot)
+                .HasColumnName("unit_label_snapshot")
+                .HasMaxLength(WasteLossLine.UnitLabelMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitCostSnapshot)
+                .HasColumnName("unit_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.LineCostSnapshot)
+                .HasColumnName("line_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+
+            entity.HasIndex(e => new { e.WasteLossId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_waste_loss_lines_waste_loss_line_number");
+            entity.HasIndex(e => e.InventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_waste_loss_lines_inventory_movement_id")
+                .HasFilter("inventory_movement_id IS NOT NULL");
+
+            entity.HasOne<WasteLossRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.WasteLossId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_waste_loss_lines_waste_losses");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_waste_loss_lines_products");
+        });
+
+        modelBuilder.Entity<WasteLossNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("waste_loss_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_waste_loss_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_waste_loss_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();

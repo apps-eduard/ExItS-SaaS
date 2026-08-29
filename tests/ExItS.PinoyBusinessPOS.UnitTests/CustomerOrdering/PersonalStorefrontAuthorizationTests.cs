@@ -545,6 +545,11 @@ public sealed class PersonalStorefrontAuthorizationTests
             Task.FromResult(false);
         public Task<bool> HasProductionOutputReversalAsync(PosOrganizationId organizationId, ProductionRunId productionRunId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult(false);
+        public Task<bool> HasWasteLossAsync(PosOrganizationId organizationId, WasteLossId wasteLossId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+        public Task<bool> HasWasteLossVoidRestorationAsync(PosOrganizationId organizationId, WasteLossId wasteLossId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult<decimal?>(null);
         public Task<bool> HasSaleReturnRestockAsync(

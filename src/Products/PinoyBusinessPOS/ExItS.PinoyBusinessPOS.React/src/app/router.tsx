@@ -99,6 +99,9 @@ import { ProductionRunListPage } from "@/features/inventory/ProductionRunListPag
 import { StockUseCreatePage } from "@/features/inventory/StockUseCreatePage";
 import { StockUseDetailPage } from "@/features/inventory/StockUseDetailPage";
 import { StockUseListPage } from "@/features/inventory/StockUseListPage";
+import { WasteLossCreatePage } from "@/features/inventory/WasteLossCreatePage";
+import { WasteLossDetailPage } from "@/features/inventory/WasteLossDetailPage";
+import { WasteLossListPage } from "@/features/inventory/WasteLossListPage";
 import {
   CashierRoleHomePage,
   ManagerRoleHomePage,
@@ -553,6 +556,9 @@ export const appRoutes = [
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },
               { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },
+              { path: "waste-loss", element: <WasteLossListPage /> },
+              { path: "waste-loss/new", element: <WasteLossCreatePage /> },
+              { path: "waste-loss/:wasteLossId", element: <WasteLossDetailPage /> },
               { path: "production", element: <ProductionHomePage /> },
               { path: "production/setups", element: <ProductionDefinitionListPage /> },
               { path: "production/setups/new", element: <ProductionDefinitionFormPage /> },

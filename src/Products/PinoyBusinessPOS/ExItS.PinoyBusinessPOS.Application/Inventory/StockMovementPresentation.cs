@@ -42,6 +42,8 @@ public static class StockMovementPresentation
             StockMovementType.ProductionMaterialRestoration => "Production material restored",
             StockMovementType.ProductionOutput => "Production output",
             StockMovementType.ProductionOutputReversal => "Production output reversed",
+            StockMovementType.WasteLoss => "Waste/loss",
+            StockMovementType.WasteLossVoidRestoration => "Waste/loss voided",
             _ => type.ToString()
         };
     }

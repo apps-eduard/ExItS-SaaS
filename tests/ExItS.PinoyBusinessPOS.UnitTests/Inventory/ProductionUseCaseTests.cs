@@ -651,6 +651,16 @@ public sealed class ProductionUseCaseTests
                 m.OrganizationId == organizationId && m.ProductId == productId && m.SourceId == productionRunId.Value
                 && m.MovementType == StockMovementType.ProductionOutputReversal));
 
+        public Task<bool> HasWasteLossAsync(PosOrganizationId organizationId, WasteLossId wasteLossId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId && m.ProductId == productId && m.SourceId == wasteLossId.Value
+                && m.MovementType == StockMovementType.WasteLoss));
+
+        public Task<bool> HasWasteLossVoidRestorationAsync(PosOrganizationId organizationId, WasteLossId wasteLossId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId && m.ProductId == productId && m.SourceId == wasteLossId.Value
+                && m.MovementType == StockMovementType.WasteLossVoidRestoration));
+
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default)
         {
             var cost = Movements

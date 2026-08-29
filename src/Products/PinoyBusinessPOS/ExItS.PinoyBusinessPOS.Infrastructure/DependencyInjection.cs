@@ -68,6 +68,7 @@ public static class DependencyInjection
         services.AddSingleton<IInventoryTransferAlertSink, NoOpInventoryTransferAlertSink>();
         services.AddScoped<IDirectPurchaseReceiptRepository, DirectPurchaseReceiptRepository>();
         services.AddScoped<IStockUseRepository, StockUseRepository>();
+        services.AddScoped<IWasteLossRepository, WasteLossRepository>();
         services.AddScoped<IProductionDefinitionRepository, ProductionDefinitionRepository>();
         services.AddScoped<IProductionRunRepository, ProductionRunRepository>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();

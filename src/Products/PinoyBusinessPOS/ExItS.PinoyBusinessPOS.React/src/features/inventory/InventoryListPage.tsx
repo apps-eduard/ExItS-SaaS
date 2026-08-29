@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, ChevronRight, Factory, PackageMinus } from "lucide-react";
+import { CalendarClock, ChevronRight, Factory, PackageMinus, Trash2 } from "lucide-react";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -99,6 +99,13 @@ export function InventoryListPage() {
             icon: <PackageMinus />,
             href: "/inventory/stock-use",
             testId: "open-stock-use",
+          },
+          {
+            key: "waste-loss",
+            label: t("inventory.openWasteLoss"),
+            icon: <Trash2 />,
+            href: "/inventory/waste-loss",
+            testId: "open-waste-loss",
           },
           {
             key: "production",

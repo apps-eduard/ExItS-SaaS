@@ -34,6 +34,10 @@ export function inventoryMovementTypeLabelKey(movementType: string): MessageKey 
       return "inventory.movementType.stockUse";
     case "StockUseVoidRestoration":
       return "inventory.movementType.stockUseVoid";
+    case "WasteLoss":
+      return "inventory.movementType.wasteLoss";
+    case "WasteLossVoidRestoration":
+      return "inventory.movementType.wasteLossVoid";
     case "ProductionMaterialConsumption":
       return "inventory.movementType.productionMaterial";
     case "ProductionMaterialRestoration":

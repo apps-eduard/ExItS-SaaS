@@ -37,7 +37,11 @@ public enum StockMovementType
     /// <summary>Finished goods added by a production run.</summary>
     ProductionOutput = 18,
     /// <summary>Compensating output reversal when a production run is voided.</summary>
-    ProductionOutputReversal = 19
+    ProductionOutputReversal = 19,
+    /// <summary>Stock written off as waste/loss (waste/loss document).</summary>
+    WasteLoss = 20,
+    /// <summary>Compensating restoration when a waste/loss document is voided.</summary>
+    WasteLossVoidRestoration = 21
 }
 
 public static class StockMovementTypes
@@ -65,7 +69,9 @@ public static class StockMovementTypes
         nameof(StockMovementType.ProductionMaterialConsumption),
         nameof(StockMovementType.ProductionMaterialRestoration),
         nameof(StockMovementType.ProductionOutput),
-        nameof(StockMovementType.ProductionOutputReversal)
+        nameof(StockMovementType.ProductionOutputReversal),
+        nameof(StockMovementType.WasteLoss),
+        nameof(StockMovementType.WasteLossVoidRestoration)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();
