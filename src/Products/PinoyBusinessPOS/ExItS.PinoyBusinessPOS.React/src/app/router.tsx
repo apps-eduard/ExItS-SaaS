@@ -96,6 +96,9 @@ import { ProductionHomePage } from "@/features/inventory/ProductionHomePage";
 import { ProductionRunCreatePage } from "@/features/inventory/ProductionRunCreatePage";
 import { ProductionRunDetailPage } from "@/features/inventory/ProductionRunDetailPage";
 import { ProductionRunListPage } from "@/features/inventory/ProductionRunListPage";
+import { StockCountCreatePage } from "@/features/inventory/StockCountCreatePage";
+import { StockCountDetailPage } from "@/features/inventory/StockCountDetailPage";
+import { StockCountListPage } from "@/features/inventory/StockCountListPage";
 import { StockUseCreatePage } from "@/features/inventory/StockUseCreatePage";
 import { StockUseDetailPage } from "@/features/inventory/StockUseDetailPage";
 import { StockUseListPage } from "@/features/inventory/StockUseListPage";
@@ -553,6 +556,9 @@ export const appRoutes = [
             children: [
               { index: true, element: <InventoryListPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
+              { path: "stock-counts", element: <StockCountListPage /> },
+              { path: "stock-counts/new", element: <StockCountCreatePage /> },
+              { path: "stock-counts/:stockCountId", element: <StockCountDetailPage /> },
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },
               { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },

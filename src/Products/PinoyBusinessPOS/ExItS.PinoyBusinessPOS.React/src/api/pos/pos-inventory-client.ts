@@ -140,7 +140,13 @@ function appendQuery(
 
 export function listInventory(
   workspace: PosWorkspaceScope,
-  options: { search?: string; page?: number; pageSize?: number } = {},
+  options: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    /** When set, server filters tracked/untracked inventory accounts. */
+    tracked?: boolean;
+  } = {},
   signal?: AbortSignal,
 ): Promise<PosInventoryPagedResult> {
   return posRequest({
@@ -151,6 +157,7 @@ export function listInventory(
       search: options.search,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
+      tracked: options.tracked,
     }),
   });
 }
