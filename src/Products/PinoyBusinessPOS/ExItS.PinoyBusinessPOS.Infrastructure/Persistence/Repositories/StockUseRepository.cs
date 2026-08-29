@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using Microsoft.EntityFrameworkCore;
 
@@ -198,6 +199,77 @@ public sealed class StockUseRepository : IStockUseRepository
         }
 
         return StockUseNumbers.Format(businessDateUtc, value);
+    }
+
+    public async Task<InventoryDocumentCostPeriodAggregate> AggregatePostedCostForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string posted = nameof(StockUseStatus.Posted);
+
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var headers = _db.StockUses.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.Status == posted
+                        && s.OccurredAtUtc >= from
+                        && s.OccurredAtUtc < exclusiveTo);
+
+        if (branchId is not null)
+        {
+            headers = headers.Where(s => s.BranchId == branchId.Value);
+        }
+
+        var lines = await (
+                from su in headers
+                join line in _db.StockUseLines.AsNoTracking() on su.Id equals line.StockUseId
+                select new { su.Id, line.UnitCostSnapshot, line.LineCostSnapshot })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (lines.Count == 0)
+        {
+            return new InventoryDocumentCostPeriodAggregate(0m, 0, 0, 0, 0);
+        }
+
+        var postedCount = lines.Select(l => l.Id).Distinct().Count();
+        var docs = lines.GroupBy(l => l.Id).ToList();
+        var completeCostCount = 0;
+        var partialCostCount = 0;
+        var unavailableCostCount = 0;
+
+        foreach (var doc in docs)
+        {
+            var status = ProductionCostStatuses.FromMaterialCosts(doc.Select(l => l.UnitCostSnapshot).ToList());
+            switch (status)
+            {
+                case ProductionCostStatus.Complete:
+                    completeCostCount++;
+                    break;
+                case ProductionCostStatus.Partial:
+                    partialCostCount++;
+                    break;
+                default:
+                    unavailableCostCount++;
+                    break;
+            }
+        }
+
+        var knownCost = SaleMoney.RoundMoney(
+            lines.Where(l => l.LineCostSnapshot is not null).Sum(l => l.LineCostSnapshot!.Value));
+
+        return new InventoryDocumentCostPeriodAggregate(
+            knownCost,
+            postedCount,
+            completeCostCount,
+            partialCostCount,
+            unavailableCostCount);
     }
 
     private static long SequenceLockKey(PosOrganizationId organizationId, DateOnly businessDateUtc)

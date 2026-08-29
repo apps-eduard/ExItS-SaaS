@@ -8,6 +8,11 @@ public sealed record SaleReturnFilter(Guid? SaleId = null, string? ReturnNumber 
 
 public sealed record SaleLineReturnTotals(decimal ReturnedQuantity, decimal RefundedAmount);
 
+/// <summary>Return COGS adjustment rows for profitability (links to original sale line costs).</summary>
+public sealed record SaleReturnCogsPeriodAggregate(
+    decimal KnownReturnCogs,
+    bool HasUnknownCostReturn);
+
 public interface ISaleReturnRepository
 {
     Task<SaleReturn?> GetByIdAsync(
@@ -40,6 +45,20 @@ public interface ISaleReturnRepository
     Task<decimal> SumCashRefundsForShiftAsync(
         PosOrganizationId organizationId,
         Guid cashierShiftId,
+        CancellationToken cancellationToken = default);
+
+    Task<SaleReturnCogsPeriodAggregate> AggregateReturnCogsForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<decimal> SumRefundsForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     Task<SaleReturn> CreateAsync(

@@ -403,6 +403,45 @@ describe("pos-sales-client", () => {
     expect(String(vi.mocked(fetch).mock.calls[1][0])).toContain("paymentMethod=Cash");
   });
 
+  it("preserves optional sale cost and line cost snapshots on parse", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(
+          saleJson({
+            costStatus: "Complete",
+            totalCostSnapshot: 12.5,
+            grossProfit: 12.5,
+            grossMarginPercent: 50,
+            lines: [
+              {
+                saleLineId: "99999999-9999-4999-8999-999999999999",
+                productId,
+                lineNumber: 1,
+                name: "Coke",
+                sku: "COKE-330",
+                unitOfMeasure: "pc",
+                sellingMode: "PerItem",
+                unitPrice: 25,
+                quantity: 1,
+                lineTotal: 25,
+                unitCostSnapshot: 12.5,
+                lineCostSnapshot: 12.5,
+              },
+            ],
+          }),
+        ),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const sale = await getSale(workspace, saleId);
+    expect(sale.costStatus).toBe("Complete");
+    expect(sale.totalCostSnapshot).toBe(12.5);
+    expect(sale.grossProfit).toBe(12.5);
+    expect(sale.grossMarginPercent).toBe(50);
+    expect(sale.lines[0]?.lineCostSnapshot).toBe(12.5);
+  });
+
   it("surfaces checkout failure as PosApiError", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(

@@ -22,4 +22,6 @@ internal sealed class SaleLineRecord
     public string? SellingUnitNameSnapshot { get; set; }
     public decimal? EnteredQuantity { get; set; }
     public decimal? MultiplierToBaseSnapshot { get; set; }
+    public decimal? UnitCostSnapshot { get; set; }
+    public decimal? LineCostSnapshot { get; set; }
 }

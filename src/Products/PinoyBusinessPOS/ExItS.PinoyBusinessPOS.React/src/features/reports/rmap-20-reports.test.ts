@@ -6,6 +6,7 @@ import {
   dashboardPath,
   formatReportPaymentMethod,
   managementOverviewPath,
+  profitabilityPath,
   salesByPaymentPath,
   salesSummaryPath,
 } from "@/api/pos/pos-reporting-client";
@@ -72,6 +73,24 @@ describe("report-access", () => {
       grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
     });
     expect(canAccessOperationalReport(cashierAdvanced, "shifts")).toBe(true);
+    expect(canAccessOperationalReport(cashierAdvanced, "profitability")).toBe(false);
+  });
+
+  it("allows profitability only for ViewReports roles", () => {
+    const owner = grant({ mappedPosRoleCode: "Owner", productLocalRoleCode: "Owner" });
+    const reportingUser = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+    });
+    const cashierAdvanced = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
+    });
+
+    expect(canAccessOperationalReport(owner, "profitability")).toBe(true);
+    expect(canAccessOperationalReport(reportingUser, "profitability")).toBe(true);
+    expect(canAccessOperationalReport(cashierAdvanced, "profitability")).toBe(false);
   });
 
   it("allows inventory staff inventory/purchasing reports only with advanced grant", () => {
@@ -106,6 +125,14 @@ describe("pos-reporting-client paths", () => {
     expect(salesByPaymentPath({ fromDate: "2026-08-21", toDate: "2026-08-21" })).toContain(
       "sales-by-payment",
     );
+    expect(
+      profitabilityPath(
+        { fromDate: "2026-08-01", toDate: "2026-08-21" },
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      ),
+    ).toBe(
+      "/api/v1/pos/reports/profitability?fromDate=2026-08-01&toDate=2026-08-21&branchId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
   });
 
   it("formats payment methods without tax terminology", () => {
@@ -124,6 +151,23 @@ describe("pos-reporting-client paths", () => {
 describe("report user-facing terminology boundary", () => {
   it("keeps ManualGCash labeled as GCash", () => {
     expect(formatReportPaymentMethod("ManualGCash")).toBe("GCash");
+  });
+
+  it("defines profitability report labels in every locale catalog", async () => {
+    const { catalogs } = await import("@/i18n/messages");
+    const keys = [
+      "reports.profitability",
+      "reports.metric.cogs",
+      "reports.metric.knownCogs",
+      "reports.costIncompletePartial",
+      "reports.costIncompleteUnavailable",
+    ] as const;
+
+    for (const [locale, catalog] of Object.entries(catalogs)) {
+      for (const key of keys) {
+        expect(catalog[key], `${locale}:${key}`).toBeTruthy();
+      }
+    }
   });
 
   it("does not expose roadmap/developer wording in normal message catalogs", async () => {

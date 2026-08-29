@@ -6229,6 +6229,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("unit_price");
 
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_cost_snapshot");
+
+                    b.Property<decimal?>("LineCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_cost_snapshot");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
@@ -6385,6 +6395,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("cashier_shift_id");
 
+                    b.Property<string>("CostStatus")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cost_status");
+
                     b.Property<decimal?>("ChangeAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -6472,6 +6487,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("tax_amount");
+
+                    b.Property<decimal?>("TotalCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_cost_snapshot");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 2)
@@ -6562,6 +6582,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_sales_status", "status IN ('Completed', 'Voided', 'AwaitingPayment')");
 
                             t.HasCheckConstraint("ck_sales_stock_reservation", "stock_reservation_state IN ('None', 'Reserved', 'Released', 'Consumed')");
+
+                            t.HasCheckConstraint("ck_sales_cost_status", "cost_status IS NULL OR cost_status IN ('Complete', 'Partial', 'Unavailable')");
 
                             t.HasCheckConstraint("ck_sales_tender_consistency", "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
 

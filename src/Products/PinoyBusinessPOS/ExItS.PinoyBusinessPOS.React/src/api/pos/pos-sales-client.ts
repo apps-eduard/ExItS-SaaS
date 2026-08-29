@@ -129,6 +129,8 @@ export const posSaleLineDtoSchema = z.object({
   grossLineTotal: z.number().optional(),
   lineDiscountAmount: z.number().optional(),
   saleDiscountAllocatedAmount: z.number().optional(),
+  unitCostSnapshot: z.number().nullable().optional(),
+  lineCostSnapshot: z.number().nullable().optional(),
 });
 
 export const posSaleQuotePriceOverrideDtoSchema = z.object({
@@ -175,6 +177,10 @@ export const posSaleDtoSchema = z.object({
   saleDiscountTotal: z.number().optional(),
   // Server Map() emits null when no overrides were applied (not omitted).
   priceOverrides: z.array(posSaleQuotePriceOverrideDtoSchema).nullable().optional(),
+  costStatus: z.string().nullable().optional(),
+  totalCostSnapshot: z.number().nullable().optional(),
+  grossProfit: z.number().nullable().optional(),
+  grossMarginPercent: z.number().nullable().optional(),
 });
 
 export type PosSaleLineDto = z.infer<typeof posSaleLineDtoSchema>;

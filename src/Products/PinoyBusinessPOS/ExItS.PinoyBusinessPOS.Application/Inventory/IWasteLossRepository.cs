@@ -3,6 +3,13 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 
+public sealed record InventoryDocumentCostPeriodAggregate(
+    decimal KnownCost,
+    int PostedCount,
+    int CompleteCostCount,
+    int PartialCostCount,
+    int UnavailableCostCount);
+
 public interface IWasteLossRepository
 {
     Task<WasteLoss?> GetByIdAsync(
@@ -29,5 +36,12 @@ public interface IWasteLossRepository
     Task<string> AllocateNextNumberAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<InventoryDocumentCostPeriodAggregate> AggregatePostedCostForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 }

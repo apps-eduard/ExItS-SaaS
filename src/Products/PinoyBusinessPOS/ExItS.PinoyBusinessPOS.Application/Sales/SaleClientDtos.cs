@@ -19,7 +19,9 @@ public sealed record PosSaleLineDto(
     decimal LineTotal,
     decimal GrossLineTotal = 0m,
     decimal LineDiscountAmount = 0m,
-    decimal SaleDiscountAllocatedAmount = 0m);
+    decimal SaleDiscountAllocatedAmount = 0m,
+    decimal? UnitCostSnapshot = null,
+    decimal? LineCostSnapshot = null);
 
 public sealed record PosSaleDto(
     Guid SaleId,
@@ -68,7 +70,11 @@ public sealed record PosSaleDto(
     decimal LineDiscountTotal = 0m,
     decimal SaleDiscountTotal = 0m,
     decimal DiscountTotal = 0m,
-    List<PosSaleQuotePriceOverrideDto>? PriceOverrides = null);
+    List<PosSaleQuotePriceOverrideDto>? PriceOverrides = null,
+    string? CostStatus = null,
+    decimal? TotalCostSnapshot = null,
+    decimal? GrossProfit = null,
+    decimal? GrossMarginPercent = null);
 
 /// <summary>
 /// A server-signed offline price lease presented back at checkout.

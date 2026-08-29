@@ -9,6 +9,11 @@ const REPORTS_PATH = "/api/v1/pos/reports";
 /** Date-only strings as `yyyy-MM-dd` (server ReportDateRange / UTC calendar day). */
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+/** .NET Guid strings are not always RFC UUID version-nibble compliant. */
+const guidSchema = z
+  .string()
+  .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
+
 const reportDailyAmountSchema = z.object({
   date: dateOnlySchema,
   amount: z.number(),
@@ -289,6 +294,27 @@ export const posSupplierPurchasingReportDtoSchema = z.object({
   rows: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
+export const posProfitabilityReportDtoSchema = z.object({
+  fromDate: dateOnlySchema,
+  toDate: dateOnlySchema,
+  branchId: guidSchema.nullable().optional(),
+  netSales: z.number(),
+  cogsStatus: z.string(),
+  knownCogs: z.number(),
+  totalCogs: z.number().nullable().optional(),
+  grossProfit: z.number().nullable().optional(),
+  grossMarginPercent: z.number().nullable().optional(),
+  completedSaleCount: z.number(),
+  completeCostSaleCount: z.number(),
+  partialCostSaleCount: z.number(),
+  unavailableCostSaleCount: z.number(),
+  wasteLossKnownCost: z.number(),
+  wasteLossCostStatus: z.string(),
+  stockUseKnownCost: z.number(),
+  stockUseCostStatus: z.string(),
+  costCompletenessPercent: z.number(),
+});
+
 export type PosManagementOverviewDto = z.infer<typeof posManagementOverviewDtoSchema>;
 export type PosDashboardDto = z.infer<typeof posDashboardDtoSchema>;
 export type PosSalesReportDto = z.infer<typeof posSalesReportDtoSchema>;
@@ -310,6 +336,7 @@ export type PosProductUtangSummaryReportDto = z.infer<typeof posProductUtangSumm
 export type PosSalesByProductReportDto = z.infer<typeof posSalesByProductReportDtoSchema>;
 export type PosStockCountVarianceReportDto = z.infer<typeof posStockCountVarianceReportDtoSchema>;
 export type PosSupplierPurchasingReportDto = z.infer<typeof posSupplierPurchasingReportDtoSchema>;
+export type PosProfitabilityReportDto = z.infer<typeof posProfitabilityReportDtoSchema>;
 
 export type ReportDateQuery = {
   fromDate: string;
@@ -416,6 +443,22 @@ export function expensesSummaryPath(range?: ReportDateQuery | null): string {
 
 export function utangByProductPath(range?: ReportDateQuery | null): string {
   return withQuery(`${REPORTS_PATH}/utang-by-product`, range);
+}
+
+export function profitabilityPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+): string {
+  if (!range) {
+    return `${REPORTS_PATH}/profitability`;
+  }
+  const params = new URLSearchParams();
+  appendDates(params, range);
+  if (branchId) {
+    params.set("branchId", branchId);
+  }
+  const qs = params.toString();
+  return qs ? `${REPORTS_PATH}/profitability?${qs}` : `${REPORTS_PATH}/profitability`;
 }
 
 /** Paths that must never appear as tax/VAT/BIR navigation targets in this package. */
@@ -727,6 +770,20 @@ export async function getProductUtangSummaryReport(
     signal,
   });
   return posProductUtangSummaryReportDtoSchema.parse(raw);
+}
+
+export async function getProfitabilityReport(
+  workspace: PosWorkspaceScope,
+  range: ReportDateQuery,
+  signal?: AbortSignal,
+): Promise<PosProfitabilityReportDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    path: profitabilityPath(range, workspace.branchId),
+    workspace,
+    signal,
+  });
+  return posProfitabilityReportDtoSchema.parse(raw);
 }
 
 /** Friendly payment label — never tax terminology. */

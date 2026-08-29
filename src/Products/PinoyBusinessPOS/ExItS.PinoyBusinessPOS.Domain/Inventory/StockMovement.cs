@@ -183,7 +183,8 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -195,6 +196,9 @@ public sealed class StockMovement
         }
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: true);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -206,7 +210,8 @@ public sealed class StockMovement
             StockMovementSourceType.Sale,
             saleId,
             utcNow,
-            actorId);
+            actorId,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement CustomerOrderDeduction(

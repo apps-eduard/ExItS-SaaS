@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 using Microsoft.EntityFrameworkCore;
 
@@ -198,6 +199,61 @@ public sealed class WasteLossRepository : IWasteLossRepository
         }
 
         return WasteLossNumbers.Format(businessDateUtc, value);
+    }
+
+    public async Task<InventoryDocumentCostPeriodAggregate> AggregatePostedCostForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string posted = nameof(WasteLossStatus.Posted);
+        const string complete = nameof(ProductionCostStatus.Complete);
+        const string partial = nameof(ProductionCostStatus.Partial);
+        const string unavailable = nameof(ProductionCostStatus.Unavailable);
+
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var query = _db.WasteLosses.AsNoTracking()
+            .Where(w => w.OrganizationId == organizationId.Value
+                        && w.Status == posted
+                        && w.OccurredAtUtc >= from
+                        && w.OccurredAtUtc < exclusiveTo);
+
+        if (branchId is not null)
+        {
+            query = query.Where(w => w.BranchId == branchId.Value);
+        }
+
+        var row = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                PostedCount = g.Count(),
+                CompleteCostCount = g.Count(w => w.CostStatus == complete),
+                PartialCostCount = g.Count(w => w.CostStatus == partial),
+                UnavailableCostCount = g.Count(w => w.CostStatus == unavailable),
+                KnownCost = g.Where(w => w.CostStatus != unavailable)
+                    .Sum(w => (decimal?)w.TotalCostSnapshot) ?? 0m
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (row is null)
+        {
+            return new InventoryDocumentCostPeriodAggregate(0m, 0, 0, 0, 0);
+        }
+
+        return new InventoryDocumentCostPeriodAggregate(
+            SaleMoney.RoundMoney(row.KnownCost),
+            row.PostedCount,
+            row.CompleteCostCount,
+            row.PartialCostCount,
+            row.UnavailableCostCount);
     }
 
     private static long SequenceLockKey(PosOrganizationId organizationId, DateOnly businessDateUtc)

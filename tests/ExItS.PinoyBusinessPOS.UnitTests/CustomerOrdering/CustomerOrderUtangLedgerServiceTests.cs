@@ -2,13 +2,16 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.CustomerOrdering;
 
@@ -208,7 +211,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
     }
 
     private static CustomerOrderUtangLedgerService CreateService(FakeSales sales, FakeCredits credits) =>
-        new(sales, credits, new FakeCustomers());
+        new(sales, credits, new FakeCustomers(), new InventoryCostResolver(new CostResolverInventoryStub()));
 
     private static CustomerOrder CreateOrder(
         CustomerOrderStatus status,
@@ -383,8 +386,17 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             SaleStatus? status = null,
             SalePaymentMethod? paymentMethod = null,
             Guid? customerId = null,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new SalePeriodAggregate(0, 0, 0, 0, 0, 0, 0, 0));
+
+        public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SaleCostPeriodAggregate(0, 0, 0, 0, 0m));
 
         public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
             PosOrganizationId organizationId,

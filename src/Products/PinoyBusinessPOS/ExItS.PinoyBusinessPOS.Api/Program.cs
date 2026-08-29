@@ -424,6 +424,8 @@ builder.Services.AddHttpClient("LocalValidationPlatformApi", (sp, client) =>
 builder.Services.AddHostedService<PosLocalValidationHostedService>();
 builder.Services.AddScoped<RevokePosRole>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.OperationalReportService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ProfitabilityReportService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Inventory.InventoryCostResolver>();
 
 var app = builder.Build();
 

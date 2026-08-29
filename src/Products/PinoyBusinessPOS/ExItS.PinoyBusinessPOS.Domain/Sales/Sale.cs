@@ -62,6 +62,18 @@ public sealed class Sale
     /// <summary>Total commercial discount taken off this sale.</summary>
     public decimal DiscountTotal { get; }
 
+    /// <summary>
+    /// COGS completeness for snapshotted line costs. Legacy sales without stored cost status are
+    /// rehydrated as <see cref="ProductionCostStatus.Unavailable"/>.
+    /// </summary>
+    public ProductionCostStatus CostStatus { get; }
+
+    /// <summary>
+    /// Sum of known line COGS when <see cref="CostStatus"/> is Partial or Complete; null when Unavailable.
+    /// When Complete, equals full sale COGS at checkout.
+    /// </summary>
+    public decimal? TotalCostSnapshot { get; }
+
     /// <summary>Sales tax amount recorded at checkout. Zero for legacy sales and when tax is not configured.</summary>
     public decimal TaxAmount { get; }
 
@@ -143,6 +155,8 @@ public sealed class Sale
         decimal grossSubtotal,
         decimal lineDiscountTotal,
         decimal saleDiscountTotal,
+        ProductionCostStatus costStatus,
+        decimal? totalCostSnapshot,
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
@@ -175,6 +189,8 @@ public sealed class Sale
         LineDiscountTotal = lineDiscountTotal;
         SaleDiscountTotal = saleDiscountTotal;
         DiscountTotal = SaleMoney.RoundMoney(lineDiscountTotal + saleDiscountTotal);
+        CostStatus = costStatus;
+        TotalCostSnapshot = totalCostSnapshot;
         AmountTendered = amountTendered;
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
@@ -336,6 +352,8 @@ public sealed class Sale
             ? SaleStatus.AwaitingPayment
             : SaleStatus.Completed;
 
+        var (costStatus, totalCostSnapshot) = ComputeCostSnapshot(saleLines);
+
         return new Sale(
             saleId,
             organizationId,
@@ -348,6 +366,8 @@ public sealed class Sale
             grossSubtotal,
             discountResult.LineDiscountTotal,
             discountResult.SaleDiscountTotal,
+            costStatus,
+            totalCostSnapshot,
             tendered,
             change,
             reference,
@@ -418,6 +438,8 @@ public sealed class Sale
         var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
         resolvedBuyer.EnsureConsistentWith(customerId);
 
+        var (costStatus, totalCostSnapshot) = ComputeCostSnapshot(saleLines);
+
         return new Sale(
             saleId,
             organizationId,
@@ -430,6 +452,8 @@ public sealed class Sale
             grossSubtotal,
             lineDiscountTotal: 0m,
             saleDiscountTotal: 0m,
+            costStatus,
+            totalCostSnapshot,
             amountTendered: null,
             changeAmount: null,
             gcashReference: null,
@@ -542,6 +566,16 @@ public sealed class Sale
             .Select(l => new SaleDiscountLineBasis(l.LineNumber, l.ProductId, l.GrossLineTotal))
             .ToArray();
 
+    private static (ProductionCostStatus CostStatus, decimal? TotalCostSnapshot) ComputeCostSnapshot(
+        IReadOnlyList<SaleLine> lines)
+    {
+        var costStatus = ProductionCostStatuses.FromMaterialCosts(lines.Select(l => l.UnitCostSnapshot).ToList());
+        decimal? totalCost = costStatus == ProductionCostStatus.Unavailable
+            ? null
+            : SaleMoney.RoundMoney(lines.Where(l => l.LineCostSnapshot is not null).Sum(l => l.LineCostSnapshot!.Value));
+        return (costStatus, totalCost);
+    }
+
     /// <summary>
     /// Completes an electronic sale after an authoritative Paid payment attempt.
     /// Idempotent when already Completed with the same payment method.
@@ -621,7 +655,9 @@ public sealed class Sale
         decimal lineDiscountTotal = 0m,
         decimal saleDiscountTotal = 0m,
         IEnumerable<SaleCommercialDiscountAdjustment>? commercialDiscounts = null,
-        IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null) =>
+        IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null,
+        ProductionCostStatus costStatus = ProductionCostStatus.Unavailable,
+        decimal? totalCostSnapshot = null) =>
         new(
             id,
             organizationId,
@@ -636,6 +672,8 @@ public sealed class Sale
             grossSubtotal ?? subtotal,
             lineDiscountTotal,
             saleDiscountTotal,
+            costStatus,
+            totalCostSnapshot,
             amountTendered,
             changeAmount,
             gcashReference,

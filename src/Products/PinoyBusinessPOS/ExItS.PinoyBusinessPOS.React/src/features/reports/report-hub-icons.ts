@@ -10,6 +10,7 @@ import {
   PackagePlus,
   Receipt,
   RotateCcw,
+  TrendingUp,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const operationalReportIcons: Record<OperationalReportKind, LucideIcon> = {
   "sales-by-payment": Wallet,
   "sales-by-product": Package,
   returns: RotateCcw,
+  profitability: TrendingUp,
   shifts: Clock3,
   "cash-variance": Wallet,
   "inventory-status": Boxes,

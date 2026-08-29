@@ -554,6 +554,25 @@ public sealed class InventoryTransferUseCaseTests
         public Task<bool> HasSaleReturnRestockAsync(PosOrganizationId organizationId, SaleReturnId saleReturnId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyDictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> GetMovementSummariesAsync(PosOrganizationId organizationId, IReadOnlyCollection<CatalogProductId> productIds, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
     }
 
     private sealed class InMemoryTransfers : IInventoryTransferRepository

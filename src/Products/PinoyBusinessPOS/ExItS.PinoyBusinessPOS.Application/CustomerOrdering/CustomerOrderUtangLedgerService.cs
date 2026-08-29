@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -29,15 +30,18 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
     private readonly ISaleRepository _sales;
     private readonly ICreditEntryRepository _credits;
     private readonly IPOSCustomerRepository _customers;
+    private readonly InventoryCostResolver _costResolver;
 
     public CustomerOrderUtangLedgerService(
         ISaleRepository sales,
         ICreditEntryRepository credits,
-        IPOSCustomerRepository customers)
+        IPOSCustomerRepository customers,
+        InventoryCostResolver costResolver)
     {
         _sales = sales;
         _credits = credits;
         _customers = customers;
+        _costResolver = costResolver;
     }
 
     public async Task PostOnCompleteIfNeededAsync(
@@ -87,6 +91,9 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
             .ConfigureAwait(false);
 
         var lineDrafts = CustomerOrderUtangSettlementLines.FromOrder(order);
+        lineDrafts = await _costResolver
+            .EnrichDraftsWithCostsAsync(orgId, lineDrafts, cancellationToken)
+            .ConfigureAwait(false);
         var creditEntryId = CustomerOrderUtangSettlementIds.CreditEntryIdForOrder(order.Id);
         var buyerParty = SaleBuyerParty.ExternalCustomer(order.CustomerParty.DisplayNameSnapshot);
 

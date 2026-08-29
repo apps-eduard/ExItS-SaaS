@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, ChevronDown, Plus, RotateCcw } from "lucide-react";
-import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
+import { canProcessReturn, canVoidSale, canViewReports } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
   getSale,
@@ -16,6 +16,7 @@ import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { productionCostStatusLabelKey } from "@/features/inventory/production-labels";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -48,6 +49,7 @@ export function TransactionSummaryPage() {
 
   const allowVoid = canVoidSale(sessionGrant);
   const allowProcessReturn = canProcessReturn(sessionGrant);
+  const allowViewCost = canViewReports(sessionGrant);
 
   const saleQuery = useQuery({
     queryKey: ["pos-sale", workspaceScope?.organizationId, workspaceScope?.branchId, saleId],
@@ -89,6 +91,13 @@ export function TransactionSummaryPage() {
   const sale = saleQuery.data;
   const isVoided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
   const paymentLabel = formatPaymentMethodLabel(sale.paymentMethod);
+  const costComplete = sale.costStatus === "Complete";
+  const showCostSection =
+    allowViewCost &&
+    (sale.costStatus != null ||
+      sale.totalCostSnapshot != null ||
+      sale.grossProfit != null ||
+      sale.lines.some((line) => line.lineCostSnapshot != null || line.unitCostSnapshot != null));
 
   async function onVoid() {
     if (!workspaceScope || !saleId || voiding || isVoided) {
@@ -284,6 +293,14 @@ export function TransactionSummaryPage() {
                         : null}
                     </span>
                   ) : null}
+                  {allowViewCost && line.lineCostSnapshot != null ? (
+                    <span
+                      className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid={`summary-line-cost-${line.lineNumber}`}
+                    >
+                      {t("summary.lineCost")}: <MoneyDisplay amount={line.lineCostSnapshot} />
+                    </span>
+                  ) : null}
                 </span>
                 <MoneyDisplay amount={line.lineTotal} />
               </li>
@@ -316,6 +333,53 @@ export function TransactionSummaryPage() {
             </p>
           ) : null}
         </div>
+
+        {showCostSection ? (
+          <div
+            className="mt-4 space-y-1 border-t border-border pt-3 text-[length:var(--exits-text-sm)]"
+            data-testid="summary-cost-section"
+          >
+            <p className="m-0 font-semibold">{t("summary.costSection")}</p>
+            {sale.costStatus ? (
+              <p className="m-0 flex justify-between gap-2">
+                <span className="text-muted">{t("summary.costStatus")}</span>
+                <span data-testid="summary-cost-status">
+                  {t(productionCostStatusLabelKey(sale.costStatus))}
+                </span>
+              </p>
+            ) : null}
+            {costComplete && sale.totalCostSnapshot != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-total-cost">
+                <span className="text-muted">{t("summary.totalCost")}</span>
+                <MoneyDisplay amount={sale.totalCostSnapshot} />
+              </p>
+            ) : sale.totalCostSnapshot != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-known-cost">
+                <span className="text-muted">{t("summary.knownCost")}</span>
+                <MoneyDisplay amount={sale.totalCostSnapshot} />
+              </p>
+            ) : null}
+            {costComplete && sale.grossProfit != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-gross-profit">
+                <span className="text-muted">{t("summary.grossProfit")}</span>
+                <MoneyDisplay amount={sale.grossProfit} />
+              </p>
+            ) : null}
+            {costComplete && sale.grossMarginPercent != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-gross-margin">
+                <span className="text-muted">{t("summary.grossMargin")}</span>
+                <span>{sale.grossMarginPercent.toFixed(1)}%</span>
+              </p>
+            ) : null}
+            {!costComplete && sale.costStatus ? (
+              <p className="m-0 text-muted" data-testid="summary-cost-incomplete">
+                {sale.costStatus === "Partial"
+                  ? t("summary.costIncompletePartial")
+                  : t("summary.costIncompleteUnavailable")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </Card>
 
       {!isVoided && allowVoid ? (

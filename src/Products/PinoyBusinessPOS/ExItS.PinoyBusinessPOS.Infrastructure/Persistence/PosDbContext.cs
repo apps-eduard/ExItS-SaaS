@@ -1024,6 +1024,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_stock_reservation",
                     "stock_reservation_state IN ('None', 'Reserved', 'Released', 'Consumed')");
+                tb.HasCheckConstraint(
+                    "ck_sales_cost_status",
+                    "cost_status IS NULL OR cost_status IN ('Complete', 'Partial', 'Unavailable')");
             });
 
             entity.HasKey(e => e.Id);
@@ -1093,6 +1096,12 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("void_reason")
                 .HasMaxLength(Sale.VoidReasonMaxLength);
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.CostStatus)
+                .HasColumnName("cost_status")
+                .HasMaxLength(16);
+            entity.Property(e => e.TotalCostSnapshot)
+                .HasColumnName("total_cost_snapshot")
+                .HasPrecision(18, 2);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -1242,6 +1251,12 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.MultiplierToBaseSnapshot)
                 .HasColumnName("multiplier_to_base_snapshot")
                 .HasPrecision(18, 3);
+            entity.Property(e => e.UnitCostSnapshot)
+                .HasColumnName("unit_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.LineCostSnapshot)
+                .HasColumnName("line_cost_snapshot")
+                .HasPrecision(18, 2);
 
             entity.HasIndex(e => new { e.SaleId, e.LineNumber })
                 .IsUnique()

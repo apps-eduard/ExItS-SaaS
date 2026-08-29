@@ -579,6 +579,25 @@ public sealed class PersonalStorefrontAuthorizationTests
             IReadOnlyCollection<CatalogProductId> productIds,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
     }
 
     private sealed class FakeProducts(Action? onList = null) : ICatalogProductRepository

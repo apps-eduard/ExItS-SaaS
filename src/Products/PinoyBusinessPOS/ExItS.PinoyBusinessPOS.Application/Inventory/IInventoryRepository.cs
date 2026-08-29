@@ -201,6 +201,15 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch variant of <see cref="GetLatestAcquisitionUnitCostAsync"/> — one query, latest cost per product.
+    /// Products with no acquisition cost are omitted from the dictionary.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,
         SaleReturnId saleReturnId,

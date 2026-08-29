@@ -42,7 +42,9 @@ internal static class SaleEntityMapper
                 l.MultiplierToBaseSnapshot,
                 l.GrossLineTotal,
                 l.LineDiscountAmount,
-                l.SaleDiscountAllocatedAmount))
+                l.SaleDiscountAllocatedAmount,
+                l.UnitCostSnapshot,
+                l.LineCostSnapshot))
             .ToList();
 
         var discounts = discountRecords?
@@ -111,7 +113,11 @@ internal static class SaleEntityMapper
             record.LineDiscountTotal,
             record.SaleDiscountTotal,
             discounts,
-            priceOverrides);
+            priceOverrides,
+            record.CostStatus is null
+                ? ProductionCostStatus.Unavailable
+                : ProductionCostStatuses.Parse(record.CostStatus),
+            record.TotalCostSnapshot);
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -148,7 +154,9 @@ internal static class SaleEntityMapper
             VoidedAtUtc = sale.VoidedAtUtc,
             VoidedBy = sale.VoidedBy,
             VoidReason = sale.VoidReason,
-            UpdatedAtUtc = sale.UpdatedAtUtc
+            UpdatedAtUtc = sale.UpdatedAtUtc,
+            CostStatus = ProductionCostStatuses.ToCode(sale.CostStatus),
+            TotalCostSnapshot = sale.TotalCostSnapshot
         };
 
     public static SaleLineRecord ToRecord(SaleLine line) =>
@@ -173,7 +181,9 @@ internal static class SaleEntityMapper
             SellingUnitId = line.SellingUnitId?.Value,
             SellingUnitNameSnapshot = line.SellingUnitNameSnapshot,
             EnteredQuantity = line.EnteredQuantity,
-            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
+            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot,
+            UnitCostSnapshot = line.UnitCostSnapshot,
+            LineCostSnapshot = line.LineCostSnapshot
         };
 
     public static SaleCommercialDiscountAdjustmentRecord ToRecord(SaleCommercialDiscountAdjustment adjustment) =>

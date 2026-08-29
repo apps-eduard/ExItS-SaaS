@@ -219,5 +219,24 @@ public sealed class MultiBranchCustomerCommerceTests
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> GetMovementSummariesAsync(PosOrganizationId organizationId, IReadOnlyCollection<CatalogProductId> productIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<bool> HasCustomerOrderDeductionAsync(PosOrganizationId organizationId, CustomerOrderId orderId, CatalogProductId productId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
     }
 }

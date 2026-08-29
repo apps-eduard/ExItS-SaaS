@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using Microsoft.EntityFrameworkCore;
@@ -230,9 +231,17 @@ internal sealed class SaleRepository : ISaleRepository
         SaleStatus? status = null,
         SalePaymentMethod? paymentMethod = null,
         Guid? customerId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
-        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc, status, paymentMethod, customerId);
+        var query = BuildReportHeaderQuery(
+            organizationId,
+            fromDateUtc,
+            toDateUtc,
+            status,
+            paymentMethod,
+            customerId,
+            branchId);
         const string completed = nameof(SaleStatus.Completed);
         const string voided = nameof(SaleStatus.Voided);
         var cash = SalePaymentMethods.ToCode(SalePaymentMethod.Cash);
@@ -322,13 +331,69 @@ internal sealed class SaleRepository : ISaleRepository
             .ToList();
     }
 
+    public async Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string completed = nameof(SaleStatus.Completed);
+        const string complete = nameof(ProductionCostStatus.Complete);
+        const string partial = nameof(ProductionCostStatus.Partial);
+        const string unavailable = nameof(ProductionCostStatus.Unavailable);
+
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var query = _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.Status == completed
+                        && s.RecordedAtUtc >= from
+                        && s.RecordedAtUtc < exclusiveTo);
+
+        if (branchId is not null)
+        {
+            query = query.Where(s => s.BranchId == branchId.Value);
+        }
+
+        var row = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                CompletedCount = g.Count(),
+                CompleteCostCount = g.Count(s => s.CostStatus == complete),
+                PartialCostCount = g.Count(s => s.CostStatus == partial),
+                UnavailableCostCount = g.Count(s => s.CostStatus == unavailable || s.CostStatus == null),
+                KnownCogsSum = g.Where(s => s.CostStatus == complete || s.CostStatus == partial)
+                    .Sum(s => (decimal?)s.TotalCostSnapshot) ?? 0m
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (row is null)
+        {
+            return new SaleCostPeriodAggregate(0, 0, 0, 0, 0m);
+        }
+
+        return new SaleCostPeriodAggregate(
+            row.CompletedCount,
+            row.CompleteCostCount,
+            row.PartialCostCount,
+            row.UnavailableCostCount,
+            SaleMoney.RoundMoney(row.KnownCogsSum));
+    }
+
     private IQueryable<SaleRecord> BuildReportHeaderQuery(
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
         SaleStatus? status = null,
         SalePaymentMethod? paymentMethod = null,
-        Guid? customerId = null)
+        Guid? customerId = null,
+        Guid? branchId = null)
     {
         var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         var exclusiveTo = new DateTimeOffset(
@@ -355,6 +420,11 @@ internal sealed class SaleRepository : ISaleRepository
         if (customerId is not null)
         {
             query = query.Where(s => s.CustomerId == customerId.Value);
+        }
+
+        if (branchId is not null)
+        {
+            query = query.Where(s => s.BranchId == branchId.Value);
         }
 
         return query;

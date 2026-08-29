@@ -158,6 +158,7 @@ public static class DomainErrorCodes
     public const string InvalidSaleLineQuantity = "pos.sale_line.quantity.invalid";
     public const string InvalidSaleLineUnitPrice = "pos.sale_line.unit_price.invalid";
     public const string InvalidSaleLineNameSnapshot = "pos.sale_line.name.invalid";
+    public const string InvalidSaleLineUnitCostSnapshot = "pos.sale_line.unit_cost_snapshot.invalid";
     public const string SaleUtangCustomerRequired = "pos.sale.utang.customer_required";
     public const string SaleUtangLinkageInvalid = "pos.sale.utang.linkage_invalid";
     public const string SaleUtangTotalMustBePositive = "pos.sale.utang.total_must_be_positive";

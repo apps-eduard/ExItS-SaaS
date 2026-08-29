@@ -678,6 +678,24 @@ public sealed class ProductionUseCaseTests
             return Task.FromResult(cost);
         }
 
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListLowStockAsync(PosOrganizationId organizationId, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<InventoryAccount>> ListAllAccountsAsync(PosOrganizationId organizationId, CancellationToken cancellationToken = default) => throw new NotSupportedException();

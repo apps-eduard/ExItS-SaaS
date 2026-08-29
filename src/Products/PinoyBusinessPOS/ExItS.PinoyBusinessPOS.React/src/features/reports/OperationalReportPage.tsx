@@ -10,6 +10,7 @@ import {
   getInventoryStatusReport,
   getOperationalOverview,
   getProductUtangSummaryReport,
+  getProfitabilityReport,
   getPurchaseOutstandingReport,
   getPurchasingSummaryReport,
   getReturnsReport,
@@ -42,8 +43,13 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { productionCostStatusLabelKey } from "@/features/inventory/production-labels";
 
 type Line = { label: string; value: React.ReactNode };
+
+function formatMarginPercent(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
 
 function titleKeyFor(kind: OperationalReportKind): MessageKey {
   const map: Record<OperationalReportKind, MessageKey> = {
@@ -52,6 +58,7 @@ function titleKeyFor(kind: OperationalReportKind): MessageKey {
     "sales-by-payment": "reports.salesByPayment",
     "sales-by-product": "reports.salesByProduct",
     returns: "reports.returns",
+    profitability: "reports.profitability",
     shifts: "reports.shiftSummary",
     "cash-variance": "reports.cashVariance",
     "inventory-status": "reports.inventoryStatus",
@@ -159,6 +166,79 @@ async function loadLines(
           value: <MoneyDisplay amount={d.refundAmount} />,
         },
       ];
+    }
+    case "profitability": {
+      const d = await getProfitabilityReport(workspace, range, signal);
+      const cogsComplete = d.cogsStatus === "Complete";
+      const lines: Line[] = [
+        { label: t("reports.metric.net"), value: <MoneyDisplay amount={d.netSales} /> },
+      ];
+
+      if (cogsComplete && d.totalCogs != null) {
+        lines.push({
+          label: t("reports.metric.cogs"),
+          value: <MoneyDisplay amount={d.totalCogs} />,
+        });
+        if (d.grossProfit != null) {
+          lines.push({
+            label: t("reports.metric.grossProfit"),
+            value: <MoneyDisplay amount={d.grossProfit} />,
+          });
+        }
+        if (d.grossMarginPercent != null) {
+          lines.push({
+            label: t("reports.metric.grossMargin"),
+            value: formatMarginPercent(d.grossMarginPercent),
+          });
+        }
+      } else {
+        lines.push({
+          label: t("reports.metric.knownCogs"),
+          value: <MoneyDisplay amount={d.knownCogs} />,
+        });
+        lines.push({
+          label: t("reports.metric.costIncomplete"),
+          value:
+            d.cogsStatus === "Partial"
+              ? t("reports.costIncompletePartial")
+              : t("reports.costIncompleteUnavailable"),
+        });
+      }
+
+      lines.push(
+        {
+          label: t("reports.metric.wasteLossCost"),
+          value: (
+            <>
+              <MoneyDisplay amount={d.wasteLossKnownCost} />
+              <span className="ml-1 text-muted">
+                ({t(productionCostStatusLabelKey(d.wasteLossCostStatus))})
+              </span>
+            </>
+          ),
+        },
+        {
+          label: t("reports.metric.stockUseCost"),
+          value: (
+            <>
+              <MoneyDisplay amount={d.stockUseKnownCost} />
+              <span className="ml-1 text-muted">
+                ({t(productionCostStatusLabelKey(d.stockUseCostStatus))})
+              </span>
+            </>
+          ),
+        },
+        {
+          label: t("reports.metric.costCompleteness"),
+          value: formatMarginPercent(d.costCompletenessPercent),
+        },
+        {
+          label: t("reports.metric.completedSales"),
+          value: String(d.completedSaleCount),
+        },
+      );
+
+      return lines;
     }
     case "shifts": {
       const d = await getShiftSummaryReport(workspace, range, signal);

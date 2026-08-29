@@ -659,6 +659,43 @@ internal sealed class InventoryRepository : IInventoryRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return new Dictionary<Guid, decimal?>();
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var opening = nameof(StockMovementType.OpeningStock);
+        var purchase = nameof(StockMovementType.PurchaseReceipt);
+        var direct = nameof(StockMovementType.DirectPurchaseReceipt);
+        var productionOutput = nameof(StockMovementType.ProductionOutput);
+
+        var rows = await _db.StockMovements.AsNoTracking()
+            .Where(m =>
+                m.OrganizationId == organizationId.Value
+                && ids.Contains(m.ProductId)
+                && m.UnitCost != null
+                && (m.MovementType == opening
+                    || m.MovementType == purchase
+                    || m.MovementType == direct
+                    || m.MovementType == productionOutput))
+            .GroupBy(m => m.ProductId)
+            .Select(g => new
+            {
+                ProductId = g.Key,
+                UnitCost = g.OrderByDescending(x => x.RecordedAtUtc).Select(x => x.UnitCost).FirstOrDefault()
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(r => r.ProductId, r => r.UnitCost);
+    }
+
     public Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,
         SaleReturnId saleReturnId,

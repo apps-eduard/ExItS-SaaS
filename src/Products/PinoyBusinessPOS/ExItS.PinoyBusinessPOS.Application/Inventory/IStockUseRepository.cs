@@ -30,4 +30,11 @@ public interface IStockUseRepository
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         CancellationToken cancellationToken = default);
+
+    Task<InventoryDocumentCostPeriodAggregate> AggregatePostedCostForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
 }

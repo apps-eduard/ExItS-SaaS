@@ -26,6 +26,14 @@ public sealed record SalePaymentAggregate(string PaymentMethod, decimal Total, i
 
 public sealed record SaleDailyAggregate(DateOnly Day, decimal Amount, int Count);
 
+/// <summary>Completed-sale COGS aggregates for profitability reporting (excludes voided sales).</summary>
+public sealed record SaleCostPeriodAggregate(
+    int CompletedCount,
+    int CompleteCostCount,
+    int PartialCostCount,
+    int UnavailableCostCount,
+    decimal KnownCogsSum);
+
 public interface ISaleRepository
 {
     Task<Sale?> GetByIdAsync(
@@ -69,6 +77,7 @@ public interface ISaleRepository
         SaleStatus? status = null,
         SalePaymentMethod? paymentMethod = null,
         Guid? customerId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -87,6 +96,17 @@ public interface ISaleRepository
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Completed-sale COGS header aggregates for profitability (voided sales excluded).
+    /// Legacy null <c>cost_status</c> counts as Unavailable.
+    /// </summary>
+    Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

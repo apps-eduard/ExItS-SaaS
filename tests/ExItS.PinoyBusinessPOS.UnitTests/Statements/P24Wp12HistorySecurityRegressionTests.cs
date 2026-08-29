@@ -516,7 +516,9 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Guid? customerId = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task<SalePeriodAggregate> AggregatePeriodAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, SaleStatus? status = null, SalePaymentMethod? paymentMethod = null, Guid? customerId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<SalePeriodAggregate> AggregatePeriodAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, SaleStatus? status = null, SalePaymentMethod? paymentMethod = null, Guid? customerId = null, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<SaleDailyAggregate>> AggregateCompletedByDayAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 

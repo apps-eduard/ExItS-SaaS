@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Reporting;
@@ -176,11 +177,16 @@ public sealed class SaleReportAggregateEquivalenceTests
             SaleStatus? status = null,
             SalePaymentMethod? paymentMethod = null,
             Guid? customerId = null,
+            Guid? branchId = null,
             CancellationToken cancellationToken = default)
         {
             var loaded = await ListForReportAsync(
                     organizationId, fromDateUtc, toDateUtc, status, paymentMethod, null, customerId, cancellationToken)
                 .ConfigureAwait(false);
+            if (branchId is not null)
+            {
+                loaded = loaded.Where(s => s.BranchId?.Value == branchId).ToList();
+            }
             var completed = loaded.Where(s => s.Status == SaleStatus.Completed).ToList();
             var voided = loaded.Where(s => s.Status == SaleStatus.Voided).ToList();
             return new SalePeriodAggregate(
@@ -192,6 +198,35 @@ public sealed class SaleReportAggregateEquivalenceTests
                 SaleMoney.RoundMoney(completed.Where(s => s.PaymentMethod == SalePaymentMethod.ManualGCash).Sum(s => s.Total)),
                 SaleMoney.RoundMoney(completed.Where(s => s.PaymentMethod == SalePaymentMethod.Utang).Sum(s => s.Total)),
                 completed.Count(s => s.PaymentMethod == SalePaymentMethod.Utang));
+        }
+
+        public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            var exclusiveTo = new DateTimeOffset(toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            var q = items.Where(s =>
+                s.OrganizationId == organizationId
+                && s.RecordedAtUtc >= from
+                && s.RecordedAtUtc < exclusiveTo
+                && s.Status == SaleStatus.Completed);
+            if (branchId is not null)
+            {
+                q = q.Where(s => s.BranchId?.Value == branchId);
+            }
+
+            var list = q.ToList();
+            var complete = list.Count(s => s.CostStatus == ProductionCostStatus.Complete);
+            var partial = list.Count(s => s.CostStatus == ProductionCostStatus.Partial);
+            var unavailable = list.Count(s => s.CostStatus == ProductionCostStatus.Unavailable);
+            var known = SaleMoney.RoundMoney(list
+                .Where(s => s.CostStatus is ProductionCostStatus.Complete or ProductionCostStatus.Partial)
+                .Sum(s => s.TotalCostSnapshot ?? 0m));
+            return Task.FromResult(new SaleCostPeriodAggregate(list.Count, complete, partial, unavailable, known));
         }
 
         public async Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(

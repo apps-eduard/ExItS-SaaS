@@ -354,6 +354,25 @@ public sealed class SaleReturnStockServiceTests
         public Task<bool> HasInventoryTransferMovementAsync(PosOrganizationId organizationId, InventoryTransferId transferId, CatalogProductId productId, StockMovementType movementType, InventoryLotId? lotId = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> GetMovementSummariesAsync(PosOrganizationId organizationId, IReadOnlyCollection<CatalogProductId> productIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
     }
 
     private sealed class FakeProducts(IReadOnlyList<CatalogProduct> items) : ICatalogProductRepository
@@ -391,6 +410,23 @@ public sealed class SaleReturnStockServiceTests
         public Task<bool> HasReturnsForSaleAsync(PosOrganizationId organizationId, SaleId saleId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<IReadOnlyDictionary<Guid, SaleLineReturnTotals>> GetPriorTotalsBySaleLineAsync(PosOrganizationId organizationId, SaleId saleId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<decimal> SumCashRefundsForShiftAsync(PosOrganizationId organizationId, Guid cashierShiftId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public Task<SaleReturnCogsPeriodAggregate> AggregateReturnCogsForPeriodAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SaleReturnCogsPeriodAggregate(0m, false));
+
+        public Task<decimal> SumRefundsForPeriodAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
         public Task<SaleReturn> CreateAsync(PosOrganizationId organizationId, DateOnly businessDateUtc, Func<string, SaleReturn> createReturn, Func<SaleReturn, CancellationToken, Task>? afterReturnCreated = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 

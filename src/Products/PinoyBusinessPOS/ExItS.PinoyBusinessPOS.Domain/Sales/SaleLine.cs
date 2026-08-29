@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -23,7 +24,8 @@ public sealed record SaleLineDraft(
     ProductUnitId? SellingUnitId = null,
     string? SellingUnitNameSnapshot = null,
     decimal? EnteredQuantity = null,
-    decimal? MultiplierToBaseSnapshot = null);
+    decimal? MultiplierToBaseSnapshot = null,
+    decimal? UnitCostSnapshot = null);
 
 /// <summary>
 /// One immutable line of a recorded sale. Product name, SKU, barcode, unit of measure, selling mode,
@@ -89,6 +91,15 @@ public sealed class SaleLine
     /// <summary>Multiplier from selling unit to base. Null/absent with legacy lines; treat as 1.</summary>
     public decimal? MultiplierToBaseSnapshot { get; }
 
+    /// <summary>
+    /// Optional acquisition cost per base unit snapshotted at checkout from latest authoritative
+    /// acquisition cost only. Immutable after create; never derived from selling price.
+    /// </summary>
+    public decimal? UnitCostSnapshot { get; }
+
+    /// <summary>RoundMoney(UnitCostSnapshot × base Quantity) when unit cost is known.</summary>
+    public decimal? LineCostSnapshot { get; }
+
     private SaleLine(
         SaleLineId id,
         SaleId saleId,
@@ -109,7 +120,9 @@ public sealed class SaleLine
         ProductUnitId? sellingUnitId,
         string? sellingUnitNameSnapshot,
         decimal? enteredQuantity,
-        decimal? multiplierToBaseSnapshot)
+        decimal? multiplierToBaseSnapshot,
+        decimal? unitCostSnapshot,
+        decimal? lineCostSnapshot)
     {
         Id = id;
         SaleId = saleId;
@@ -131,6 +144,8 @@ public sealed class SaleLine
         SellingUnitNameSnapshot = sellingUnitNameSnapshot;
         EnteredQuantity = enteredQuantity;
         MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
+        UnitCostSnapshot = unitCostSnapshot;
+        LineCostSnapshot = lineCostSnapshot;
     }
 
     internal static SaleLine Create(
@@ -180,6 +195,11 @@ public sealed class SaleLine
             multiplierSnapshot = draft.MultiplierToBaseSnapshot;
         }
 
+        var unitCost = NormalizeOptionalUnitCost(draft.UnitCostSnapshot);
+        decimal? lineCost = unitCost is null
+            ? null
+            : SaleMoney.RoundMoney(unitCost.Value * quantity);
+
         return new SaleLine(
             id ?? SaleLineId.New(),
             saleId,
@@ -200,7 +220,9 @@ public sealed class SaleLine
             draft.SellingUnitId,
             NormalizeOptionalSnapshot(draft.SellingUnitNameSnapshot, SellingUnitNameSnapshotMaxLength),
             enteredQuantity,
-            multiplierSnapshot);
+            multiplierSnapshot,
+            unitCost,
+            lineCost);
     }
 
     /// <summary>
@@ -259,7 +281,9 @@ public sealed class SaleLine
         decimal? multiplierToBaseSnapshot = null,
         decimal? grossLineTotal = null,
         decimal lineDiscountAmount = 0m,
-        decimal saleDiscountAllocatedAmount = 0m) =>
+        decimal saleDiscountAllocatedAmount = 0m,
+        decimal? unitCostSnapshot = null,
+        decimal? lineCostSnapshot = null) =>
         new(
             id,
             saleId,
@@ -282,7 +306,9 @@ public sealed class SaleLine
             sellingUnitId,
             sellingUnitNameSnapshot,
             enteredQuantity,
-            multiplierToBaseSnapshot);
+            multiplierToBaseSnapshot,
+            unitCostSnapshot,
+            lineCostSnapshot);
 
     /// <summary>
     /// Conversion pricing applies when entered qty + multiplier are present and the multiplier is not
@@ -423,5 +449,29 @@ public sealed class SaleLine
 
         var trimmed = value.Trim();
         return trimmed.Length > maxLength ? trimmed[..maxLength] : trimmed;
+    }
+
+    private static decimal? NormalizeOptionalUnitCost(decimal? unitCost)
+    {
+        if (unitCost is null)
+        {
+            return null;
+        }
+
+        if (unitCost.Value < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleLineUnitCostSnapshot,
+                "Unit cost snapshot cannot be negative.");
+        }
+
+        if (unitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleLineUnitCostSnapshot,
+                "Unit cost snapshot is too large.");
+        }
+
+        return SaleMoney.RoundMoney(unitCost.Value);
     }
 }

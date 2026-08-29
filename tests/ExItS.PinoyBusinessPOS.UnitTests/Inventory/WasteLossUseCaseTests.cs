@@ -587,6 +587,14 @@ public sealed class WasteLossUseCaseTests
             _sequence++;
             return Task.FromResult(WasteLossNumbers.Format(businessDateUtc, _sequence));
         }
+
+        public Task<InventoryDocumentCostPeriodAggregate> AggregatePostedCostForPeriodAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new InventoryDocumentCostPeriodAggregate(0m, 0, 0, 0, 0));
     }
 
     private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
@@ -715,6 +723,24 @@ public sealed class WasteLossUseCaseTests
             return Task.FromResult(cost);
         }
 
+        public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<Guid, decimal?>();
+            foreach (var productId in productIds)
+            {
+                var cost = await GetLatestAcquisitionUnitCostAsync(organizationId, productId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (cost is not null)
+                {
+                    result[productId.Value] = cost;
+                }
+            }
+
+            return result;
+        }
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListLowStockAsync(PosOrganizationId organizationId, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<InventoryAccount>> ListAllAccountsAsync(PosOrganizationId organizationId, CancellationToken cancellationToken = default) => throw new NotSupportedException();

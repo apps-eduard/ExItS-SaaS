@@ -84,8 +84,10 @@ public sealed class SaleQueryService
             take);
     }
 
-    public static PosSaleDto Map(Sale sale) =>
-        new(
+    public static PosSaleDto Map(Sale sale)
+    {
+        var profitability = SaleProfitability.Compute(sale);
+        return new(
             sale.Id.Value,
             sale.OrganizationId.Value,
             sale.SaleNumber,
@@ -119,7 +121,9 @@ public sealed class SaleQueryService
                     l.LineTotal,
                     l.GrossLineTotal,
                     l.LineDiscountAmount,
-                    l.SaleDiscountAllocatedAmount))
+                    l.SaleDiscountAllocatedAmount,
+                    l.UnitCostSnapshot,
+                    l.LineCostSnapshot))
                 .ToList(),
             sale.CustomerId?.Value,
             sale.LinkedCreditEntryId?.Value,
@@ -149,7 +153,12 @@ public sealed class SaleQueryService
                     })
                     .Where(o => o.LineNumber > 0)
                     .OrderBy(o => o.LineNumber)
-                    .ToList());
+                    .ToList(),
+            CostStatus: ProductionCostStatuses.ToCode(sale.CostStatus),
+            TotalCostSnapshot: sale.TotalCostSnapshot,
+            GrossProfit: profitability?.GrossProfit,
+            GrossMarginPercent: profitability?.GrossMarginPercent);
+    }
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -275,6 +284,7 @@ public sealed class CheckoutSale
     private readonly IPosOperationalSetupRepository _operationalSetups;
     private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
     private readonly IOfflinePriceAuthorityService _priceAuthorities;
+    private readonly InventoryCostResolver _costResolver;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -289,9 +299,11 @@ public sealed class CheckoutSale
         IPosOperationalSetupRepository operationalSetups,
         IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
         IOfflinePriceAuthorityService priceAuthorities,
+        InventoryCostResolver costResolver,
         IClock clock)
     {
         _priceAuthorities = priceAuthorities;
+        _costResolver = costResolver;
         _sales = sales;
         _products = products;
         _units = units;
@@ -491,6 +503,10 @@ public sealed class CheckoutSale
 
             var drafts = resolved.Value!.Drafts;
             var byId = resolved.Value!.ProductsById;
+
+            drafts = (await _costResolver
+                .EnrichDraftsWithCostsAsync(orgId, drafts, cancellationToken)
+                .ConfigureAwait(false)).ToList();
 
             var intentsResult = TryParseIntents(discounts);
             if (!intentsResult.IsSuccess)

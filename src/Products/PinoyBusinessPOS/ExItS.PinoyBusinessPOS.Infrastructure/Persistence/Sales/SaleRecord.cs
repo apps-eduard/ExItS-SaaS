@@ -34,5 +34,7 @@ internal sealed class SaleRecord
     public Guid? VoidedBy { get; set; }
     public string? VoidReason { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+    public string? CostStatus { get; set; }
+    public decimal? TotalCostSnapshot { get; set; }
     public uint Xmin { get; set; }
 }
