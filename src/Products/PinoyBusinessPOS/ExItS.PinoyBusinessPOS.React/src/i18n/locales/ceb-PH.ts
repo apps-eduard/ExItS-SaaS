@@ -1084,7 +1084,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.expirationDateRequired": "Gikinahanglan ang expiration date niining stock change.",
   "inventory.expirationEmpty": "Walay lots niining window",
   "inventory.expirationEmptyDetail": "Sulayi ang laing window o search, o susiha ang product inventory detail.",
-  "inventory.expirationLede": "Tan-awa ang expired ug near-expiry lots. Ang write-offs magpabilin sa inventory detail.",
+  "inventory.expirationLede":
+    "Tan-awa ang expired ug near-expiry lots. I-write off ang expired stock ngadto sa Waste / Loss kung naconfirm ang physical quantity.",
+  "inventory.viewProduct": "Tan-awa",
+  "inventory.writeOffExpired": "I-write off",
   "inventory.expirationTitle": "Mo-expire nga stock",
   "inventory.expiredQty": "Nag-expire",
   "inventory.expiryCountExpired": "Expired lots: {count}",
@@ -1275,8 +1278,21 @@ export const cebPH: Record<keyof typeof en, string> = {
   "wasteLoss.history": "Kasaysayan sa Waste / Loss",
   "wasteLoss.recordWasteLoss": "Irekord ang waste / loss",
   "wasteLoss.recordTitle": "Irekord ang Waste / Loss",
+  "wasteLoss.recordExpiredTitle": "Irekord ang expired stock",
   "wasteLoss.detailLede": "Stock nga na-write off isip waste o loss.",
   "wasteLoss.backList": "Balik sa Waste / Loss",
+  "wasteLoss.backToExpiration": "Balik sa Expiration",
+  "wasteLoss.lotLabel": "Lot",
+  "wasteLoss.expiredOn": "Expired",
+  "wasteLoss.availableInLot": "Available niining lot",
+  "wasteLoss.confirmPhysicalQuantity":
+    "I-confirm ang physical quantity sa dili pa irekord. Marekord ang gipili nga quantity isip expired waste.",
+  "wasteLoss.noStockRemainsInLot": "Wala nay stock niining lot.",
+  "wasteLoss.lotNoLongerAvailable": "Dili na available kini nga lot.",
+  "wasteLoss.lotNoLongerExpired":
+    "Dili na marked as expired kini nga lot. Susihon ang reason ug quantity sa dili pa irekord.",
+  "wasteLoss.expiredWriteOffHint":
+    "Naka-set sa Expired ang reason niining lot. Puwede nimo usbon kung mas angay ang laing waste reason.",
   "wasteLoss.reason": "Rason",
   "wasteLoss.reason.spoiled": "Spoiled",
   "wasteLoss.reason.expired": "Expired",

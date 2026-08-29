@@ -1084,7 +1084,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.expirationDateRequired": "Kinahanglan ang expiration date sa sini nga stock change.",
   "inventory.expirationEmpty": "Wala sing lots sa sini nga window",
   "inventory.expirationEmptyDetail": "Tilawi ang laing window ukon search, ukon usisaa ang product inventory detail.",
-  "inventory.expirationLede": "Tan-awa ang expired kag near-expiry lots. Ang write-offs magpabilin sa inventory detail.",
+  "inventory.expirationLede":
+    "Tan-awa ang expired kag near-expiry lots. I-write off ang expired stock sa Waste / Loss kung naconfirm ang physical quantity.",
+  "inventory.viewProduct": "Tan-awa",
+  "inventory.writeOffExpired": "I-write off",
   "inventory.expirationTitle": "Mo-expire nga stock",
   "inventory.expiredQty": "Nag-expire",
   "inventory.expiryCountExpired": "Expired lots: {count}",
@@ -1275,8 +1278,21 @@ export const hilPH: Record<keyof typeof en, string> = {
   "wasteLoss.history": "Kasaysayan sang Waste / Loss",
   "wasteLoss.recordWasteLoss": "Irekord ang waste / loss",
   "wasteLoss.recordTitle": "Irekord ang Waste / Loss",
+  "wasteLoss.recordExpiredTitle": "Irekord ang expired stock",
   "wasteLoss.detailLede": "Stock nga na-write off bilang waste ukon loss.",
   "wasteLoss.backList": "Balik sa Waste / Loss",
+  "wasteLoss.backToExpiration": "Balik sa Expiration",
+  "wasteLoss.lotLabel": "Lot",
+  "wasteLoss.expiredOn": "Expired",
+  "wasteLoss.availableInLot": "Available sa sini nga lot",
+  "wasteLoss.confirmPhysicalQuantity":
+    "I-confirm ang physical quantity antes irekord. Marekord ang ginpili nga quantity bilang expired waste.",
+  "wasteLoss.noStockRemainsInLot": "Wala na sing stock sa sini nga lot.",
+  "wasteLoss.lotNoLongerAvailable": "Indi na available ang sini nga lot.",
+  "wasteLoss.lotNoLongerExpired":
+    "Indi na marked as expired ang sini nga lot. Usisaa ang reason kag quantity antes irekord.",
+  "wasteLoss.expiredWriteOffHint":
+    "Naka-set sa Expired ang reason para sa sini nga lot. Pwede mo usbon kung mas nabagay ang iban nga waste reason.",
   "wasteLoss.reason": "Rason",
   "wasteLoss.reason.spoiled": "Spoiled",
   "wasteLoss.reason.expired": "Expired",

@@ -322,7 +322,7 @@ test.describe("RMAP-08 lots / expiry", () => {
     await expect(page.getByTestId(`expiring-lot-${LOT_EXPIRED_ID}`)).toBeVisible();
     await expect(page.getByTestId(`expiring-lot-${LOT_NEAR_ID}`)).toHaveCount(0);
 
-    await page.getByTestId(`expiring-lot-${LOT_EXPIRED_ID}`).click();
+    await page.getByTestId(`expiring-lot-view-${LOT_EXPIRED_ID}`).click();
     await expect(page.getByTestId("inventory-detail-page")).toBeVisible();
     await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Good");
     await expect(page.getByTestId("inventory-expiry-totals")).toContainText("Near expiry");
@@ -465,7 +465,7 @@ test.describe("RMAP-08 lots / expiry", () => {
       await expect(page.getByText(LONG_NAME).first()).toBeVisible();
       await assertNoHorizontalOverflow(page);
 
-      await page.getByTestId(`expiring-lot-${LOT_NEAR_ID}`).click();
+      await page.getByTestId(`expiring-lot-view-${LOT_NEAR_ID}`).click();
       await expect(page.getByTestId("inventory-detail-page")).toBeVisible();
       await assertMinTouchTarget(page.getByTestId("inventory-adjust"));
       await assertMinTouchTarget(page.getByTestId("inventory-disable"));

@@ -22,7 +22,7 @@ Durable **Waste / Loss** inventory document for intentional write-off of unusabl
 | WASTE_LOSS_CONCURRENCY | Same inventory product reservation locks as Sale / StockUse / Production |
 | WASTE_LOSS_IDEMPOTENCY | Client `WasteLossId` + `inventory.waste_loss` idempotency scope |
 | WASTE_LOSS_LOT_POLICY | Exact lot required when `TracksExpiration`; `ConsumeSpecificAsync` only (never FEFO) |
-| EXPIRED_STOCK_QUICK_FLOW | DEFERRED |
+| EXPIRED_STOCK_QUICK_FLOW | IMPLEMENTED (POS-EXPIRED-STOCK-WASTE-QUICK-FLOW-01; React prefill only) |
 | WASTE_LOSS_COST_SOURCE | Authoritative acquisition / ProductionOutput UnitCost via inventory cost resolver; never SellingPrice |
 | WASTE_LOSS_COST_STATUS | `Complete` / `Partial` / `Unavailable` (Production cost semantics) |
 | SELLING_PRICE_USED_AS_COST | NO |
@@ -76,7 +76,7 @@ Durable **Waste / Loss** inventory document for intentional write-off of unusabl
 
 ## Explicit deferrals
 
-- Automatic expired-stock disposal
+- Automatic expired-stock disposal (quick flow is manual only; see POS-EXPIRED-STOCK-WASTE-QUICK-FLOW-01)
 - Automatic production-waste generation
 - Full accounting / expense ledger / profit dashboard rewrite
 - Offline Waste/Loss mutation queue — ONLINE_ONLY

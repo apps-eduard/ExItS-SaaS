@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { canManageInventory } from "@/access/pos-capabilities";
 import { listExpiringLots, type PosExpiringLotDto } from "@/api/pos/pos-inventory-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -11,6 +12,7 @@ import { BackgroundRefreshIndicator } from "@/components/exits/loading/Backgroun
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
+import { buildExpiredWasteQuickFlowHref } from "@/features/inventory/expired-waste-quick-flow";
 import {
   EXPIRY_WINDOWS,
   addLocalDays,
@@ -72,7 +74,8 @@ function windowLabel(code: ExpiryWindowCode, t: ReturnType<typeof useI18n>["t"])
 
 export function InventoryExpirationPage() {
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const allowWriteOff = canManageInventory(sessionGrant);
   const [windowCode, setWindowCode] = useState<ExpiryWindowCode>("Days30");
   const [customFrom, setCustomFrom] = useState(() => formatLocalDateOnly());
   const [customTo, setCustomTo] = useState(() => addLocalDays(formatLocalDateOnly(), 30));
@@ -183,10 +186,7 @@ export function InventoryExpirationPage() {
         />
 
         {windowCode === "Custom" ? (
-          <div
-            className="inventory-expiry-custom"
-            data-testid="inventory-expiry-custom-range"
-          >
+          <div className="inventory-expiry-custom" data-testid="inventory-expiry-custom-range">
             <label className="inventory-expiry-custom__field">
               <span className="inventory-expiry-custom__label">{t("inventory.customFrom")}</span>
               <input
@@ -263,14 +263,16 @@ export function InventoryExpirationPage() {
           const label = resolveLotExpiryLabel(lot.expiryStatus, lot.expirationDate);
           const tone = statusTone(label);
           const statusText = formatLotStatus(lot, t);
+          const isExpired = label.kind === "expired";
+          const canWriteOff =
+            allowWriteOff && isExpired && Number.isFinite(lot.quantityOnHand) && lot.quantityOnHand > 0;
           return (
             <li key={lot.lotId}>
-              <Link
-                className="inventory-expiring-lot block min-w-0 no-underline"
-                to={`/inventory/${lot.productId}`}
+              <div
+                className="inventory-expiring-lot flex min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
                 data-testid={`expiring-lot-${lot.lotId}`}
               >
-                <div className="inventory-expiring-lot__row">
+                <div className="inventory-expiring-lot__row flex min-w-0 items-start justify-between gap-2">
                   <span className="inventory-expiring-lot__name min-w-0 truncate font-semibold text-foreground">
                     {lot.productName}
                   </span>
@@ -288,7 +290,35 @@ export function InventoryExpirationPage() {
                   {lot.lotNumber ? ` · ${lot.lotNumber}` : ""} · {t("inventory.onHand")}:{" "}
                   {lot.quantityOnHand}
                 </span>
-              </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="min-h-11"
+                    data-testid={`expiring-lot-view-${lot.lotId}`}
+                  >
+                    <Link to={`/inventory/${lot.productId}`}>{t("inventory.viewProduct")}</Link>
+                  </Button>
+                  {canWriteOff ? (
+                    <Button
+                      asChild
+                      className="min-h-11"
+                      data-testid={`expiring-lot-write-off-${lot.lotId}`}
+                    >
+                      <Link
+                        to={buildExpiredWasteQuickFlowHref({
+                          productId: lot.productId,
+                          lotId: lot.lotId,
+                          quantity: lot.quantityOnHand,
+                          source: "expiration",
+                        })}
+                      >
+                        {t("inventory.writeOffExpired")}
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </li>
           );
         })}

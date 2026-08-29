@@ -1084,7 +1084,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.expirationDateRequired": "Gimasapul ti expiration date iti daytoy a stock change.",
   "inventory.expirationEmpty": "Awan ti lots iti daytoy a window",
   "inventory.expirationEmptyDetail": "Padasen ti laing window wenno search, wenno kitaen ti product inventory detail.",
-  "inventory.expirationLede": "Kitaen ti expired ken near-expiry lots. Ti write-offs magpabilin iti inventory detail.",
+  "inventory.expirationLede":
+    "Kitaen ti expired ken near-expiry lots. I-write off ti expired stock iti Waste / Loss no ma-confirm ti physical quantity.",
+  "inventory.viewProduct": "Kitaen",
+  "inventory.writeOffExpired": "I-write off",
   "inventory.expirationTitle": "Mo-expire a stock",
   "inventory.expiredQty": "Nag-expire",
   "inventory.expiryCountExpired": "Expired lots: {count}",
@@ -1275,8 +1278,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "wasteLoss.history": "Historiana ti Waste / Loss",
   "wasteLoss.recordWasteLoss": "I-record ti waste / loss",
   "wasteLoss.recordTitle": "I-record ti Waste / Loss",
+  "wasteLoss.recordExpiredTitle": "I-record ti expired stock",
   "wasteLoss.detailLede": "Stock a na-write off kas waste wenno loss.",
   "wasteLoss.backList": "Agsubli iti Waste / Loss",
+  "wasteLoss.backToExpiration": "Agsubli iti Expiration",
+  "wasteLoss.lotLabel": "Lot",
+  "wasteLoss.expiredOn": "Expired",
+  "wasteLoss.availableInLot": "Available iti daytoy a lot",
+  "wasteLoss.confirmPhysicalQuantity":
+    "I-confirm ti physical quantity sakbay nga i-record. Ma-record ti napili a kaadu kas expired waste.",
+  "wasteLoss.noStockRemainsInLot": "Awanen ti stock iti daytoy a lot.",
+  "wasteLoss.lotNoLongerAvailable": "Saanen a available daytoy a lot.",
+  "wasteLoss.lotNoLongerExpired":
+    "Saanen a marked as expired daytoy a lot. Kitaen ti reason ken quantity sakbay nga i-record.",
+  "wasteLoss.expiredWriteOffHint":
+    "Naka-set iti Expired ti reason para iti daytoy a lot. Mabalinmo nga baliwan no nasaysayaat ti sabali a waste reason.",
   "wasteLoss.reason": "Rason",
   "wasteLoss.reason.spoiled": "Spoiled",
   "wasteLoss.reason.expired": "Expired",

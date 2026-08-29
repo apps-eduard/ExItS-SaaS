@@ -73,7 +73,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | PAYMENTS_STATUS | **IMPLEMENTED** (manual) | Cash/ManualGCash/Utang real. `FakePaymentGateway` only for Card/GCash attempts — **do not ship as production GCash**. |
 | STOCK_USE_STATUS | **IMPLEMENTED** | Domain/API/React/void/FEFO/cost snapshot; ONLINE_ONLY. Cost null when no acquisition. |
 | PRODUCTION_STATUS | **IMPLEMENTED** | Setups/runs/void/material cost/output UnitCost; cycle LIMITED; nested Made→Made LATER; capacity DEFERRED. |
-| WASTE_LOSS_STATUS | **IMPLEMENTED** | Exact lots, reasons, void, cost; expired quick-flow **DEFERRED**. |
+| WASTE_LOSS_STATUS | **IMPLEMENTED** | Exact lots, reasons, void, cost; expired quick-flow **IMPLEMENTED** (POS-EXPIRED-STOCK-WASTE-QUICK-FLOW-01). |
 | COST_PROFIT_STATUS | **IMPLEMENTED** (accuracy PARTIAL) | SaleLine/Sale snapshots; profitability report; Waste/StockUse separate. **LAST_AUTHORITATIVE** (not lot FIFO). Product profitability ranking DEFERRED. Legacy sales Unavailable (no backfill). |
 | REPORTING_STATUS | **PARTIAL** | Classic + operational + profitability present. Most aggregates **org-wide** while shell is branch-bound (misread risk). Discount period totals missing. Product GP ranking deferred. Export deferred. |
 | DEVICE_STATUS | **PARTIAL** | Register/devices UI + runtime policy; sell readiness gate. Not a POS `UtangCapability` (admin experience). PWA device context optional. |
@@ -107,7 +107,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | B2B | Retail checkout of Business Customers | DEFERRED | — | — | — | — | LATER | B2B report | After identity polish |
 | Payments | Real Card/GCash | PARTIAL/lab | FakePaymentGateway | not on floor | — | **P0 if mis-shipped** | LATER (auth) | DI FakePaymentGateway | Keep ManualGCash |
 | Expenses | CRUD | PARTIAL | API | classic report only | — | Low | IMPORTANT | ExpenseEndpoints; no feature CRUD routes | Expenses React CRUD |
-| Waste | Expired quick review | DEFERRED | lots API | no quick flow | — | Low | IMPORTANT | Waste report | Optional later |
+| Waste | Expired quick review | **IMPLEMENTED** | Waste/Loss create prefill | Expiration → Write off → exact lot | targeted PASS | Low | IMPORTANT | this report | Maintain |
 | Offline | Org Web mutations | DEFERRED | ONLINE_ONLY | ONLINE_ONLY | policy | — | NOT_NEEDED on Web | offline matrix | Preserve for native |
 | Accounting | GL / operating profit | DEFERRED | — | — | — | — | NOT_NEEDED | cost report | Out of scope |
 | I18n | Middle-dot encoding | UNSAFE/PARTIAL | — | `?` in strings | inventory tests fail | Low | **P2** | `en.ts` movement labels | Fix encoding |
@@ -197,7 +197,7 @@ UNRELATED_TEST_FAILURES ≈ 76 (personal/platform/session)
 | Class | Items |
 |-------|--------|
 | MVP_REQUIRED | React Stock Count; React Transfers (if multi-branch); branch-report honesty/contract; suite harness repair for sell-floor; keep ManualGCash-only payments |
-| IMPORTANT | B2B identity display reconcile; discount period report fields; Expenses CRUD UI; expired→waste quick flow; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
+| IMPORTANT | B2B identity display reconcile; discount period report fields; Expenses CRUD UI; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
 | LATER | Product profitability ranking; lot-layer FIFO COGS; nested BOM; real Card/GCash provider; B2B retail checkout; native offline activation |
 | NOT_NEEDED | GL, operating profit, labor/overhead, enterprise manufacturing, Org Web offline money |
 
@@ -267,13 +267,13 @@ RESPONSIVE_UX_STATUS=PARTIAL
 ```
 P0_GAPS=FakePaymentGateway must not be production GCash/Card; tenancy fail-closed discipline
 P1_GAPS=React Stock Count; React Transfers; branch vs org report honesty; org session/sell-floor harness
-P2_GAPS=B2B identity asymmetry; discount period report; Expenses CRUD; expired waste quick flow; i18n encoding; CustomerOrder COGS UnitCost; inventory write-off permission coarseness
+P2_GAPS=B2B identity asymmetry; discount period report; Expenses CRUD; i18n encoding; CustomerOrder COGS UnitCost; inventory write-off permission coarseness
 P3_GAPS=Product profitability rank; nested production; list stock valuation; nav crowding; exports
 ```
 
 ```
 MVP_REQUIRED_GAPS=Stock Count UI; Transfer UI (multi-branch); branch-report contract; harness repair; payment honesty
-IMPORTANT_GAPS=B2B identity UX; discount report fields; Expenses CRUD; expired quick flow; i18n middle-dot fix
+IMPORTANT_GAPS=B2B identity UX; discount report fields; Expenses CRUD; i18n middle-dot fix
 LATER_GAPS=Product GP ranking; lot FIFO; real Card/GCash; B2B retail checkout; native offline
 NOT_NEEDED_FOR_TARGET_MARKET=GL; operating profit; labor/overhead; Org Web offline money; enterprise manufacturing
 ```
