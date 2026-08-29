@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
 import { AUTH_LOGOUT_PATH } from "@/api/platform/browser-session";
 import { markPendingRemoteLogout } from "@/session/pending-remote-logout";
@@ -22,28 +23,18 @@ describe("reconnect after offline logout", () => {
         const url = String(input);
         const method = init?.method ?? "GET";
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-logout" }),
-            text: async () => "",
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-logout" });
         }
         if (url.endsWith(AUTH_LOGOUT_PATH) && method === "POST") {
-          return { ok: false, status: 503, json: async () => ({ detail: "logout unavailable" }), text: async () => "" } as Response;
+          return jsonResponse(503, { detail: "logout unavailable" });
         }
         if (url.includes("/api/v1/platform/auth/me")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               userId: USER,
               username: "kizy",
               displayName: "Kizy",
               accountClass: "Organization",
-            }),
-            text: async () => "",
-          } as Response;
+            });
         }
         throw new Error(`Unexpected fetch: ${url}`);
       }),

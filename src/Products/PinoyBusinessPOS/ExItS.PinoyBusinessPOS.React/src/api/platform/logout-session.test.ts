@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
 import { AUTH_LOGOUT_PATH } from "@/api/platform/browser-session";
 import { logoutSession } from "@/api/platform/platform-auth-client";
@@ -33,22 +34,12 @@ describe("logoutSession", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-logout" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-logout" });
       }
       if (url.endsWith(AUTH_LOGOUT_PATH)) {
         expect(init?.method).toBe("POST");
         expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-logout");
-        return {
-          ok: true,
-          status: 204,
-          json: async () => null,
-          text: async () => "",
-        } as Response;
+        return jsonResponse(204, null);
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -64,20 +55,10 @@ describe("logoutSession", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf" });
       }
       if (url.endsWith(AUTH_LOGOUT_PATH)) {
-        return {
-          ok: false,
-          status: 401,
-          json: async () => ({ detail: "session invalid" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(401, { detail: "session invalid" });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -92,32 +73,17 @@ describe("logoutSession", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: `csrf-${logoutAttempts + 1}` }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: `csrf-${logoutAttempts + 1}` });
       }
       if (url.endsWith(AUTH_LOGOUT_PATH)) {
         logoutAttempts += 1;
         if (logoutAttempts === 1) {
-          return {
-            ok: false,
-            status: 400,
-            json: async () => ({
+          return jsonResponse(400, {
               errorCode: PlatformAntiforgeryDefaults.invalidErrorCode,
               detail: "antiforgery",
-            }),
-            text: async () => "",
-          } as Response;
+            });
         }
-        return {
-          ok: true,
-          status: 204,
-          json: async () => null,
-          text: async () => "",
-        } as Response;
+        return jsonResponse(204, null);
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -131,23 +97,13 @@ describe("logoutSession", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf" });
       }
       if (url.endsWith(AUTH_LOGOUT_PATH)) {
-        return {
-          ok: false,
-          status: 403,
-          json: async () => ({
+        return jsonResponse(403, {
             errorCode: "application.auth.account_scope_denied",
             detail: "Forbidden",
-          }),
-          text: async () => "",
-        } as Response;
+          });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });
@@ -162,20 +118,10 @@ describe("logoutSession", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf" });
       }
       if (url.endsWith(AUTH_LOGOUT_PATH)) {
-        return {
-          ok: false,
-          status: 500,
-          json: async () => ({ detail: "logout unavailable" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(500, { detail: "logout unavailable" });
       }
       throw new Error(`Unexpected fetch: ${url}`);
     });

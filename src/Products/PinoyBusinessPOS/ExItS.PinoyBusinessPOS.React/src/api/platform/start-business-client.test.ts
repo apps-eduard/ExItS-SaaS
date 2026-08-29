@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import {
   getPersonalProfile,
@@ -18,18 +19,10 @@ describe("start-business-client", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("/api/v1/platform/antiforgery/token")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
-            text: async () => "",
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf" });
         }
         expect(url).toContain("/api/v1/personal/onboarding/business-types");
-        return {
-          ok: true,
-          status: 200,
-          json: async () => [
+        return jsonResponse(200, [
             {
               Id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
               Code: "retail",
@@ -38,9 +31,7 @@ describe("start-business-client", () => {
               Status: "Active",
               SortOrder: 10,
             },
-          ],
-          text: async () => "",
-        } as Response;
+          ]);
       }),
     );
 
@@ -60,23 +51,17 @@ describe("start-business-client", () => {
   it("loads personal profile for contact prefill", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async () =>
-          ({
-            ok: true,
-            status: 200,
-            json: async () => ({
-              UserIdentityId: "11111111-1111-1111-1111-111111111111",
-              AccountProfileId: "22222222-2222-2222-2222-222222222222",
-              Username: "ana",
-              DisplayName: "Ana",
-              Email: "ana@example.com",
-              AccountClass: "Personal",
-              Status: "Active",
-              Phone: "+639171234567",
-            }),
-            text: async () => "",
-          }) as Response,
+      vi.fn(async () =>
+        jsonResponse(200, {
+          UserIdentityId: "11111111-1111-1111-1111-111111111111",
+          AccountProfileId: "22222222-2222-2222-2222-222222222222",
+          Username: "ana",
+          DisplayName: "Ana",
+          Email: "ana@example.com",
+          AccountClass: "Personal",
+          Status: "Active",
+          Phone: "+639171234567",
+        }),
       ),
     );
 
@@ -89,12 +74,7 @@ describe("start-business-client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/v1/platform/antiforgery/token")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf" });
       }
       expect(url).toContain("/api/v1/personal/start-business");
       expect(init?.method).toBe("POST");
@@ -102,10 +82,7 @@ describe("start-business-client", () => {
       expect(body.displayName).toBe("Ana Store");
       expect(body.startAsTrial).toBe(true);
       expect(body.payNow).toBe(false);
-      return {
-        ok: true,
-        status: 201,
-        json: async () => ({
+      return jsonResponse(201, {
           OrganizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
           MembershipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
           OrganizationAccountProfileId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
@@ -120,9 +97,7 @@ describe("start-business-client", () => {
           PosOwnerRoleGranted: true,
           ProductCode: "pinoy-business-pos",
           PrimaryBranchId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
-        }),
-        text: async () => "",
-      } as Response;
+        });
     });
     vi.stubGlobal("fetch", fetchMock);
 

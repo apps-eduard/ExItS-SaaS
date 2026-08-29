@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   closePersonalDebtRelationship,
   confirmPersonalUtangEntry,
@@ -17,10 +18,7 @@ describe("personal-utang-client", () => {
   it("parses contact list payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
+      vi.fn(async () => (jsonResponse(200, [
           {
             Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
             DisplayName: "Ana",
@@ -30,9 +28,7 @@ describe("personal-utang-client", () => {
             Status: "Active",
             CreatedAtUtc: "2026-08-21T00:00:00Z",
           },
-        ],
-        text: async () => "",
-      })),
+        ]))),
     );
 
     const contacts = await listPersonalContacts();
@@ -47,10 +43,7 @@ describe("personal-utang-client", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("/relationships/lent")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 Id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                 Perspective: "Lent",
@@ -64,15 +57,10 @@ describe("personal-utang-client", () => {
                 IsSharedLedger: true,
                 IsPrivate: false,
               },
-            ],
-            text: async () => "",
-          };
+            ]);
         }
         if (url.includes("/history")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 Id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
                 RelationshipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -92,11 +80,9 @@ describe("personal-utang-client", () => {
                 SettlementBalanceSnapshot: null,
                 IsSettlement: false,
               },
-            ],
-            text: async () => "",
-          };
+            ]);
         }
-        return { ok: false, status: 404, json: async () => ({}), text: async () => "" };
+        return jsonResponse(404, {});
       }),
     );
 
@@ -118,19 +104,11 @@ describe("personal-utang-client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/antiforgery/token")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-          text: async (): Promise<string> => "",
-        };
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
       expect(init?.method ?? "GET").toBe("POST");
       if (url.includes("/confirm")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
+        return jsonResponse(200, {
             id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
             relationshipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
             entryType: "Payment",
@@ -145,14 +123,9 @@ describe("personal-utang-client", () => {
             canCancel: false,
             affectsBalance: true,
             isSharedLedger: true,
-          }),
-          text: async () => "",
-        };
+          });
       }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
           relationshipId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
           entryType: "Payment",
@@ -168,9 +141,7 @@ describe("personal-utang-client", () => {
           canCancel: false,
           affectsBalance: false,
           isSharedLedger: true,
-        }),
-        text: async () => "",
-      };
+        });
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -198,22 +169,14 @@ describe("personal-utang-client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/antiforgery/token")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-          text: async (): Promise<string> => "",
-        };
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
       expect(init?.method ?? "GET").toBe("POST");
       const body = init?.body ? JSON.parse(String(init.body)) : {};
       if (url.includes("/settle")) {
         expect(body.settlementEntryId).toBe("dddddddd-dddd-dddd-dddd-dddddddddddd");
         expect(body.expectedVersion).toBe(4);
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
+        return jsonResponse(200, {
             outcome: "Completed",
             relationship: {
               id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -241,15 +204,10 @@ describe("personal-utang-client", () => {
               isSettlement: true,
               affectsBalance: true,
             },
-          }),
-          text: async () => "",
-        };
+          });
       }
       if (url.includes("/close")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
+        return jsonResponse(200, {
             Outcome: "Closed",
             Relationship: {
               Id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -262,11 +220,9 @@ describe("personal-utang-client", () => {
               IsSharedLedger: false,
               IsPrivate: true,
             },
-          }),
-          text: async () => "",
-        };
+          });
       }
-      return { ok: false, status: 404, json: async () => ({}), text: async () => "" };
+      return jsonResponse(404, {});
     });
     vi.stubGlobal("fetch", fetchMock);
 

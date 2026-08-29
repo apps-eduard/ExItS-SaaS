@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -31,23 +32,15 @@ function createSessionFetchMock(
     const method = init?.method ?? "GET";
 
     if (url.includes("/pos-devices/authorize") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           posDeviceId: deviceId,
           branchId,
           installationDeviceId: installId,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/cashier-shifts/current") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           shiftId,
           organizationId: orgId,
           shiftNumber: "S-1",
@@ -64,42 +57,22 @@ function createSessionFetchMock(
           openedBy: "dddddddd-dddd-dddd-dddd-dddddddddddd",
           createdAtUtc: "2026-08-21T01:00:00Z",
           updatedAtUtc: "2026-08-21T01:00:00Z",
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/catalog/categories") || url.includes("/catalog/products")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ items: [], totalCount: 0, page: 1, pageSize: 50 }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, { items: [], totalCount: 0, page: 1, pageSize: 50 });
     }
 
     if (url.includes("/api/v1/platform/antiforgery/token")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
     }
 
     if (url.includes("/api/v1/platform/auth/me") && method === "GET") {
       if (!authenticated) {
-        return {
-          ok: false,
-          status: 401,
-          json: async () => ({ errorCode: "application.auth.session_invalid" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(401, { errorCode: "application.auth.session_invalid" });
       }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           sessionId: "11111111-1111-1111-1111-111111111111",
           username: "cashier",
           displayName: "Cashier One",
@@ -107,31 +80,21 @@ function createSessionFetchMock(
           accountClass: "Organization",
           homeOrganizationId: orgId,
           organizationContextLocked: true,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/platform/auth/organizations") && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
+      return jsonResponse(200, [
           {
             organizationId: orgId,
             displayName: "Kizy Store",
             slug: "kizy-store",
           },
-        ],
-        text: async () => "",
-      } as Response;
+        ]);
     }
 
     if (url.includes(`/organizations/${orgId}/branches`) && method === "GET") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
+      return jsonResponse(200, [
           {
             id: branchId,
             organizationId: orgId,
@@ -140,78 +103,51 @@ function createSessionFetchMock(
             isPrimary: true,
             status: "Active",
           },
-        ],
-        text: async () => "",
-      } as Response;
+        ]);
     }
 
     if (url.includes("/api/v1/platform/auth/organization-context") && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+      return jsonResponse(204, null);
     }
 
     if (url.includes(`/organizations/${orgId}/branch-context`) && method === "PUT") {
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+      return jsonResponse(204, null);
     }
 
     if (url.includes("/api/v1/platform/auth/token") && method === "POST") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           accessToken: "in-memory-only-access-token",
           productAccessAllowed: true,
           mappedPosRoleCode: "Cashier",
           productLocalRoleCode: "Cashier",
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/pos-api/api/v1/pos/operational-branch") && method === "PUT") {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           organizationId: orgId,
           branchId,
           name: "Main Branch",
           deviceMatchesSelectedBranch: false,
           deviceBoundBranchId: null,
           openCashierShiftPresent: false,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/platform/auth/logout") && method === "POST") {
       expect(new Headers(init?.headers).get("X-XSRF-TOKEN")).toBe("csrf-token");
       if (logoutMode === "fail") {
-        return {
-          ok: false,
-          status: 500,
-          json: async () => ({ detail: "logout unavailable" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(500, { detail: "logout unavailable" });
       }
       if (logoutMode === "already_signed_out") {
         authenticated = false;
-        return {
-          ok: false,
-          status: 401,
-          json: async () => ({ detail: "session invalid" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(401, { detail: "session invalid" });
       }
       authenticated = false;
-      return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+      return jsonResponse(204, null);
     }
 
-    return {
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: "not mocked" }),
-      text: async () => "",
-    } as Response;
+    return jsonResponse(404, { detail: "not mocked" });
   });
 }
 

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   getCustomerLinkStatus,
   listCustomerLinkRequestHistory,
@@ -24,19 +25,14 @@ describe("customer-link-status-client", () => {
         expect(String(input)).toContain(
           `/api/v1/organizations/${organizationId}/customers/${businessCustomerId}/link-status`,
         );
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({
+        return jsonResponse(200, {
             BusinessCustomerId: businessCustomerId,
             OrganizationId: organizationId,
             Status: "Pending",
             LinkedUserIdentityId: null,
             LatestLinkRequestId: requestId,
             LatestLinkRequestStatus: "Pending",
-          }),
-          text: async () => "",
-        };
+          });
       }),
     );
 
@@ -50,19 +46,14 @@ describe("customer-link-status-client", () => {
   it("parses Linked status with linked user identity", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
+      vi.fn(async () => (jsonResponse(200, {
           businessCustomerId,
           organizationId,
           status: "Linked",
           linkedUserIdentityId: userId,
           latestLinkRequestId: requestId,
           latestLinkRequestStatus: "Active",
-        }),
-        text: async () => "",
-      })),
+        }))),
     );
 
     const status = await getCustomerLinkStatus(organizationId, businessCustomerId);
@@ -77,10 +68,7 @@ describe("customer-link-status-client", () => {
         expect(String(input)).toContain(
           `/api/v1/organizations/${organizationId}/customers/${businessCustomerId}/link-requests`,
         );
-        return {
-          ok: true,
-          status: 200,
-          json: async () => [
+        return jsonResponse(200, [
             {
               Id: requestId,
               Status: "Pending",
@@ -92,9 +80,7 @@ describe("customer-link-status-client", () => {
               CreatedAtUtc: "2026-08-18T08:00:00Z",
               ResolvedAtUtc: "2026-08-19T12:00:00Z",
             },
-          ],
-          text: async () => "",
-        };
+          ]);
       }),
     );
 

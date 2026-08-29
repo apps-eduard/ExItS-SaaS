@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
@@ -16,19 +17,11 @@ function createPersonalFetchMock(userId = personalUserId) {
     const url = String(input);
 
     if (url.includes("/api/v1/platform/antiforgery/token")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
     }
 
     if (url.includes("/api/v1/platform/auth/me")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           sessionId: userId,
           userId,
           username: "ana",
@@ -38,25 +31,15 @@ function createPersonalFetchMock(userId = personalUserId) {
           accountClass: "Personal",
           homeOrganizationId: null,
           organizationContextLocked: false,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/platform/auth/organizations")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/dashboard")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           userIdentityId: userId,
           accountProfileId: personalProfileId,
           accountClass: "Personal",
@@ -66,9 +49,7 @@ function createPersonalFetchMock(userId = personalUserId) {
           totalLentBalance: 0,
           totalBorrowedBalance: 0,
           pendingConfirmationCount: 0,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (
@@ -79,20 +60,10 @@ function createPersonalFetchMock(userId = personalUserId) {
       url.includes("/api/v1/personal/notifications") ||
       url.includes("/api/v1/personal/ownership")
     ) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => (url.includes("linked-merchants") ? { items: [], page: 1, pageSize: 50, totalCount: 0 } : []),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, (url.includes("linked-merchants") ? { items: [], page: 1, pageSize: 50, totalCount: 0 } : []));
     }
 
-    return {
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: `unmocked ${url}` }),
-      text: async () => "",
-    } as Response;
+    return jsonResponse(404, { detail: `unmocked ${url}` });
   });
 }
 

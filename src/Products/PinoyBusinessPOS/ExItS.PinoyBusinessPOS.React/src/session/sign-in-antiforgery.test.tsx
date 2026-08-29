@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,11 +33,7 @@ describe("sign-in antiforgery preservation", () => {
         const url = String(input);
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
           expect(init?.credentials).toBe("include");
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
         }
         throw new Error(`Unexpected fetch: ${url}`);
       }),
@@ -55,38 +52,26 @@ describe("sign-in antiforgery preservation", () => {
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
           antiforgeryBootstrapCount += 1;
           expect(init?.credentials).toBe("include");
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               headerName: "X-XSRF-TOKEN",
               token: `csrf-${antiforgeryBootstrapCount}`,
-            }),
-          } as Response;
+            });
         }
         if (url.includes("/api/v1/platform/auth/login") && init?.method === "POST") {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               sessionId: "22222222-2222-2222-2222-222222222222",
               userId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
               username: "owner",
               accountClass: "Organization",
-            }),
-          } as Response;
+            });
         }
         if (url.includes("/api/v1/platform/auth/me")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               sessionId: "22222222-2222-2222-2222-222222222222",
               userId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
               username: "owner",
               accountClass: "Organization",
-            }),
-          } as Response;
+            });
         }
         throw new Error(`Unexpected fetch: ${url}`);
       }),

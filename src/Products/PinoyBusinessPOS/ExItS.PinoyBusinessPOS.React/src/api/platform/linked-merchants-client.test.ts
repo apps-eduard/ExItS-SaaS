@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   getLinkedMerchantOrderingCapability,
   listLinkedMerchants,
@@ -18,10 +19,7 @@ describe("linked-merchants-client", () => {
   it("parses PascalCase linked merchant page payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
+      vi.fn(async () => (jsonResponse(200, {
           Items: [
             {
               LinkedCustomerId: linkedCustomerId,
@@ -38,9 +36,7 @@ describe("linked-merchants-client", () => {
           TotalCount: 1,
           Page: 1,
           PageSize: 20,
-        }),
-        text: async () => "",
-      })),
+        }))),
     );
 
     const page = await listLinkedMerchants(1, 20);
@@ -52,17 +48,12 @@ describe("linked-merchants-client", () => {
   it("parses ordering capability payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
+      vi.fn(async () => (jsonResponse(200, {
           OrganizationId: organizationId,
           CanCustomerOrder: true,
           CanCustomerDelivery: true,
           OrganizationDisplayName: "Corner Store",
-        }),
-        text: async () => "",
-      })),
+        }))),
     );
 
     const capability = await getLinkedMerchantOrderingCapability(organizationId);

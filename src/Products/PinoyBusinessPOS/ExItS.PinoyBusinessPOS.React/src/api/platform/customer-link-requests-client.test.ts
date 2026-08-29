@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   acceptCustomerLinkRequest,
   declineCustomerLinkRequest,
@@ -20,10 +21,7 @@ describe("customer-link-requests-client", () => {
   it("parses PascalCase pending link request payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
+      vi.fn(async () => (jsonResponse(200, [
           {
             Id: requestId,
             OrganizationId: orgId,
@@ -34,9 +32,7 @@ describe("customer-link-requests-client", () => {
             ExpiresAtUtc: "2026-08-27T00:00:00Z",
             TargetPublicUserId: "EXITS-ANA",
           },
-        ],
-        text: async () => "",
-      })),
+        ]))),
     );
 
     const items = await listPendingCustomerLinkRequests();
@@ -51,10 +47,7 @@ describe("customer-link-requests-client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       expect(url).toContain("/api/v1/personal/customer-link-requests/history");
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [
+      return jsonResponse(200, [
           {
             Id: requestId,
             OrganizationId: orgId,
@@ -65,9 +58,7 @@ describe("customer-link-requests-client", () => {
             ExpiresAtUtc: "2026-08-27T00:00:00Z",
             TargetPublicUserId: "EXITS-ANA",
           },
-        ],
-        text: async () => "",
-      };
+        ]);
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -84,23 +75,13 @@ describe("customer-link-requests-client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/antiforgery/token")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-          text: async () => "",
-        };
+        return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
       }
       expect(init?.method).toBe("POST");
       expect(url).toMatch(
         /\/customer-link-requests\/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\/(accept|decline)/,
       );
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({}),
-        text: async () => "",
-      };
+      return jsonResponse(200, {});
     });
     vi.stubGlobal("fetch", fetchMock);
 

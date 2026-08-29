@@ -13,6 +13,7 @@ import { AppProviders } from "@/app/providers";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
+import { jsonResponse } from "@/test/session-context";
 import { InvitationsPage } from "@/features/personal/InvitationsPage";
 import { NotificationsPage } from "@/features/personal/NotificationsPage";
 import { PeoplePage } from "@/features/personal/PeoplePage";
@@ -60,14 +61,6 @@ const pendingConnection: PersonalConnectionRequestDto = {
   expiresAtUtc: "2026-09-01T00:00:00.000Z",
   direction: "Sent",
 };
-
-function jsonResponse(status: number, body: unknown) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  };
-}
 
 function withAntiforgery(
   handler: (input: RequestInfo | URL, init?: RequestInit) => ReturnType<typeof jsonResponse> | Promise<ReturnType<typeof jsonResponse>>,

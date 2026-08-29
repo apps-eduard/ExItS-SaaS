@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   classifyTodoDue,
   filterAndSortTodosForTab,
@@ -42,10 +43,7 @@ describe("personal-todo-client", () => {
   it("parses PascalCase todo list payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
+      vi.fn(async () => (jsonResponse(200, [
           {
             Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
             OwnerUserIdentityId: ownerId,
@@ -62,9 +60,7 @@ describe("personal-todo-client", () => {
             CompletedAtUtc: null,
             Version: 2,
           },
-        ],
-        text: async () => "",
-      })),
+        ]))),
     );
 
     const todos = await listPersonalTodos();

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import {
   loadOrganizationCustomerLinkOverlay,
   overlayFromLinkPages,
@@ -43,30 +44,20 @@ describe("loadOrganizationCustomerLinkOverlay", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("linked-customer-app-users")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               Items: [{ BusinessCustomerId: connectedId, Status: "Active" }],
               TotalCount: 1,
               Page: 1,
               PageSize: 100,
-            }),
-            text: async (): Promise<string> => "",
-          };
+            });
         }
         expect(url).toContain("customer-link-requests?status=Pending");
-        return {
-          ok: true,
-          status: 200,
-            json: async () => ({
+        return jsonResponse(200, {
             items: [{ businessCustomerId: pendingId, status: "Pending" }],
             totalCount: 1,
             page: 1,
             pageSize: 100,
-          }),
-          text: async (): Promise<string> => "",
-        };
+          });
       }),
     );
 
@@ -79,12 +70,7 @@ describe("loadOrganizationCustomerLinkOverlay", () => {
   it("treats 403 as an empty loaded overlay so the list still renders", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: false,
-        status: 403,
-        json: async () => ({ title: "Forbidden", status: 403 }),
-        text: async (): Promise<string> => "",
-      })),
+      vi.fn(async () => (jsonResponse(403, { title: "Forbidden", status: 403 }))),
     );
 
     const overlay = await loadOrganizationCustomerLinkOverlay(organizationId);

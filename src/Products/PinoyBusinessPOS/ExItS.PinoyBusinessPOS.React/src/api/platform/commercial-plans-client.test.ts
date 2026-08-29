@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { findCommercialPlan, listCommercialPlans } from "@/api/platform/commercial-plans-client";
 
@@ -11,10 +12,7 @@ describe("commercial-plans-client", () => {
   it("normalizes PascalCase commercial plans and filters Active", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => [
+      vi.fn(async () => (jsonResponse(200, [
           {
             Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
             ProductCode: "pinoy-business-pos",
@@ -61,9 +59,7 @@ describe("commercial-plans-client", () => {
             AnnualPrice: 0,
             CurrencyCode: "PHP",
           },
-        ],
-        text: async () => "",
-      })),
+        ]))),
     );
 
     const plans = await listCommercialPlans();

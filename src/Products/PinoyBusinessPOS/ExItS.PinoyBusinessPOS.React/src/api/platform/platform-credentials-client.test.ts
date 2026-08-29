@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { getPlatformCredentialStatus } from "@/api/platform/platform-credentials-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 
@@ -9,16 +10,12 @@ describe("platform-credentials-client", () => {
   });
 
   it("reads the signed-in credential status from the self-service auth route", async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
+    const fetchMock = vi.fn(async () => (jsonResponse(200, {
         UserId: "33333333-3333-4333-8333-333333333333",
         HasPassword: true,
         EmailVerified: false,
         IsLockedOut: false,
-      }),
-    }));
+      })));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await getPlatformCredentialStatus();
@@ -33,11 +30,7 @@ describe("platform-credentials-client", () => {
   it("reports hasPassword false rather than assuming a password exists", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ hasPassword: false }),
-      })),
+      vi.fn(async () => (jsonResponse(200, { hasPassword: false }))),
     );
 
     const result = await getPlatformCredentialStatus();
@@ -47,11 +40,7 @@ describe("platform-credentials-client", () => {
   it("surfaces transport failures instead of guessing", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: false,
-        status: 503,
-        json: async () => ({ errorCode: "application.unavailable" }),
-      })),
+      vi.fn(async () => (jsonResponse(503, { errorCode: "application.unavailable" }))),
     );
 
     expect(await getPlatformCredentialStatus()).toMatchObject({ ok: false, status: 503 });

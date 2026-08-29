@@ -2,115 +2,139 @@
 
 **Status:** COMPLETE  
 **Branch:** `feat/organization`  
-**START_SHA:** `e75f0c744e73c2ce9a6780a48ea613ce341fdebb`
+**TASK:** POS-REACT-TEST-HARNESS-ORG-SESSION-REPAIR-01
+**START_SHA:** `23ee9143893ed39306d071f0b60b43fd5a1500a3`
 
-## Baseline full suite
+## Baseline full suite (at START_SHA)
 
 | Metric | Value |
 |--------|-------|
-| BASELINE_FULL_SUITE | `npm test` (vitest run) |
-| BASELINE_TOTAL | 1210 |
-| BASELINE_PASS | 1122 |
-| BASELINE_FAIL | 88 |
-| BASELINE_ORG_SESSION_FAILURES | 13 (sell-floor 9 + account-shell 4) |
-| BASELINE_ORG_REAL_FAILURES | 0 |
-| BASELINE_ORG_COPY_I18N | 8 (workspace-grant 2, connectivity 1, inventory detail 2, QR purpose copy 3) |
-| BASELINE_UNRELATED_FAILURES | 67 (Personal route UI + Platform HTTP client mocks + session sign-in/out) |
+| BASELINE_FULL_SUITE | `npx vitest run` |
+| BASELINE_TOTAL | 1256 |
+| BASELINE_PASS | 1182 |
+| BASELINE_FAIL | 74 |
 
-## Production contracts (unchanged)
+### Baseline failure classification (pre-repair)
+
+| Bucket | Approx |
+|--------|--------|
+| PLATFORM (empty `text()` / missing `text()` on fetch mocks) | ~19 files |
+| PERSONAL (same session/`text()` defect + one i18n middle-dot) | ~5–6 files |
+| SESSION_SHARED (sign-in/out/remote-logout empty `text()`) | ~3–4 files |
+| CONNECTIVITY / QR / INVENTORY_I18N / WORKSPACE (Unicode corruption in `en.ts`) | ~5–6 files |
+| ORGANIZATION_FEATURE_REGRESSIONS | 0 |
+| ORGANIZATION_HARNESS (sell-floor / shell) | 0 at this START_SHA (already repaired earlier on branch) |
+
+## ROOT_CAUSE
+
+`platform-http.ts` reads response bodies via `response.text()` then JSON-parses. Many Platform/Personal/session tests mocked `json: async () => body` with `text: async () => ""` (or omitted `text` entirely). Bootstrap and clients therefore saw empty payloads → missing `accountClass` / parse failures. Production gates were correct; **fixtures were wrong**.
+
+Secondary: `en.ts` had encoding corruption (`…`/`—`/`·` → `?`) on keys asserted by connectivity, QR, inventory detail, workspace grant, and people summary tests.
+
+## SESSION_MODEL / ACCOUNT_CLASS_MODEL / ORGANIZATION_TEST_MODEL
 
 | Model | Source of truth |
 |-------|-----------------|
 | ACCOUNT_CLASS_MODEL | Server `accountClass` on `/auth/me` → `sessionAccountClass()`; never inferred from email |
-| ORGANIZATION_SESSION_MODEL | `accountClass=Organization`, `homeOrganizationId`, optional `organizationContextLocked` |
+| ORGANIZATION_SESSION_MODEL | `accountClass=Organization`, membership, active org/workspace, branch as required by route |
 | PERSONAL_SESSION_MODEL | `accountClass=Personal`, `homeOrganizationId=null` |
-| WORKSPACE_BINDING_MODEL | `boundWorkspace.{organizationId,branchId,branchName,experience}` via WorkspaceProvider |
-| BRANCH_BINDING_MODEL | `RequireBranchBound` / operational `X-Pos-Branch-Id`; report scope uses query `branchId` only |
-| ORGANIZATION_ROUTE_GUARD | `RequireOrganizationSession` → `RequireAccountClass(allow=["Organization"])` |
-| PERSONAL_ROUTE_GUARD | `RequirePersonalSession` |
-| SELL_ROUTE_GUARD | Organization session + workspace/branch + Sell readiness (device/shift/commercial) |
+| SELL_READY | Explicit opt-in: device + register + open shift via `createOrganizationSellReadyFetch` / `renderOrganizationAt({ sellReady: true })` |
+| ORGANIZATION_ROUTE_GUARD | `RequireOrganizationSession` / `RequireAccountClass(allow=["Organization"])` — **unchanged** |
 
-**PRODUCTION_GUARD_WEAKENED=NO**
-
-## Harness root cause
-
-`HARNESS_ROOT_CAUSE=` Platform HTTP (`platform-http.ts`) reads JSON via `response.text()`. Many Organization route tests mocked `json()` with a full session body but `text: async () => ""`. Bootstrap therefore received an empty `/auth/me` payload → missing `accountClass` → `RequireAccountClass` correctly denied Organization Sell / shell routes.
-
-Secondary: Sell Floor landscape cart / `sell-pay` only mounts at `min-width: 900px`; tests needed an explicit desktop (or mobile) `matchMedia` stub matching the scenario.
-
-## Canonical helpers
+## CANONICAL_TEST_HELPER
 
 | Helper | Location |
 |--------|----------|
-| CURRENT_ORG_TEST_HELPER / CANONICAL_ORG_TEST_CONTEXT | `src/test/session-context.ts` → `createOrganizationSessionSnapshot`, `createOrganizationPlatformFetch`, `createOrganizationSellReadyFetch`, `seedOrganizationSellReadyLocalState` |
-| CURRENT_PERSONAL_TEST_HELPER / CANONICAL_PERSONAL_TEST_CONTEXT | same file → `createPersonalSessionSnapshot`, `createPersonalPlatformFetch` |
-| CURRENT_WORKSPACE_TEST_HELPER | `createOrganizationBoundWorkspace` + existing WorkspaceProvider mocks in feature tests |
-| Router helpers | `src/test/render.tsx` → `renderOrganizationAt`, `renderPersonalAt`; `jsonResponse` re-exported (text+json consistent) |
+| `jsonResponse(status, body)` | `src/test/session-context.ts` — consistent `.text()` + `.json()` |
+| `createOrganizationSessionSnapshot` / `createOrganizationPlatformFetch` / `createOrganizationSellReadyFetch` / `seedOrganizationSellReadyLocalState` | same |
+| `createPersonalSessionSnapshot` / `createPersonalPlatformFetch` | same |
+| `renderOrganizationAt` / `renderPersonalAt` | `src/test/render.tsx` |
 
-## Fixes applied
+Do **not** invent a second harness. Extend these helpers.
+
+## TEST_STATE_RESET_MODEL
+
+`src/test/setup.ts` `afterEach`: RTL `cleanup`, `vi.unstubAllGlobals()`, `localStorage` + `sessionStorage` clear, theme/lang reset.
+
+## SELL_FLOOR_HARNESS_BEFORE / AFTER
+
+| | |
+|--|--|
+| BEFORE (historical) | Stale mocks with empty `text()` dropped Organization `accountClass`; Sell correctly denied |
+| AFTER (this START_SHA + package) | Sell-floor already on `createOrganizationSellReadyFetch`; suite green; denial tests retained |
+
+## Fixes applied in this package
 
 | Area | Fix |
 |------|-----|
-| SELL_FLOOR_ROOT_CAUSE | Empty `text()` dropped Organization `accountClass`; desktop viewport not stubbed |
-| SELL_FLOOR_FIX | Use `createOrganizationSellReadyFetch` + `jsonResponse`; stub viewport; Personal→Sell fail-closed test |
-| account-shell | Same Organization sell-ready fetch factory |
-| SessionGuards | Added Organization allow + Personal deny regressions |
-| workspace-grant-hint | Align pending-probe wait with `workspace-grant-loading`; pin mock |
-| I18N_FIXES | SMALL_ISOLATED en.ts: ellipsis / em-dash / middle-dot on keys asserted by org-adjacent tests |
-| QR_FAILURE_POLICY | Fixed shared en copy corruption only; behavior unchanged |
+| Platform client tests | Rewrite Response stubs to `jsonResponse` |
+| Session sign-in/out / remote-logout / reconnect | Same |
+| Personal shell / switch / guide / people-lifecycle | Same; people-lifecycle uses shared `jsonResponse` |
+| Sign-in antiforgery | Antiforgery + login + `/me` stubs use `jsonResponse` |
+| `en.ts` (asserted keys only) | Restore `…` / `—` / `·` on reconnecting, stock adjustment, expiration warning, QR purpose, workspace preparing, people.summary |
+| PRODUCTION | No auth/guard/behavior change |
 
-## Isolation
+## PRODUCTION_BEHAVIOR_CHANGE / GUARDS
 
 | Check | Result |
 |-------|--------|
-| GLOBAL_STATE_LEAK_FOUND | NO (suite vs alone matched for sell-floor once mock fixed) |
-| MSW_HANDLER_LEAK_FOUND | NO (no MSW; vitest `fetch` stubs) |
-| STORAGE_LEAK_FOUND | Mitigated: `setup.ts` clears `localStorage` + `sessionStorage` after each test |
+| PRODUCTION_BEHAVIOR_CHANGE | NO |
+| PRODUCTION_GUARDS_WEAKENED | NO |
+| AUTH_BYPASS_ADDED | NO |
+| ACCOUNT_CLASS_BYPASS_ADDED | NO |
+
+## TARGETED_TESTS
+
+- Platform clients, logout-session, credentials, governance-step-up, org customer links
+- sign-out, sign-in-antiforgery, remote-logout-retry
+- personal-shell-home, personal-switch-to-business, PersonalGuidePage, people-lifecycle
+- sell-floor, sell-floor-remount-sync, sell-readiness, account-shell, SessionGuards.account-class
+- workspace-grant-hint, connectivity-ux, QR, InventoryDetailPage(+cost), checkout-personal-customer-picker
+
+All PASS.
 
 ## Final full suite
 
 | Metric | Value |
 |--------|-------|
-| FINAL_FULL_SUITE | `npm test` |
-| FINAL_TOTAL | 1214 |
-| FINAL_PASS | 1148 |
-| FINAL_FAIL | 66 |
-| FAILURES_REMOVED | 22 |
-| FAILURES_REMAINING | 66 |
-| REMAINING_ORGANIZATION_FAILURES | 0 |
-| REMAINING_PERSONAL_FAILURES | 32 |
-| REMAINING_PLATFORM_FAILURES | 27 |
-| REMAINING_GLOBAL_SESSION_FAILURES | 7 |
-| REMAINING_QR_FAILURES | 0 |
-| REMAINING_I18N_FAILURES | 0 |
-| REMAINING_OTHER_FAILURES | 0 |
-| REMAINING_UNKNOWN_FAILURES | 0 |
+| FINAL_FULL_SUITE | `npx vitest run` |
+| FINAL_TOTAL | 1256 |
+| FINAL_PASS | 1256 |
+| FINAL_FAIL | 0 |
+| FAILURE_DELTA | −74 |
 
-Remaining Personal/Platform/session failures still largely use hand-rolled empty `text()` mocks (same defect class). Deferred to avoid an unsafe bulk rewrite; use `jsonResponse` / `createPersonalPlatformFetch` when those packages are repaired.
+| Bucket | Count |
+|--------|-------|
+| ORGANIZATION_HARNESS_FAILURES | 0 |
+| ORGANIZATION_REAL_FAILURES | 0 |
+| SESSION_SHARED_FAILURES | 0 |
+| PERSONAL_FAILURES | 0 |
+| PLATFORM_FAILURES | 0 |
+| CONNECTIVITY_FAILURES | 0 |
+| QR_FAILURES | 0 |
+| INVENTORY_I18N_FAILURES | 0 |
+| WORKSPACE_FAILURES | 0 |
+| OTHER_FAILURES | 0 |
 
-## Security regressions
+| Anti-cheat | |
+|------------|--|
+| NEW_TEST_SKIPS | 0 |
+| NEW_TEST_ONLY | 0 |
+| TEST_EXCLUSIONS_ADDED | 0 |
+
+## Validation
 
 | Check | Result |
 |-------|--------|
-| PERSONAL_TO_ORG_FAILS_CLOSED | PASS (`SellFloorPage account-class gate`, `SessionGuards`) |
-| VALID_ORG_SESSION_CAN_ENTER_SELL | PASS |
-| WRONG_WORKSPACE_FAILS_CLOSED | PASS (existing branch/workspace guards retained; no production change) |
-
-## Validation evidence
-
-- ORG_HARNESS_TARGETED_TESTS: sell-floor, account-shell, SessionGuards.account-class, workspace-grant-hint — PASS
-- SELL_FLOOR_TESTS: 11/11 PASS
-- ORG_ROUTER_TESTS: SessionGuards + RequireBranchBound — PASS
-- RECENT_FEATURE_REGRESSION_TESTS: Stock Count, Transfer, report-branch-scope, inventory detail — PASS
-- TYPECHECK: PASS
-- LINT: PASS (0 errors; pre-existing warnings only)
-- BUILD: PASS
-- NEW_TEST_SKIPS=0 / NEW_TEST_ONLY=0 / CONFLICT_MARKERS=0
+| TYPECHECK | PASS |
+| LINT | PASS (0 errors; 35 pre-existing warnings) |
+| BUILD | PASS |
+| MIGRATION | N/A |
 
 ## Explicit non-goals
 
-No production account-class / Sell / device / shift / branch / online-only policy changes. No Expenses CRUD, B2B identity, payment gateway, or broad Personal/Platform suite rewrite.
+No profitability, inventory business features, Stock Count, Transfer, discount/reporting, CustomerOrder COGS, FIFO, supplier payable, permission redesign, Card/GCash, B2B checkout, offline Org mutations, GL. Organization gaps audit **not** refreshed in this package.
 
-## Next
+## NEXT
 
-REASSESS GAP ROADMAP AFTER HARNESS REPAIR; LIKELY POS-EXPENSES-REACT-CRUD-01 OR POS-B2B-IDENTITY-DISPLAY-01 (or Personal/Platform empty-`text()` mock cleanup package).
+`POS-INVENTORY-PERMISSION-I18N-POLISH-01`

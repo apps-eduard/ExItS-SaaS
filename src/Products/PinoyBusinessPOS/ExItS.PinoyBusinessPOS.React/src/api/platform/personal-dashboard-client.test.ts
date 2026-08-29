@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { getPersonalDashboard } from "@/api/platform/personal-dashboard-client";
 
 describe("getPersonalDashboard", () => {
   it("parses PascalCase Platform dashboard payloads", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
+      vi.fn(async () => (jsonResponse(200, {
           UserIdentityId: "11111111-1111-1111-1111-111111111111",
           AccountProfileId: "22222222-2222-2222-2222-222222222222",
           AccountClass: "Personal",
@@ -17,9 +15,7 @@ describe("getPersonalDashboard", () => {
           ActiveRelationshipCount: 2,
           TotalLentBalance: 1000,
           TotalBorrowedBalance: 250.5,
-        }),
-        text: async () => "",
-      })),
+        }))),
     );
 
     const dto = await getPersonalDashboard();
@@ -33,10 +29,7 @@ describe("getPersonalDashboard", () => {
   it("parses pendingConfirmationCount", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
+      vi.fn(async () => (jsonResponse(200, {
           UserIdentityId: "11111111-1111-1111-1111-111111111111",
           AccountProfileId: "22222222-2222-2222-2222-222222222222",
           AccountClass: "Personal",
@@ -46,9 +39,7 @@ describe("getPersonalDashboard", () => {
           TotalLentBalance: 10,
           TotalBorrowedBalance: 0,
           PendingConfirmationCount: 4,
-        }),
-        text: async () => "",
-      })),
+        }))),
     );
 
     const dto = await getPersonalDashboard();

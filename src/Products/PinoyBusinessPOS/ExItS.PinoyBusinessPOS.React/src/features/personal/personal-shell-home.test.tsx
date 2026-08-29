@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
@@ -23,19 +24,11 @@ function createPersonalFetchMock() {
     const url = String(input);
 
     if (url.includes("/api/v1/platform/antiforgery/token")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
     }
 
     if (url.includes("/api/v1/platform/auth/me")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           sessionId: personalUserId,
           userId: personalUserId,
           username: "ana",
@@ -45,25 +38,15 @@ function createPersonalFetchMock() {
           accountClass: "Personal",
           homeOrganizationId: null,
           organizationContextLocked: false,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/platform/auth/organizations")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/dashboard")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           userIdentityId: personalUserId,
           accountProfileId: personalProfileId,
           accountClass: "Personal",
@@ -73,85 +56,43 @@ function createPersonalFetchMock() {
           totalLentBalance: 500,
           totalBorrowedBalance: 150,
           pendingConfirmationCount: 1,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/personal/utang/contacts")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/utang/relationships/lent")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/utang/relationships/borrowed")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/todos")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/linked-merchants")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
+      return jsonResponse(200, {
           items: [],
           totalCount: 0,
           page: 1,
           pageSize: 50,
-        }),
-        text: async () => "",
-      } as Response;
+        });
     }
 
     if (url.includes("/api/v1/personal/customer-link-requests")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
     if (url.includes("/api/v1/personal/notifications")) {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => [],
-        text: async () => "",
-      } as Response;
+      return jsonResponse(200, []);
     }
 
-    return {
-      ok: false,
-      status: 404,
-      json: async () => ({ detail: `unmocked ${url}` }),
-      text: async () => "",
-    } as Response;
+    return jsonResponse(404, { detail: `unmocked ${url}` });
   });
 }
 
@@ -281,10 +222,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("/api/v1/commercial/plans")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                 ProductCode: "pinoy-business-pos",
@@ -308,9 +246,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
                 AnnualPrice: 9990,
                 CurrencyCode: "PHP",
               },
-            ],
-            text: async () => "",
-          } as Response;
+            ]);
         }
         return base(input);
       }),
@@ -332,10 +268,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("/api/v1/commercial/plans")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                 ProductCode: "pinoy-business-pos",
@@ -359,15 +292,10 @@ describe("Personal shell and home (RMAP-22B)", () => {
                 AnnualPrice: 9990,
                 CurrencyCode: "PHP",
               },
-            ],
-            text: async () => "",
-          } as Response;
+            ]);
         }
         if (url.includes("/api/v1/personal/onboarding/business-types")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 Id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
                 Code: "retail",
@@ -376,15 +304,10 @@ describe("Personal shell and home (RMAP-22B)", () => {
                 Status: "Active",
                 SortOrder: 10,
               },
-            ],
-            text: async () => "",
-          } as Response;
+            ]);
         }
         if (url.includes("/api/v1/personal/profile")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               UserIdentityId: personalUserId,
               AccountProfileId: personalProfileId,
               Username: "ana",
@@ -393,9 +316,7 @@ describe("Personal shell and home (RMAP-22B)", () => {
               AccountClass: "Personal",
               Status: "Active",
               Phone: null,
-            }),
-            text: async () => "",
-          } as Response;
+            });
         }
         return base(input);
       }),
@@ -440,18 +361,10 @@ describe("Personal shell and home (RMAP-22B)", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.includes("/api/v1/platform/antiforgery/token")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-token" }),
-            text: async () => "",
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-token" });
         }
         if (url.includes("/api/v1/platform/auth/me")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
+          return jsonResponse(200, {
               sessionId: personalUserId,
               username: "cashier@ORG000001",
               displayName: "Cashier",
@@ -460,30 +373,18 @@ describe("Personal shell and home (RMAP-22B)", () => {
               accountClass: "Organization",
               homeOrganizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
               organizationContextLocked: true,
-            }),
-            text: async () => "",
-          } as Response;
+            });
         }
         if (url.includes("/api/v1/platform/auth/organizations")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => [
+          return jsonResponse(200, [
               {
                 organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                 displayName: "Org",
                 slug: "org",
               },
-            ],
-            text: async () => "",
-          } as Response;
+            ]);
         }
-        return {
-          ok: false,
-          status: 404,
-          json: async () => ({ detail: "unmocked" }),
-          text: async () => "",
-        } as Response;
+        return jsonResponse(404, { detail: "unmocked" });
       }),
     );
 

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { jsonResponse } from "@/test/session-context";
 import { PlatformAntiforgeryDefaults } from "@/api/platform/antiforgery";
 import { AUTH_LOGOUT_PATH } from "@/api/platform/browser-session";
 import {
@@ -25,16 +26,11 @@ describe("remote logout retry", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-logout" }),
-            text: async () => "",
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-logout" });
         }
         if (url.endsWith(AUTH_LOGOUT_PATH)) {
           expect(init?.method).toBe("POST");
-          return { ok: true, status: 204, json: async () => null, text: async () => "" } as Response;
+          return jsonResponse(204, null);
         }
         throw new Error(`Unexpected fetch: ${url}`);
       }),
@@ -52,15 +48,10 @@ describe("remote logout retry", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = String(input);
         if (url.endsWith(PlatformAntiforgeryDefaults.tokenPath)) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ headerName: "X-XSRF-TOKEN", token: "csrf-logout" }),
-            text: async () => "",
-          } as Response;
+          return jsonResponse(200, { headerName: "X-XSRF-TOKEN", token: "csrf-logout" });
         }
         if (url.endsWith(AUTH_LOGOUT_PATH)) {
-          return { ok: false, status: 503, json: async () => ({ detail: "logout unavailable" }), text: async () => "" } as Response;
+          return jsonResponse(503, { detail: "logout unavailable" });
         }
         throw new Error(`Unexpected fetch: ${url}`);
       }),
