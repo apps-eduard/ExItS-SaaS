@@ -7,6 +7,7 @@ Per-product profitability ranking for Organization POS using immutable sale/retu
 | Field | Value |
 |--------|--------|
 | START_SHA | `d3ff54f16c1252c1f8dc18bf81d5e1e6aa2df7c2` |
+| FEATURE_SHA | `1e08f2d08f12cbf4c47752e7c036e7367bc27478` |
 | NET_SALES_BASIS | Σ completed `SaleLine.LineTotal` − period refunds (post-discount line money) |
 | SALES_BEFORE_DISCOUNTS | Σ `GrossLineTotal` |
 | COMMERCIAL_DISCOUNTS | Σ line `LineDiscountAmount + SaleDiscountAllocatedAmount` |
