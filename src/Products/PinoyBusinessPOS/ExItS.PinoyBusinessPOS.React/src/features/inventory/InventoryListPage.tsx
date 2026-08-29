@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, Trash2 } from "lucide-react";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -99,6 +99,13 @@ export function InventoryListPage() {
             icon: <ClipboardList />,
             href: "/inventory/stock-counts",
             testId: "open-stock-count",
+          },
+          {
+            key: "transfers",
+            label: t("inventory.openTransfers"),
+            icon: <ArrowLeftRight />,
+            href: "/inventory/transfers",
+            testId: "open-transfers",
           },
           {
             key: "stock-use",
