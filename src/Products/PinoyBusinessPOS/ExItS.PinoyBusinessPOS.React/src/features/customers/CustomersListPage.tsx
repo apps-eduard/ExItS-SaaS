@@ -58,11 +58,14 @@ function customerStatusTone(status: string): "success" | "warning" {
   return status.toLowerCase() === "active" ? "success" : "warning";
 }
 
-function pricingSummary(customer: BusinessCustomer, discountTemplate: string, noDiscount: string): string {
+function discountLabel(
+  customer: BusinessCustomer,
+  discountTemplate: string,
+): string | null {
   if (customer.customerDiscountPercent != null && customer.customerDiscountPercent > 0) {
     return discountTemplate.replace("{percent}", String(customer.customerDiscountPercent));
   }
-  return noDiscount;
+  return null;
 }
 
 export function CustomersListPage() {
@@ -95,6 +98,8 @@ export function CustomersListPage() {
 
   const showPeople = kind === "all" || kind === "people";
   const showBusinesses = allowBusiness && (kind === "all" || kind === "businesses");
+  /** Status chips only on People tab — avoids two competing “All” filters on All. */
+  const showStatusFilter = kind === "people";
 
   const peopleQuery = useQuery({
     queryKey: [
@@ -165,6 +170,8 @@ export function CustomersListPage() {
     : (peopleQuery.data?.items ?? []);
 
   const businessItems = useMemo(() => businessQuery.data ?? [], [businessQuery.data]);
+  const peopleReady = peopleQuery.isSuccess || usingCache;
+  const businessesReady = businessQuery.isSuccess;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -181,33 +188,31 @@ export function CustomersListPage() {
         backTo={pageBackNav.managerHome.to}
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-customers"
+        trailing={
+          allowCreate && showPeople ? (
+            <Link
+              to="/customers/new"
+              className="customers-page__add"
+              data-testid="customers-new"
+              aria-label={t("customers.add")}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              <span className="customers-page__add-label">{t("customers.add")}</span>
+            </Link>
+          ) : null
+        }
       />
-
-      {allowCreate && showPeople ? (
-        <ExitsChipBar
-          variant="actions"
-          ariaLabel={t("customers.title")}
-          testId="customers-toolbar"
-          className="exits-animate-toolbar"
-          items={[
-            {
-              key: "new",
-              label: t("customers.add"),
-              icon: <Plus />,
-              href: "/customers/new",
-              testId: "customers-new",
-              emphasis: "primary",
-            },
-          ]}
-        />
-      ) : null}
 
       <SearchField
         label={t("customers.search")}
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         onClear={() => setSearch("")}
-        placeholder={t("customers.search")}
+        placeholder={
+          kind === "businesses"
+            ? t("customers.business.search")
+            : t("customers.search")
+        }
         data-testid="customers-search"
         containerClassName="customers-page__search exits-page__search"
       />
@@ -227,7 +232,7 @@ export function CustomersListPage() {
         />
       ) : null}
 
-      {showPeople ? (
+      {showStatusFilter ? (
         <ExitsChipBar
           variant="filter"
           ariaLabel={t("customers.statusFilter")}
@@ -251,18 +256,27 @@ export function CustomersListPage() {
       ) : null}
 
       {showPeople ? (
-        <section className="flex min-w-0 flex-col gap-2" data-testid="customers-people-section">
+        <section className="customers-section" data-testid="customers-people-section">
           {kind === "all" ? (
-            <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-              {t("customers.kindPeople")}
-            </h2>
+            <div className="customers-section__head">
+              <h2 className="customers-section__title">{t("customers.kindPeople")}</h2>
+              {peopleReady ? (
+                <span className="customers-section__count">{peopleItems.length}</span>
+              ) : null}
+            </div>
           ) : null}
           {peopleQuery.isLoading && !usingCache ? <LoadingState label={t("loading.label")} /> : null}
           {peopleQuery.isError && !usingCache ? (
             <ErrorState title={t("error.title")} detail={(peopleQuery.error as Error).message} />
           ) : null}
-          {(peopleQuery.isSuccess || usingCache) && peopleItems.length === 0 ? (
-            <EmptyState title={t("customers.empty")} detail={t("customers.emptyDetail")} />
+          {peopleReady && peopleItems.length === 0 ? (
+            kind === "all" ? (
+              <p className="customers-section__empty-inline" data-testid="customers-people-empty">
+                {t("customers.peopleEmptyCompact")}
+              </p>
+            ) : (
+              <EmptyState title={t("customers.empty")} detail={t("customers.emptyDetail")} />
+            )
           ) : null}
           <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
             {peopleItems.map((customer) => {
@@ -302,11 +316,14 @@ export function CustomersListPage() {
       ) : null}
 
       {showBusinesses ? (
-        <section className="flex min-w-0 flex-col gap-2" data-testid="customers-business-section">
+        <section className="customers-section" data-testid="customers-business-section">
           {kind === "all" ? (
-            <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-              {t("customers.kindBusinesses")}
-            </h2>
+            <div className="customers-section__head">
+              <h2 className="customers-section__title">{t("customers.kindBusinesses")}</h2>
+              {businessesReady ? (
+                <span className="customers-section__count">{businessItems.length}</span>
+              ) : null}
+            </div>
           ) : null}
           {businessQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
           {businessQuery.isError ? (
@@ -327,42 +344,45 @@ export function CustomersListPage() {
               </button>
             </div>
           ) : null}
-          {businessQuery.isSuccess && businessItems.length === 0 ? (
+          {businessesReady && businessItems.length === 0 ? (
             <EmptyState
               title={t("customers.business.empty")}
               detail={t("customers.business.emptyHelp")}
             />
           ) : null}
           <ul
-            className="exits-list customers-business-list m-0 grid list-none gap-2 p-0 md:grid-cols-2 xl:grid-cols-1"
+            className="exits-list customers-business-list m-0 grid list-none gap-2 p-0"
             data-testid="business-customers-list"
           >
             {businessItems.map((customer) => {
               const name =
                 customer.organizationDisplayName.trim() || t("customers.business.unknown");
-              const meta = [
-                t("customers.business.badge"),
-                t("customers.business.sharedCount").replace(
-                  "{count}",
-                  String(customer.sharedCount),
-                ),
-                pricingSummary(
-                  customer,
-                  t("customers.business.discountOff"),
-                  t("customers.business.noDiscount"),
-                ),
-              ].join(" · ");
+              const pricing = discountLabel(
+                customer,
+                t("customers.business.discountShort"),
+              );
               return (
                 <li key={customer.connectionId}>
                   <Link
-                    className="exits-list__card business-customer-row block min-w-0 text-foreground no-underline"
+                    className="exits-list__card business-customer-row customer-row block min-w-0 text-foreground no-underline"
                     to={`/customers/business/${customer.connectionId}`}
                     data-testid={`business-customer-row-${customer.connectionId}`}
                   >
                     <span className="customer-row__main min-w-0">
-                      <span className="exits-list__name block truncate font-semibold">{name}</span>
-                      <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                        {meta}
+                      <span className="business-customer-row__title">
+                        <span className="exits-list__name truncate font-semibold">{name}</span>
+                        <span className="business-customer-row__badge">
+                          {t("customers.business.badgeShort")}
+                        </span>
+                      </span>
+                      <span className="business-customer-row__facts">
+                        <span>
+                          {t("customers.business.sharedCountShort").replace(
+                            "{count}",
+                            String(customer.sharedCount),
+                          )}
+                        </span>
+                        {pricing ? <span>{pricing}</span> : null}
                       </span>
                     </span>
                     <span className="customer-row__aside">
