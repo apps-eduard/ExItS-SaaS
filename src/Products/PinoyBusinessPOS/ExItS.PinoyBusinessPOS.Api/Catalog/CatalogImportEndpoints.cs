@@ -265,38 +265,8 @@ internal static class CatalogImportEndpoints
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
     }
 
-    private static string? ExtractPlatformSessionToken(HttpRequest request)
-    {
-        if (request.Headers.TryGetValue("X-ExItS-Session-Token", out var values)
-            && !string.IsNullOrWhiteSpace(values.FirstOrDefault()))
-        {
-            return values.FirstOrDefault()!.Trim();
-        }
-
-        if (request.Headers.TryGetValue("Authorization", out var authValues))
-        {
-            var header = authValues.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(header)
-                && header.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
-            {
-                var token = header["PlatformSession ".Length..].Trim();
-                if (!string.IsNullOrWhiteSpace(token))
-                {
-                    return token;
-                }
-            }
-        }
-
-        // React POS keeps the Platform session in an HttpOnly cookie and sends product
-        // Bearer to POS. Accept the same cookie Platform uses for browser sessions.
-        if (request.Cookies.TryGetValue(".ExItS.Platform.Auth", out var cookieToken)
-            && !string.IsNullOrWhiteSpace(cookieToken))
-        {
-            return cookieToken.Trim();
-        }
-
-        return null;
-    }
+    private static string? ExtractPlatformSessionToken(HttpRequest request) =>
+        PlatformCallerCredentialForwarder.ResolvePlatformSessionToken(request);
 }
 
 internal sealed class ImportedGlobalProductsQuery

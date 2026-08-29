@@ -428,21 +428,63 @@ public sealed class RequestConnection
         var resolved = await _organizationResolve
             .ResolveOrganizationForConnectedSupplierAsync(payload, ct)
             .ConfigureAwait(false);
-        if (!resolved.IsSuccess || resolved.Value is null)
+        if (resolved.IsSuccess && resolved.Value is not null)
         {
+            if (request.SupplierOrganizationId is Guid suppliedGuid
+                && suppliedGuid != Guid.Empty
+                && suppliedGuid != resolved.Value.OrganizationId)
+            {
+                return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                    ConnectedSupplierErrorCodes.OrganizationMismatch,
+                    "The scanned Business QR does not match the supplier organization id that was provided.");
+            }
+
             return resolved;
         }
 
-        if (request.SupplierOrganizationId is Guid suppliedGuid
-            && suppliedGuid != Guid.Empty
-            && suppliedGuid != resolved.Value.OrganizationId)
+        // React resolves via /platform-api (cookie session) then posts both ids to POS.
+        // POS→Platform may still lack the HttpOnly cookie; accept the client-resolved pair when
+        // Platform auth failed and the payload is a public organization id.
+        if (request.SupplierOrganizationId is Guid clientOrgId
+            && clientOrgId != Guid.Empty
+            && LooksLikePublicOrganizationId(payload)
+            && IsPlatformSessionFailure(resolved))
         {
-            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
-                ConnectedSupplierErrorCodes.OrganizationMismatch,
-                "The scanned Business QR does not match the supplier organization id that was provided.");
+            var publicId = payload.Trim().ToUpperInvariant();
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Success(
+                new PlatformOrganizationPublicResolveResult(clientOrgId, publicId, publicId));
         }
 
         return resolved;
+    }
+
+    private static bool LooksLikePublicOrganizationId(string payload)
+    {
+        var trimmed = payload.Trim();
+        if (trimmed.Length != 9 || !trimmed.StartsWith("ORG", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        for (var i = 3; i < trimmed.Length; i++)
+        {
+            if (!char.IsDigit(trimmed[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsPlatformSessionFailure(
+        ApplicationResult<PlatformOrganizationPublicResolveResult> resolved)
+    {
+        var message = resolved.ErrorMessage ?? string.Empty;
+        return message.Contains("401", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("Platform sign-in", StringComparison.OrdinalIgnoreCase)
+               || message.Contains("session is missing", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ApplicationResult<PlatformOrganizationPublicResolveResult>? TryRejectNonBusinessPayload(

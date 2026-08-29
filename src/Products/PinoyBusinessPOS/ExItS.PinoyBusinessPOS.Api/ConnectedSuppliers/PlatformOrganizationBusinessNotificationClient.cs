@@ -115,21 +115,16 @@ public sealed class PlatformOrganizationBusinessNotificationClient(
     private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath)
     {
         var request = new HttpRequestMessage(method, relativePath);
-        var token = httpContextAccessor.HttpContext?.Request.Headers["X-ExItS-Session-Token"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            var auth = httpContextAccessor.HttpContext?.Request.Headers.Authorization.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(auth)
-                && auth.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
-            {
-                token = auth["PlatformSession ".Length..].Trim();
-            }
-        }
-
+        var httpRequest = httpContextAccessor.HttpContext?.Request;
+        PlatformCallerCredentialForwarder.CopyTo(httpRequest, request);
+        var token = PlatformCallerCredentialForwarder.ResolvePlatformSessionToken(httpRequest);
         if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", token);
-            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            if (!request.Headers.Contains("X-ExItS-Session-Token"))
+            {
+                request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            }
         }
 
         return request;

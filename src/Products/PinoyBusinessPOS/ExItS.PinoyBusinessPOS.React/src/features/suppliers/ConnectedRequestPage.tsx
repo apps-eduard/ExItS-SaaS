@@ -3,6 +3,8 @@ import { CheckCircle2, Inbox, PenLine, Send } from "lucide-react";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import { requestConnection } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import { resolvePublicOrganizationId } from "@/api/platform/public-identity-client";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
@@ -48,13 +50,19 @@ export function ConnectedRequestPage() {
     }
     setSaving(true);
     try {
+      // Resolve via Platform (browser cookie session) first, then post both ids to POS.
+      // POS may not see the HttpOnly Platform cookie on /pos-api and would otherwise 401.
+      const resolved = await resolvePublicOrganizationId(trimmed, "Organization");
       await requestConnection(workspace, {
-        supplierPublicOrganizationIdOrQrPayload: trimmed,
+        supplierPublicOrganizationIdOrQrPayload: resolved.publicOrganizationId,
+        supplierOrganizationId: resolved.organizationId,
       });
       setSuccess(t("connected.requestSent"));
       setPayload("");
     } catch (err) {
-      if (err instanceof PosApiError) {
+      if (err instanceof PlatformApiError) {
+        setError(err.problem.detail ?? err.message ?? t("connected.requestFailed"));
+      } else if (err instanceof PosApiError) {
         setError(err.problem.detail ?? err.message ?? t("connected.requestFailed"));
       } else {
         setError(t("connected.requestFailed"));

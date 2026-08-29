@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace ExItS.PinoyBusinessPOS.Api.ConnectedSuppliers;
 
 /// <summary>
-/// Calls Platform public-organization / QR resolve APIs. Mirrors
-/// <c>PlatformMerchantCatalogClient</c> session-header forwarding.
+/// Calls Platform public-organization / QR resolve APIs. Forwards Platform session the same
+/// way as merchant catalog (header, PlatformSession auth, or React HttpOnly auth cookie).
 /// </summary>
 public sealed class PlatformOrganizationPublicResolveClient(
     HttpClient httpClient,
@@ -37,6 +37,15 @@ public sealed class PlatformOrganizationPublicResolveClient(
         }
 
         EnsureBaseAddress();
+        if (string.IsNullOrWhiteSpace(
+                PlatformCallerCredentialForwarder.ResolvePlatformSessionToken(
+                    httpContextAccessor.HttpContext?.Request)))
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Your Platform sign-in is missing for this request. Refresh the page or sign in again, then retry.");
+        }
+
         var payload = publicOrganizationIdOrQrPayload.Trim();
 
         // Prefer typed QR resolve when payload looks like an ExItS envelope; otherwise public-id resolve.
@@ -171,21 +180,19 @@ public sealed class PlatformOrganizationPublicResolveClient(
     private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath)
     {
         var request = new HttpRequestMessage(method, relativePath);
-        var token = httpContextAccessor.HttpContext?.Request.Headers["X-ExItS-Session-Token"].FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            var auth = httpContextAccessor.HttpContext?.Request.Headers.Authorization.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(auth)
-                && auth.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
-            {
-                token = auth["PlatformSession ".Length..].Trim();
-            }
-        }
+        var httpRequest = httpContextAccessor.HttpContext?.Request;
+        // Forward Cookie collection so Platform can authenticate even if token extraction fails.
+        PlatformCallerCredentialForwarder.CopyTo(httpRequest, request);
 
+        // Prefer PlatformSession Authorization so Platform POSTs skip cookie+CSRF.
+        var token = PlatformCallerCredentialForwarder.ResolvePlatformSessionToken(httpRequest);
         if (!string.IsNullOrWhiteSpace(token))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", token);
-            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            if (!request.Headers.Contains("X-ExItS-Session-Token"))
+            {
+                request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
+            }
         }
 
         return request;

@@ -278,4 +278,31 @@ public sealed class RequestConnectionBusinessQrTests
         Assert.Equal(ConnectedSupplierErrorCodes.DuplicateRelationship, result.ErrorCode);
         Assert.Contains("already been sent", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task Accepts_client_resolved_org_when_platform_session_missing_on_pos()
+    {
+        var supplierOrg = Guid.NewGuid();
+        var buyerOrg = Guid.NewGuid();
+        var relationships = new FakeRelationships();
+        var suppliers = new FakeSuppliers();
+        var resolve = new FakeResolve
+        {
+            Result = ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Platform organization resolve failed with 401 Unauthorized.")
+        };
+        var useCase = CreateUseCase(relationships, resolve, suppliers);
+
+        var result = await useCase.ExecuteAsync(
+            buyerOrg,
+            new RequestConnectionRequest(
+                SupplierOrganizationId: supplierOrg,
+                SupplierPublicOrganizationIdOrQrPayload: "ORG544183"));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.NotNull(relationships.LastAdded);
+        Assert.Equal(supplierOrg, relationships.LastAdded!.SupplierOrganizationId.Value);
+        Assert.Equal("ORG544183", relationships.LastAdded.SupplierPublicOrganizationIdSnapshot);
+    }
 }
