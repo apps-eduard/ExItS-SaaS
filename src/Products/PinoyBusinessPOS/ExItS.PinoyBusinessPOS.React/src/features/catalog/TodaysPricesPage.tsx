@@ -59,7 +59,11 @@ export function TodaysPricesPage() {
     queryKey: ["catalog", "prices", workspace?.organizationId, workspace?.branchId, debounced],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) =>
-      listCatalogProducts(workspace!, { search: debounced || undefined, pageSize: 100 }, signal),
+      listCatalogProducts(
+        workspace!,
+        { search: debounced || undefined, canBeSold: true, pageSize: 100 },
+        signal,
+      ),
   });
 
   useEffect(() => {

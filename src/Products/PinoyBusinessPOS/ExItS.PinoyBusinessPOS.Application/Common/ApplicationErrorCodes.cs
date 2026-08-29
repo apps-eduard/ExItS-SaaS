@@ -48,6 +48,7 @@ public static class ApplicationErrorCodes
     public const string PaymentSimulationOutcomeInvalid = "pos.payment.simulation.outcome.invalid";
     public const string SaleProductNotFound = "pos.sale.product.not_found";
     public const string SaleProductNotActive = "pos.sale.product.not_active";
+    public const string SaleProductNotSellable = "pos.sale.product.not_sellable";
     public const string SaleSnapshotIncomplete = "pos.sale.snapshot.incomplete";
     public const string SaleSnapshotLineTotalMismatch = "pos.sale.snapshot.line_total_mismatch";
     public const string SaleSnapshotInvalid = "pos.sale.snapshot.invalid";

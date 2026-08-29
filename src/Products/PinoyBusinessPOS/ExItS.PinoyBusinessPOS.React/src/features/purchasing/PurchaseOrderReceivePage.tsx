@@ -69,8 +69,8 @@ export function PurchaseOrderReceivePage() {
       const po = await getPurchaseOrder(workspace!, purchaseOrderId!, signal);
       setLines(
         po.lines.map((line) => ({
-          productId: line.productId,
-          name: line.nameSnapshot ?? line.productId,
+          productId: line.productId ?? "",
+          name: line.nameSnapshot ?? line.productId ?? "",
           uom: line.uomSnapshot ?? "",
           orderedQty: line.orderedQty,
           receivedQty: line.receivedQty,

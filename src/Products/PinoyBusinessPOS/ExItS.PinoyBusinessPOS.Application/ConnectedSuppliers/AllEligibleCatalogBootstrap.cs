@@ -43,6 +43,11 @@ internal static class AllEligibleCatalogBootstrap
                     continue;
                 }
 
+                if (!product.CanBeSold)
+                {
+                    continue;
+                }
+
                 var baseline = product.DefaultConnectedPoPrice is > 0m
                     ? product.DefaultConnectedPoPrice.Value
                     : product.SellingPrice is > 0m

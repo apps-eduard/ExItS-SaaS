@@ -274,6 +274,8 @@ export type CreateBuyerProductAndLinkInput = {
   name: string;
   unitOfMeasure: string;
   sellingPrice: number;
+  /** Resale | Ingredient | InternalUse — required by server for create-and-link. */
+  businessUsage?: string;
   sku?: string | null;
   description?: string | null;
   categoryId?: string | null;
@@ -800,6 +802,7 @@ export async function createBuyerProductAndLink(
       name: input.name.trim(),
       unitOfMeasure: input.unitOfMeasure,
       sellingPrice: input.sellingPrice,
+      businessUsage: input.businessUsage ?? null,
       sku: input.sku?.trim() || null,
       description: input.description?.trim() || null,
       categoryId: input.categoryId ?? null,

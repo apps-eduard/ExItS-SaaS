@@ -975,6 +975,13 @@ public sealed class CheckoutSale
                         $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
                 }
 
+                if (!product.CanBeSold)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotSellable,
+                        $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
+                }
+
                 CatalogProductUnit? authoritySellingUnit = null;
                 if (line.SellingUnitId is not null)
                 {
@@ -1021,6 +1028,13 @@ public sealed class CheckoutSale
                         $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
                 }
 
+                if (!product.CanBeSold)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.SaleProductNotSellable,
+                        $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
+                }
+
                 CatalogProductUnit? sellingUnit = null;
                 if (line.SellingUnitId is not null)
                 {
@@ -1062,6 +1076,13 @@ public sealed class CheckoutSale
                         return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
                             ApplicationErrorCodes.SaleProductNotActive,
                             $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    if (!product.CanBeSold)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotSellable,
+                            $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
                     }
 
                     CatalogProductUnit? sellingUnit = null;
@@ -1106,6 +1127,13 @@ public sealed class CheckoutSale
                         return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
                             ApplicationErrorCodes.SaleProductNotActive,
                             $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    if (!product.CanBeSold)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.SaleProductNotSellable,
+                            $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
                     }
 
                     drafts.Add(new SaleLineDraft(

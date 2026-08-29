@@ -220,6 +220,7 @@ export function SellFloorPage() {
         {
           status: "Active",
           categoryId: activeCategory === "all" ? undefined : activeCategory,
+          canBeSold: true,
           page: 1,
           pageSize: CATALOG_BROWSE_PAGE_SIZE,
         },
@@ -475,6 +476,7 @@ export function SellFloorPage() {
     void resolveCatalogLookup(workspaceScope, term, {
       status: "Active",
       categoryId: activeCategory === "all" ? undefined : activeCategory,
+      canBeSold: true,
     })
       .then((result) => {
         if (cancelled) {

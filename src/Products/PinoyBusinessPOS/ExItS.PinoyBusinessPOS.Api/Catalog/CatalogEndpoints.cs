@@ -281,6 +281,7 @@ internal static class CatalogEndpoints
             Guid? brandId,
             string? unitOfMeasure,
             string? search,
+            bool? canBeSold,
             int? page,
             int? pageSize,
             CatalogProductQueryService queries,
@@ -344,7 +345,8 @@ internal static class CatalogEndpoints
                 parsedCategory,
                 parsedUnit,
                 search,
-                BrandId: parsedBrand);
+                BrandId: parsedBrand,
+                CanBeSold: canBeSold);
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -385,6 +387,7 @@ internal static class CatalogEndpoints
                     body.Units,
                     body.CanExposeToConnectedBuyers,
                     body.DefaultConnectedPoPrice,
+                    body.BusinessUsage,
                     ct)
                 .ConfigureAwait(false);
 
@@ -559,6 +562,7 @@ internal static class CatalogEndpoints
                     body.Units,
                     body.CanExposeToConnectedBuyers,
                     body.DefaultConnectedPoPrice,
+                    body.BusinessUsage,
                     ct)
                 .ConfigureAwait(false);
 

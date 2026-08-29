@@ -29,7 +29,8 @@ public sealed record CreateBuyerProductAndLinkRequest(
     bool? CanBeSold = null,
     bool? CanBeUsedAsIngredient = null,
     bool? IsProduced = null,
-    Guid? PurchaseOrderId = null);
+    Guid? PurchaseOrderId = null,
+    string? BusinessUsage = null);
 
 public sealed record CreateBuyerProductAndLinkResultDto(
     BuyerSupplierProductLinkDto Link,
@@ -406,6 +407,17 @@ public sealed class CreateBuyerProductAndLink
                 "Quick create requires the same unit of measure as the supplier product. Use advanced product setup for conversions.");
         }
 
+        if (string.IsNullOrWhiteSpace(request.BusinessUsage)
+            && string.IsNullOrWhiteSpace(request.UsagePreset)
+            && request.CanBeSold is null
+            && request.CanBeUsedAsIngredient is null
+            && request.IsProduced is null)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
+                ApplicationErrorCodes.CatalogBulkValidation,
+                "Choose how your business will use this product before creating it.");
+        }
+
         // Buyer SellingPrice is independent of supplier PO price. Never equate them here.
         var staged = await CatalogProductCreateCore.StageAsync(
             _products,
@@ -435,7 +447,8 @@ public sealed class CreateBuyerProductAndLink
             unitInputs: null,
             canExposeToConnectedBuyers: false,
             defaultConnectedPoPrice: null,
-            ct).ConfigureAwait(false);
+            ct,
+            request.BusinessUsage).ConfigureAwait(false);
         if (!staged.IsSuccess)
         {
             return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(

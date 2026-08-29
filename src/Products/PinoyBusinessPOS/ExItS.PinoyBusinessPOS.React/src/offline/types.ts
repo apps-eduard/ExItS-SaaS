@@ -1,8 +1,11 @@
 import type { PosCatalogProductDto, PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
 import type { OfflinePriceAuthority } from "@/api/pos/pos-offline-price-authority-client";
 
-/** v6 adds the server-signed offline price lease store (RMAP-21 Review Repair 01). */
-export const OFFLINE_SCHEMA_VERSION = 6 as const;
+/**
+ * v6 adds the server-signed offline price lease store (RMAP-21 Review Repair 01).
+ * v7: businessUsage rides on cached PosCatalogProductDto (no separate IndexedDB column).
+ */
+export const OFFLINE_SCHEMA_VERSION = 7 as const;
 
 /** Written to `meta` on open so a Personal write can refuse an Organization database. */
 export const OFFLINE_SCOPE_KIND_META_KEY = "scopeKind" as const;

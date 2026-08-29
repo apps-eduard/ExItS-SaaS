@@ -248,6 +248,7 @@ public static class ConnectedSupplierMapper
         DateTimeOffset updatedAtUtc)
     {
         var isShared = product?.IsBlockedFromConnectedBuyers != true
+            && product?.CanBeSold == true
             && ConnectedPoPricing.IsProductShared(mode, share);
 
         decimal? effective = null;

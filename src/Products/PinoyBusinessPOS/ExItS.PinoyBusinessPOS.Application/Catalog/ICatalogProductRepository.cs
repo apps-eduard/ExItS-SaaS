@@ -11,7 +11,9 @@ public sealed record CatalogProductFilter(
     string? Search = null,
     bool? CanExposeToConnectedBuyers = null,
     bool UncategorizedOnly = false,
-    ProductBrandId? BrandId = null);
+    ProductBrandId? BrandId = null,
+    /// <summary>When set, filters by authoritative <c>CanBeSold</c> (Resale sell-floor eligibility).</summary>
+    bool? CanBeSold = null);
 
 public interface ICatalogProductRepository
 {

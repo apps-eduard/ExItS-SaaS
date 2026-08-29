@@ -57,6 +57,10 @@ export type PosCatalogProductDto = {
   createdAtUtc: string;
   updatedAtUtc: string;
   canBeSold?: boolean;
+  /** Resale | Ingredient | InternalUse — prefer over canBeSold when present. */
+  businessUsage?: string | null;
+  canBeUsedAsIngredient?: boolean | null;
+  usagePreset?: string | null;
   hasImage?: boolean;
   imageVersion?: number | null;
   imageSource?: string | null;
@@ -140,6 +144,7 @@ export type CreatePosCatalogProductRequest = {
   productId?: string | null;
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
+  businessUsage?: string | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
@@ -157,6 +162,7 @@ export type UpdatePosCatalogProductRequest = {
   expectedUpdatedAtUtc?: string | null;
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
+  businessUsage?: string | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean | null;
   expirationWarningDays?: number | null;

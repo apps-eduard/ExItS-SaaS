@@ -152,11 +152,23 @@ public sealed class ProductUnitConversionTests
     }
 
     [Fact]
-    public void Usage_requires_at_least_one_consume_or_produce_flag()
+    public void Usage_allows_purchasable_only_as_internal_use()
+    {
+        var caps = ProductUsageCapabilities.Create(
+            canBePurchased: true,
+            canBeSold: false,
+            canBeUsedAsIngredient: false,
+            isProduced: false,
+            presetCode: ProductUsageCapabilities.InternalUseCode);
+        Assert.Equal(ProductBusinessUsage.InternalUse, ProductBusinessUsages.Classify(caps));
+    }
+
+    [Fact]
+    public void Usage_rejects_product_with_no_participation_flags()
     {
         var ex = Assert.Throws<DomainException>(() =>
             ProductUsageCapabilities.Create(
-                canBePurchased: true,
+                canBePurchased: false,
                 canBeSold: false,
                 canBeUsedAsIngredient: false,
                 isProduced: false));

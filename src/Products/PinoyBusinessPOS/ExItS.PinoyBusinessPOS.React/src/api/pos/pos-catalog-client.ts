@@ -29,6 +29,8 @@ export type ListCatalogProductsOptions = {
   status?: string;
   categoryId?: string;
   brandId?: string | null;
+  /** When true, only products that can appear on the Sell floor (Resale). */
+  canBeSold?: boolean;
   page?: number;
   pageSize?: number;
 };
@@ -47,7 +49,10 @@ export type ListCatalogBrandsOptions = {
   pageSize?: number;
 };
 
-function appendQuery(path: string, params: Record<string, string | number | undefined>): string {
+function appendQuery(
+  path: string,
+  params: Record<string, string | number | boolean | undefined>,
+): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== "") {
@@ -244,6 +249,7 @@ export function listCatalogProducts(
       status: options.status ?? "Active",
       categoryId: options.categoryId,
       brandId: options.brandId ?? undefined,
+      canBeSold: options.canBeSold,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? CATALOG_BROWSE_PAGE_SIZE,
     }),

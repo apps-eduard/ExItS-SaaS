@@ -50,7 +50,7 @@ function baseInput(
 
 describe("RMAP-21D offline Cash sale enqueue", () => {
   it("keeps the Sell stores intact after the price-lease schema bump", async () => {
-    expect(OFFLINE_SCHEMA_VERSION).toBe(6);
+    expect(OFFLINE_SCHEMA_VERSION).toBe(7);
     const { db } = await openScopedDb("user-schema");
     expect([...db.objectStoreNames].sort()).toEqual([
       "catalogCategories",

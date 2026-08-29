@@ -54,6 +54,14 @@ import {
 } from "@/features/catalog/product-unit-drafts";
 
 import {
+  businessUsageLabelKey,
+  resolveBusinessUsage,
+  type ProductBusinessUsage,
+} from "@/features/catalog/product-business-usage";
+
+import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
+
+import {
   buildEnableInventoryBody,
   computeOpeningStockValue,
   validateOpeningStockInput,
@@ -184,7 +192,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [brandId, setBrandId] = useState("");
 
-  const [canBeSold, setCanBeSold] = useState(true);
+  const [businessUsage, setBusinessUsage] = useState<ProductBusinessUsage>("Resale");
+
+  const [initialBusinessUsage, setInitialBusinessUsage] =
+    useState<ProductBusinessUsage | null>(null);
 
   const [tracksExpiration, setTracksExpiration] = useState(false);
 
@@ -265,7 +276,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
     setBrandId(product.brandId ?? "");
 
-    setCanBeSold(product.canBeSold !== false);
+    const usage = resolveBusinessUsage(product);
+    setBusinessUsage(usage);
+    setInitialBusinessUsage(usage);
 
     setTracksExpiration(product.tracksExpiration === true);
 
@@ -377,7 +390,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           unitOfMeasure,
           sellingPrice: price,
           sellingMode,
-          canBeSold,
+          businessUsage,
           units: unitsPayload,
           tracksExpiration: trackStockQuantity && tracksExpiration,
           expirationWarningDays: resolvedWarningDays,
@@ -407,7 +420,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         unitOfMeasure,
         sellingPrice: price,
         sellingMode,
-        canBeSold,
+        businessUsage,
         expectedUpdatedAtUtc,
         units: configurePackages ? unitsPayload : undefined,
         tracksExpiration: existing?.tracksExpiration === true,
@@ -543,6 +556,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const isActive = productStatus?.toLowerCase() === "active";
 
+  const isResale = businessUsage === "Resale";
+
+  const showLeaveSellFloorNote =
+    mode === "edit" &&
+    initialBusinessUsage === "Resale" &&
+    businessUsage !== "Resale";
+
   const brandOptions: PosProductBrandDto[] = (() => {
     const active = brandsQuery.data?.items ?? [];
     const currentBrandId = productQuery.data?.brandId;
@@ -586,7 +606,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         trailing={
           mode === "edit" && productStatus ? (
-            <StatusChip tone={isActive ? "success" : "warning"}>{productStatus}</StatusChip>
+            <span className="flex flex-wrap items-center gap-2">
+              <StatusChip tone={isActive ? "success" : "warning"}>{productStatus}</StatusChip>
+              <span className="text-[length:var(--exits-text-sm)] text-muted">
+                {t("catalog.businessUsage.label")}: {t(businessUsageLabelKey(businessUsage))}
+              </span>
+            </span>
           ) : undefined
         }
       />
@@ -779,6 +804,22 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           <h2 className="catalog-form-section__title">{t("catalog.sectionPricing")}</h2>
 
           <div className="catalog-form-section__grid">
+            <div className="catalog-form-field--full">
+              <ProductBusinessUsageSelector
+                value={businessUsage}
+                onChange={setBusinessUsage}
+              />
+            </div>
+
+            {showLeaveSellFloorNote ? (
+              <p
+                className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="catalog-leave-sell-floor-note"
+              >
+                {t("catalog.businessUsage.leaveSellFloor")}
+              </p>
+            ) : null}
+
             <FormSelect
               label={t("catalog.baseUnit")}
 
@@ -831,17 +872,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               onChange={(e) => setSellingPrice(e.target.value)}
             />
 
-            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+            <p
+              className={
+                isResale
+                  ? "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  : "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted opacity-70"
+              }
+            >
               {t("catalog.baseSellingPriceHint")}
             </p>
-
-            <FormCheck
-              label={t("catalog.canBeSold")}
-
-              checked={canBeSold}
-
-              onChange={setCanBeSold}
-            />
           </div>
         </section>
 

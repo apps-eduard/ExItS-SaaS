@@ -21,6 +21,11 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
+import {
+  businessUsageHintKey,
+  type ProductBusinessUsage,
+} from "@/features/catalog/product-business-usage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -38,6 +43,7 @@ export function PrepareConnectedProductsPage() {
     uom: string;
     purchasePrice: number;
   } | null>(null);
+  const [businessUsage, setBusinessUsage] = useState<ProductBusinessUsage | null>(null);
   const [sellingPriceText, setSellingPriceText] = useState("");
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [pickerSearch, setPickerSearch] = useState("");
@@ -89,6 +95,8 @@ export function PrepareConnectedProductsPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
+  const scope = workspace;
+
   if (poQuery.isLoading || readinessQuery.isLoading) {
     return <LoadingState label={t("loading.label")} />;
   }
@@ -111,10 +119,10 @@ export function PrepareConnectedProductsPage() {
 
   async function refresh() {
     await queryClient.invalidateQueries({
-      queryKey: ["po-receiving-readiness", workspace.organizationId, purchaseOrderId],
+      queryKey: ["po-receiving-readiness", scope.organizationId, purchaseOrderId],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
+      queryKey: ["purchase-order", scope.organizationId, purchaseOrderId],
     });
     await readinessQuery.refetch();
   }
@@ -131,7 +139,7 @@ export function PrepareConnectedProductsPage() {
     setBusyKey(`link-${supplierProductId}`);
     setError(null);
     try {
-      await linkProduct(workspace, relationshipId, {
+      await linkProduct(scope, relationshipId, {
         buyerProductId,
         exposureId: exposure.exposureId,
         purchaseOrderId,
@@ -149,8 +157,18 @@ export function PrepareConnectedProductsPage() {
     }
   }
 
+  function resetCreateForm() {
+    setCreateFor(null);
+    setBusinessUsage(null);
+    setSellingPriceText("");
+  }
+
   async function doCreate() {
     if (!createFor || !relationshipId || !allowCreate) {
+      return;
+    }
+    if (!businessUsage) {
+      setError(t("catalog.businessUsage.chooseRequired"));
       return;
     }
     const exposure = catalogQuery.data?.items.find(
@@ -160,23 +178,34 @@ export function PrepareConnectedProductsPage() {
       setError(t("purchasing.prepareExposureMissing"));
       return;
     }
-    const selling = Number(sellingPriceText);
-    if (!Number.isFinite(selling) || selling < 0) {
-      setError(t("purchasing.prepareSellingPriceInvalid"));
-      return;
+
+    let selling = 0;
+    if (businessUsage === "Resale") {
+      selling = Number(sellingPriceText);
+      if (!Number.isFinite(selling) || selling < 0) {
+        setError(t("purchasing.prepareSellingPriceInvalid"));
+        return;
+      }
+    } else if (sellingPriceText.trim() !== "") {
+      selling = Number(sellingPriceText);
+      if (!Number.isFinite(selling) || selling < 0) {
+        setError(t("purchasing.prepareSellingPriceInvalid"));
+        return;
+      }
     }
+
     setBusyKey(`create-${createFor.supplierProductId}`);
     setError(null);
     try {
-      await createBuyerProductAndLink(workspace, relationshipId, {
+      await createBuyerProductAndLink(scope, relationshipId, {
         exposureId: exposure.exposureId,
         name: createFor.name,
         unitOfMeasure: createFor.uom,
         sellingPrice: selling,
+        businessUsage,
         purchaseOrderId,
       });
-      setCreateFor(null);
-      setSellingPriceText("");
+      resetCreateForm();
       await refresh();
     } catch (err) {
       setError(
@@ -221,7 +250,7 @@ export function PrepareConnectedProductsPage() {
                     {item.purchaseUnitPrice} / {item.unitOfMeasureCode}
                   </p>
                 </div>
-                <StatusChip tone={item.status === "Review" ? "warning" : "neutral"}>
+                <StatusChip tone={item.status === "Review" ? "warning" : "info"}>
                   {item.status === "Review"
                     ? t("purchasing.prepareMatchFound")
                     : t("purchasing.prepareNewProduct")}
@@ -269,6 +298,7 @@ export function PrepareConnectedProductsPage() {
                         uom: item.unitOfMeasureCode,
                         purchasePrice: item.purchaseUnitPrice,
                       });
+                      setBusinessUsage(null);
                       setSellingPriceText("");
                     }}
                   >
@@ -285,8 +315,9 @@ export function PrepareConnectedProductsPage() {
         <Card className="flex flex-col gap-3 p-3" data-testid="prepare-link-picker">
           <p className="m-0 font-medium">{t("purchasing.prepareChooseExisting")}</p>
           <SearchField
+            label={t("purchasing.prepareSearchProducts")}
             value={pickerSearch}
-            onChange={setPickerSearch}
+            onChange={(event) => setPickerSearch(event.target.value)}
             placeholder={t("purchasing.prepareSearchProducts")}
           />
           <ul className="m-0 grid list-none gap-2 p-0">
@@ -305,7 +336,7 @@ export function PrepareConnectedProductsPage() {
             ))}
           </ul>
           <Button type="button" variant="ghost" onClick={() => setPickerFor(null)}>
-            {t("common.cancel")}
+            {t("purchasing.cancel")}
           </Button>
         </Card>
       ) : null}
@@ -319,24 +350,37 @@ export function PrepareConnectedProductsPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)]">
             {t("purchasing.preparePurchaseCost")}: {createFor.purchasePrice} / {createFor.uom}
           </p>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("purchasing.prepareYourSellingPrice")}</span>
-            <input
-              className="min-h-11 rounded-md border border-border px-3"
-              inputMode="decimal"
-              value={sellingPriceText}
-              onChange={(event) => setSellingPriceText(event.target.value)}
-              data-testid="prepare-selling-price"
-            />
-          </label>
+          <ProductBusinessUsageSelector
+            value={businessUsage}
+            onChange={setBusinessUsage}
+            requireExplicitChoice
+            name="prepareBusinessUsage"
+          />
+          {businessUsage && businessUsage !== "Resale" ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t(businessUsageHintKey(businessUsage))}
+            </p>
+          ) : null}
+          {businessUsage === "Resale" ? (
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span>{t("purchasing.prepareYourSellingPrice")}</span>
+              <input
+                className="min-h-11 rounded-md border border-border px-3"
+                inputMode="decimal"
+                value={sellingPriceText}
+                onChange={(event) => setSellingPriceText(event.target.value)}
+                data-testid="prepare-selling-price"
+              />
+            </label>
+          ) : null}
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="ghost" onClick={() => setCreateFor(null)}>
-              {t("common.cancel")}
+            <Button type="button" variant="ghost" onClick={() => resetCreateForm()}>
+              {t("purchasing.cancel")}
             </Button>
             <Button
               type="button"
               className="min-h-11"
-              disabled={busyKey != null}
+              disabled={busyKey != null || businessUsage === null}
               onClick={() => void doCreate()}
               data-testid="prepare-create-link"
             >

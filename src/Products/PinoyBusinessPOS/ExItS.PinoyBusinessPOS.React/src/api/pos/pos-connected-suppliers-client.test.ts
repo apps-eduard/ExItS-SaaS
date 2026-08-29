@@ -224,6 +224,7 @@ describe("pos-connected-suppliers-client", () => {
       name: "Rice 25kg",
       unitOfMeasure: "Bag",
       sellingPrice: 20,
+      businessUsage: "Resale",
     });
     await listLinks(workspace, relationshipId);
     await unlinkProduct(workspace, linkId);

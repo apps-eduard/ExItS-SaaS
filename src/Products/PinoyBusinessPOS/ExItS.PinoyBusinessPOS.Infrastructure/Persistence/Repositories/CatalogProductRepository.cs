@@ -222,6 +222,12 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
             query = query.Where(p => p.CanExposeToConnectedBuyers == canExpose);
         }
 
+        if (filter.CanBeSold is not null)
+        {
+            var canBeSold = filter.CanBeSold.Value;
+            query = query.Where(p => p.CanBeSold == canBeSold);
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var term = filter.Search.Trim();

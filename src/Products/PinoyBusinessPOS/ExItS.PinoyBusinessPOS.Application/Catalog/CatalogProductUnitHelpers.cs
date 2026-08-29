@@ -23,8 +23,16 @@ internal static class CatalogProductUnitHelpers
         bool? canBeSold,
         bool? canBeUsedAsIngredient,
         bool? isProduced,
-        string? usagePreset)
+        string? usagePreset,
+        string? businessUsage = null)
     {
+        // Explicit business-usage classification wins over raw flags/presets.
+        if (!string.IsNullOrWhiteSpace(businessUsage))
+        {
+            return ProductBusinessUsages.ToCapabilities(
+                ProductBusinessUsages.ParseRequired(businessUsage));
+        }
+
         if (!string.IsNullOrWhiteSpace(usagePreset)
             && canBePurchased is null
             && canBeSold is null

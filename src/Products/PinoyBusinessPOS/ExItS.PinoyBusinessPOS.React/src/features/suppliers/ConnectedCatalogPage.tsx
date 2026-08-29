@@ -173,6 +173,7 @@ export function ConnectedCatalogPage() {
         unitOfMeasure: uom,
         // Buyer selling price is independent of supplier purchase price.
         sellingPrice: 0,
+        businessUsage: "Resale",
       });
       setMessage(t("connected.createAndLinkSucceeded"));
       await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });

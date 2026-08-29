@@ -194,6 +194,7 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             {
                 "shared" => joined.Where(x =>
                     !x.product.IsBlockedFromConnectedBuyers
+                    && x.product.CanBeSold
                     && (x.share == null || x.share.IsShared)),
                 "notshared" => joined.Where(x =>
                     x.share != null && !x.share.IsShared),
@@ -202,14 +203,14 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
                     && x.share.IsShared
                     && x.share.BuyerSpecificPoPrice != null),
                 "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
-                _ => joined
+                _ => joined.Where(x => x.product.CanBeSold || x.product.IsBlockedFromConnectedBuyers)
             };
         }
         else
         {
             joined = filter switch
             {
-                "shared" => joined.Where(x => x.share != null && x.share.IsShared),
+                "shared" => joined.Where(x => x.share != null && x.share.IsShared && x.product.CanBeSold),
                 "notshared" => joined.Where(x => x.share == null || !x.share.IsShared),
                 "customprice" => joined.Where(x =>
                     x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
@@ -218,7 +219,7 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             };
         }
 
-        var eligibleCount = await products.CountAsync(x => !x.IsBlockedFromConnectedBuyers, ct)
+        var eligibleCount = await products.CountAsync(x => !x.IsBlockedFromConnectedBuyers && x.CanBeSold, ct)
             .ConfigureAwait(false);
         var excludedCount = await shares.CountAsync(x => !x.IsShared, ct).ConfigureAwait(false);
         var explicitSharedCount = await (
@@ -332,7 +333,8 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             .CountAsync(
                 x => x.OrganizationId == supplier.Value
                      && x.Status == activeStatus
-                     && !x.IsBlockedFromConnectedBuyers,
+                     && !x.IsBlockedFromConnectedBuyers
+                     && x.CanBeSold,
                 ct)
             .ConfigureAwait(false);
     }

@@ -252,7 +252,15 @@ public sealed class CatalogProductQueryService
             resolved.HasMerchantOverride,
             product.PlatformBarcode,
             product.BrandId?.Value,
-            brandName);
+            brandName,
+            ProductBusinessUsages.ToCode(
+                ProductBusinessUsages.Classify(
+                    ProductUsageCapabilities.Create(
+                        product.CanBePurchased,
+                        product.CanBeSold,
+                        product.CanBeUsedAsIngredient,
+                        product.IsProduced,
+                        product.UsagePreset))));
     }
 
     private async Task<string?> ResolveBrandNameAsync(
@@ -334,6 +342,7 @@ public sealed class CreateCatalogProduct
         IReadOnlyList<PosCatalogProductUnitInput>? units = null,
         bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null,
+        string? businessUsage = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -366,7 +375,8 @@ public sealed class CreateCatalogProduct
                 units,
                 canExposeToConnectedBuyers,
                 defaultConnectedPoPrice,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                businessUsage).ConfigureAwait(false);
             if (!staged.IsSuccess)
             {
                 return ApplicationResult<CatalogProduct>.Failure(staged.ErrorCode!, staged.ErrorMessage!);
@@ -440,6 +450,7 @@ public sealed class UpdateCatalogProduct
         IReadOnlyList<PosCatalogProductUnitInput>? units = null,
         bool? canExposeToConnectedBuyers = null,
         decimal? defaultConnectedPoPrice = null,
+        string? businessUsage = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -571,8 +582,38 @@ public sealed class UpdateCatalogProduct
                     now);
             }
 
+            if (canBePurchased is not null
+                || canBeSold is not null
+                || canBeUsedAsIngredient is not null
+                || isProduced is not null
+                || !string.IsNullOrWhiteSpace(usagePreset)
+                || !string.IsNullOrWhiteSpace(businessUsage))
+            {
+                var usage = CatalogProductUnitHelpers.ResolveUsage(
+                    canBePurchased ?? product.CanBePurchased,
+                    canBeSold ?? product.CanBeSold,
+                    canBeUsedAsIngredient ?? product.CanBeUsedAsIngredient,
+                    isProduced ?? product.IsProduced,
+                    usagePreset ?? product.UsagePreset,
+                    businessUsage);
+                product.UpdateUsage(usage, now);
+
+                // Non-resale products must not remain exposed to connected buyers.
+                if (!product.CanBeSold && product.CanExposeToConnectedBuyers)
+                {
+                    product.DisableConnectedBuyerAvailability(now);
+                }
+            }
+
             if (canExposeToConnectedBuyers == true)
             {
+                if (!product.CanBeSold)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        ApplicationErrorCodes.CatalogBulkValidation,
+                        "Only sell-as-is products can be shared with connected business customers.");
+                }
+
                 product.EnableConnectedBuyerAvailability(now);
                 if (defaultConnectedPoPrice is not null)
                 {
@@ -586,21 +627,6 @@ public sealed class UpdateCatalogProduct
             else if (defaultConnectedPoPrice is not null)
             {
                 product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
-            }
-
-            if (canBePurchased is not null
-                || canBeSold is not null
-                || canBeUsedAsIngredient is not null
-                || isProduced is not null
-                || !string.IsNullOrWhiteSpace(usagePreset))
-            {
-                var usage = CatalogProductUnitHelpers.ResolveUsage(
-                    canBePurchased ?? product.CanBePurchased,
-                    canBeSold ?? product.CanBeSold,
-                    canBeUsedAsIngredient ?? product.CanBeUsedAsIngredient,
-                    isProduced ?? product.IsProduced,
-                    usagePreset ?? product.UsagePreset);
-                product.UpdateUsage(usage, now);
             }
 
             if (units is { Count: > 0 })
@@ -666,7 +692,7 @@ internal static class ConnectedProductExposureSync
     {
         if (exposures is null) return;
         var existing = await exposures.GetByProductAsync(product.OrganizationId, product.Id, ct).ConfigureAwait(false);
-        if (product.IsBlockedFromConnectedBuyers || !product.CanExposeToConnectedBuyers)
+        if (product.IsBlockedFromConnectedBuyers || !product.CanExposeToConnectedBuyers || !product.CanBeSold)
         {
             if (existing is not null && existing.IsExposed)
             {
@@ -1007,7 +1033,8 @@ internal static class CatalogProductCreateCore
         IReadOnlyList<PosCatalogProductUnitInput>? unitInputs,
         bool canExposeToConnectedBuyers,
         decimal? defaultConnectedPoPrice,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? businessUsage = null)
     {
         var orgId = PosOrganizationId.From(organizationId);
 
@@ -1029,7 +1056,8 @@ internal static class CatalogProductCreateCore
             canBeSold,
             canBeUsedAsIngredient,
             isProduced,
-            usagePreset);
+            usagePreset,
+            businessUsage);
         ProductCategoryId? category = null;
         if (categoryId is not null)
         {
@@ -1102,13 +1130,13 @@ internal static class CatalogProductCreateCore
             await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
         }
 
-        if (canExposeToConnectedBuyers)
+        if (canExposeToConnectedBuyers && usage.CanBeSold)
         {
             product.EnableConnectedBuyerAvailability(now);
         }
         else
         {
-            // Explicit false: global-block (Create defaults to eligible).
+            // Explicit false, or non-resale usage: global-block (Create defaults to eligible for Resale only).
             product.DisableConnectedBuyerAvailability(now);
         }
 

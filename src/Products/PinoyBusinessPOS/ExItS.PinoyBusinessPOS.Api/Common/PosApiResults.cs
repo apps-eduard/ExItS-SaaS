@@ -98,6 +98,7 @@ internal static class PosApiResults
             or DomainErrorCodes.ProductNotActive
             or ApplicationErrorCodes.SaleNumberConflict
             or ApplicationErrorCodes.SaleProductNotActive
+            or ApplicationErrorCodes.SaleProductNotSellable
             or ApplicationErrorCodes.PaymentAttemptConflict
             or DomainErrorCodes.InvalidSaleStatusTransition
             or ApplicationErrorCodes.CreditReversalRequiresSaleVoid

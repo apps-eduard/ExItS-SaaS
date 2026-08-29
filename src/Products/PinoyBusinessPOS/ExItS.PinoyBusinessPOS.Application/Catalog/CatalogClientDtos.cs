@@ -85,7 +85,9 @@ public sealed record PosCatalogProductDto(
     bool HasMerchantImageOverride = false,
     string? PlatformBarcode = null,
     Guid? BrandId = null,
-    string? BrandName = null);
+    string? BrandName = null,
+    /// <summary>Buyer-owned business usage: Resale | Ingredient | InternalUse.</summary>
+    string BusinessUsage = "Resale");
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -119,7 +121,8 @@ public sealed record CreatePosCatalogProductRequest(
     string? UsagePreset = null,
     IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
     bool CanExposeToConnectedBuyers = false,
-    decimal? DefaultConnectedPoPrice = null);
+    decimal? DefaultConnectedPoPrice = null,
+    string? BusinessUsage = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -141,7 +144,8 @@ public sealed record UpdatePosCatalogProductRequest(
     string? UsagePreset = null,
     IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
     bool? CanExposeToConnectedBuyers = null,
-    decimal? DefaultConnectedPoPrice = null);
+    decimal? DefaultConnectedPoPrice = null,
+    string? BusinessUsage = null);
 
 /// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
 public sealed record UpdatePosCatalogProductPriceItem(

@@ -22,6 +22,11 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
+import {
+  businessUsageLabelKey,
+  resolveBusinessUsage,
+  type ProductBusinessUsage,
+} from "@/features/catalog/product-business-usage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -30,6 +35,7 @@ import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 const PAGE_SIZE = 20;
 
 type StatusFilter = "Active" | "Inactive" | "";
+type UsageFilter = "all" | ProductBusinessUsage;
 
 const STATUS_FILTERS: Array<{
   value: StatusFilter;
@@ -41,12 +47,28 @@ const STATUS_FILTERS: Array<{
   { value: "", key: "all", labelKey: "catalog.statusAll" },
 ];
 
+const USAGE_FILTERS: Array<{
+  value: UsageFilter;
+  key: string;
+  labelKey:
+    | "catalog.businessUsage.filterAll"
+    | "catalog.businessUsage.filterResale"
+    | "catalog.businessUsage.filterIngredient"
+    | "catalog.businessUsage.filterInternal";
+}> = [
+  { value: "all", key: "all", labelKey: "catalog.businessUsage.filterAll" },
+  { value: "Resale", key: "Resale", labelKey: "catalog.businessUsage.filterResale" },
+  { value: "Ingredient", key: "Ingredient", labelKey: "catalog.businessUsage.filterIngredient" },
+  { value: "InternalUse", key: "InternalUse", labelKey: "catalog.businessUsage.filterInternal" },
+];
+
 export function CatalogProductsPage() {
   const { t } = useI18n();
   const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
+  const [usageFilter, setUsageFilter] = useState<UsageFilter>("all");
   const [categoryId, setCategoryId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [page, setPage] = useState(1);
@@ -58,7 +80,7 @@ export function CatalogProductsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debounced, status, categoryId, brandId]);
+  }, [debounced, status, categoryId, brandId, usageFilter]);
 
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", "filter", workspace?.organizationId, workspace?.branchId],
@@ -113,6 +135,14 @@ export function CatalogProductsPage() {
         signal,
       ),
   });
+
+  const filteredItems = useMemo(() => {
+    const items = query.data?.items ?? [];
+    if (usageFilter === "all") {
+      return items;
+    }
+    return items.filter((product) => resolveBusinessUsage(product) === usageFilter);
+  }, [query.data?.items, usageFilter]);
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -243,6 +273,19 @@ export function CatalogProductsPage() {
         }))}
       />
 
+      <ExitsChipBar
+        variant="filter"
+        ariaLabel={t("catalog.businessUsage.label")}
+        testId="catalog-usage-filters"
+        items={USAGE_FILTERS.map((filter) => ({
+          key: filter.key,
+          label: t(filter.labelKey),
+          state: usageFilter === filter.value ? "active" : "idle",
+          testId: `catalog-usage-${filter.key}`,
+          onSelect: () => setUsageFilter(filter.value),
+        }))}
+      />
+
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isFetching && !query.isLoading && query.data ? (
         <BackgroundRefreshIndicator active label={t("loading.updating")} />
@@ -250,15 +293,16 @@ export function CatalogProductsPage() {
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
-      {query.isSuccess && query.data.items.length === 0 ? (
+      {query.isSuccess && filteredItems.length === 0 ? (
         <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-products-list">
-        {query.data?.items.map((product) => {
+        {filteredItems.map((product) => {
           const categoryName = product.categoryId
             ? categoryNameById.get(product.categoryId)
             : undefined;
+          const usage = resolveBusinessUsage(product);
           const secondaryMeta = [product.brandName, categoryName].filter(Boolean).join(" · ");
           const idsMeta = [product.sku, product.barcode].filter(Boolean).join(" · ");
           const isActive = product.status.toLowerCase() === "active";
@@ -282,6 +326,9 @@ export function CatalogProductsPage() {
                       {idsMeta}
                     </span>
                   ) : null}
+                  <span className="catalog-product-row__usage mt-0.5 block truncate text-muted">
+                    {t(businessUsageLabelKey(usage))}
+                  </span>
                 </span>
                 <span className="catalog-product-row__aside">
                   {product.sellingPrice != null ? (

@@ -71,7 +71,11 @@ export async function resolveCatalogLookup(
     return { kind: "empty", unknownBarcode: true };
   }
 
-  const page = await listCatalogProducts(workspace, { ...listOptions, search: term }, signal);
+  const page = await listCatalogProducts(
+    workspace,
+    { ...listOptions, search: term, canBeSold: listOptions.canBeSold ?? true },
+    signal,
+  );
   return {
     kind: "search",
     products: page.items.filter((item) => item.canBeSold !== false),
