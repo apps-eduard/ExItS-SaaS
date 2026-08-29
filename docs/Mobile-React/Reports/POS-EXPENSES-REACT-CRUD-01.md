@@ -3,6 +3,8 @@
 **Status:** COMPLETE  
 **Branch:** `feat/organization`  
 **START_SHA:** `e704a585acc7edfc8053c3f6dc9b09405c1f1654`  
+**FINAL_SHA:** `7d3038d8302fdb94353f0bfb40c357b22774000c`  
+**REMOTE_SHA:** `7d3038d8302fdb94353f0bfb40c357b22774000c`  
 **TASK:** POS-EXPENSES-REACT-CRUD-01
 
 ## Audit (pre-implementation)
@@ -72,8 +74,21 @@
 | CONFLICT_MARKERS | 0 |
 | POS_API_HEALTH | N/A (local E2E not run this package; API contract unchanged) |
 
-## Final report fields
+## Backend tests (this package)
 
-See commit message / push evidence for `FINAL_SHA`.
+| Suite | Result |
+|-------|--------|
+| Unit `FullyQualifiedName~Expense` | 12 passed |
+| Integration `PosExpenseApi` | 6 passed |
+| Architecture `PosExpenses` | 5 passed |
+
+## Git
+
+| Field | Value |
+|-------|--------|
+| FINAL_SHA | `7d3038d8302fdb94353f0bfb40c357b22774000c` |
+| REMOTE_SHA | `7d3038d8302fdb94353f0bfb40c357b22774000c` |
+| PUSH | PASS |
+| WORKTREE_CLEAN | YES |
 
 **NEXT:** POS-B2B-IDENTITY-DISPLAY-01
