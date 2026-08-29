@@ -1,4 +1,4 @@
-# POS-PRODUCT-PROFITABILITY-RANKING-01
+﻿# POS-PRODUCT-PROFITABILITY-RANKING-01
 
 ## Summary
 
@@ -8,7 +8,8 @@ Authoritative **product profitability ranking** from immutable Sale/SaleLine com
 |--------|--------|
 | TASK | POS-PRODUCT-PROFITABILITY-RANKING-01 |
 | START_SHA | `d3ff54f16c1252c1f8dc18bf81d5e1e6aa2df7c2` |
-| FEATURE_SHA | *(updated after follow-up commit)* |
+| FEATURE_SHA | `1e08f2d08f12cbf4c47752e7c036e7367bc27478` |
+| HARDEN_SHA | `` |
 | EXISTING_COST_MODEL | SaleLine UnitCostSnapshot / LineCostSnapshot; Sale CostStatus |
 | EXISTING_DISCOUNT_MODEL | SaleLine GrossLineTotal / TotalLineDiscount / LineTotal |
 | PRODUCT_PROFITABILITY_SOURCE_OF_TRUTH | Completed sale + return line snapshots (SQL aggregates) |
@@ -34,7 +35,15 @@ Authoritative **product profitability ranking** from immutable Sale/SaleLine com
 | TABLET_UX | Summary grid + cards / table breakpoint |
 | DESKTOP_UX | Summary + sortable table |
 | I18N_PARITY | en / fil-PH / ceb-PH / ilo-PH / hil-PH |
+| BACKEND_TESTS | 24 passed (ProductProfitability + Discount + SaleCostProfit) |
+| REACT_TARGETED_TESTS | 12 passed |
+| REACT_FULL_SUITE | TOTAL=1256 PASS=1182 FAIL=74 |
+| PRODUCT_PROFITABILITY_RELATED_FAILURES | 0 |
+| TYPECHECK | PASS |
+| LINT | PASS (0 errors) |
+| BUILD | PASS |
 | MIGRATION | N/A |
+| CONFLICT_MARKERS | 0 |
 | PERMISSION | ViewReports |
 
 ## API
