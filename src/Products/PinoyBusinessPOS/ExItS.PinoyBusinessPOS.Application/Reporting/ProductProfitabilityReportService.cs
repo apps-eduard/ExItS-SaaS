@@ -39,6 +39,7 @@ public sealed record PosProductProfitabilityRowDto(
     decimal RefundAmount,
     decimal KnownCogs,
     string CogsStatus,
+    decimal? TotalCogs,
     decimal? GrossProfit,
     decimal? GrossMarginPercent,
     decimal CostCompletenessPercent);
@@ -128,8 +129,10 @@ public sealed class ProductProfitabilityReportService(
 
             decimal? grossProfit = null;
             decimal? grossMargin = null;
+            decimal? totalCogs = null;
             if (cogsStatus == ProductionCostStatus.Complete)
             {
+                totalCogs = knownCogs;
                 grossProfit = ReportMath.RoundMoney(netSales - knownCogs);
                 if (netSales > 0m)
                 {
@@ -156,6 +159,7 @@ public sealed class ProductProfitabilityReportService(
                     refunds,
                     knownCogs,
                     ProductionCostStatuses.ToCode(cogsStatus),
+                    totalCogs,
                     grossProfit,
                     grossMargin,
                     completeness));

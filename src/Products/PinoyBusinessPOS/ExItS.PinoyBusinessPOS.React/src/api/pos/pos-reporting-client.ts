@@ -348,6 +348,7 @@ export const posProductProfitabilityRowDtoSchema = z.object({
   refundAmount: z.number(),
   knownCogs: z.number(),
   cogsStatus: z.string(),
+  totalCogs: z.number().nullable().optional(),
   grossProfit: z.number().nullable().optional(),
   grossMarginPercent: z.number().nullable().optional(),
   costCompletenessPercent: z.number(),

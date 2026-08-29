@@ -23,6 +23,7 @@ describe("product profitability client schema", () => {
           refundAmount: 0,
           knownCogs: 300,
           cogsStatus: "Complete",
+          totalCogs: 300,
           grossProfit: 600,
           grossMarginPercent: 66.7,
           costCompletenessPercent: 100,
@@ -40,6 +41,7 @@ describe("product profitability client schema", () => {
           refundAmount: 0,
           knownCogs: 100,
           cogsStatus: "Partial",
+          totalCogs: null,
           grossProfit: null,
           grossMarginPercent: null,
           costCompletenessPercent: 40,
@@ -48,8 +50,10 @@ describe("product profitability client schema", () => {
     });
 
     expect(dto.rows[0]?.grossProfit).toBe(600);
+    expect(dto.rows[0]?.totalCogs).toBe(300);
     expect(dto.rows[0]?.commercialDiscounts).toBe(100);
     expect(dto.rows[1]?.grossProfit).toBeNull();
+    expect(dto.rows[1]?.totalCogs).toBeNull();
     expect(dto.rankBy).toBe("grossProfitDesc");
   });
 });

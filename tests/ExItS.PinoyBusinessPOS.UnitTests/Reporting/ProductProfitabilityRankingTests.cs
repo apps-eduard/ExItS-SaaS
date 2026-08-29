@@ -48,6 +48,7 @@ public sealed class ProductProfitabilityRankingTests
         Assert.Equal(100m, rows[0].CommercialDiscounts);
         Assert.Equal(1000m, rows[0].SalesBeforeDiscounts);
         Assert.Equal(900m, rows[0].NetSales);
+        Assert.Equal(300m, rows[0].TotalCogs);
         Assert.Equal(ProductLow, rows[1].ProductId);
         Assert.Equal(100m, rows[1].GrossProfit); // 500 - 400
     }
@@ -80,6 +81,7 @@ public sealed class ProductProfitabilityRankingTests
         var row = Assert.Single(
             (await svc.GetAsync(Org.Value, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 30))).Value!.Rows);
         Assert.Equal(nameof(ProductionCostStatus.Partial), row.CogsStatus);
+        Assert.Null(row.TotalCogs);
         Assert.Null(row.GrossProfit);
         Assert.Null(row.GrossMarginPercent);
         Assert.Equal(200m, row.KnownCogs);

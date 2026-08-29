@@ -54,6 +54,23 @@ function compareNullableNumber(
   return asc ? a - b : b - a;
 }
 
+function summarize(rows: PosProductProfitabilityRowDto[]) {
+  const netSales = rows.reduce((sum, r) => sum + r.netSales, 0);
+  const discounts = rows.reduce((sum, r) => sum + r.commercialDiscounts, 0);
+  const soldRows = rows.filter((r) => r.quantitySold > 0);
+  const allComplete =
+    soldRows.length > 0 && soldRows.every((r) => r.cogsStatus === "Complete");
+  const grossProfit = allComplete
+    ? rows.reduce((sum, r) => sum + (r.grossProfit ?? 0), 0)
+    : null;
+  const completeCount = soldRows.filter((r) => r.cogsStatus === "Complete").length;
+  const completeness =
+    soldRows.length === 0
+      ? 0
+      : Math.round((completeCount / soldRows.length) * 1000) / 10;
+  return { netSales, discounts, grossProfit, completeness, allComplete };
+}
+
 export function ProductProfitabilityTable({
   rows,
   rankBy,
@@ -66,6 +83,7 @@ export function ProductProfitabilityTable({
   const { t } = useI18n();
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortAsc, setSortAsc] = useState(false);
+  const summary = useMemo(() => summarize(rows), [rows]);
 
   const displayed = useMemo(() => {
     if (!sortKey) {
@@ -124,6 +142,46 @@ export function ProductProfitabilityTable({
 
   return (
     <div className="flex min-w-0 flex-col gap-3" data-testid="product-profitability-table">
+      <div
+        className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
+        data-testid="product-profitability-summary"
+      >
+        <div className="rounded-md border border-border p-3">
+          <div className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("reports.metric.netSales")}
+          </div>
+          <div className="mt-1">
+            <MoneyDisplay amount={summary.netSales} />
+          </div>
+        </div>
+        <div className="rounded-md border border-border p-3">
+          <div className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("reports.metric.commercialDiscounts")}
+          </div>
+          <div className="mt-1">
+            <MoneyDisplay amount={summary.discounts} />
+          </div>
+        </div>
+        <div className="rounded-md border border-border p-3">
+          <div className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("reports.metric.grossProfit")}
+          </div>
+          <div className="mt-1">
+            {summary.grossProfit != null ? (
+              <MoneyDisplay amount={summary.grossProfit} />
+            ) : (
+              <span className="text-muted">{t("reports.costIncompletePartial")}</span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-md border border-border p-3">
+          <div className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("reports.metric.costCompleteness")}
+          </div>
+          <div className="mt-1 tabular-nums">{formatMargin(summary.completeness)}</div>
+        </div>
+      </div>
+
       <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span>{t("reports.rank.label")}</span>
         <select
@@ -140,7 +198,67 @@ export function ProductProfitabilityTable({
         </select>
       </label>
 
-      <div className="overflow-x-auto">
+      {/* Mobile / tablet cards */}
+      <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden" data-testid="product-profit-cards">
+        {displayed.map((row) => {
+          const complete = row.cogsStatus === "Complete";
+          return (
+            <li
+              key={row.productId}
+              className="rounded-md border border-border p-3"
+              data-testid={`product-profit-card-${row.productId}`}
+            >
+              <div className="font-medium">{row.productName}</div>
+              <div className="mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                {t(productionCostStatusLabelKey(row.cogsStatus))}
+              </div>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-[length:var(--exits-text-sm)]">
+                <div>
+                  <dt className="text-muted">{t("reports.col.qtySold")}</dt>
+                  <dd className="m-0 tabular-nums">{row.quantitySold}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted">{t("reports.metric.netSales")}</dt>
+                  <dd className="m-0">
+                    <MoneyDisplay amount={row.netSales} />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">{t("reports.metric.knownCogs")}</dt>
+                  <dd className="m-0">
+                    <MoneyDisplay amount={complete ? (row.totalCogs ?? row.knownCogs) : row.knownCogs} />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">{t("reports.metric.grossProfit")}</dt>
+                  <dd className="m-0">
+                    {complete && row.grossProfit != null ? (
+                      <MoneyDisplay amount={row.grossProfit} />
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">{t("reports.metric.grossMargin")}</dt>
+                  <dd className="m-0 tabular-nums">
+                    {complete ? formatMargin(row.grossMarginPercent) : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">{t("reports.metric.commercialDiscounts")}</dt>
+                  <dd className="m-0">
+                    <MoneyDisplay amount={row.commercialDiscounts} />
+                  </dd>
+                </div>
+              </dl>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop table */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[56rem] border-collapse text-[length:var(--exits-text-sm)]">
           <thead>
             <tr className="border-b border-border">
@@ -193,7 +311,7 @@ export function ProductProfitabilityTable({
                     ) : null}
                   </td>
                   <td className="px-2 py-2">
-                    <MoneyDisplay amount={row.knownCogs} />
+                    <MoneyDisplay amount={complete ? (row.totalCogs ?? row.knownCogs) : row.knownCogs} />
                   </td>
                   <td className="px-2 py-2">
                     {t(productionCostStatusLabelKey(row.cogsStatus))}

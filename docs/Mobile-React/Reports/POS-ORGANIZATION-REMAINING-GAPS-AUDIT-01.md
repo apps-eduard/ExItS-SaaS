@@ -74,7 +74,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | STOCK_USE_STATUS | **IMPLEMENTED** | Domain/API/React/void/FEFO/cost snapshot; ONLINE_ONLY. Cost null when no acquisition. |
 | PRODUCTION_STATUS | **IMPLEMENTED** | Setups/runs/void/material cost/output UnitCost; cycle LIMITED; nested Made→Made LATER; capacity DEFERRED. |
 | WASTE_LOSS_STATUS | **IMPLEMENTED** | Exact lots, reasons, void, cost; expired quick-flow **IMPLEMENTED** (POS-EXPIRED-STOCK-WASTE-QUICK-FLOW-01). |
-| COST_PROFIT_STATUS | **IMPLEMENTED** (accuracy PARTIAL) | SaleLine/Sale snapshots; profitability report; Waste/StockUse separate. **LAST_AUTHORITATIVE** (not lot FIFO). Product profitability ranking DEFERRED. Legacy sales Unavailable (no backfill). |
+| COST_PROFIT_STATUS | **IMPLEMENTED** (accuracy PARTIAL) | SaleLine/Sale snapshots; profitability report; **product profitability ranking IMPLEMENTED** (POS-PRODUCT-PROFITABILITY-RANKING-01). Waste/StockUse separate. **LAST_AUTHORITATIVE** (not lot FIFO). Legacy sales Unavailable (no backfill). |
 | REPORTING_STATUS | **PARTIAL** | Classic + operational + profitability present. Most aggregates **org-wide** while shell is branch-bound (misread risk). Discount period totals missing. Product GP ranking deferred. Export deferred. |
 | DEVICE_STATUS | **PARTIAL** | Register/devices UI + runtime policy; sell readiness gate. Not a POS `UtangCapability` (admin experience). PWA device context optional. |
 | SHIFT_STATUS | **IMPLEMENTED** | Open/close; CreateSale requires open shift + register. |
@@ -100,7 +100,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | Inventory | Transfers | PARTIAL | PASS | MISSING React | API/Maui | Med | **MVP_REQUIRED** (multi-branch) | transfers API; no React pages | React transfer package |
 | Cost | Sale COGS / GP | IMPLEMENTED | PASS | PASS | 15 unit + report UI | Med accuracy | MVP_REQUIRED done | cost snapshots + profitability | Honest LAST_AUTHORITATIVE labels |
 | Cost | Lot FIFO layers | DEFERRED | N/A | N/A | — | — | **LATER** | lots lack UnitCost | Do not build ERP costing now |
-| Cost | Product profitability rank | DEFERRED | no | no | — | Low | IMPORTANT | cost report | Later package |
+| Cost | Product profitability rank | **IMPLEMENTED** | PASS | PASS | Low | IMPORTANT | POS-PRODUCT-PROFITABILITY-RANKING-01 | Maintain |
 | Reports | Branch-scoped aggregates | PARTIAL | profitability optional branch | most org-wide | — | **P1** | **MVP_REQUIRED** | RMAP-20 + ReportingEndpoints | Branch report contract |
 | Reports | Discount period totals | **IMPLEMENTED** | sale snapshots | overview/summary/classic/product | targeted PASS | Low | IMPORTANT | POS-DISCOUNT-REPORTING-HARDENING-01 | Maintain |
 | B2B | List vs live identity | PARTIAL | by design | asymmetric | — | Low | IMPORTANT | BusinessCustomerUseCases | Reconcile display |
@@ -184,7 +184,7 @@ UNRELATED_TEST_FAILURES ≈ 76 (personal/platform/session)
 | What was wasted/lost? | IMPLEMENTED |
 | What was produced? | IMPLEMENTED (production runs history) |
 | Which products sell most? | IMPLEMENTED (sales-by-product) |
-| Which generate most gross profit? | DEFERRED |
+| Which generate most gross profit? | **IMPLEMENTED** (product-profitability) |
 | Utang outstanding? | IMPLEMENTED |
 | Branch performance? | PARTIAL (branchId on profitability only; most reports org-wide) |
 | Cashier/device/shift? | PARTIAL (sales-by-cashier, shifts-summary; device reporting light) |
@@ -198,7 +198,7 @@ UNRELATED_TEST_FAILURES ≈ 76 (personal/platform/session)
 |-------|--------|
 | MVP_REQUIRED | React Stock Count; React Transfers (if multi-branch); branch-report honesty/contract; suite harness repair for sell-floor; keep ManualGCash-only payments |
 | IMPORTANT | Expenses CRUD UI; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
-| LATER | Product profitability ranking; lot-layer FIFO COGS; nested BOM; real Card/GCash provider; B2B retail checkout; native offline activation |
+| LATER | lot-layer FIFO COGS; nested BOM; real Card/GCash provider; B2B retail checkout; native offline activation |
 | NOT_NEEDED | GL, operating profit, labor/overhead, enterprise manufacturing, Org Web offline money |
 
 Exact cost-layer/FIFO costing is **safely deferred** for micro/small POS if UI honestly says “estimated / last purchase or production cost” and forces acquisition costs on receive/opening.
