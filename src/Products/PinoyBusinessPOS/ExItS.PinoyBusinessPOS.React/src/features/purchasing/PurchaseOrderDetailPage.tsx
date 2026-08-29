@@ -208,6 +208,14 @@ export function PurchaseOrderDetailPage() {
     allowManage && online && (po?.status === "Draft" || po?.canWithdrawConnected === true);
   const canReceive =
     allowManage && online && po != null && isPurchaseOrderReceivable(po) && !needsApproval;
+  const needsProductSetup =
+    allowManage &&
+    online &&
+    po != null &&
+    (po.needsProductSetup === true || (po.productSetupRequiredCount ?? 0) > 0) &&
+    (po.canReceiveConnected ?? true) &&
+    !needsApproval &&
+    (po.status === "Ordered" || po.status === "PartiallyReceived");
   const canAcceptChanges = allowManage && online && needsApproval;
   const orderTotal = po ? resolveOrderTotal(po) : null;
 
@@ -302,6 +310,22 @@ export function PurchaseOrderDetailPage() {
       {needsApproval ? (
         <Card data-testid="po-needs-approval">
           <p className="m-0">{t("purchasing.changesNeedApproval")}</p>
+        </Card>
+      ) : null}
+      {needsProductSetup ? (
+        <Card className="p-3" data-testid="po-prepare-products-banner">
+          <p className="m-0 font-medium">{t("purchasing.prepareProductsTitle")}</p>
+          <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("purchasing.prepareProductsHelp").replace(
+              "{count}",
+              String(po?.productSetupRequiredCount ?? po?.lines.filter((l) => l.needsProductSetup).length ?? 0),
+            )}
+          </p>
+          <Button asChild className="mt-3 min-h-11" data-testid="po-prepare-products">
+            <Link to={`/purchasing/${purchaseOrderId}/prepare-products`}>
+              {t("purchasing.prepareProductsAction")}
+            </Link>
+          </Button>
         </Card>
       ) : null}
       {canReceive && displayStatus === "Ready" ? (

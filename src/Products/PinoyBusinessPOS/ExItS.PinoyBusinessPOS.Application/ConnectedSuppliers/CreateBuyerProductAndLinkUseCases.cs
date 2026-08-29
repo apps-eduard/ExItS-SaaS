@@ -2,11 +2,13 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
@@ -18,12 +20,16 @@ public sealed record CreateBuyerProductAndLinkRequest(
     string? Sku = null,
     string? Description = null,
     Guid? CategoryId = null,
+    Guid? BrandId = null,
+    string? Barcode = null,
+    bool? TracksExpiration = null,
     Guid? ClientProductId = null,
     string? UsagePreset = null,
     bool? CanBePurchased = null,
     bool? CanBeSold = null,
     bool? CanBeUsedAsIngredient = null,
-    bool? IsProduced = null);
+    bool? IsProduced = null,
+    Guid? PurchaseOrderId = null);
 
 public sealed record CreateBuyerProductAndLinkResultDto(
     BuyerSupplierProductLinkDto Link,
@@ -257,6 +263,7 @@ public sealed class CreateBuyerProductAndLink
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IProductBrandRepository _brands;
+    private readonly IPurchaseOrderRepository? _purchaseOrders;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
@@ -274,7 +281,8 @@ public sealed class CreateBuyerProductAndLink
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IClock clock,
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        IPurchaseOrderRepository? purchaseOrders = null)
     {
         _relationships = relationships;
         _exposures = exposures;
@@ -284,6 +292,7 @@ public sealed class CreateBuyerProductAndLink
         _units = units;
         _categories = categories;
         _brands = brands;
+        _purchaseOrders = purchaseOrders;
         _uow = uow;
         _access = access;
         _clock = clock;
@@ -411,12 +420,12 @@ public sealed class CreateBuyerProductAndLink
             request.SellingPrice,
             request.Description,
             request.Sku,
-            barcode: null,
+            request.Barcode,
             request.CategoryId,
-            brandId: null,
+            request.BrandId,
             request.ClientProductId,
             sellingMode: null,
-            tracksExpiration: false,
+            tracksExpiration: request.TracksExpiration ?? false,
             expirationWarningDays: null,
             request.CanBePurchased,
             request.CanBeSold,
@@ -461,6 +470,17 @@ public sealed class CreateBuyerProductAndLink
             _time.GetUtcNow(),
             effectiveOrderPrice: effectivePrice);
         await _links.AddAsync(link, ct).ConfigureAwait(false);
+        if (request.PurchaseOrderId is Guid poId && poId != Guid.Empty && _purchaseOrders is not null)
+        {
+            var po = await _purchaseOrders.GetByIdAsync(buyer, PurchaseOrderId.From(poId), ct)
+                .ConfigureAwait(false);
+            if (po is not null && po.OrganizationId == buyer)
+            {
+                po.BindBuyerProductForSupplierProduct(exposure.ProductId, product.Id, _time.GetUtcNow());
+                await _purchaseOrders.UpdateAsync(po, ct).ConfigureAwait(false);
+            }
+        }
+
         await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return ApplicationResult<CreateBuyerProductAndLinkResultDto>.Success(MapResult(

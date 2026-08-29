@@ -2806,12 +2806,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
-            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.SupplierProductId).HasColumnName("supplier_product_id");
             entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
             entity.Property(e => e.NameSnapshot)
                 .HasColumnName("name_snapshot")
                 .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength);
             entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength);
+            entity.Property(e => e.SkuSnapshot)
+                .HasColumnName("sku_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength);
             entity.Property(e => e.OrderedQty).HasColumnName("ordered_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.UnitPurchaseCost).HasColumnName("unit_purchase_cost").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
@@ -2838,19 +2842,19 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.PurchaseOrderId, e.ProductId })
                 .IsUnique()
+                .HasFilter("product_id IS NOT NULL")
                 .HasDatabaseName("ux_purchase_order_lines_po_product");
+
+            entity.HasIndex(e => new { e.PurchaseOrderId, e.SupplierProductId })
+                .IsUnique()
+                .HasFilter("supplier_product_id IS NOT NULL")
+                .HasDatabaseName("ux_purchase_order_lines_po_supplier_product");
 
             entity.HasOne<PurchaseOrderRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.PurchaseOrderId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_purchase_order_lines_purchase_orders");
-
-            entity.HasOne<CatalogProductRecord>()
-                .WithMany()
-                .HasForeignKey(e => e.ProductId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_purchase_order_lines_products");
         });
 
         modelBuilder.Entity<PurchaseOrderNumberSequenceRecord>(entity =>
@@ -3539,6 +3543,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.SyncVersion).HasColumnName("sync_version"); entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>new{x.RelationshipId,x.BuyerProductId}).IsUnique().HasFilter("is_active").HasDatabaseName("ux_buyer_supplier_product_links_active");
+            entity.HasIndex(x=>new{x.RelationshipId,x.SupplierProductId}).IsUnique().HasFilter("is_active").HasDatabaseName("ux_buyer_supplier_product_links_supplier_active");
             entity.HasIndex(x=>new{x.RelationshipId,x.SyncVersion}).HasDatabaseName("ix_buyer_supplier_product_links_sync");
         });
         modelBuilder.Entity<ConnectedPurchaseOrderRecord>(entity =>

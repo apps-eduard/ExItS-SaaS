@@ -25,7 +25,7 @@ const guidSchema = z
 
 export const posPurchaseOrderLineDtoSchema = z.object({
   lineId: guidSchema,
-  productId: guidSchema,
+  productId: guidSchema.nullable().optional(),
   lineNumber: z.number(),
   nameSnapshot: z.string().nullable().optional(),
   uomSnapshot: z.string().nullable().optional(),
@@ -37,6 +37,9 @@ export const posPurchaseOrderLineDtoSchema = z.object({
   lineNotes: z.string().nullable().optional(),
   closedShortQty: z.number().optional(),
   tracksExpiration: z.boolean().optional(),
+  supplierProductId: guidSchema.nullable().optional(),
+  skuSnapshot: z.string().nullable().optional(),
+  needsProductSetup: z.boolean().optional().default(false),
 });
 
 export const connectedPurchaseOrderLineDtoSchema = z
@@ -86,6 +89,8 @@ export const posPurchaseOrderDtoSchema = z.object({
   connectedLines: z.array(connectedPurchaseOrderLineDtoSchema).nullable().optional(),
   changesProposedAtUtc: z.string().nullable().optional(),
   supplierName: z.string().nullable().optional(),
+  needsProductSetup: z.boolean().optional().default(false),
+  productSetupRequiredCount: z.number().optional().default(0),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
@@ -320,9 +325,60 @@ export function isReceivablePurchaseOrderStatus(status: string): boolean {
 export function isPurchaseOrderReceivable(po: PosPurchaseOrderDto): boolean {
   return (
     (po.canReceiveConnected ?? true) &&
+    !(po.needsProductSetup ?? false) &&
     isReceivablePurchaseOrderStatus(po.status) &&
     po.lines.some((line) => line.outstandingQty > 0)
   );
+}
+
+export const connectedReceivingReadinessItemSchema = z.object({
+  supplierProductId: guidSchema,
+  supplierName: z.string(),
+  supplierSku: z.string().nullable().optional(),
+  supplierBarcode: z.string().nullable().optional(),
+  unitOfMeasureCode: z.string(),
+  purchaseUnitPrice: z.number(),
+  fulfillmentQty: z.number(),
+  status: z.string(),
+  canAutoLink: z.boolean(),
+  candidateBuyerProductId: guidSchema.nullable().optional(),
+  candidateBuyerProductName: z.string().nullable().optional(),
+  linkedBuyerProductId: guidSchema.nullable().optional(),
+  linkedBuyerProductName: z.string().nullable().optional(),
+  nameMatched: z.boolean(),
+  skuMatched: z.boolean(),
+  barcodeMatched: z.boolean(),
+  unitCompatible: z.boolean(),
+  matchDetails: z.string(),
+  needsSetup: z.boolean(),
+});
+
+export const connectedReceivingReadinessResultSchema = z.object({
+  purchaseOrderId: guidSchema,
+  connectedPurchaseOrderId: guidSchema.nullable().optional(),
+  relationshipId: guidSchema.nullable().optional(),
+  canReceive: z.boolean(),
+  readyCount: z.number(),
+  needsSetupCount: z.number(),
+  items: z.array(connectedReceivingReadinessItemSchema),
+});
+
+export type ConnectedReceivingReadinessResult = z.infer<
+  typeof connectedReceivingReadinessResultSchema
+>;
+
+export async function getConnectedReceivingReadiness(
+  workspace: PosWorkspaceScope,
+  purchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedReceivingReadinessResult> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/receiving-readiness`,
+  });
+  return connectedReceivingReadinessResultSchema.parse(raw);
 }
 
 export async function listPurchaseOrders(

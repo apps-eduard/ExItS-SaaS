@@ -9,6 +9,8 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
@@ -94,7 +96,8 @@ public sealed record LinkProductRequest(
     Guid ExposureId,
     Guid? BuyerPurchaseUnitId = null,
     decimal? MultiplierToBase = null,
-    string? PackageLabel = null);
+    string? PackageLabel = null,
+    Guid? PurchaseOrderId = null);
 public sealed record LinkedProductsDeltaDto(IReadOnlyList<BuyerSupplierProductLinkDto> Changed, IReadOnlyList<Guid> RemovedIds, long Cursor);
 public sealed record ConnectedPurchaseOrderLineDto(
     Guid ProductId,
@@ -1138,11 +1141,12 @@ public sealed class LinkProduct
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IBuyerSupplierProductLinkRepository _links;private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
+    private readonly IPurchaseOrderRepository? _purchaseOrders;
     private readonly IPosUnitOfWork _uow;private readonly IPosCommercialAccessAccessor _access;private readonly TimeProvider _clock;
     public LinkProduct(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IBuyerSupplierProductLinkRepository l,
         ICatalogProductRepository p,ICatalogProductUnitRepository units,IPosUnitOfWork u,IPosCommercialAccessAccessor a,
-        IConnectedBuyerProductShareRepository shares,TimeProvider? c=null)
-    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_shares=shares;_clock=c??TimeProvider.System;}
+        IConnectedBuyerProductShareRepository shares,TimeProvider? c=null,IPurchaseOrderRepository? purchaseOrders=null)
+    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_shares=shares;_clock=c??TimeProvider.System;_purchaseOrders=purchaseOrders;}
     public async Task<ApplicationResult<BuyerSupplierProductLinkDto>> ExecuteAsync(Guid orgId,Guid relationshipId,LinkProductRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManagePurchasing);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(gate.ErrorCode!,gate.ErrorMessage!);
@@ -1161,7 +1165,11 @@ public sealed class LinkProduct
      if(existingBySupplier is not null)
      {
        if(existingBySupplier.BuyerProductId==product.Id)
+       {
+         await BindPurchaseOrderIfRequestedAsync(buyer, request.PurchaseOrderId, exposure.ProductId, product.Id, ct).ConfigureAwait(false);
+         await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
          return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existingBySupplier));
+       }
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.BulkValidation,"This supplier product is already linked to another catalog product.");
      }
      Guid? buyerPurchaseUnitId=request.BuyerPurchaseUnitId;
@@ -1173,10 +1181,40 @@ public sealed class LinkProduct
          return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(DomainErrorCodes.InvalidProductUnitId,"Buyer purchase unit must be an active purchase unit for the buyer product.");
        multiplier=request.MultiplierToBase??unit.MultiplierToBase;
      }
-     var existing=await _links.FindAsync(r.Id,product.Id,ct);if(existing is not null)return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existing));
+     var existing=await _links.FindAsync(r.Id,product.Id,ct);
+     if(existing is not null)
+     {
+       await BindPurchaseOrderIfRequestedAsync(buyer, request.PurchaseOrderId, exposure.ProductId, product.Id, ct).ConfigureAwait(false);
+       await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+       return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existing));
+     }
      var link=BuyerSupplierProductLink.Create(r.Id,buyer,r.SupplierOrganizationId,product.Id,exposure,_clock.GetUtcNow(),
        buyerPurchaseUnitId:buyerPurchaseUnitId,multiplierToBase:multiplier,packageLabel:request.PackageLabel,effectiveOrderPrice:effectivePrice);
-     await _links.AddAsync(link,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(link));}
+     await _links.AddAsync(link,ct);
+     await BindPurchaseOrderIfRequestedAsync(buyer, request.PurchaseOrderId, exposure.ProductId, product.Id, ct).ConfigureAwait(false);
+     await _uow.SaveChangesAsync(ct);return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(link));}
+
+    private async Task BindPurchaseOrderIfRequestedAsync(
+        PosOrganizationId buyer,
+        Guid? purchaseOrderId,
+        CatalogProductId supplierProductId,
+        CatalogProductId buyerProductId,
+        CancellationToken ct)
+    {
+        if (purchaseOrderId is not Guid poId || poId == Guid.Empty || _purchaseOrders is null)
+        {
+            return;
+        }
+
+        var po = await _purchaseOrders.GetByIdAsync(buyer, PurchaseOrderId.From(poId), ct).ConfigureAwait(false);
+        if (po is null || po.OrganizationId != buyer)
+        {
+            return;
+        }
+
+        po.BindBuyerProductForSupplierProduct(supplierProductId, buyerProductId, _clock.GetUtcNow());
+        await _purchaseOrders.UpdateAsync(po, ct).ConfigureAwait(false);
+    }
 }
 
 public sealed class UnlinkProduct

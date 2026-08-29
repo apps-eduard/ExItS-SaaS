@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -163,10 +164,15 @@ public sealed class PurchaseOrder
                 "Line snapshot count must match draft lines.");
         }
 
-        var snapshotByProduct = snapshots.ToDictionary(s => s.ProductId.Value);
+        static string LineKey(CatalogProductId? productId, CatalogProductId? supplierProductId) =>
+            productId is not null
+                ? $"b:{productId.Value:D}"
+                : $"s:{supplierProductId!.Value:D}";
+
+        var snapshotByKey = snapshots.ToDictionary(s => LineKey(s.ProductId, s.SupplierProductId));
         foreach (var line in _lines.OrderBy(l => l.LineNumber))
         {
-            if (!snapshotByProduct.TryGetValue(line.ProductId.Value, out var snapshot))
+            if (!snapshotByKey.TryGetValue(LineKey(line.ProductId, line.SupplierProductId), out var snapshot))
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidPurchaseOrderLine,
@@ -228,7 +234,9 @@ public sealed class PurchaseOrder
                 "At least one receive line is required.");
         }
 
-        var lineByProduct = _lines.ToDictionary(l => l.ProductId.Value);
+        var lineByProduct = _lines
+            .Where(l => l.ProductId is not null)
+            .ToDictionary(l => l.ProductId!.Value);
         foreach (var receive in receiveLines)
         {
             if (!lineByProduct.TryGetValue(receive.ProductId.Value, out var line))
@@ -236,6 +244,13 @@ public sealed class PurchaseOrder
                 throw new DomainException(
                     DomainErrorCodes.InvalidPurchaseOrderLine,
                     "Receive line product is not on this purchase order.");
+            }
+
+            if (line.NeedsBuyerProductSetup)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseOrderLine,
+                    "Product setup is required before goods can be received.");
             }
 
             if (receive.ReceiveQty > 0m)
@@ -266,6 +281,35 @@ public sealed class PurchaseOrder
     }
 
     /// <summary>
+    /// After explicit create/link, bind buyer product onto unlinked connected lines for this supplier product.
+    /// </summary>
+    public void BindBuyerProductForSupplierProduct(
+        CatalogProductId supplierProductId,
+        CatalogProductId buyerProductId,
+        DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        var matched = false;
+        foreach (var line in _lines)
+        {
+            if (line.SupplierProductId != supplierProductId)
+            {
+                continue;
+            }
+
+            line.BindBuyerProduct(buyerProductId);
+            matched = true;
+        }
+
+        if (!matched)
+        {
+            return;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
     /// Caps remaining outstanding to supplier-confirmed quantities without changing OrderedQty.
     /// Reduced/unavailable remainder is short-closed so goods receipt cannot exceed confirmation.
     /// </summary>
@@ -283,7 +327,8 @@ public sealed class PurchaseOrder
 
         foreach (var line in _lines)
         {
-            if (!confirmedQtyByBuyerProductId.TryGetValue(line.ProductId.Value, out var confirmed))
+            if (line.ProductId is null
+                || !confirmedQtyByBuyerProductId.TryGetValue(line.ProductId.Value, out var confirmed))
             {
                 continue;
             }
@@ -413,23 +458,61 @@ public sealed class PurchaseOrder
                 $"A purchase order may contain at most {MaxLineCount} lines.");
         }
 
-        var productIds = lines.Select(l => l.ProductId.Value).ToList();
+        var productIds = lines
+            .Where(l => l.ProductId is not null)
+            .Select(l => l.ProductId!.Value)
+            .ToList();
         if (productIds.Count != productIds.Distinct().Count())
         {
             throw new DomainException(
                 DomainErrorCodes.PurchaseOrderDuplicateProduct,
                 "Duplicate products are not allowed on a purchase order.");
         }
+
+        var supplierProductIds = lines
+            .Where(l => l.SupplierProductId is not null)
+            .Select(l => l.SupplierProductId!.Value)
+            .ToList();
+        if (supplierProductIds.Count != supplierProductIds.Distinct().Count())
+        {
+            throw new DomainException(
+                DomainErrorCodes.PurchaseOrderDuplicateProduct,
+                "Duplicate supplier products are not allowed on a purchase order.");
+        }
     }
 
     private static void EnsureNoDuplicateProducts(IReadOnlyList<PurchaseOrderLineDraft> lines)
     {
-        var productIds = lines.Select(l => l.ProductId.Value).ToList();
+        var productIds = lines
+            .Where(l => l.ProductId is not null)
+            .Select(l => l.ProductId!.Value)
+            .ToList();
         if (productIds.Count != productIds.Distinct().Count())
         {
             throw new DomainException(
                 DomainErrorCodes.PurchaseOrderDuplicateProduct,
                 "Duplicate products are not allowed on a purchase order.");
+        }
+
+        var supplierProductIds = lines
+            .Where(l => l.SupplierProductId is not null)
+            .Select(l => l.SupplierProductId!.Value)
+            .ToList();
+        if (supplierProductIds.Count != supplierProductIds.Distinct().Count())
+        {
+            throw new DomainException(
+                DomainErrorCodes.PurchaseOrderDuplicateProduct,
+                "Duplicate supplier products are not allowed on a purchase order.");
+        }
+
+        foreach (var line in lines)
+        {
+            if (line.ProductId is null && line.SupplierProductId is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseOrderLine,
+                    "A purchase-order line requires a buyer product or a supplier product identity.");
+            }
         }
     }
 

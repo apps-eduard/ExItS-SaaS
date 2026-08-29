@@ -21,10 +21,14 @@ public sealed class PurchaseOrderLine
     public PurchaseOrderLineId Id { get; }
     public PurchaseOrderId PurchaseOrderId { get; }
     public PosOrganizationId OrganizationId { get; }
-    public CatalogProductId ProductId { get; }
+    /// <summary>Buyer catalog product when mapped; null until prepare/link for connected unlinked lines.</summary>
+    public CatalogProductId? ProductId { get; private set; }
+    /// <summary>Supplier catalog product identity for connected PO lines.</summary>
+    public CatalogProductId? SupplierProductId { get; private set; }
     public int LineNumber { get; }
     public string? NameSnapshot { get; private set; }
     public UnitOfMeasure? UomSnapshot { get; private set; }
+    public string? SkuSnapshot { get; private set; }
     public decimal OrderedQty { get; private set; }
     public decimal UnitPurchaseCost { get; private set; }
     public decimal LineTotal { get; private set; }
@@ -38,12 +42,13 @@ public sealed class PurchaseOrderLine
 
     public decimal OutstandingQty => OrderedQty - ReceivedQty - ClosedShortQty;
     public bool HasReceivingIssues => ClosedShortQty > 0m;
+    public bool NeedsBuyerProductSetup => ProductId is null;
 
     private PurchaseOrderLine(
         PurchaseOrderLineId id,
         PurchaseOrderId purchaseOrderId,
         PosOrganizationId organizationId,
-        CatalogProductId productId,
+        CatalogProductId? productId,
         int lineNumber,
         string? nameSnapshot,
         UnitOfMeasure? uomSnapshot,
@@ -55,15 +60,26 @@ public sealed class PurchaseOrderLine
         ProductUnitId? purchaseUnitId,
         string? purchaseUnitNameSnapshot,
         decimal multiplierToBaseSnapshot,
-        decimal closedShortQty = 0m)
+        decimal closedShortQty = 0m,
+        CatalogProductId? supplierProductId = null,
+        string? skuSnapshot = null)
     {
+        if (productId is null && supplierProductId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderLine,
+                "A purchase-order line requires a buyer product or a supplier product identity.");
+        }
+
         Id = id;
         PurchaseOrderId = purchaseOrderId;
         OrganizationId = organizationId;
         ProductId = productId;
+        SupplierProductId = supplierProductId;
         LineNumber = lineNumber;
         NameSnapshot = nameSnapshot;
         UomSnapshot = uomSnapshot;
+        SkuSnapshot = skuSnapshot;
         OrderedQty = orderedQty;
         UnitPurchaseCost = unitPurchaseCost;
         LineTotal = lineTotal;
@@ -85,14 +101,15 @@ public sealed class PurchaseOrderLine
         EnsurePositiveQty(draft.OrderedQty, uom: null, isDraft: true);
         var cost = NormalizeUnitPurchaseCost(draft.UnitPurchaseCost);
         var multiplier = CatalogProductUnit.NormalizeMultiplier(draft.MultiplierToBaseSnapshot);
+        var name = draft.NameSnapshot is null ? null : NormalizeNameSnapshot(draft.NameSnapshot);
         return new PurchaseOrderLine(
             id ?? PurchaseOrderLineId.New(),
             purchaseOrderId,
             organizationId,
             draft.ProductId,
             lineNumber,
-            nameSnapshot: null,
-            uomSnapshot: null,
+            name,
+            draft.UomSnapshot,
             draft.OrderedQty,
             cost,
             SaleMoney.RoundMoney(cost * draft.OrderedQty),
@@ -100,7 +117,9 @@ public sealed class PurchaseOrderLine
             NormalizeLineNotes(draft.LineNotes),
             draft.PurchaseUnitId,
             NormalizePurchaseUnitName(draft.PurchaseUnitNameSnapshot),
-            multiplier);
+            multiplier,
+            supplierProductId: draft.SupplierProductId,
+            skuSnapshot: NormalizeOptionalSku(draft.SkuSnapshot));
     }
 
     internal static PurchaseOrderLine CreateOrdered(
@@ -134,13 +153,32 @@ public sealed class PurchaseOrderLine
             NormalizeLineNotes(snapshot.LineNotes),
             snapshot.PurchaseUnitId,
             NormalizePurchaseUnitName(snapshot.PurchaseUnitNameSnapshot),
-            multiplier);
+            multiplier,
+            supplierProductId: snapshot.SupplierProductId,
+            skuSnapshot: NormalizeOptionalSku(snapshot.SkuSnapshot));
     }
 
     internal void UpdateDraft(PurchaseOrderLineDraft draft)
     {
         EnsurePositiveQty(draft.OrderedQty, uom: null, isDraft: true);
         var cost = NormalizeUnitPurchaseCost(draft.UnitPurchaseCost);
+        ProductId = draft.ProductId;
+        SupplierProductId = draft.SupplierProductId ?? SupplierProductId;
+        if (draft.NameSnapshot is not null)
+        {
+            NameSnapshot = NormalizeNameSnapshot(draft.NameSnapshot);
+        }
+
+        if (draft.UomSnapshot is not null)
+        {
+            UomSnapshot = draft.UomSnapshot;
+        }
+
+        if (draft.SkuSnapshot is not null)
+        {
+            SkuSnapshot = NormalizeOptionalSku(draft.SkuSnapshot);
+        }
+
         OrderedQty = draft.OrderedQty;
         UnitPurchaseCost = cost;
         LineTotal = SaleMoney.RoundMoney(cost * draft.OrderedQty);
@@ -150,9 +188,16 @@ public sealed class PurchaseOrderLine
         MultiplierToBaseSnapshot = CatalogProductUnit.NormalizeMultiplier(draft.MultiplierToBaseSnapshot);
     }
 
+    /// <summary>Binds a buyer catalog product after explicit create/link (prepare-for-receiving).</summary>
+    internal void BindBuyerProduct(CatalogProductId buyerProductId)
+    {
+        ProductId = buyerProductId;
+    }
+
     internal void FreezeSnapshot(PurchaseOrderLineSnapshotInput snapshot)
     {
-        if (snapshot.ProductId != ProductId)
+        if (snapshot.ProductId != ProductId
+            || snapshot.SupplierProductId != SupplierProductId)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPurchaseOrderLine,
@@ -161,6 +206,7 @@ public sealed class PurchaseOrderLine
 
         NameSnapshot = NormalizeNameSnapshot(snapshot.NameSnapshot);
         UomSnapshot = snapshot.UomSnapshot;
+        SkuSnapshot = NormalizeOptionalSku(snapshot.SkuSnapshot) ?? SkuSnapshot;
         if (snapshot.SellingMode == SellingMode.ByWeight)
         {
             SellingModes.EnsureCompatible(snapshot.SellingMode, snapshot.UomSnapshot);
@@ -233,7 +279,7 @@ public sealed class PurchaseOrderLine
         PurchaseOrderLineId id,
         PurchaseOrderId purchaseOrderId,
         PosOrganizationId organizationId,
-        CatalogProductId productId,
+        CatalogProductId? productId,
         int lineNumber,
         string? nameSnapshot,
         UnitOfMeasure? uomSnapshot,
@@ -245,7 +291,9 @@ public sealed class PurchaseOrderLine
         ProductUnitId? purchaseUnitId = null,
         string? purchaseUnitNameSnapshot = null,
         decimal multiplierToBaseSnapshot = 1m,
-        decimal closedShortQty = 0m) =>
+        decimal closedShortQty = 0m,
+        CatalogProductId? supplierProductId = null,
+        string? skuSnapshot = null) =>
         new(
             id,
             purchaseOrderId,
@@ -262,7 +310,9 @@ public sealed class PurchaseOrderLine
             purchaseUnitId,
             purchaseUnitNameSnapshot,
             multiplierToBaseSnapshot,
-            closedShortQty);
+            closedShortQty,
+            supplierProductId,
+            skuSnapshot);
 
     internal static decimal NormalizeUnitPurchaseCost(decimal cost)
     {
@@ -306,6 +356,19 @@ public sealed class PurchaseOrderLine
         {
             _ = NormalizeQuantity(quantity, uom.Value, sellingMode);
         }
+    }
+
+    private static string? NormalizeOptionalSku(string? sku)
+    {
+        if (string.IsNullOrWhiteSpace(sku))
+        {
+            return null;
+        }
+
+        var trimmed = sku.Trim();
+        return trimmed.Length > NameSnapshotMaxLength
+            ? trimmed[..NameSnapshotMaxLength]
+            : trimmed;
     }
 
     private static string NormalizeNameSnapshot(string name)

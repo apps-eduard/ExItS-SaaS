@@ -269,14 +269,6 @@ export type BulkPricingInput = {
   fixedPrice?: number | null;
 };
 
-export type LinkProductInput = {
-  buyerProductId: string;
-  exposureId: string;
-  buyerPurchaseUnitId?: string | null;
-  multiplierToBase?: number | null;
-  packageLabel?: string | null;
-};
-
 export type CreateBuyerProductAndLinkInput = {
   exposureId: string;
   name: string;
@@ -285,6 +277,19 @@ export type CreateBuyerProductAndLinkInput = {
   sku?: string | null;
   description?: string | null;
   categoryId?: string | null;
+  brandId?: string | null;
+  barcode?: string | null;
+  tracksExpiration?: boolean | null;
+  purchaseOrderId?: string | null;
+};
+
+export type LinkProductInput = {
+  buyerProductId: string;
+  exposureId: string;
+  buyerPurchaseUnitId?: string | null;
+  multiplierToBase?: number | null;
+  packageLabel?: string | null;
+  purchaseOrderId?: string | null;
 };
 
 export type ExposeProductInput = {
@@ -773,6 +778,7 @@ export async function linkProduct(
       buyerPurchaseUnitId: input.buyerPurchaseUnitId ?? null,
       multiplierToBase: input.multiplierToBase ?? null,
       packageLabel: input.packageLabel ?? null,
+      purchaseOrderId: input.purchaseOrderId ?? null,
     },
   });
   return buyerSupplierProductLinkSchema.parse(raw);
@@ -797,6 +803,10 @@ export async function createBuyerProductAndLink(
       sku: input.sku?.trim() || null,
       description: input.description?.trim() || null,
       categoryId: input.categoryId ?? null,
+      brandId: input.brandId ?? null,
+      barcode: input.barcode?.trim() || null,
+      tracksExpiration: input.tracksExpiration ?? null,
+      purchaseOrderId: input.purchaseOrderId ?? null,
     },
   });
   return createBuyerProductAndLinkResultSchema.parse(raw);

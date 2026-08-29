@@ -12,7 +12,6 @@ import {
   createBuyerProductAndLink,
   linkProduct,
   searchExposedCatalog,
-  suggestBuyerProductMatches,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { getSupplier, isConnectedSupplier } from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -152,7 +151,16 @@ export function ConnectedCatalogPage() {
     }
   }
 
-  async function doCreateAndLink(exposureId: string, name: string, uom: string, price: number) {
+  async function openSuggestionsThenLink(exposureId: string) {
+    if (!workspace || !relationshipId || !allowLink) {
+      return;
+    }
+    // Never auto-link weak/name-only suggestions — open explicit picker.
+    setLinkPickerExposureId(exposureId);
+    setPickerSearch("");
+  }
+
+  async function doCreateAndLink(exposureId: string, name: string, uom: string) {
     if (!workspace || !relationshipId || !allowCreate) {
       return;
     }
@@ -163,7 +171,8 @@ export function ConnectedCatalogPage() {
         exposureId,
         name,
         unitOfMeasure: uom,
-        sellingPrice: price > 0 ? price : 1,
+        // Buyer selling price is independent of supplier purchase price.
+        sellingPrice: 0,
       });
       setMessage(t("connected.createAndLinkSucceeded"));
       await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
@@ -173,26 +182,6 @@ export function ConnectedCatalogPage() {
           ? (err.problem.detail ?? err.message)
           : t("connected.createAndLinkFailed"),
       );
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  async function openSuggestionsThenLink(exposureId: string) {
-    if (!workspace || !relationshipId || !allowLink) {
-      return;
-    }
-    setBusyKey(`suggest-${exposureId}`);
-    try {
-      const suggestions = await suggestBuyerProductMatches(workspace, relationshipId, exposureId);
-      const first = suggestions.candidates[0];
-      if (first) {
-        await doLink(exposureId, first.productId);
-      } else {
-        setLinkPickerExposureId(exposureId);
-      }
-    } catch {
-      setLinkPickerExposureId(exposureId);
     } finally {
       setBusyKey(null);
     }
@@ -355,7 +344,6 @@ export function ConnectedCatalogPage() {
                             item.exposureId,
                             item.nameSnapshot,
                             item.unitOfMeasureCode,
-                            item.effectiveSupplierOrderPrice ?? item.supplierOrderPrice,
                           )
                         }
                       >

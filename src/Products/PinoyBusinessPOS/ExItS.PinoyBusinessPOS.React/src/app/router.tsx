@@ -122,6 +122,7 @@ import { PurchaseOrdersListPage } from "@/features/purchasing/PurchaseOrdersList
 import { PurchaseOrderCreatePage } from "@/features/purchasing/PurchaseOrderCreatePage";
 import { PurchaseOrderDetailPage } from "@/features/purchasing/PurchaseOrderDetailPage";
 import { PurchaseOrderReceivePage } from "@/features/purchasing/PurchaseOrderReceivePage";
+import { PrepareConnectedProductsPage } from "@/features/purchasing/PrepareConnectedProductsPage";
 import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage";
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
 import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
@@ -790,6 +791,14 @@ export const appRoutes = [
                   <RequireViewPurchasing>
                     <PurchaseOrderDetailPage />
                   </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: ":purchaseOrderId/prepare-products",
+                element: (
+                  <RequireManagePurchasing>
+                    <PrepareConnectedProductsPage />
+                  </RequireManagePurchasing>
                 ),
               },
               {

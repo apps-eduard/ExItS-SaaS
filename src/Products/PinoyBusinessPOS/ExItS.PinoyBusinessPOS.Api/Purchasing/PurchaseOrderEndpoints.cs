@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -187,6 +188,22 @@ internal static class PurchaseOrderEndpoints
             }
 
             var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, actorId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
+        group.MapGet("/{purchaseOrderId:guid}/receiving-readiness", async (
+            HttpRequest request,
+            Guid purchaseOrderId,
+            ClassifyConnectedPurchaseReceivingReadiness useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewPurchasing, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, ct).ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
 

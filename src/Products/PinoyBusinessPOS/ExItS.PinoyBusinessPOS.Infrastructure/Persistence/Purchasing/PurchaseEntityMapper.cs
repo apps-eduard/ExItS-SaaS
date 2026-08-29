@@ -18,7 +18,7 @@ internal static class PurchaseEntityMapper
                 PurchaseOrderLineId.From(l.Id),
                 poId,
                 orgId,
-                CatalogProductId.From(l.ProductId),
+                l.ProductId is null ? null : CatalogProductId.From(l.ProductId.Value),
                 l.LineNumber,
                 l.NameSnapshot,
                 l.UomSnapshot is null ? null : UnitOfMeasures.Parse(l.UomSnapshot),
@@ -30,7 +30,9 @@ internal static class PurchaseEntityMapper
                 l.PurchaseUnitId is null ? null : ProductUnitId.From(l.PurchaseUnitId.Value),
                 l.PurchaseUnitNameSnapshot,
                 l.MultiplierToBaseSnapshot,
-                l.ClosedShortQty))
+                l.ClosedShortQty,
+                l.SupplierProductId is null ? null : CatalogProductId.From(l.SupplierProductId.Value),
+                l.SkuSnapshot))
             .ToList();
 
         return PurchaseOrder.Rehydrate(
@@ -91,10 +93,12 @@ internal static class PurchaseEntityMapper
             Id = line.Id.Value,
             PurchaseOrderId = line.PurchaseOrderId.Value,
             OrganizationId = line.OrganizationId.Value,
-            ProductId = line.ProductId.Value,
+            ProductId = line.ProductId?.Value,
+            SupplierProductId = line.SupplierProductId?.Value,
             LineNumber = line.LineNumber,
             NameSnapshot = line.NameSnapshot,
             UomSnapshot = line.UomSnapshot is null ? null : UnitOfMeasures.ToCode(line.UomSnapshot.Value),
+            SkuSnapshot = line.SkuSnapshot,
             OrderedQty = line.OrderedQty,
             UnitPurchaseCost = line.UnitPurchaseCost,
             LineTotal = line.LineTotal,

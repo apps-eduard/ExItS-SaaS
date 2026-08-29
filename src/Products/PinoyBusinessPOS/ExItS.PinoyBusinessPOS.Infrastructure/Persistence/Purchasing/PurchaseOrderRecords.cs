@@ -38,10 +38,12 @@ internal sealed class PurchaseOrderLineRecord
     public Guid Id { get; set; }
     public Guid PurchaseOrderId { get; set; }
     public Guid OrganizationId { get; set; }
-    public Guid ProductId { get; set; }
+    public Guid? ProductId { get; set; }
+    public Guid? SupplierProductId { get; set; }
     public int LineNumber { get; set; }
     public string? NameSnapshot { get; set; }
     public string? UomSnapshot { get; set; }
+    public string? SkuSnapshot { get; set; }
     public decimal OrderedQty { get; set; }
     public decimal UnitPurchaseCost { get; set; }
     public decimal LineTotal { get; set; }

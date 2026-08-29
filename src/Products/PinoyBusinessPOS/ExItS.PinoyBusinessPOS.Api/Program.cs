@@ -352,6 +352,7 @@ builder.Services.AddScoped<LinkProduct>();
 builder.Services.AddScoped<CreateBuyerProductAndLink>();
 builder.Services.AddScoped<SuggestBuyerProductMatches>();
 builder.Services.AddScoped<ClassifyCatalogReadiness>();
+builder.Services.AddScoped<ClassifyConnectedPurchaseReceivingReadiness>();
 builder.Services.AddScoped<AutoLinkExactMatches>();
 builder.Services.AddScoped<UnlinkProduct>();
 builder.Services.AddScoped<ListLinks>();

@@ -16,7 +16,7 @@ namespace ExItS.PinoyBusinessPOS.Application.Purchasing;
 
 public sealed record PosPurchaseOrderLineDto(
     Guid LineId,
-    Guid ProductId,
+    Guid? ProductId,
     int LineNumber,
     string? NameSnapshot,
     string? UomSnapshot,
@@ -27,7 +27,10 @@ public sealed record PosPurchaseOrderLineDto(
     decimal OutstandingQty,
     string? LineNotes,
     decimal ClosedShortQty = 0m,
-    bool TracksExpiration = false);
+    bool TracksExpiration = false,
+    Guid? SupplierProductId = null,
+    string? SkuSnapshot = null,
+    bool NeedsProductSetup = false);
 
 public sealed record PosPurchaseOrderDto(
     Guid PurchaseOrderId,
@@ -63,7 +66,9 @@ public sealed record PosPurchaseOrderDto(
     decimal? ConfirmedTotalAmount = null,
     IReadOnlyList<ConnectedPurchaseOrderLineDto>? ConnectedLines = null,
     DateTimeOffset? ChangesProposedAtUtc = null,
-    string? SupplierName = null);
+    string? SupplierName = null,
+    bool NeedsProductSetup = false,
+    int ProductSetupRequiredCount = 0);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -106,7 +111,8 @@ public sealed record CreatePurchaseOrderLineRequest(
     decimal OrderedQty,
     decimal UnitPurchaseCost,
     string? LineNotes = null,
-    Guid? PurchaseUnitId = null);
+    Guid? PurchaseUnitId = null,
+    Guid? SupplierProductId = null);
 
 public sealed record CreatePurchaseOrderRequest(
     Guid SupplierId,
@@ -184,14 +190,17 @@ public static class PurchaseMapper
             DeclineNote: connected?.DeclineNote,
             HasReceivingIssues: po.HasReceivingIssues,
             CanWithdrawConnected: connected?.CanBuyerWithdraw == true,
-            CanReceiveConnected: connected is null || connected.CanBuyerReceive,
+            CanReceiveConnected: (connected is null || connected.CanBuyerReceive)
+                && !po.Lines.Any(l => l.NeedsBuyerProductSetup),
             PaymentTerm: ConnectedPoPaymentTerms.ToApi(connected?.PaymentTerm ?? po.PaymentTerm),
             PaymentTermLabel: ConnectedPoPaymentTerms.ToUiLabel(connected?.PaymentTerm ?? po.PaymentTerm),
             ProposedTotalAmount: connected?.ProposedTotalAmount,
             ConfirmedTotalAmount: connected is null ? null : connected.ConfirmedTotalAmount,
             ConnectedLines: connected?.Lines.Select(ConnectedSupplierMapper.MapLine).ToList(),
             ChangesProposedAtUtc: connected?.ChangesProposedAtUtc,
-            SupplierName: supplierName);
+            SupplierName: supplierName,
+            NeedsProductSetup: po.Lines.Any(l => l.NeedsBuyerProductSetup),
+            ProductSetupRequiredCount: po.Lines.Count(l => l.NeedsBuyerProductSetup));
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -204,7 +213,11 @@ public static class PurchaseMapper
         var supplier = await suppliers
             .GetByIdAsync(po.OrganizationId, po.SupplierId, cancellationToken)
             .ConfigureAwait(false);
-        var productIds = po.Lines.Select(l => l.ProductId).Distinct().ToList();
+        var productIds = po.Lines
+            .Where(l => l.ProductId is not null)
+            .Select(l => l.ProductId!)
+            .Distinct()
+            .ToList();
         var catalog = productIds.Count == 0
             ? Array.Empty<CatalogProduct>()
             : await products.ListByIdsAsync(po.OrganizationId, productIds, cancellationToken).ConfigureAwait(false);
@@ -215,16 +228,21 @@ public static class PurchaseMapper
         PurchaseOrderLine line,
         IReadOnlyDictionary<Guid, CatalogProduct>? products = null)
     {
-        var product = products is not null && products.TryGetValue(line.ProductId.Value, out var found)
-            ? found
-            : null;
+        CatalogProduct? product = null;
+        if (line.ProductId is not null
+            && products is not null
+            && products.TryGetValue(line.ProductId.Value, out var found))
+        {
+            product = found;
+        }
+
         var name = string.IsNullOrWhiteSpace(line.NameSnapshot) ? product?.Name : line.NameSnapshot;
         var uom = line.UomSnapshot?.ToString()
             ?? (string.IsNullOrWhiteSpace(line.PurchaseUnitNameSnapshot) ? null : line.PurchaseUnitNameSnapshot)
             ?? product?.UnitOfMeasure.ToString();
         return new(
             line.Id.Value,
-            line.ProductId.Value,
+            line.ProductId?.Value,
             line.LineNumber,
             name,
             uom,
@@ -235,7 +253,10 @@ public static class PurchaseMapper
             line.OutstandingQty,
             line.LineNotes,
             line.ClosedShortQty,
-            product?.TracksExpiration ?? false);
+            product?.TracksExpiration ?? false,
+            line.SupplierProductId?.Value,
+            line.SkuSnapshot,
+            line.NeedsBuyerProductSetup);
     }
 
     public static PosGoodsReceiptDto Map(GoodsReceipt receipt) =>
@@ -449,26 +470,59 @@ internal static class PurchaseSupplierGuard
 }
 
 /// <summary>
-/// Connected-supplier PO line eligibility: Active relationship, buyer link for this
-/// relationship only, shared + orderable exposure, and effective PO price
-/// (buyer-specific else Default PO). Never uses buyer retail SellingPrice.
+/// Connected-supplier PO line eligibility: Active relationship; shared + orderable exposure;
+/// effective PO price (override → discount → selling/Default PO). Never uses buyer retail SellingPrice
+/// as the PO unit price source of truth for the supplier catalog.
+/// Buyer product links are optional at order time — required before goods receipt.
 /// </summary>
 public static class ConnectedPurchaseOrderLineEligibility
 {
+    public sealed record LineIdentity(Guid? BuyerProductId, Guid SupplierProductId);
+
+    public sealed record ResolvedLine(
+        Guid? BuyerProductId,
+        Guid SupplierProductId,
+        string NameSnapshot,
+        string? SkuSnapshot,
+        string UnitOfMeasureCode,
+        decimal EffectivePrice,
+        BuyerSupplierProductLink? Link);
+
     public sealed record Outcome(
         ConnectedSupplierRelationship Relationship,
         IReadOnlyDictionary<Guid, BuyerSupplierProductLink> LinksByBuyerProductId,
-        IReadOnlyDictionary<Guid, decimal> EffectivePriceByBuyerProductId);
+        IReadOnlyDictionary<Guid, decimal> EffectivePriceByBuyerProductId,
+        IReadOnlyDictionary<Guid, ResolvedLine> ResolvedBySupplierProductId);
+
+    public sealed record LineRequest(Guid? BuyerProductId, Guid? SupplierProductId);
 
     /// <summary>
     /// Returns null when the supplier is external (no connected checks).
     /// Returns Failure when connected and any line is invalid.
-    /// Returns Success with effective prices keyed by buyer product id when connected and valid.
     /// </summary>
     public static async Task<ApplicationResult<Outcome>?> ValidateIfConnectedAsync(
         PosOrganizationId buyerOrganizationId,
         Supplier supplier,
         IReadOnlyList<Guid> buyerProductIds,
+        IConnectedSupplierRelationshipRepository relationships,
+        IBuyerSupplierProductLinkRepository links,
+        ISupplierProductExposureRepository? exposures,
+        IConnectedBuyerProductShareRepository? shares,
+        CancellationToken cancellationToken) =>
+        await ValidateIfConnectedAsync(
+            buyerOrganizationId,
+            supplier,
+            buyerProductIds.Select(id => new LineRequest(id, null)).ToList(),
+            relationships,
+            links,
+            exposures,
+            shares,
+            cancellationToken).ConfigureAwait(false);
+
+    public static async Task<ApplicationResult<Outcome>?> ValidateIfConnectedAsync(
+        PosOrganizationId buyerOrganizationId,
+        Supplier supplier,
+        IReadOnlyList<LineRequest> lines,
         IConnectedSupplierRelationshipRepository relationships,
         IBuyerSupplierProductLinkRepository links,
         ISupplierProductExposureRepository? exposures,
@@ -513,20 +567,51 @@ public static class ConnectedPurchaseOrderLineEligibility
         var linksByBuyerProduct = linkList
             .Where(x => x.IsActive)
             .ToDictionary(x => x.BuyerProductId.Value);
+        var linksBySupplierProduct = linkList
+            .Where(x => x.IsActive)
+            .GroupBy(x => x.SupplierProductId.Value)
+            .ToDictionary(g => g.Key, g => g.First());
 
-        var prices = new Dictionary<Guid, decimal>();
-        foreach (var buyerProductId in buyerProductIds.Distinct())
+        var pricesByBuyer = new Dictionary<Guid, decimal>();
+        var resolvedBySupplier = new Dictionary<Guid, ResolvedLine>();
+
+        foreach (var line in lines)
         {
-            if (!linksByBuyerProduct.TryGetValue(buyerProductId, out var link))
+            BuyerSupplierProductLink? link = null;
+            Guid? supplierProductId = line.SupplierProductId;
+
+            if (line.BuyerProductId is Guid buyerProductId && buyerProductId != Guid.Empty)
             {
-                return ApplicationResult<Outcome>.Failure(
-                    ConnectedSupplierErrorCodes.LinkNotFound,
-                    "Every connected purchase-order line must have an active supplier product link for this supplier.");
+                if (linksByBuyerProduct.TryGetValue(buyerProductId, out var byBuyer))
+                {
+                    link = byBuyer;
+                    supplierProductId = byBuyer.SupplierProductId.Value;
+                }
+                else if (supplierProductId is null)
+                {
+                    // Unlinked buyer-product lines are not allowed without an explicit supplier product id.
+                    return ApplicationResult<Outcome>.Failure(
+                        ConnectedSupplierErrorCodes.LinkNotFound,
+                        "Every connected purchase-order line must identify a shared supplier product.");
+                }
             }
 
-            if (link.RelationshipId.Value != relationship.Id.Value
-                || link.BuyerOrganizationId != buyerOrganizationId
-                || link.SupplierOrganizationId != relationship.SupplierOrganizationId)
+            if (supplierProductId is null || supplierProductId == Guid.Empty)
+            {
+                return ApplicationResult<Outcome>.Failure(
+                    ConnectedSupplierErrorCodes.ExposureNotFound,
+                    "A connected purchase-order line is missing the supplier product identity.");
+            }
+
+            if (link is null)
+            {
+                linksBySupplierProduct.TryGetValue(supplierProductId.Value, out link);
+            }
+
+            if (link is not null
+                && (link.RelationshipId.Value != relationship.Id.Value
+                    || link.BuyerOrganizationId != buyerOrganizationId
+                    || link.SupplierOrganizationId != relationship.SupplierOrganizationId))
             {
                 return ApplicationResult<Outcome>.Failure(
                     ConnectedSupplierErrorCodes.LinkNotFound,
@@ -534,10 +619,13 @@ public static class ConnectedPurchaseOrderLineEligibility
             }
 
             var exposure = await exposures
-                .GetByProductAsync(relationship.SupplierOrganizationId, link.SupplierProductId, cancellationToken)
+                .GetByProductAsync(
+                    relationship.SupplierOrganizationId,
+                    CatalogProductId.From(supplierProductId.Value),
+                    cancellationToken)
                 .ConfigureAwait(false);
             var share = await shares
-                .FindAsync(relationship.Id, link.SupplierProductId, cancellationToken)
+                .FindAsync(relationship.Id, CatalogProductId.From(supplierProductId.Value), cancellationToken)
                 .ConfigureAwait(false);
             if (exposure is null
                 || !ConnectedPoPricing.TryResolveEffectivePrice(
@@ -554,10 +642,29 @@ public static class ConnectedPurchaseOrderLineEligibility
                     "A connected supplier product is no longer shared or orderable.");
             }
 
-            prices[buyerProductId] = effectivePrice;
+            var buyerId = line.BuyerProductId is Guid bid && bid != Guid.Empty
+                ? bid
+                : link?.BuyerProductId.Value;
+            var resolved = new ResolvedLine(
+                buyerId,
+                supplierProductId.Value,
+                exposure.NameSnapshot,
+                exposure.SkuSnapshot,
+                exposure.UnitOfMeasureCode,
+                effectivePrice,
+                link);
+            resolvedBySupplier[supplierProductId.Value] = resolved;
+            if (buyerId is Guid keyedBuyer)
+            {
+                pricesByBuyer[keyedBuyer] = effectivePrice;
+            }
         }
 
-        return ApplicationResult<Outcome>.Success(new(relationship, linksByBuyerProduct, prices));
+        return ApplicationResult<Outcome>.Success(new(
+            relationship,
+            linksByBuyerProduct,
+            pricesByBuyer,
+            resolvedBySupplier));
     }
 }
 
@@ -649,20 +756,37 @@ public sealed class CreatePurchaseOrder
                     "Supplier was not found in this organization.");
             }
 
-            var productIds = request.Lines.Select(l => l.ProductId).ToList();
-            var (productError, products) = await PurchaseProductGuard
-                .ResolveProductsAsync(_products, org, productIds, cancellationToken)
-                .ConfigureAwait(false);
-            if (productError is not null)
+            var lineRequests = request.Lines
+                .Select(l => new ConnectedPurchaseOrderLineEligibility.LineRequest(
+                    l.ProductId == Guid.Empty ? null : l.ProductId,
+                    l.SupplierProductId))
+                .ToList();
+            var buyerProductIds = lineRequests
+                .Where(l => l.BuyerProductId is Guid id && id != Guid.Empty)
+                .Select(l => l.BuyerProductId!.Value)
+                .Distinct()
+                .ToList();
+            IReadOnlyDictionary<Guid, CatalogProduct> products = new Dictionary<Guid, CatalogProduct>();
+            if (buyerProductIds.Count > 0)
             {
-                return ApplicationResult<PosPurchaseOrderDto>.Failure(productError.ErrorCode!, productError.ErrorMessage!);
+                var (productError, resolvedProducts) = await PurchaseProductGuard
+                    .ResolveProductsAsync(_products, org, buyerProductIds, cancellationToken)
+                    .ConfigureAwait(false);
+                if (productError is not null)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        productError.ErrorCode!,
+                        productError.ErrorMessage!);
+                }
+
+                products = resolvedProducts;
             }
 
             var connectedEligibility = await ConnectedPurchaseOrderLineEligibility
                 .ValidateIfConnectedAsync(
                     org,
                     supplier,
-                    productIds,
+                    lineRequests,
                     _connectedRelationships,
                     _connectedLinks,
                     _connectedExposures,
@@ -676,22 +800,84 @@ public sealed class CreatePurchaseOrder
                     connectedEligibility.ErrorMessage!);
             }
 
+            var resolvedBySupplier = connectedEligibility?.Value?.ResolvedBySupplierProductId;
             var effectiveConnectedPrices = connectedEligibility?.Value?.EffectivePriceByBuyerProductId;
 
             var utcNow = _clock.GetUtcNow();
             var lineDrafts = new List<PurchaseOrderLineDraft>();
             foreach (var l in request.Lines)
             {
+                var buyerProductId = l.ProductId == Guid.Empty ? (Guid?)null : l.ProductId;
+                CatalogProductId? supplierProductId = null;
+                string? nameSnapshot = null;
+                UnitOfMeasure? uomSnapshot = null;
+                string? skuSnapshot = null;
+                decimal unitCost = l.UnitPurchaseCost;
+
+                if (resolvedBySupplier is not null)
+                {
+                    Guid supplierKey;
+                    if (l.SupplierProductId is Guid sp && sp != Guid.Empty)
+                    {
+                        supplierKey = sp;
+                    }
+                    else if (buyerProductId is Guid bp
+                             && connectedEligibility!.Value!.LinksByBuyerProductId.TryGetValue(bp, out var link))
+                    {
+                        supplierKey = link.SupplierProductId.Value;
+                    }
+                    else
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            ConnectedSupplierErrorCodes.ExposureNotFound,
+                            "A connected purchase-order line is missing the supplier product identity.");
+                    }
+
+                    if (!resolvedBySupplier.TryGetValue(supplierKey, out var resolved))
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            ConnectedSupplierErrorCodes.ExposureNotFound,
+                            "A connected supplier product is no longer shared or orderable.");
+                    }
+
+                    supplierProductId = CatalogProductId.From(resolved.SupplierProductId);
+                    nameSnapshot = resolved.NameSnapshot;
+                    skuSnapshot = resolved.SkuSnapshot;
+                    UnitOfMeasures.TryParse(resolved.UnitOfMeasureCode, out var parsedUom);
+                    uomSnapshot = parsedUom;
+                    unitCost = resolved.EffectivePrice;
+                    buyerProductId = resolved.BuyerProductId ?? buyerProductId;
+                }
+                else if (buyerProductId is Guid buyerId)
+                {
+                    unitCost = effectiveConnectedPrices is not null
+                        ? effectiveConnectedPrices[buyerId]
+                        : l.UnitPurchaseCost;
+                }
+                else
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        DomainErrorCodes.InvalidPurchaseOrderLine,
+                        "A purchase-order line requires a buyer product or a supplier product identity.");
+                }
+
                 ProductUnitId? purchaseUnitId = null;
                 string? purchaseUnitName = null;
                 var multiplier = 1m;
                 if (l.PurchaseUnitId is not null)
                 {
+                    if (buyerProductId is null)
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            DomainErrorCodes.InvalidProductUnitId,
+                            "Purchase units require a buyer catalog product.");
+                    }
+
                     var unit = await _units
                         .GetByIdAsync(org, ProductUnitId.From(l.PurchaseUnitId.Value), cancellationToken)
                         .ConfigureAwait(false);
                     if (unit is null
-                        || unit.ProductId.Value != l.ProductId
+                        || unit.ProductId.Value != buyerProductId.Value
                         || !unit.IsActive
                         || unit.Kind != ProductUnitKind.Purchase)
                     {
@@ -705,18 +891,18 @@ public sealed class CreatePurchaseOrder
                     multiplier = unit.MultiplierToBase;
                 }
 
-                var unitCost = effectiveConnectedPrices is not null
-                    ? effectiveConnectedPrices[l.ProductId]
-                    : l.UnitPurchaseCost;
-
                 lineDrafts.Add(new PurchaseOrderLineDraft(
-                    CatalogProductId.From(l.ProductId),
+                    buyerProductId is Guid bpid ? CatalogProductId.From(bpid) : null,
                     l.OrderedQty,
                     unitCost,
                     l.LineNotes,
                     purchaseUnitId,
                     purchaseUnitName,
-                    multiplier));
+                    multiplier,
+                    supplierProductId,
+                    nameSnapshot,
+                    uomSnapshot,
+                    skuSnapshot));
             }
 
             var po = PurchaseOrder.CreateDraft(
@@ -1031,36 +1217,37 @@ public sealed class SubmitPurchaseOrder
                 return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing));
             }
 
-            var productIds = existing.Lines.Select(l => l.ProductId.Value).ToList();
-            var (productError, products) = await PurchaseProductGuard
-                .ResolveProductsAsync(_products, org, productIds, cancellationToken)
-                .ConfigureAwait(false);
-            if (productError is not null)
+            var lineRequests = existing.Lines
+                .Select(l => new ConnectedPurchaseOrderLineEligibility.LineRequest(
+                    l.ProductId?.Value,
+                    l.SupplierProductId?.Value))
+                .ToList();
+            var buyerProductIds = existing.Lines
+                .Where(l => l.ProductId is not null)
+                .Select(l => l.ProductId!.Value)
+                .Distinct()
+                .ToList();
+            IReadOnlyDictionary<Guid, CatalogProduct> products = new Dictionary<Guid, CatalogProduct>();
+            if (buyerProductIds.Count > 0)
             {
-                return ApplicationResult<PosPurchaseOrderDto>.Failure(productError.ErrorCode!, productError.ErrorMessage!);
+                var (productError, resolvedProducts) = await PurchaseProductGuard
+                    .ResolveProductsAsync(_products, org, buyerProductIds, cancellationToken)
+                    .ConfigureAwait(false);
+                if (productError is not null)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        productError.ErrorCode!,
+                        productError.ErrorMessage!);
+                }
+
+                products = resolvedProducts;
             }
 
             var utcNow = _clock.GetUtcNow();
             var businessDate = PurchaseOrderNumbers.BusinessDateOf(utcNow);
-            var snapshots = existing.Lines
-                .OrderBy(l => l.LineNumber)
-                .Select(l =>
-                {
-                    var product = products[l.ProductId.Value];
-                    return new PurchaseOrderLineSnapshotInput(
-                        l.ProductId,
-                        product.Name,
-                        product.UnitOfMeasure,
-                        l.OrderedQty,
-                        l.UnitPurchaseCost,
-                        l.LineNotes,
-                        product.SellingMode);
-                })
-                .ToList();
 
             ConnectedSupplierRelationship? connectedRelationship = null;
-            Dictionary<Guid, BuyerSupplierProductLink>? connectedLinksByBuyerProduct = null;
-            Dictionary<Guid, decimal>? connectedPricesByBuyerProduct = null;
+            Dictionary<Guid, ConnectedPurchaseOrderLineEligibility.ResolvedLine>? resolvedBySupplier = null;
             ConnectedPurchaseOrder? createdConnected = null;
             var supplier = await _suppliers.GetByIdAsync(org, existing.SupplierId, cancellationToken).ConfigureAwait(false);
             if (supplier is null)
@@ -1074,7 +1261,7 @@ public sealed class SubmitPurchaseOrder
                 .ValidateIfConnectedAsync(
                     org,
                     supplier,
-                    productIds,
+                    lineRequests,
                     _connectedRelationships,
                     _connectedLinks,
                     _connectedExposures,
@@ -1091,12 +1278,53 @@ public sealed class SubmitPurchaseOrder
             if (connectedEligibility?.Value is { } connectedOutcome)
             {
                 connectedRelationship = connectedOutcome.Relationship;
-                connectedLinksByBuyerProduct = connectedOutcome.LinksByBuyerProductId
-                    .Where(x => productIds.Contains(x.Key))
-                    .ToDictionary(x => x.Key, x => x.Value);
-                connectedPricesByBuyerProduct = connectedOutcome.EffectivePriceByBuyerProductId
+                resolvedBySupplier = connectedOutcome.ResolvedBySupplierProductId
                     .ToDictionary(x => x.Key, x => x.Value);
             }
+
+            var snapshots = existing.Lines
+                .OrderBy(l => l.LineNumber)
+                .Select(l =>
+                {
+                    if (l.ProductId is CatalogProductId buyerPid && products.TryGetValue(buyerPid.Value, out var product))
+                    {
+                        return new PurchaseOrderLineSnapshotInput(
+                            l.ProductId,
+                            product.Name,
+                            product.UnitOfMeasure,
+                            l.OrderedQty,
+                            l.UnitPurchaseCost,
+                            l.LineNotes,
+                            product.SellingMode,
+                            l.PurchaseUnitId,
+                            l.PurchaseUnitNameSnapshot,
+                            l.MultiplierToBaseSnapshot,
+                            l.SupplierProductId,
+                            l.SkuSnapshot);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(l.NameSnapshot) || l.UomSnapshot is null)
+                    {
+                        throw new DomainException(
+                            DomainErrorCodes.InvalidPurchaseOrderLine,
+                            "Supplier product snapshot is required before submitting an unlinked connected line.");
+                    }
+
+                    return new PurchaseOrderLineSnapshotInput(
+                        l.ProductId,
+                        l.NameSnapshot!,
+                        l.UomSnapshot.Value,
+                        l.OrderedQty,
+                        l.UnitPurchaseCost,
+                        l.LineNotes,
+                        SellingMode.PerItem,
+                        l.PurchaseUnitId,
+                        l.PurchaseUnitNameSnapshot,
+                        l.MultiplierToBaseSnapshot,
+                        l.SupplierProductId,
+                        l.SkuSnapshot);
+                })
+                .ToList();
 
             var submitted = await _orders.SubmitAsync(
                     org,
@@ -1120,14 +1348,28 @@ public sealed class SubmitPurchaseOrder
 
                             var connectedLines = po.Lines.OrderBy(x => x.LineNumber).Select(x =>
                             {
-                                var link = connectedLinksByBuyerProduct![x.ProductId.Value];
+                                var supplierProductId = x.SupplierProductId
+                                    ?? (resolvedBySupplier is not null
+                                        && x.ProductId is not null
+                                        && resolvedBySupplier.Values.FirstOrDefault(r => r.BuyerProductId == x.ProductId.Value)
+                                            is { } byBuyer
+                                            ? CatalogProductId.From(byBuyer.SupplierProductId)
+                                            : null);
+                                if (supplierProductId is null)
+                                {
+                                    throw new DomainException(
+                                        ConnectedSupplierErrorCodes.ExposureNotFound,
+                                        "Connected purchase-order lines require a supplier product identity.");
+                                }
+
+                                var resolved = resolvedBySupplier![supplierProductId.Value];
                                 return ConnectedPurchaseOrderLine.Create(
-                                    link.SupplierProductId,
-                                    link.SupplierNameSnapshot,
-                                    link.SupplierSkuSnapshot,
+                                    supplierProductId,
+                                    x.NameSnapshot ?? resolved.NameSnapshot,
+                                    x.SkuSnapshot ?? resolved.SkuSnapshot,
                                     x.OrderedQty,
-                                    connectedPricesByBuyerProduct![x.ProductId.Value],
-                                    link.UnitOfMeasureCode);
+                                    resolved.EffectivePrice,
+                                    resolved.UnitOfMeasureCode);
                             }).ToList();
                             createdConnected = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
                                 connectedRelationship, po.Id, po.PoNumber, po.OrderDate, po.Notes, connectedLines, utcNow,
@@ -1485,6 +1727,20 @@ public sealed class ReceivePurchaseOrder
                         "Goods receipt is only allowed after the supplier accepts the connected order.");
                 }
 
+                if (existing.Lines.Any(l => l.NeedsBuyerProductSetup)
+                    || (connected.Lines.Any(l => l.FulfillmentQty > 0m)
+                        && _links is not null
+                        && await HasUnreadyReceivableLinesAsync(
+                            existing,
+                            connected,
+                            _links,
+                            cancellationToken).ConfigureAwait(false)))
+                {
+                    return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                        ConnectedSupplierErrorCodes.LinkNotFound,
+                        "Product setup is required before stock can be received. Prepare products for receiving first.");
+                }
+
                 if (_links is not null)
                 {
                     foreach (var line in request.Lines)
@@ -1623,5 +1879,38 @@ public sealed class ReceivePurchaseOrder
         {
             return ApplicationResult<PosGoodsReceiptDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private static async Task<bool> HasUnreadyReceivableLinesAsync(
+        PurchaseOrder purchaseOrder,
+        ConnectedPurchaseOrder connected,
+        IBuyerSupplierProductLinkRepository links,
+        CancellationToken cancellationToken)
+    {
+        var linkList = await links
+            .ListAsync(connected.RelationshipId, connected.BuyerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var bySupplier = linkList
+            .Where(x => x.IsActive)
+            .GroupBy(x => x.SupplierProductId.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var cpoLine in connected.Lines.Where(l => l.FulfillmentQty > 0m))
+        {
+            if (!bySupplier.TryGetValue(cpoLine.ProductId.Value, out var link))
+            {
+                return true;
+            }
+
+            var poLine = purchaseOrder.Lines.FirstOrDefault(l =>
+                l.SupplierProductId == cpoLine.ProductId
+                || l.ProductId == link.BuyerProductId);
+            if (poLine is null || poLine.ProductId is null || poLine.NeedsBuyerProductSetup)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

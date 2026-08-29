@@ -157,6 +157,26 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
     }
 
     [Fact]
+    public async Task Unlinked_supplier_product_line_is_allowed_for_ordering()
+    {
+        var fixture = CreateConnectedFixture(includeLink: false, buyerSpecific: null);
+        var result = await ConnectedPurchaseOrderLineEligibility.ValidateIfConnectedAsync(
+            Buyer,
+            fixture.Supplier,
+            [new ConnectedPurchaseOrderLineEligibility.LineRequest(null, fixture.Exposure.ProductId.Value)],
+            fixture.Relationships,
+            fixture.Links,
+            fixture.Exposures,
+            fixture.Shares,
+            CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.True(result!.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Contains(fixture.Exposure.ProductId.Value, result.Value!.ResolvedBySupplierProductId.Keys);
+        Assert.Equal(200m, result.Value.ResolvedBySupplierProductId[fixture.Exposure.ProductId.Value].EffectivePrice);
+    }
+
+    [Fact]
     public async Task Product_linked_to_other_connected_supplier_is_rejected()
     {
         var fixtureA = CreateConnectedFixture();
