@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -16,7 +17,9 @@ public sealed record BuyerProductShareQueryResultDto(
     int SharedCount,
     int Page,
     int PageSize,
-    IReadOnlyList<BuyerProductShareCategoryFacetDto> Categories);
+    IReadOnlyList<BuyerProductShareCategoryFacetDto> Categories,
+    string CatalogSharingMode = "SelectedOnly",
+    decimal? CustomerDiscountPercent = null);
 
 public sealed record BulkBuyerProductShareMutationRequest(
     string Operation,
@@ -66,15 +69,24 @@ public sealed class QueryBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly ICatalogProductRepository? _products;
+    private readonly ISupplierProductExposureRepository? _exposures;
+    private readonly IPosUnitOfWork? _uow;
 
     public QueryBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        ICatalogProductRepository? products = null,
+        ISupplierProductExposureRepository? exposures = null,
+        IPosUnitOfWork? uow = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
+        _products = products;
+        _exposures = exposures;
+        _uow = uow;
     }
 
     public async Task<ApplicationResult<BuyerProductShareQueryResultDto>> ExecuteAsync(
@@ -102,24 +114,41 @@ public sealed class QueryBuyerProductShares
                 ConnectedSupplierErrorCodes.NotFound, "Relationship was not found.");
         }
 
+        if (relationship.CatalogSharingMode == CatalogSharingMode.AllEligible
+            && _products is not null
+            && _exposures is not null
+            && _uow is not null)
+        {
+            await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                    supplier,
+                    _products,
+                    _exposures,
+                    DateTimeOffset.UtcNow,
+                    ct)
+                .ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var pageNumber = Math.Max(page ?? 1, 1);
         var result = await _shares.SearchForSupplierManagementAsync(
-            relationship.Id, supplier, query, category, shareFilter, skip, take, idsOnly: false, ct)
+            relationship.Id,
+            supplier,
+            query,
+            category,
+            shareFilter,
+            skip,
+            take,
+            idsOnly: false,
+            ct,
+            relationship.CatalogSharingMode)
             .ConfigureAwait(false);
 
         var items = new List<ConnectedBuyerProductShareDto>(result.Rows.Count);
         foreach (var row in result.Rows)
         {
-            if (row.Share is null)
-            {
-                items.Add(ConnectedSupplierMapper.MapUnshared(
-                    relationship, supplier, row.Product, row.Exposure, row.CategoryName));
-            }
-            else
-            {
-                items.Add(ConnectedSupplierMapper.Map(row.Share, row.Exposure, row.Product, row.CategoryName));
-            }
+            items.Add(ConnectedSupplierMapper.MapForManagement(
+                relationship, row.Product, row.Share, row.Exposure, row.CategoryName));
         }
 
         return ApplicationResult<BuyerProductShareQueryResultDto>.Success(new(
@@ -131,7 +160,9 @@ public sealed class QueryBuyerProductShares
             take,
             result.CategoryFacets
                 .Select(x => new BuyerProductShareCategoryFacetDto(x.CategoryName, x.Count))
-                .ToList()));
+                .ToList(),
+            relationship.CatalogSharingMode.ToString(),
+            relationship.CustomerDiscountPercent));
     }
 }
 

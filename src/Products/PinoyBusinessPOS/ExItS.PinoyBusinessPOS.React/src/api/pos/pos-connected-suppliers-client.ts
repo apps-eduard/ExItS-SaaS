@@ -106,6 +106,8 @@ export const buyerProductShareQueryResultSchema = z.object({
   page: z.number(),
   pageSize: z.number(),
   categories: z.array(buyerProductShareCategoryFacetSchema),
+  catalogSharingMode: z.string().optional().default("SelectedOnly"),
+  customerDiscountPercent: z.number().nullable().optional().default(null),
 });
 
 export const missingDefaultPoProductSchema = z.object({

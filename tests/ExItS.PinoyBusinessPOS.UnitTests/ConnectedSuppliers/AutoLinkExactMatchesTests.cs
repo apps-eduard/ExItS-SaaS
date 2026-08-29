@@ -452,7 +452,8 @@ public sealed class AutoLinkExactMatchesTests
             int skip,
             int take,
             bool idsOnly,
-            CancellationToken ct = default) =>
+            CancellationToken ct = default,
+            CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult(new BuyerProductShareSearchPage([], [], 0, 0, 0, []));
 
         public Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)

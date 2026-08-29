@@ -147,4 +147,27 @@ public sealed class ConnectedCatalogSharingPricingTests
         Assert.Equal(CatalogSharingMode.SelectedOnly, relationship.CatalogSharingMode);
         Assert.Null(relationship.CustomerDiscountPercent);
     }
+
+    [Fact]
+    public void AllEligible_empty_discount_uses_selling_price()
+    {
+        var exposure = Exposure(80m);
+        Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(
+            exposure,
+            share: null,
+            CatalogSharingMode.AllEligible,
+            customerDiscountPercent: null,
+            sellingPrice: 100m,
+            out var price,
+            out var source));
+        Assert.Equal(100m, price);
+        Assert.Equal(ConnectedCustomerPriceSource.SellingPrice, source);
+    }
+
+    [Fact]
+    public void IsProductShared_AllEligible_without_row()
+    {
+        Assert.True(ConnectedPoPricing.IsProductShared(CatalogSharingMode.AllEligible, share: null));
+        Assert.False(ConnectedPoPricing.IsProductShared(CatalogSharingMode.SelectedOnly, share: null));
+    }
 }

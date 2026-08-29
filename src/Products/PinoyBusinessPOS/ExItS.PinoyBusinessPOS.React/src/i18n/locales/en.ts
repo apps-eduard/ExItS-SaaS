@@ -2891,6 +2891,13 @@ export const en = {
   "connected.filterShared": "Shared",
   "connected.filterNotShared": "Not shared",
   "connected.shareSummary": "{shared} shared of {eligible} eligible",
+  "connected.shareSummaryAllEligible":
+    "{shared} available of {eligible} eligible (all eligible shared by default)",
+  "connected.customerDiscountBanner": "Customer pricing: {percent}% off selling price",
+  "connected.sellingPriceBaselineBanner":
+    "Customer price uses each product’s selling price (no extra discount).",
+  "connected.listPrice": "Selling price",
+  "connected.noListPrice": "No selling price",
   "connected.shared": "Shared",
   "connected.notShared": "Not shared",
   "connected.buyerPrice": "Buyer price",

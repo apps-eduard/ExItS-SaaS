@@ -143,7 +143,8 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         int skip,
         int take,
         bool idsOnly,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly)
     {
         var activeStatus = nameof(CatalogProductStatus.Active);
         var products = db.CatalogProducts.AsNoTracking()
@@ -186,23 +187,48 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         }
 
         var filter = NormalizeShareFilter(shareFilter);
-        joined = filter switch
+        if (catalogSharingMode == CatalogSharingMode.AllEligible)
         {
-            "shared" => joined.Where(x => x.share != null && x.share.IsShared),
-            "notshared" => joined.Where(x => x.share == null || !x.share.IsShared),
-            "customprice" => joined.Where(x =>
-                x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
-            "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
-            _ => joined
-        };
+            // Shared by default; exclusions are sparse IsShared=false rows.
+            joined = filter switch
+            {
+                "shared" => joined.Where(x =>
+                    !x.product.IsBlockedFromConnectedBuyers
+                    && (x.share == null || x.share.IsShared)),
+                "notshared" => joined.Where(x =>
+                    x.share != null && !x.share.IsShared),
+                "customprice" => joined.Where(x =>
+                    x.share != null
+                    && x.share.IsShared
+                    && x.share.BuyerSpecificPoPrice != null),
+                "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
+                _ => joined
+            };
+        }
+        else
+        {
+            joined = filter switch
+            {
+                "shared" => joined.Where(x => x.share != null && x.share.IsShared),
+                "notshared" => joined.Where(x => x.share == null || !x.share.IsShared),
+                "customprice" => joined.Where(x =>
+                    x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
+                "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
+                _ => joined
+            };
+        }
 
         var eligibleCount = await products.CountAsync(x => !x.IsBlockedFromConnectedBuyers, ct)
             .ConfigureAwait(false);
-        var sharedCount = await (
+        var excludedCount = await shares.CountAsync(x => !x.IsShared, ct).ConfigureAwait(false);
+        var explicitSharedCount = await (
             from product in products
             join share in shares on product.Id equals share.SupplierProductId
             where share.IsShared
             select product.Id).CountAsync(ct).ConfigureAwait(false);
+        var sharedCount = catalogSharingMode == CatalogSharingMode.AllEligible
+            ? Math.Max(0, eligibleCount - excludedCount)
+            : explicitSharedCount;
 
         var matchingCount = await joined.CountAsync(ct).ConfigureAwait(false);
 

@@ -224,17 +224,42 @@ export function ConnectedSharedProductsPage() {
         />
       ) : null}
       {query.data ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-          data-testid="connected-share-summary"
-        >
-          {t("connected.shareSummary")
-            .replace("{shared}", String(query.data.sharedCount))
-            .replace("{eligible}", String(query.data.eligibleCount))}
-        </p>
+        <div className="flex min-w-0 flex-col gap-1" data-testid="connected-share-summary">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {query.data.catalogSharingMode === "AllEligible"
+              ? t("connected.shareSummaryAllEligible")
+                  .replace("{shared}", String(query.data.sharedCount))
+                  .replace("{eligible}", String(query.data.eligibleCount))
+              : t("connected.shareSummary")
+                  .replace("{shared}", String(query.data.sharedCount))
+                  .replace("{eligible}", String(query.data.eligibleCount))}
+          </p>
+          {query.data.customerDiscountPercent != null
+          && query.data.customerDiscountPercent > 0 ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("connected.customerDiscountBanner").replace(
+                "{percent}",
+                String(query.data.customerDiscountPercent),
+              )}
+            </p>
+          ) : query.data.catalogSharingMode === "AllEligible" ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("connected.sellingPriceBaselineBanner")}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       <ul className="m-0 grid list-none gap-2 p-0" data-testid="connected-share-list">
-        {query.data?.items.map((item) => (
+        {query.data?.items.map((item) => {
+          const customerPrice =
+            item.effectiveSupplierOrderPrice
+            ?? item.buyerSpecificPoPrice
+            ?? null;
+          const listPrice =
+            item.sellingPrice != null && item.sellingPrice > 0
+              ? item.sellingPrice
+              : item.defaultPoPrice;
+          return (
           <li key={item.supplierProductId}>
             <Card className="p-3">
               <label className="flex cursor-pointer items-start gap-3">
@@ -251,26 +276,34 @@ export function ConnectedSharedProductsPage() {
                   <span className="block font-semibold">
                     {item.nameSnapshot ?? item.supplierProductId}
                   </span>
-                  <span className="mt-1 flex flex-wrap gap-2 text-[length:var(--exits-text-sm)] text-muted">
+                  <span className="mt-1 flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)] text-muted">
                     {item.skuSnapshot}
                     <StatusChip tone={item.isShared ? "success" : "warning"}>
-                      {item.isShared ? t("connected.shared") : t("connected.notShared")}
+                      {item.isShared
+                        ? t("connected.shared")
+                        : query.data.catalogSharingMode === "AllEligible"
+                          ? t("connected.excluded")
+                          : t("connected.notShared")}
                     </StatusChip>
-                    {item.buyerSpecificPoPrice != null ? (
-                      <span data-testid={`connected-buyer-price-${item.supplierProductId}`}>
-                        {t("connected.buyerPrice")}: {item.buyerSpecificPoPrice}
+                    {customerPrice != null ? (
+                      <span data-testid={`connected-customer-price-${item.supplierProductId}`}>
+                        {t("connected.customerPrice")}: {customerPrice}
+                      </span>
+                    ) : null}
+                    {listPrice != null ? (
+                      <span>
+                        {t("connected.listPrice")}: {listPrice}
                       </span>
                     ) : (
-                      <span>
-                        {t("connected.usesDefaultPo")}: {item.defaultPoPrice ?? "—"}
-                      </span>
+                      <span>{t("connected.noListPrice")}</span>
                     )}
                   </span>
                 </span>
               </label>
             </Card>
           </li>
-        ))}
+          );
+        })}
       </ul>
       {allowManage && selected.size > 0 ? (
         <div className="flex flex-wrap gap-2" data-testid="connected-bulk-actions">

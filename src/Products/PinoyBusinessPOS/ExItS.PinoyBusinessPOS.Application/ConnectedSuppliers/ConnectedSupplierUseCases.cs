@@ -175,54 +175,137 @@ public static class ConnectedSupplierMapper
     public static SupplierProductExposureDto Map(SupplierProductExposure x, decimal effectivePrice) =>
         Map(x) with { SupplierOrderPrice = effectivePrice, EffectiveSupplierOrderPrice = effectivePrice };
     public static ConnectedBuyerProductShareDto Map(ConnectedBuyerProductShare x, SupplierProductExposure? exposure = null,
-        CatalogProduct? product = null, string? categoryName = null)
-    {
-        decimal? effective = exposure is not null && ConnectedPoPricing.TryResolveEffectivePrice(exposure, x, out var price)
-            ? price : null;
-        var category = !string.IsNullOrWhiteSpace(categoryName)
-            ? categoryName
-            : exposure?.CategoryNameSnapshot;
-        var defaultPo = product?.DefaultConnectedPoPrice
-            ?? (exposure is { IsExposed: true } ? exposure.SupplierOrderPrice : null);
-        return new(x.Id.Value,x.RelationshipId.Value,x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,
-            x.SupplierProductId.Value,x.IsShared,x.BuyerSpecificPoPrice,effective,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
-            product?.Sku ?? exposure?.SkuSnapshot,
-            product?.Name ?? exposure?.NameSnapshot,
-            product is not null ? product.UnitOfMeasure.ToString() : exposure?.UnitOfMeasureCode,
-            product?.SellingPrice,
-            category,
-            defaultPo,
-            product?.IsBlockedFromConnectedBuyers ?? false);
-    }
+        CatalogProduct? product = null, string? categoryName = null) =>
+        MapForManagement(
+            CatalogSharingMode.SelectedOnly,
+            customerDiscountPercent: null,
+            x.RelationshipId.Value,
+            x.BuyerOrganizationId.Value,
+            x.SupplierOrganizationId.Value,
+            product,
+            x,
+            exposure,
+            categoryName,
+            shareId: x.Id.Value,
+            createdAtUtc: x.CreatedAtUtc,
+            updatedAtUtc: x.UpdatedAtUtc);
 
     public static ConnectedBuyerProductShareDto MapUnshared(
         ConnectedSupplierRelationship relationship,
         PosOrganizationId supplier,
         CatalogProduct product,
         SupplierProductExposure? exposure,
-        string? categoryName)
-    {
-        var defaultPo = product.DefaultConnectedPoPrice
-            ?? (exposure is { IsExposed: true } ? exposure.SupplierOrderPrice : null);
-        return new(
-            Guid.Empty,
+        string? categoryName) =>
+        MapForManagement(
+            relationship.CatalogSharingMode,
+            relationship.CustomerDiscountPercent,
             relationship.Id.Value,
             relationship.BuyerOrganizationId.Value,
             supplier.Value,
-            product.Id.Value,
-            false,
-            null,
-            null,
-            0,
-            product.CreatedAtUtc,
-            product.UpdatedAtUtc,
-            product.Sku,
-            product.Name,
-            product.UnitOfMeasure.ToString(),
-            product.SellingPrice,
+            product,
+            share: null,
+            exposure,
             categoryName,
+            shareId: Guid.Empty,
+            createdAtUtc: product.CreatedAtUtc,
+            updatedAtUtc: product.UpdatedAtUtc);
+
+    public static ConnectedBuyerProductShareDto MapForManagement(
+        ConnectedSupplierRelationship relationship,
+        CatalogProduct product,
+        ConnectedBuyerProductShare? share,
+        SupplierProductExposure? exposure,
+        string? categoryName) =>
+        MapForManagement(
+            relationship.CatalogSharingMode,
+            relationship.CustomerDiscountPercent,
+            relationship.Id.Value,
+            relationship.BuyerOrganizationId.Value,
+            relationship.SupplierOrganizationId.Value,
+            product,
+            share,
+            exposure,
+            categoryName,
+            shareId: share?.Id.Value ?? Guid.Empty,
+            createdAtUtc: share?.CreatedAtUtc ?? product.CreatedAtUtc,
+            updatedAtUtc: share?.UpdatedAtUtc ?? product.UpdatedAtUtc);
+
+    private static ConnectedBuyerProductShareDto MapForManagement(
+        CatalogSharingMode mode,
+        decimal? customerDiscountPercent,
+        Guid relationshipId,
+        Guid buyerOrganizationId,
+        Guid supplierOrganizationId,
+        CatalogProduct? product,
+        ConnectedBuyerProductShare? share,
+        SupplierProductExposure? exposure,
+        string? categoryName,
+        Guid shareId,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc)
+    {
+        var isShared = product?.IsBlockedFromConnectedBuyers != true
+            && ConnectedPoPricing.IsProductShared(mode, share);
+
+        decimal? effective = null;
+        var selling = product?.SellingPrice;
+        if (isShared)
+        {
+            if (exposure is not null
+                && ConnectedPoPricing.TryResolveEffectivePrice(
+                    exposure,
+                    share,
+                    mode,
+                    customerDiscountPercent,
+                    selling,
+                    out var fromExposure,
+                    out _))
+            {
+                effective = fromExposure;
+            }
+            else if (selling is > 0m)
+            {
+                // AllEligible display path when Default PO / exposure is not staged yet.
+                var baseline = selling.Value;
+                effective = customerDiscountPercent is decimal d && d > 0m
+                    ? ConnectedPoPricing.RoundMoney(baseline * (1m - (d / 100m)))
+                    : ConnectedPoPricing.RoundMoney(baseline);
+            }
+            else if (share?.BuyerSpecificPoPrice is decimal overridePrice)
+            {
+                effective = ConnectedPoPricing.RoundMoney(overridePrice);
+            }
+        }
+
+        var category = !string.IsNullOrWhiteSpace(categoryName)
+            ? categoryName
+            : exposure?.CategoryNameSnapshot;
+        var defaultPo = product?.DefaultConnectedPoPrice
+            ?? (exposure is { IsExposed: true } ? exposure.SupplierOrderPrice : null);
+        var productId = product?.Id.Value
+            ?? share?.SupplierProductId.Value
+            ?? exposure?.ProductId.Value
+            ?? Guid.Empty;
+
+        return new(
+            shareId,
+            relationshipId,
+            buyerOrganizationId,
+            supplierOrganizationId,
+            productId,
+            isShared,
+            share?.BuyerSpecificPoPrice,
+            effective,
+            share?.SyncVersion ?? 0,
+            createdAtUtc,
+            updatedAtUtc,
+            product?.Sku ?? exposure?.SkuSnapshot,
+            product?.Name ?? exposure?.NameSnapshot,
+            product is not null ? product.UnitOfMeasure.ToString() : exposure?.UnitOfMeasureCode,
+            selling,
+            category,
             defaultPo,
-            product.IsBlockedFromConnectedBuyers);
+            product?.IsBlockedFromConnectedBuyers ?? false);
     }
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
@@ -553,6 +636,8 @@ public sealed class RespondConnection
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly ICatalogProductRepository? _products;
+    private readonly ISupplierProductExposureRepository? _exposures;
     private readonly TimeProvider _clock;
 
     public RespondConnection(
@@ -560,13 +645,17 @@ public sealed class RespondConnection
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        ICatalogProductRepository? products = null,
+        ISupplierProductExposureRepository? exposures = null)
     {
         _relationships = relationships;
         _uow = uow;
         _access = access;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _clock = clock ?? TimeProvider.System;
+        _products = products;
+        _exposures = exposures;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -607,6 +696,16 @@ public sealed class RespondConnection
 
                 r.Approve(_clock.GetUtcNow(), request.RespondedByUserId);
                 r.ConfigureCatalogSharing(mode, request.CustomerDiscountPercent, _clock.GetUtcNow());
+                if (mode == CatalogSharingMode.AllEligible)
+                {
+                    await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                            org,
+                            _products,
+                            _exposures,
+                            _clock.GetUtcNow(),
+                            ct)
+                        .ConfigureAwait(false);
+                }
             }
             else
             {
@@ -810,20 +909,14 @@ public sealed class ListBuyerProductShares
         }
 
         var page = await _shares.SearchForSupplierManagementAsync(
-                relationship.Id, supplier, null, null, null, 0, 10_000, idsOnly: false, ct)
+                relationship.Id, supplier, null, null, null, 0, 10_000, idsOnly: false, ct,
+                relationship.CatalogSharingMode)
             .ConfigureAwait(false);
         var result = new List<ConnectedBuyerProductShareDto>(page.Rows.Count);
         foreach (var row in page.Rows)
         {
-            if (row.Share is null)
-            {
-                result.Add(ConnectedSupplierMapper.MapUnshared(
-                    relationship, supplier, row.Product, row.Exposure, row.CategoryName));
-            }
-            else
-            {
-                result.Add(ConnectedSupplierMapper.Map(row.Share, row.Exposure, row.Product, row.CategoryName));
-            }
+            result.Add(ConnectedSupplierMapper.MapForManagement(
+                relationship, row.Product, row.Share, row.Exposure, row.CategoryName));
         }
 
         return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);

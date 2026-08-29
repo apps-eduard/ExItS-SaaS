@@ -58,7 +58,7 @@ export function ConnectedIncomingRequestsPage() {
     name: string;
   } | null>(null);
   const [sharingMode, setSharingMode] = useState<"AllEligible" | "SelectedOnly">("AllEligible");
-  const [discountPercent, setDiscountPercent] = useState("10");
+  const [discountPercent, setDiscountPercent] = useState("");
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -96,7 +96,7 @@ export function ConnectedIncomingRequestsPage() {
     if (accept) {
       setAcceptSetup({ relationshipId, name });
       setSharingMode("AllEligible");
-      setDiscountPercent("10");
+      setDiscountPercent("");
       setActionError(null);
       return;
     }

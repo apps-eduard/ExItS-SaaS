@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
@@ -55,7 +56,8 @@ public sealed class GetConnectionCatalogSettings
             skip: 0,
             take: 1,
             idsOnly: true,
-            ct).ConfigureAwait(false);
+            ct,
+            r.CatalogSharingMode).ConfigureAwait(false);
 
         var shareRows = await _shares.ListAsync(r.Id, ct).ConfigureAwait(false);
         var excludedCount = shareRows.Count(x => !x.IsShared);
@@ -82,6 +84,8 @@ public sealed class GetConnectionCatalogSettings
 public sealed class UpdateConnectionCatalogSettings
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ICatalogProductRepository _products;
+    private readonly ISupplierProductExposureRepository _exposures;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -90,11 +94,15 @@ public sealed class UpdateConnectionCatalogSettings
         IConnectedSupplierRelationshipRepository relationships,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
+        ICatalogProductRepository products,
+        ISupplierProductExposureRepository exposures,
         TimeProvider? clock = null)
     {
         _relationships = relationships;
         _uow = uow;
         _access = access;
+        _products = products;
+        _exposures = exposures;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -143,6 +151,17 @@ public sealed class UpdateConnectionCatalogSettings
         try
         {
             r.ConfigureCatalogSharing(mode.Value, request.CustomerDiscountPercent, _clock.GetUtcNow());
+            if (mode == CatalogSharingMode.AllEligible)
+            {
+                await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                        supplier,
+                        _products,
+                        _exposures,
+                        _clock.GetUtcNow(),
+                        ct)
+                    .ConfigureAwait(false);
+            }
+
             await _relationships.UpdateAsync(r, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
         }

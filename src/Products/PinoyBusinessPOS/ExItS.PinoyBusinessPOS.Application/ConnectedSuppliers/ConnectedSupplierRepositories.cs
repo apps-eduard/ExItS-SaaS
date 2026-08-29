@@ -60,7 +60,8 @@ public interface IConnectedBuyerProductShareRepository
         int skip,
         int take,
         bool idsOnly,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly);
 
     Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
     Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);

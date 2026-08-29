@@ -96,7 +96,8 @@ public sealed class BusinessCustomerProjectionTests
             int skip,
             int take,
             bool idsOnly,
-            CancellationToken ct = default) =>
+            CancellationToken ct = default,
+            CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult(new BuyerProductShareSearchPage([], [], 0, EligibleCount, 0, []));
 
         public Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)
