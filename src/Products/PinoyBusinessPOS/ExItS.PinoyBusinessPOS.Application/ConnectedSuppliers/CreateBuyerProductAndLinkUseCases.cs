@@ -195,7 +195,14 @@ public sealed class SuggestBuyerProductMatches
         }
 
         var share = await _shares.FindAsync(relationship.Id, exposure.ProductId, ct).ConfigureAwait(false);
-        if (!ConnectedPoPricing.TryResolveEffectivePrice(exposure, share, out var poPrice))
+        if (!ConnectedPoPricing.TryResolveEffectivePrice(
+                exposure,
+                share,
+                relationship.CatalogSharingMode,
+                relationship.CustomerDiscountPercent,
+                sellingPrice: null,
+                out var poPrice,
+                out _))
         {
             return ConnectedSupplierUseCaseGuard.Failure<SuggestBuyerProductMatchesResultDto>(
                 ConnectedSupplierErrorCodes.ExposureNotFound, "This product is not shared with your business.");
@@ -355,7 +362,14 @@ public sealed class CreateBuyerProductAndLink
         }
 
         var share = await _shares.FindAsync(relationship.Id, exposure.ProductId, ct).ConfigureAwait(false);
-        if (!ConnectedPoPricing.TryResolveEffectivePrice(exposure, share, out var effectivePrice))
+        if (!ConnectedPoPricing.TryResolveEffectivePrice(
+                exposure,
+                share,
+                relationship.CatalogSharingMode,
+                relationship.CustomerDiscountPercent,
+                sellingPrice: null,
+                out var effectivePrice,
+                out _))
         {
             return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
                 ConnectedSupplierErrorCodes.ExposureNotFound, "This product is not shared with your business.");

@@ -56,8 +56,61 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         (await db.ConnectedBuyerProductShares.AsNoTracking().Where(x=>x.RelationshipId==relationshipId.Value)
             .OrderBy(x=>x.SupplierProductId).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
     public async Task<(IReadOnlyList<SupplierProductExposure> Exposures,IReadOnlyList<ConnectedBuyerProductShare> Shares,int Total)>
-        SearchSharedCatalogAsync(ConnectedSupplierRelationshipId relationshipId,PosOrganizationId supplier,string? query,string? category,int skip,int take,CancellationToken ct=default)
+        SearchSharedCatalogAsync(
+            ConnectedSupplierRelationshipId relationshipId,
+            PosOrganizationId supplier,
+            string? query,
+            string? category,
+            int skip,
+            int take,
+            CancellationToken ct = default,
+            CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly)
     {
+        if (catalogSharingMode == CatalogSharingMode.AllEligible)
+        {
+            var allEligible =
+                from exposure in db.SupplierProductExposures.AsNoTracking()
+                join share in db.ConnectedBuyerProductShares.AsNoTracking()
+                        .Where(s => s.RelationshipId == relationshipId.Value)
+                    on exposure.ProductId equals share.SupplierProductId into shareGroup
+                from share in shareGroup.DefaultIfEmpty()
+                where exposure.SupplierOrganizationId == supplier.Value
+                      && exposure.IsExposed
+                      && exposure.IsOrderable
+                      && (share == null || share.IsShared)
+                select new { exposure, share };
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var term = query.Trim().ToUpper();
+                allEligible = allEligible.Where(x => x.exposure.NameSnapshot.ToUpper().Contains(term)
+                    || (x.exposure.SkuSnapshot != null && x.exposure.SkuSnapshot.ToUpper().Contains(term)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                var term = category.Trim().ToUpper();
+                allEligible = allEligible.Where(x =>
+                    x.exposure.CategoryNameSnapshot != null && x.exposure.CategoryNameSnapshot.ToUpper() == term);
+            }
+
+            var allTotal = await allEligible.CountAsync(ct).ConfigureAwait(false);
+            var allRows = await allEligible
+                .OrderBy(x => x.exposure.NameSnapshot).ThenBy(x => x.exposure.Id)
+                .Skip(skip).Take(take)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+
+            // Parallel lists: share may be null for inherited AllEligible rows (empty Guid placeholder not used —
+            // callers match by product id via dictionary with null-safe GetValueOrDefault).
+            var exposures = allRows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x.exposure)).ToList();
+            var shares = allRows
+                .Where(x => x.share is not null)
+                .Select(x => ConnectedSupplierEntityMapper.ToDomain(x.share!))
+                .ToList();
+            return (exposures, shares, allTotal);
+        }
+
         var q=from exposure in db.SupplierProductExposures.AsNoTracking()
               join share in db.ConnectedBuyerProductShares.AsNoTracking()
                 on exposure.ProductId equals share.SupplierProductId

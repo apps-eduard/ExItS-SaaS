@@ -53,6 +53,12 @@ export function ConnectedIncomingRequestsPage() {
     relationshipId: string;
     name: string;
   } | null>(null);
+  const [acceptSetup, setAcceptSetup] = useState<{
+    relationshipId: string;
+    name: string;
+  } | null>(null);
+  const [sharingMode, setSharingMode] = useState<"AllEligible" | "SelectedOnly">("AllEligible");
+  const [discountPercent, setDiscountPercent] = useState("10");
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -87,15 +93,55 @@ export function ConnectedIncomingRequestsPage() {
     if (!workspace || !allowManage || busyId) {
       return;
     }
+    if (accept) {
+      setAcceptSetup({ relationshipId, name });
+      setSharingMode("AllEligible");
+      setDiscountPercent("10");
+      setActionError(null);
+      return;
+    }
     setBusyId(relationshipId);
     setActionError(null);
     try {
-      if (accept) {
-        await approveConnection(workspace, relationshipId);
-        setSharePrompt({ relationshipId, name });
-      } else {
-        await declineConnection(workspace, relationshipId);
-      }
+      await declineConnection(workspace, relationshipId);
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+    } catch (err) {
+      setActionError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : t("connected.respondFailed"),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmAcceptAndShare() {
+    if (!workspace || !allowManage || !acceptSetup || busyId) {
+      return;
+    }
+    const discountRaw = discountPercent.trim();
+    const discount =
+      sharingMode === "AllEligible" && discountRaw !== ""
+        ? Number.parseFloat(discountRaw)
+        : null;
+    if (discount !== null && (Number.isNaN(discount) || discount < 0 || discount > 100)) {
+      setActionError(t("connected.customerDiscountInvalid"));
+      return;
+    }
+    setBusyId(acceptSetup.relationshipId);
+    setActionError(null);
+    try {
+      await approveConnection(workspace, acceptSetup.relationshipId, {
+        catalogSharingMode: sharingMode,
+        customerDiscountPercent: discount,
+        confirmCatalogSharing: sharingMode === "AllEligible",
+      });
+      setSharePrompt({
+        relationshipId: acceptSetup.relationshipId,
+        name: acceptSetup.name,
+      });
+      setAcceptSetup(null);
       await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
     } catch (err) {
       setActionError(
@@ -160,6 +206,91 @@ export function ConnectedIncomingRequestsPage() {
         <div className="exits-alert exits-alert--error" role="alert">
           <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
         </div>
+      ) : null}
+
+      {acceptSetup ? (
+        <section className="catalog-form-section connected-accept-setup" data-testid="connected-accept-setup">
+          <h2 className="catalog-form-section__title m-0">{t("connected.acceptSetupTitle")}</h2>
+          <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
+            {t("connected.acceptSetupHelp").replace("{name}", acceptSetup.name)}
+          </p>
+          <fieldset className="m-0 mt-3 border-0 p-0">
+            <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
+              {t("connected.catalogSharing")}
+            </legend>
+            <label className="mb-2 flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+              <input
+                type="radio"
+                name="sharing-mode"
+                checked={sharingMode === "AllEligible"}
+                onChange={() => setSharingMode("AllEligible")}
+                data-testid="connected-accept-all-eligible"
+              />
+              <span>
+                <strong className="font-medium">{t("connected.allEligibleProducts")}</strong>
+                <br />
+                <span className="text-muted">{t("connected.allEligibleProductsHelp")}</span>
+              </span>
+            </label>
+            <label className="flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+              <input
+                type="radio"
+                name="sharing-mode"
+                checked={sharingMode === "SelectedOnly"}
+                onChange={() => setSharingMode("SelectedOnly")}
+                data-testid="connected-accept-selected-only"
+              />
+              <span>
+                <strong className="font-medium">{t("connected.selectedProductsOnly")}</strong>
+              </span>
+            </label>
+          </fieldset>
+          {sharingMode === "AllEligible" ? (
+            <label className="mt-3 flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="font-medium">{t("connected.customerDiscount")}</span>
+              <input
+                className="min-h-11 w-full max-w-[8rem] rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3"
+                inputMode="decimal"
+                value={discountPercent}
+                onChange={(event) => setDiscountPercent(event.target.value)}
+                data-testid="connected-accept-discount"
+                aria-label={t("connected.customerDiscount")}
+              />
+              <span className="text-muted">{t("connected.customerDiscountHelp")}</span>
+            </label>
+          ) : null}
+          <p className="m-0 mt-3 text-[length:var(--exits-text-sm)] text-muted">
+            {t("connected.acceptSetupInventoryNote")}
+          </p>
+          <div className="connected-incoming-row__actions mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              disabled={Boolean(busyId)}
+              onClick={() => setAcceptSetup(null)}
+              data-testid="connected-accept-cancel"
+            >
+              {t("connected.acceptSetupCancel")}
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={Boolean(busyId)}
+              onClick={() => {
+                void confirmAcceptAndShare();
+              }}
+              data-testid="connected-accept-confirm"
+            >
+              {busyId === acceptSetup.relationshipId ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <Check className="size-4" aria-hidden />
+              )}
+              {t("connected.acceptAndStartSharing")}
+            </Button>
+          </div>
+        </section>
       ) : null}
 
       {sharePrompt ? (

@@ -1838,9 +1838,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("buyer_public_organization_id_snapshot");
 
+                    b.Property<int>("CatalogSharingMode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("catalog_sharing_mode");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<decimal?>("CustomerDiscountPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("customer_discount_percent");
 
                     b.Property<DateTimeOffset?>("DisconnectedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -1905,6 +1916,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("connected_supplier_relationships", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
+
                             t.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
                         });
                 });

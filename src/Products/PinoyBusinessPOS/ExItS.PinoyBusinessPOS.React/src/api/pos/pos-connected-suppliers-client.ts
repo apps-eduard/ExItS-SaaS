@@ -41,6 +41,18 @@ export const connectedSupplierRelationshipSchema = z.object({
   updatedAtUtc: isoDateSchema,
   counterpartyDisplayName: z.string().nullable().optional(),
   counterpartyPublicOrganizationId: z.string().nullable().optional(),
+  catalogSharingMode: z.string().optional().default("SelectedOnly"),
+  customerDiscountPercent: z.number().nullable().optional().default(null),
+});
+
+export const connectionCatalogSettingsSchema = z.object({
+  relationshipId: guidSchema,
+  catalogSharingMode: z.string(),
+  customerDiscountPercent: z.number().nullable().optional().default(null),
+  eligibleCount: z.number(),
+  sharedCount: z.number(),
+  excludedCount: z.number(),
+  overrideCount: z.number(),
 });
 
 export const supplierProductExposureSchema = z.object({
@@ -361,16 +373,63 @@ export async function requestConnection(
 export async function approveConnection(
   workspace: PosWorkspaceScope,
   relationshipId: string,
-  signal?: AbortSignal,
+  options?: {
+    catalogSharingMode?: "AllEligible" | "SelectedOnly";
+    customerDiscountPercent?: number | null;
+    confirmCatalogSharing?: boolean;
+    signal?: AbortSignal;
+  },
 ): Promise<ConnectedSupplierRelationship> {
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
-    signal,
+    signal: options?.signal,
     path: `${relPath(relationshipId, "/approve")}`,
-    body: {},
+    body: {
+      catalogSharingMode: options?.catalogSharingMode ?? null,
+      customerDiscountPercent: options?.customerDiscountPercent ?? null,
+      confirmCatalogSharing: options?.confirmCatalogSharing ?? false,
+    },
   });
   return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+export async function getConnectionCatalogSettings(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<z.infer<typeof connectionCatalogSettingsSchema>> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${relPath(relationshipId, "/catalog-settings")}`,
+  });
+  return connectionCatalogSettingsSchema.parse(raw);
+}
+
+export async function updateConnectionCatalogSettings(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  input: {
+    catalogSharingMode: "AllEligible" | "SelectedOnly";
+    customerDiscountPercent?: number | null;
+    confirmModeChange?: boolean;
+  },
+  signal?: AbortSignal,
+): Promise<z.infer<typeof connectionCatalogSettingsSchema>> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${relPath(relationshipId, "/catalog-settings")}`,
+    body: {
+      catalogSharingMode: input.catalogSharingMode,
+      customerDiscountPercent: input.customerDiscountPercent ?? null,
+      confirmModeChange: input.confirmModeChange ?? false,
+    },
+  });
+  return connectionCatalogSettingsSchema.parse(raw);
 }
 
 export async function declineConnection(

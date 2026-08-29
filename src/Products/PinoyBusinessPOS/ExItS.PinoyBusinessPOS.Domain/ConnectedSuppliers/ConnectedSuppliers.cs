@@ -8,6 +8,27 @@ namespace ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 
 public enum ConnectedSupplierRelationshipStatus { Pending = 0, Active = 1, Declined = 2, Disconnected = 3 }
 public enum SupplierConnectionType { External = 0, ConnectedOrganization = 1 }
+
+/// <summary>
+/// How a supplier-buyer connection publishes eligible catalog products.
+/// Legacy connections default to <see cref="SelectedOnly"/> so visibility does not broaden on migration.
+/// </summary>
+public enum CatalogSharingMode
+{
+    /// <summary>Only products with an explicit shared share row are buyer-visible.</summary>
+    SelectedOnly = 0,
+    /// <summary>All eligible products are shared unless explicitly excluded (IsShared=false).</summary>
+    AllEligible = 1
+}
+
+/// <summary>Server-side source for the buyer-facing effective purchase price.</summary>
+public enum ConnectedCustomerPriceSource
+{
+    SellingPrice = 0,
+    CustomerDiscount = 1,
+    ProductOverride = 2,
+    DefaultPoPrice = 3
+}
 public enum ConnectedPurchaseOrderStatus
 {
     New = 0,
@@ -133,6 +154,10 @@ public sealed class ConnectedSupplierRelationship
     public string? SupplierDisplayNameSnapshot { get; }
     /// <summary>Public organization id (ORG######) of the supplier at request time.</summary>
     public string? SupplierPublicOrganizationIdSnapshot { get; }
+    /// <summary>Legacy connections remain <see cref="CatalogSharingMode.SelectedOnly"/>.</summary>
+    public CatalogSharingMode CatalogSharingMode { get; private set; }
+    /// <summary>Optional buyer-level discount percent applied to selling/default PO baseline (0–100).</summary>
+    public decimal? CustomerDiscountPercent { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -141,7 +166,9 @@ public sealed class ConnectedSupplierRelationship
         Guid? requestedByUserId, DateTimeOffset? respondedAtUtc, Guid? respondedByUserId,
         DateTimeOffset? disconnectedAtUtc, DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc,
         string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
-        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null)
+        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null,
+        CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
+        decimal? customerDiscountPercent = null)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
@@ -150,6 +177,8 @@ public sealed class ConnectedSupplierRelationship
         BuyerPublicOrganizationIdSnapshot = CleanSnapshot(buyerPublicOrganizationIdSnapshot, 32);
         SupplierDisplayNameSnapshot = CleanSnapshot(supplierDisplayNameSnapshot, 128);
         SupplierPublicOrganizationIdSnapshot = CleanSnapshot(supplierPublicOrganizationIdSnapshot, 32);
+        CatalogSharingMode = catalogSharingMode;
+        CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
@@ -185,15 +214,39 @@ public sealed class ConnectedSupplierRelationship
         if (Status != ConnectedSupplierRelationshipStatus.Active) InvalidTransition();
         Status = ConnectedSupplierRelationshipStatus.Disconnected; DisconnectedAtUtc = utcNow; UpdatedAtUtc = utcNow;
     }
+
+    /// <summary>
+    /// Sets catalog sharing mode and optional customer discount. Active relationships only
+    /// (or call during Approve before save). Does not create per-product share rows.
+    /// </summary>
+    public void ConfigureCatalogSharing(
+        CatalogSharingMode mode,
+        decimal? customerDiscountPercent,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        CatalogSharingMode = mode;
+        CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
+        UpdatedAtUtc = utcNow;
+    }
+
     public static ConnectedSupplierRelationship Rehydrate(ConnectedSupplierRelationshipId id, PosOrganizationId buyer,
         PosOrganizationId supplier, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedBy, DateTimeOffset? respondedAtUtc, Guid? respondedBy, DateTimeOffset? disconnectedAtUtc,
         DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc,
         string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
-        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null) =>
+        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null,
+        CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
+        decimal? customerDiscountPercent = null) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
-            supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot);
+            supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
+            catalogSharingMode, customerDiscountPercent);
 
     private static string? CleanSnapshot(string? value, int maxLength)
     {
@@ -205,6 +258,25 @@ public sealed class ConnectedSupplierRelationship
         var trimmed = value.Trim();
         return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
     }
+
+    private static decimal? NormalizeDiscount(decimal? percent)
+    {
+        if (percent is null)
+        {
+            return null;
+        }
+
+        var value = decimal.Round(percent.Value, 2, MidpointRounding.AwayFromZero);
+        if (value < 0m || value > 100m)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOffer,
+                "Customer discount percent must be between 0 and 100.");
+        }
+
+        return value == 0m ? null : value;
+    }
+
     private static void InvalidTransition() => throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidTransition, "Connected supplier relationship transition is not allowed.");
     internal static void EnsureUtc(DateTimeOffset value)
     {
@@ -365,20 +437,75 @@ public sealed class ConnectedBuyerProductShare
 
 public static class ConnectedPoPricing
 {
+    /// <summary>
+    /// Legacy SELECTED_ONLY path (no connection discount / selling-price baseline).
+    /// Prefer the overload that accepts sharing mode + discount for new call sites.
+    /// </summary>
     public static bool TryResolveEffectivePrice(
         SupplierProductExposure exposure,
         ConnectedBuyerProductShare? share,
-        out decimal price)
+        out decimal price) =>
+        TryResolveEffectivePrice(
+            exposure,
+            share,
+            CatalogSharingMode.SelectedOnly,
+            customerDiscountPercent: null,
+            sellingPrice: null,
+            out price,
+            out _);
+
+    public static bool IsProductShared(CatalogSharingMode mode, ConnectedBuyerProductShare? share) =>
+        mode == CatalogSharingMode.AllEligible
+            ? share is null || share.IsShared
+            : share is not null && share.IsShared;
+
+    /// <summary>
+    /// Effective buyer purchase price for the exposure's orderable unit.
+    /// Precedence: product override → customer discount on baseline → baseline.
+    /// Baseline prefers SellingPrice when &gt; 0, else exposure SupplierOrderPrice (Default PO).
+    /// </summary>
+    public static bool TryResolveEffectivePrice(
+        SupplierProductExposure exposure,
+        ConnectedBuyerProductShare? share,
+        CatalogSharingMode mode,
+        decimal? customerDiscountPercent,
+        decimal? sellingPrice,
+        out decimal price,
+        out ConnectedCustomerPriceSource source)
     {
         price = 0m;
-        if (!exposure.IsExposed || !exposure.IsOrderable || share is null || !share.IsShared)
+        source = ConnectedCustomerPriceSource.DefaultPoPrice;
+        if (!exposure.IsExposed || !exposure.IsOrderable || !IsProductShared(mode, share))
         {
             return false;
         }
 
-        price = share.BuyerSpecificPoPrice ?? exposure.SupplierOrderPrice;
+        if (share?.BuyerSpecificPoPrice is decimal overridePrice)
+        {
+            price = RoundMoney(overridePrice);
+            source = ConnectedCustomerPriceSource.ProductOverride;
+            return true;
+        }
+
+        var baseline = sellingPrice is > 0m ? sellingPrice.Value : exposure.SupplierOrderPrice;
+        var baselineSource = sellingPrice is > 0m
+            ? ConnectedCustomerPriceSource.SellingPrice
+            : ConnectedCustomerPriceSource.DefaultPoPrice;
+
+        if (customerDiscountPercent is decimal discount && discount > 0m)
+        {
+            price = RoundMoney(baseline * (1m - (discount / 100m)));
+            source = ConnectedCustomerPriceSource.CustomerDiscount;
+            return true;
+        }
+
+        price = RoundMoney(baseline);
+        source = baselineSource;
         return true;
     }
+
+    public static decimal RoundMoney(decimal value) =>
+        decimal.Round(value, 2, MidpointRounding.AwayFromZero);
 }
 
 public sealed class BuyerSupplierProductLink

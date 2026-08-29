@@ -381,8 +381,15 @@ internal sealed class BuyerCatalogMatchContext
         var rows = new List<SharedCatalogRow>();
         foreach (var exposure in exposures)
         {
-            if (!sharesByProduct.TryGetValue(exposure.ProductId.Value, out var share)
-                || !ConnectedPoPricing.TryResolveEffectivePrice(exposure, share, out var poPrice))
+            sharesByProduct.TryGetValue(exposure.ProductId.Value, out var share);
+            if (!ConnectedPoPricing.TryResolveEffectivePrice(
+                    exposure,
+                    share,
+                    relationship.CatalogSharingMode,
+                    relationship.CustomerDiscountPercent,
+                    sellingPrice: null,
+                    out var poPrice,
+                    out _))
             {
                 continue;
             }

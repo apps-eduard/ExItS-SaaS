@@ -486,7 +486,7 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
         public Task<IReadOnlyList<ConnectedBuyerProductShare>> ListAsync(ConnectedSupplierRelationshipId relationshipId, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<ConnectedBuyerProductShare>>(_items.Where(x => x.RelationshipId == relationshipId).ToList());
         public Task<(IReadOnlyList<SupplierProductExposure> Exposures, IReadOnlyList<ConnectedBuyerProductShare> Shares, int Total)> SearchSharedCatalogAsync(
-            ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, int skip, int take, CancellationToken ct = default) =>
+            ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, int skip, int take, CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult<(IReadOnlyList<SupplierProductExposure>, IReadOnlyList<ConnectedBuyerProductShare>, int)>(([], [], 0));
         public Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
             ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, string? shareFilter, int skip, int take, bool idsOnly, CancellationToken ct = default) =>

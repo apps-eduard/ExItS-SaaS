@@ -540,7 +540,14 @@ public static class ConnectedPurchaseOrderLineEligibility
                 .FindAsync(relationship.Id, link.SupplierProductId, cancellationToken)
                 .ConfigureAwait(false);
             if (exposure is null
-                || !ConnectedPoPricing.TryResolveEffectivePrice(exposure, share, out var effectivePrice))
+                || !ConnectedPoPricing.TryResolveEffectivePrice(
+                    exposure,
+                    share,
+                    relationship.CatalogSharingMode,
+                    relationship.CustomerDiscountPercent,
+                    sellingPrice: null,
+                    out var effectivePrice,
+                    out _))
             {
                 return ApplicationResult<Outcome>.Failure(
                     ConnectedSupplierErrorCodes.ExposureNotFound,

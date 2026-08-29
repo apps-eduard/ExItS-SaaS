@@ -427,7 +427,7 @@ public sealed class AutoLinkExactMatchesTests
             string? category,
             int skip,
             int take,
-            CancellationToken ct = default)
+            CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly)
         {
             var shares = _items.Where(x => x.RelationshipId == relationshipId && x.IsShared).ToList();
             var sharedProductIds = shares.Select(x => x.SupplierProductId.Value).ToHashSet();

@@ -521,7 +521,7 @@ public sealed class CreateBuyerProductAndLinkTests
             string? category,
             int skip,
             int take,
-            CancellationToken ct = default) =>
+            CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult<(IReadOnlyList<SupplierProductExposure>,
                 IReadOnlyList<ConnectedBuyerProductShare>,
                 int)>(([], [], 0));

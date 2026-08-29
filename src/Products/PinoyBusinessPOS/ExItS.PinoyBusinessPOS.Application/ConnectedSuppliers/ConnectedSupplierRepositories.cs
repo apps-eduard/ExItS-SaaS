@@ -43,7 +43,8 @@ public interface IConnectedBuyerProductShareRepository
             string? category,
             int skip,
             int take,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly);
 
     /// <summary>
     /// Supplier-side share management: active catalog products left-joined to relationship shares

@@ -3468,7 +3468,11 @@ public sealed class PosDbContext : DbContext
 
         modelBuilder.Entity<ConnectedSupplierRelationshipRecord>(entity =>
         {
-            entity.ToTable("connected_supplier_relationships", tb => tb.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3"));
+            entity.ToTable("connected_supplier_relationships", tb =>
+            {
+                tb.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
+                tb.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
+            });
             entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
             entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
@@ -3479,6 +3483,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.BuyerPublicOrganizationIdSnapshot).HasColumnName("buyer_public_organization_id_snapshot").HasMaxLength(32);
             entity.Property(x=>x.SupplierDisplayNameSnapshot).HasColumnName("supplier_display_name_snapshot").HasMaxLength(128);
             entity.Property(x=>x.SupplierPublicOrganizationIdSnapshot).HasColumnName("supplier_public_organization_id_snapshot").HasMaxLength(32);
+            entity.Property(x=>x.CatalogSharingMode).HasColumnName("catalog_sharing_mode").HasDefaultValue(0);
+            entity.Property(x=>x.CustomerDiscountPercent).HasColumnName("customer_discount_percent").HasPrecision(5, 2);
             entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>new{x.BuyerOrganizationId,x.SupplierOrganizationId}).IsUnique().HasFilter("status IN (0, 1)").HasDatabaseName("ux_connected_supplier_relationships_open");

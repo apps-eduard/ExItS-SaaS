@@ -40,12 +40,30 @@ public sealed record ConnectedSupplierRelationshipDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     string? CounterpartyDisplayName = null,
-    string? CounterpartyPublicOrganizationId = null);
+    string? CounterpartyPublicOrganizationId = null,
+    string CatalogSharingMode = "SelectedOnly",
+    decimal? CustomerDiscountPercent = null);
 public sealed record RequestConnectionRequest(
     Guid? SupplierOrganizationId = null,
     string? SupplierPublicOrganizationIdOrQrPayload = null,
     Guid? RequestedByUserId = null);
-public sealed record RespondConnectionRequest(Guid? RespondedByUserId = null);
+public sealed record RespondConnectionRequest(
+    Guid? RespondedByUserId = null,
+    string? CatalogSharingMode = null,
+    decimal? CustomerDiscountPercent = null,
+    bool ConfirmCatalogSharing = false);
+public sealed record ConnectionCatalogSettingsDto(
+    Guid RelationshipId,
+    string CatalogSharingMode,
+    decimal? CustomerDiscountPercent,
+    int EligibleCount,
+    int SharedCount,
+    int ExcludedCount,
+    int OverrideCount);
+public sealed record UpdateConnectionCatalogSettingsRequest(
+    string CatalogSharingMode,
+    decimal? CustomerDiscountPercent = null,
+    bool ConfirmModeChange = false);
 public sealed record SupplierProductExposureDto(Guid ExposureId, Guid SupplierOrganizationId, Guid ProductId, string? SkuSnapshot,
     string NameSnapshot, string? CategoryNameSnapshot, string UnitOfMeasureCode, decimal SupplierOrderPrice,
     bool IsOrderable, bool IsExposed, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
@@ -148,7 +166,9 @@ public static class ConnectedSupplierMapper
         CounterpartyDisplayName: supplierView ? x.BuyerDisplayNameSnapshot : x.SupplierDisplayNameSnapshot,
         CounterpartyPublicOrganizationId: supplierView
             ? x.BuyerPublicOrganizationIdSnapshot
-            : x.SupplierPublicOrganizationIdSnapshot);
+            : x.SupplierPublicOrganizationIdSnapshot,
+        CatalogSharingMode: x.CatalogSharingMode.ToString(),
+        CustomerDiscountPercent: x.CustomerDiscountPercent);
     public static SupplierProductExposureDto Map(SupplierProductExposure x) => new(x.Id.Value,x.SupplierOrganizationId.Value,
         x.ProductId.Value,x.SkuSnapshot,x.NameSnapshot,x.CategoryNameSnapshot,x.UnitOfMeasureCode,x.SupplierOrderPrice,
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
@@ -577,7 +597,16 @@ public sealed class RespondConnection
         {
             if (approve)
             {
+                var mode = ParseCatalogSharingMode(request.CatalogSharingMode) ?? CatalogSharingMode.SelectedOnly;
+                if (mode == CatalogSharingMode.AllEligible && !request.ConfirmCatalogSharing)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                        ConnectedSupplierErrorCodes.BulkValidation,
+                        "Confirm catalog sharing to share all eligible products with this customer.");
+                }
+
                 r.Approve(_clock.GetUtcNow(), request.RespondedByUserId);
+                r.ConfigureCatalogSharing(mode, request.CustomerDiscountPercent, _clock.GetUtcNow());
             }
             else
             {
@@ -653,6 +682,18 @@ public sealed class RespondConnection
                 : ex.Message;
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, message);
         }
+    }
+
+    internal static CatalogSharingMode? ParseCatalogSharingMode(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        return Enum.TryParse<CatalogSharingMode>(raw.Trim(), ignoreCase: true, out var mode)
+            ? mode
+            : null;
     }
 }
 
@@ -980,10 +1021,22 @@ public sealed class SearchExposedCatalog
      if(r is null||r.BuyerOrganizationId!=buyer)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
      if(r.Status!=ConnectedSupplierRelationshipStatus.Active)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.RelationshipInactive,"Relationship is not active.");
      var p=Math.Max(page??1,1);var size=Math.Clamp(pageSize??25,1,50);
-     var (items,shares,total)=await _shares.SearchSharedCatalogAsync(r.Id,r.SupplierOrganizationId,query,category,(p-1)*size,size,ct);
+     var (items,shares,total)=await _shares.SearchSharedCatalogAsync(
+         r.Id,r.SupplierOrganizationId,query,category,(p-1)*size,size,ct,r.CatalogSharingMode);
      var sharesByProduct=shares.ToDictionary(x=>x.SupplierProductId.Value);
      return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(x=>
-       ConnectedSupplierMapper.Map(x,ConnectedPoPricing.TryResolveEffectivePrice(x,sharesByProduct[x.ProductId.Value],out var price)?price:x.SupplierOrderPrice)).ToList(),total,p,size));}
+       {
+           sharesByProduct.TryGetValue(x.ProductId.Value, out var share);
+           var resolved = ConnectedPoPricing.TryResolveEffectivePrice(
+               x,
+               share,
+               r.CatalogSharingMode,
+               r.CustomerDiscountPercent,
+               sellingPrice: null,
+               out var price,
+               out _);
+           return ConnectedSupplierMapper.Map(x, resolved ? price : x.SupplierOrderPrice);
+       }).ToList(),total,p,size));}
 }
 
 public sealed class LinkProduct
@@ -1009,7 +1062,7 @@ public sealed class LinkProduct
      if(exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed||!exposure.IsOrderable)
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Exposure was not found.");
      var share=await _shares.FindAsync(r.Id,exposure.ProductId,ct);
-     if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out var effectivePrice))
+     if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,r.CatalogSharingMode,r.CustomerDiscountPercent,null,out var effectivePrice,out _))
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"This product is not shared with your business.");
      var existingBySupplier=await _links.FindBySupplierProductAsync(r.Id,exposure.ProductId,ct);
      if(existingBySupplier is not null)
@@ -1586,7 +1639,7 @@ public sealed class RevalidateConnectedPoDraft
        request.Lines.Select(l=>new ConnectedPoDraftReviewItem(l.SupplierProductId,ConnectedPoDraftReviewStatus.RelationshipInactive,l.UnitPriceSnapshot,null)).ToList()));
      var items=new List<ConnectedPoDraftReviewItem>();foreach(var line in request.Lines){var productId=CatalogProductId.From(line.SupplierProductId);
        var e=await _exposures.GetByProductAsync(r.SupplierOrganizationId,productId,ct);var share=await _shares.FindAsync(r.Id,productId,ct);
-       var price=0m;var available=e is not null&&ConnectedPoPricing.TryResolveEffectivePrice(e,share,out price);
+       var price=0m;var available=e is not null&&ConnectedPoPricing.TryResolveEffectivePrice(e,share,r.CatalogSharingMode,r.CustomerDiscountPercent,null,out price,out _);
        var status=!available?ConnectedPoDraftReviewStatus.Unavailable:price!=Domain.Sales.SaleMoney.RoundMoney(line.UnitPriceSnapshot)?ConnectedPoDraftReviewStatus.PriceChanged:ConnectedPoDraftReviewStatus.Unchanged;
        items.Add(new(line.SupplierProductId,status,line.UnitPriceSnapshot,available?price:null));}
      var overall=items.Any(i=>i.Status==ConnectedPoDraftReviewStatus.Unavailable)?ConnectedPoDraftReviewStatus.Unavailable:
