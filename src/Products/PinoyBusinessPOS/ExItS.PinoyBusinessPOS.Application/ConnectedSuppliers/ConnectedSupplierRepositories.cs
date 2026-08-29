@@ -64,7 +64,23 @@ public interface IConnectedBuyerProductShareRepository
 
     Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
     Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
+
+    /// <summary>
+    /// Batch share-row aggregates for many relationships (avoids N+1 on Business Customer list).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
+        IReadOnlyList<Guid> relationshipIds,
+        CancellationToken ct = default);
+
+    /// <summary>Active supplier catalog products that are not blocked from connected buyers.</summary>
+    Task<int> CountEligibleSupplierProductsAsync(PosOrganizationId supplier, CancellationToken ct = default);
 }
+
+/// <summary>Sparse share-row counts for one relationship (exclusions / overrides / explicit shares).</summary>
+public sealed record BuyerRelationshipShareStats(
+    int ExplicitSharedCount,
+    int ExcludedCount,
+    int OverrideCount);
 
 /// <summary>One Manage-Products row: catalog product with optional share and exposure.</summary>
 public sealed record BuyerProductShareManagementRow(

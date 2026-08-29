@@ -463,6 +463,23 @@ public sealed class AutoLinkExactMatchesTests
 
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) =>
             Task.CompletedTask;
+
+        public Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
+            IReadOnlyList<Guid> relationshipIds,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>>(
+                _items
+                    .Where(x => relationshipIds.Contains(x.RelationshipId.Value))
+                    .GroupBy(x => x.RelationshipId.Value)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => new BuyerRelationshipShareStats(
+                            g.Count(x => x.IsShared),
+                            g.Count(x => !x.IsShared),
+                            g.Count(x => x.IsShared && x.BuyerSpecificPoPrice is not null))));
+
+        public Task<int> CountEligibleSupplierProductsAsync(PosOrganizationId supplier, CancellationToken ct = default) =>
+            Task.FromResult(0);
     }
 
     private sealed class InMemoryLinks : IBuyerSupplierProductLinkRepository

@@ -270,6 +270,46 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
     {db.ConnectedBuyerProductShares.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
     public async Task UpdateAsync(ConnectedBuyerProductShare x,CancellationToken ct=default)
     {var row=await db.ConnectedBuyerProductShares.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,row);}
+
+    public async Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
+        IReadOnlyList<Guid> relationshipIds,
+        CancellationToken ct = default)
+    {
+        if (relationshipIds.Count == 0)
+        {
+            return new Dictionary<Guid, BuyerRelationshipShareStats>();
+        }
+
+        var idSet = relationshipIds.Distinct().ToList();
+        var rows = await db.ConnectedBuyerProductShares.AsNoTracking()
+            .Where(x => idSet.Contains(x.RelationshipId))
+            .GroupBy(x => x.RelationshipId)
+            .Select(g => new
+            {
+                RelationshipId = g.Key,
+                ExplicitSharedCount = g.Count(x => x.IsShared),
+                ExcludedCount = g.Count(x => !x.IsShared),
+                OverrideCount = g.Count(x => x.IsShared && x.BuyerSpecificPoPrice != null),
+            })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(
+            x => x.RelationshipId,
+            x => new BuyerRelationshipShareStats(x.ExplicitSharedCount, x.ExcludedCount, x.OverrideCount));
+    }
+
+    public async Task<int> CountEligibleSupplierProductsAsync(PosOrganizationId supplier, CancellationToken ct = default)
+    {
+        var activeStatus = nameof(CatalogProductStatus.Active);
+        return await db.CatalogProducts.AsNoTracking()
+            .CountAsync(
+                x => x.OrganizationId == supplier.Value
+                     && x.Status == activeStatus
+                     && !x.IsBlockedFromConnectedBuyers,
+                ct)
+            .ConfigureAwait(false);
+    }
 }
 
 internal sealed class BuyerSupplierProductLinkRepository(PosDbContext db) : IBuyerSupplierProductLinkRepository

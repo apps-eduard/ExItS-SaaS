@@ -812,3 +812,57 @@ export async function unlinkProduct(
     path: `${PATH}/links/${linkId}`,
   });
 }
+
+// --- Business customers (supplier projection over OrganizationConnection) ---
+
+export const businessCustomerSchema = z.object({
+  connectionId: guidSchema,
+  supplierOrganizationId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  organizationDisplayName: z.string(),
+  organizationPublicId: z.string().nullable().optional(),
+  relationshipStatus: z.string(),
+  catalogSharingMode: z.string(),
+  customerDiscountPercent: z.number().nullable().optional().default(null),
+  eligibleCount: z.number(),
+  sharedCount: z.number(),
+  excludedCount: z.number(),
+  overrideCount: z.number(),
+  connectedSinceUtc: isoDateSchema.nullable().optional(),
+  createdAtUtc: isoDateSchema,
+  updatedAtUtc: isoDateSchema,
+  displayNameIsLive: z.boolean().optional().default(false),
+});
+
+export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;
+
+export async function listBusinessCustomers(
+  workspace: PosWorkspaceScope,
+  options?: { search?: string; includeDisconnected?: boolean },
+  signal?: AbortSignal,
+): Promise<BusinessCustomer[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers`, {
+      search: options?.search,
+      includeDisconnected: options?.includeDisconnected ? "true" : undefined,
+    }),
+  });
+  return z.array(businessCustomerSchema).parse(raw);
+}
+
+export async function getBusinessCustomer(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<BusinessCustomer> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}`,
+  });
+  return businessCustomerSchema.parse(raw);
+}

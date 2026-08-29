@@ -331,6 +331,8 @@ builder.Services.AddScoped<RequestConnection>();
 builder.Services.AddScoped<RespondConnection>();
 builder.Services.AddScoped<GetConnectionCatalogSettings>();
 builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
+builder.Services.AddScoped<ListBusinessCustomers>();
+builder.Services.AddScoped<GetBusinessCustomer>();
 builder.Services.AddScoped<DisconnectConnectedSupplier>();
 builder.Services.AddScoped<ListRelationships>();
 builder.Services.AddScoped<ExposeProduct>();

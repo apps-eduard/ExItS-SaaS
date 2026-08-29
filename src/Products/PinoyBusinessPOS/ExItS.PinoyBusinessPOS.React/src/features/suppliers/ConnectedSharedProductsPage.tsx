@@ -167,7 +167,7 @@ export function ConnectedSharedProductsPage() {
       <PageHeader
         title={t("connected.manageSharedTitle")}
         description={t("connected.manageSharedHelp")}
-        backTo={`/suppliers/connected/buyers/${relationshipId}`}
+        backTo={`/customers/business/${relationshipId}`}
         backLabel={t("connected.backToBuyer")}
         backTestId="page-header-back-suppliers"
       />

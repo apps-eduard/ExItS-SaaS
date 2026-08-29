@@ -186,7 +186,7 @@ export function ConnectedIncomingRequestsPage() {
             key: "buyers",
             label: t("connected.buyersTitle"),
             icon: <Users />,
-            href: "/suppliers/connected/buyers",
+            href: "/customers?kind=businesses",
             testId: "connected-incoming-buyers",
           },
         ]}

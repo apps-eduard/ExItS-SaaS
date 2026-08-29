@@ -79,6 +79,7 @@ import {
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import { CatalogTemplateImportPage } from "@/features/catalog/CatalogTemplateImportPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
+import { BusinessCustomerDetailPage } from "@/features/customers/BusinessCustomerDetailPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
 import { CustomerRepayPage } from "@/features/customers/CustomerRepayPage";
@@ -598,6 +599,10 @@ export const appRoutes = [
                     <CustomerCreatePage />
                   </RequireCreateCustomer>
                 ),
+              },
+              {
+                path: "business/:connectionId",
+                element: <BusinessCustomerDetailPage />,
               },
               { path: ":customerId", element: <CustomerDetailPage /> },
               {

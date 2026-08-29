@@ -25,6 +25,12 @@ internal static class ConnectedSupplierEndpoints
         group.MapGet("/relationships",async(HttpRequest req,string? view,ListRelationships use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;
          return PosApiResults.FromResult(await use.ExecuteAsync(org,string.Equals(view,"supplier",StringComparison.OrdinalIgnoreCase),ct),Results.Ok);});
+        group.MapGet("/business-customers",async(HttpRequest req,string? search,bool? includeDisconnected,ListBusinessCustomers use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,search,includeDisconnected??false,ct),Results.Ok);});
+        group.MapGet("/business-customers/{connectionId:guid}",async(HttpRequest req,Guid connectionId,GetBusinessCustomer use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,connectionId,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/catalog",async(HttpRequest req,Guid id,string? query,string? category,int? page,int? pageSize,SearchExposedCatalog use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,query,category,page,pageSize,ct),Results.Ok);});
         group.MapPost("/exposures",async(HttpRequest req,ExposeProductRequest body,ExposeProduct use,IPosCommercialAccessAccessor access,CancellationToken ct)=>

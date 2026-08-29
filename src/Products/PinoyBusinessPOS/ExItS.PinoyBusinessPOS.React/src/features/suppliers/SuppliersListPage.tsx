@@ -147,7 +147,7 @@ export function SuppliersListPage() {
                 {
                   key: "buyers",
                   label: t("connected.buyersTitle"),
-                  href: "/suppliers/connected/buyers",
+                  href: "/customers?kind=businesses",
                   testId: "suppliers-connected-buyers",
                 },
               ]
