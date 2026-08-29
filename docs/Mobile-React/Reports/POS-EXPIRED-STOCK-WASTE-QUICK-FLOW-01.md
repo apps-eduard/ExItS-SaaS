@@ -86,7 +86,7 @@ When `source=expiration` + exact lot ready:
 | | |
 |--|--|
 | START_SHA | `a06ecc9f5b708d3ca769b16d72990f3f76d618c2` |
-| FEATURE_COMMIT | _(filled after commit)_ |
+| FEATURE_COMMIT | `d2af6ad4c5b2ef12945edce3232591afe61dee1c` |
 | BRANCH | `feat/organization` |
 
 ## NEXT
