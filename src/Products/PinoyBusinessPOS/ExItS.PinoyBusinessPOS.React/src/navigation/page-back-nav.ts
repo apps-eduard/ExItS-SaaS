@@ -14,6 +14,7 @@ export const pageBackNav = {
   inventory: { to: "/inventory", labelKey: "inventory.backList" as MessageKey },
   catalog: { to: "/catalog", labelKey: "catalog.back" as MessageKey },
   returns: { to: "/returns", labelKey: "returns.back" as MessageKey },
+  expenses: { to: "/expenses", labelKey: "expense.backList" as MessageKey },
   orders: { to: "/orders", labelKey: "orders.backToQueue" as MessageKey },
   reports: { to: "/reports", labelKey: "reports.back" as MessageKey },
   orgDevices: { to: "/org/devices", labelKey: "devices.backDevices" as MessageKey },

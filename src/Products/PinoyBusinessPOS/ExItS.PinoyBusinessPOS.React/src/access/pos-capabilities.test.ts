@@ -27,6 +27,8 @@ import {
   canViewCustomerOrders,
   canManageCustomerOrders,
   canViewDashboard,
+  canViewExpenses,
+  canManageExpenses,
   canViewPurchasing,
   canViewReports,
   canViewSuppliers,
@@ -436,5 +438,26 @@ describe("pos-capabilities", () => {
     expect(canViewDashboard(reporting)).toBe(true);
     expect(canViewDashboard(cashier)).toBe(false);
     expect(canViewReports(cashier)).toBe(false);
+
+    expect(canViewExpenses(owner)).toBe(true);
+    expect(canViewExpenses(manager)).toBe(true);
+    expect(canViewExpenses(reporting)).toBe(true);
+    expect(canViewExpenses(cashier)).toBe(false);
+    expect(canViewExpenses(inventory)).toBe(false);
+    expect(canManageExpenses(owner)).toBe(true);
+    expect(canManageExpenses(manager)).toBe(true);
+    expect(canManageExpenses(reporting)).toBe(false);
+    expect(canManageExpenses(cashier)).toBe(false);
+  });
+
+  it("keeps ViewExpenses independent of ViewReports feature deny", () => {
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-expenses-view"],
+    });
+    expect(canViewReports(reporting)).toBe(false);
+    expect(canViewExpenses(reporting)).toBe(true);
   });
 });

@@ -22,6 +22,8 @@ import {
   canManageCustomerOrders,
   canViewCustomers,
   canViewDashboard,
+  canViewExpenses,
+  canManageExpenses,
   canViewInventory,
   canViewPurchasing,
   canViewRegisters,
@@ -649,6 +651,26 @@ export function RequireViewReturns({ children }: { children: ReactNode }) {
 
   if (!canViewReturns(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="returns-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewExpenses({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewExpenses(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="expenses-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireManageExpenses({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canManageExpenses(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="expenses-manage-denied" />;
   }
 
   return children;

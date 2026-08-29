@@ -33,6 +33,8 @@ export const OFFLINE_OPERATION_TYPES = {
   CustomerOrderAccept: "customer_order.accept",
   CustomerOrderReject: "customer_order.reject",
   CustomerOrderComplete: "customer_order.complete",
+  /** Online-only expense create — mirrors server PosMutationIdempotencyHelper expense.create. */
+  ExpenseCreate: "expense.create",
 } as const;
 
 function guidToN(guid: string): string {

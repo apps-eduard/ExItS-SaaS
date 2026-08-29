@@ -21,6 +21,8 @@ export const FEATURE_STORE_ADVANCED_REPORTS = "store-advanced-reports";
 export const FEATURE_STORE_EXPORT = "store-export";
 export const FEATURE_STORE_CUSTOMER_ORDERING = "store-customer-ordering";
 export const FEATURE_STORE_DELIVERY_ORDERS = "store-delivery-orders";
+export const FEATURE_STORE_EXPENSES_VIEW = "store-expenses-view";
+export const FEATURE_STORE_EXPENSES_MANAGE = "store-expenses-manage";
 
 function featureGrantDenied(
   grant: PosSessionGrantFacts | null | undefined,
@@ -463,11 +465,36 @@ export function canExportData(grant: PosSessionGrantFacts | null | undefined): b
 }
 
 /**
- * ViewExpenses UI gate — Owner/Admin/StoreManager/ReportingUser (+ org management).
- * Cashier DENY.
+ * ViewExpenses UI gate — PosRoleMatrix Owner/Admin/StoreManager/ReportingUser.
+ * Cashier / InventoryStaff DENY. Server remains authoritative via store-expenses-view.
+ * Independent of ViewReports (classic expense *reports* may still use report gates).
  */
 export function canViewExpenses(grant: PosSessionGrantFacts | null | undefined): boolean {
-  return canViewReports(grant);
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_STORE_EXPENSES_VIEW)) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
+ * ManageExpenses UI gate — Owner/Admin/StoreManager only.
+ * Server remains authoritative via store-expenses-manage (record/void/category mutation).
+ */
+export function canManageExpenses(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_STORE_EXPENSES_MANAGE)) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
 }
 
 /** Reports hub entry when any report-family capability is present (MAUI ReportsHub parity). */

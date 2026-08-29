@@ -12,6 +12,7 @@ import {
   Settings,
   Truck,
   Users,
+  Wallet,
 } from "lucide-react";
 import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
 import {
@@ -26,6 +27,7 @@ import {
   canViewSuppliers,
   canAccessReportsHub,
   canViewDashboard,
+  canViewExpenses,
   canUseAdminExperience,
   hasOrganizationManagementAuthority,
   canInviteOrganizationStaff,
@@ -145,6 +147,7 @@ export type OrgMoreLink = {
     | "org.more.returns"
     | "org.more.purchasing"
     | "org.more.suppliers"
+    | "org.more.expenses"
     | "org.more.dashboard"
     | "org.more.reports"
     | "org.more.organization"
@@ -230,6 +233,14 @@ export function buildOrgMoreSections(
       labelKey: "org.more.suppliers",
       testId: "org-more-suppliers",
       icon: Truck,
+    });
+  }
+  if (canViewExpenses(grant)) {
+    operations.push({
+      to: "/expenses",
+      labelKey: "org.more.expenses",
+      testId: "org-more-expenses",
+      icon: Wallet,
     });
   }
 

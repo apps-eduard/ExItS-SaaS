@@ -21,6 +21,10 @@ import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
+import { ExpenseCategoriesPage } from "@/features/expenses/ExpenseCategoriesPage";
+import { ExpenseCreatePage } from "@/features/expenses/ExpenseCreatePage";
+import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
+import { ExpenseListPage } from "@/features/expenses/ExpenseListPage";
 import { AddLocalPersonPage } from "@/features/personal/AddLocalPersonPage";
 import { AddPersonPage } from "@/features/personal/AddPersonPage";
 import { PersonCreatePage } from "@/features/personal/PersonFormPage";
@@ -186,6 +190,8 @@ import {
   RequireClassicUtangReport,
   RequireViewCustomerOrders,
   RequireViewDashboard,
+  RequireViewExpenses,
+  RequireManageExpenses,
   RequireViewInventory,
   RequireViewPurchasing,
   RequireViewRegisters,
@@ -878,6 +884,31 @@ export const appRoutes = [
                 ),
               },
               { path: ":returnId", element: <ReturnDetailPage /> },
+            ],
+          },
+          {
+            path: "expenses",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireViewExpenses>
+                    <Outlet />
+                  </RequireViewExpenses>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <ExpenseListPage /> },
+              {
+                path: "new",
+                element: (
+                  <RequireManageExpenses>
+                    <ExpenseCreatePage />
+                  </RequireManageExpenses>
+                ),
+              },
+              { path: "categories", element: <ExpenseCategoriesPage /> },
+              { path: ":expenseId", element: <ExpenseDetailPage /> },
             ],
           },
           {
