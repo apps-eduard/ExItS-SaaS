@@ -32,6 +32,8 @@ import {
   canViewPurchasing,
   canViewReports,
   canViewSuppliers,
+  canViewInventory,
+  canManageInventory,
   canViewRegisters,
   canViewReturns,
   canViewShifts,
@@ -448,6 +450,17 @@ describe("pos-capabilities", () => {
     expect(canManageExpenses(manager)).toBe(true);
     expect(canManageExpenses(reporting)).toBe(false);
     expect(canManageExpenses(cashier)).toBe(false);
+
+    expect(canViewInventory(owner)).toBe(true);
+    expect(canViewInventory(manager)).toBe(true);
+    expect(canViewInventory(inventory)).toBe(true);
+    expect(canViewInventory(reporting)).toBe(true);
+    expect(canViewInventory(cashier)).toBe(false);
+    expect(canManageInventory(owner)).toBe(true);
+    expect(canManageInventory(manager)).toBe(true);
+    expect(canManageInventory(inventory)).toBe(true);
+    expect(canManageInventory(reporting)).toBe(false);
+    expect(canManageInventory(cashier)).toBe(false);
   });
 
   it("keeps ViewExpenses independent of ViewReports feature deny", () => {

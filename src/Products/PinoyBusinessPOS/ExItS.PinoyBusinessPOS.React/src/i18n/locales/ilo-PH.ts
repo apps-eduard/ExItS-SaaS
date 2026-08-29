@@ -1098,6 +1098,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.filterTracked": "Tracked",
   "inventory.filterUntracked": "Not tracked",
   "inventory.lede": "Naka-off by default ti tracking. Ti untracked saan a pasabot a out of stock.",
+  "inventory.manageScopeHint": "Inventory management includes stock use, waste / write-off, production, stock counts, transfers, and adjustments.",
+  "inventory.viewOnlyHint": "View only. Recording stock use, waste, production, counts, transfers, and adjustments needs inventory management.",
   "inventory.loadMore": "Karga pa",
   "inventory.loadingMore": "Agkarkarga pa?",
   "inventory.lotNumberOptional": "Lot number (opsional)",

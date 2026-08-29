@@ -34,7 +34,13 @@ function baseAccount(extra: Record<string, unknown> = {}) {
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: workspace,
-    sessionGrant: { capabilities: ["Inventory.View", "Inventory.Manage"] },
+    sessionGrant: {
+      productAccessAllowed: true,
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    },
   }),
 }));
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, Trash2 } from "lucide-react";
+import { canManageInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -30,7 +31,8 @@ const TRACKING_FILTERS: Array<{
 
 export function InventoryListPage() {
   const { t } = useI18n();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const allowManage = canManageInventory(sessionGrant);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>("all");
@@ -78,6 +80,22 @@ export function InventoryListPage() {
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-inventory"
       />
+
+      {!allowManage ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="inventory-view-only-hint"
+        >
+          {t("inventory.viewOnlyHint")}
+        </p>
+      ) : (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="inventory-manage-scope-hint"
+        >
+          {t("inventory.manageScopeHint")}
+        </p>
+      )}
 
       <ExitsChipBar
         variant="actions"

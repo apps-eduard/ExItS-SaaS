@@ -187,7 +187,7 @@ export function buildOrgMoreSections(
   const organization: OrgMoreLink[] = [];
   const settings: OrgMoreLink[] = [];
 
-  if (canManageCatalog(grant) && canViewInventory(grant)) {
+  if (canViewInventory(grant)) {
     operations.push({
       to: "/inventory",
       labelKey: "org.more.inventory",

@@ -78,7 +78,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | REPORTING_STATUS | **PARTIAL** | Classic + operational + profitability present. Most aggregates **org-wide** while shell is branch-bound (misread risk). Discount period totals missing. Product GP ranking deferred. Export deferred. |
 | DEVICE_STATUS | **PARTIAL** | Register/devices UI + runtime policy; sell readiness gate. Not a POS `UtangCapability` (admin experience). PWA device context optional. |
 | SHIFT_STATUS | **IMPLEMENTED** | Open/close; CreateSale requires open shift + register. |
-| STAFF_RBAC_STATUS | **PARTIAL** | Owner/Manager/Cashier/InventoryStaff/ReportingUser matrix. Stock Use/Production/Waste fold into ManageInventory (over-broad for some shops). Devices via admin experience. |
+| STAFF_RBAC_STATUS | **OK (SMB)** | ViewInventory vs ManageInventory only. ManageInventory intentionally covers stock use / waste / expired write-off / production / count / transfer / adjust (POS-INVENTORY-PERMISSION-I18N-POLISH-01). ReportingUser view-only. |
 | BRANCH_STATUS | **PARTIAL** | Multi-branch entities + sale/inventory branch params. Reports mostly org-wide; profitability optional `branchId`. Transfer UI missing hurts multi-branch. |
 | DELIVERY_STATUS | **IMPLEMENTED** | Seller orders queue + storefront + delivery marks; fulfillment settings. Not every edge of MAUI parity proven in this audit. |
 | OFFLINE_NATIVE_READINESS | **DEFERRED / ONLINE_ONLY** | Org Web: no offline business mutations. Stock Use/Production/Waste/COGS use client IDs + server cost authority — native-friendly. Do not activate offline on Web. |
@@ -134,7 +134,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 4. Expired-stock → Waste quick review.
 5. i18n middle-dot `?` corruption (`inventory.movementType.manualIncrease`, expiration status).
 6. CustomerOrder SaleDeduction without UnitCost (fulfillment COGS trail).
-7. Over-broad ManageInventory for Stock Use / Production / Waste write-off.
+7. ~~Over-broad ManageInventory for Stock Use / Production / Waste write-off~~ — **resolved as intentional SMB model** (POS-INVENTORY-PERMISSION-I18N-POLISH-01); View vs Manage split fixed on React.
 
 ### P3
 1. Product profitability ranking.
@@ -197,7 +197,7 @@ UNRELATED_TEST_FAILURES ≈ 76 (personal/platform/session)
 | Class | Items |
 |-------|--------|
 | MVP_REQUIRED | React Stock Count; React Transfers (if multi-branch); branch-report honesty/contract; suite harness repair for sell-floor; keep ManualGCash-only payments |
-| IMPORTANT | Expenses CRUD UI; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
+| IMPORTANT | Expenses CRUD UI |
 | LATER | lot-layer FIFO COGS; nested BOM; real Card/GCash provider; B2B retail checkout; native offline activation |
 | NOT_NEEDED | GL, operating profit, labor/overhead, enterprise manufacturing, Org Web offline money |
 
@@ -267,13 +267,13 @@ RESPONSIVE_UX_STATUS=PARTIAL
 ```
 P0_GAPS=FakePaymentGateway must not be production GCash/Card; tenancy fail-closed discipline
 P1_GAPS=React Stock Count; React Transfers; branch vs org report honesty; org session/sell-floor harness
-P2_GAPS=Expenses CRUD; i18n encoding; CustomerOrder COGS UnitCost; inventory write-off permission coarseness
+P2_GAPS=Expenses CRUD; CustomerOrder COGS UnitCost
 P3_GAPS=Product profitability rank; nested production; list stock valuation; nav crowding; exports
 ```
 
 ```
 MVP_REQUIRED_GAPS=Stock Count UI; Transfer UI (multi-branch); branch-report contract; harness repair; payment honesty
-IMPORTANT_GAPS=Expenses CRUD; i18n middle-dot fix; ManageInventory write-off permission story
+IMPORTANT_GAPS=Expenses CRUD UI
 LATER_GAPS=Product GP ranking; lot FIFO; real Card/GCash; B2B retail checkout; native offline
 NOT_NEEDED_FOR_TARGET_MARKET=GL; operating profit; labor/overhead; Org Web offline money; enterprise manufacturing
 ```

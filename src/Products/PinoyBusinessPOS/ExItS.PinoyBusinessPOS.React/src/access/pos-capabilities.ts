@@ -540,7 +540,9 @@ export function canManageCatalog(grant: PosSessionGrantFacts | null | undefined)
 }
 
 /**
- * ManageInventory UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ InventoryStaff compat).
+ * ManageInventory UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ InventoryStaff).
+ * Covers quantity mutations: adjust, stock use, waste/loss (incl. expired write-off),
+ * production, stock count, and transfers. No separate per-feature capabilities (SMB model).
  * Server remains authoritative.
  */
 export function canManageInventory(grant: PosSessionGrantFacts | null | undefined): boolean {
@@ -554,9 +556,20 @@ export function canManageInventory(grant: PosSessionGrantFacts | null | undefine
   return role === "inventorystaff";
 }
 
-/** ViewInventory — same matrix as manage for default roles; Cashier excluded. */
+/**
+ * ViewInventory UI gate — PosRoleMatrix Owner/Admin/StoreManager/InventoryStaff/ReportingUser.
+ * Cashier DENY. ReportingUser is view-only (no ManageInventory).
+ * Server remains authoritative via store-inventory-view.
+ */
 export function canViewInventory(grant: PosSessionGrantFacts | null | undefined): boolean {
-  return canManageInventory(grant);
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "inventorystaff" || role === "reportinguser";
 }
 
 /**

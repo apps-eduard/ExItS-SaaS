@@ -58,11 +58,23 @@ describe("org bottom nav config", () => {
     const managerLinks = buildOrgMoreLinks(baseGrant({ mappedPosRoleCode: "StoreManager" }));
     expect(managerLinks.some((l) => l.to === "/customers")).toBe(true);
     expect(managerLinks.some((l) => l.to === "/reports")).toBe(true);
+    expect(managerLinks.some((l) => l.to === "/inventory")).toBe(true);
+
+    const inventoryStaffLinks = buildOrgMoreLinks(
+      baseGrant({ mappedPosRoleCode: "InventoryStaff", productLocalRoleCode: "InventoryStaff" }),
+    );
+    expect(inventoryStaffLinks.some((l) => l.to === "/inventory")).toBe(true);
+
+    const reportingLinks = buildOrgMoreLinks(
+      baseGrant({ mappedPosRoleCode: "ReportingUser", productLocalRoleCode: "ReportingUser" }),
+    );
+    expect(reportingLinks.some((l) => l.to === "/inventory")).toBe(true);
 
     const cashierLinks = buildOrgMoreLinks(
       baseGrant({ mappedPosRoleCode: "Cashier", productLocalRoleCode: "Cashier" }),
     );
     expect(cashierLinks.some((l) => l.to === "/customers")).toBe(false);
+    expect(cashierLinks.some((l) => l.to === "/inventory")).toBe(false);
     expect(cashierLinks.some((l) => l.to === "/settings/preferences")).toBe(true);
   });
 });

@@ -1098,6 +1098,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.filterTracked": "Tracked",
   "inventory.filterUntracked": "Not tracked",
   "inventory.lede": "Naka-off by default ang tracking. Ang untracked dili pasabot nga out of stock.",
+  "inventory.manageScopeHint": "Inventory management includes stock use, waste / write-off, production, stock counts, transfers, and adjustments.",
+  "inventory.viewOnlyHint": "View only. Recording stock use, waste, production, counts, transfers, and adjustments needs inventory management.",
   "inventory.loadMore": "Karga pa",
   "inventory.loadingMore": "Nagkarga pa?",
   "inventory.lotNumberOptional": "Lot number (opsyonal)",

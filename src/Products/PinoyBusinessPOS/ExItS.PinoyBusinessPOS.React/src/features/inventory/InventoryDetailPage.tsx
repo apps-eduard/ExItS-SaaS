@@ -486,25 +486,31 @@ export function InventoryDetailPage() {
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("inventory.expirationSetupRequiredDetail")}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    asChild
-                    type="button"
-                    className="min-h-11"
-                  >
-                    <Link
-                      to={expirationSettingsPath(productId!, "assign")}
-                      data-testid="inventory-expiration-setup-assign"
-                    >
-                      {t("inventory.assignExpirationDates")}
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    type="button"
-                    variant="outline"
-                    className="min-h-11"
-                  >
+                {allowManageInventory ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild type="button" className="min-h-11">
+                      <Link
+                        to={expirationSettingsPath(productId!, "assign")}
+                        data-testid="inventory-expiration-setup-assign"
+                      >
+                        {t("inventory.assignExpirationDates")}
+                      </Link>
+                    </Button>
+                    <Button asChild type="button" variant="outline" className="min-h-11">
+                      <Link
+                        to={expirationSettingsPath(productId!, "warning")}
+                        data-testid="inventory-manage-expiration"
+                      >
+                        {t("inventory.manageExpirationSettings")}
+                      </Link>
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : tracksExpiration ? (
+              allowManageInventory ? (
+                <div className="mt-3">
+                  <Button asChild type="button" variant="outline" className="min-h-11">
                     <Link
                       to={expirationSettingsPath(productId!, "warning")}
                       data-testid="inventory-manage-expiration"
@@ -513,19 +519,8 @@ export function InventoryDetailPage() {
                     </Link>
                   </Button>
                 </div>
-              </div>
-            ) : tracksExpiration ? (
-              <div className="mt-3">
-                <Button asChild type="button" variant="outline" className="min-h-11">
-                  <Link
-                    to={expirationSettingsPath(productId!, "warning")}
-                    data-testid="inventory-manage-expiration"
-                  >
-                    {t("inventory.manageExpirationSettings")}
-                  </Link>
-                </Button>
-              </div>
-            ) : (
+              ) : null
+            ) : allowManageInventory ? (
               <div className="mt-3">
                 <Button asChild type="button" className="min-h-11">
                   <Link
@@ -536,7 +531,7 @@ export function InventoryDetailPage() {
                   </Link>
                 </Button>
               </div>
-            )}
+            ) : null}
           </>
         ) : (
           <>
@@ -570,6 +565,7 @@ export function InventoryDetailPage() {
       ) : null}
 
       {!account.isTracked ? (
+        allowManageInventory ? (
         <Card className="flex flex-col gap-3 p-3">
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.enableTracking")}
@@ -635,7 +631,8 @@ export function InventoryDetailPage() {
             {t("inventory.enable")}
           </Button>
         </Card>
-      ) : showAddOpeningStock ? (
+        ) : null
+      ) : showAddOpeningStock && allowManageInventory ? (
         <>
           <Card className="flex flex-col gap-3 p-3" data-testid="inventory-add-opening-stock">
             <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
@@ -714,10 +711,12 @@ export function InventoryDetailPage() {
         <>
           {lotsSection}
 
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.stockAdjustment")}
-            </h2>
+          {allowManageInventory ? (
+            <>
+              <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">
+                <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+                  {t("inventory.stockAdjustment")}
+                </h2>
 
             <fieldset className="m-0 border-0 p-0">
               <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
@@ -872,6 +871,8 @@ export function InventoryDetailPage() {
           >
             {t("inventory.disable")}
           </Button>
+            </>
+          ) : null}
         </>
       )}
 
