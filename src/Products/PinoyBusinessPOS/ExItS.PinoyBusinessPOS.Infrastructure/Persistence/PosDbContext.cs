@@ -87,6 +87,11 @@ public sealed class PosDbContext : DbContext
     internal DbSet<StockUseRecord> StockUses => Set<StockUseRecord>();
     internal DbSet<StockUseLineRecord> StockUseLines => Set<StockUseLineRecord>();
     internal DbSet<StockUseNumberSequenceRecord> StockUseNumberSequences => Set<StockUseNumberSequenceRecord>();
+    internal DbSet<ProductionDefinitionRecord> ProductionDefinitions => Set<ProductionDefinitionRecord>();
+    internal DbSet<ProductionComponentRecord> ProductionComponents => Set<ProductionComponentRecord>();
+    internal DbSet<ProductionRunRecord> ProductionRuns => Set<ProductionRunRecord>();
+    internal DbSet<ProductionRunMaterialRecord> ProductionRunMaterials => Set<ProductionRunMaterialRecord>();
+    internal DbSet<ProductionRunNumberSequenceRecord> ProductionRunNumberSequences => Set<ProductionRunNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
@@ -2011,7 +2016,7 @@ public sealed class PosDbContext : DbContext
 
             // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
             // EF Core snapshots only the last filtered unique on this identical column set
-            // (currently inventory_transfer_source). Earlier indexes (sale/purchase/count/return/stock_use)
+            // (currently inventory_transfer_source). Earlier indexes (sale/purchase/count/return/stock_use/production)
             // remain from prior migrations and must not be dropped.
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -2042,6 +2047,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_stock_movements_stock_use_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.StockUse)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_production_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.Production)}' AND source_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -2597,6 +2608,327 @@ public sealed class PosDbContext : DbContext
 
             entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_stock_use_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<ProductionDefinitionRecord>(entity =>
+        {
+            entity.ToTable("production_definitions", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_production_definitions_status",
+                    $"status IN ({string.Join(", ", ProductionDefinitionStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint("ck_production_definitions_output_qty_positive", "output_quantity_entered > 0");
+                tb.HasCheckConstraint("ck_production_definitions_output_multiplier_positive", "output_multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_production_definitions_output_base_positive", "output_base_quantity > 0");
+                tb.HasCheckConstraint("ck_production_definitions_revision_positive", "revision >= 1");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(ProductionDefinition.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.OutputProductId).HasColumnName("output_product_id").IsRequired();
+            entity.Property(e => e.OutputProductUnitId).HasColumnName("output_product_unit_id");
+            entity.Property(e => e.OutputQuantityEntered)
+                .HasColumnName("output_quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.OutputMultiplierToBase)
+                .HasColumnName("output_multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.OutputBaseQuantity)
+                .HasColumnName("output_base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(ProductionDefinitionStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Revision).HasColumnName("revision").IsRequired();
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedByUserId).HasColumnName("updated_by_user_id");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Name })
+                .HasDatabaseName("ix_production_definitions_org_name");
+            entity.HasIndex(e => new { e.OrganizationId, e.OutputProductId })
+                .HasDatabaseName("ix_production_definitions_org_output");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_production_definitions_org_status");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OutputProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_production_definitions_output_products");
+        });
+
+        modelBuilder.Entity<ProductionComponentRecord>(entity =>
+        {
+            entity.ToTable("production_components", tb =>
+            {
+                tb.HasCheckConstraint("ck_production_components_quantity_positive", "quantity_entered > 0");
+                tb.HasCheckConstraint("ck_production_components_multiplier_positive", "multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_production_components_base_positive", "base_quantity > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ProductionDefinitionId).HasColumnName("production_definition_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.MaterialProductId).HasColumnName("material_product_id").IsRequired();
+            entity.Property(e => e.ProductUnitId).HasColumnName("product_unit_id");
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order").IsRequired();
+            entity.Property(e => e.QuantityEntered)
+                .HasColumnName("quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.MultiplierToBase)
+                .HasColumnName("multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.BaseQuantity)
+                .HasColumnName("base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.ProductionDefinitionId, e.SortOrder })
+                .IsUnique()
+                .HasDatabaseName("ux_production_components_definition_sort");
+            entity.HasIndex(e => new { e.ProductionDefinitionId, e.MaterialProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_production_components_definition_material");
+
+            entity.HasOne<ProductionDefinitionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductionDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_production_components_definitions");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MaterialProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_production_components_materials");
+        });
+
+        modelBuilder.Entity<ProductionRunRecord>(entity =>
+        {
+            entity.ToTable("production_runs", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_production_runs_status",
+                    $"status IN ({string.Join(", ", ProductionRunStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_production_runs_cost_status",
+                    $"cost_status IN ({string.Join(", ", ProductionCostStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint("ck_production_runs_output_qty_positive", "output_quantity_entered > 0");
+                tb.HasCheckConstraint("ck_production_runs_output_multiplier_positive", "output_multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_production_runs_output_base_positive", "output_base_quantity > 0");
+                tb.HasCheckConstraint("ck_production_runs_revision_positive", "production_definition_revision >= 1");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductionNumber)
+                .HasColumnName("production_number")
+                .HasMaxLength(ProductionNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.ReferenceNumber)
+                .HasColumnName("reference_number")
+                .HasMaxLength(ProductionRun.ReferenceNumberMaxLength);
+            entity.Property(e => e.ProductionDefinitionId).HasColumnName("production_definition_id").IsRequired();
+            entity.Property(e => e.ProductionDefinitionRevision)
+                .HasColumnName("production_definition_revision")
+                .IsRequired();
+            entity.Property(e => e.ProductionDefinitionNameSnapshot)
+                .HasColumnName("production_definition_name_snapshot")
+                .HasMaxLength(ProductionDefinition.NameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.OutputProductId).HasColumnName("output_product_id").IsRequired();
+            entity.Property(e => e.OutputProductUnitId).HasColumnName("output_product_unit_id");
+            entity.Property(e => e.OutputQuantityEntered)
+                .HasColumnName("output_quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.OutputMultiplierToBase)
+                .HasColumnName("output_multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.OutputBaseQuantity)
+                .HasColumnName("output_base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.OutputNameSnapshot)
+                .HasColumnName("output_name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.OutputUnitLabelSnapshot)
+                .HasColumnName("output_unit_label_snapshot")
+                .HasMaxLength(ProductionRunMaterial.UnitLabelMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ProducedAtUtc).HasColumnName("produced_at_utc");
+            entity.Property(e => e.OutputExpirationDate)
+                .HasColumnName("output_expiration_date")
+                .HasColumnType("date");
+            entity.Property(e => e.OutputLotNumber)
+                .HasColumnName("output_lot_number")
+                .HasMaxLength(64);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(ProductionRunStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CostStatus)
+                .HasColumnName("cost_status")
+                .HasMaxLength(ProductionCostStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.TotalMaterialCost)
+                .HasColumnName("total_material_cost")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.OutputBaseUnitCost)
+                .HasColumnName("output_base_unit_cost")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(ProductionRun.NotesMaxLength);
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.VoidedByUserId).HasColumnName("voided_by_user_id");
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(ProductionRun.IdempotencyKeyMaxLength);
+            entity.Property(e => e.OutputInventoryMovementId).HasColumnName("output_inventory_movement_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductionNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_production_runs_org_production_number");
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_production_runs_org_idempotency_key")
+                .HasFilter("idempotency_key IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.ProducedAtUtc })
+                .HasDatabaseName("ix_production_runs_org_produced_at");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_production_runs_org_status");
+            entity.HasIndex(e => new { e.OrganizationId, e.OutputProductId })
+                .HasDatabaseName("ix_production_runs_org_output");
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductionDefinitionId })
+                .HasDatabaseName("ix_production_runs_org_definition");
+            entity.HasIndex(e => e.OutputInventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_production_runs_output_inventory_movement_id")
+                .HasFilter("output_inventory_movement_id IS NOT NULL");
+
+            entity.HasOne<ProductionDefinitionRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductionDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_production_runs_definitions");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OutputProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_production_runs_output_products");
+        });
+
+        modelBuilder.Entity<ProductionRunMaterialRecord>(entity =>
+        {
+            entity.ToTable("production_run_materials", tb =>
+            {
+                tb.HasCheckConstraint("ck_production_run_materials_expected_non_negative", "expected_quantity_entered >= 0");
+                tb.HasCheckConstraint("ck_production_run_materials_actual_positive", "actual_quantity_entered > 0");
+                tb.HasCheckConstraint("ck_production_run_materials_multiplier_positive", "multiplier_to_base > 0");
+                tb.HasCheckConstraint("ck_production_run_materials_expected_base_non_negative", "expected_base_quantity >= 0");
+                tb.HasCheckConstraint("ck_production_run_materials_actual_base_positive", "actual_base_quantity > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ProductionRunId).HasColumnName("production_run_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.MaterialProductId).HasColumnName("material_product_id").IsRequired();
+            entity.Property(e => e.ProductUnitId).HasColumnName("product_unit_id");
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.ExpectedQuantityEntered)
+                .HasColumnName("expected_quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ActualQuantityEntered)
+                .HasColumnName("actual_quantity_entered")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.MultiplierToBase)
+                .HasColumnName("multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ExpectedBaseQuantity)
+                .HasColumnName("expected_base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ActualBaseQuantity)
+                .HasColumnName("actual_base_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitLabelSnapshot)
+                .HasColumnName("unit_label_snapshot")
+                .HasMaxLength(ProductionRunMaterial.UnitLabelMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitCostSnapshot)
+                .HasColumnName("unit_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.LineCostSnapshot)
+                .HasColumnName("line_cost_snapshot")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+
+            entity.HasIndex(e => new { e.ProductionRunId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_production_run_materials_run_line");
+            entity.HasIndex(e => e.InventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_production_run_materials_inventory_movement_id")
+                .HasFilter("inventory_movement_id IS NOT NULL");
+
+            entity.HasOne<ProductionRunRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductionRunId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_production_run_materials_runs");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MaterialProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_production_run_materials_products");
+        });
+
+        modelBuilder.Entity<ProductionRunNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("production_run_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_production_run_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_production_run_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();

@@ -9,6 +9,7 @@ public sealed class ProductBusinessUsageTests
     [InlineData(ProductBusinessUsage.Resale, true, false, false)]
     [InlineData(ProductBusinessUsage.Ingredient, false, true, false)]
     [InlineData(ProductBusinessUsage.InternalUse, false, false, false)]
+    [InlineData(ProductBusinessUsage.ProducedItem, true, false, true)]
     public void ToCapabilities_maps_expected_flags(
         ProductBusinessUsage usage,
         bool canBeSold,
@@ -19,7 +20,7 @@ public sealed class ProductBusinessUsageTests
         Assert.Equal(canBeSold, caps.CanBeSold);
         Assert.Equal(ingredient, caps.CanBeUsedAsIngredient);
         Assert.Equal(produced, caps.IsProduced);
-        Assert.True(caps.CanBePurchased);
+        Assert.Equal(usage == ProductBusinessUsage.ProducedItem ? false : true, caps.CanBePurchased);
         Assert.Equal(usage, ProductBusinessUsages.Classify(caps));
     }
 
@@ -32,11 +33,29 @@ public sealed class ProductBusinessUsageTests
     }
 
     [Fact]
-    public void MadeProduct_classifies_as_Resale_for_sell_floor()
+    public void MadeProduct_classifies_as_ProducedItem()
     {
         Assert.Equal(
-            ProductBusinessUsage.Resale,
+            ProductBusinessUsage.ProducedItem,
             ProductBusinessUsages.Classify(ProductUsageCapabilities.MadeProduct));
+    }
+
+    [Fact]
+    public void ProducedItem_maps_to_MadeProduct_capabilities()
+    {
+        var caps = ProductBusinessUsages.ToCapabilities(ProductBusinessUsage.ProducedItem);
+        Assert.True(caps.IsProduced);
+        Assert.True(caps.CanBeSold);
+        Assert.False(caps.CanBePurchased);
+        Assert.Equal(ProductUsageCapabilities.MadeProductCode, caps.PresetCode);
+    }
+
+    [Fact]
+    public void FromPreset_accepts_ProducedItem_alias()
+    {
+        var caps = ProductUsageCapabilities.FromPreset(ProductBusinessUsages.ProducedItem);
+        Assert.True(caps.IsProduced);
+        Assert.Equal(ProductUsageCapabilities.MadeProductCode, caps.PresetCode);
     }
 
     [Fact]
@@ -59,9 +78,19 @@ public sealed class ProductBusinessUsageTests
     [InlineData("Resale")]
     [InlineData("Ingredient")]
     [InlineData("InternalUse")]
+    [InlineData("ProducedItem")]
+    [InlineData("MadeProduct")]
     public void Parse_accepts_stable_codes(string code)
     {
         Assert.True(ProductBusinessUsages.TryParse(code, out var usage));
-        Assert.Equal(code, ProductBusinessUsages.ToCode(usage));
+        if (code is "ProducedItem" or "MadeProduct")
+        {
+            Assert.Equal(ProductBusinessUsage.ProducedItem, usage);
+            Assert.Equal(ProductBusinessUsages.ProducedItem, ProductBusinessUsages.ToCode(usage));
+        }
+        else
+        {
+            Assert.Equal(code, ProductBusinessUsages.ToCode(usage));
+        }
     }
 }

@@ -286,6 +286,65 @@ public sealed class InventoryLotStockService
     }
 
     /// <summary>
+    /// Reverses prior positive lot receives for a source (e.g. production output) by decreasing
+    /// each lot. Blocks when attributable on-hand on a lot is insufficient.
+    /// </summary>
+    public async Task ReverseReceiveSourceAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        StockMovementType receiveType,
+        StockMovementType reverseType,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        var received = await _lots
+            .ListBySourceAsync(organizationId, sourceId, receiveType, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var movement in received)
+        {
+            if (await _lots
+                    .HasMovementAsync(organizationId, sourceId, movement.LotId, reverseType, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                continue;
+            }
+
+            var lot = await _lots.GetByIdAsync(organizationId, movement.LotId, cancellationToken).ConfigureAwait(false);
+            if (lot is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.ProductionVoidOutputInsufficient,
+                    "Production output lot was not found for void reversal.");
+            }
+
+            var qty = Math.Abs(movement.QuantityEffect);
+            if (lot.QuantityOnHand < qty)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.ProductionVoidOutputInsufficient,
+                    "Cannot void production: attributable output stock has already been consumed.");
+            }
+
+            lot.Apply(-qty, utcNow);
+            await _lots.UpdateAsync(lot, cancellationToken).ConfigureAwait(false);
+            await AddMovementAsync(
+                    organizationId,
+                    lot.Id,
+                    lot.ProductId,
+                    reverseType,
+                    -qty,
+                    movement.SourceType,
+                    actorId,
+                    utcNow,
+                    sourceId,
+                    stockMovementId: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// Partial sale-return restock onto original sale-consumed lots only (earliest expiration first).
     /// Never exceeds each lot's original consumed quantity net of prior SaleReturnRestock restores.
     /// Expired lots may receive quantity but remain expired / not sellable.

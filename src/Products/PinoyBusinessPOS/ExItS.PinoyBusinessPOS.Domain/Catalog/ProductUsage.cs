@@ -5,7 +5,6 @@ namespace ExItS.PinoyBusinessPOS.Domain.Catalog;
 /// <summary>
 /// Buyer-owned classification: how the business uses this catalog product.
 /// Maps onto <see cref="ProductUsageCapabilities"/> flags (authoritative for sell/purchase/kitchen).
-/// Future extension: <c>ProducedItem</c> (finished goods) — do not add until separately approved.
 /// </summary>
 public enum ProductBusinessUsage
 {
@@ -17,6 +16,9 @@ public enum ProductBusinessUsage
 
     /// <summary>Internal use — business consumption; not sold to customers.</summary>
     InternalUse = 2,
+
+    /// <summary>Made or prepared by the business (maps to <see cref="ProductUsageCapabilities.MadeProduct"/>).</summary>
+    ProducedItem = 3,
 }
 
 /// <summary>Stable API/storage strings for <see cref="ProductBusinessUsage"/>.</summary>
@@ -25,6 +27,7 @@ public static class ProductBusinessUsages
     public const string Resale = "Resale";
     public const string Ingredient = "Ingredient";
     public const string InternalUse = "InternalUse";
+    public const string ProducedItem = "ProducedItem";
 
     public static string ToCode(ProductBusinessUsage usage) =>
         usage switch
@@ -32,6 +35,7 @@ public static class ProductBusinessUsages
             ProductBusinessUsage.Resale => Resale,
             ProductBusinessUsage.Ingredient => Ingredient,
             ProductBusinessUsage.InternalUse => InternalUse,
+            ProductBusinessUsage.ProducedItem => ProducedItem,
             _ => throw new DomainException(
                 DomainErrorCodes.InvalidProductUsage,
                 $"Unknown business usage '{usage}'.")
@@ -56,6 +60,10 @@ public static class ProductBusinessUsages
             case InternalUse:
                 usage = ProductBusinessUsage.InternalUse;
                 return true;
+            case ProducedItem:
+            case ProductUsageCapabilities.MadeProductCode:
+                usage = ProductBusinessUsage.ProducedItem;
+                return true;
             default:
                 return false;
         }
@@ -67,7 +75,7 @@ public static class ProductBusinessUsages
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidProductUsage,
-                $"Unknown business usage '{value}'. Expected Resale, Ingredient, or InternalUse.");
+                $"Unknown business usage '{value}'. Expected Resale, Ingredient, InternalUse, or ProducedItem.");
         }
 
         return usage;
@@ -75,12 +83,21 @@ public static class ProductBusinessUsages
 
     /// <summary>
     /// Derives business usage from authoritative capability flags.
-    /// Sellable products classify as Resale (including MadeProduct / IngredientAndSellable).
+    /// Produced / MadeProduct classifies as <see cref="ProductBusinessUsage.ProducedItem"/> before Resale.
     /// Non-sellable ingredients classify as Ingredient; otherwise InternalUse.
     /// </summary>
     public static ProductBusinessUsage Classify(ProductUsageCapabilities capabilities)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
+
+        if (capabilities.IsProduced
+            || string.Equals(
+                capabilities.PresetCode,
+                ProductUsageCapabilities.MadeProductCode,
+                StringComparison.Ordinal))
+        {
+            return ProductBusinessUsage.ProducedItem;
+        }
 
         if (capabilities.CanBeSold)
         {
@@ -105,6 +122,7 @@ public static class ProductBusinessUsages
             ProductBusinessUsage.Resale => ProductUsageCapabilities.BuyAndSell,
             ProductBusinessUsage.Ingredient => ProductUsageCapabilities.Ingredient,
             ProductBusinessUsage.InternalUse => ProductUsageCapabilities.InternalUse,
+            ProductBusinessUsage.ProducedItem => ProductUsageCapabilities.MadeProduct,
             _ => throw new DomainException(
                 DomainErrorCodes.InvalidProductUsage,
                 $"Unknown business usage '{usage}'.")
@@ -194,6 +212,7 @@ public sealed class ProductUsageCapabilities
             InternalUseCode => InternalUse,
             // Business-usage aliases accepted for API convenience.
             ProductBusinessUsages.Resale => BuyAndSell,
+            ProductBusinessUsages.ProducedItem => MadeProduct,
             _ => throw new DomainException(
                 DomainErrorCodes.InvalidProductUsage,
                 $"Unknown usage preset '{presetCode}'.")

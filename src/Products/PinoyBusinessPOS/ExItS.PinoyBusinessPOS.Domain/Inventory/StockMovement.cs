@@ -26,6 +26,10 @@ public sealed class StockMovement
     public const string TransferCancelRestoreReasonPrefix = "Transfer cancelled";
     public const string StockUseConsumptionReason = "Stock use";
     public const string StockUseVoidRestorationReason = "Stock use void restoration";
+    public const string ProductionMaterialConsumptionReason = "Production material used";
+    public const string ProductionMaterialRestorationReason = "Production material restored";
+    public const string ProductionOutputReason = "Production output";
+    public const string ProductionOutputReversalReason = "Production output reversed";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -643,6 +647,161 @@ public sealed class StockMovement
             branchId);
     }
 
+    public static StockMovement ProductionMaterialConsumption(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid productionRunId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureProductionRunId(productionRunId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var movementReason = string.IsNullOrWhiteSpace(reason)
+            ? ProductionMaterialConsumptionReason
+            : NormalizeOptionalReason(reason);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ProductionMaterialConsumption,
+            -absolute,
+            movementReason,
+            StockMovementSourceType.Production,
+            productionRunId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
+    }
+
+    public static StockMovement ProductionMaterialRestoration(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid productionRunId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureProductionRunId(productionRunId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var restoredReason = string.IsNullOrWhiteSpace(reason)
+            ? ProductionMaterialRestorationReason
+            : NormalizeOptionalReason(reason);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ProductionMaterialRestoration,
+            absolute,
+            restoredReason,
+            StockMovementSourceType.Production,
+            productionRunId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
+    public static StockMovement ProductionOutput(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid productionRunId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureProductionRunId(productionRunId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var movementReason = string.IsNullOrWhiteSpace(reason)
+            ? ProductionOutputReason
+            : NormalizeOptionalReason(reason);
+        // MATERIAL_ONLY complete cost may set UnitCost; never invent from SellingPrice.
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ProductionOutput,
+            absolute,
+            movementReason,
+            StockMovementSourceType.Production,
+            productionRunId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
+    }
+
+    public static StockMovement ProductionOutputReversal(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid productionRunId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureProductionRunId(productionRunId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reversedReason = string.IsNullOrWhiteSpace(reason)
+            ? ProductionOutputReversalReason
+            : NormalizeOptionalReason(reason);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ProductionOutputReversal,
+            -absolute,
+            reversedReason,
+            StockMovementSourceType.Production,
+            productionRunId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
     public StockMovement WithLot(InventoryLotId lotId) =>
         new(
             Id,
@@ -793,6 +952,16 @@ public sealed class StockMovement
             throw new DomainException(
                 DomainErrorCodes.InvalidStockUseId,
                 "StockUseId cannot be an empty GUID.");
+        }
+    }
+
+    private static void EnsureProductionRunId(Guid productionRunId)
+    {
+        if (productionRunId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidProductionRunId,
+                "ProductionRunId cannot be an empty GUID.");
         }
     }
 

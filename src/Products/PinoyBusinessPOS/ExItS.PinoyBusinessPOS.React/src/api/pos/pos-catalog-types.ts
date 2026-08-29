@@ -57,9 +57,10 @@ export type PosCatalogProductDto = {
   createdAtUtc: string;
   updatedAtUtc: string;
   canBeSold?: boolean;
-  /** Resale | Ingredient | InternalUse — prefer over canBeSold when present. */
+  /** Resale | Ingredient | InternalUse | ProducedItem — prefer over canBeSold when present. */
   businessUsage?: string | null;
   canBeUsedAsIngredient?: boolean | null;
+  isProduced?: boolean | null;
   usagePreset?: string | null;
   hasImage?: boolean;
   imageVersion?: number | null;

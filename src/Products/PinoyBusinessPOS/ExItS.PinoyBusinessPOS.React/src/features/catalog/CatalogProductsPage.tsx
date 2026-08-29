@@ -54,12 +54,18 @@ const USAGE_FILTERS: Array<{
     | "catalog.businessUsage.filterAll"
     | "catalog.businessUsage.filterResale"
     | "catalog.businessUsage.filterIngredient"
-    | "catalog.businessUsage.filterInternal";
+    | "catalog.businessUsage.filterInternal"
+    | "catalog.businessUsage.filterProduced";
 }> = [
   { value: "all", key: "all", labelKey: "catalog.businessUsage.filterAll" },
   { value: "Resale", key: "Resale", labelKey: "catalog.businessUsage.filterResale" },
   { value: "Ingredient", key: "Ingredient", labelKey: "catalog.businessUsage.filterIngredient" },
   { value: "InternalUse", key: "InternalUse", labelKey: "catalog.businessUsage.filterInternal" },
+  {
+    value: "ProducedItem",
+    key: "ProducedItem",
+    labelKey: "catalog.businessUsage.filterProduced",
+  },
 ];
 
 export function CatalogProductsPage() {

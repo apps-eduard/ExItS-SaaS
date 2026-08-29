@@ -306,6 +306,33 @@ public static class DomainErrorCodes
     public const string InvalidStockUseNotes = "pos.stock_use.notes.invalid";
     public const string InvalidStockUseIdempotencyKey = "pos.stock_use.idempotency_key.invalid";
 
+    public const string InvalidProductionDefinitionId = "pos.production.definition.id.invalid";
+    public const string InvalidProductionComponentId = "pos.production.component.id.invalid";
+    public const string InvalidProductionRunId = "pos.production.run.id.invalid";
+    public const string InvalidProductionRunMaterialId = "pos.production.run_material.id.invalid";
+    public const string InvalidProductionRunNumber = "pos.production.run.number.invalid";
+    public const string InvalidProductionDefinitionName = "pos.production.definition.name.invalid";
+    public const string InvalidProductionDefinitionStatus = "pos.production.definition.status.invalid";
+    public const string InvalidProductionDefinitionRevision = "pos.production.definition.revision.invalid";
+    public const string ProductionRequiresComponents = "pos.production.components.required";
+    public const string ProductionDuplicateComponent = "pos.production.component.duplicate";
+    public const string ProductionSelfComponentForbidden = "pos.production.component.self_forbidden";
+    public const string ProductionCycleDetected = "pos.production.definition.cycle";
+    public const string ProductionComponentNotEligible = "pos.production.component.not_eligible";
+    public const string ProductionOutputNotEligible = "pos.production.output.not_eligible";
+    public const string ProductionDefinitionInactive = "pos.production.definition.inactive";
+    public const string InvalidProductionQuantity = "pos.production.quantity.invalid";
+    public const string InvalidProductionUnitCost = "pos.production.unit_cost.invalid";
+    public const string InvalidProductionCostStatus = "pos.production.cost_status.invalid";
+    public const string InvalidProductionRunStatus = "pos.production.run.status.invalid";
+    public const string InvalidProductionRunStatusTransition = "pos.production.run.status.invalid_transition";
+    public const string InvalidProductionReference = "pos.production.reference.invalid";
+    public const string InvalidProductionNotes = "pos.production.notes.invalid";
+    public const string InvalidProductionIdempotencyKey = "pos.production.idempotency_key.invalid";
+    public const string InvalidProductionRun = "pos.production.run.invalid";
+    public const string InvalidProductionRunMaterial = "pos.production.run_material.invalid";
+    public const string ProductionVoidOutputInsufficient = "pos.production.void.output_insufficient";
+
     public const string InvalidCashierShiftId = "pos.cashier_shift.id.invalid";
     public const string InvalidCashierShiftMovementId = "pos.cashier_shift_movement.id.invalid";
     public const string InvalidCashierShiftNumber = "pos.cashier_shift.number.invalid";

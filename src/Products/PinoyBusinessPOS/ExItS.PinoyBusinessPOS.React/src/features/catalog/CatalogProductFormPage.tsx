@@ -55,6 +55,7 @@ import {
 
 import {
   businessUsageLabelKey,
+  isSellFloorBusinessUsage,
   resolveBusinessUsage,
   type ProductBusinessUsage,
 } from "@/features/catalog/product-business-usage";
@@ -556,12 +557,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const isActive = productStatus?.toLowerCase() === "active";
 
-  const isResale = businessUsage === "Resale";
+  const isOnSellFloor = isSellFloorBusinessUsage(businessUsage);
 
   const showLeaveSellFloorNote =
     mode === "edit" &&
-    initialBusinessUsage === "Resale" &&
-    businessUsage !== "Resale";
+    initialBusinessUsage != null &&
+    isSellFloorBusinessUsage(initialBusinessUsage) &&
+    !isOnSellFloor;
 
   const brandOptions: PosProductBrandDto[] = (() => {
     const active = brandsQuery.data?.items ?? [];
@@ -874,7 +876,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
             <p
               className={
-                isResale
+                isOnSellFloor
                   ? "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
                   : "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted opacity-70"
               }

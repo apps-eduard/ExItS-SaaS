@@ -38,6 +38,10 @@ public static class StockMovementPresentation
             StockMovementType.ExpirationInitialization => "Expiration initialization",
             StockMovementType.StockUse => "Stock use",
             StockMovementType.StockUseVoidRestoration => "Stock use voided",
+            StockMovementType.ProductionMaterialConsumption => "Production material used",
+            StockMovementType.ProductionMaterialRestoration => "Production material restored",
+            StockMovementType.ProductionOutput => "Production output",
+            StockMovementType.ProductionOutputReversal => "Production output reversed",
             _ => type.ToString()
         };
     }

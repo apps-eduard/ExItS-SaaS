@@ -89,6 +89,13 @@ import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsP
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
+import { ProductionDefinitionDetailPage } from "@/features/inventory/ProductionDefinitionDetailPage";
+import { ProductionDefinitionFormPage } from "@/features/inventory/ProductionDefinitionFormPage";
+import { ProductionDefinitionListPage } from "@/features/inventory/ProductionDefinitionListPage";
+import { ProductionHomePage } from "@/features/inventory/ProductionHomePage";
+import { ProductionRunCreatePage } from "@/features/inventory/ProductionRunCreatePage";
+import { ProductionRunDetailPage } from "@/features/inventory/ProductionRunDetailPage";
+import { ProductionRunListPage } from "@/features/inventory/ProductionRunListPage";
 import { StockUseCreatePage } from "@/features/inventory/StockUseCreatePage";
 import { StockUseDetailPage } from "@/features/inventory/StockUseDetailPage";
 import { StockUseListPage } from "@/features/inventory/StockUseListPage";
@@ -546,6 +553,20 @@ export const appRoutes = [
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },
               { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },
+              { path: "production", element: <ProductionHomePage /> },
+              { path: "production/setups", element: <ProductionDefinitionListPage /> },
+              { path: "production/setups/new", element: <ProductionDefinitionFormPage /> },
+              {
+                path: "production/setups/:definitionId/edit",
+                element: <ProductionDefinitionFormPage />,
+              },
+              {
+                path: "production/setups/:definitionId",
+                element: <ProductionDefinitionDetailPage />,
+              },
+              { path: "production/produce", element: <ProductionRunCreatePage /> },
+              { path: "production/runs", element: <ProductionRunListPage /> },
+              { path: "production/runs/:runId", element: <ProductionRunDetailPage /> },
               { path: ":productId", element: <InventoryDetailPage /> },
               { path: ":productId/expiration", element: <ExpirationSettingsPage /> },
             ],

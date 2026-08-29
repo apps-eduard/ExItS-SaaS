@@ -29,7 +29,15 @@ public enum StockMovementType
     /// <summary>Internal / non-sale stock consumption (stock use document).</summary>
     StockUse = 14,
     /// <summary>Compensating restoration when a stock use document is voided.</summary>
-    StockUseVoidRestoration = 15
+    StockUseVoidRestoration = 15,
+    /// <summary>Material consumed by a production run.</summary>
+    ProductionMaterialConsumption = 16,
+    /// <summary>Compensating material restoration when a production run is voided.</summary>
+    ProductionMaterialRestoration = 17,
+    /// <summary>Finished goods added by a production run.</summary>
+    ProductionOutput = 18,
+    /// <summary>Compensating output reversal when a production run is voided.</summary>
+    ProductionOutputReversal = 19
 }
 
 public static class StockMovementTypes
@@ -53,7 +61,11 @@ public static class StockMovementTypes
         nameof(StockMovementType.DirectPurchaseReceipt),
         nameof(StockMovementType.ExpirationInitialization),
         nameof(StockMovementType.StockUse),
-        nameof(StockMovementType.StockUseVoidRestoration)
+        nameof(StockMovementType.StockUseVoidRestoration),
+        nameof(StockMovementType.ProductionMaterialConsumption),
+        nameof(StockMovementType.ProductionMaterialRestoration),
+        nameof(StockMovementType.ProductionOutput),
+        nameof(StockMovementType.ProductionOutputReversal)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

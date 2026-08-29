@@ -33,8 +33,18 @@ describe("purchase-cost-display", () => {
     expect(inventoryMovementTypeLabelKey("PurchaseReceipt")).toBe(
       "inventory.movementType.poReceipt",
     );
-    expect(inventoryMovementTypeLabelKey("ManualIncrease")).toBe(
-      "inventory.movementType.manualIncrease",
+    expect(inventoryMovementTypeLabelKey("StockUse")).toBe("inventory.movementType.stockUse");
+    expect(inventoryMovementTypeLabelKey("ProductionMaterialConsumption")).toBe(
+      "inventory.movementType.productionMaterial",
+    );
+    expect(inventoryMovementTypeLabelKey("ProductionMaterialRestoration")).toBe(
+      "inventory.movementType.productionMaterialVoid",
+    );
+    expect(inventoryMovementTypeLabelKey("ProductionOutput")).toBe(
+      "inventory.movementType.productionOutput",
+    );
+    expect(inventoryMovementTypeLabelKey("ProductionOutputReversal")).toBe(
+      "inventory.movementType.productionOutputVoid",
     );
   });
 

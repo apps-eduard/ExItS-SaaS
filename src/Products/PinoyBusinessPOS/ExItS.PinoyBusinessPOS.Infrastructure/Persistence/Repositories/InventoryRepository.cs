@@ -557,6 +557,58 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.StockUseVoidRestoration),
             cancellationToken);
 
+    public Task<bool> HasProductionMaterialConsumptionAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == productionRunId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.Production)
+                && m.MovementType == nameof(StockMovementType.ProductionMaterialConsumption),
+            cancellationToken);
+
+    public Task<bool> HasProductionMaterialRestorationAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == productionRunId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.Production)
+                && m.MovementType == nameof(StockMovementType.ProductionMaterialRestoration),
+            cancellationToken);
+
+    public Task<bool> HasProductionOutputAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == productionRunId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.Production)
+                && m.MovementType == nameof(StockMovementType.ProductionOutput),
+            cancellationToken);
+
+    public Task<bool> HasProductionOutputReversalAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == productionRunId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.Production)
+                && m.MovementType == nameof(StockMovementType.ProductionOutputReversal),
+            cancellationToken);
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
@@ -565,6 +617,7 @@ internal sealed class InventoryRepository : IInventoryRepository
         var opening = nameof(StockMovementType.OpeningStock);
         var purchase = nameof(StockMovementType.PurchaseReceipt);
         var direct = nameof(StockMovementType.DirectPurchaseReceipt);
+        var productionOutput = nameof(StockMovementType.ProductionOutput);
         return await _db.StockMovements.AsNoTracking()
             .Where(m =>
                 m.OrganizationId == organizationId.Value
@@ -572,7 +625,8 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.UnitCost != null
                 && (m.MovementType == opening
                     || m.MovementType == purchase
-                    || m.MovementType == direct))
+                    || m.MovementType == direct
+                    || m.MovementType == productionOutput))
             .OrderByDescending(m => m.RecordedAtUtc)
             .Select(m => m.UnitCost)
             .FirstOrDefaultAsync(cancellationToken)

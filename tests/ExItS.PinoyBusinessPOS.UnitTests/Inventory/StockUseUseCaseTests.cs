@@ -588,6 +588,50 @@ public sealed class StockUseUseCaseTests
                 && m.SourceId == stockUseId.Value
                 && m.MovementType == StockMovementType.StockUseVoidRestoration));
 
+        public Task<bool> HasProductionMaterialConsumptionAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.ProductId == productId
+                && m.SourceId == productionRunId.Value
+                && m.MovementType == StockMovementType.ProductionMaterialConsumption));
+
+        public Task<bool> HasProductionMaterialRestorationAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.ProductId == productId
+                && m.SourceId == productionRunId.Value
+                && m.MovementType == StockMovementType.ProductionMaterialRestoration));
+
+        public Task<bool> HasProductionOutputAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.ProductId == productId
+                && m.SourceId == productionRunId.Value
+                && m.MovementType == StockMovementType.ProductionOutput));
+
+        public Task<bool> HasProductionOutputReversalAsync(
+            PosOrganizationId organizationId,
+            ProductionRunId productionRunId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.ProductId == productId
+                && m.SourceId == productionRunId.Value
+                && m.MovementType == StockMovementType.ProductionOutputReversal));
+
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,
@@ -600,7 +644,8 @@ public sealed class StockUseUseCaseTests
                     && m.UnitCost is not null
                     && m.MovementType is StockMovementType.OpeningStock
                         or StockMovementType.PurchaseReceipt
-                        or StockMovementType.DirectPurchaseReceipt)
+                        or StockMovementType.DirectPurchaseReceipt
+                        or StockMovementType.ProductionOutput)
                 .OrderByDescending(m => m.RecordedAtUtc)
                 .Select(m => m.UnitCost)
                 .FirstOrDefault();

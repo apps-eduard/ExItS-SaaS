@@ -156,9 +156,33 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasProductionMaterialConsumptionAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasProductionMaterialRestorationAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasProductionOutputAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasProductionOutputReversalAsync(
+        PosOrganizationId organizationId,
+        ProductionRunId productionRunId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
-    /// (opening / purchase receipt / direct purchase), newest first. Null when unknown.
+    /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.
     /// </summary>
     Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
