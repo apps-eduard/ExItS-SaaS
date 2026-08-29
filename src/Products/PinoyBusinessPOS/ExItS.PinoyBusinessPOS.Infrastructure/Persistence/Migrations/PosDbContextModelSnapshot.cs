@@ -1544,6 +1544,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_buyer_supplier_product_links_active")
                         .HasFilter("is_active");
 
+                    b.HasIndex("RelationshipId", "SupplierProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_buyer_supplier_product_links_supplier_active")
+                        .HasFilter("is_active");
+
                     b.HasIndex("RelationshipId", "SyncVersion")
                         .HasDatabaseName("ix_buyer_supplier_product_links_sync");
 
@@ -4603,7 +4608,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid?>("ProductId")
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
 
@@ -4625,6 +4630,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("received_qty");
 
+                    b.Property<string>("SkuSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("sku_snapshot");
+
+                    b.Property<Guid?>("SupplierProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_product_id");
+
                     b.Property<decimal>("UnitPurchaseCost")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -4637,15 +4651,19 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("PurchaseOrderId", "LineNumber")
                         .IsUnique()
                         .HasDatabaseName("ux_purchase_order_lines_po_line_number");
 
                     b.HasIndex("PurchaseOrderId", "ProductId")
                         .IsUnique()
-                        .HasDatabaseName("ux_purchase_order_lines_po_product");
+                        .HasDatabaseName("ux_purchase_order_lines_po_product")
+                        .HasFilter("product_id IS NOT NULL");
+
+                    b.HasIndex("PurchaseOrderId", "SupplierProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_purchase_order_lines_po_supplier_product")
+                        .HasFilter("supplier_product_id IS NOT NULL");
 
                     b.ToTable("purchase_order_lines", "pos", t =>
                         {
@@ -6186,13 +6204,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing.PurchaseOrderLineRecord", b =>
                 {
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_purchase_order_lines_products");
-
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing.PurchaseOrderRecord", null)
                         .WithMany()
                         .HasForeignKey("PurchaseOrderId")
