@@ -17,6 +17,7 @@ import {
   getOperationalOverview,
   getProductUtangSummaryReport,
   getProfitabilityReport,
+  getProductProfitabilityReport,
   getPurchaseOutstandingReport,
   getPurchasingSummaryReport,
   getReturnsReport,
@@ -49,6 +50,10 @@ import {
   type ReportBranchScopeSelection,
 } from "@/features/reports/report-branch-scope";
 import {
+  ProductProfitabilityTable,
+  type ProductProfitabilityRankBy,
+} from "@/features/reports/ProductProfitabilityTable";
+import {
   resolveReportDatePreset,
   type ReportDatePreset,
   type ReportDateRangeValue,
@@ -72,6 +77,7 @@ function titleKeyFor(kind: OperationalReportKind): MessageKey {
     "sales-by-product": "reports.salesByProduct",
     returns: "reports.returns",
     profitability: "reports.profitability",
+    "product-profitability": "reports.productProfitability",
     shifts: "reports.shiftSummary",
     "cash-variance": "reports.cashVariance",
     "inventory-status": "reports.inventoryStatus",
@@ -300,6 +306,8 @@ async function loadLines(
 
       return lines;
     }
+    case "product-profitability":
+      return [];
     case "shifts": {
       const d = await getShiftSummaryReport(workspace, range, signal);
       return [
@@ -423,11 +431,13 @@ export function OperationalReportPage() {
   const [scopeSelection, setScopeSelection] = useState<ReportBranchScopeSelection>({
     mode: "current",
   });
+  const [rankBy, setRankBy] = useState<ProductProfitabilityRankBy>("grossProfitDesc");
 
   const kindValid = Boolean(kindParam && isOperationalReportKind(kindParam));
   const kind = kindValid ? (kindParam as OperationalReportKind) : "overview";
   const allowed = kindValid && canAccessOperationalReport(sessionGrant, kind);
   const needsDates = operationalReportNeedsDates(kind);
+  const isProductProfitability = kind === "product-profitability";
   const scopeMode = reportScopeModeForOperational(kind);
   const allowAll = canSelectAllBranches({
     hasOrgManagement: hasOrganizationManagementAuthority(sessionGrant),
@@ -466,9 +476,25 @@ export function OperationalReportPage() {
       applied.fromDate,
       applied.toDate,
     ],
-    enabled: Boolean(workspace && kindValid && allowed),
+    enabled: Boolean(workspace && kindValid && allowed && !isProductProfitability),
     queryFn: ({ signal }) => loadLines(kind, workspace!, applied, signal, t, reportBranchId),
   });
+
+  const productProfitQuery = useQuery({
+    queryKey: [
+      "product-profitability",
+      workspace?.organizationId,
+      reportBranchId ?? "all",
+      applied.fromDate,
+      applied.toDate,
+      rankBy,
+    ],
+    enabled: Boolean(workspace && kindValid && allowed && isProductProfitability),
+    queryFn: ({ signal }) =>
+      getProductProfitabilityReport(workspace!, applied, signal, reportBranchId, rankBy),
+  });
+
+  const activeQuery = isProductProfitability ? productProfitQuery : query;
 
   if (!kindValid || !allowed) {
     return <Navigate to="/reports" replace />;
@@ -487,8 +513,8 @@ export function OperationalReportPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const errorMessage = query.isError
-    ? describePosApiError(query.error, t, "reports.loadError")
+  const errorMessage = activeQuery.isError
+    ? describePosApiError(activeQuery.error, t, "reports.loadError")
     : null;
 
   return (
@@ -499,7 +525,11 @@ export function OperationalReportPage() {
     >
       <PageHeader
         title={t(titleKeyFor(kind))}
-        description={t("reports.operationalLede")}
+        description={t(
+          isProductProfitability
+            ? "reports.productProfitabilityLede"
+            : "reports.operationalLede",
+        )}
         backTo={pageBackNav.reports.to}
         backLabel={t(pageBackNav.reports.labelKey)}
         backTestId="page-header-back-reports"
@@ -518,13 +548,13 @@ export function OperationalReportPage() {
             selection={scopeSelection}
             onSelectionChange={setScopeSelection}
             allowAllBranches={allowAll}
-            loading={query.isFetching}
+            loading={activeQuery.isFetching}
           />
         }
         onPresetChange={onPresetChange}
         onCustomChange={setCustom}
         onApply={() => setApplied(resolveReportDatePreset(preset, new Date(), custom))}
-        loading={query.isFetching}
+        loading={activeQuery.isFetching}
         showDates={needsDates}
       />
 
@@ -533,16 +563,27 @@ export function OperationalReportPage() {
         variant="ghost"
         className="min-h-11 w-fit"
         data-testid="report-refresh"
-        disabled={query.isFetching}
-        onClick={() => void query.refetch()}
+        disabled={activeQuery.isFetching}
+        onClick={() => void activeQuery.refetch()}
       >
         {t("dashboard.refresh")}
       </Button>
 
       <Card data-testid="report-results">
-        {query.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
+        {activeQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
         {errorMessage ? <ErrorState title={t("reports.errorTitle")} detail={errorMessage} /> : null}
-        {query.data && query.data.length > 0 ? (
+        {isProductProfitability && productProfitQuery.data ? (
+          productProfitQuery.data.rows.length > 0 ? (
+            <ProductProfitabilityTable
+              rows={productProfitQuery.data.rows}
+              rankBy={rankBy}
+              onRankByChange={setRankBy}
+            />
+          ) : !productProfitQuery.isLoading && !errorMessage ? (
+            <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+          ) : null
+        ) : null}
+        {!isProductProfitability && query.data && query.data.length > 0 ? (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {query.data.map((line, index) => (
               <li
@@ -555,7 +596,11 @@ export function OperationalReportPage() {
             ))}
           </ul>
         ) : null}
-        {query.data && query.data.length === 0 && !query.isLoading && !errorMessage ? (
+        {!isProductProfitability &&
+        query.data &&
+        query.data.length === 0 &&
+        !query.isLoading &&
+        !errorMessage ? (
           <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
         ) : null}
       </Card>

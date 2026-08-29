@@ -406,6 +406,15 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new SaleCostPeriodAggregate(0, 0, 0, 0, 0m));
 
+        public Task<IReadOnlyList<ProductProfitabilitySaleAggregate>> AggregateProductProfitabilitySalesAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+
         public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

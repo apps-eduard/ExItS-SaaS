@@ -419,6 +419,15 @@ public sealed class SaleReturnStockServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new SaleReturnCogsPeriodAggregate(0m, false));
 
+        public Task<IReadOnlyList<ProductProfitabilityReturnAggregate>> AggregateProductProfitabilityReturnsAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+
         public Task<decimal> SumRefundsForPeriodAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

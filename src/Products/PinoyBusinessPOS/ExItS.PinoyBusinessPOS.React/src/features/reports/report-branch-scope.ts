@@ -30,6 +30,7 @@ export function reportScopeModeForOperational(kind: string): ReportScopeMode {
     case "sales-by-product":
     case "returns":
     case "profitability":
+    case "product-profitability":
     case "inventory-movements":
       return "branch";
     case "shifts":

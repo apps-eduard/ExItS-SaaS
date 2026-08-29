@@ -28,6 +28,7 @@ export type OperationalReportKind =
   | "sales-by-product"
   | "returns"
   | "profitability"
+  | "product-profitability"
   | "shifts"
   | "cash-variance"
   | "inventory-status"
@@ -48,7 +49,7 @@ export function canAccessOperationalReport(
   grant: PosSessionGrantFacts | null | undefined,
   kind: OperationalReportKind,
 ): boolean {
-  if (kind === "profitability") {
+  if (kind === "profitability" || kind === "product-profitability") {
     return canViewReports(grant);
   }
 
@@ -116,6 +117,7 @@ export const OPERATIONAL_REPORT_KINDS: OperationalReportKind[] = [
   "sales-by-product",
   "returns",
   "profitability",
+  "product-profitability",
   "shifts",
   "cash-variance",
   "inventory-status",
@@ -187,6 +189,11 @@ export function buildOperationalReportGroups(
           kind: "profitability",
           path: "/reports/operational/profitability",
           titleKey: "reports.profitability",
+        },
+        {
+          kind: "product-profitability",
+          path: "/reports/operational/product-profitability",
+          titleKey: "reports.productProfitability",
         },
       ],
     });

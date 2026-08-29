@@ -23,6 +23,7 @@ const operationalReportIcons: Record<OperationalReportKind, LucideIcon> = {
   "sales-by-product": Package,
   returns: RotateCcw,
   profitability: TrendingUp,
+  "product-profitability": BarChart3,
   shifts: Clock3,
   "cash-variance": Wallet,
   "inventory-status": Boxes,

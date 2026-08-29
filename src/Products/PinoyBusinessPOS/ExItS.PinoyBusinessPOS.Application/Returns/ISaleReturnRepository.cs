@@ -13,6 +13,16 @@ public sealed record SaleReturnCogsPeriodAggregate(
     decimal KnownReturnCogs,
     bool HasUnknownCostReturn);
 
+/// <summary>
+/// Per-product completed-return refund/COGS aggregates using original sale line UnitCostSnapshot.
+/// </summary>
+public sealed record ProductProfitabilityReturnAggregate(
+    Guid ProductId,
+    decimal QuantityReturned,
+    decimal RefundAmount,
+    decimal KnownReturnCogs,
+    bool HasUnknownCostReturn);
+
 public interface ISaleReturnRepository
 {
     Task<SaleReturn?> GetByIdAsync(
@@ -48,6 +58,16 @@ public interface ISaleReturnRepository
         CancellationToken cancellationToken = default);
 
     Task<SaleReturnCogsPeriodAggregate> AggregateReturnCogsForPeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Per-product return refund/COGS aggregates for product profitability (SQL; original sale line costs).
+    /// </summary>
+    Task<IReadOnlyList<ProductProfitabilityReturnAggregate>> AggregateProductProfitabilityReturnsAsync(
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,

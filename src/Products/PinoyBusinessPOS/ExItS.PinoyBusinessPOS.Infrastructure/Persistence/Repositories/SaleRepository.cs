@@ -443,6 +443,69 @@ internal sealed class SaleRepository : ISaleRepository
             SaleMoney.RoundMoney(row.KnownCogsSum));
     }
 
+    public async Task<IReadOnlyList<ProductProfitabilitySaleAggregate>> AggregateProductProfitabilitySalesAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string completed = nameof(SaleStatus.Completed);
+
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var sales = _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.Status == completed
+                        && s.RecordedAtUtc >= from
+                        && s.RecordedAtUtc < exclusiveTo);
+
+        if (branchId is not null)
+        {
+            sales = sales.Where(s => s.BranchId == branchId.Value);
+        }
+
+        var rows = await (
+                from sale in sales
+                join line in _db.SaleLines.AsNoTracking() on sale.Id equals line.SaleId
+                group line by line.ProductId
+                into g
+                select new
+                {
+                    ProductId = g.Key,
+                    ProductName = g.Max(x => x.NameSnapshot)!,
+                    Sku = g.Max(x => x.SkuSnapshot),
+                    UnitOfMeasure = g.Max(x => x.UnitOfMeasureSnapshot)!,
+                    QuantitySold = g.Sum(x => x.Quantity),
+                    SalesBeforeDiscounts = g.Sum(x => x.GrossLineTotal),
+                    CommercialDiscounts = g.Sum(x => x.LineDiscountAmount + x.SaleDiscountAllocatedAmount),
+                    NetLineSales = g.Sum(x => x.LineTotal),
+                    KnownCogsSum = g.Sum(x => x.LineCostSnapshot ?? 0m),
+                    KnownCostQuantity = g.Sum(x => x.UnitCostSnapshot != null ? x.Quantity : 0m),
+                    UnknownCostQuantity = g.Sum(x => x.UnitCostSnapshot == null ? x.Quantity : 0m)
+                })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows
+            .Select(r => new ProductProfitabilitySaleAggregate(
+                r.ProductId,
+                r.ProductName,
+                r.Sku,
+                r.UnitOfMeasure,
+                r.QuantitySold,
+                SaleMoney.RoundMoney(r.SalesBeforeDiscounts),
+                SaleMoney.RoundMoney(r.CommercialDiscounts),
+                SaleMoney.RoundMoney(r.NetLineSales),
+                SaleMoney.RoundMoney(r.KnownCogsSum),
+                r.KnownCostQuantity,
+                r.UnknownCostQuantity))
+            .ToList();
+    }
+
     private IQueryable<SaleRecord> BuildReportHeaderQuery(
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,

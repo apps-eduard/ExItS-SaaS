@@ -142,6 +142,15 @@ public sealed class DiscountReportingHardeningTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Costs);
 
+        public Task<IReadOnlyList<ProductProfitabilitySaleAggregate>> AggregateProductProfitabilitySalesAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+
         public Task<IReadOnlySet<Guid>> ListSaleIdsInBranchAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<Guid> saleIds,
@@ -198,6 +207,15 @@ public sealed class DiscountReportingHardeningTests
             Guid? branchId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new SaleReturnCogsPeriodAggregate(0m, false));
+
+        public Task<IReadOnlyList<ProductProfitabilityReturnAggregate>> AggregateProductProfitabilityReturnsAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
 
         public Task<decimal> SumRefundsForPeriodAsync(
             PosOrganizationId organizationId,

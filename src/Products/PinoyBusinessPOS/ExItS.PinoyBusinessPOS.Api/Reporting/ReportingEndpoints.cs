@@ -34,6 +34,7 @@ internal static class ReportingEndpoints
         reports.MapGet("/sales-by-product", GetSalesByProductOperational);
         reports.MapGet("/returns", GetReturnsReport);
         reports.MapGet("/profitability", GetProfitabilityReport);
+        reports.MapGet("/product-profitability", GetProductProfitabilityReport);
         reports.MapGet("/shifts-summary", GetShiftSummary);
         reports.MapGet("/cash-variance", GetCashVariance);
         reports.MapGet("/inventory-status", GetInventoryStatus);
@@ -475,6 +476,38 @@ internal static class ReportingEndpoints
 
         var result = await reports
             .GetAsync(organizationId, from, to, branchId, ct)
+            .ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetProductProfitabilityReport(
+        HttpRequest request,
+        string? fromDate,
+        string? toDate,
+        Guid? branchId,
+        string? rankBy,
+        ProductProfitabilityReportService reports,
+        IOrganizationBranchDirectory branches,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewReports, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseOptionalDates(fromDate, toDate, out var from, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        if ((problem = await ValidateReportBranchAsync(organizationId, branchId, branches, ct).ConfigureAwait(false)) is not null)
+        {
+            return problem;
+        }
+
+        var result = await reports
+            .GetAsync(organizationId, from, to, branchId, rankBy, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }

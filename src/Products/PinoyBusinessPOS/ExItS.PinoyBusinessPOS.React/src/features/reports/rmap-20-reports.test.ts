@@ -7,6 +7,7 @@ import {
   formatReportPaymentMethod,
   managementOverviewPath,
   profitabilityPath,
+  productProfitabilityPath,
   salesByPaymentPath,
   salesSummaryPath,
 } from "@/api/pos/pos-reporting-client";
@@ -74,6 +75,7 @@ describe("report-access", () => {
     });
     expect(canAccessOperationalReport(cashierAdvanced, "shifts")).toBe(true);
     expect(canAccessOperationalReport(cashierAdvanced, "profitability")).toBe(false);
+    expect(canAccessOperationalReport(cashierAdvanced, "product-profitability")).toBe(false);
   });
 
   it("allows profitability only for ViewReports roles", () => {
@@ -89,8 +91,11 @@ describe("report-access", () => {
     });
 
     expect(canAccessOperationalReport(owner, "profitability")).toBe(true);
+    expect(canAccessOperationalReport(owner, "product-profitability")).toBe(true);
     expect(canAccessOperationalReport(reportingUser, "profitability")).toBe(true);
+    expect(canAccessOperationalReport(reportingUser, "product-profitability")).toBe(true);
     expect(canAccessOperationalReport(cashierAdvanced, "profitability")).toBe(false);
+    expect(canAccessOperationalReport(cashierAdvanced, "product-profitability")).toBe(false);
   });
 
   it("allows inventory staff inventory/purchasing reports only with advanced grant", () => {
@@ -133,6 +138,15 @@ describe("pos-reporting-client paths", () => {
     ).toBe(
       "/api/v1/pos/reports/profitability?fromDate=2026-08-01&toDate=2026-08-21&branchId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     );
+    expect(
+      productProfitabilityPath(
+        { fromDate: "2026-08-01", toDate: "2026-08-21" },
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "grossProfitDesc",
+      ),
+    ).toBe(
+      "/api/v1/pos/reports/product-profitability?fromDate=2026-08-01&toDate=2026-08-21&branchId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa&rankBy=grossProfitDesc",
+    );
   });
 
   it("formats payment methods without tax terminology", () => {
@@ -157,6 +171,17 @@ describe("report user-facing terminology boundary", () => {
     const { catalogs } = await import("@/i18n/messages");
     const keys = [
       "reports.profitability",
+      "reports.productProfitability",
+      "reports.productProfitabilityLede",
+      "reports.rank.label",
+      "reports.rank.grossProfitDesc",
+      "reports.rank.grossProfitAsc",
+      "reports.rank.netSalesDesc",
+      "reports.rank.grossMarginDesc",
+      "reports.col.product",
+      "reports.col.qtySold",
+      "reports.col.returnedQty",
+      "reports.metric.cogsStatus",
       "reports.metric.cogs",
       "reports.metric.knownCogs",
       "reports.costIncompletePartial",

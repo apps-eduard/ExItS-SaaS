@@ -248,6 +248,14 @@ public sealed class SaleReportAggregateEquivalenceTests
             return Task.FromResult(new SaleCostPeriodAggregate(list.Count, complete, partial, unavailable, known));
         }
 
+        public Task<IReadOnlyList<ProductProfitabilitySaleAggregate>> AggregateProductProfitabilitySalesAsync(
+            PosOrganizationId organizationId,
+            DateOnly fromDateUtc,
+            DateOnly toDateUtc,
+            Guid? branchId = null,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public async Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

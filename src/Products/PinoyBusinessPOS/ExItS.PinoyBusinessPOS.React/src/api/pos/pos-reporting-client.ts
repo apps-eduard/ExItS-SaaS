@@ -334,6 +334,33 @@ export const posProfitabilityReportDtoSchema = z.object({
   commercialDiscountTotal: z.number().optional().default(0),
 });
 
+export const posProductProfitabilityRowDtoSchema = z.object({
+  productId: guidSchema,
+  productName: z.string(),
+  sku: z.string().nullable().optional(),
+  unitOfMeasure: z.string(),
+  quantitySold: z.number(),
+  quantityReturned: z.number(),
+  netQuantity: z.number(),
+  salesBeforeDiscounts: z.number(),
+  commercialDiscounts: z.number(),
+  netSales: z.number(),
+  refundAmount: z.number(),
+  knownCogs: z.number(),
+  cogsStatus: z.string(),
+  grossProfit: z.number().nullable().optional(),
+  grossMarginPercent: z.number().nullable().optional(),
+  costCompletenessPercent: z.number(),
+});
+
+export const posProductProfitabilityReportDtoSchema = z.object({
+  fromDate: dateOnlySchema,
+  toDate: dateOnlySchema,
+  branchId: guidSchema.nullable().optional(),
+  rankBy: z.string(),
+  rows: z.array(posProductProfitabilityRowDtoSchema),
+});
+
 export type PosManagementOverviewDto = z.infer<typeof posManagementOverviewDtoSchema>;
 export type PosDashboardDto = z.infer<typeof posDashboardDtoSchema>;
 export type PosSalesReportDto = z.infer<typeof posSalesReportDtoSchema>;
@@ -356,6 +383,10 @@ export type PosSalesByProductReportDto = z.infer<typeof posSalesByProductReportD
 export type PosStockCountVarianceReportDto = z.infer<typeof posStockCountVarianceReportDtoSchema>;
 export type PosSupplierPurchasingReportDto = z.infer<typeof posSupplierPurchasingReportDtoSchema>;
 export type PosProfitabilityReportDto = z.infer<typeof posProfitabilityReportDtoSchema>;
+export type PosProductProfitabilityReportDto = z.infer<
+  typeof posProductProfitabilityReportDtoSchema
+>;
+export type PosProductProfitabilityRowDto = z.infer<typeof posProductProfitabilityRowDtoSchema>;
 
 export type ReportDateQuery = {
   fromDate: string;
@@ -499,6 +530,25 @@ export function profitabilityPath(
   branchId?: string | null,
 ): string {
   return withQuery(`${REPORTS_PATH}/profitability`, range, branchId);
+}
+
+export function productProfitabilityPath(
+  range?: ReportDateQuery | null,
+  branchId?: string | null,
+  rankBy?: string | null,
+): string {
+  const params = new URLSearchParams();
+  if (range) {
+    appendDates(params, range);
+  }
+  if (branchId) {
+    params.set("branchId", branchId);
+  }
+  if (rankBy) {
+    params.set("rankBy", rankBy);
+  }
+  const qs = params.toString();
+  return qs ? `${REPORTS_PATH}/product-profitability?${qs}` : `${REPORTS_PATH}/product-profitability`;
 }
 
 /** Paths that must never appear as tax/VAT/BIR navigation targets in this package. */
@@ -833,6 +883,22 @@ export async function getProfitabilityReport(
     signal,
   });
   return posProfitabilityReportDtoSchema.parse(raw);
+}
+
+export async function getProductProfitabilityReport(
+  workspace: PosWorkspaceScope,
+  range: ReportDateQuery,
+  signal?: AbortSignal,
+  reportBranchId?: string | null,
+  rankBy?: string | null,
+): Promise<PosProductProfitabilityReportDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    path: productProfitabilityPath(range, reportBranchId, rankBy),
+    workspace,
+    signal,
+  });
+  return posProductProfitabilityReportDtoSchema.parse(raw);
 }
 
 /** Friendly payment label — never tax terminology. */

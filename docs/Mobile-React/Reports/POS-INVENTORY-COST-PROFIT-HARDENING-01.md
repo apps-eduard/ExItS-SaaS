@@ -31,7 +31,7 @@ Harden authoritative inventory cost resolution and immutable **Sale COGS** / **G
 | INVENTORY_VALUATION_LABEL | Estimated stock value |
 | COST_VISIBILITY_PERMISSION | `ViewReports` (sale summary internal section) |
 | PROFIT_VISIBILITY_PERMISSION | `ViewReports` (`/reports/operational/profitability`) |
-| PRODUCT_PROFITABILITY_REPORT | DEFERRED |
+| PRODUCT_PROFITABILITY_REPORT | IMPLEMENTED (POS-PRODUCT-PROFITABILITY-RANKING-01) |
 | UTANG_PROFIT_REPORT_POLICY | Utang Completed sales count in NetSales/COGS like Cash/GCash (receivables not redesigned) |
 | COST_QUERY_N_PLUS_ONE | PASS (batch `GetLatestAcquisitionUnitCostsAsync`) |
 | REPORT_QUERY_N_PLUS_ONE | PASS (header aggregates + return/waste/stock-use projections) |
@@ -74,7 +74,7 @@ Harden authoritative inventory cost resolution and immutable **Sale COGS** / **G
 ## Explicit deferrals
 
 - Exact lot-layer / FIFO multi-source COGS (lots lack UnitCost)
-- Product profitability ranking report
+- Product profitability ranking report → **IMPLEMENTED** (`POS-PRODUCT-PROFITABILITY-RANKING-01`)
 - Formal accounting inventory valuation / GL
 - Operating profit / expense allocation
 - Client offline cost authority

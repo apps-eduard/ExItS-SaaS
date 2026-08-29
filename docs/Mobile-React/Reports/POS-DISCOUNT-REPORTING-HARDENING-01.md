@@ -72,4 +72,4 @@ Harden Organization POS **sales reporting** so commercial discount snapshots alr
 
 ## NEXT
 
-`POS-PRODUCT-PROFITABILITY-RANKING-01`
+`POS-PRODUCT-PROFITABILITY-RANKING-01` (completed — see that report).

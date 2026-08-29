@@ -220,7 +220,7 @@ Exact cost-layer/FIFO costing is **safely deferred** for micro/small POS if UI h
 ### NEXT_03 = POS-REPORTS-BRANCH-SCOPING-01
 - **WHY_NOW:** Operators bind a branch then read org-wide totals — money/ops misread risk (P1).
 - **SCOPE:** Contract for classic/operational reports: filter by branch **or** hard-label “All branches”; wire `branchId` consistently; profitability already optional.
-- **DO_NOT_INCLUDE:** Fake P&L; tax engine; product profitability ranking.
+- **DO_NOT_INCLUDE:** Fake P&L; tax engine.
 
 ### NEXT_04 = POS-REACT-TEST-HARNESS-ORG-SESSION-REPAIR-01
 - **WHY_NOW:** 9 sell-floor + shell/session failures block CI confidence for Organization work.

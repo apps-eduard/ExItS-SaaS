@@ -382,6 +382,61 @@ internal sealed class SaleReturnRepository : ISaleReturnRepository
         return new SaleReturnCogsPeriodAggregate(SaleMoney.RoundMoney(known), hasUnknown);
     }
 
+    public async Task<IReadOnlyList<ProductProfitabilityReturnAggregate>> AggregateProductProfitabilityReturnsAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        const string completed = nameof(SaleReturnStatus.Completed);
+
+        var returns = _db.SaleReturns.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value
+                        && r.Status == completed
+                        && r.ReturnDate >= fromDateUtc
+                        && r.ReturnDate <= toDateUtc);
+
+        if (branchId is not null)
+        {
+            returns = from ret in returns
+                join sale in _db.Sales.AsNoTracking() on ret.SaleId equals sale.Id
+                where sale.BranchId == branchId.Value
+                select ret;
+        }
+
+        var rows = await (
+                from ret in returns
+                join line in _db.SaleReturnLines.AsNoTracking() on ret.Id equals line.SaleReturnId
+                join saleLine in _db.SaleLines.AsNoTracking() on line.SaleLineId equals saleLine.Id
+                select new
+                {
+                    line.ProductId,
+                    line.QuantityReturned,
+                    line.RefundAmount,
+                    saleLine.UnitCostSnapshot
+                })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows
+            .GroupBy(r => r.ProductId)
+            .Select(g =>
+            {
+                var hasUnknown = g.Any(x => x.UnitCostSnapshot is null);
+                var knownCogs = g
+                    .Where(x => x.UnitCostSnapshot is not null)
+                    .Sum(x => SaleMoney.RoundMoney(x.UnitCostSnapshot!.Value * x.QuantityReturned));
+                return new ProductProfitabilityReturnAggregate(
+                    g.Key,
+                    g.Sum(x => x.QuantityReturned),
+                    SaleMoney.RoundMoney(g.Sum(x => x.RefundAmount)),
+                    SaleMoney.RoundMoney(knownCogs),
+                    hasUnknown);
+            })
+            .ToList();
+    }
+
     public async Task<decimal> SumRefundsForPeriodAsync(
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,

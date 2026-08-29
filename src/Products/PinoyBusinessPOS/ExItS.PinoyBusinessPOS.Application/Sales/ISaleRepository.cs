@@ -49,6 +49,22 @@ public sealed record SaleCostPeriodAggregate(
     int UnavailableCostCount,
     decimal KnownCogsSum);
 
+/// <summary>
+/// Per-product completed-sale money/COGS aggregates from immutable line snapshots (voided excluded).
+/// </summary>
+public sealed record ProductProfitabilitySaleAggregate(
+    Guid ProductId,
+    string ProductName,
+    string? Sku,
+    string UnitOfMeasure,
+    decimal QuantitySold,
+    decimal SalesBeforeDiscounts,
+    decimal CommercialDiscounts,
+    decimal NetLineSales,
+    decimal KnownCogsSum,
+    decimal KnownCostQuantity,
+    decimal UnknownCostQuantity);
+
 public interface ISaleRepository
 {
     Task<Sale?> GetByIdAsync(
@@ -131,6 +147,16 @@ public interface ISaleRepository
     /// Legacy null <c>cost_status</c> counts as Unavailable.
     /// </summary>
     Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Per-product completed-sale aggregates for product profitability ranking (SQL group-by; no N+1).
+    /// </summary>
+    Task<IReadOnlyList<ProductProfitabilitySaleAggregate>> AggregateProductProfitabilitySalesAsync(
         PosOrganizationId organizationId,
         DateOnly fromDateUtc,
         DateOnly toDateUtc,
