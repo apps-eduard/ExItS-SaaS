@@ -67,7 +67,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | PRODUCT_STATUS | **IMPLEMENTED** | BusinessUsage Resale/Ingredient/InternalUse/ProducedItem; sell filter `CanBeSold`; brands/categories/units/expiry. Legacy `IngredientAndSellable` classifies as Resale. |
 | INVENTORY_STATUS | **PARTIAL** | Opening/adjust/lots/low-stock badges IMPLEMENTED. **Stock Count + Transfers: API/Maui yes, React UI missing.** Valuation = estimated last UnitCost (no account-level stock-value field). |
 | PURCHASING_STATUS | **IMPLEMENTED** | Direct Buy, PO, GRN, partial receive, connected PO, BuyerSupplierProductLink prepare. Update-PO still buyer-product oriented (partial polish). |
-| SUPPLIER_STATUS | **PARTIAL** | Connected sharing AllEligible/SelectedOnly IMPLEMENTED. List Business Customer = snapshot; detail may show live Platform name (**known identity asymmetry**). B2B retail checkout DEFERRED. |
+| SUPPLIER_STATUS | **PARTIAL** | Connected sharing AllEligible/SelectedOnly IMPLEMENTED. Business Customer list/detail identity = **SNAPSHOT_CONSISTENT** (POS-B2B-IDENTITY-DISPLAY-01; live list deferred — no Platform batch resolver). B2B retail checkout DEFERRED. |
 | CUSTOMER_STATUS | **IMPLEMENTED** | Walk-in, CRUD, history, Business Customers list/detail. Not duplicated as Pinoy Loan. |
 | UTANG_STATUS | **IMPLEMENTED** | Org product-based Utang + repay/statements. Personal Utang separate. Offline Utang on Org Web blocked (ONLINE_ONLY). |
 | PAYMENTS_STATUS | **IMPLEMENTED** (manual) | Cash/ManualGCash/Utang real. `FakePaymentGateway` only for Card/GCash attempts — **do not ship as production GCash**. |

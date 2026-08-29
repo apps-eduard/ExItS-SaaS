@@ -29,8 +29,21 @@ public sealed record BusinessCustomerDto(
     bool DisplayNameIsLive = false);
 
 /// <summary>
+/// Identity display policy for Business Customer list and detail.
+/// Platform has no batch public-organization resolver; per-row live resolve would N+1.
+/// Therefore both surfaces use relationship snapshot as the primary identity.
+/// Live list enrichment is deferred until a safe batch Platform mechanism exists.
+/// </summary>
+public static class BusinessCustomerIdentityDisplay
+{
+    public const string Policy = "SNAPSHOT_CONSISTENT";
+    public const string LiveListIdentity = "DEFERRED_NO_BATCH_RESOLVER";
+}
+
+/// <summary>
 /// Lists supplier Business Customers = Active (or optionally disconnected) buyer relationships.
 /// Catalog aggregates are batch-loaded (no per-row N+1).
+/// Primary identity = relationship buyer snapshot (same as detail).
 /// </summary>
 public sealed class ListBusinessCustomers
 {
@@ -90,16 +103,18 @@ public sealed class ListBusinessCustomers
                 .ConfigureAwait(false);
 
         var result = filtered
-            .Select(r => Map(
+            .Select(r => MapFromSnapshot(
                 r,
                 eligibleCount,
-                stats.GetValueOrDefault(r.Id.Value, new BuyerRelationshipShareStats(0, 0, 0)),
-                displayNameIsLive: false))
+                stats.GetValueOrDefault(r.Id.Value, new BuyerRelationshipShareStats(0, 0, 0))))
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BusinessCustomerDto>>.Success(result);
     }
 
+    /// <summary>
+    /// Search matches snapshot display name and public ORG id — the identity users see.
+    /// </summary>
     private static bool MatchesSearch(ConnectedSupplierRelationship r, string term)
     {
         var haystack = string.Join(
@@ -110,6 +125,20 @@ public sealed class ListBusinessCustomers
         return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Maps a relationship to the Business Customer DTO using snapshot identity only.
+    /// Does not call Platform; DisplayNameIsLive is always false under SNAPSHOT_CONSISTENT.
+    /// </summary>
+    internal static BusinessCustomerDto MapFromSnapshot(
+        ConnectedSupplierRelationship r,
+        int eligibleCount,
+        BuyerRelationshipShareStats stats) =>
+        Map(r, eligibleCount, stats, displayNameIsLive: false);
+
+    /// <summary>
+    /// Shared mapper. Live name/public id parameters remain for unit-test isolation of Map
+    /// semantics; production list/detail always pass null / DisplayNameIsLive=false.
+    /// </summary>
     internal static BusinessCustomerDto Map(
         ConnectedSupplierRelationship r,
         int eligibleCount,
@@ -122,8 +151,6 @@ public sealed class ListBusinessCustomers
             ? Math.Max(0, eligibleCount - stats.ExcludedCount)
             : stats.ExplicitSharedCount;
 
-        // OverrideCount for SelectedOnly = shared rows with price; for AllEligible also count
-        // overrides on still-shared (non-excluded) rows — stats.OverrideCount already filters IsShared.
         return new BusinessCustomerDto(
             r.Id.Value,
             r.SupplierOrganizationId.Value,
@@ -149,25 +176,23 @@ public sealed class ListBusinessCustomers
 }
 
 /// <summary>
-/// Supplier Business Customer detail for one connection. Prefers live Platform public identity
-/// for display name when the buyer's public ORG id is known (no duplicate Customer entity).
+/// Supplier Business Customer detail for one connection.
+/// Uses the same snapshot identity policy as <see cref="ListBusinessCustomers"/> —
+/// no per-detail Platform live resolve (avoids list/detail asymmetry and N+1 if applied to lists).
 /// </summary>
 public sealed class GetBusinessCustomer
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
-    private readonly IPlatformOrganizationPublicResolve _platformOrgs;
     private readonly IPosCommercialAccessAccessor _access;
 
     public GetBusinessCustomer(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
-        IPlatformOrganizationPublicResolve platformOrgs,
         IPosCommercialAccessAccessor access)
     {
         _relationships = relationships;
         _shares = shares;
-        _platformOrgs = platformOrgs;
         _access = access;
     }
 
@@ -200,25 +225,7 @@ public sealed class GetBusinessCustomer
             .ConfigureAwait(false);
         var stats = statsMap.GetValueOrDefault(r.Id.Value, new BuyerRelationshipShareStats(0, 0, 0));
 
-        string? liveName = null;
-        string? livePublicId = null;
-        var isLive = false;
-        if (!string.IsNullOrWhiteSpace(r.BuyerPublicOrganizationIdSnapshot))
-        {
-            var live = await _platformOrgs
-                .ResolveOrganizationForConnectedSupplierAsync(r.BuyerPublicOrganizationIdSnapshot!, ct)
-                .ConfigureAwait(false);
-            if (live.IsSuccess
-                && live.Value is not null
-                && live.Value.OrganizationId == r.BuyerOrganizationId.Value)
-            {
-                liveName = live.Value.DisplayName;
-                livePublicId = live.Value.PublicOrganizationId;
-                isLive = true;
-            }
-        }
-
         return ApplicationResult<BusinessCustomerDto>.Success(
-            ListBusinessCustomers.Map(r, eligibleCount, stats, isLive, liveName, livePublicId));
+            ListBusinessCustomers.MapFromSnapshot(r, eligibleCount, stats));
     }
 }

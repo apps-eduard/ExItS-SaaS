@@ -370,7 +370,12 @@ export function CustomersListPage() {
                   >
                     <span className="customer-row__main min-w-0">
                       <span className="business-customer-row__title">
-                        <span className="exits-list__name truncate font-semibold">{name}</span>
+                        <span
+                          className="exits-list__name truncate font-semibold"
+                          data-testid={`business-customer-name-${customer.connectionId}`}
+                        >
+                          {name}
+                        </span>
                         <span className="business-customer-row__badge">
                           {t("customers.business.badgeShort")}
                         </span>

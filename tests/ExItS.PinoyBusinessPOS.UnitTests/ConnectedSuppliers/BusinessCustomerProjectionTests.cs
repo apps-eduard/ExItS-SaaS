@@ -260,29 +260,116 @@ public sealed class BusinessCustomerProjectionTests
     }
 
     [Fact]
-    public async Task Get_prefers_live_organization_display_name()
+    public async Task Get_uses_snapshot_identity_same_as_list_even_when_platform_has_renamed()
     {
         var mica = PosOrganizationId.From(Guid.NewGuid());
         var paul = PosOrganizationId.From(Guid.NewGuid());
         var relationships = new InMemoryRelationships();
-        var connection = ActiveBuyer(mica, paul, "Mica Store", "ORGMICA01");
+        var connection = ActiveBuyer(mica, paul, "Kizy Mini Store", "ORGKIZY01");
         await relationships.AddAsync(connection);
 
+        // Platform would return a renamed display name — detail must not diverge from list.
         var platform = new FakePlatformOrgs
         {
             LiveOrganizationId = mica.Value,
-            LivePublicId = "ORGMICA01",
-            LiveDisplayName = "Mica Supermarket",
+            LivePublicId = "ORGKIZY01",
+            LiveDisplayName = "Kizy Wholesale Trading",
         };
 
-        var get = new GetBusinessCustomer(relationships, new InMemoryShares(), platform, new FakeAccess());
-        var result = await get.ExecuteAsync(paul.Value, connection.Id.Value);
+        var shares = new InMemoryShares();
+        var list = await new ListBusinessCustomers(relationships, shares, new FakeAccess())
+            .ExecuteAsync(paul.Value);
+        var get = new GetBusinessCustomer(relationships, shares, new FakeAccess());
+        var detail = await get.ExecuteAsync(paul.Value, connection.Id.Value);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("Mica Supermarket", result.Value!.OrganizationDisplayName);
-        Assert.True(result.Value.DisplayNameIsLive);
-        Assert.Equal(1, platform.ResolveCalls);
-        Assert.Equal("Mica Store", connection.BuyerDisplayNameSnapshot);
+        Assert.True(list.IsSuccess);
+        Assert.True(detail.IsSuccess);
+        Assert.Equal("Kizy Mini Store", list.Value![0].OrganizationDisplayName);
+        Assert.Equal("Kizy Mini Store", detail.Value!.OrganizationDisplayName);
+        Assert.Equal(list.Value[0].OrganizationPublicId, detail.Value.OrganizationPublicId);
+        Assert.False(list.Value[0].DisplayNameIsLive);
+        Assert.False(detail.Value.DisplayNameIsLive);
+        Assert.Equal(0, platform.ResolveCalls);
+        Assert.Equal("Kizy Mini Store", connection.BuyerDisplayNameSnapshot);
+        Assert.Equal(BusinessCustomerIdentityDisplay.Policy, "SNAPSHOT_CONSISTENT");
+    }
+
+    [Fact]
+    public async Task Get_cross_org_supplier_is_fail_closed()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var otherSupplier = PosOrganizationId.From(Guid.NewGuid());
+        var relationships = new InMemoryRelationships();
+        var connection = ActiveBuyer(mica, paul, "Kizy Store", "ORGKIZY01");
+        await relationships.AddAsync(connection);
+
+        var get = new GetBusinessCustomer(relationships, new InMemoryShares(), new FakeAccess());
+        var result = await get.ExecuteAsync(otherSupplier.Value, connection.Id.Value);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ConnectedSupplierErrorCodes.NotFound, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task List_search_matches_displayed_snapshot_name()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var relationships = new InMemoryRelationships();
+        await relationships.AddAsync(ActiveBuyer(mica, paul, "Kizy Mini Store", "ORGKIZY01"));
+
+        var list = new ListBusinessCustomers(relationships, new InMemoryShares(), new FakeAccess());
+        var hit = await list.ExecuteAsync(paul.Value, search: "Mini Store");
+        var miss = await list.ExecuteAsync(paul.Value, search: "Wholesale Trading");
+
+        Assert.True(hit.IsSuccess);
+        Assert.Single(hit.Value!);
+        Assert.True(miss.IsSuccess);
+        Assert.Empty(miss.Value!);
+    }
+
+    [Fact]
+    public async Task List_and_detail_identity_match_for_disconnected_when_included()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var relationships = new InMemoryRelationships();
+        var connection = ActiveBuyer(mica, paul, "Kizy Store", "ORGKIZY01");
+        connection.Disconnect(DateTimeOffset.UtcNow);
+        await relationships.AddAsync(connection);
+
+        var shares = new InMemoryShares();
+        var list = await new ListBusinessCustomers(relationships, shares, new FakeAccess())
+            .ExecuteAsync(paul.Value, includeDisconnected: true);
+        var detail = await new GetBusinessCustomer(relationships, shares, new FakeAccess())
+            .ExecuteAsync(paul.Value, connection.Id.Value);
+
+        Assert.True(list.IsSuccess);
+        Assert.True(detail.IsSuccess);
+        Assert.Equal("Disconnected", list.Value![0].RelationshipStatus);
+        Assert.Equal(list.Value[0].OrganizationDisplayName, detail.Value!.OrganizationDisplayName);
+        Assert.Equal(list.Value[0].OrganizationPublicId, detail.Value.OrganizationPublicId);
+        Assert.False(detail.Value.DisplayNameIsLive);
+    }
+
+    [Fact]
+    public async Task Empty_snapshot_name_falls_back_to_public_id()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var relationships = new InMemoryRelationships();
+        var connection = ActiveBuyer(mica, paul, "   ", "ORGKIZY01");
+        await relationships.AddAsync(connection);
+
+        var shares = new InMemoryShares();
+        var list = await new ListBusinessCustomers(relationships, shares, new FakeAccess())
+            .ExecuteAsync(paul.Value);
+        var detail = await new GetBusinessCustomer(relationships, shares, new FakeAccess())
+            .ExecuteAsync(paul.Value, connection.Id.Value);
+
+        Assert.Equal("ORGKIZY01", list.Value![0].OrganizationDisplayName);
+        Assert.Equal("ORGKIZY01", detail.Value!.OrganizationDisplayName);
     }
 
     [Fact]

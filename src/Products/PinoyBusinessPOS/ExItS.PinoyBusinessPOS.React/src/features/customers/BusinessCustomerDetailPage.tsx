@@ -124,8 +124,17 @@ export function BusinessCustomerDetailPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("customers.business.connectedOrg")}
             </p>
+            <p
+              className="m-0 mt-1 text-[length:var(--exits-text-lg)] font-semibold"
+              data-testid="business-customer-display-name"
+            >
+              {name}
+            </p>
             {customer.organizationPublicId ? (
-              <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              <p
+                className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="business-customer-public-id"
+              >
                 {customer.organizationPublicId}
               </p>
             ) : null}
