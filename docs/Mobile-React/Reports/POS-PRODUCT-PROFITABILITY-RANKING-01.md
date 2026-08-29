@@ -9,7 +9,8 @@ Authoritative **product profitability ranking** from immutable Sale/SaleLine com
 | TASK | POS-PRODUCT-PROFITABILITY-RANKING-01 |
 | START_SHA | `d3ff54f16c1252c1f8dc18bf81d5e1e6aa2df7c2` |
 | FEATURE_SHA | `1e08f2d08f12cbf4c47752e7c036e7367bc27478` |
-| HARDEN_SHA | `` |
+| HARDEN_SHA | `a22d8e3d` (TotalCogs + summary/mobile cards) |
+| FINAL_SHA | `c620faf7807cff2cfd276e151c945b8ff9e8468c` |
 | EXISTING_COST_MODEL | SaleLine UnitCostSnapshot / LineCostSnapshot; Sale CostStatus |
 | EXISTING_DISCOUNT_MODEL | SaleLine GrossLineTotal / TotalLineDiscount / LineTotal |
 | PRODUCT_PROFITABILITY_SOURCE_OF_TRUTH | Completed sale + return line snapshots (SQL aggregates) |
