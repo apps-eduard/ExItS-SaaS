@@ -28,7 +28,11 @@ public sealed record PosOperationalOverviewDto(
     decimal Refunds,
     decimal NetSales,
     int CompletedTransactionCount,
-    decimal AverageTransactionValue);
+    decimal AverageTransactionValue,
+    decimal PreDiscountGrossSales = 0m,
+    decimal CommercialDiscountTotal = 0m,
+    decimal NetSubtotal = 0m,
+    decimal TaxAmount = 0m);
 
 public sealed record PosSalesSummaryReportDto(
     DateOnly FromDate,
@@ -38,7 +42,11 @@ public sealed record PosSalesSummaryReportDto(
     decimal CompletedReturnsRefunds,
     decimal NetSales,
     int CompletedTransactionCount,
-    decimal AverageTransactionValue);
+    decimal AverageTransactionValue,
+    decimal PreDiscountGrossSales = 0m,
+    decimal CommercialDiscountTotal = 0m,
+    decimal NetSubtotal = 0m,
+    decimal TaxAmount = 0m);
 
 public sealed record PosSalesByCashierRowDto(
     Guid CashierActorId,
@@ -46,7 +54,9 @@ public sealed record PosSalesByCashierRowDto(
     decimal CashCollected,
     decimal GrossSales,
     decimal VoidedSales,
-    decimal NetSales);
+    decimal NetSales,
+    decimal PreDiscountGrossSales = 0m,
+    decimal CommercialDiscountTotal = 0m);
 
 public sealed record PosSalesByCashierReportDto(
     DateOnly FromDate,
@@ -58,7 +68,9 @@ public sealed record PosPaymentMethodBreakdownDto(
     decimal GrossCompleted,
     decimal Voided,
     decimal Refunded,
-    decimal Net);
+    decimal Net,
+    decimal PreDiscountGross = 0m,
+    decimal CommercialDiscountTotal = 0m);
 
 public sealed record PosSalesByPaymentReportDto(
     DateOnly FromDate,
@@ -75,7 +87,9 @@ public sealed record PosSalesByProductRowDto(
     decimal NetQuantity,
     decimal GrossSaleAmount,
     decimal RefundAmount,
-    decimal NetAmount);
+    decimal NetAmount,
+    decimal PreDiscountGrossSaleAmount = 0m,
+    decimal CommercialDiscountAmount = 0m);
 
 public sealed record PosSalesByProductReportDto(
     DateOnly FromDate,
@@ -261,7 +275,9 @@ public sealed class OperationalReportService(
         var completedGross = saleTotals.CompletedTotal;
         var voidedTotal = saleTotals.VoidedTotal;
         var refunds = ReportMath.RoundMoney(returnRows.Sum(r => r.TotalRefundAmount));
-        var net = ReportMath.RoundMoney(completedGross - voidedTotal - refunds);
+        // CompletedTotal already excludes voided sales — do not subtract VoidedTotal again.
+        // Discounts are already reflected in Sale.Total; never subtract DiscountTotal again.
+        var net = ReportMath.RoundMoney(completedGross - refunds);
         var count = saleTotals.CompletedCount;
         var avg = count == 0 ? 0m : ReportMath.RoundMoney(completedGross / count);
 
@@ -274,7 +290,11 @@ public sealed class OperationalReportService(
                 refunds,
                 net,
                 count,
-                avg));
+                avg,
+                saleTotals.CompletedGrossSubtotal,
+                saleTotals.CompletedDiscountTotal,
+                saleTotals.CompletedNetSubtotal,
+                saleTotals.CompletedTaxAmount));
     }
 
     public async Task<ApplicationResult<PosSalesByCashierReportDto>> GetSalesByCashierAsync(
@@ -308,13 +328,17 @@ public sealed class OperationalReportService(
                     completed
                         .Where(s => s.PaymentMethod == SalePaymentMethod.Cash)
                         .Sum(s => s.Total));
+                var preDiscount = ReportMath.RoundMoney(completed.Sum(s => s.GrossSubtotal));
+                var discount = ReportMath.RoundMoney(completed.Sum(s => s.DiscountTotal));
                 return new PosSalesByCashierRowDto(
                     g.Key,
                     completed.Count,
                     cash,
                     gross,
                     voidedTotal,
-                    ReportMath.RoundMoney(gross - voidedTotal));
+                    ReportMath.RoundMoney(gross),
+                    preDiscount,
+                    discount);
             })
             .OrderByDescending(r => r.GrossSales)
             .ThenBy(r => r.CashierActorId)
@@ -352,6 +376,8 @@ public sealed class OperationalReportService(
             var code = SalePaymentMethods.ToCode(method);
             completedByMethod.TryGetValue(code, out var completedRow);
             var completed = completedRow?.Total ?? 0m;
+            var preDiscount = completedRow?.GrossSubtotal ?? 0m;
+            var discount = completedRow?.DiscountTotal ?? 0m;
             var voidedSales = await sales
                 .AggregatePeriodAsync(
                     org,
@@ -370,7 +396,9 @@ public sealed class OperationalReportService(
                     completed,
                     ReportMath.RoundMoney(voided),
                     ReportMath.RoundMoney(refunded),
-                    ReportMath.RoundMoney(completed - voided - refunded)));
+                    ReportMath.RoundMoney(completed - refunded),
+                    ReportMath.RoundMoney(preDiscount),
+                    ReportMath.RoundMoney(discount)));
         }
 
         return ApplicationResult<PosSalesByPaymentReportDto>.Success(
@@ -424,7 +452,11 @@ public sealed class OperationalReportService(
                 sold[line.ProductId.Value] = existing with
                 {
                     QuantitySold = existing.QuantitySold + line.Quantity,
-                    GrossSaleAmount = ReportMath.RoundMoney(existing.GrossSaleAmount + line.LineTotal)
+                    GrossSaleAmount = ReportMath.RoundMoney(existing.GrossSaleAmount + line.LineTotal),
+                    PreDiscountGrossSaleAmount = ReportMath.RoundMoney(
+                        existing.PreDiscountGrossSaleAmount + line.GrossLineTotal),
+                    CommercialDiscountAmount = ReportMath.RoundMoney(
+                        existing.CommercialDiscountAmount + line.TotalLineDiscount)
                 };
             }
         }
@@ -540,7 +572,11 @@ public sealed class OperationalReportService(
                 s.CompletedReturnsRefunds,
                 s.NetSales,
                 s.CompletedTransactionCount,
-                s.AverageTransactionValue));
+                s.AverageTransactionValue,
+                s.PreDiscountGrossSales,
+                s.CommercialDiscountTotal,
+                s.NetSubtotal,
+                s.TaxAmount));
     }
 
     public async Task<ApplicationResult<PosShiftSummaryReportDto>> GetShiftSummaryAsync(

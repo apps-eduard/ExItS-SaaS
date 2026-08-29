@@ -161,6 +161,11 @@ describe("report user-facing terminology boundary", () => {
       "reports.metric.knownCogs",
       "reports.costIncompletePartial",
       "reports.costIncompleteUnavailable",
+      "reports.metric.preDiscountGross",
+      "reports.metric.commercialDiscounts",
+      "reports.metric.netSubtotal",
+      "reports.metric.completedSales",
+      "reports.metric.netSales",
     ] as const;
 
     for (const [locale, catalog] of Object.entries(catalogs)) {

@@ -99,12 +99,28 @@ async function loadLines(
       const d = await getOperationalOverview(workspace, range, signal, reportBranchId);
       return [
         {
-          label: t("reports.metric.gross"),
+          label: t("reports.metric.preDiscountGross"),
+          value: <MoneyDisplay amount={d.preDiscountGrossSales} />,
+        },
+        {
+          label: t("reports.metric.commercialDiscounts"),
+          value: <MoneyDisplay amount={d.commercialDiscountTotal} />,
+        },
+        {
+          label: t("reports.metric.netSubtotal"),
+          value: <MoneyDisplay amount={d.netSubtotal} />,
+        },
+        {
+          label: t("reports.metric.tax"),
+          value: <MoneyDisplay amount={d.taxAmount} />,
+        },
+        {
+          label: t("reports.metric.completedSales"),
           value: <MoneyDisplay amount={d.completedGrossSales} />,
         },
         { label: t("reports.metric.voids"), value: <MoneyDisplay amount={d.voidedSales} /> },
         { label: t("reports.metric.returns"), value: <MoneyDisplay amount={d.refunds} /> },
-        { label: t("reports.metric.net"), value: <MoneyDisplay amount={d.netSales} /> },
+        { label: t("reports.metric.netSales"), value: <MoneyDisplay amount={d.netSales} /> },
         {
           label: t("reports.metric.transactions"),
           value: String(d.completedTransactionCount),
@@ -113,17 +129,29 @@ async function loadLines(
           label: t("reports.metric.avgTxn"),
           value: <MoneyDisplay amount={d.averageTransactionValue} />,
         },
-        {
-          label: t("reports.metric.commercialDiscountNote"),
-          value: t("reports.commercialDiscountUnavailable"),
-        },
       ];
     }
     case "sales-summary": {
       const d = await getSalesSummaryReport(workspace, range, signal, reportBranchId);
       return [
         {
-          label: t("reports.metric.gross"),
+          label: t("reports.metric.preDiscountGross"),
+          value: <MoneyDisplay amount={d.preDiscountGrossSales} />,
+        },
+        {
+          label: t("reports.metric.commercialDiscounts"),
+          value: <MoneyDisplay amount={d.commercialDiscountTotal} />,
+        },
+        {
+          label: t("reports.metric.netSubtotal"),
+          value: <MoneyDisplay amount={d.netSubtotal} />,
+        },
+        {
+          label: t("reports.metric.tax"),
+          value: <MoneyDisplay amount={d.taxAmount} />,
+        },
+        {
+          label: t("reports.metric.completedSales"),
           value: <MoneyDisplay amount={d.completedGrossSales} />,
         },
         { label: t("reports.metric.voids"), value: <MoneyDisplay amount={d.voidedSales} /> },
@@ -131,14 +159,10 @@ async function loadLines(
           label: t("reports.metric.returns"),
           value: <MoneyDisplay amount={d.completedReturnsRefunds} />,
         },
-        { label: t("reports.metric.net"), value: <MoneyDisplay amount={d.netSales} /> },
+        { label: t("reports.metric.netSales"), value: <MoneyDisplay amount={d.netSales} /> },
         {
           label: t("reports.metric.transactions"),
           value: String(d.completedTransactionCount),
-        },
-        {
-          label: t("reports.metric.commercialDiscountNote"),
-          value: t("reports.commercialDiscountUnavailable"),
         },
       ];
     }
@@ -146,7 +170,15 @@ async function loadLines(
       const d = await getSalesByPaymentReport(workspace, range, signal, reportBranchId);
       return d.rows.flatMap((row) => [
         {
-          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.gross")}`,
+          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.preDiscountGross")}`,
+          value: <MoneyDisplay amount={row.preDiscountGross} />,
+        },
+        {
+          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.commercialDiscounts")}`,
+          value: <MoneyDisplay amount={row.commercialDiscountTotal} />,
+        },
+        {
+          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.completedSales")}`,
           value: <MoneyDisplay amount={row.grossCompleted} />,
         },
         {
@@ -158,17 +190,27 @@ async function loadLines(
           value: <MoneyDisplay amount={row.refunded} />,
         },
         {
-          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.net")}`,
+          label: `${formatReportPaymentMethod(row.paymentMethod)} — ${t("reports.metric.netSales")}`,
           value: <MoneyDisplay amount={row.net} />,
         },
       ]);
     }
     case "sales-by-product": {
       const d = await getSalesByProductReport(workspace, range, signal, reportBranchId);
-      return d.rows.slice(0, 25).map((row) => ({
-        label: row.productName,
-        value: <MoneyDisplay amount={row.netAmount} />,
-      }));
+      return d.rows.slice(0, 25).flatMap((row) => [
+        {
+          label: `${row.productName} — ${t("reports.metric.preDiscountGross")}`,
+          value: <MoneyDisplay amount={row.preDiscountGrossSaleAmount} />,
+        },
+        {
+          label: `${row.productName} — ${t("reports.metric.commercialDiscounts")}`,
+          value: <MoneyDisplay amount={row.commercialDiscountAmount} />,
+        },
+        {
+          label: `${row.productName} — ${t("reports.metric.netSales")}`,
+          value: <MoneyDisplay amount={row.netAmount} />,
+        },
+      ]);
     }
     case "returns": {
       const d = await getReturnsReport(workspace, range, signal, reportBranchId);
@@ -185,7 +227,11 @@ async function loadLines(
       const d = await getProfitabilityReport(workspace, range, signal, reportBranchId);
       const cogsComplete = d.cogsStatus === "Complete";
       const lines: Line[] = [
-        { label: t("reports.metric.net"), value: <MoneyDisplay amount={d.netSales} /> },
+        { label: t("reports.metric.netSales"), value: <MoneyDisplay amount={d.netSales} /> },
+        {
+          label: t("reports.metric.commercialDiscounts"),
+          value: <MoneyDisplay amount={d.commercialDiscountTotal} />,
+        },
       ];
 
       if (cogsComplete && d.totalCogs != null) {

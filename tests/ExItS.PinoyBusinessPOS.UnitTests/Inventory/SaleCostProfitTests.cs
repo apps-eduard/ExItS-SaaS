@@ -271,6 +271,7 @@ public sealed class SaleCostProfitTests
         var service = new ProfitabilityReportService(
             new FakeSaleRepo
             {
+                // CompletedTotal is already Completed-only; VoidedTotal is informational.
                 Period = new SalePeriodAggregate(500m, 2, 200m, 1, 0m, 0m, 0m, 0),
                 Costs = new SaleCostPeriodAggregate(2, 2, 0, 0, 120m),
             },
@@ -282,10 +283,10 @@ public sealed class SaleCostProfitTests
         var result = await service.GetAsync(org, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(300m, result.Value!.NetSales);
+        Assert.Equal(500m, result.Value!.NetSales);
         Assert.Equal("Complete", result.Value.CogsStatus);
         Assert.Equal(120m, result.Value.TotalCogs);
-        Assert.Equal(180m, result.Value.GrossProfit);
+        Assert.Equal(380m, result.Value.GrossProfit);
     }
 
     [Fact]

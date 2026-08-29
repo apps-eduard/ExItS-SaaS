@@ -27,7 +27,8 @@ public sealed record PosProfitabilityReportDto(
     string WasteLossCostStatus,
     decimal StockUseKnownCost,
     string StockUseCostStatus,
-    decimal CostCompletenessPercent);
+    decimal CostCompletenessPercent,
+    decimal CommercialDiscountTotal = 0m);
 
 /// <summary>
 /// Period profitability from immutable sale COGS snapshots. Voided sales excluded from aggregates
@@ -83,7 +84,7 @@ public sealed class ProfitabilityReportService(
             .SumRefundsForPeriodAsync(org, range.FromDate, range.ToDate, branchId, cancellationToken)
             .ConfigureAwait(false);
 
-        var netSales = ReportMath.RoundMoney(saleTotals.CompletedTotal - saleTotals.VoidedTotal - refunds);
+        var netSales = ReportMath.RoundMoney(saleTotals.CompletedTotal - refunds);
         var knownCogs = ReportMath.RoundMoney(
             Math.Max(0m, saleCosts.KnownCogsSum - returnCogs.KnownReturnCogs));
 
@@ -121,7 +122,8 @@ public sealed class ProfitabilityReportService(
                 DeriveDocumentPeriodCostStatus(wasteCosts),
                 stockUseCosts.KnownCost,
                 DeriveDocumentPeriodCostStatus(stockUseCosts),
-                completeness));
+                completeness,
+                saleTotals.CompletedDiscountTotal));
     }
 
     private static ProductionCostStatus DeriveSalePeriodCogsStatus(

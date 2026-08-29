@@ -206,7 +206,9 @@ public sealed class DashboardQueryService
                 paymentBreakdown,
                 salesCountByDay,
                 ReportMath.Compare(completedTotal, priorCompletedTotal, prior),
-                ReportMath.Compare(expenseTotal, priorExpenseTotal, prior)));
+                ReportMath.Compare(expenseTotal, priorExpenseTotal, prior),
+                saleTotals.CompletedDiscountTotal,
+                saleTotals.CompletedGrossSubtotal));
     }
 
     private async Task<(decimal Outstanding, decimal Overdue)> ComputeUtangTotalsAsync(
@@ -374,7 +376,9 @@ public sealed class SalesReportService
                 g.First().CategoryName ?? (g.Key is null ? "Uncategorized" : g.Key.Value.ToString("D")),
                 g.Sum(x => x.Quantity),
                 ReportMath.RoundMoney(g.Sum(x => x.SalesAmount)),
-                g.Sum(x => x.LineCount)))
+                g.Sum(x => x.LineCount),
+                ReportMath.RoundMoney(g.Sum(x => x.PreDiscountGrossSaleAmount)),
+                ReportMath.RoundMoney(g.Sum(x => x.CommercialDiscountAmount))))
             .OrderByDescending(r => r.SalesAmount)
             .ThenBy(r => r.CategoryName, StringComparer.Ordinal)
             .ToList();
@@ -423,7 +427,11 @@ public sealed class SalesReportService
                 byCategory,
                 topQty,
                 topAmt,
-                byDay));
+                byDay,
+                ReportMath.RoundMoney(completed.Sum(s => s.GrossSubtotal)),
+                ReportMath.RoundMoney(completed.Sum(s => s.DiscountTotal)),
+                ReportMath.RoundMoney(completed.Sum(s => s.Subtotal)),
+                ReportMath.RoundMoney(completed.Sum(s => s.TaxAmount))));
     }
 
     private static IReadOnlyList<ReportProductSalesRowDto> BuildProductRows(
@@ -454,7 +462,9 @@ public sealed class SalesReportService
                     ReportMath.RoundMoney(g.Sum(l => l.LineTotal)),
                     g.Count(),
                     catId,
-                    catName);
+                    catName,
+                    ReportMath.RoundMoney(g.Sum(l => l.GrossLineTotal)),
+                    ReportMath.RoundMoney(g.Sum(l => l.TotalLineDiscount)));
             })
             .OrderByDescending(r => r.SalesAmount)
             .ThenBy(r => r.NameSnapshot, StringComparer.Ordinal)

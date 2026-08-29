@@ -211,7 +211,12 @@ public sealed class SaleReportAggregateEquivalenceTests
                 SaleMoney.RoundMoney(completed.Where(s => s.PaymentMethod == SalePaymentMethod.Cash).Sum(s => s.Total)),
                 SaleMoney.RoundMoney(completed.Where(s => s.PaymentMethod == SalePaymentMethod.ManualGCash).Sum(s => s.Total)),
                 SaleMoney.RoundMoney(completed.Where(s => s.PaymentMethod == SalePaymentMethod.Utang).Sum(s => s.Total)),
-                completed.Count(s => s.PaymentMethod == SalePaymentMethod.Utang));
+                completed.Count(s => s.PaymentMethod == SalePaymentMethod.Utang),
+                SaleMoney.RoundMoney(completed.Sum(s => s.GrossSubtotal)),
+                SaleMoney.RoundMoney(completed.Sum(s => s.DiscountTotal)),
+                SaleMoney.RoundMoney(completed.Sum(s => s.Subtotal)),
+                SaleMoney.RoundMoney(completed.Sum(s => s.TaxAmount)),
+                SaleMoney.RoundMoney(voided.Sum(s => s.DiscountTotal)));
         }
 
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
@@ -257,7 +262,12 @@ public sealed class SaleReportAggregateEquivalenceTests
                 .Where(s => s.Status == SaleStatus.Completed)
                 .GroupBy(s => SalePaymentMethods.ToCode(s.PaymentMethod))
                 .OrderBy(g => g.Key, StringComparer.Ordinal)
-                .Select(g => new SalePaymentAggregate(g.Key, SaleMoney.RoundMoney(g.Sum(x => x.Total)), g.Count()))
+                .Select(g => new SalePaymentAggregate(
+                    g.Key,
+                    SaleMoney.RoundMoney(g.Sum(x => x.Total)),
+                    g.Count(),
+                    SaleMoney.RoundMoney(g.Sum(x => x.GrossSubtotal)),
+                    SaleMoney.RoundMoney(g.Sum(x => x.DiscountTotal))))
                 .ToList();
         }
 

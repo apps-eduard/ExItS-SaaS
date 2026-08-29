@@ -70,6 +70,8 @@ export const posDashboardDtoSchema = z.object({
   salesCountByDay: z.array(reportDailyAmountSchema),
   salesTotalComparison: reportPeriodComparisonSchema.nullable().optional(),
   expenseTotalComparison: reportPeriodComparisonSchema.nullable().optional(),
+  commercialDiscountTotal: z.number().optional().default(0),
+  preDiscountGrossSales: z.number().optional().default(0),
 });
 
 export const posSalesReportDtoSchema = z.object({
@@ -87,6 +89,10 @@ export const posSalesReportDtoSchema = z.object({
   topProductsByQuantity: z.array(z.record(z.string(), z.unknown())).optional(),
   topProductsBySalesAmount: z.array(z.record(z.string(), z.unknown())).optional(),
   byDay: z.array(reportDailyAmountSchema).optional(),
+  preDiscountGrossSales: z.number().optional().default(0),
+  commercialDiscountTotal: z.number().optional().default(0),
+  netSubtotal: z.number().optional().default(0),
+  taxAmount: z.number().optional().default(0),
 });
 
 export const posInventoryReportDtoSchema = z.object({
@@ -147,6 +153,10 @@ export const posOperationalOverviewDtoSchema = z.object({
   netSales: z.number(),
   completedTransactionCount: z.number(),
   averageTransactionValue: z.number(),
+  preDiscountGrossSales: z.number().optional().default(0),
+  commercialDiscountTotal: z.number().optional().default(0),
+  netSubtotal: z.number().optional().default(0),
+  taxAmount: z.number().optional().default(0),
 });
 
 export const posSalesSummaryReportDtoSchema = z.object({
@@ -158,6 +168,10 @@ export const posSalesSummaryReportDtoSchema = z.object({
   netSales: z.number(),
   completedTransactionCount: z.number(),
   averageTransactionValue: z.number(),
+  preDiscountGrossSales: z.number().optional().default(0),
+  commercialDiscountTotal: z.number().optional().default(0),
+  netSubtotal: z.number().optional().default(0),
+  taxAmount: z.number().optional().default(0),
 });
 
 export const posPaymentMethodBreakdownDtoSchema = z.object({
@@ -166,6 +180,8 @@ export const posPaymentMethodBreakdownDtoSchema = z.object({
   voided: z.number(),
   refunded: z.number(),
   net: z.number(),
+  preDiscountGross: z.number().optional().default(0),
+  commercialDiscountTotal: z.number().optional().default(0),
 });
 
 export const posSalesByPaymentReportDtoSchema = z.object({
@@ -276,6 +292,8 @@ export const posSalesByProductReportDtoSchema = z.object({
       grossSaleAmount: z.number(),
       refundAmount: z.number(),
       netAmount: z.number(),
+      preDiscountGrossSaleAmount: z.number().optional().default(0),
+      commercialDiscountAmount: z.number().optional().default(0),
     }),
   ),
 });
@@ -313,6 +331,7 @@ export const posProfitabilityReportDtoSchema = z.object({
   stockUseKnownCost: z.number(),
   stockUseCostStatus: z.string(),
   costCompletenessPercent: z.number(),
+  commercialDiscountTotal: z.number().optional().default(0),
 });
 
 export type PosManagementOverviewDto = z.infer<typeof posManagementOverviewDtoSchema>;

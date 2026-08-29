@@ -102,7 +102,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 | Cost | Lot FIFO layers | DEFERRED | N/A | N/A | — | — | **LATER** | lots lack UnitCost | Do not build ERP costing now |
 | Cost | Product profitability rank | DEFERRED | no | no | — | Low | IMPORTANT | cost report | Later package |
 | Reports | Branch-scoped aggregates | PARTIAL | profitability optional branch | most org-wide | — | **P1** | **MVP_REQUIRED** | RMAP-20 + ReportingEndpoints | Branch report contract |
-| Reports | Discount period totals | MISSING | discounts on sale | UI says unavailable | — | Low | IMPORTANT | OperationalReportPage | Add DTO aggregates |
+| Reports | Discount period totals | **IMPLEMENTED** | sale snapshots | overview/summary/classic/product | targeted PASS | Low | IMPORTANT | POS-DISCOUNT-REPORTING-HARDENING-01 | Maintain |
 | B2B | List vs live identity | PARTIAL | by design | asymmetric | — | Low | IMPORTANT | BusinessCustomerUseCases | Reconcile display |
 | B2B | Retail checkout of Business Customers | DEFERRED | — | — | — | — | LATER | B2B report | After identity polish |
 | Payments | Real Card/GCash | PARTIAL/lab | FakePaymentGateway | not on floor | — | **P0 if mis-shipped** | LATER (auth) | DI FakePaymentGateway | Keep ManualGCash |
@@ -129,7 +129,7 @@ Evidence: `Api/Program.cs` Map* endpoints; `React/src/app/router.tsx`; `React/sr
 
 ### P2
 1. B2B Business Customer list snapshot vs detail live name.
-2. Commercial discount period report fields.
+2. ~~Commercial discount period report fields.~~ **DONE** (POS-DISCOUNT-REPORTING-HARDENING-01).
 3. Expenses React CRUD.
 4. Expired-stock → Waste quick review.
 5. i18n middle-dot `?` corruption (`inventory.movementType.manualIncrease`, expiration status).
@@ -197,7 +197,7 @@ UNRELATED_TEST_FAILURES ≈ 76 (personal/platform/session)
 | Class | Items |
 |-------|--------|
 | MVP_REQUIRED | React Stock Count; React Transfers (if multi-branch); branch-report honesty/contract; suite harness repair for sell-floor; keep ManualGCash-only payments |
-| IMPORTANT | B2B identity display reconcile; discount period report fields; Expenses CRUD UI; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
+| IMPORTANT | Expenses CRUD UI; inventory i18n encoding fix; clearer ManageInventory vs write-off permission story |
 | LATER | Product profitability ranking; lot-layer FIFO COGS; nested BOM; real Card/GCash provider; B2B retail checkout; native offline activation |
 | NOT_NEEDED | GL, operating profit, labor/overhead, enterprise manufacturing, Org Web offline money |
 
@@ -267,13 +267,13 @@ RESPONSIVE_UX_STATUS=PARTIAL
 ```
 P0_GAPS=FakePaymentGateway must not be production GCash/Card; tenancy fail-closed discipline
 P1_GAPS=React Stock Count; React Transfers; branch vs org report honesty; org session/sell-floor harness
-P2_GAPS=B2B identity asymmetry; discount period report; Expenses CRUD; i18n encoding; CustomerOrder COGS UnitCost; inventory write-off permission coarseness
+P2_GAPS=Expenses CRUD; i18n encoding; CustomerOrder COGS UnitCost; inventory write-off permission coarseness
 P3_GAPS=Product profitability rank; nested production; list stock valuation; nav crowding; exports
 ```
 
 ```
 MVP_REQUIRED_GAPS=Stock Count UI; Transfer UI (multi-branch); branch-report contract; harness repair; payment honesty
-IMPORTANT_GAPS=B2B identity UX; discount report fields; Expenses CRUD; i18n middle-dot fix
+IMPORTANT_GAPS=Expenses CRUD; i18n middle-dot fix; ManageInventory write-off permission story
 LATER_GAPS=Product GP ranking; lot FIFO; real Card/GCash; B2B retail checkout; native offline
 NOT_NEEDED_FOR_TARGET_MARKET=GL; operating profit; labor/overhead; Org Web offline money; enterprise manufacturing
 ```

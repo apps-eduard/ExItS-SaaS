@@ -12,6 +12,11 @@ public sealed record SaleFilter(
     string? SaleNumber = null);
 
 /// <summary>Header totals for a reporting period without loading sale lines.</summary>
+/// <remarks>
+/// <see cref="CompletedTotal"/> is Σ Sale.Total (post-discount amount due) for Completed sales.
+/// <see cref="CompletedGrossSubtotal"/> is Σ Sale.GrossSubtotal (pre–commercial-discount).
+/// <see cref="CompletedDiscountTotal"/> is Σ Sale.DiscountTotal for Completed only (voided discounts excluded).
+/// </remarks>
 public sealed record SalePeriodAggregate(
     decimal CompletedTotal,
     int CompletedCount,
@@ -20,9 +25,19 @@ public sealed record SalePeriodAggregate(
     decimal CashTotal,
     decimal ManualGCashTotal,
     decimal UtangTotal,
-    int UtangCount);
+    int UtangCount,
+    decimal CompletedGrossSubtotal = 0m,
+    decimal CompletedDiscountTotal = 0m,
+    decimal CompletedNetSubtotal = 0m,
+    decimal CompletedTaxAmount = 0m,
+    decimal VoidedDiscountTotal = 0m);
 
-public sealed record SalePaymentAggregate(string PaymentMethod, decimal Total, int Count);
+public sealed record SalePaymentAggregate(
+    string PaymentMethod,
+    decimal Total,
+    int Count,
+    decimal GrossSubtotal = 0m,
+    decimal DiscountTotal = 0m);
 
 public sealed record SaleDailyAggregate(DateOnly Day, decimal Amount, int Count);
 

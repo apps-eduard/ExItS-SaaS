@@ -119,7 +119,23 @@ export function ClassicReportPage() {
         const d = await getSalesReport(workspace!, applied, signal, reportBranchId);
         return [
           {
-            label: t("reports.metric.gross"),
+            label: t("reports.metric.preDiscountGross"),
+            value: <MoneyDisplay amount={d.preDiscountGrossSales} />,
+          },
+          {
+            label: t("reports.metric.commercialDiscounts"),
+            value: <MoneyDisplay amount={d.commercialDiscountTotal} />,
+          },
+          {
+            label: t("reports.metric.netSubtotal"),
+            value: <MoneyDisplay amount={d.netSubtotal} />,
+          },
+          {
+            label: t("reports.metric.tax"),
+            value: <MoneyDisplay amount={d.taxAmount} />,
+          },
+          {
+            label: t("reports.metric.completedSales"),
             value: <MoneyDisplay amount={d.completedSalesTotal} />,
           },
           {
@@ -141,10 +157,6 @@ export function ClassicReportPage() {
                 <MoneyDisplay amount={d.utangSalesTotal} /> ({d.utangSaleCount})
               </>
             ),
-          },
-          {
-            label: t("reports.metric.commercialDiscountNote"),
-            value: t("reports.commercialDiscountUnavailable"),
           },
           ...d.byPaymentMethod.map((row) => ({
             label: formatReportPaymentMethod(row.paymentMethod),

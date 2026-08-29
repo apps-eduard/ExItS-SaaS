@@ -290,7 +290,17 @@ internal sealed class SaleRepository : ISaleRepository
                     .Sum(s => (decimal?)s.Total) ?? 0m,
                 UtangTotal = g.Where(s => s.Status == completed && s.PaymentMethod == utang)
                     .Sum(s => (decimal?)s.Total) ?? 0m,
-                UtangCount = g.Count(s => s.Status == completed && s.PaymentMethod == utang)
+                UtangCount = g.Count(s => s.Status == completed && s.PaymentMethod == utang),
+                CompletedGrossSubtotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.GrossSubtotal) ?? 0m,
+                CompletedDiscountTotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.DiscountTotal) ?? 0m,
+                CompletedNetSubtotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.Subtotal) ?? 0m,
+                CompletedTaxAmount = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.TaxAmount) ?? 0m,
+                VoidedDiscountTotal = g.Where(s => s.Status == voided)
+                    .Sum(s => (decimal?)s.DiscountTotal) ?? 0m
             })
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -308,7 +318,12 @@ internal sealed class SaleRepository : ISaleRepository
             SaleMoney.RoundMoney(rows.CashTotal),
             SaleMoney.RoundMoney(rows.ManualGCashTotal),
             SaleMoney.RoundMoney(rows.UtangTotal),
-            rows.UtangCount);
+            rows.UtangCount,
+            SaleMoney.RoundMoney(rows.CompletedGrossSubtotal),
+            SaleMoney.RoundMoney(rows.CompletedDiscountTotal),
+            SaleMoney.RoundMoney(rows.CompletedNetSubtotal),
+            SaleMoney.RoundMoney(rows.CompletedTaxAmount),
+            SaleMoney.RoundMoney(rows.VoidedDiscountTotal));
     }
 
     public async Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
@@ -324,13 +339,25 @@ internal sealed class SaleRepository : ISaleRepository
 
         var rows = await query
             .GroupBy(s => s.PaymentMethod)
-            .Select(g => new { PaymentMethod = g.Key, Total = g.Sum(s => s.Total), Count = g.Count() })
+            .Select(g => new
+            {
+                PaymentMethod = g.Key,
+                Total = g.Sum(s => s.Total),
+                Count = g.Count(),
+                GrossSubtotal = g.Sum(s => s.GrossSubtotal),
+                DiscountTotal = g.Sum(s => s.DiscountTotal)
+            })
             .OrderBy(r => r.PaymentMethod)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return rows
-            .Select(r => new SalePaymentAggregate(r.PaymentMethod, SaleMoney.RoundMoney(r.Total), r.Count))
+            .Select(r => new SalePaymentAggregate(
+                r.PaymentMethod,
+                SaleMoney.RoundMoney(r.Total),
+                r.Count,
+                SaleMoney.RoundMoney(r.GrossSubtotal),
+                SaleMoney.RoundMoney(r.DiscountTotal)))
             .ToList();
     }
 

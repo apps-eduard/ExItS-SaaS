@@ -48,7 +48,9 @@ public sealed record PosDashboardDto(
     IReadOnlyList<ReportPaymentBreakdownDto> PaymentMethodBreakdown,
     IReadOnlyList<ReportDailyAmountDto> SalesCountByDay,
     ReportPeriodComparisonDto? SalesTotalComparison,
-    ReportPeriodComparisonDto? ExpenseTotalComparison);
+    ReportPeriodComparisonDto? ExpenseTotalComparison,
+    decimal CommercialDiscountTotal = 0m,
+    decimal PreDiscountGrossSales = 0m);
 
 public sealed record ReportProductSalesRowDto(
     Guid ProductId,
@@ -60,14 +62,18 @@ public sealed record ReportProductSalesRowDto(
     decimal SalesAmount,
     int LineCount,
     Guid? CategoryId,
-    string? CategoryName);
+    string? CategoryName,
+    decimal PreDiscountGrossSaleAmount = 0m,
+    decimal CommercialDiscountAmount = 0m);
 
 public sealed record ReportCategorySalesRowDto(
     Guid? CategoryId,
     string CategoryName,
     decimal Quantity,
     decimal SalesAmount,
-    int LineCount);
+    int LineCount,
+    decimal PreDiscountGrossSaleAmount = 0m,
+    decimal CommercialDiscountAmount = 0m);
 
 public sealed record PosSalesReportDto(
     DateOnly FromDate,
@@ -83,7 +89,11 @@ public sealed record PosSalesReportDto(
     IReadOnlyList<ReportCategorySalesRowDto> ByCategory,
     IReadOnlyList<ReportProductSalesRowDto> TopProductsByQuantity,
     IReadOnlyList<ReportProductSalesRowDto> TopProductsBySalesAmount,
-    IReadOnlyList<ReportDailyAmountDto> ByDay);
+    IReadOnlyList<ReportDailyAmountDto> ByDay,
+    decimal PreDiscountGrossSales = 0m,
+    decimal CommercialDiscountTotal = 0m,
+    decimal NetSubtotal = 0m,
+    decimal TaxAmount = 0m);
 
 public sealed record ReportCustomerBalanceRowDto(
     Guid CustomerId,
