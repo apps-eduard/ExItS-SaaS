@@ -6,9 +6,9 @@ Controlled completion of remaining single-branch pilot gaps after Stock Use reme
 |-------|-------|
 | **TASK** | POS-PILOT-COMPLETION-VALIDATION-01 |
 | **START_SHA** | `6962fcd42cb03cf10a61c25edbfa842aa21b7206` |
-| **FEATURE_SHA** | _(set at commit)_ |
-| **FINAL_SHA** | _(set at commit)_ |
-| **REMOTE_SHA** | _(set after push)_ |
+| **FEATURE_SHA** | `0abc15dadaed545a962d36819fd375a013772fff` |
+| **FINAL_SHA** | `0abc15dadaed545a962d36819fd375a013772fff` |
+| **REMOTE_SHA** | _(after push)_ |
 | **PILOT_BASELINE_SOURCE** | `docs/Mobile-React/Pilot/POS-CONTROLLED-SINGLE-BRANCH-PILOT-01.md` |
 | **ORIGINAL_PILOT_RESULT** | NO (`PILOT_PASS=NO`; SCENARIO_14 FAIL; 19/21 NOT_RUN) |
 | **COMPLETION_VALIDATION_RESULT** | YES |
