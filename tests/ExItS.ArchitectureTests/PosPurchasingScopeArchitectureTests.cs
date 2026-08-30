@@ -65,6 +65,22 @@ public sealed class PosPurchasingScopeArchitectureTests
     }
 
     [Fact]
+    public void Supplier_payables_do_not_reference_customer_utang_types()
+    {
+        var root = PosProject("ExItS.PinoyBusinessPOS.Domain");
+        var payables = Path.Combine(root, "SupplierPayables");
+        Assert.True(Directory.Exists(payables));
+        foreach (var file in Directory.EnumerateFiles(payables, "*.cs", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("CreditEntry", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("Repayment", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("UtangLedger", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("CustomerOrderUtang", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void Purchasing_api_and_client_expose_no_offline_queue_surface()
     {
         var endpoints = File.ReadAllText(Path.Combine(

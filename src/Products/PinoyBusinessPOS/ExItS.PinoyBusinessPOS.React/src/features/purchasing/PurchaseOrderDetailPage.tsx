@@ -28,6 +28,7 @@ import {
   sumPurchaseOrderLineTotals,
 } from "@/features/purchasing/purchase-cost-display";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -96,9 +97,11 @@ function GoodsReceiptCard({
       setVoidReason("");
     } catch (err) {
       setVoidError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("purchasing.reverseFailed"))
-          : t("purchasing.reverseFailed"),
+        receiptReverseErrorMessage(
+          err,
+          t("purchasing.reverseFailed"),
+          t("supplierPayables.reverseBlockedByPayments"),
+        ),
       );
     } finally {
       setVoiding(false);

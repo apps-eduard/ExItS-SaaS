@@ -260,4 +260,37 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("shows friendly message when reverse is blocked by supplier payments", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(poClient, "voidGoodsReceipt").mockRejectedValue(
+      new PosApiError(409, {
+        title: "Conflict",
+        status: 409,
+        detail: "raw code detail",
+        errorCode: "pos.supplier_payable.void.blocked_by_payments",
+      }),
+    );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`po-receipt-reverse-${goodsReceiptId}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`po-receipt-reverse-${goodsReceiptId}`));
+    await user.type(
+      screen.getByTestId(`po-receipt-reverse-reason-${goodsReceiptId}`),
+      "Undo",
+    );
+    await user.click(screen.getByTestId(`po-receipt-reverse-confirm-${goodsReceiptId}`));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /cannot be reversed because supplier payments have already been recorded/i,
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/raw code detail/i)).not.toBeInTheDocument();
+  });
 });

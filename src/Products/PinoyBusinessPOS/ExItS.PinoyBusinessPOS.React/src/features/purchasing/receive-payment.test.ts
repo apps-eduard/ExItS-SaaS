@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   directPurchaseCreditValidationKey,
   formatMoneyInput,
+  laterPaymentsAmount,
   parseMoneyInput,
+  receiptReverseErrorMessage,
   remainingCredit,
   roundMoney,
+  validateReceivePaidNow,
 } from "@/features/purchasing/receive-payment";
 
 describe("receive-payment helpers", () => {
@@ -39,5 +42,34 @@ describe("receive-payment helpers", () => {
     );
     expect(directPurchaseCreditValidationKey("sup-1", 100, 50)).toBeNull();
     expect(directPurchaseCreditValidationKey(null, 100, 100)).toBeNull();
+  });
+
+  it("validates PaidNow against receipt total", () => {
+    expect(validateReceivePaidNow(100, null)).toBe("purchasing.invalidPaidNow");
+    expect(validateReceivePaidNow(100, 101)).toBe("purchasing.paidNowExceedsTotal");
+    expect(validateReceivePaidNow(100, 0)).toBeNull();
+    expect(validateReceivePaidNow(100, 100)).toBeNull();
+  });
+
+  it("computes later payments excluding paid-at-receipt", () => {
+    expect(laterPaymentsAmount(500, 200)).toBe(300);
+    expect(laterPaymentsAmount(200, 200)).toBe(0);
+  });
+
+  it("maps receipt reverse blocked-by-payments to friendly message", () => {
+    const friendly =
+      "This receipt cannot be reversed because supplier payments have already been recorded.";
+    expect(
+      receiptReverseErrorMessage(
+        {
+          problem: {
+            errorCode: "pos.supplier_payable.void.blocked_by_payments",
+            detail: "raw",
+          },
+        },
+        "fallback",
+        friendly,
+      ),
+    ).toBe(friendly);
   });
 });

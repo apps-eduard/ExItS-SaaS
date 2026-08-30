@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { PosApiError } from "@/api/pos/pos-http";
 import {
   getDirectPurchaseReceipt,
   voidDirectPurchaseReceipt,
@@ -17,6 +16,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -95,9 +95,11 @@ export function DirectPurchaseDetailPage() {
       setVoidReason("");
     } catch (err) {
       setError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("purchasing.reverseFailed"))
-          : t("purchasing.reverseFailed"),
+        receiptReverseErrorMessage(
+          err,
+          t("purchasing.reverseFailed"),
+          t("supplierPayables.reverseBlockedByPayments"),
+        ),
       );
     } finally {
       setVoiding(false);

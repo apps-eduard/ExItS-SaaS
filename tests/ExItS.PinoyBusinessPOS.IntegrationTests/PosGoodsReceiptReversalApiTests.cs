@@ -325,9 +325,11 @@ public sealed class PosGoodsReceiptReversalApiTests(PosPostgreSqlFixture fixture
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:PosDatabase"] = connectionString
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    ["LocalValidation:Enabled"] = "false"
                 });
             });
+            builder.UseSetting("LocalValidation:Enabled", "false");
         }
     }
 }

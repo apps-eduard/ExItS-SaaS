@@ -174,23 +174,44 @@ describe("report csv export builders", () => {
   });
 
   it("maps supplier-payables rows into CSV columns", async () => {
-    vi.spyOn(reportingClient, "getSupplierPayablesReport").mockResolvedValue([
-      {
-        payableId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-        supplierId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-        supplierName: "Fresh Farms",
-        sourceType: "GoodsReceipt",
-        sourceId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-        originalAmount: 1000,
-        paidAtReceiptAmount: 200,
-        paidAmount: 100,
-        balance: 700,
-        status: "PartiallyPaid",
-        dueDate: "2026-09-15",
-        isOverdue: true,
-        createdAtUtc: "2026-08-20T00:00:00Z",
+    vi.spyOn(reportingClient, "getSupplierPayablesReport").mockResolvedValue({
+      asOfDate: "2026-08-30",
+      summary: {
+        outstandingTotal: 700,
+        overdueTotal: 700,
+        openCount: 0,
+        partiallyPaidCount: 1,
+        paidCount: 0,
+        voidedCount: 0,
       },
-    ]);
+      suppliers: [
+        {
+          supplierId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          supplierName: "Fresh Farms",
+          outstandingBalance: 700,
+          overdueBalance: 700,
+          openPayables: 1,
+          oldestDueDate: "2026-09-15",
+        },
+      ],
+      payables: [
+        {
+          payableId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          supplierId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          supplierName: "Fresh Farms",
+          sourceType: "GoodsReceipt",
+          sourceId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          originalAmount: 1000,
+          paidAtReceiptAmount: 200,
+          paidAmount: 300,
+          balance: 700,
+          status: "PartiallyPaid",
+          dueDate: "2026-09-15",
+          isOverdue: true,
+          createdAtUtc: "2026-08-20T00:00:00Z",
+        },
+      ],
+    });
 
     const result = await buildOperationalReportExport({
       kind: "supplier-payables",
@@ -198,20 +219,71 @@ describe("report csv export builders", () => {
       range: { fromDate: "2026-08-01", toDate: "2026-08-30" },
       scope: {
         organizationName: "Kizy Store",
-        scopeLabel: "all-branches",
+        scopeLabel: "organization",
       },
     });
 
     expect(result.filename).toContain("supplier-payables");
+    expect(result.filename).toContain("2026-08-30");
     expect(result.csvText).toContain("Fresh Farms");
-    expect(result.csvText).toContain("GoodsReceipt");
+    expect(result.csvText).toContain("Goods Receipt");
+    expect(result.csvText).toContain("100");
     expect(result.csvText).toContain("700");
-    expect(result.csvText).toContain("true");
+    expect(result.csvText).not.toMatch(/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/i);
+    expect(result.csvText).not.toMatch(/₱/);
     expect(reportingClient.getSupplierPayablesReport).toHaveBeenCalledWith(
       workspace,
-      { outstandingOnly: true },
+      { outstandingOnly: false },
       undefined,
     );
+  });
+
+  it("exports blank due date and Unicode supplier names for supplier-payables", async () => {
+    vi.spyOn(reportingClient, "getSupplierPayablesReport").mockResolvedValue({
+      asOfDate: "2026-08-30",
+      summary: {
+        outstandingTotal: 50,
+        overdueTotal: 0,
+        openCount: 1,
+        partiallyPaidCount: 0,
+        paidCount: 0,
+        voidedCount: 0,
+      },
+      suppliers: [],
+      payables: [
+        {
+          payableId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          supplierId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          supplierName: "Ñiño Farms  agrikultura",
+          sourceType: "DirectPurchaseReceipt",
+          sourceId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          originalAmount: 50,
+          paidAtReceiptAmount: 0,
+          paidAmount: 0,
+          balance: 50,
+          status: "Open",
+          dueDate: null,
+          isOverdue: false,
+          createdAtUtc: "2026-08-20T00:00:00Z",
+        },
+      ],
+    });
+
+    const result = await buildOperationalReportExport({
+      kind: "supplier-payables",
+      workspace,
+      range: { fromDate: "2026-08-01", toDate: "2026-08-30" },
+      scope: {
+        organizationName: "Kizy Store",
+        scopeLabel: "organization",
+      },
+    });
+
+    expect(result.csvText).toContain("Ñiño Farms");
+    expect(result.csvText).toContain("Direct Purchase");
+    const lines = result.csvText.trim().split(/\r?\n/);
+    const dataLine = lines[lines.length - 1]!;
+    expect(dataLine.split(",").some((cell) => cell === "" || cell === '""')).toBe(true);
   });
 });
 

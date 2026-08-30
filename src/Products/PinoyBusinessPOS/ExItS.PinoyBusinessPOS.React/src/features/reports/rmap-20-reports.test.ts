@@ -114,7 +114,24 @@ describe("report-access", () => {
     });
     expect(canAccessOperationalReport(staffAdvanced, "inventory-status")).toBe(true);
     expect(canAccessOperationalReport(staffAdvanced, "purchasing-summary")).toBe(true);
+    expect(canAccessOperationalReport(staffAdvanced, "supplier-payables")).toBe(true);
     expect(canAccessOperationalReport(staffAdvanced, "sales-summary")).toBe(false);
+  });
+
+  it("gates supplier-payables report for reporting user and cashier", () => {
+    const reportingUser = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
+    });
+    expect(canAccessOperationalReport(reportingUser, "supplier-payables")).toBe(true);
+
+    const cashierAdvanced = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      grantedFeatureCodes: [FEATURE_STORE_ADVANCED_REPORTS],
+    });
+    expect(canAccessOperationalReport(cashierAdvanced, "supplier-payables")).toBe(false);
   });
 });
 

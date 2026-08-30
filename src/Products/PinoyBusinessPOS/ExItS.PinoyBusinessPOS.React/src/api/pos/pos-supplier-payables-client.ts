@@ -97,11 +97,41 @@ export const supplierPayableReportRowDtoSchema = z.object({
   createdAtUtc: z.string(),
 });
 
+export const supplierPayableReportSummaryDtoSchema = z.object({
+  outstandingTotal: z.number(),
+  overdueTotal: z.number(),
+  openCount: z.number(),
+  partiallyPaidCount: z.number(),
+  paidCount: z.number(),
+  voidedCount: z.number(),
+});
+
+export const supplierPayableSupplierBalanceDtoSchema = z.object({
+  supplierId: guidSchema,
+  supplierName: z.string().nullable().optional(),
+  outstandingBalance: z.number(),
+  overdueBalance: z.number(),
+  openPayables: z.number(),
+  oldestDueDate: z.string().nullable().optional(),
+});
+
+export const supplierPayableReportDtoSchema = z.object({
+  asOfDate: z.string(),
+  summary: supplierPayableReportSummaryDtoSchema,
+  suppliers: z.array(supplierPayableSupplierBalanceDtoSchema),
+  payables: z.array(supplierPayableReportRowDtoSchema),
+});
+
 export type PosSupplierPayableDto = z.infer<typeof supplierPayableDtoSchema>;
 export type PosSupplierPayablePagedResult = z.infer<typeof supplierPayablePagedResultSchema>;
 export type PosSupplierPayablePaymentDto = z.infer<typeof supplierPayablePaymentDtoSchema>;
 export type PosSupplierPayableSummaryDto = z.infer<typeof supplierPayableSummaryDtoSchema>;
 export type PosSupplierPayableReportRowDto = z.infer<typeof supplierPayableReportRowDtoSchema>;
+export type PosSupplierPayableReportDto = z.infer<typeof supplierPayableReportDtoSchema>;
+export type PosSupplierPayableReportSummaryDto = z.infer<typeof supplierPayableReportSummaryDtoSchema>;
+export type PosSupplierPayableSupplierBalanceDto = z.infer<
+  typeof supplierPayableSupplierBalanceDtoSchema
+>;
 
 export type ListSupplierPayablesOptions = {
   supplierId?: string;
@@ -259,7 +289,7 @@ export async function getSupplierPayablesReport(
   workspace: PosWorkspaceScope,
   options: ListSupplierPayableReportOptions = {},
   signal?: AbortSignal,
-): Promise<PosSupplierPayableReportRowDto[]> {
+): Promise<PosSupplierPayableReportDto> {
   const raw = await posRequest<unknown>({
     method: "GET",
     workspace,
@@ -267,8 +297,8 @@ export async function getSupplierPayablesReport(
     path: appendQuery(REPORTS_PATH, {
       supplierId: options.supplierId,
       status: options.status,
-      outstandingOnly: options.outstandingOnly ?? true,
+      outstandingOnly: options.outstandingOnly ?? false,
     }),
   });
-  return z.array(supplierPayableReportRowDtoSchema).parse(raw);
+  return supplierPayableReportDtoSchema.parse(raw);
 }

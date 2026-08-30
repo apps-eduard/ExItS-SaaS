@@ -380,6 +380,12 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         }
 
         public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> supplierIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(new Dictionary<Guid, string>());
     }
 
     private sealed class InMemoryReceipts : IDirectPurchaseReceiptRepository

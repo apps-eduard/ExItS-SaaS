@@ -208,4 +208,32 @@ describe("DirectPurchaseDetailPage cost UX", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("shows friendly message when reverse is blocked by supplier payments", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(directClient, "voidDirectPurchaseReceipt").mockRejectedValue(
+      new PosApiError(409, {
+        title: "Conflict",
+        status: 409,
+        detail: "raw detail",
+        errorCode: "pos.supplier_payable.void.blocked_by_payments",
+      }),
+    );
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-purchase-reverse")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("direct-purchase-reverse"));
+    await user.type(screen.getByTestId("direct-purchase-reverse-reason"), "Undo");
+    await user.click(screen.getByTestId("direct-purchase-reverse-confirm"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /cannot be reversed because supplier payments have already been recorded/i,
+        ),
+      ).toBeInTheDocument();
+    });
+  });
 });

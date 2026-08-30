@@ -287,35 +287,40 @@ export async function buildOperationalReportExport(args: {
       );
     }
     case "supplier-payables": {
-      const rows = await getSupplierPayablesReport(
+      const report = await getSupplierPayablesReport(
         workspace,
-        { outstandingOnly: true },
+        { outstandingOnly: false },
         signal,
       );
-      return finalizeExport("supplier-payables", scope, {
+      const scoped = {
+        ...scope,
+        fromDate: report.asOfDate,
+        toDate: report.asOfDate,
+      };
+      return finalizeExport("supplier-payables", scoped, {
         headers: [
           "Supplier",
-          "Source Type",
+          "Source",
+          "Receipt Date",
           "Original Amount",
           "Paid At Receipt",
-          "Paid Amount",
+          "Later Payments",
+          "Total Paid",
           "Balance",
-          "Status",
           "Due Date",
-          "Overdue",
-          "Created At Utc",
+          "Status",
         ],
-        rows: rows.map((row) => [
+        rows: report.payables.map((row) => [
           row.supplierName ?? "",
-          row.sourceType,
+          row.sourceType === "DirectPurchaseReceipt" ? "Direct Purchase" : "Goods Receipt",
+          row.createdAtUtc.slice(0, 10),
           row.originalAmount,
           row.paidAtReceiptAmount,
+          Math.max(0, Number((row.paidAmount - row.paidAtReceiptAmount).toFixed(2))),
           row.paidAmount,
           row.balance,
-          row.status,
           row.dueDate ?? "",
-          row.isOverdue,
-          row.createdAtUtc,
+          row.status,
         ]),
       });
     }

@@ -167,15 +167,15 @@ internal static class SupplierPayableEndpoints
                 return problem!;
             }
 
-            var rows = await queries
+            var report = await queries
                 .ListForReportAsync(
                     organizationId,
                     supplierId,
                     status,
-                    outstandingOnly ?? true,
+                    outstandingOnly ?? false,
                     ct)
                 .ConfigureAwait(false);
-            return Results.Ok(rows);
+            return Results.Ok(report);
         });
 
         return app;

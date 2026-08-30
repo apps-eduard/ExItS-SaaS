@@ -4,7 +4,7 @@ import { posRequest } from "@/api/pos/pos-http";
 import {
   getSupplierPayablesReport as fetchSupplierPayablesReport,
   type ListSupplierPayableReportOptions,
-  type PosSupplierPayableReportRowDto,
+  type PosSupplierPayableReportDto,
 } from "@/api/pos/pos-supplier-payables-client";
 
 const DASHBOARD_PATH = "/api/v1/pos/dashboard";
@@ -874,7 +874,7 @@ export async function getSupplierPayablesReport(
   workspace: PosWorkspaceScope,
   options: ListSupplierPayableReportOptions = {},
   signal?: AbortSignal,
-): Promise<PosSupplierPayableReportRowDto[]> {
+): Promise<PosSupplierPayableReportDto> {
   return fetchSupplierPayablesReport(workspace, options, signal);
 }
 

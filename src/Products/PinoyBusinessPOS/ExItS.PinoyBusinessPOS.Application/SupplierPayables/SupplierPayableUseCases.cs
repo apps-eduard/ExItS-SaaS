@@ -125,7 +125,7 @@ public sealed class SupplierPayableQueryService
             totals.OpenCount);
     }
 
-    public async Task<IReadOnlyList<PosSupplierPayableReportRowDto>> ListForReportAsync(
+    public async Task<PosSupplierPayableReportDto> ListForReportAsync(
         Guid organizationId,
         Guid? supplierId,
         string? status,
@@ -154,8 +154,101 @@ public sealed class SupplierPayableQueryService
         var names = await LoadSupplierNamesAsync(org, items.Select(i => i.SupplierId).Distinct(), cancellationToken)
             .ConfigureAwait(false);
 
-        return items
+        var payables = items
             .Select(p => SupplierPayableMapper.MapReportRow(p, names.GetValueOrDefault(p.SupplierId.Value), asOf))
+            .ToList();
+
+        var summary = BuildReportSummary(items, asOf);
+        var suppliers = BuildSupplierBalances(items, names, asOf);
+
+        return new PosSupplierPayableReportDto(asOf, summary, suppliers, payables);
+    }
+
+    private static PosSupplierPayableReportSummaryDto BuildReportSummary(
+        IReadOnlyList<SupplierPayable> items,
+        DateOnly asOf)
+    {
+        decimal outstanding = 0m;
+        decimal overdue = 0m;
+        var open = 0;
+        var partial = 0;
+        var paid = 0;
+        var voided = 0;
+
+        foreach (var payable in items)
+        {
+            switch (payable.Status)
+            {
+                case SupplierPayableStatus.Open:
+                    open++;
+                    break;
+                case SupplierPayableStatus.PartiallyPaid:
+                    partial++;
+                    break;
+                case SupplierPayableStatus.Paid:
+                    paid++;
+                    break;
+                case SupplierPayableStatus.Voided:
+                    voided++;
+                    break;
+            }
+
+            if (payable.Status is SupplierPayableStatus.Open or SupplierPayableStatus.PartiallyPaid
+                && payable.Balance > 0m)
+            {
+                outstanding += payable.Balance;
+                if (SupplierPayableMapper.IsOverdue(payable, asOf))
+                {
+                    overdue += payable.Balance;
+                }
+            }
+        }
+
+        return new PosSupplierPayableReportSummaryDto(
+            SupplierPayableMoney.RoundMoney(outstanding),
+            SupplierPayableMoney.RoundMoney(overdue),
+            open,
+            partial,
+            paid,
+            voided);
+    }
+
+    private static IReadOnlyList<PosSupplierPayableSupplierBalanceDto> BuildSupplierBalances(
+        IReadOnlyList<SupplierPayable> items,
+        IReadOnlyDictionary<Guid, string> names,
+        DateOnly asOf)
+    {
+        return items
+            .GroupBy(p => p.SupplierId.Value)
+            .Select(group =>
+            {
+                var openRows = group
+                    .Where(p =>
+                        p.Status is SupplierPayableStatus.Open or SupplierPayableStatus.PartiallyPaid
+                        && p.Balance > 0m)
+                    .ToList();
+                var outstanding = openRows.Sum(p => p.Balance);
+                var overdue = openRows
+                    .Where(p => SupplierPayableMapper.IsOverdue(p, asOf))
+                    .Sum(p => p.Balance);
+                DateOnly? oldest = null;
+                foreach (var payable in openRows)
+                {
+                    if (payable.DueDate is DateOnly due && (oldest is null || due < oldest.Value))
+                    {
+                        oldest = due;
+                    }
+                }
+                return new PosSupplierPayableSupplierBalanceDto(
+                    group.Key,
+                    names.GetValueOrDefault(group.Key),
+                    SupplierPayableMoney.RoundMoney(outstanding),
+                    SupplierPayableMoney.RoundMoney(overdue),
+                    openRows.Count,
+                    oldest);
+            })
+            .OrderByDescending(s => s.OutstandingBalance)
+            .ThenBy(s => s.SupplierName)
             .ToList();
     }
 
@@ -166,19 +259,13 @@ public sealed class SupplierPayableQueryService
         IEnumerable<SupplierId> supplierIds,
         CancellationToken cancellationToken)
     {
-        var result = new Dictionary<Guid, string>();
-        foreach (var supplierId in supplierIds)
-        {
-            var supplier = await _suppliers
-                .GetByIdAsync(organizationId, supplierId, cancellationToken)
-                .ConfigureAwait(false);
-            if (supplier is not null)
-            {
-                result[supplierId.Value] = supplier.Name;
-            }
-        }
-
-        return result;
+        var ids = supplierIds.Select(id => id.Value).Distinct().ToList();
+        var names = await _suppliers
+            .GetDisplayNamesByIdsAsync(organizationId, ids, cancellationToken)
+            .ConfigureAwait(false);
+        return names is Dictionary<Guid, string> dict
+            ? dict
+            : names.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 }
 

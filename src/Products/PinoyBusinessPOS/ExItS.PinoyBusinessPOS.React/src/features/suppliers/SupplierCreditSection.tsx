@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { laterPaymentsAmount, parseMoneyInput, remainingCredit } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -76,7 +77,7 @@ function sourceLabelKey(sourceType: string): MessageKey {
     : "supplierPayables.source.goodsReceipt";
 }
 
-function isOpenPayable(payable: PosSupplierPayableDto): boolean {
+function canRecordPayment(payable: PosSupplierPayableDto): boolean {
   return (
     (payable.status === "Open" || payable.status === "PartiallyPaid") && payable.balance > 0
   );
@@ -95,7 +96,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
   const allowManage = canManagePurchasing(sessionGrant);
 
   const [paymentTarget, setPaymentTarget] = useState<PosSupplierPayableDto | null>(null);
-  const [historyTarget, setHistoryTarget] = useState<PosSupplierPayableDto | null>(null);
+  const [detailTarget, setDetailTarget] = useState<PosSupplierPayableDto | null>(null);
   const [amountText, setAmountText] = useState("");
   const [paymentMethod, setPaymentMethod] =
     useState<SupplierPayablePaymentMethodCode>("Cash");
@@ -129,23 +130,12 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
       ),
   });
 
+  const historyPayableId = detailTarget?.payableId ?? paymentTarget?.payableId;
+
   const paymentsQuery = useQuery({
-    queryKey: [
-      "supplier-payable-payments",
-      workspace?.organizationId,
-      historyTarget?.payableId ?? paymentTarget?.payableId,
-    ],
-    enabled:
-      Boolean(workspace) &&
-      allowView &&
-      online &&
-      Boolean(historyTarget?.payableId || paymentTarget?.payableId),
-    queryFn: ({ signal }) =>
-      listSupplierPayablePayments(
-        workspace!,
-        (historyTarget ?? paymentTarget)!.payableId,
-        signal,
-      ),
+    queryKey: ["supplier-payable-payments", workspace?.organizationId, historyPayableId],
+    enabled: Boolean(workspace) && allowView && online && Boolean(historyPayableId),
+    queryFn: ({ signal }) => listSupplierPayablePayments(workspace!, historyPayableId!, signal),
   });
 
   useEffect(() => {
@@ -163,19 +153,24 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
     return null;
   }
 
-  const payables = (listQuery.data?.items ?? []).filter(isOpenPayable);
+  const payables = listQuery.data?.items ?? [];
   const summary = summaryQuery.data;
+  const paidCount = payables.filter((p) => p.status === "Paid").length;
+  const paymentAmount = parseMoneyInput(amountText);
+  const remainingAfterPayment =
+    paymentTarget && paymentAmount !== null
+      ? remainingCredit(paymentTarget.balance, paymentAmount)
+      : paymentTarget?.balance ?? 0;
 
   async function onRecordPayment() {
     if (!workspace || !paymentTarget || !allowManage || !online || recording) {
       return;
     }
-    const amount = Number(amountText.trim());
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (paymentAmount === null || paymentAmount <= 0) {
       setFormError(t("supplierPayables.amountRequired"));
       return;
     }
-    if (amount > paymentTarget.balance) {
+    if (paymentAmount > paymentTarget.balance) {
       setFormError(t("supplierPayables.overpay"));
       return;
     }
@@ -183,7 +178,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
     setFormError(null);
     try {
       await recordSupplierPayablePayment(workspace, paymentTarget.payableId, {
-        amount,
+        amount: paymentAmount,
         paymentMethod,
         reference: reference.trim() || null,
         notes: notes.trim() || null,
@@ -219,7 +214,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
             {t("supplierPayables.loadFailed")}
           </p>
         ) : (
-          <dl className="m-0 grid gap-2 sm:grid-cols-3 text-[length:var(--exits-text-sm)]">
+          <dl className="m-0 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-[length:var(--exits-text-sm)]">
             <div>
               <dt className="text-muted">{t("supplierPayables.outstanding")}</dt>
               <dd className="m-0" data-testid="supplier-credit-outstanding">
@@ -238,13 +233,19 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                 {summary?.openCount ?? 0}
               </dd>
             </div>
+            <div>
+              <dt className="text-muted">{t("supplierPayables.paidCount")}</dt>
+              <dd className="m-0" data-testid="supplier-credit-paid-count">
+                {paidCount}
+              </dd>
+            </div>
           </dl>
         )}
       </Card>
 
       <Card>
         <h3 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("supplierPayables.outstandingPayables")}
+          {t("supplierPayables.listTitle")}
         </h3>
         {payables.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="supplier-credit-empty">
@@ -252,66 +253,90 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
           </p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="supplier-credit-list">
-            {payables.map((payable) => (
-              <li
-                key={payable.payableId}
-                className="rounded-md border border-border p-3"
-                data-testid={`supplier-payable-${payable.payableId}`}
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusChip tone={payableStatusTone(payable.status, payable.isOverdue)}>
-                    {t(statusLabelKey(payable.status))}
-                  </StatusChip>
-                  {payable.isOverdue ? (
-                    <StatusChip tone="danger">{t("supplierPayables.overdue")}</StatusChip>
-                  ) : null}
-                </div>
-                <p className="mt-2 mb-1 text-[length:var(--exits-text-sm)] text-muted">
-                  {t(sourceLabelKey(payable.sourceType))}
-                </p>
-                <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] sm:grid-cols-3">
-                  <div>
-                    <dt className="text-muted">{t("supplierPayables.amountPaid")}</dt>
-                    <dd className="m-0">
-                      <MoneyDisplay
-                        amount={payable.paidAtReceiptAmount + payable.paidAmount}
-                      />
-                    </dd>
+            {payables.map((payable) => {
+              const later = laterPaymentsAmount(payable.paidAmount, payable.paidAtReceiptAmount);
+              const showPay = allowManage && online && canRecordPayment(payable);
+              return (
+                <li
+                  key={payable.payableId}
+                  className="rounded-md border border-border p-3"
+                  data-testid={`supplier-payable-${payable.payableId}`}
+                  data-status={payable.status}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusChip tone={payableStatusTone(payable.status, payable.isOverdue)}>
+                      {t(statusLabelKey(payable.status))}
+                    </StatusChip>
+                    {payable.isOverdue && payable.status !== "Voided" && payable.status !== "Paid" ? (
+                      <StatusChip tone="danger">{t("supplierPayables.overdue")}</StatusChip>
+                    ) : null}
                   </div>
-                  <div>
-                    <dt className="text-muted">{t("supplierPayables.balanceDue")}</dt>
-                    <dd className="m-0">
-                      <MoneyDisplay amount={payable.balance} />
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">{t("supplierPayables.dueDate")}</dt>
-                    <dd className="m-0">{payable.dueDate?.trim() || "—"}</dd>
-                  </div>
-                </dl>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {allowManage && online ? (
+                  <p className="mt-2 mb-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {t(sourceLabelKey(payable.sourceType))}
+                    {payable.createdAtUtc
+                      ? ` · ${new Date(payable.createdAtUtc).toLocaleDateString()}`
+                      : ""}
+                  </p>
+                  <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.originalAmount")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={payable.originalAmount} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.paidAtReceipt")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={payable.paidAtReceiptAmount} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.laterPayments")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={later} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.totalPaid")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={payable.paidAmount} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.balance")}</dt>
+                      <dd className="m-0">
+                        <MoneyDisplay amount={payable.balance} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("supplierPayables.dueDate")}</dt>
+                      <dd className="m-0">{payable.dueDate?.trim() || "—"}</dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {showPay ? (
+                      <Button
+                        type="button"
+                        className="min-h-11"
+                        data-testid={`supplier-payable-record-${payable.payableId}`}
+                        onClick={() => setPaymentTarget(payable)}
+                      >
+                        {t("supplierPayables.recordPayment")}
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
+                      variant="ghost"
                       className="min-h-11"
-                      data-testid={`supplier-payable-record-${payable.payableId}`}
-                      onClick={() => setPaymentTarget(payable)}
+                      data-testid={`supplier-payable-detail-${payable.payableId}`}
+                      onClick={() => setDetailTarget(payable)}
                     >
-                      {t("supplierPayables.recordPayment")}
+                      {t("supplierPayables.viewDetails")}
                     </Button>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="min-h-11"
-                    data-testid={`supplier-payable-history-${payable.payableId}`}
-                    onClick={() => setHistoryTarget(payable)}
-                  >
-                    {t("supplierPayables.paymentHistory")}
-                  </Button>
-                </div>
-              </li>
-            ))}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
@@ -331,10 +356,29 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
             >
               {t("supplierPayables.recordPayment")}
             </h2>
-            <p className="m-0 mb-3 text-[length:var(--exits-text-sm)] text-muted">
-              {t("supplierPayables.balanceDue")}:{" "}
-              <MoneyDisplay amount={paymentTarget.balance} />
-            </p>
+            <dl
+              className="m-0 mb-3 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3"
+              data-testid="supplier-payment-preview"
+            >
+              <div>
+                <dt className="text-muted">{t("supplierPayables.balance")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={paymentTarget.balance} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.amount")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={paymentAmount ?? 0} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.remainingBalance")}</dt>
+                <dd className="m-0" data-testid="supplier-payment-remaining">
+                  <MoneyDisplay amount={remainingAfterPayment} />
+                </dd>
+              </div>
+            </dl>
             {formError ? (
               <p
                 className="mb-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
@@ -420,35 +464,102 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
         </div>
       ) : null}
 
-      {historyTarget ? (
+      {detailTarget ? (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="supplier-payment-history-title"
-          data-testid="supplier-payment-history-dialog"
+          aria-labelledby="supplier-payable-detail-title"
+          data-testid="supplier-payable-detail-dialog"
         >
-          <Card className="w-full max-w-md">
+          <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto">
             <h2
-              id="supplier-payment-history-title"
+              id="supplier-payable-detail-title"
               className="m-0 mb-3 text-[length:var(--exits-text-base)] font-semibold"
             >
-              {t("supplierPayables.paymentHistory")}
+              {t("supplierPayables.detailTitle")}
             </h2>
+            <div className="mb-3 flex flex-wrap gap-2">
+              <StatusChip tone={payableStatusTone(detailTarget.status, detailTarget.isOverdue)}>
+                {t(statusLabelKey(detailTarget.status))}
+              </StatusChip>
+            </div>
+            <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+              <div>
+                <dt className="text-muted">{t("supplierPayables.source")}</dt>
+                <dd className="m-0">{t(sourceLabelKey(detailTarget.sourceType))}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.receiptDate")}</dt>
+                <dd className="m-0">
+                  {new Date(detailTarget.createdAtUtc).toLocaleDateString()}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.originalAmount")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={detailTarget.originalAmount} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.paidAtReceipt")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={detailTarget.paidAtReceiptAmount} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.laterPayments")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay
+                    amount={laterPaymentsAmount(
+                      detailTarget.paidAmount,
+                      detailTarget.paidAtReceiptAmount,
+                    )}
+                  />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.balance")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={detailTarget.balance} />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("supplierPayables.dueDate")}</dt>
+                <dd className="m-0">{detailTarget.dueDate?.trim() || "—"}</dd>
+              </div>
+              {detailTarget.voidReason?.trim() ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-muted">{t("supplierPayables.voidReason")}</dt>
+                  <dd className="m-0">{detailTarget.voidReason}</dd>
+                </div>
+              ) : null}
+            </dl>
+
+            <h3 className="mb-2 mt-4 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("supplierPayables.paymentHistory")}
+            </h3>
             {paymentsQuery.isLoading ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("loading.label")}
               </p>
             ) : (paymentsQuery.data?.length ?? 0) === 0 ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="supplier-payable-no-payments"
+              >
                 {t("supplierPayables.noPayments")}
               </p>
             ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              <ul
+                className="m-0 flex list-none flex-col gap-2 p-0"
+                data-testid="supplier-payable-payment-history"
+              >
                 {(paymentsQuery.data as PosSupplierPayablePaymentDto[]).map((payment) => (
                   <li
                     key={payment.paymentId}
                     className="rounded-md border border-border p-2 text-[length:var(--exits-text-sm)]"
+                    data-testid={`supplier-payment-row-${payment.paymentId}`}
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <MoneyDisplay amount={payment.amount} />
@@ -460,17 +571,33 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                     {payment.reference?.trim() ? (
                       <p className="m-0 mt-1">{payment.reference}</p>
                     ) : null}
+                    {payment.notes?.trim() ? (
+                      <p className="m-0 mt-1 text-muted">{payment.notes}</p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
             )}
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-2">
+              {allowManage && online && canRecordPayment(detailTarget) ? (
+                <Button
+                  type="button"
+                  className="min-h-11"
+                  data-testid="supplier-payable-detail-record"
+                  onClick={() => {
+                    setPaymentTarget(detailTarget);
+                    setDetailTarget(null);
+                  }}
+                >
+                  {t("supplierPayables.recordPayment")}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
                 className="min-h-11"
-                onClick={() => setHistoryTarget(null)}
-                data-testid="supplier-payment-history-close"
+                onClick={() => setDetailTarget(null)}
+                data-testid="supplier-payable-detail-close"
               >
                 {t("supplierPayables.cancel")}
               </Button>

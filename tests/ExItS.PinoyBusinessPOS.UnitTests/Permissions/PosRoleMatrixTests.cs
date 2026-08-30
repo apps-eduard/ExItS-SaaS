@@ -47,7 +47,10 @@ public sealed class PosRoleMatrixTests
     [InlineData(PosRole.Cashier, PosOperationalReportKind.ShiftSummary, true)]
     [InlineData(PosRole.InventoryStaff, PosOperationalReportKind.InventoryStatus, true)]
     [InlineData(PosRole.InventoryStaff, PosOperationalReportKind.Expenses, false)]
+    [InlineData(PosRole.InventoryStaff, PosOperationalReportKind.SupplierPayables, true)]
     [InlineData(PosRole.ReportingUser, PosOperationalReportKind.Overview, true)]
+    [InlineData(PosRole.ReportingUser, PosOperationalReportKind.SupplierPayables, true)]
+    [InlineData(PosRole.Cashier, PosOperationalReportKind.SupplierPayables, false)]
     public void Report_access_matches_matrix(PosRole role, PosOperationalReportKind kind, bool expected) =>
         Assert.Equal(expected, PosRoleMatrix.AllowsReport(role, kind));
 

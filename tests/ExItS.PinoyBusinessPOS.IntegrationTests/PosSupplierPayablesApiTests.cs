@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
@@ -133,8 +134,12 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         using var report = Scoped(HttpMethod.Get, $"{Report}?outstandingOnly=true", org);
         using var reportResponse = await client.SendAsync(report);
         reportResponse.EnsureSuccessStatusCode();
-        var rows = await reportResponse.Content.ReadFromJsonAsync<List<PosSupplierPayableReportRowDto>>(JsonOptions);
-        Assert.Contains(rows!, r => r.PayableId == payable.PayableId && r.Balance == 30m);
+        var reportDto = await reportResponse.Content.ReadFromJsonAsync<PosSupplierPayableReportDto>(JsonOptions);
+        Assert.NotNull(reportDto);
+        Assert.Contains(reportDto.Payables, r => r.PayableId == payable.PayableId && r.Balance == 30m);
+        Assert.Equal(30m, reportDto.Summary.OutstandingTotal);
+        Assert.True(reportDto.Summary.PartiallyPaidCount >= 1);
+        Assert.Contains(reportDto.Suppliers, s => s.SupplierId == supplier.SupplierId && s.OutstandingBalance == 30m);
     }
 
     [Fact]
@@ -272,6 +277,92 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal("Voided", voided!.Status);
     }
 
+    [Fact]
+    public async Task View_purchasing_can_list_report_but_cannot_record_payment_inventory_manage_denied()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        var supplier = await CreateSupplierAsync(client, org, "Permission Payable Supplier");
+        var product = await CreateProductAsync(client, org, "Permission Payable Item");
+        await EnableTrackedAsync(client, org, product.ProductId, openingQuantity: 5m, unitCost: 3m);
+        var (_, grn) = await CreateOrderedAndReceiveAsync(
+            client, org, supplier.SupplierId, product.ProductId, 2m, 10m, 2m, paidNow: 0m);
+
+        using var listOwned = Scoped(HttpMethod.Get, $"{Payables}?supplierId={supplier.SupplierId:D}", org);
+        using var listOwnedResponse = await client.SendAsync(listOwned);
+        listOwnedResponse.EnsureSuccessStatusCode();
+        var page = await listOwnedResponse.Content.ReadFromJsonAsync<PagedResult<PosSupplierPayableDto>>(JsonOptions);
+        var payable = Assert.Single(page!.Items);
+        Assert.Equal(grn.GoodsReceiptId, payable.SourceId);
+
+        using var viewList = Scoped(
+            HttpMethod.Get,
+            $"{Payables}?supplierId={supplier.SupplierId:D}",
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: PosFeatureCodes.StorePurchasingView);
+        using var viewListResponse = await client.SendAsync(viewList);
+        Assert.Equal(HttpStatusCode.OK, viewListResponse.StatusCode);
+
+        using var viewReport = Scoped(
+            HttpMethod.Get,
+            Report,
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: PosFeatureCodes.StorePurchasingView);
+        using var viewReportResponse = await client.SendAsync(viewReport);
+        Assert.Equal(HttpStatusCode.OK, viewReportResponse.StatusCode);
+
+        using var viewPay = Scoped(
+            HttpMethod.Post,
+            $"{Payables}/{payable.PayableId:D}/payments",
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: PosFeatureCodes.StorePurchasingView);
+        viewPay.Content = JsonContent.Create(
+            new RecordSupplierPayablePaymentRequest(5m, "Cash"),
+            options: JsonOptions);
+        using var viewPayResponse = await client.SendAsync(viewPay);
+        Assert.Equal(HttpStatusCode.Forbidden, viewPayResponse.StatusCode);
+
+        using var inventoryOnlyPay = Scoped(
+            HttpMethod.Post,
+            $"{Payables}/{payable.PayableId:D}/payments",
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: $"{PosFeatureCodes.StoreInventoryView},{PosFeatureCodes.StoreInventoryManage}");
+        inventoryOnlyPay.Content = JsonContent.Create(
+            new RecordSupplierPayablePaymentRequest(5m, "Cash"),
+            options: JsonOptions);
+        using var inventoryOnlyPayResponse = await client.SendAsync(inventoryOnlyPay);
+        Assert.Equal(HttpStatusCode.Forbidden, inventoryOnlyPayResponse.StatusCode);
+
+        using var cashierDenied = Scoped(
+            HttpMethod.Get,
+            Payables,
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: $"{PosFeatureCodes.StoreSalesView},{PosFeatureCodes.StoreSalesCreate}");
+        using var cashierDeniedResponse = await client.SendAsync(cashierDenied);
+        Assert.Equal(HttpStatusCode.Forbidden, cashierDeniedResponse.StatusCode);
+
+        using var managePay = Scoped(
+            HttpMethod.Post,
+            $"{Payables}/{payable.PayableId:D}/payments",
+            org,
+            status: PosSubscriptionStatuses.Active,
+            grants: $"{PosFeatureCodes.StorePurchasingView},{PosFeatureCodes.StorePurchasingManage}");
+        managePay.Content = JsonContent.Create(
+            new RecordSupplierPayablePaymentRequest(5m, "Cash"),
+            options: JsonOptions);
+        var hash = ComputePayloadHash(new RecordSupplierPayablePaymentRequest(5m, "Cash"));
+        AttachIdempotency(managePay, "spp-perm-1", hash, OfflineOperationTypes.SupplierPayablePayment);
+        using var managePayResponse = await client.SendAsync(managePay);
+        Assert.Equal(HttpStatusCode.Created, managePayResponse.StatusCode);
+    }
+
     private static async Task<(Guid PurchaseOrderId, PosGoodsReceiptDto Receipt)> CreateOrderedAndReceiveAsync(
         HttpClient client,
         Guid org,
@@ -364,9 +455,12 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:PosDatabase"] = connectionString
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    // Host env may set LocalValidation__Enabled=true from local-validation scripts.
+                    ["LocalValidation:Enabled"] = "false"
                 });
             });
+            builder.UseSetting("LocalValidation:Enabled", "false");
         }
     }
 }

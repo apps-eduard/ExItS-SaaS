@@ -53,4 +53,10 @@ public interface ISupplierRepository
     Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default);
+
+    /// <summary>Batch display-name lookup (avoids N+1 when mapping payables/report rows).</summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> supplierIds,
+        CancellationToken cancellationToken = default);
 }

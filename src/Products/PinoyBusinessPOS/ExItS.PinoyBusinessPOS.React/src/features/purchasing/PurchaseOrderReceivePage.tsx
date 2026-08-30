@@ -20,7 +20,11 @@ import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSecti
 import {
   formatMoneyInput,
   parseMoneyInput,
+  remainingCredit,
   roundMoney,
+  validateReceivePaidNow,
+  type ReceivePaymentMethodCode,
+  type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 import { buildReceivePlan, parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -60,6 +64,8 @@ export function PurchaseOrderReceivePage() {
   const [statusLocked, setStatusLocked] = useState(false);
   const [paidNowText, setPaidNowText] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [paymentMode, setPaymentMode] = useState<ReceivePaymentMode>("paidInFull");
+  const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
   const [paidNowTouched, setPaidNowTouched] = useState(false);
   const goodsReceiptIdRef = useRef<string | null>(null);
 
@@ -118,12 +124,26 @@ export function PurchaseOrderReceivePage() {
   }, [lines]);
 
   useEffect(() => {
+    if (paymentMode === "paidInFull") {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setDueDate("");
+      return;
+    }
     if (!paidNowTouched) {
       setPaidNowText(formatMoneyInput(estimatedTotal));
     }
-  }, [estimatedTotal, paidNowTouched]);
+  }, [estimatedTotal, paidNowTouched, paymentMode]);
 
   const paidNowValue = parseMoneyInput(paidNowText);
+
+  function onPaymentModeChange(mode: ReceivePaymentMode) {
+    setPaymentMode(mode);
+    setPaidNowTouched(false);
+    if (mode === "paidInFull") {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setDueDate("");
+    }
+  }
 
   function updateLine(productId: string, patch: Partial<LineEdit>) {
     setLines((prev) =>
@@ -178,13 +198,15 @@ export function PurchaseOrderReceivePage() {
     if (!tryPlan()) {
       return;
     }
-    const paidNow = parseMoneyInput(paidNowText);
-    if (paidNow === null) {
-      setError(t("purchasing.invalidPaidNow"));
+    const paidNow =
+      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
+    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
+    if (paidError) {
+      setError(t(paidError));
       return;
     }
-    if (paidNow > estimatedTotal) {
-      setError(t("purchasing.paidNowExceedsTotal"));
+    if (paidNow! > 0 && !paymentMethod) {
+      setError(t("purchasing.paymentMethodRequired"));
       return;
     }
     setError(null);
@@ -199,13 +221,15 @@ export function PurchaseOrderReceivePage() {
     if (!planned) {
       return;
     }
-    const paidNow = parseMoneyInput(paidNowText);
-    if (paidNow === null) {
-      setError(t("purchasing.invalidPaidNow"));
+    const paidNow =
+      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
+    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
+    if (paidError) {
+      setError(t(paidError));
       return;
     }
-    if (paidNow > estimatedTotal) {
-      setError(t("purchasing.paidNowExceedsTotal"));
+    if (paidNow! > 0 && !paymentMethod) {
+      setError(t("purchasing.paymentMethodRequired"));
       return;
     }
     if (!goodsReceiptIdRef.current) {
@@ -225,8 +249,11 @@ export function PurchaseOrderReceivePage() {
         deliveryReference: deliveryReference.trim() || null,
         notes: notes.trim() || null,
         paidNow,
-        dueDate: paidNow < estimatedTotal && dueDate.trim() ? dueDate.trim() : null,
-        paymentMethodAtReceipt: paidNow > 0 ? "Cash" : null,
+        dueDate:
+          remainingCredit(estimatedTotal, paidNow!) > 0 && dueDate.trim()
+            ? dueDate.trim()
+            : null,
+        paymentMethodAtReceipt: paidNow! > 0 ? paymentMethod : null,
         lines: planned.map((line) => {
           const edit = lines.find((l) => l.productId === line.productId);
           const goodQty = line.receiveQty;
@@ -458,14 +485,20 @@ export function PurchaseOrderReceivePage() {
           </label>
           <ReceivePaymentSection
             estimatedTotal={estimatedTotal}
+            mode={paymentMode}
+            onModeChange={onPaymentModeChange}
             paidNowText={paidNowText}
             onPaidNowChange={(value) => {
               setPaidNowTouched(true);
               setPaidNowText(value);
             }}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
             dueDate={dueDate}
             onDueDateChange={setDueDate}
-            paidNowValue={paidNowValue}
+            paidNowValue={
+              paymentMode === "paidInFull" ? estimatedTotal : paidNowValue
+            }
           />
         </div>
       ) : null}
@@ -473,14 +506,20 @@ export function PurchaseOrderReceivePage() {
       {reviewing ? (
         <ReceivePaymentSection
           estimatedTotal={estimatedTotal}
+          mode={paymentMode}
+          onModeChange={onPaymentModeChange}
           paidNowText={paidNowText}
           onPaidNowChange={(value) => {
             setPaidNowTouched(true);
             setPaidNowText(value);
           }}
+          paymentMethod={paymentMethod}
+          onPaymentMethodChange={setPaymentMethod}
           dueDate={dueDate}
           onDueDateChange={setDueDate}
-          paidNowValue={paidNowValue}
+          paidNowValue={
+            paymentMode === "paidInFull" ? estimatedTotal : paidNowValue
+          }
           disabled={busy || statusLocked}
         />
       ) : null}

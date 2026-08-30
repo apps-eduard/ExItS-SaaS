@@ -24,6 +24,7 @@ Operators need a small-business flow: receive stock → optionally pay part now 
 6. Receipt reversal: if the payable has **no** supplier payments, void the payable with the receipt; if any payment exists, **block** receipt reversal (conflict) until a future payment-reversal package.
 7. Architecture guards may forbid legacy/out-of-scope names (`AccountsPayable`, `SupplierInvoice`, `accounts_payable`, `supplier_invoices`, `supplier_payments`) while **allowing** `SupplierPayable*` and `supplier_payable*` tables authorized by this ADR.
 8. UI language for PH operators may say “Supplier Credit” / “Balance Due”; internal/code naming remains SupplierPayable (never reuse “Utang” for supplier debt).
+9. **Reporting** is organization **as-of** (current payable state), not a period sales report. Report endpoint returns summary + per-supplier balances + payable rows; CSV export is client-side via the existing operational report export stack (`store-export`).
 
 ## Consequences
 
@@ -32,13 +33,14 @@ Operators need a small-business flow: receive stock → optionally pay part now 
 - Clear AR vs AP separation.
 - Audit-friendly purchase → payable → payment history.
 - Safe interaction with purchase receipt reversal.
+- Practical org-wide “what do we owe?” report without inventing GL.
 
 ### Negative / Follow-on
 
 - Supplier payment void/refund deferred.
 - No GL journals, aging buckets beyond optional due date, or gateway execution.
 - Architecture tests and prior “no AP” docs must be updated deliberately (this ADR).
-
+- Historical period reconstruction of payables is out of scope for the initial as-of report.
 ## Rejected alternatives
 
 - Reusing Customer Utang entities/endpoints for suppliers.

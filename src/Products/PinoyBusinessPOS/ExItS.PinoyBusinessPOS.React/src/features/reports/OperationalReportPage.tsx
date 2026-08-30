@@ -59,6 +59,7 @@ import {
   ProductProfitabilityTable,
   type ProductProfitabilityRankBy,
 } from "@/features/reports/ProductProfitabilityTable";
+import { SupplierPayablesReportView } from "@/features/reports/SupplierPayablesReportView";
 import {
   resolveReportDatePreset,
   type ReportDatePreset,
@@ -393,26 +394,8 @@ async function loadLines(
         };
       });
     }
-    case "supplier-payables": {
-      const rows = await getSupplierPayablesReport(
-        workspace,
-        { outstandingOnly: true },
-        signal,
-      );
-      return rows.slice(0, 25).map((row) => ({
-        label: row.supplierName?.trim() || t("reports.unknownSupplier"),
-        value: (
-          <span className="inline-flex flex-wrap items-baseline gap-2">
-            <MoneyDisplay amount={row.balance} />
-            {row.isOverdue ? (
-              <span className="text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
-                {t("supplierPayables.overdue")}
-              </span>
-            ) : null}
-          </span>
-        ),
-      }));
-    }
+    case "supplier-payables":
+      return [];
     case "expenses-summary": {
       const d = await getExpenseSummaryReport(workspace, range, signal);
       return [
@@ -465,6 +448,7 @@ export function OperationalReportPage() {
   const allowed = kindValid && canAccessOperationalReport(sessionGrant, kind);
   const needsDates = operationalReportNeedsDates(kind);
   const isProductProfitability = kind === "product-profitability";
+  const isSupplierPayables = kind === "supplier-payables";
   const scopeMode = reportScopeModeForOperational(kind);
   const allowAll = canSelectAllBranches({
     hasOrgManagement: hasOrganizationManagementAuthority(sessionGrant),
@@ -503,7 +487,10 @@ export function OperationalReportPage() {
       applied.fromDate,
       applied.toDate,
     ],
-    enabled: Boolean(workspace && kindValid && allowed && !isProductProfitability),
+    enabled:
+      Boolean(workspace && kindValid && allowed) &&
+      !isProductProfitability &&
+      !isSupplierPayables,
     queryFn: ({ signal }) => loadLines(kind, workspace!, applied, signal, t, reportBranchId),
   });
 
@@ -521,7 +508,18 @@ export function OperationalReportPage() {
       getProductProfitabilityReport(workspace!, applied, signal, reportBranchId, rankBy),
   });
 
-  const activeQuery = isProductProfitability ? productProfitQuery : query;
+  const supplierPayablesQuery = useQuery({
+    queryKey: ["supplier-payables-report", workspace?.organizationId],
+    enabled: Boolean(workspace && kindValid && allowed && isSupplierPayables),
+    queryFn: ({ signal }) =>
+      getSupplierPayablesReport(workspace!, { outstandingOnly: false }, signal),
+  });
+
+  const activeQuery = isProductProfitability
+    ? productProfitQuery
+    : isSupplierPayables
+      ? supplierPayablesQuery
+      : query;
 
   if (!kindValid || !allowed) {
     return <Navigate to="/reports" replace />;
@@ -555,7 +553,9 @@ export function OperationalReportPage() {
         description={t(
           isProductProfitability
             ? "reports.productProfitabilityLede"
-            : "reports.operationalLede",
+            : isSupplierPayables
+              ? "reports.supplierPayables.lede"
+              : "reports.operationalLede",
         )}
         backTo={pageBackNav.reports.to}
         backLabel={t(pageBackNav.reports.labelKey)}
@@ -616,8 +616,16 @@ export function OperationalReportPage() {
                   selection: scopeSelection,
                   currentBranchName: boundWorkspace?.branchName,
                 }),
-                fromDate: needsDates ? applied.fromDate : null,
-                toDate: needsDates ? applied.toDate : null,
+                fromDate: needsDates
+                  ? applied.fromDate
+                  : isSupplierPayables
+                    ? (supplierPayablesQuery.data?.asOfDate ?? null)
+                    : null,
+                toDate: needsDates
+                  ? applied.toDate
+                  : isSupplierPayables
+                    ? (supplierPayablesQuery.data?.asOfDate ?? null)
+                    : null,
               },
             })
           }
@@ -638,7 +646,13 @@ export function OperationalReportPage() {
             <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
           ) : null
         ) : null}
-        {!isProductProfitability && query.data && query.data.length > 0 ? (
+        {isSupplierPayables && supplierPayablesQuery.data ? (
+          <SupplierPayablesReportView report={supplierPayablesQuery.data} />
+        ) : null}
+        {!isProductProfitability &&
+        !isSupplierPayables &&
+        query.data &&
+        query.data.length > 0 ? (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {query.data.map((line, index) => (
               <li
@@ -652,6 +666,7 @@ export function OperationalReportPage() {
           </ul>
         ) : null}
         {!isProductProfitability &&
+        !isSupplierPayables &&
         query.data &&
         query.data.length === 0 &&
         !query.isLoading &&

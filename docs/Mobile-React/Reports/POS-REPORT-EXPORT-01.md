@@ -37,6 +37,7 @@ No separate export calculation service. No PDF/XLSX. No backend endpoints added.
 | Purchasing summary | EXPORT_NOW | Metric/Value |
 | Purchase outstanding | EXPORT_NOW | Optional `rows` or Metric/Value |
 | Supplier purchasing | EXPORT_NOW | Optional `rows` |
+| Supplier payables | EXPORT_NOW | As-of payables rows (Supplier/Source/Receipt Date/amounts/Due Date/Status); no internal IDs |
 | Expense summary | EXPORT_NOW | Optional `byCategory` or Metric/Value |
 | Utang by product | EXPORT_NOW | Optional `byProduct` or Metric/Value |
 | Profitability summary | EXPORT_NOW | Metric/Value (includes waste/stock-use aggregates already on report) |

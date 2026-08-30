@@ -42,6 +42,22 @@ public sealed record PosSupplierPayableSummaryDto(
     decimal OverdueTotal,
     int OpenCount);
 
+public sealed record PosSupplierPayableReportSummaryDto(
+    decimal OutstandingTotal,
+    decimal OverdueTotal,
+    int OpenCount,
+    int PartiallyPaidCount,
+    int PaidCount,
+    int VoidedCount);
+
+public sealed record PosSupplierPayableSupplierBalanceDto(
+    Guid SupplierId,
+    string? SupplierName,
+    decimal OutstandingBalance,
+    decimal OverdueBalance,
+    int OpenPayables,
+    DateOnly? OldestDueDate);
+
 public sealed record PosSupplierPayableReportRowDto(
     Guid PayableId,
     Guid SupplierId,
@@ -56,6 +72,12 @@ public sealed record PosSupplierPayableReportRowDto(
     DateOnly? DueDate,
     bool IsOverdue,
     DateTimeOffset CreatedAtUtc);
+
+public sealed record PosSupplierPayableReportDto(
+    DateOnly AsOfDate,
+    PosSupplierPayableReportSummaryDto Summary,
+    IReadOnlyList<PosSupplierPayableSupplierBalanceDto> Suppliers,
+    IReadOnlyList<PosSupplierPayableReportRowDto> Payables);
 
 public sealed record RecordSupplierPayablePaymentRequest(
     decimal Amount,

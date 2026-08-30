@@ -219,6 +219,26 @@ internal sealed class SupplierRepository : ISupplierRepository
         SupplierEntityMapper.ApplyToRecord(supplier, record);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesByIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> supplierIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (supplierIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var idList = supplierIds.Distinct().ToList();
+        var rows = await _db.Suppliers.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value && idList.Contains(s.Id))
+            .Select(s => new { s.Id, s.Name })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(r => r.Id, r => r.Name);
+    }
+
     private static long SequenceLockKey(PosOrganizationId organizationId)
     {
         Span<byte> bytes = stackalloc byte[16];

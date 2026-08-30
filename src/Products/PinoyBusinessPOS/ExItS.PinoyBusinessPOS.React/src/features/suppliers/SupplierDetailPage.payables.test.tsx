@@ -15,7 +15,11 @@ const orgId = "11111111-1111-1111-1111-111111111111";
 const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const supplierId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const payableId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const actorId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+const paidPayableId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+const voidedPayableId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+const partialPayableId = "ffffffff-ffff-ffff-ffff-ffffffffffff";
+const actorId = "99999999-9999-9999-9999-999999999999";
+const paymentId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
 const getSupplier = vi.fn();
 const getSupplierPayableSummary = vi.fn();
@@ -115,10 +119,10 @@ function payableDto(overrides: Partial<PosSupplierPayableDto> = {}): PosSupplier
     supplierId,
     supplierName: "Fresh Farms",
     sourceType: "GoodsReceipt",
-    sourceId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+    sourceId: "11111111-2222-3333-4444-555555555555",
     originalAmount: 1000,
     paidAtReceiptAmount: 200,
-    paidAmount: 0,
+    paidAmount: 200,
     balance: 800,
     status: "Open",
     dueDate: "2026-09-15",
@@ -177,7 +181,7 @@ describe("SupplierDetailPage supplier credit", () => {
     });
     listSupplierPayablePayments.mockResolvedValue([] as PosSupplierPayablePaymentDto[]);
     recordSupplierPayablePayment.mockResolvedValue({
-      paymentId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      paymentId,
       payableId,
       amount: 100,
       paymentMethod: "Cash",
@@ -193,7 +197,108 @@ describe("SupplierDetailPage supplier credit", () => {
     vi.clearAllMocks();
   });
 
-  it("lists outstanding payables and records a payment", async () => {
+  it("renders supplier payable summary", async () => {
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("supplier-credit-outstanding")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("supplier-credit-overdue")).toBeInTheDocument();
+    expect(screen.getByTestId("supplier-credit-open-count")).toHaveTextContent("1");
+  });
+
+  it("lists payables with backend statuses including Paid and Voided", async () => {
+    listSupplierPayables.mockResolvedValue({
+      items: [
+        payableDto({ payableId, status: "Open", balance: 800, paidAmount: 200 }),
+        payableDto({
+          payableId: partialPayableId,
+          status: "PartiallyPaid",
+          paidAmount: 500,
+          balance: 500,
+          hasPostedPayments: true,
+        }),
+        payableDto({
+          payableId: paidPayableId,
+          status: "Paid",
+          paidAmount: 1000,
+          balance: 0,
+        }),
+        payableDto({
+          payableId: voidedPayableId,
+          status: "Voided",
+          balance: 0,
+          voidedAtUtc: "2026-08-29T00:00:00Z",
+          voidReason: "Receipt reversed",
+        }),
+      ],
+      totalCount: 4,
+      page: 1,
+      pageSize: 50,
+    });
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId(`supplier-payable-${payableId}`)).toHaveAttribute(
+        "data-status",
+        "Open",
+      );
+    });
+    expect(screen.getByTestId(`supplier-payable-${partialPayableId}`)).toHaveAttribute(
+      "data-status",
+      "PartiallyPaid",
+    );
+    expect(screen.getByTestId(`supplier-payable-${paidPayableId}`)).toHaveAttribute(
+      "data-status",
+      "Paid",
+    );
+    expect(screen.getByTestId(`supplier-payable-${voidedPayableId}`)).toHaveAttribute(
+      "data-status",
+      "Voided",
+    );
+  });
+
+  it("shows record payment for Open and PartiallyPaid only", async () => {
+    listSupplierPayables.mockResolvedValue({
+      items: [
+        payableDto({ payableId, status: "Open", balance: 800 }),
+        payableDto({
+          payableId: partialPayableId,
+          status: "PartiallyPaid",
+          balance: 400,
+          paidAmount: 600,
+          hasPostedPayments: true,
+        }),
+        payableDto({
+          payableId: paidPayableId,
+          status: "Paid",
+          balance: 0,
+          paidAmount: 1000,
+        }),
+        payableDto({
+          payableId: voidedPayableId,
+          status: "Voided",
+          balance: 0,
+        }),
+      ],
+      totalCount: 4,
+      page: 1,
+      pageSize: 50,
+    });
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId(`supplier-payable-record-${payableId}`)).toBeInTheDocument();
+    });
+    expect(
+      screen.getByTestId(`supplier-payable-record-${partialPayableId}`),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`supplier-payable-record-${paidPayableId}`),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`supplier-payable-record-${voidedPayableId}`),
+    ).not.toBeInTheDocument();
+  });
+
+  it("lists outstanding payables and records a payment that refreshes summary", async () => {
     const user = userEvent.setup();
     renderDetail();
 
@@ -216,6 +321,10 @@ describe("SupplierDetailPage supplier credit", () => {
         expect.objectContaining({ amount: 100, paymentMethod: "Cash" }),
       );
     });
+    await waitFor(() => {
+      expect(getSupplierPayableSummary).toHaveBeenCalled();
+      expect(listSupplierPayables).toHaveBeenCalled();
+    });
   });
 
   it("blocks overpay before calling the API", async () => {
@@ -233,6 +342,54 @@ describe("SupplierDetailPage supplier credit", () => {
 
     expect(await screen.findByTestId("supplier-payment-error")).toBeInTheDocument();
     expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
+  });
+
+  it("blocks zero and negative payment amounts", async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId(`supplier-payable-record-${payableId}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`supplier-payable-record-${payableId}`));
+    const dialog = screen.getByTestId("supplier-payment-dialog");
+    const amount = within(dialog).getByTestId("supplier-payment-amount");
+    await user.clear(amount);
+    await user.type(amount, "0");
+    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
+    expect(await screen.findByTestId("supplier-payment-error")).toBeInTheDocument();
+    expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
+
+    await user.clear(amount);
+    await user.type(amount, "-5");
+    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
+    expect(screen.getByTestId("supplier-payment-error")).toBeInTheDocument();
+    expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
+  });
+
+  it("renders payment history in payable detail", async () => {
+    const user = userEvent.setup();
+    listSupplierPayablePayments.mockResolvedValue([
+      {
+        paymentId,
+        payableId,
+        amount: 150,
+        paymentMethod: "BankTransfer",
+        reference: "REF-1",
+        notes: "Partial",
+        paidAtUtc: "2026-08-25T10:00:00Z",
+        recordedBy: actorId,
+        recordedAtUtc: "2026-08-25T10:00:00Z",
+      },
+    ] as PosSupplierPayablePaymentDto[]);
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId(`supplier-payable-detail-${payableId}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`supplier-payable-detail-${payableId}`));
+    await waitFor(() => {
+      expect(screen.getByTestId("supplier-payable-payment-history")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`supplier-payment-row-${paymentId}`)).toBeInTheDocument();
   });
 
   it("hides supplier credit when purchasing view is denied", async () => {
@@ -261,6 +418,6 @@ describe("SupplierDetailPage supplier credit", () => {
       expect(screen.getByTestId("supplier-credit-list")).toBeInTheDocument();
     });
     expect(screen.queryByTestId(`supplier-payable-record-${payableId}`)).not.toBeInTheDocument();
-    expect(screen.getByTestId(`supplier-payable-history-${payableId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`supplier-payable-detail-${payableId}`)).toBeInTheDocument();
   });
 });

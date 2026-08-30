@@ -184,7 +184,8 @@ public static class PosRoleMatrix
             or PosOperationalReportKind.InventoryMovements
             or PosOperationalReportKind.StockCountVariance
             or PosOperationalReportKind.PurchasingSummary
-            or PosOperationalReportKind.PurchaseOutstanding,
+            or PosOperationalReportKind.PurchaseOutstanding
+            or PosOperationalReportKind.SupplierPayables,
         _ => false
     };
 
@@ -220,5 +221,6 @@ public enum PosOperationalReportKind
     SupplierPurchasing = 12,
     Expenses = 13,
     Utang = 14,
-    SalesByCashier = 15
+    SalesByCashier = 15,
+    SupplierPayables = 16
 }

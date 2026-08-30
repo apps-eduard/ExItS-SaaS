@@ -21,7 +21,11 @@ import {
   directPurchaseCreditValidationKey,
   formatMoneyInput,
   parseMoneyInput,
+  remainingCredit,
   roundMoney,
+  validateReceivePaidNow,
+  type ReceivePaymentMethodCode,
+  type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -69,6 +73,8 @@ export function ReceiveStockPage() {
   const [statusLocked, setStatusLocked] = useState(false);
   const [paidNowText, setPaidNowText] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [paymentMode, setPaymentMode] = useState<ReceivePaymentMode>("paidInFull");
+  const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
   const [paidNowTouched, setPaidNowTouched] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
 
@@ -82,13 +88,66 @@ export function ReceiveStockPage() {
     [lines],
   );
 
+  const allowSupplierCredit = Boolean(supplierId.trim());
+
   useEffect(() => {
+    if (!allowSupplierCredit && paymentMode === "supplierCredit") {
+      setPaymentMode("paidInFull");
+      setPaidNowTouched(false);
+      setDueDate("");
+    }
+  }, [allowSupplierCredit, paymentMode]);
+
+  useEffect(() => {
+    if (paymentMode === "paidInFull") {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setDueDate("");
+      return;
+    }
     if (!paidNowTouched) {
       setPaidNowText(formatMoneyInput(estimatedTotal));
     }
-  }, [estimatedTotal, paidNowTouched]);
+  }, [estimatedTotal, paidNowTouched, paymentMode]);
 
   const paidNowValue = parseMoneyInput(paidNowText);
+  const effectivePaidNow =
+    paymentMode === "paidInFull" ? estimatedTotal : paidNowValue;
+
+  function onPaymentModeChange(mode: ReceivePaymentMode) {
+    if (mode === "supplierCredit" && !allowSupplierCredit) {
+      return;
+    }
+    setPaymentMode(mode);
+    setPaidNowTouched(false);
+    if (mode === "paidInFull") {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setDueDate("");
+    }
+  }
+
+  function validatePayment(): number | null {
+    const paidNow =
+      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
+    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
+    if (paidError) {
+      setError(t(paidError));
+      return null;
+    }
+    const creditKey = directPurchaseCreditValidationKey(
+      supplierId,
+      estimatedTotal,
+      paidNow!,
+    );
+    if (creditKey) {
+      setError(t(creditKey));
+      return null;
+    }
+    if (paidNow! > 0 && !paymentMethod) {
+      setError(t("purchasing.paymentMethodRequired"));
+      return null;
+    }
+    return paidNow;
+  }
 
   const workspace = useMemo(
     () =>
@@ -170,18 +229,8 @@ export function ReceiveStockPage() {
     if (!workspace || !allowManage || !online || saving || statusLocked || lines.length === 0) {
       return;
     }
-    const paidNow = parseMoneyInput(paidNowText);
+    const paidNow = validatePayment();
     if (paidNow === null) {
-      setError(t("purchasing.invalidPaidNow"));
-      return;
-    }
-    if (paidNow > estimatedTotal) {
-      setError(t("purchasing.paidNowExceedsTotal"));
-      return;
-    }
-    const creditKey = directPurchaseCreditValidationKey(supplierId, estimatedTotal, paidNow);
-    if (creditKey) {
-      setError(t(creditKey));
       return;
     }
     if (!idempotencyKeyRef.current) {
@@ -195,8 +244,11 @@ export function ReceiveStockPage() {
     const idempotencyKey = idempotencyKeyRef.current;
     const paymentFields = {
       paidNow,
-      dueDate: paidNow < estimatedTotal && dueDate.trim() ? dueDate.trim() : null,
-      paymentMethodAtReceipt: paidNow > 0 ? "Cash" : null,
+      dueDate:
+        remainingCredit(estimatedTotal, paidNow) > 0 && dueDate.trim()
+          ? dueDate.trim()
+          : null,
+      paymentMethodAtReceipt: paidNow > 0 ? paymentMethod : null,
     };
     setSaving(true);
     setError(null);
@@ -480,14 +532,19 @@ export function ReceiveStockPage() {
           {lines.length > 0 ? (
             <ReceivePaymentSection
               estimatedTotal={estimatedTotal}
+              mode={paymentMode}
+              onModeChange={onPaymentModeChange}
               paidNowText={paidNowText}
               onPaidNowChange={(value) => {
                 setPaidNowTouched(true);
                 setPaidNowText(value);
               }}
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
               dueDate={dueDate}
               onDueDateChange={setDueDate}
-              paidNowValue={paidNowValue}
+              paidNowValue={effectivePaidNow}
+              allowSupplierCredit={allowSupplierCredit}
               disabled={!allowManage || !online}
             />
           ) : null}
@@ -497,22 +554,7 @@ export function ReceiveStockPage() {
             className="min-h-11"
             disabled={lines.length === 0 || !allowManage || !online}
             onClick={() => {
-              const paidNow = parseMoneyInput(paidNowText);
-              if (paidNow === null) {
-                setError(t("purchasing.invalidPaidNow"));
-                return;
-              }
-              if (paidNow > estimatedTotal) {
-                setError(t("purchasing.paidNowExceedsTotal"));
-                return;
-              }
-              const creditKey = directPurchaseCreditValidationKey(
-                supplierId,
-                estimatedTotal,
-                paidNow,
-              );
-              if (creditKey) {
-                setError(t(creditKey));
+              if (validatePayment() === null) {
                 return;
               }
               setError(null);
@@ -536,14 +578,19 @@ export function ReceiveStockPage() {
           </ul>
           <ReceivePaymentSection
             estimatedTotal={estimatedTotal}
+            mode={paymentMode}
+            onModeChange={onPaymentModeChange}
             paidNowText={paidNowText}
             onPaidNowChange={(value) => {
               setPaidNowTouched(true);
               setPaidNowText(value);
             }}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
             dueDate={dueDate}
             onDueDateChange={setDueDate}
-            paidNowValue={paidNowValue}
+            paidNowValue={effectivePaidNow}
+            allowSupplierCredit={allowSupplierCredit}
             disabled={saving || statusLocked}
           />
           <div className="mt-3 flex flex-wrap gap-2">

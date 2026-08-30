@@ -624,6 +624,12 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
         public Task<(IReadOnlyList<Supplier> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, SupplierFilter filter, int skip, int take, CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<Supplier>, int)>((_items.Where(x => x.OrganizationId == organizationId).ToList(), _items.Count));
         public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetDisplayNamesByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> supplierIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(new Dictionary<Guid, string>());
     }
 
     private sealed class InMemoryOrders : IPurchaseOrderRepository
