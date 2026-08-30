@@ -243,17 +243,17 @@ export function BranchFulfillmentEditPage() {
     try {
       const updated = await updateOrganizationBranch(organizationId, branchId, {
         name: name.trim(),
-        addressLine1: addressLine1.trim() || null,
-        addressLine2: addressLine2.trim() || null,
-        city: city.trim() || null,
-        region: region.trim() || null,
-        postalCode: postalCode.trim() || null,
-        countryCode: countryCode.trim() || null,
+        addressLine1: addressLine1.trim(),
+        addressLine2: addressLine2.trim(),
+        city: city.trim(),
+        region: region.trim(),
+        postalCode: postalCode.trim(),
+        countryCode: countryCode.trim(),
         latitude: coords.latitude,
         longitude: coords.longitude,
         clearCoordinates: coords.clearCoordinates,
-        contactPhone: contactPhone.trim() || null,
-        timeZoneId: timeZoneId.trim() || null,
+        contactPhone: contactPhone.trim(),
+        timeZoneId: timeZoneId.trim(),
       });
       applyBranch(updated);
 

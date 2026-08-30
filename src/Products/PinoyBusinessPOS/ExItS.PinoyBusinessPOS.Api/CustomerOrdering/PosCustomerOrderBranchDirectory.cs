@@ -87,20 +87,18 @@ internal sealed class PosCustomerOrderBranchDirectory(
             return [];
         }
 
+        // Personal linked buyers cannot call org membership branch APIs — use linked-merchant projection.
+        var personalBranches = await TryListLinkedMerchantBranchesAsync(sellerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (personalBranches is not null)
+        {
+            return personalBranches;
+        }
+
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/platform/organizations/{sellerOrganizationId:D}/branches");
-        var source = httpContextAccessor.HttpContext?.Request;
-        if (source is not null)
-        {
-            foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
-            {
-                if (source.Headers.TryGetValue(name, out var value))
-                {
-                    platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
-                }
-            }
-        }
+        ForwardPlatformCredentials(platformRequest);
 
         try
         {
@@ -132,6 +130,59 @@ internal sealed class PosCustomerOrderBranchDirectory(
         {
             return [];
         }
+    }
+
+    private async Task<IReadOnlyList<CustomerOrderBranchSnapshot>?> TryListLinkedMerchantBranchesAsync(
+        Guid sellerOrganizationId,
+        CancellationToken cancellationToken)
+    {
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/v1/personal/linked-merchants/{sellerOrganizationId:D}/fulfillment-branches");
+        ForwardPlatformCredentials(platformRequest);
+
+        try
+        {
+            using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
+            if (response.StatusCode is System.Net.HttpStatusCode.NotFound
+                or System.Net.HttpStatusCode.Forbidden
+                or System.Net.HttpStatusCode.Unauthorized)
+            {
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var branches = await response.Content
+                .ReadFromJsonAsync<IReadOnlyList<OrganizationBranchDto>>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false)
+                ?? [];
+
+            return branches
+                .Where(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Select(MapBranch)
+                .ToList();
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private void ForwardPlatformCredentials(HttpRequestMessage platformRequest)
+    {
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
     }
 
     private void EnsureBaseAddress()

@@ -177,6 +177,52 @@ public sealed class GetLinkedMerchantOrderingCapability
     }
 }
 
+/// <summary>
+/// Public fulfillment branch snapshots for a Personal user who is actively linked to the merchant.
+/// </summary>
+public sealed class ListLinkedMerchantFulfillmentBranches
+{
+    private readonly ILinkedCustomerAppUserRepository _links;
+    private readonly ListBranches _listBranches;
+
+    public ListLinkedMerchantFulfillmentBranches(
+        ILinkedCustomerAppUserRepository links,
+        ListBranches listBranches)
+    {
+        _links = links;
+        _listBranches = listBranches;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<OrganizationBranchDto>>> ExecuteAsync(
+        PlatformUserId userIdentityId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (organizationId == Guid.Empty)
+        {
+            return ApplicationResult<IReadOnlyList<OrganizationBranchDto>>.Failure(
+                ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                "Organization id is required.");
+        }
+
+        var org = PlatformOrganizationId.From(organizationId);
+        var (links, _) = await _links
+            .ListActiveByUserAsync(userIdentityId, skip: 0, take: 200, cancellationToken)
+            .ConfigureAwait(false);
+        if (!links.Any(l => l.OrganizationId == org))
+        {
+            return ApplicationResult<IReadOnlyList<OrganizationBranchDto>>.Failure(
+                ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                "No active linked merchant was found for this organization.");
+        }
+
+        var branches = await _listBranches
+            .ExecuteForLinkedCustomerAsync(org, cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<IReadOnlyList<OrganizationBranchDto>>.Success(branches);
+    }
+}
+
 internal static class LinkedMerchantOrderingCapability
 {
     public static (bool CanOrder, bool CanDelivery) FromSnapshot(EntitlementSnapshot? snapshot)

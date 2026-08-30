@@ -478,6 +478,7 @@ builder.Services.AddScoped<MarkRelatedOrganizationNotificationsRead>();
 builder.Services.AddScoped<UnlinkAcceptedCustomerLink>();
 builder.Services.AddScoped<ListLinkedMerchantsForPersonalUser>();
 builder.Services.AddScoped<GetLinkedMerchantOrderingCapability>();
+builder.Services.AddScoped<ListLinkedMerchantFulfillmentBranches>();
 builder.Services.AddScoped<AuthorizeLinkedCustomerAccess>();
 builder.Services.AddScoped<DenyStaffAccessToUnrelatedPersonalRecords>();
 builder.Services.AddScoped<GrantPersonalFeature>();

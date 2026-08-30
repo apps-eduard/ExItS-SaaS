@@ -156,6 +156,32 @@ public sealed class ListBranches(
         {
             list = list.Where(b => accessible.Contains(b.Id.Value)).ToList();
         }
+
+        return await MapListAsync(organizationId, list, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Linked Personal customers need Active branch fulfillment snapshots without organization membership.
+    /// Skips staff branch-access filtering; still returns only org-owned branches for the seller.
+    /// </summary>
+    public Task<IReadOnlyList<OrganizationBranchDto>> ExecuteForLinkedCustomerAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default) =>
+        MapListFromOrganizationAsync(organizationId, cancellationToken);
+
+    private async Task<IReadOnlyList<OrganizationBranchDto>> MapListFromOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var list = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        return await MapListAsync(organizationId, list, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<OrganizationBranchDto>> MapListAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyList<OrganizationBranch> list,
+        CancellationToken cancellationToken)
+    {
         var policyList = await policies.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var policiesByBranchId = policyList.ToDictionary(p => p.BranchId.Value);
         var hoursByBranchId = await hours.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
@@ -312,13 +338,15 @@ public sealed class UpdateBranch(
         try
         {
             branch.Rename(command.Name, clock.UtcNow);
+            // Null address fields mean "omit" (preserve existing). Empty string clears.
+            // Prevents coordinate-only updates from wiping structured address / readiness.
             branch.UpdateAddress(
-                command.AddressLine1,
-                command.AddressLine2,
-                command.City,
-                command.Region,
-                command.PostalCode,
-                command.CountryCode,
+                command.AddressLine1 ?? branch.AddressLine1,
+                command.AddressLine2 ?? branch.AddressLine2,
+                command.City ?? branch.City,
+                command.Region ?? branch.Region,
+                command.PostalCode ?? branch.PostalCode,
+                command.CountryCode ?? branch.CountryCode,
                 clock.UtcNow);
 
             if (command.ClearCoordinates == true)

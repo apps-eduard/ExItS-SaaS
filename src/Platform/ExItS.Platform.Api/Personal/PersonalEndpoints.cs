@@ -76,6 +76,23 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        personal.MapGet("/linked-merchants/{organizationId:guid}/fulfillment-branches", async (
+            HttpContext http,
+            Guid organizationId,
+            ListLinkedMerchantFulfillmentBranches listBranches,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listBranches
+                .ExecuteAsync(PlatformUserId.From(userId), organizationId, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/linked-merchants/authorization", async (
             HttpContext http,
             Guid? organizationId,
