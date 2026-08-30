@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  getSupplierPayablesReport as fetchSupplierPayablesReport,
+  type ListSupplierPayableReportOptions,
+  type PosSupplierPayableReportRowDto,
+} from "@/api/pos/pos-supplier-payables-client";
 
 const DASHBOARD_PATH = "/api/v1/pos/dashboard";
 const MANAGEMENT_OVERVIEW_PATH = "/api/v1/pos/management/overview";
@@ -518,6 +523,27 @@ export function supplierPurchasingPath(range?: ReportDateQuery | null): string {
   return withQuery(`${REPORTS_PATH}/supplier-purchasing`, range);
 }
 
+export function supplierPayablesPath(options?: {
+  supplierId?: string;
+  status?: string;
+  outstandingOnly?: boolean;
+}): string {
+  const params = new URLSearchParams();
+  if (options?.supplierId) {
+    params.set("supplierId", options.supplierId);
+  }
+  if (options?.status) {
+    params.set("status", options.status);
+  }
+  if (options?.outstandingOnly !== undefined) {
+    params.set("outstandingOnly", String(options.outstandingOnly));
+  } else {
+    params.set("outstandingOnly", "true");
+  }
+  const qs = params.toString();
+  return qs ? `${REPORTS_PATH}/supplier-payables?${qs}` : `${REPORTS_PATH}/supplier-payables`;
+}
+
 export function expensesSummaryPath(range?: ReportDateQuery | null): string {
   return withQuery(`${REPORTS_PATH}/expenses-summary`, range);
 }
@@ -841,6 +867,15 @@ export async function getSupplierPurchasingReport(
     signal,
   });
   return posSupplierPurchasingReportDtoSchema.parse(raw);
+}
+
+/** Organization supplier payables / supplier credit report (ADR-023). */
+export async function getSupplierPayablesReport(
+  workspace: PosWorkspaceScope,
+  options: ListSupplierPayableReportOptions = {},
+  signal?: AbortSignal,
+): Promise<PosSupplierPayableReportRowDto[]> {
+  return fetchSupplierPayablesReport(workspace, options, signal);
 }
 
 export async function getExpenseSummaryReport(

@@ -172,6 +172,47 @@ describe("report csv export builders", () => {
       }),
     ).toBe("Main Branch");
   });
+
+  it("maps supplier-payables rows into CSV columns", async () => {
+    vi.spyOn(reportingClient, "getSupplierPayablesReport").mockResolvedValue([
+      {
+        payableId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        supplierId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        supplierName: "Fresh Farms",
+        sourceType: "GoodsReceipt",
+        sourceId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        originalAmount: 1000,
+        paidAtReceiptAmount: 200,
+        paidAmount: 100,
+        balance: 700,
+        status: "PartiallyPaid",
+        dueDate: "2026-09-15",
+        isOverdue: true,
+        createdAtUtc: "2026-08-20T00:00:00Z",
+      },
+    ]);
+
+    const result = await buildOperationalReportExport({
+      kind: "supplier-payables",
+      workspace,
+      range: { fromDate: "2026-08-01", toDate: "2026-08-30" },
+      scope: {
+        organizationName: "Kizy Store",
+        scopeLabel: "all-branches",
+      },
+    });
+
+    expect(result.filename).toContain("supplier-payables");
+    expect(result.csvText).toContain("Fresh Farms");
+    expect(result.csvText).toContain("GoodsReceipt");
+    expect(result.csvText).toContain("700");
+    expect(result.csvText).toContain("true");
+    expect(reportingClient.getSupplierPayablesReport).toHaveBeenCalledWith(
+      workspace,
+      { outstandingOnly: true },
+      undefined,
+    );
+  });
 });
 
 describe("canExportData entitlement", () => {

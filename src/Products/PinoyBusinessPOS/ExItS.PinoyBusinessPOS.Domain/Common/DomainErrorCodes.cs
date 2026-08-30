@@ -482,4 +482,24 @@ public static class DomainErrorCodes
     public const string ProductImageTooLarge = "pos.product.image.too_large";
     public const string ProductImageUnsupportedType = "pos.product.image.unsupported_type";
     public const string ProductImageNotFound = "pos.product.image.not_found";
+
+    public const string InvalidSupplierPayableId = "pos.supplier_payable.id.invalid";
+    public const string InvalidSupplierPayablePaymentId = "pos.supplier_payable_payment.id.invalid";
+    public const string InvalidSupplierPayableSourceType = "pos.supplier_payable.source_type.invalid";
+    public const string InvalidSupplierPayableSourceId = "pos.supplier_payable.source_id.invalid";
+    public const string InvalidSupplierPayableAmount = "pos.supplier_payable.amount.invalid";
+    public const string InvalidSupplierPayablePaidAtReceipt = "pos.supplier_payable.paid_at_receipt.invalid";
+    public const string InvalidSupplierPayablePaymentMethod = "pos.supplier_payable.payment_method.invalid";
+    public const string InvalidSupplierPayablePaymentAmount = "pos.supplier_payable_payment.amount.invalid";
+    public const string InvalidSupplierPayablePaymentReference = "pos.supplier_payable_payment.reference.invalid";
+    public const string InvalidSupplierPayablePaymentNotes = "pos.supplier_payable_payment.notes.invalid";
+    public const string InvalidSupplierPayableActor = "pos.supplier_payable.actor.invalid";
+    public const string InvalidSupplierPayableStatusTransition = "pos.supplier_payable.status.invalid_transition";
+    public const string InvalidSupplierPayableVoidReason = "pos.supplier_payable.void.reason.invalid";
+    public const string SupplierPayableOverpayNotAllowed = "pos.supplier_payable.overpay.not_allowed";
+    public const string SupplierPayableVoidBlockedByPayments = "pos.supplier_payable.void.blocked_by_payments";
+    public const string DirectPurchaseRequiresSupplierForCredit =
+        "pos.direct_purchase_receipt.supplier.required_for_credit";
+    public const string SupplierPayableReceiptReversalBlocked =
+        "pos.supplier_payable.receipt_reversal.blocked_by_payments";
 }

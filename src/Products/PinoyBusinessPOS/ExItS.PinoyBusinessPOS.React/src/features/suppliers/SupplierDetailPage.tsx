@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
+import { SupplierCreditSection } from "@/features/suppliers/SupplierCreditSection";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -224,6 +225,8 @@ export function SupplierDetailPage() {
           </Button>
         </div>
       ) : null}
+
+      <SupplierCreditSection supplierId={supplierId} />
 
       <div className="flex flex-wrap gap-2">
         {allowManage ? (

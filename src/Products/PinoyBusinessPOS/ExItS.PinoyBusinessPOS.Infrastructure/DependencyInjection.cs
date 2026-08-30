@@ -10,6 +10,8 @@ using ExItS.PinoyBusinessPOS.Application.Onboarding;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
+using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
@@ -76,6 +78,7 @@ public static class DependencyInjection
         services.AddScoped<IPosRoleAssignmentRepository, PosRoleAssignmentRepository>();
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<ISupplierPayableRepository, SupplierPayableRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IConnectedSupplierRelationshipRepository, ConnectedSupplierRelationshipRepository>();
         services.AddScoped<ISupplierProductExposureRepository, SupplierProductExposureRepository>();

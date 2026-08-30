@@ -122,6 +122,7 @@ internal static class PosIdempotencyEndpointHelper
         Application.Permissions.PosRoleAssignmentDto a => a.AssignmentId.ToString("D"),
         Application.Catalog.PosCatalogImportJobDto j => j.JobId.ToString("D"),
         Application.CustomerOrdering.CustomerOrderDto o => o.OrderId.ToString("D"),
+        Application.SupplierPayables.PosSupplierPayablePaymentDto sp => sp.PaymentId.ToString("D"),
         _ => null
     };
 }

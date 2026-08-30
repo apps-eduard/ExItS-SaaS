@@ -11,7 +11,9 @@ using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 
 namespace ExItS.PinoyBusinessPOS.Application.Purchasing;
 
@@ -157,7 +159,10 @@ public sealed record ReceivePurchaseOrderRequest(
     Guid? GoodsReceiptId = null,
     DateOnly? ReceivedDate = null,
     string? DeliveryReference = null,
-    string? Notes = null);
+    string? Notes = null,
+    decimal? PaidNow = null,
+    DateOnly? DueDate = null,
+    string? PaymentMethodAtReceipt = null);
 
 public static class PurchaseMapper
 {
@@ -1665,6 +1670,7 @@ public sealed class ReceivePurchaseOrder
     private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -1673,6 +1679,7 @@ public sealed class ReceivePurchaseOrder
         IPurchaseStockService purchaseStock,
         IPosCommercialAccessAccessor access,
         IConnectedPurchaseOrderRepository connectedOrders,
+        CreateSupplierPayableFromReceipt createPayable,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IBuyerSupplierProductLinkRepository? links = null)
@@ -1684,6 +1691,7 @@ public sealed class ReceivePurchaseOrder
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _links = links;
         _access = access;
+        _createPayable = createPayable;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -1844,9 +1852,21 @@ public sealed class ReceivePurchaseOrder
                         return (existing, grn);
                     },
                     async (grn, po, ct) =>
+                    {
                         await _purchaseStock
                             .ApplyReceiptAsync(org, grn, po, actorId, utcNow, ct)
-                            .ConfigureAwait(false),
+                            .ConfigureAwait(false);
+                        await _createPayable
+                            .CreateFromGoodsReceiptAsync(
+                                grn,
+                                request.PaidNow,
+                                request.DueDate,
+                                request.PaymentMethodAtReceipt,
+                                actorId,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+                    },
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -1933,6 +1953,7 @@ public sealed class VoidGoodsReceipt
     private readonly IInventoryRepository _inventory;
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
+    private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
 
     public VoidGoodsReceipt(
@@ -1941,6 +1962,7 @@ public sealed class VoidGoodsReceipt
         IInventoryRepository inventory,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
+        CreateSupplierPayableFromReceipt createPayable,
         IClock clock)
     {
         _orders = orders;
@@ -1948,6 +1970,7 @@ public sealed class VoidGoodsReceipt
         _inventory = inventory;
         _lots = lots;
         _unitOfWork = unitOfWork;
+        _createPayable = createPayable;
         _clock = clock;
     }
 
@@ -1994,6 +2017,20 @@ public sealed class VoidGoodsReceipt
                             return ApplicationResult<PosGoodsReceiptDto>.Success(PurchaseMapper.Map(receipt));
                         }
 
+                        var utcNow = _clock.UtcNow;
+                        var voidReason = request.Reason.Trim();
+
+                        await _createPayable
+                            .EnsureVoidOrBlockForReceiptReversalAsync(
+                                orgId,
+                                SupplierPayableSourceType.GoodsReceipt,
+                                receipt.Id.Value,
+                                voidReason,
+                                actorId,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+
                         var po = await _orders.GetByIdAsync(orgId, receipt.PurchaseOrderId, ct).ConfigureAwait(false);
                         if (po is null)
                         {
@@ -2009,8 +2046,6 @@ public sealed class VoidGoodsReceipt
                             .ToList();
                         var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
                         var productsById = products.ToDictionary(p => p.Id.Value);
-                        var utcNow = _clock.UtcNow;
-                        var voidReason = request.Reason.Trim();
 
                         ApplicationResult<PosGoodsReceiptDto>? failure = null;
                         await _inventory

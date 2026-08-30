@@ -26,5 +26,6 @@
 | ADR-020 | Personal Utang migration and provenance | **Accepted** — [Open](ADR-020-personal-utang-migration-and-provenance.md) |
 | ADR-021 | Linked customer statements and Personal monetization | **Accepted** (architecture contract; not implemented) — [Open](ADR-021-linked-customer-statements-and-personal-monetization.md) |
 | ADR-022 | Separated AntDesign browser hosts and unified authentication | **Accepted** — [Open](ADR-022-separated-antdesign-web-hosts-and-unified-auth.md) |
+| ADR-023 | Organization Supplier Payables (AP) vs Customer Utang (AR) | **Accepted** — [Open](ADR-023-organization-supplier-payables.md) |
 
 Cursor creates detailed ADR files only when the related phase validates the decision against the repository.

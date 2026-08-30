@@ -118,6 +118,8 @@ internal static class PosApiResults
             or DomainErrorCodes.InventoryInsufficientStock
             or DomainErrorCodes.GoodsReceiptVoidInsufficient
             or DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient
+            or DomainErrorCodes.SupplierPayableReceiptReversalBlocked
+            or DomainErrorCodes.SupplierPayableVoidBlockedByPayments
             or DomainErrorCodes.ProductionVoidOutputInsufficient
             or DomainErrorCodes.InventoryDisableRequiresZero
             or DomainErrorCodes.InventoryOpeningDuplicate

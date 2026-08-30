@@ -37,6 +37,7 @@ export type OperationalReportKind =
   | "purchasing-summary"
   | "purchase-outstanding"
   | "supplier-purchasing"
+  | "supplier-payables"
   | "expenses-summary"
   | "utang-by-product";
 
@@ -85,7 +86,8 @@ export function canAccessOperationalReport(
       kind === "inventory-movements" ||
       kind === "stock-count-variance" ||
       kind === "purchasing-summary" ||
-      kind === "purchase-outstanding"
+      kind === "purchase-outstanding" ||
+      kind === "supplier-payables"
     );
   }
 
@@ -105,9 +107,13 @@ export function canAccessClassicReport(
   return canViewReports(grant);
 }
 
-/** Whether a kind needs date filters (purchase-outstanding / inventory-status are as-of). */
+/** Whether a kind needs date filters (purchase-outstanding / inventory-status / supplier-payables are as-of). */
 export function operationalReportNeedsDates(kind: OperationalReportKind): boolean {
-  return kind !== "inventory-status" && kind !== "purchase-outstanding";
+  return (
+    kind !== "inventory-status" &&
+    kind !== "purchase-outstanding" &&
+    kind !== "supplier-payables"
+  );
 }
 
 export const OPERATIONAL_REPORT_KINDS: OperationalReportKind[] = [
@@ -126,6 +132,7 @@ export const OPERATIONAL_REPORT_KINDS: OperationalReportKind[] = [
   "purchasing-summary",
   "purchase-outstanding",
   "supplier-purchasing",
+  "supplier-payables",
   "expenses-summary",
   "utang-by-product",
 ];
@@ -258,6 +265,11 @@ export function buildOperationalReportGroups(
         kind: "supplier-purchasing",
         path: "/reports/operational/supplier-purchasing",
         titleKey: "reports.supplierPurchasing",
+      },
+      {
+        kind: "supplier-payables",
+        path: "/reports/operational/supplier-payables",
+        titleKey: "reports.supplierPayables",
       },
     ];
     const items = candidates.filter((item) => canAccessOperationalReport(grant, item.kind));

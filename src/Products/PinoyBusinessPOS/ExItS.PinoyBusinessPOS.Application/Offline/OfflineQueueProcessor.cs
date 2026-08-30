@@ -535,4 +535,10 @@ public static class OfflineOperationTypes
 
     /// <summary>Personal Utang entry/payment record — Platform Personal API only.</summary>
     public const string PersonalEntryRecord = "personal.entry.record";
+
+    /// <summary>
+    /// Server-side idempotency for recording a supplier payable payment. Online-only: no offline
+    /// dispatcher or queue handler. Names the idempotency scope so a retried payment replays.
+    /// </summary>
+    public const string SupplierPayablePayment = "supplier_payable.payment";
 }

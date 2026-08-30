@@ -26,6 +26,7 @@ import {
   getSalesSummaryReport,
   getShiftSummaryReport,
   getStockCountVarianceReport,
+  getSupplierPayablesReport,
   getSupplierPurchasingReport,
 } from "@/api/pos/pos-reporting-client";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,7 @@ function titleKeyFor(kind: OperationalReportKind): MessageKey {
     "purchasing-summary": "reports.purchasingSummary",
     "purchase-outstanding": "reports.purchaseOutstanding",
     "supplier-purchasing": "reports.supplierPurchasing",
+    "supplier-payables": "reports.supplierPayables",
     "expenses-summary": "reports.expenseSummary",
     "utang-by-product": "reports.utangByProduct",
   };
@@ -390,6 +392,26 @@ async function loadLines(
           value: String(r.orderedQuantity ?? 0),
         };
       });
+    }
+    case "supplier-payables": {
+      const rows = await getSupplierPayablesReport(
+        workspace,
+        { outstandingOnly: true },
+        signal,
+      );
+      return rows.slice(0, 25).map((row) => ({
+        label: row.supplierName?.trim() || t("reports.unknownSupplier"),
+        value: (
+          <span className="inline-flex flex-wrap items-baseline gap-2">
+            <MoneyDisplay amount={row.balance} />
+            {row.isOverdue ? (
+              <span className="text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+                {t("supplierPayables.overdue")}
+              </span>
+            ) : null}
+          </span>
+        ),
+      }));
     }
     case "expenses-summary": {
       const d = await getExpenseSummaryReport(workspace, range, signal);

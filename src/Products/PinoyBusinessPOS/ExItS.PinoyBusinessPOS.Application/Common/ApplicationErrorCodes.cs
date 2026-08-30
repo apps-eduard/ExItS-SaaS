@@ -135,6 +135,9 @@ public static class ApplicationErrorCodes
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
 
+    public const string SupplierPayableNotFound = "pos.supplier_payable.not_found";
+    public const string SupplierPayableConcurrencyConflict = "pos.supplier_payable.concurrency_conflict";
+
     public const string DirectPurchaseReceiptNotFound = "pos.direct_purchase_receipt.not_found";
     public const string StockUseNotFound = "pos.stock_use.not_found";
     public const string StockUseNumberConflict = "pos.stock_use.number.conflict";

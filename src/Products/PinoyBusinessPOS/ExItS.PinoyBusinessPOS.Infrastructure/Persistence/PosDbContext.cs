@@ -11,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Onboarding;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
@@ -27,6 +28,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Onboarding;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns;
@@ -101,6 +103,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
+    internal DbSet<SupplierPayableRecord> SupplierPayables => Set<SupplierPayableRecord>();
+    internal DbSet<SupplierPayablePaymentRecord> SupplierPayablePayments => Set<SupplierPayablePaymentRecord>();
     internal DbSet<SupplierRecord> Suppliers => Set<SupplierRecord>();
     internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
     internal DbSet<ConnectedSupplierRelationshipRecord> ConnectedSupplierRelationships => Set<ConnectedSupplierRelationshipRecord>();
@@ -3286,6 +3290,129 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<SupplierPayableRecord>(entity =>
+        {
+            entity.ToTable("supplier_payables", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_status",
+                    "status IN ('Open', 'PartiallyPaid', 'Paid', 'Voided')");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_source_type",
+                    $"source_type IN ({string.Join(", ", SupplierPayableSourceTypes.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_amounts_non_negative",
+                    "original_amount > 0 AND paid_at_receipt_amount >= 0 AND paid_amount >= 0 AND balance >= 0");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_balance_identity",
+                    "balance = original_amount - paid_amount");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_paid_at_receipt_le_original",
+                    "paid_at_receipt_amount <= original_amount");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_void_consistency",
+                    "(status <> 'Voided' AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payables_payment_method_at_receipt",
+                    $"payment_method_at_receipt IS NULL OR payment_method_at_receipt IN ({string.Join(", ", SupplierPayablePaymentMethods.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
+            entity.Property(e => e.SourceType)
+                .HasColumnName("source_type")
+                .HasMaxLength(SupplierPayableSourceTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SourceId).HasColumnName("source_id").IsRequired();
+            entity.Property(e => e.OriginalAmount).HasColumnName("original_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.PaidAtReceiptAmount)
+                .HasColumnName("paid_at_receipt_amount")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.PaidAmount).HasColumnName("paid_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Balance).HasColumnName("balance").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.DueDate).HasColumnName("due_date").HasColumnType("date");
+            entity.Property(e => e.PaymentMethodAtReceipt)
+                .HasColumnName("payment_method_at_receipt")
+                .HasMaxLength(SupplierPayablePaymentMethods.CodeMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.VoidedBy).HasColumnName("voided_by");
+            entity.Property(e => e.VoidReason)
+                .HasColumnName("void_reason")
+                .HasMaxLength(SupplierPayable.VoidReasonMaxLength);
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceType, e.SourceId })
+                .IsUnique()
+                .HasDatabaseName("ux_supplier_payables_org_source");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SupplierId, e.Status })
+                .HasDatabaseName("ix_supplier_payables_org_supplier_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_supplier_payables_org_status");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.DueDate })
+                .HasDatabaseName("ix_supplier_payables_org_due_date");
+
+            entity.HasOne<SupplierRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_supplier_payables_suppliers");
+        });
+
+        modelBuilder.Entity<SupplierPayablePaymentRecord>(entity =>
+        {
+            entity.ToTable("supplier_payable_payments", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_supplier_payable_payments_amount_positive",
+                    "amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_supplier_payable_payments_payment_method",
+                    $"payment_method IN ({string.Join(", ", SupplierPayablePaymentMethods.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.PayableId).HasColumnName("payable_id").IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.PaymentMethod)
+                .HasColumnName("payment_method")
+                .HasMaxLength(SupplierPayablePaymentMethods.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Reference)
+                .HasColumnName("reference")
+                .HasMaxLength(SupplierPayablePayment.ReferenceMaxLength);
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(SupplierPayablePayment.NotesMaxLength);
+            entity.Property(e => e.PaidAtUtc).HasColumnName("paid_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.PayableId })
+                .HasDatabaseName("ix_supplier_payable_payments_org_payable");
+
+            entity.HasOne<SupplierPayableRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PayableId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_supplier_payable_payments_payables");
         });
 
         modelBuilder.Entity<SupplierRecord>(entity =>

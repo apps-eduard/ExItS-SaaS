@@ -191,6 +191,10 @@ export type ReceivePurchaseOrderRequest = {
   receivedDate?: string | null;
   deliveryReference?: string | null;
   notes?: string | null;
+  /** Amount settled at receipt; remainder becomes supplier credit (ADR-023). */
+  paidNow?: number | null;
+  dueDate?: string | null;
+  paymentMethodAtReceipt?: string | null;
 };
 
 export type ListPurchaseOrdersOptions = {
@@ -313,6 +317,17 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
   const notes = trimOrUndef(body.notes);
   if (notes) {
     payload.notes = notes;
+  }
+  if (body.paidNow !== undefined && body.paidNow !== null) {
+    payload.paidNow = body.paidNow;
+  }
+  const dueDate = trimOrUndef(body.dueDate);
+  if (dueDate) {
+    payload.dueDate = dueDate;
+  }
+  const methodAtReceipt = trimOrUndef(body.paymentMethodAtReceipt);
+  if (methodAtReceipt) {
+    payload.paymentMethodAtReceipt = methodAtReceipt;
   }
   return payload;
 }

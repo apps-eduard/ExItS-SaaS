@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
@@ -16,6 +16,12 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
+import {
+  formatMoneyInput,
+  parseMoneyInput,
+  roundMoney,
+} from "@/features/purchasing/receive-payment";
 import { buildReceivePlan, parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -52,6 +58,9 @@ export function PurchaseOrderReceivePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusLocked, setStatusLocked] = useState(false);
+  const [paidNowText, setPaidNowText] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [paidNowTouched, setPaidNowTouched] = useState(false);
   const goodsReceiptIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
@@ -95,6 +104,26 @@ export function PurchaseOrderReceivePage() {
     po != null &&
     isPurchaseOrderReceivable(po) &&
     (lines?.some((l) => l.outstandingQty > 0) ?? false);
+
+  const estimatedTotal = useMemo(() => {
+    if (!lines) {
+      return 0;
+    }
+    return roundMoney(
+      lines.reduce((sum, line) => {
+        const good = parseNonNegativeQty(line.goodText) ?? 0;
+        return sum + good * line.unitPurchaseCost;
+      }, 0),
+    );
+  }, [lines]);
+
+  useEffect(() => {
+    if (!paidNowTouched) {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+    }
+  }, [estimatedTotal, paidNowTouched]);
+
+  const paidNowValue = parseMoneyInput(paidNowText);
 
   function updateLine(productId: string, patch: Partial<LineEdit>) {
     setLines((prev) =>
@@ -149,6 +178,16 @@ export function PurchaseOrderReceivePage() {
     if (!tryPlan()) {
       return;
     }
+    const paidNow = parseMoneyInput(paidNowText);
+    if (paidNow === null) {
+      setError(t("purchasing.invalidPaidNow"));
+      return;
+    }
+    if (paidNow > estimatedTotal) {
+      setError(t("purchasing.paidNowExceedsTotal"));
+      return;
+    }
+    setError(null);
     setReviewing(true);
   }
 
@@ -158,6 +197,15 @@ export function PurchaseOrderReceivePage() {
     }
     const planned = tryPlan();
     if (!planned) {
+      return;
+    }
+    const paidNow = parseMoneyInput(paidNowText);
+    if (paidNow === null) {
+      setError(t("purchasing.invalidPaidNow"));
+      return;
+    }
+    if (paidNow > estimatedTotal) {
+      setError(t("purchasing.paidNowExceedsTotal"));
       return;
     }
     if (!goodsReceiptIdRef.current) {
@@ -176,6 +224,9 @@ export function PurchaseOrderReceivePage() {
         goodsReceiptId,
         deliveryReference: deliveryReference.trim() || null,
         notes: notes.trim() || null,
+        paidNow,
+        dueDate: paidNow < estimatedTotal && dueDate.trim() ? dueDate.trim() : null,
+        paymentMethodAtReceipt: paidNow > 0 ? "Cash" : null,
         lines: planned.map((line) => {
           const edit = lines.find((l) => l.productId === line.productId);
           const goodQty = line.receiveQty;
@@ -405,7 +456,33 @@ export function PurchaseOrderReceivePage() {
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
+          <ReceivePaymentSection
+            estimatedTotal={estimatedTotal}
+            paidNowText={paidNowText}
+            onPaidNowChange={(value) => {
+              setPaidNowTouched(true);
+              setPaidNowText(value);
+            }}
+            dueDate={dueDate}
+            onDueDateChange={setDueDate}
+            paidNowValue={paidNowValue}
+          />
         </div>
+      ) : null}
+
+      {reviewing ? (
+        <ReceivePaymentSection
+          estimatedTotal={estimatedTotal}
+          paidNowText={paidNowText}
+          onPaidNowChange={(value) => {
+            setPaidNowTouched(true);
+            setPaidNowText(value);
+          }}
+          dueDate={dueDate}
+          onDueDateChange={setDueDate}
+          paidNowValue={paidNowValue}
+          disabled={busy || statusLocked}
+        />
       ) : null}
 
       <div className="flex flex-wrap gap-2">

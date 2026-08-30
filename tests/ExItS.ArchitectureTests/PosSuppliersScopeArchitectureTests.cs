@@ -12,7 +12,7 @@ public sealed class PosSuppliersScopeArchitectureTests
         "GoodsReceipt",
         "AccountsPayable",
         "SupplierInvoice",
-        "SupplierPayment",
+        "AccountsPayableLedger",
         "CostHistory",
         "PurchaseReturn"
     ];
@@ -134,7 +134,7 @@ public sealed class PosSuppliersScopeArchitectureTests
             foreach (var forbidden in new[]
                      {
                          "GoodsReceipt", "Receiving", "AccountsPayable",
-                         "SupplierInvoice", "SupplierPayment", "CostHistory", "PurchaseReturn"
+                         "SupplierInvoice", "AccountsPayableLedger", "CostHistory", "PurchaseReturn"
                      })
             {
                 Assert.DoesNotContain(forbidden, text, StringComparison.OrdinalIgnoreCase);
@@ -158,6 +158,12 @@ public sealed class PosSuppliersScopeArchitectureTests
             Assert.True(Directory.Exists(root), root);
             foreach (var file in Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories))
             {
+                if (file.Contains($"{Path.DirectorySeparatorChar}SupplierPayables{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                    || file.Contains($"{Path.AltDirectorySeparatorChar}SupplierPayables{Path.AltDirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
                     || file.EndsWith(".razor", StringComparison.OrdinalIgnoreCase))
                 {
@@ -176,6 +182,12 @@ public sealed class PosSuppliersScopeArchitectureTests
         {
             foreach (var file in Directory.EnumerateFiles(project, "Supplier*.cs", SearchOption.AllDirectories))
             {
+                if (file.Contains($"{Path.DirectorySeparatorChar}SupplierPayables{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                    || file.Contains($"{Path.AltDirectorySeparatorChar}SupplierPayables{Path.AltDirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 yield return file;
             }
         }

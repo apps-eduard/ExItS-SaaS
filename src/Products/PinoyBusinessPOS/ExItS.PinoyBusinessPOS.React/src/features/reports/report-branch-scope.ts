@@ -43,6 +43,7 @@ export function reportScopeModeForOperational(kind: string): ReportScopeMode {
     case "purchasing-summary":
     case "purchase-outstanding":
     case "supplier-purchasing":
+    case "supplier-payables":
     case "expenses-summary":
     case "utang-by-product":
       return "organization_only";

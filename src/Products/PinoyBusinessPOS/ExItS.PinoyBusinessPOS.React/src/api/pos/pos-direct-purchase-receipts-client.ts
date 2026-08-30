@@ -93,6 +93,10 @@ export type CreateDirectPurchaseReceiptRequest = {
   notes?: string | null;
   /** Body idempotency key (API contract) — client-generated UUID string. */
   idempotencyKey?: string | null;
+  /** Amount settled at receipt; remainder becomes supplier credit (ADR-023). */
+  paidNow?: number | null;
+  dueDate?: string | null;
+  paymentMethodAtReceipt?: string | null;
 };
 
 export type ListDirectPurchaseReceiptsOptions = {
@@ -206,6 +210,17 @@ export async function createDirectPurchaseReceipt(
   const notes = trimOrUndef(body.notes);
   if (notes) {
     payload.notes = notes;
+  }
+  if (body.paidNow !== undefined && body.paidNow !== null) {
+    payload.paidNow = body.paidNow;
+  }
+  const dueDate = trimOrUndef(body.dueDate);
+  if (dueDate) {
+    payload.dueDate = dueDate;
+  }
+  const methodAtReceipt = trimOrUndef(body.paymentMethodAtReceipt);
+  if (methodAtReceipt) {
+    payload.paymentMethodAtReceipt = methodAtReceipt;
   }
   payload.idempotencyKey = body.idempotencyKey?.trim() || crypto.randomUUID();
 

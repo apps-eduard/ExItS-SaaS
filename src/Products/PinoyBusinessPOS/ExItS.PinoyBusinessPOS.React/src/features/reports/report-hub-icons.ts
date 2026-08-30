@@ -32,6 +32,7 @@ const operationalReportIcons: Record<OperationalReportKind, LucideIcon> = {
   "purchasing-summary": PackagePlus,
   "purchase-outstanding": Truck,
   "supplier-purchasing": Truck,
+  "supplier-payables": Wallet,
   "expenses-summary": Receipt,
   "utang-by-product": Wallet,
 };

@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -11,6 +12,7 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
@@ -226,6 +228,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 Inventory,
                 new InventoryLotStockService(Lots),
                 UnitOfWork,
+                new CreateSupplierPayableFromReceipt(new NoOpSupplierPayableRepository()),
                 Clock);
         }
 
@@ -666,5 +669,48 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryLotMovement>>(
                 Movements.Where(m => m.OrganizationId == organizationId && m.SourceId == sourceId && m.MovementType == movementType).ToList());
+    }
+
+    private sealed class NoOpSupplierPayableRepository : ISupplierPayableRepository
+    {
+        public Task<SupplierPayable?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableId payableId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<SupplierPayable?>(null);
+
+        public Task<SupplierPayable?> FindBySourceAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableSourceType sourceType,
+            Guid sourceId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<SupplierPayable?>(null);
+
+        public Task<(IReadOnlyList<SupplierPayable> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<SupplierPayable>, int)>((Array.Empty<SupplierPayable>(), 0));
+
+        public Task<IReadOnlyList<SupplierPayablePayment>> ListPaymentsAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableId payableId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplierPayablePayment>>(Array.Empty<SupplierPayablePayment>());
+
+        public Task AddAsync(SupplierPayable payable, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(SupplierPayable payable, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<SupplierPayableSummaryTotals> GetSupplierSummaryAsync(
+            PosOrganizationId organizationId,
+            SupplierId supplierId,
+            DateOnly asOfDate,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SupplierPayableSummaryTotals(0m, 0m, 0));
     }
 }

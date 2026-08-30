@@ -20,6 +20,7 @@ import {
   getSalesSummaryReport,
   getShiftSummaryReport,
   getStockCountVarianceReport,
+  getSupplierPayablesReport,
   getSupplierPurchasingReport,
   getUtangReport,
   type PosProductProfitabilityRowDto,
@@ -284,6 +285,39 @@ export async function buildOperationalReportExport(args: {
           "orderCount",
         ]),
       );
+    }
+    case "supplier-payables": {
+      const rows = await getSupplierPayablesReport(
+        workspace,
+        { outstandingOnly: true },
+        signal,
+      );
+      return finalizeExport("supplier-payables", scope, {
+        headers: [
+          "Supplier",
+          "Source Type",
+          "Original Amount",
+          "Paid At Receipt",
+          "Paid Amount",
+          "Balance",
+          "Status",
+          "Due Date",
+          "Overdue",
+          "Created At Utc",
+        ],
+        rows: rows.map((row) => [
+          row.supplierName ?? "",
+          row.sourceType,
+          row.originalAmount,
+          row.paidAtReceiptAmount,
+          row.paidAmount,
+          row.balance,
+          row.status,
+          row.dueDate ?? "",
+          row.isOverdue,
+          row.createdAtUtc,
+        ]),
+      });
     }
     case "inventory-status": {
       const data = await getInventoryStatusReport(workspace, signal);

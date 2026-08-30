@@ -9,10 +9,9 @@ public sealed class PosPurchasingScopeArchitectureTests
     [
         "AccountsPayable",
         "SupplierInvoice",
-        "SupplierPayment",
         "CostHistory",
         "PurchaseReturn",
-        "AccountsPayable"
+        "AccountsPayableLedger"
     ];
 
     [Fact]
@@ -59,6 +58,10 @@ public sealed class PosPurchasingScopeArchitectureTests
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);
         }
+
+        // ADR-023 authorizes organization supplier payables (distinct from legacy AP table names).
+        Assert.Contains("\"supplier_payables\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"supplier_payable_payments\"", context, StringComparison.Ordinal);
     }
 
     [Fact]

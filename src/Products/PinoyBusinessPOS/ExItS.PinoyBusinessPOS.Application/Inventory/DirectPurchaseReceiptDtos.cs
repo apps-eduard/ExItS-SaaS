@@ -62,7 +62,10 @@ public sealed record CreateDirectPurchaseReceiptRequest(
     string? SourceName = null,
     string? ReferenceNumber = null,
     string? Notes = null,
-    string? IdempotencyKey = null);
+    string? IdempotencyKey = null,
+    decimal? PaidNow = null,
+    DateOnly? DueDate = null,
+    string? PaymentMethodAtReceipt = null);
 
 public static class DirectPurchaseReceiptMapper
 {

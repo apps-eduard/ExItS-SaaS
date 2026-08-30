@@ -16,6 +16,13 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
+import {
+  directPurchaseCreditValidationKey,
+  formatMoneyInput,
+  parseMoneyInput,
+  roundMoney,
+} from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -60,12 +67,28 @@ export function ReceiveStockPage() {
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
+  const [paidNowText, setPaidNowText] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [paidNowTouched, setPaidNowTouched] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
+
+  const estimatedTotal = useMemo(
+    () => roundMoney(lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)),
+    [lines],
+  );
+
+  useEffect(() => {
+    if (!paidNowTouched) {
+      setPaidNowText(formatMoneyInput(estimatedTotal));
+    }
+  }, [estimatedTotal, paidNowTouched]);
+
+  const paidNowValue = parseMoneyInput(paidNowText);
 
   const workspace = useMemo(
     () =>
@@ -147,6 +170,20 @@ export function ReceiveStockPage() {
     if (!workspace || !allowManage || !online || saving || statusLocked || lines.length === 0) {
       return;
     }
+    const paidNow = parseMoneyInput(paidNowText);
+    if (paidNow === null) {
+      setError(t("purchasing.invalidPaidNow"));
+      return;
+    }
+    if (paidNow > estimatedTotal) {
+      setError(t("purchasing.paidNowExceedsTotal"));
+      return;
+    }
+    const creditKey = directPurchaseCreditValidationKey(supplierId, estimatedTotal, paidNow);
+    if (creditKey) {
+      setError(t(creditKey));
+      return;
+    }
     if (!idempotencyKeyRef.current) {
       const generated = createSecureMutationId();
       if (!generated.ok) {
@@ -156,6 +193,11 @@ export function ReceiveStockPage() {
       idempotencyKeyRef.current = generated.id;
     }
     const idempotencyKey = idempotencyKeyRef.current;
+    const paymentFields = {
+      paidNow,
+      dueDate: paidNow < estimatedTotal && dueDate.trim() ? dueDate.trim() : null,
+      paymentMethodAtReceipt: paidNow > 0 ? "Cash" : null,
+    };
     setSaving(true);
     setError(null);
     try {
@@ -173,6 +215,7 @@ export function ReceiveStockPage() {
           expiryDate: line.expiryDate,
           lotNumber: line.lotNumber,
         })),
+        ...paymentFields,
       });
       idempotencyKeyRef.current = null;
       navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
@@ -198,6 +241,7 @@ export function ReceiveStockPage() {
               expiryDate: line.expiryDate,
               lotNumber: line.lotNumber,
             })),
+            ...paymentFields,
           });
           idempotencyKeyRef.current = null;
           navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
@@ -433,11 +477,47 @@ export function ReceiveStockPage() {
             )}
           </section>
 
+          {lines.length > 0 ? (
+            <ReceivePaymentSection
+              estimatedTotal={estimatedTotal}
+              paidNowText={paidNowText}
+              onPaidNowChange={(value) => {
+                setPaidNowTouched(true);
+                setPaidNowText(value);
+              }}
+              dueDate={dueDate}
+              onDueDateChange={setDueDate}
+              paidNowValue={paidNowValue}
+              disabled={!allowManage || !online}
+            />
+          ) : null}
+
           <Button
             type="button"
             className="min-h-11"
             disabled={lines.length === 0 || !allowManage || !online}
-            onClick={() => setReviewing(true)}
+            onClick={() => {
+              const paidNow = parseMoneyInput(paidNowText);
+              if (paidNow === null) {
+                setError(t("purchasing.invalidPaidNow"));
+                return;
+              }
+              if (paidNow > estimatedTotal) {
+                setError(t("purchasing.paidNowExceedsTotal"));
+                return;
+              }
+              const creditKey = directPurchaseCreditValidationKey(
+                supplierId,
+                estimatedTotal,
+                paidNow,
+              );
+              if (creditKey) {
+                setError(t(creditKey));
+                return;
+              }
+              setError(null);
+              setReviewing(true);
+            }}
             data-testid="direct-review"
           >
             {t("purchasing.reviewDirect")}
@@ -454,6 +534,18 @@ export function ReceiveStockPage() {
               </li>
             ))}
           </ul>
+          <ReceivePaymentSection
+            estimatedTotal={estimatedTotal}
+            paidNowText={paidNowText}
+            onPaidNowChange={(value) => {
+              setPaidNowTouched(true);
+              setPaidNowText(value);
+            }}
+            dueDate={dueDate}
+            onDueDateChange={setDueDate}
+            paidNowValue={paidNowValue}
+            disabled={saving || statusLocked}
+          />
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               type="button"

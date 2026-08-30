@@ -1,11 +1,13 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -58,6 +60,7 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly IInventoryRepository _inventory;
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
+    private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
 
     public CreateDirectPurchaseReceipt(
@@ -67,6 +70,7 @@ public sealed class CreateDirectPurchaseReceipt
         IInventoryRepository inventory,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
+        CreateSupplierPayableFromReceipt createPayable,
         IClock clock)
     {
         _receipts = receipts;
@@ -75,6 +79,7 @@ public sealed class CreateDirectPurchaseReceipt
         _inventory = inventory;
         _lots = lots;
         _unitOfWork = unitOfWork;
+        _createPayable = createPayable;
         _clock = clock;
     }
 
@@ -286,6 +291,24 @@ public sealed class CreateDirectPurchaseReceipt
                         }
 
                         await _receipts.AddAsync(receipt, ct).ConfigureAwait(false);
+
+                        var payableResult = await _createPayable
+                            .TryCreateFromDirectPurchaseAsync(
+                                receipt,
+                                request.PaidNow,
+                                request.DueDate,
+                                request.PaymentMethodAtReceipt,
+                                actorId,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+                        if (!payableResult.IsSuccess)
+                        {
+                            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                payableResult.ErrorCode!,
+                                payableResult.ErrorMessage!);
+                        }
+
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                         return ApplicationResult<DirectPurchaseReceiptDto>.Success(
                             DirectPurchaseReceiptMapper.Map(receipt));
@@ -320,6 +343,7 @@ public sealed class VoidDirectPurchaseReceipt
     private readonly IInventoryRepository _inventory;
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
+    private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
 
     public VoidDirectPurchaseReceipt(
@@ -328,6 +352,7 @@ public sealed class VoidDirectPurchaseReceipt
         IInventoryRepository inventory,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
+        CreateSupplierPayableFromReceipt createPayable,
         IClock clock)
     {
         _receipts = receipts;
@@ -335,6 +360,7 @@ public sealed class VoidDirectPurchaseReceipt
         _inventory = inventory;
         _lots = lots;
         _unitOfWork = unitOfWork;
+        _createPayable = createPayable;
         _clock = clock;
     }
 
@@ -387,6 +413,17 @@ public sealed class VoidDirectPurchaseReceipt
                         var productsById = products.ToDictionary(p => p.Id.Value);
                         var utcNow = _clock.UtcNow;
                         var voidReason = request.Reason.Trim();
+
+                        await _createPayable
+                            .EnsureVoidOrBlockForReceiptReversalAsync(
+                                orgId,
+                                SupplierPayableSourceType.DirectPurchaseReceipt,
+                                receipt.Id.Value,
+                                voidReason,
+                                actorId,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
 
                         ApplicationResult<DirectPurchaseReceiptDto>? failure = null;
                         await _inventory

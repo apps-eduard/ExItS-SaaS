@@ -37,6 +37,8 @@ export const OFFLINE_OPERATION_TYPES = {
   CustomerOrderComplete: "customer_order.complete",
   /** Online-only expense create — mirrors server PosMutationIdempotencyHelper expense.create. */
   ExpenseCreate: "expense.create",
+  /** Online-only supplier payable payment — mirrors OfflineOperationTypes.SupplierPayablePayment. */
+  SupplierPayablePayment: "supplier_payable.payment",
 } as const;
 
 function guidToN(guid: string): string {
