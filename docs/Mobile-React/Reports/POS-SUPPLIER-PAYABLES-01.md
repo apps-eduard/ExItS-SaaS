@@ -5,7 +5,7 @@
 **TASK:** POS-SUPPLIER-PAYABLES-01  
 **START_SHA:** `178100d07b2e248f561a491d0b41120483a9844a`
 **FEATURE_SHA:** `c045ea25242a108390412bfba7fce506da94ec47`
-**FINAL_SHA:** _(recorded after docs stamp)_
+**FINAL_SHA:** `8366a8ecabe73d39dd21f29850957c84b3e74ab8`
 **ADR:** [ADR-023](../../decisions/ADR-023-organization-supplier-payables.md)
 
 ## DOMAIN_BOUNDARY / CUSTOMER_UTANG_SEPARATION
