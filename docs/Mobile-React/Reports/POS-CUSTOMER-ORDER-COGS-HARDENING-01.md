@@ -4,7 +4,7 @@
 **Branch:** `feat/organization`  
 **TASK:** POS-CUSTOMER-ORDER-COGS-HARDENING-01  
 **START_SHA:** `a4416f283f868048db99e757c268e58e6de66907`  
-**FEATURE_SHA:** _(recorded at commit)_
+**FEATURE_SHA:** `ea9334be2708efe5cf554cc46dfa54701166b7e6`
 
 ## CURRENT_CUSTOMER_ORDER_COST_MODEL
 
