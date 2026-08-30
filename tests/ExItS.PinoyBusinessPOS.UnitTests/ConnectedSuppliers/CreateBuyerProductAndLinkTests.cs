@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -264,6 +265,23 @@ public sealed class CreateBuyerProductAndLinkTests
         Assert.Empty(harness.Links.Items);
     }
 
+    [Fact]
+    public async Task Missing_business_usage_fails_before_product_is_added()
+    {
+        var harness = CreateHarness();
+        var request = Request(harness.Exposure) with { BusinessUsage = null };
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            request);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CatalogBulkValidation, result.ErrorCode);
+        Assert.Equal(0, harness.Products.AddCount);
+        Assert.Empty(harness.Links.Items);
+    }
+
     private static Harness CreateHarness(
         bool activeRelationship = true,
         bool includeShare = true,
@@ -326,6 +344,10 @@ public sealed class CreateBuyerProductAndLinkTests
             new FixedTimeProvider(Now.AddMinutes(5)));
     }
 
+    /// <summary>
+    /// Valid create-and-link request matching the React contract (BusinessUsage=Resale).
+    /// Negative cases must override with <c>with { BusinessUsage = null }</c> (or equivalent).
+    /// </summary>
     private static CreateBuyerProductAndLinkRequest Request(
         SupplierProductExposure exposure,
         decimal sellingPrice = 72m) =>
@@ -334,7 +356,8 @@ public sealed class CreateBuyerProductAndLinkTests
             "Buyer Premium Rice",
             exposure.UnitOfMeasureCode,
             sellingPrice,
-            Sku: $"BUY-{Guid.NewGuid():N}");
+            Sku: $"BUY-{Guid.NewGuid():N}",
+            BusinessUsage: "Resale");
 
     private static CatalogProduct Product(
         PosOrganizationId organizationId,
