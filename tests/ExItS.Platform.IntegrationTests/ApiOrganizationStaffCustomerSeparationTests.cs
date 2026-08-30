@@ -236,6 +236,26 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
     }
 
     [Fact]
+    public async Task Staff_invitation_persists_product_role_on_create_wire()
+    {
+        var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("prl");
+        _ = ownerId;
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var contactEmail = $"{Unique("prlc")}@example.com";
+
+        using var staffInvite = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/staff-invitations",
+            ownerToken,
+            new { email = contactEmail, role = "OrganizationMember", productRole = "Cashier" });
+        var inviteResponse = await _client.SendAsync(staffInvite);
+        Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
+        var inviteBody = await inviteResponse.Content.ReadFromJsonAsync<JsonElement>();
+        // Regression: staff-invitations previously dropped ProductRole (always null on wire).
+        Assert.Equal("Cashier", inviteBody.GetProperty("productRole").GetString());
+    }
+
+    [Fact]
     public async Task Staff_invitation_creates_membership_and_credit_customer_stays_non_staff()
     {
         var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("inv");

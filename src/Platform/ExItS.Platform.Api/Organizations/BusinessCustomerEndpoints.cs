@@ -761,6 +761,9 @@ internal static class BusinessCustomerEndpoints
                 .ResolveActorMembershipAuthorityAsync(organizationId, ct)
                 .ConfigureAwait(false);
 
+            // Pass invitee profile + productRole through to CreateOrganizationInvitation.
+            // Omitting productRole left accepted staff without pinoy-business-pos grants
+            // (product_assignment_missing) while the wire body looked like a POS role invite.
             var result = await useCase
                 .ExecuteAsync(
                     PlatformOrganizationId.From(organizationId),
@@ -769,7 +772,15 @@ internal static class BusinessCustomerEndpoints
                     membershipAuthz.Inner.CurrentActor.PlatformUserId,
                     authority.ActorMembershipRole,
                     authority.HasPlatformManageMemberships,
-                    cancellationToken: ct)
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    body.Phone,
+                    body.EmployeeCode,
+                    body.Branch,
+                    body.ProductRole,
+                    body.RequireEmailVerification ?? true,
+                    ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)
             {

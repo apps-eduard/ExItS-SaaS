@@ -758,8 +758,16 @@ internal static class ReportingEndpoints
             return false;
         }
 
-        if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewAdvancedReports, out problem))
+        // Plan entitlement only (`store-advanced-reports`). Do not intersect with PosRoleMatrix:
+        // ReportingUser / StoreManager / InventoryStaff never list ViewAdvancedReports as a role
+        // capability — they are gated by AllowsReport + ViewReports/ViewInventory/etc. instead.
+        var advanced = CommercialAccessGuard.Require(access, UtangCapability.ViewAdvancedReports);
+        if (!advanced.IsSuccess)
         {
+            problem = PosApiResults.Problem(
+                advanced.ErrorCode!,
+                advanced.ErrorMessage!,
+                PosApiResults.MapStatusCode(advanced.ErrorCode!));
             return false;
         }
 

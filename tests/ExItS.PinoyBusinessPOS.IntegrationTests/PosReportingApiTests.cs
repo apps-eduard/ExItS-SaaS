@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
+using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Application.Reporting;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using Microsoft.AspNetCore.Hosting;
@@ -185,6 +186,88 @@ public sealed class PosReportingApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(
             ApplicationErrorCodes.ReportRangeTooLarge,
             problem.GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
+    public async Task Operational_sales_summary_allows_ReportingUser_and_inventory_status_allows_InventoryStaff()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var owner = Actor;
+        var reporter = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var inventoryStaff = Guid.Parse("bbbbbbbb-cccc-dddd-eeee-ffffffffffff");
+
+        // Bootstrap Owner on first authenticated request.
+        using var bootstrap = ScopedActor(HttpMethod.Get, Dashboard, org, owner);
+        using var bootstrapResp = await client.SendAsync(bootstrap);
+        Assert.True(bootstrapResp.IsSuccessStatusCode, await bootstrapResp.Content.ReadAsStringAsync());
+
+        await AssignRoleAsync(client, org, owner, reporter, "ReportingUser");
+        await AssignRoleAsync(client, org, owner, inventoryStaff, "InventoryStaff");
+
+        using var sales = ScopedActor(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/sales-summary",
+            org,
+            reporter);
+        using var salesResp = await client.SendAsync(sales);
+        Assert.Equal(HttpStatusCode.OK, salesResp.StatusCode);
+
+        using var inv = ScopedActor(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/inventory-status",
+            org,
+            inventoryStaff);
+        using var invResp = await client.SendAsync(inv);
+        Assert.Equal(HttpStatusCode.OK, invResp.StatusCode);
+
+        using var salesDeniedForInv = ScopedActor(
+            HttpMethod.Get,
+            "/api/v1/pos/reports/sales-summary",
+            org,
+            inventoryStaff);
+        using var salesDeniedResp = await client.SendAsync(salesDeniedForInv);
+        Assert.Equal(HttpStatusCode.Forbidden, salesDeniedResp.StatusCode);
+    }
+
+    private static async Task AssignRoleAsync(
+        HttpClient client,
+        Guid org,
+        Guid ownerActor,
+        Guid targetActor,
+        string role)
+    {
+        using var assign = ScopedActor(HttpMethod.Post, "/api/v1/pos/permissions/assignments", org, ownerActor);
+        assign.Content = JsonContent.Create(new AssignPosRoleRequest(targetActor, role), options: JsonOptions);
+        using var response = await client.SendAsync(assign);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    private static HttpRequestMessage ScopedActor(
+        HttpMethod method,
+        string path,
+        Guid organizationId,
+        Guid actorId)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.OrganizationHeaderName,
+            organizationId.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.ActorHeaderName,
+            actorId.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            PosCommercialHeaders.SubscriptionStatusHeaderName,
+            PosSubscriptionStatuses.Active);
+        // Operational reports require plan entitlement store-advanced-reports (Growth).
+        request.Headers.TryAddWithoutValidation(
+            PosCommercialHeaders.FeatureGrantsHeaderName,
+            string.Join(
+                ',',
+                UtangCapabilityPolicy.DefaultDevelopmentGrants.Concat(
+                    [PosFeatureCodes.StoreAdvancedReports, PosFeatureCodes.StoreExport])));
+        return request;
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(
