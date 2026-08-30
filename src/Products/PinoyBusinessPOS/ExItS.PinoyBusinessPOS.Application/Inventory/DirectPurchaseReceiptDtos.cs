@@ -28,7 +28,13 @@ public sealed record DirectPurchaseReceiptDto(
     decimal TotalCost,
     Guid CreatedByUserId,
     DateTimeOffset CreatedAtUtc,
-    IReadOnlyList<DirectPurchaseReceiptLineDto> Lines);
+    IReadOnlyList<DirectPurchaseReceiptLineDto> Lines,
+    string Status = "Posted",
+    DateTimeOffset? VoidedAtUtc = null,
+    Guid? VoidedByUserId = null,
+    string? VoidReason = null);
+
+public sealed record VoidDirectPurchaseReceiptRequest(string Reason, string? Notes = null);
 
 public sealed record DirectPurchaseReceiptListItemDto(
     Guid DirectPurchaseReceiptId,
@@ -39,7 +45,8 @@ public sealed record DirectPurchaseReceiptListItemDto(
     string? ReferenceNumber,
     decimal TotalCost,
     int LineCount,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string Status = "Posted");
 
 public sealed record CreateDirectPurchaseReceiptLineRequest(
     Guid ProductId,
@@ -72,7 +79,11 @@ public static class DirectPurchaseReceiptMapper
             receipt.TotalCost,
             receipt.CreatedByUserId,
             receipt.CreatedAtUtc,
-            receipt.Lines.Select(MapLine).ToList());
+            receipt.Lines.Select(MapLine).ToList(),
+            DirectPurchaseReceiptStatuses.ToCode(receipt.Status),
+            receipt.VoidedAtUtc,
+            receipt.VoidedByUserId,
+            receipt.VoidReason);
 
     public static DirectPurchaseReceiptListItemDto MapListItem(DirectPurchaseReceipt receipt) =>
         new(
@@ -84,7 +95,8 @@ public static class DirectPurchaseReceiptMapper
             receipt.ReferenceNumber,
             receipt.TotalCost,
             receipt.Lines.Count,
-            receipt.CreatedAtUtc);
+            receipt.CreatedAtUtc,
+            DirectPurchaseReceiptStatuses.ToCode(receipt.Status));
 
     public static DirectPurchaseReceiptLineDto MapLine(DirectPurchaseReceiptLine line) =>
         new(

@@ -645,6 +645,32 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.WasteLossVoidRestoration),
             cancellationToken);
 
+    public Task<bool> HasPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        GoodsReceiptId goodsReceiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == goodsReceiptId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.PurchaseReceipt)
+                && m.MovementType == nameof(StockMovementType.PurchaseReceiptReversal),
+            cancellationToken);
+
+    public Task<bool> HasDirectPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        DirectPurchaseReceiptId receiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == receiptId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.DirectPurchase)
+                && m.MovementType == nameof(StockMovementType.DirectPurchaseReceiptReversal),
+            cancellationToken);
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

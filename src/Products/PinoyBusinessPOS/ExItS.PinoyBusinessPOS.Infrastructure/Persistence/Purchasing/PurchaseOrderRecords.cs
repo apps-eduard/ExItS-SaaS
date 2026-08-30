@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
 
 internal sealed class PurchaseOrderNumberSequenceRecord
@@ -67,6 +69,10 @@ internal sealed class GoodsReceiptRecord
     public string? Notes { get; set; }
     public DateTimeOffset ReceivedAtUtc { get; set; }
     public Guid ReceivedBy { get; set; }
+    public string Status { get; set; } = nameof(GoodsReceiptStatus.Posted);
+    public DateTimeOffset? VoidedAtUtc { get; set; }
+    public Guid? VoidedByUserId { get; set; }
+    public string? VoidReason { get; set; }
 }
 
 internal sealed class GoodsReceiptLineRecord

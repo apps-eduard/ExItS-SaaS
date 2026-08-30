@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
 
@@ -74,6 +76,33 @@ internal static class DirectPurchaseReceiptEndpoints
             return PosApiResults.FromResult(
                 result,
                 dto => Results.Created($"/api/v1/pos/direct-purchase-receipts/{dto.DirectPurchaseReceiptId:D}", dto));
+        });
+
+        group.MapPost("/{receiptId:guid}/void", async (
+            HttpRequest request,
+            Guid receiptId,
+            VoidDirectPurchaseReceiptRequest body,
+            VoidDirectPurchaseReceipt useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.DirectPurchaseReceiptVoid,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, receiptId, body, actorId, ct2),
+                    dto => dto,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
         });
 
         return app;

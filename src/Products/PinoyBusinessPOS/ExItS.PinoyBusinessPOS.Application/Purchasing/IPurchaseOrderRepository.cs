@@ -49,6 +49,8 @@ public interface IPurchaseOrderRepository
         GoodsReceiptId goodsReceiptId,
         CancellationToken cancellationToken = default);
 
+    Task UpdateGoodsReceiptAsync(GoodsReceipt receipt, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<GoodsReceipt>> ListGoodsReceiptsForPurchaseOrderAsync(
         PosOrganizationId organizationId,
         PurchaseOrderId purchaseOrderId,

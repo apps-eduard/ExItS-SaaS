@@ -280,6 +280,10 @@ public static class DomainErrorCodes
     public const string PurchaseOverReceipt = "pos.purchase_order.receive.over_receipt";
     public const string InvalidGoodsReceiptLine = "pos.goods_receipt.line.invalid";
     public const string InvalidGoodsReceiptNotes = "pos.goods_receipt.notes.invalid";
+    public const string InvalidGoodsReceiptStatus = "pos.goods_receipt.status.invalid";
+    public const string InvalidGoodsReceiptStatusTransition = "pos.goods_receipt.status.invalid_transition";
+    public const string InvalidGoodsReceiptVoidReason = "pos.goods_receipt.void.reason.invalid";
+    public const string GoodsReceiptVoidInsufficient = "pos.goods_receipt.void.insufficient_stock";
 
     public const string InvalidDirectPurchaseReceiptId = "pos.direct_purchase_receipt.id.invalid";
     public const string InvalidDirectPurchaseReceiptLineId = "pos.direct_purchase_receipt_line.id.invalid";
@@ -292,6 +296,10 @@ public static class DomainErrorCodes
     public const string InvalidDirectPurchaseReference = "pos.direct_purchase_receipt.reference.invalid";
     public const string InvalidDirectPurchaseNotes = "pos.direct_purchase_receipt.notes.invalid";
     public const string InvalidDirectPurchaseIdempotencyKey = "pos.direct_purchase_receipt.idempotency_key.invalid";
+    public const string InvalidDirectPurchaseReceiptStatus = "pos.direct_purchase_receipt.status.invalid";
+    public const string InvalidDirectPurchaseReceiptStatusTransition = "pos.direct_purchase_receipt.status.invalid_transition";
+    public const string InvalidDirectPurchaseVoidReason = "pos.direct_purchase_receipt.void.reason.invalid";
+    public const string DirectPurchaseReceiptVoidInsufficient = "pos.direct_purchase_receipt.void.insufficient_stock";
 
     public const string InvalidStockUseId = "pos.stock_use.id.invalid";
     public const string InvalidStockUseLineId = "pos.stock_use.line.id.invalid";

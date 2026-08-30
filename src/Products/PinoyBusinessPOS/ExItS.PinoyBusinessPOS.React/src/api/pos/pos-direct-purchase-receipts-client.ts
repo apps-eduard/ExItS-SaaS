@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
 
 const PATH = "/api/v1/pos/direct-purchase-receipts";
 
@@ -37,6 +41,10 @@ export const directPurchaseReceiptDtoSchema = z.object({
   createdByUserId: guidSchema,
   createdAtUtc: z.string(),
   lines: z.array(directPurchaseReceiptLineDtoSchema),
+  status: z.string().default("Posted"),
+  voidedAtUtc: z.string().nullable().optional(),
+  voidedByUserId: guidSchema.nullable().optional(),
+  voidReason: z.string().nullable().optional(),
 });
 
 export const directPurchaseReceiptListItemDtoSchema = z.object({
@@ -49,6 +57,7 @@ export const directPurchaseReceiptListItemDtoSchema = z.object({
   totalCost: z.number(),
   lineCount: z.number(),
   createdAtUtc: z.string(),
+  status: z.string().default("Posted"),
 });
 
 export const directPurchaseReceiptPagedResultSchema = z.object({
@@ -94,6 +103,11 @@ export type ListDirectPurchaseReceiptsOptions = {
   referenceNumber?: string;
   page?: number;
   pageSize?: number;
+};
+
+export type VoidDirectPurchaseReceiptRequest = {
+  reason: string;
+  notes?: string | null;
 };
 
 function appendQuery(
@@ -201,6 +215,36 @@ export async function createDirectPurchaseReceipt(
     signal,
     path: PATH,
     body: payload,
+  });
+  return directPurchaseReceiptDtoSchema.parse(raw);
+}
+
+/**
+ * Full reverse of a posted direct purchase receipt. Compensating stock out at original unit cost.
+ * Online-only; preserves the original receipt as Voided.
+ */
+export async function voidDirectPurchaseReceipt(
+  workspace: PosWorkspaceScope,
+  receiptId: string,
+  body: VoidDirectPurchaseReceiptRequest,
+  signal?: AbortSignal,
+): Promise<DirectPurchaseReceiptDto> {
+  const payload = {
+    reason: body.reason.trim(),
+    ...(body.notes?.trim() ? { notes: body.notes.trim() } : {}),
+  };
+  const headers = await buildPosMutationIdempotencyHeaders(
+    receiptId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.DirectPurchaseReceiptVoid,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/${receiptId}/void`,
+    body: payload,
+    headers,
   });
   return directPurchaseReceiptDtoSchema.parse(raw);
 }

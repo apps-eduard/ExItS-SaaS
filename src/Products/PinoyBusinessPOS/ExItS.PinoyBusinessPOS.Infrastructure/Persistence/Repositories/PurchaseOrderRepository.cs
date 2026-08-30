@@ -280,6 +280,23 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
         return PurchaseEntityMapper.ToDomain(record, lines);
     }
 
+    public async Task UpdateGoodsReceiptAsync(GoodsReceipt receipt, CancellationToken cancellationToken = default)
+    {
+        var record = await _db.GoodsReceipts
+            .FirstOrDefaultAsync(
+                g => g.Id == receipt.Id.Value && g.OrganizationId == receipt.OrganizationId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.GoodsReceiptNotFound,
+                "Goods receipt was not found.");
+        }
+
+        PurchaseEntityMapper.ApplyToRecord(receipt, record);
+    }
+
     public async Task<IReadOnlyList<GoodsReceipt>> ListGoodsReceiptsForPurchaseOrderAsync(
         PosOrganizationId organizationId,
         PurchaseOrderId purchaseOrderId,

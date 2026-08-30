@@ -2372,6 +2372,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_direct_purchase_receipts_total_cost_non_negative",
                     "total_cost >= 0");
+                tb.HasCheckConstraint(
+                    "ck_direct_purchase_receipts_status",
+                    $"status IN ({string.Join(", ", DirectPurchaseReceiptStatuses.Codes.Select(c => $"'{c}'"))})");
             });
 
             entity.HasKey(e => e.Id);
@@ -2401,6 +2404,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.IdempotencyKey)
                 .HasColumnName("idempotency_key")
                 .HasMaxLength(DirectPurchaseReceipt.IdempotencyKeyMaxLength);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(DirectPurchaseReceiptStatuses.CodeMaxLength)
+                .IsRequired()
+                .HasDefaultValue(DirectPurchaseReceiptStatuses.ToCode(DirectPurchaseReceiptStatus.Posted));
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.VoidedByUserId).HasColumnName("voided_by_user_id");
+            entity.Property(e => e.VoidReason)
+                .HasColumnName("void_reason")
+                .HasMaxLength(DirectPurchaseReceipt.VoidReasonMaxLength);
 
             entity.HasIndex(e => new { e.OrganizationId, e.ReceiptNumber })
                 .IsUnique()
@@ -2417,6 +2430,8 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_direct_purchase_receipts_org_reference");
             entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
                 .HasDatabaseName("ix_direct_purchase_receipts_org_created_at");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_status");
 
             entity.HasOne<SupplierRecord>()
                 .WithMany()
@@ -3528,7 +3543,12 @@ public sealed class PosDbContext : DbContext
 
         modelBuilder.Entity<GoodsReceiptRecord>(entity =>
         {
-            entity.ToTable("goods_receipts");
+            entity.ToTable("goods_receipts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_goods_receipts_status",
+                    $"status IN ({string.Join(", ", GoodsReceiptStatuses.Codes.Select(c => $"'{c}'"))})");
+            });
 
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
@@ -3541,6 +3561,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(GoodsReceipt.NotesMaxLength);
             entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
             entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(GoodsReceiptStatuses.CodeMaxLength)
+                .IsRequired()
+                .HasDefaultValue(GoodsReceiptStatuses.ToCode(GoodsReceiptStatus.Posted));
+            entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");
+            entity.Property(e => e.VoidedByUserId).HasColumnName("voided_by_user_id");
+            entity.Property(e => e.VoidReason)
+                .HasColumnName("void_reason")
+                .HasMaxLength(GoodsReceipt.VoidReasonMaxLength);
 
             entity.HasIndex(e => new { e.OrganizationId, e.GrnNumber })
                 .IsUnique()
@@ -3548,6 +3578,9 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.PurchaseOrderId })
                 .HasDatabaseName("ix_goods_receipts_org_po");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_goods_receipts_org_status");
 
             entity.HasOne<PurchaseOrderRecord>()
                 .WithMany()

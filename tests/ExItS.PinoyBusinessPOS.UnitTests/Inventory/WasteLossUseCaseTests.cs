@@ -703,6 +703,20 @@ public sealed class WasteLossUseCaseTests
                 && m.SourceId == wasteLossId.Value
                 && m.MovementType == StockMovementType.WasteLossVoidRestoration));
 
+        public Task<bool> HasPurchaseReceiptReversalAsync(
+            PosOrganizationId organizationId,
+            GoodsReceiptId goodsReceiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> HasDirectPurchaseReceiptReversalAsync(
+            PosOrganizationId organizationId,
+            DirectPurchaseReceiptId receiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

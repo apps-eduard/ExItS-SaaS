@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
+
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 
 internal sealed class DirectPurchaseReceiptRecord
@@ -14,6 +16,10 @@ internal sealed class DirectPurchaseReceiptRecord
     public Guid CreatedByUserId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public string? IdempotencyKey { get; set; }
+    public string Status { get; set; } = nameof(DirectPurchaseReceiptStatus.Posted);
+    public DateTimeOffset? VoidedAtUtc { get; set; }
+    public Guid? VoidedByUserId { get; set; }
+    public string? VoidReason { get; set; }
 }
 
 internal sealed class DirectPurchaseReceiptLineRecord

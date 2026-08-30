@@ -7,7 +7,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
 /// Durable direct purchase / stock receipt document (no purchase order). Stock is applied
-/// atomically on create for tracked products.
+/// atomically on create for tracked products. Correction is void-only (compensating
+/// reversal movements); the original receipt is never deleted.
 /// </summary>
 public sealed class DirectPurchaseReceipt
 {
@@ -15,6 +16,7 @@ public sealed class DirectPurchaseReceipt
     public const int ReferenceNumberMaxLength = 128;
     public const int NotesMaxLength = 512;
     public const int IdempotencyKeyMaxLength = 128;
+    public const int VoidReasonMaxLength = 512;
 
     private readonly List<DirectPurchaseReceiptLine> _lines;
 
@@ -30,6 +32,10 @@ public sealed class DirectPurchaseReceipt
     public Guid CreatedByUserId { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public string? IdempotencyKey { get; }
+    public DirectPurchaseReceiptStatus Status { get; private set; }
+    public DateTimeOffset? VoidedAtUtc { get; private set; }
+    public Guid? VoidedByUserId { get; private set; }
+    public string? VoidReason { get; private set; }
 
     public IReadOnlyList<DirectPurchaseReceiptLine> Lines => _lines;
 
@@ -46,7 +52,11 @@ public sealed class DirectPurchaseReceipt
         Guid createdByUserId,
         DateTimeOffset createdAtUtc,
         string? idempotencyKey,
-        List<DirectPurchaseReceiptLine> lines)
+        List<DirectPurchaseReceiptLine> lines,
+        DirectPurchaseReceiptStatus status = DirectPurchaseReceiptStatus.Posted,
+        DateTimeOffset? voidedAtUtc = null,
+        Guid? voidedByUserId = null,
+        string? voidReason = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -60,6 +70,10 @@ public sealed class DirectPurchaseReceipt
         CreatedByUserId = createdByUserId;
         CreatedAtUtc = createdAtUtc;
         IdempotencyKey = idempotencyKey;
+        Status = status;
+        VoidedAtUtc = voidedAtUtc;
+        VoidedByUserId = voidedByUserId;
+        VoidReason = voidReason;
         _lines = lines;
     }
 
@@ -109,7 +123,36 @@ public sealed class DirectPurchaseReceipt
             createdByUserId,
             utcNow,
             NormalizeIdempotencyKey(idempotencyKey),
-            built);
+            built,
+            DirectPurchaseReceiptStatus.Posted);
+    }
+
+    /// <summary>
+    /// Marks the document voided. Inventory reversal is applied by the use case.
+    /// </summary>
+    public void Void(DateTimeOffset utcNow, Guid actorId, string reason)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(actorId);
+
+        if (Status == DirectPurchaseReceiptStatus.Voided)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseReceiptStatusTransition,
+                "Direct purchase receipt is already voided.");
+        }
+
+        if (Status != DirectPurchaseReceiptStatus.Posted)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseReceiptStatusTransition,
+                "Only a posted direct purchase receipt can be voided.");
+        }
+
+        VoidReason = NormalizeVoidReason(reason);
+        Status = DirectPurchaseReceiptStatus.Voided;
+        VoidedAtUtc = utcNow;
+        VoidedByUserId = actorId;
     }
 
     public static DirectPurchaseReceipt Rehydrate(
@@ -125,7 +168,11 @@ public sealed class DirectPurchaseReceipt
         Guid createdByUserId,
         DateTimeOffset createdAtUtc,
         string? idempotencyKey,
-        IReadOnlyList<DirectPurchaseReceiptLine> lines) =>
+        IReadOnlyList<DirectPurchaseReceiptLine> lines,
+        DirectPurchaseReceiptStatus status = DirectPurchaseReceiptStatus.Posted,
+        DateTimeOffset? voidedAtUtc = null,
+        Guid? voidedByUserId = null,
+        string? voidReason = null) =>
         new(
             id,
             organizationId,
@@ -139,7 +186,31 @@ public sealed class DirectPurchaseReceipt
             createdByUserId,
             createdAtUtc,
             idempotencyKey,
-            lines.ToList());
+            lines.ToList(),
+            status,
+            voidedAtUtc,
+            voidedByUserId,
+            voidReason);
+
+    private static string NormalizeVoidReason(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseVoidReason,
+                "A void reason is required.");
+        }
+
+        var trimmed = reason.Trim();
+        if (trimmed.Length > VoidReasonMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseVoidReason,
+                $"Void reason must be at most {VoidReasonMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
 
     private static string? NormalizeSourceName(string? sourceName)
     {

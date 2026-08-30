@@ -152,7 +152,11 @@ internal static class PurchaseEntityMapper
             record.Notes,
             record.ReceivedAtUtc,
             record.ReceivedBy,
-            lines);
+            lines,
+            GoodsReceiptStatuses.Parse(record.Status),
+            record.VoidedAtUtc,
+            record.VoidedByUserId,
+            record.VoidReason);
     }
 
     public static GoodsReceiptRecord ToRecord(GoodsReceipt receipt) =>
@@ -167,8 +171,22 @@ internal static class PurchaseEntityMapper
             DeliveryReference = receipt.DeliveryReference,
             Notes = receipt.Notes,
             ReceivedAtUtc = receipt.ReceivedAtUtc,
-            ReceivedBy = receipt.ReceivedBy
+            ReceivedBy = receipt.ReceivedBy,
+            Status = GoodsReceiptStatuses.ToCode(receipt.Status),
+            VoidedAtUtc = receipt.VoidedAtUtc,
+            VoidedByUserId = receipt.VoidedByUserId,
+            VoidReason = receipt.VoidReason
         };
+
+    public static void ApplyToRecord(GoodsReceipt receipt, GoodsReceiptRecord record)
+    {
+        record.DeliveryReference = receipt.DeliveryReference;
+        record.Notes = receipt.Notes;
+        record.Status = GoodsReceiptStatuses.ToCode(receipt.Status);
+        record.VoidedAtUtc = receipt.VoidedAtUtc;
+        record.VoidedByUserId = receipt.VoidedByUserId;
+        record.VoidReason = receipt.VoidReason;
+    }
 
     public static GoodsReceiptLineRecord ToRecord(GoodsReceiptLine line) =>
         new()

@@ -212,6 +212,20 @@ public sealed class MultiBranchCustomerCommerceTests
         public Task<bool> HasWasteLossVoidRestorationAsync(PosOrganizationId organizationId, WasteLossId wasteLossId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult(false);
 
+    public Task<bool> HasPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        GoodsReceiptId goodsReceiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task<bool> HasDirectPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        DirectPurchaseReceiptId receiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult<decimal?>(null);
         public Task<bool> HasSaleReturnRestockAsync(PosOrganizationId organizationId, SaleReturnId saleReturnId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotImplementedException();

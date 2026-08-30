@@ -7,12 +7,14 @@ namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 /// <summary>
 /// Immutable goods receipt against a purchase order. Created atomically with PO receive state
-/// and optional inventory movements for tracked products.
+/// and optional inventory movements for tracked products. Correction is void-only
+/// (compensating reversal movements); the original receipt is never deleted.
 /// </summary>
 public sealed class GoodsReceipt
 {
     public const int DeliveryReferenceMaxLength = 128;
     public const int NotesMaxLength = 512;
+    public const int VoidReasonMaxLength = 512;
 
     private readonly List<GoodsReceiptLine> _lines;
 
@@ -26,6 +28,10 @@ public sealed class GoodsReceipt
     public string? Notes { get; }
     public DateTimeOffset ReceivedAtUtc { get; }
     public Guid ReceivedBy { get; }
+    public GoodsReceiptStatus Status { get; private set; }
+    public DateTimeOffset? VoidedAtUtc { get; private set; }
+    public Guid? VoidedByUserId { get; private set; }
+    public string? VoidReason { get; private set; }
 
     public IReadOnlyList<GoodsReceiptLine> Lines => _lines;
 
@@ -40,7 +46,11 @@ public sealed class GoodsReceipt
         string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
-        List<GoodsReceiptLine> lines)
+        List<GoodsReceiptLine> lines,
+        GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
+        DateTimeOffset? voidedAtUtc = null,
+        Guid? voidedByUserId = null,
+        string? voidReason = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -52,6 +62,10 @@ public sealed class GoodsReceipt
         Notes = notes;
         ReceivedAtUtc = receivedAtUtc;
         ReceivedBy = receivedBy;
+        Status = status;
+        VoidedAtUtc = voidedAtUtc;
+        VoidedByUserId = voidedByUserId;
+        VoidReason = voidReason;
         _lines = lines;
     }
 
@@ -118,7 +132,36 @@ public sealed class GoodsReceipt
             NormalizeOptional(notes, NotesMaxLength, DomainErrorCodes.InvalidGoodsReceiptNotes, "Notes"),
             utcNow,
             receivedBy,
-            lines);
+            lines,
+            GoodsReceiptStatus.Posted);
+    }
+
+    /// <summary>
+    /// Marks the document voided. Inventory reversal and PO unwind are applied by the use case.
+    /// </summary>
+    public void Void(DateTimeOffset utcNow, Guid actorId, string reason)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(actorId);
+
+        if (Status == GoodsReceiptStatus.Voided)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptStatusTransition,
+                "Goods receipt is already voided.");
+        }
+
+        if (Status != GoodsReceiptStatus.Posted)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptStatusTransition,
+                "Only a posted goods receipt can be voided.");
+        }
+
+        VoidReason = NormalizeVoidReason(reason);
+        Status = GoodsReceiptStatus.Voided;
+        VoidedAtUtc = utcNow;
+        VoidedByUserId = actorId;
     }
 
     public static GoodsReceipt Rehydrate(
@@ -132,7 +175,11 @@ public sealed class GoodsReceipt
         string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
-        IReadOnlyList<GoodsReceiptLine> lines) =>
+        IReadOnlyList<GoodsReceiptLine> lines,
+        GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
+        DateTimeOffset? voidedAtUtc = null,
+        Guid? voidedByUserId = null,
+        string? voidReason = null) =>
         new(
             id,
             organizationId,
@@ -144,7 +191,31 @@ public sealed class GoodsReceipt
             notes,
             receivedAtUtc,
             receivedBy,
-            lines.ToList());
+            lines.ToList(),
+            status,
+            voidedAtUtc,
+            voidedByUserId,
+            voidReason);
+
+    private static string NormalizeVoidReason(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptVoidReason,
+                "A void reason is required.");
+        }
+
+        var trimmed = reason.Trim();
+        if (trimmed.Length > VoidReasonMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptVoidReason,
+                $"Void reason must be at most {VoidReasonMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
 
     private static string? NormalizeOptional(string? value, int maxLength, string errorCode, string label)
     {

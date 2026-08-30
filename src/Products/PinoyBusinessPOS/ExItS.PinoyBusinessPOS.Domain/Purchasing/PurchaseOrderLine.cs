@@ -275,6 +275,37 @@ public sealed class PurchaseOrderLine
         ClosedShortQty += normalized;
     }
 
+    /// <summary>
+    /// Decreases received (and optionally short-closed) quantities from a voided goods receipt.
+    /// Never drives either quantity below zero.
+    /// </summary>
+    internal void ReverseReceipt(decimal quantity, decimal shortClosedFromThisReceipt = 0m)
+    {
+        if (quantity < 0m || shortClosedFromThisReceipt < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                "Reverse quantities cannot be negative.");
+        }
+
+        if (quantity > ReceivedQty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                $"Cannot reverse more than received quantity for '{NameSnapshot}'.");
+        }
+
+        if (shortClosedFromThisReceipt > ClosedShortQty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                $"Cannot reverse more short-closed quantity than recorded for '{NameSnapshot}'.");
+        }
+
+        ReceivedQty -= quantity;
+        ClosedShortQty -= shortClosedFromThisReceipt;
+    }
+
     public static PurchaseOrderLine Rehydrate(
         PurchaseOrderLineId id,
         PurchaseOrderId purchaseOrderId,

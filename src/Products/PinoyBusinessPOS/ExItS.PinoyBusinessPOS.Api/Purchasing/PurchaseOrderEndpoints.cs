@@ -287,6 +287,33 @@ internal static class PurchaseOrderEndpoints
                     StatusCodes.Status404NotFound)
                 : Results.Ok(receipt);
         });
+
+        group.MapPost("/{goodsReceiptId:guid}/void", async (
+            HttpRequest request,
+            Guid goodsReceiptId,
+            VoidGoodsReceiptRequest body,
+            VoidGoodsReceipt useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    OfflineOperationTypes.GoodsReceiptVoid,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, goodsReceiptId, body, actorId, ct2),
+                    dto => dto,
+                    Results.Ok,
+                    ct)
+                .ConfigureAwait(false);
+        });
     }
 
     private static bool TryAuthorize(

@@ -242,6 +242,20 @@ internal class CostResolverInventoryStub : IInventoryRepository
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 
+    public Task<bool> HasPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        GoodsReceiptId goodsReceiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task<bool> HasDirectPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        DirectPurchaseReceiptId receiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
     public Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,
         SaleReturnId saleReturnId,

@@ -456,6 +456,16 @@ public static class OfflineOperationTypes
     public const string PurchaseOrderReceive = "purchase_order.receive";
 
     /// <summary>
+    /// Server-side idempotency for voiding a PO goods receipt. Online-only.
+    /// </summary>
+    public const string GoodsReceiptVoid = "goods_receipt.void";
+
+    /// <summary>
+    /// Server-side idempotency for voiding a direct purchase receipt. Online-only.
+    /// </summary>
+    public const string DirectPurchaseReceiptVoid = "direct_purchase_receipt.void";
+
+    /// <summary>
     /// Server-side idempotency operation type for inventory stock adjustment. Online-only: no offline
     /// dispatcher or queue handler. Names the server idempotency scope so a retried adjustment
     /// replays instead of creating a second StockMovement.

@@ -21,6 +21,8 @@ export const OFFLINE_OPERATION_TYPES = {
   PurchaseOrderCreate: "purchase_order.create",
   PurchaseOrderSubmit: "purchase_order.submit",
   PurchaseOrderReceive: "purchase_order.receive",
+  GoodsReceiptVoid: "goods_receipt.void",
+  DirectPurchaseReceiptVoid: "direct_purchase_receipt.void",
   InventoryAdjustment: "inventory.adjustment",
   StockUse: "inventory.stock_use",
   WasteLoss: "inventory.waste_loss",

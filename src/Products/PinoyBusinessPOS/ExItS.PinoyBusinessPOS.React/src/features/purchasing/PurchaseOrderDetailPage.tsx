@@ -10,6 +10,7 @@ import {
   isPurchaseOrderReceivable,
   listGoodsReceiptsForPurchaseOrder,
   submitPurchaseOrder,
+  voidGoodsReceipt,
   type PosGoodsReceiptDto,
   type PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
@@ -31,6 +32,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+const RECEIPT_VOID_REASON_MAX = 512;
+
 function resolveOrderTotal(po: PosPurchaseOrderDto): {
   amount: number;
   labelKey: "purchasing.orderTotal" | "purchasing.confirmedTotal" | "purchasing.proposedTotal";
@@ -49,21 +52,67 @@ function resolveOrderTotal(po: PosPurchaseOrderDto): {
 
 function GoodsReceiptCard({
   receipt,
+  workspace,
   resolveActor,
   isResolving,
+  allowManage,
+  online,
+  onReversed,
 }: {
   receipt: PosGoodsReceiptDto;
+  workspace: { organizationId: string; branchId: string };
   resolveActor: ReturnType<typeof useActorDirectory>["resolve"];
   isResolving: boolean;
+  allowManage: boolean;
+  online: boolean;
+  onReversed: (updated: PosGoodsReceiptDto) => Promise<void>;
 }) {
   const { t } = useI18n();
   const receiptValue = sumGoodsReceiptValue(receipt.lines);
   const delivery = receipt.deliveryReference?.trim();
   const notes = receipt.notes?.trim();
+  const isPosted = (receipt.status ?? "Posted") === "Posted";
+  const isVoided = receipt.status === "Voided";
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
+  const [voidError, setVoidError] = useState<string | null>(null);
+
+  async function onVoid() {
+    const reason = voidReason.trim();
+    if (!allowManage || !online || voiding || !isPosted) {
+      return;
+    }
+    if (!reason) {
+      setVoidError(t("purchasing.reverseReasonRequired"));
+      return;
+    }
+    setVoiding(true);
+    setVoidError(null);
+    try {
+      const updated = await voidGoodsReceipt(workspace, receipt.goodsReceiptId, { reason });
+      await onReversed(updated);
+      setVoidOpen(false);
+      setVoidReason("");
+    } catch (err) {
+      setVoidError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.reverseFailed"))
+          : t("purchasing.reverseFailed"),
+      );
+    } finally {
+      setVoiding(false);
+    }
+  }
 
   return (
     <Card className="flex flex-col gap-3 p-3" data-testid={`po-receipt-${receipt.grnNumber}`}>
-      <p className="m-0 font-medium">{receipt.grnNumber}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="m-0 font-medium">{receipt.grnNumber}</p>
+        <StatusChip tone={isVoided ? "danger" : "success"}>
+          {isVoided ? t("purchasing.receiptStatus.voided") : t("purchasing.receiptStatus.posted")}
+        </StatusChip>
+      </div>
       <ActorAttribution
         labelKey="common.receivedBy"
         actorId={receipt.receivedBy}
@@ -72,6 +121,21 @@ function GoodsReceiptCard({
         isLoading={isResolving}
         testId={`po-receipt-received-by-${receipt.goodsReceiptId}`}
       />
+      {isVoided && receipt.voidedByUserId ? (
+        <ActorAttribution
+          labelKey="purchasing.reversedBy"
+          actorId={receipt.voidedByUserId}
+          occurredAtUtc={receipt.voidedAtUtc}
+          resolved={resolveActor(receipt.voidedByUserId)}
+          isLoading={isResolving}
+          testId={`po-receipt-reversed-by-${receipt.goodsReceiptId}`}
+        />
+      ) : null}
+      {isVoided && receipt.voidReason ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid={`po-receipt-void-reason-${receipt.goodsReceiptId}`}>
+          {t("purchasing.reverseReason")}: {receipt.voidReason}
+        </p>
+      ) : null}
       {delivery ? (
         <div>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -159,6 +223,86 @@ function GoodsReceiptCard({
           {t("purchasing.notes")}: {notes}
         </p>
       ) : null}
+
+      {voidError ? (
+        <ErrorState title={t("purchasing.errorTitle")} detail={voidError} />
+      ) : null}
+
+      {allowManage && isPosted && online ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-fit"
+          onClick={() => {
+            setVoidOpen(true);
+            setVoidError(null);
+          }}
+          data-testid={`po-receipt-reverse-${receipt.goodsReceiptId}`}
+        >
+          {t("purchasing.reverseReceipt")}
+        </Button>
+      ) : null}
+
+      {voidOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`po-receipt-reverse-title-${receipt.goodsReceiptId}`}
+          data-testid={`po-receipt-reverse-dialog-${receipt.goodsReceiptId}`}
+        >
+          <Card className="flex w-full max-w-md flex-col gap-3 p-4">
+            <h2
+              id={`po-receipt-reverse-title-${receipt.goodsReceiptId}`}
+              className="m-0 text-[length:var(--exits-text-lg)] font-semibold"
+            >
+              {t("purchasing.reverseTitle")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.reverseLede")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)]">
+              {receipt.grnNumber} · {receipt.receivedDate}
+            </p>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="font-medium">{t("purchasing.reverseReason")}</span>
+              <textarea
+                className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 py-2"
+                value={voidReason}
+                maxLength={RECEIPT_VOID_REASON_MAX}
+                onChange={(e) => setVoidReason(e.target.value)}
+                data-testid={`po-receipt-reverse-reason-${receipt.goodsReceiptId}`}
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="min-h-11"
+                disabled={voiding || !voidReason.trim()}
+                onClick={() => void onVoid()}
+                data-testid={`po-receipt-reverse-confirm-${receipt.goodsReceiptId}`}
+              >
+                {voiding ? t("purchasing.reversing") : t("purchasing.reverseConfirm")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={voiding}
+                onClick={() => {
+                  setVoidOpen(false);
+                  setVoidReason("");
+                  setVoidError(null);
+                }}
+                data-testid={`po-receipt-reverse-cancel-${receipt.goodsReceiptId}`}
+              >
+                {t("purchasing.reverseCancel")}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
     </Card>
   );
 }
@@ -200,6 +344,7 @@ export function PurchaseOrderDetailPage() {
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
     ...receipts.map((receipt) => receipt.receivedBy),
+    ...receipts.map((receipt) => receipt.voidedByUserId),
   ]);
   const displayStatus = po?.displayStatus || po?.status || "";
   const needsApproval = displayStatus === "ChangesNeedApproval";
@@ -460,8 +605,27 @@ export function PurchaseOrderDetailPage() {
             <li key={receipt.goodsReceiptId}>
               <GoodsReceiptCard
                 receipt={receipt}
+                workspace={workspace!}
                 resolveActor={actors.resolve}
                 isResolving={actors.isResolving}
+                allowManage={allowManage}
+                online={online}
+                onReversed={async (updated) => {
+                  queryClient.setQueryData(
+                    ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
+                    (prev: PosGoodsReceiptDto[] | undefined) =>
+                      (prev ?? []).map((r) =>
+                        r.goodsReceiptId === updated.goodsReceiptId ? updated : r,
+                      ),
+                  );
+                  await queryClient.invalidateQueries({
+                    queryKey: ["purchase-order", workspace!.organizationId, purchaseOrderId],
+                  });
+                  await queryClient.invalidateQueries({
+                    queryKey: ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
+                  });
+                  await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+                }}
               />
             </li>
           ))}

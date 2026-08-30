@@ -24,7 +24,11 @@ internal static class DirectPurchaseReceiptEntityMapper
             record.CreatedByUserId,
             record.CreatedAtUtc,
             record.IdempotencyKey,
-            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList());
+            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
+            DirectPurchaseReceiptStatuses.Parse(record.Status),
+            record.VoidedAtUtc,
+            record.VoidedByUserId,
+            record.VoidReason);
 
     public static DirectPurchaseReceiptLine ToDomain(DirectPurchaseReceiptLineRecord record) =>
         DirectPurchaseReceiptLine.Rehydrate(
@@ -57,7 +61,11 @@ internal static class DirectPurchaseReceiptEntityMapper
             TotalCost = receipt.TotalCost,
             CreatedByUserId = receipt.CreatedByUserId,
             CreatedAtUtc = receipt.CreatedAtUtc,
-            IdempotencyKey = receipt.IdempotencyKey
+            IdempotencyKey = receipt.IdempotencyKey,
+            Status = DirectPurchaseReceiptStatuses.ToCode(receipt.Status),
+            VoidedAtUtc = receipt.VoidedAtUtc,
+            VoidedByUserId = receipt.VoidedByUserId,
+            VoidReason = receipt.VoidReason
         };
 
     public static DirectPurchaseReceiptLineRecord ToRecord(DirectPurchaseReceiptLine line) =>
@@ -91,5 +99,9 @@ internal static class DirectPurchaseReceiptEntityMapper
         record.CreatedByUserId = receipt.CreatedByUserId;
         record.CreatedAtUtc = receipt.CreatedAtUtc;
         record.IdempotencyKey = receipt.IdempotencyKey;
+        record.Status = DirectPurchaseReceiptStatuses.ToCode(receipt.Status);
+        record.VoidedAtUtc = receipt.VoidedAtUtc;
+        record.VoidedByUserId = receipt.VoidedByUserId;
+        record.VoidReason = receipt.VoidReason;
     }
 }

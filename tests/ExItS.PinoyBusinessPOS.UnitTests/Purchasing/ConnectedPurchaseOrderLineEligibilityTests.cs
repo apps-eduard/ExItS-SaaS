@@ -638,6 +638,8 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
             Task.FromResult(Items.FirstOrDefault(x => x.OrganizationId == organizationId && x.Id == purchaseOrderId));
         public Task<GoodsReceipt?> GetGoodsReceiptByIdAsync(PosOrganizationId organizationId, GoodsReceiptId goodsReceiptId, CancellationToken cancellationToken = default) =>
             Task.FromResult<GoodsReceipt?>(null);
+        public Task UpdateGoodsReceiptAsync(GoodsReceipt receipt, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
         public Task<(IReadOnlyList<PurchaseOrder> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, PurchaseOrderFilter filter, int skip, int take, CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<PurchaseOrder>, int)>((Items.Where(x => x.OrganizationId == organizationId).ToList(), Items.Count));
         public Task<IReadOnlyList<GoodsReceipt>> ListGoodsReceiptsForPurchaseOrderAsync(PosOrganizationId organizationId, PurchaseOrderId purchaseOrderId, CancellationToken cancellationToken = default) =>

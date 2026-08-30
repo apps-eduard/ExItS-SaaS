@@ -193,6 +193,18 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        GoodsReceiptId goodsReceiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasDirectPurchaseReceiptReversalAsync(
+        PosOrganizationId organizationId,
+        DirectPurchaseReceiptId receiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
     /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.

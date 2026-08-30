@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
+import { PosApiError } from "@/api/pos/pos-http";
 import * as directClient from "@/api/pos/pos-direct-purchase-receipts-client";
 import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDetailPage";
 import { formatPeso } from "@/lib/format-money";
@@ -12,15 +14,21 @@ const workspace = {
   branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 };
 
+const ownerGrant = {
+  productAccessAllowed: true,
+  mappedPosRoleCode: "Owner",
+  productLocalRoleCode: "Owner",
+  membershipRole: "OrganizationOwner",
+  organizationManagementAuthority: true,
+};
+
+let sessionGrant: typeof ownerGrant = ownerGrant;
+
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: workspace,
-    sessionGrant: {
-      productAccessAllowed: true,
-      mappedPosRoleCode: "Owner",
-      productLocalRoleCode: "Owner",
-      membershipRole: "OrganizationOwner",
-      organizationManagementAuthority: true,
+    get sessionGrant() {
+      return sessionGrant;
     },
   }),
 }));
@@ -48,49 +56,66 @@ vi.mock("@/features/actors/useActorDirectory", () => ({
   }),
 }));
 
+function postedReceipt(
+  overrides: Partial<directClient.DirectPurchaseReceiptDto> = {},
+): directClient.DirectPurchaseReceiptDto {
+  return {
+    directPurchaseReceiptId: receiptId,
+    organizationId: workspace.organizationId,
+    receiptNumber: "DP-000045",
+    purchaseDate: "2026-08-28",
+    sourceNameSnapshot: "ABC Trading",
+    referenceNumber: "OR-12345",
+    notes: "Morning delivery",
+    totalCost: 4500,
+    createdByUserId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    createdAtUtc: "2026-08-28T14:15:00Z",
+    status: "Posted",
+    voidedAtUtc: null,
+    voidedByUserId: null,
+    voidReason: null,
+    lines: [
+      {
+        lineId: "11111111-1111-4111-8111-111111111111",
+        productId: "22222222-2222-4222-8222-222222222222",
+        lineNumber: 1,
+        productNameSnapshot: "Bath Soap",
+        unitOfMeasure: "Piece",
+        quantity: 24,
+        unitCost: 18,
+        lineTotal: 432,
+        expiryDate: "2027-12-30",
+        lotNumber: "LOT-A123",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function renderPage() {
+  return render(
+    <AppProviders>
+      <MemoryRouter initialEntries={[`/purchasing/direct-purchases/${receiptId}`]}>
+        <Routes>
+          <Route
+            path="/purchasing/direct-purchases/:receiptId"
+            element={<DirectPurchaseDetailPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </AppProviders>,
+  );
+}
+
 describe("DirectPurchaseDetailPage cost UX", () => {
   beforeEach(() => {
-    vi.spyOn(directClient, "getDirectPurchaseReceipt").mockResolvedValue({
-      directPurchaseReceiptId: receiptId,
-      organizationId: workspace.organizationId,
-      receiptNumber: "DP-000045",
-      purchaseDate: "2026-08-28",
-      sourceNameSnapshot: "ABC Trading",
-      referenceNumber: "OR-12345",
-      notes: "Morning delivery",
-      totalCost: 4500,
-      createdByUserId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      createdAtUtc: "2026-08-28T14:15:00Z",
-      lines: [
-        {
-          lineId: "11111111-1111-4111-8111-111111111111",
-          productId: "22222222-2222-4222-8222-222222222222",
-          lineNumber: 1,
-          productNameSnapshot: "Bath Soap",
-          unitOfMeasure: "Piece",
-          quantity: 24,
-          unitCost: 18,
-          lineTotal: 432,
-          expiryDate: "2027-12-30",
-          lotNumber: "LOT-A123",
-        },
-      ],
-    } as never);
+    vi.restoreAllMocks();
+    sessionGrant = ownerGrant;
+    vi.spyOn(directClient, "getDirectPurchaseReceipt").mockResolvedValue(postedReceipt());
   });
 
   it("shows purchase metadata, money formatting, expiry/lot, and actor", async () => {
-    render(
-      <AppProviders>
-        <MemoryRouter initialEntries={[`/purchasing/direct-purchases/${receiptId}`]}>
-          <Routes>
-            <Route
-              path="/purchasing/direct-purchases/:receiptId"
-              element={<DirectPurchaseDetailPage />}
-            />
-          </Routes>
-        </MemoryRouter>
-      </AppProviders>,
-    );
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByTestId("direct-purchase-detail-page")).toBeInTheDocument();
@@ -106,5 +131,81 @@ describe("DirectPurchaseDetailPage cost UX", () => {
     expect(screen.getByText("2027-12-30")).toBeInTheDocument();
     expect(screen.getByText("LOT-A123")).toBeInTheDocument();
     expect(screen.getByText("Maria Santos")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-purchase-reverse")).toBeInTheDocument();
+  });
+
+  it("reverses receipt with reason and hides action when voided", async () => {
+    const user = userEvent.setup();
+    const voidSpy = vi.spyOn(directClient, "voidDirectPurchaseReceipt").mockResolvedValue(
+      postedReceipt({
+        status: "Voided",
+        voidedAtUtc: "2026-08-30T12:00:00Z",
+        voidedByUserId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        voidReason: "Entered twice",
+      }),
+    );
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-purchase-reverse")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("direct-purchase-reverse"));
+    await user.type(screen.getByTestId("direct-purchase-reverse-reason"), "Entered twice");
+    await user.click(screen.getByTestId("direct-purchase-reverse-confirm"));
+
+    await waitFor(() => {
+      expect(voidSpy).toHaveBeenCalledWith(
+        workspace,
+        receiptId,
+        expect.objectContaining({ reason: "Entered twice" }),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Reversed")).toBeInTheDocument();
+      expect(screen.queryByTestId("direct-purchase-reverse")).not.toBeInTheDocument();
+      expect(screen.getByTestId("direct-purchase-void-reason")).toHaveTextContent("Entered twice");
+    });
+  });
+
+  it("hides reverse for reporting users and shows API insufficient-stock error", async () => {
+    sessionGrant = {
+      productAccessAllowed: true,
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "Member",
+      organizationManagementAuthority: false,
+    };
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-purchase-detail-page")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("direct-purchase-reverse")).not.toBeInTheDocument();
+  });
+
+  it("surfaces insufficient stock failure", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(directClient, "voidDirectPurchaseReceipt").mockRejectedValue(
+      new PosApiError(409, {
+        title: "Conflict",
+        status: 409,
+        detail: "Cannot reverse: stock from this receipt is no longer available.",
+        errorCode: "pos.direct_purchase_receipt.void.insufficient_stock",
+      }),
+    );
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-purchase-reverse")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("direct-purchase-reverse"));
+    await user.type(screen.getByTestId("direct-purchase-reverse-reason"), "Try");
+    await user.click(screen.getByTestId("direct-purchase-reverse-confirm"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/stock from this receipt is no longer available/i),
+      ).toBeInTheDocument();
+    });
   });
 });

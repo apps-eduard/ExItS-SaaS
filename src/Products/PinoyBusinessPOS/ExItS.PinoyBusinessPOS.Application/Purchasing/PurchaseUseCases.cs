@@ -9,6 +9,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -104,7 +105,13 @@ public sealed record PosGoodsReceiptDto(
     string? Notes,
     DateTimeOffset ReceivedAtUtc,
     Guid ReceivedBy,
-    IReadOnlyList<PosGoodsReceiptLineDto> Lines);
+    IReadOnlyList<PosGoodsReceiptLineDto> Lines,
+    string Status = "Posted",
+    DateTimeOffset? VoidedAtUtc = null,
+    Guid? VoidedByUserId = null,
+    string? VoidReason = null);
+
+public sealed record VoidGoodsReceiptRequest(string Reason, string? Notes = null);
 
 public sealed record CreatePurchaseOrderLineRequest(
     Guid ProductId,
@@ -288,7 +295,11 @@ public static class PurchaseMapper
                 l.DiscrepancyKind.ToString(),
                 l.DiscrepancyNote,
                 l.ExpiryDate,
-                l.LotNumber)).ToList());
+                l.LotNumber)).ToList(),
+            GoodsReceiptStatuses.ToCode(receipt.Status),
+            receipt.VoidedAtUtc,
+            receipt.VoidedByUserId,
+            receipt.VoidReason);
 }
 
 public sealed class PurchaseOrderQueryService
@@ -1912,5 +1923,229 @@ public sealed class ReceivePurchaseOrder
         }
 
         return false;
+    }
+}
+
+public sealed class VoidGoodsReceipt
+{
+    private readonly IPurchaseOrderRepository _orders;
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryRepository _inventory;
+    private readonly InventoryLotStockService _lots;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public VoidGoodsReceipt(
+        IPurchaseOrderRepository orders,
+        ICatalogProductRepository products,
+        IInventoryRepository inventory,
+        InventoryLotStockService lots,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _orders = orders;
+        _products = products;
+        _inventory = inventory;
+        _lots = lots;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<PosGoodsReceiptDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid goodsReceiptId,
+        VoidGoodsReceiptRequest request,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to void a goods receipt.");
+        }
+
+        if (request is null || string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                DomainErrorCodes.InvalidGoodsReceiptVoidReason,
+                "A void reason is required.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var id = GoodsReceiptId.From(goodsReceiptId);
+
+        try
+        {
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(
+                    async ct =>
+                    {
+                        var receipt = await _orders.GetGoodsReceiptByIdAsync(orgId, id, ct).ConfigureAwait(false);
+                        if (receipt is null)
+                        {
+                            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                ApplicationErrorCodes.GoodsReceiptNotFound,
+                                "Goods receipt was not found.");
+                        }
+
+                        if (receipt.Status == GoodsReceiptStatus.Voided)
+                        {
+                            return ApplicationResult<PosGoodsReceiptDto>.Success(PurchaseMapper.Map(receipt));
+                        }
+
+                        var po = await _orders.GetByIdAsync(orgId, receipt.PurchaseOrderId, ct).ConfigureAwait(false);
+                        if (po is null)
+                        {
+                            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                ApplicationErrorCodes.PurchaseOrderNotFound,
+                                "Purchase order was not found.");
+                        }
+
+                        var productIds = receipt.Lines
+                            .Where(l => l.QuantityReceived > 0m)
+                            .Select(l => l.ProductId)
+                            .Distinct()
+                            .ToList();
+                        var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
+                        var productsById = products.ToDictionary(p => p.Id.Value);
+                        var utcNow = _clock.UtcNow;
+                        var voidReason = request.Reason.Trim();
+
+                        ApplicationResult<PosGoodsReceiptDto>? failure = null;
+                        await _inventory
+                            .ExecuteWithProductReservationLocksAsync(
+                                orgId,
+                                productIds,
+                                async (accounts, lockCt) =>
+                                {
+                                    var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                                    var anyLotTracked = receipt.Lines.Any(l =>
+                                        l.QuantityReceived > 0m
+                                        && productsById.TryGetValue(l.ProductId.Value, out var p)
+                                        && p.TracksExpiration
+                                        && accountsByProduct.TryGetValue(l.ProductId.Value, out var a)
+                                        && a.IsTracked);
+
+                                    if (anyLotTracked)
+                                    {
+                                        try
+                                        {
+                                            await _lots
+                                                .ReverseReceiveSourceAsync(
+                                                    orgId,
+                                                    receipt.Id.Value,
+                                                    StockMovementType.PurchaseReceipt,
+                                                    StockMovementType.PurchaseReceiptReversal,
+                                                    actorId,
+                                                    utcNow,
+                                                    lockCt)
+                                                .ConfigureAwait(false);
+                                        }
+                                        catch (DomainException ex)
+                                        {
+                                            failure = ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                                DomainErrorCodes.GoodsReceiptVoidInsufficient,
+                                                string.IsNullOrWhiteSpace(ex.Message)
+                                                    ? "Cannot void goods receipt: attributable stock has already been consumed."
+                                                    : ex.Message);
+                                            return;
+                                        }
+                                    }
+
+                                    foreach (var line in receipt.Lines.Where(l => l.QuantityReceived > 0m))
+                                    {
+                                        if (!accountsByProduct.TryGetValue(line.ProductId.Value, out var account)
+                                            || !account.IsTracked)
+                                        {
+                                            continue;
+                                        }
+
+                                        if (!productsById.TryGetValue(line.ProductId.Value, out var product))
+                                        {
+                                            failure = ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                                ApplicationErrorCodes.SaleProductNotFound,
+                                                "One or more products on the goods receipt were not found.");
+                                            return;
+                                        }
+
+                                        if (!product.TracksExpiration
+                                            && account.OnHandQuantity < line.BaseQuantity)
+                                        {
+                                            failure = ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                                DomainErrorCodes.GoodsReceiptVoidInsufficient,
+                                                "Cannot void goods receipt: attributable stock has already been consumed.");
+                                            return;
+                                        }
+
+                                        if (await _inventory
+                                                .HasPurchaseReceiptReversalAsync(
+                                                    orgId,
+                                                    receipt.Id,
+                                                    line.ProductId,
+                                                    lockCt)
+                                                .ConfigureAwait(false))
+                                        {
+                                            continue;
+                                        }
+
+                                        if (!await _inventory
+                                                .HasPurchaseReceiptAsync(orgId, receipt.Id, line.ProductId, lockCt)
+                                                .ConfigureAwait(false))
+                                        {
+                                            continue;
+                                        }
+
+                                        var reversal = StockMovement.PurchaseReceiptReversal(
+                                            orgId,
+                                            line.ProductId,
+                                            account.Id,
+                                            line.BaseQuantity,
+                                            line.UomSnapshot,
+                                            receipt.Id.Value,
+                                            actorId,
+                                            utcNow,
+                                            reason: voidReason,
+                                            sellingMode: product.SellingMode,
+                                            branchId: null,
+                                            unitCost: line.BaseUnitCost);
+
+                                        account.ApplyMovementEffect(reversal.QuantityEffect);
+                                        account.Touch(utcNow);
+                                        await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
+                                        await _inventory.AddMovementAsync(reversal, lockCt).ConfigureAwait(false);
+                                    }
+
+                                    if (failure is not null)
+                                    {
+                                        return;
+                                    }
+
+                                    po.UnwindGoodsReceipt(receipt, utcNow);
+                                    receipt.Void(utcNow, actorId, voidReason);
+                                    await _orders.UpdateAsync(po, lockCt).ConfigureAwait(false);
+                                    await _orders.UpdateGoodsReceiptAsync(receipt, lockCt).ConfigureAwait(false);
+                                    await _unitOfWork.SaveChangesAsync(lockCt).ConfigureAwait(false);
+                                    failure = ApplicationResult<PosGoodsReceiptDto>.Success(PurchaseMapper.Map(receipt));
+                                },
+                                ct)
+                            .ConfigureAwait(false);
+
+                        if (failure is not null)
+                        {
+                            return failure;
+                        }
+
+                        var reloaded = await _orders.GetGoodsReceiptByIdAsync(orgId, id, ct).ConfigureAwait(false)
+                            ?? receipt;
+                        return ApplicationResult<PosGoodsReceiptDto>.Success(PurchaseMapper.Map(reloaded));
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosGoodsReceiptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
     }
 }

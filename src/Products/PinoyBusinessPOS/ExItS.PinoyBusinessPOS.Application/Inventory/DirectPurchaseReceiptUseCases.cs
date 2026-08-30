@@ -312,3 +312,217 @@ public sealed class CreateDirectPurchaseReceipt
             || message.Contains("ux_direct_purchase_receipts_org_idempotency_key", StringComparison.OrdinalIgnoreCase);
     }
 }
+
+public sealed class VoidDirectPurchaseReceipt
+{
+    private readonly IDirectPurchaseReceiptRepository _receipts;
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryRepository _inventory;
+    private readonly InventoryLotStockService _lots;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public VoidDirectPurchaseReceipt(
+        IDirectPurchaseReceiptRepository receipts,
+        ICatalogProductRepository products,
+        IInventoryRepository inventory,
+        InventoryLotStockService lots,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _receipts = receipts;
+        _products = products;
+        _inventory = inventory;
+        _lots = lots;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<DirectPurchaseReceiptDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid receiptId,
+        VoidDirectPurchaseReceiptRequest request,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to void a direct purchase receipt.");
+        }
+
+        if (request is null || string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                DomainErrorCodes.InvalidDirectPurchaseVoidReason,
+                "A void reason is required.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var id = DirectPurchaseReceiptId.From(receiptId);
+
+        try
+        {
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(
+                    async ct =>
+                    {
+                        var receipt = await _receipts.GetByIdAsync(orgId, id, ct).ConfigureAwait(false);
+                        if (receipt is null)
+                        {
+                            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                ApplicationErrorCodes.DirectPurchaseReceiptNotFound,
+                                "Direct purchase receipt was not found.");
+                        }
+
+                        if (receipt.Status == DirectPurchaseReceiptStatus.Voided)
+                        {
+                            return ApplicationResult<DirectPurchaseReceiptDto>.Success(
+                                DirectPurchaseReceiptMapper.Map(receipt));
+                        }
+
+                        var productIds = receipt.Lines.Select(l => l.ProductId).Distinct().ToList();
+                        var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
+                        var productsById = products.ToDictionary(p => p.Id.Value);
+                        var utcNow = _clock.UtcNow;
+                        var voidReason = request.Reason.Trim();
+
+                        ApplicationResult<DirectPurchaseReceiptDto>? failure = null;
+                        await _inventory
+                            .ExecuteWithProductReservationLocksAsync(
+                                orgId,
+                                productIds,
+                                async (accounts, lockCt) =>
+                                {
+                                    var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                                    var anyLotTracked = receipt.Lines.Any(l =>
+                                        productsById.TryGetValue(l.ProductId.Value, out var p)
+                                        && p.TracksExpiration
+                                        && accountsByProduct.TryGetValue(l.ProductId.Value, out var a)
+                                        && a.IsTracked);
+
+                                    if (anyLotTracked)
+                                    {
+                                        try
+                                        {
+                                            await _lots
+                                                .ReverseReceiveSourceAsync(
+                                                    orgId,
+                                                    receipt.Id.Value,
+                                                    StockMovementType.DirectPurchaseReceipt,
+                                                    StockMovementType.DirectPurchaseReceiptReversal,
+                                                    actorId,
+                                                    utcNow,
+                                                    lockCt)
+                                                .ConfigureAwait(false);
+                                        }
+                                        catch (DomainException ex)
+                                        {
+                                            failure = ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                                DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient,
+                                                string.IsNullOrWhiteSpace(ex.Message)
+                                                    ? "Cannot void direct purchase: attributable stock has already been consumed."
+                                                    : ex.Message);
+                                            return;
+                                        }
+                                    }
+
+                                    foreach (var lineGroup in receipt.Lines.GroupBy(l => l.ProductId.Value))
+                                    {
+                                        var productId = CatalogProductId.From(lineGroup.Key);
+                                        if (!accountsByProduct.TryGetValue(lineGroup.Key, out var account)
+                                            || !account.IsTracked)
+                                        {
+                                            continue;
+                                        }
+
+                                        if (!productsById.TryGetValue(lineGroup.Key, out var product))
+                                        {
+                                            failure = ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                                ApplicationErrorCodes.SaleProductNotFound,
+                                                "One or more products on the receipt were not found.");
+                                            return;
+                                        }
+
+                                        var totalQty = lineGroup.Sum(l => l.Quantity);
+                                        if (!product.TracksExpiration && account.OnHandQuantity < totalQty)
+                                        {
+                                            failure = ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                                DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient,
+                                                "Cannot void direct purchase: attributable stock has already been consumed.");
+                                            return;
+                                        }
+
+                                        if (await _inventory
+                                                .HasDirectPurchaseReceiptReversalAsync(
+                                                    orgId,
+                                                    receipt.Id,
+                                                    productId,
+                                                    lockCt)
+                                                .ConfigureAwait(false))
+                                        {
+                                            continue;
+                                        }
+
+                                        if (!await _inventory
+                                                .HasDirectPurchaseReceiptAsync(orgId, receipt.Id, productId, lockCt)
+                                                .ConfigureAwait(false))
+                                        {
+                                            continue;
+                                        }
+
+                                        // Preserve original receipt unit cost (first line in group when uniform).
+                                        var unitCost = lineGroup.First().UnitCost;
+                                        var reversal = StockMovement.DirectPurchaseReceiptReversal(
+                                            orgId,
+                                            productId,
+                                            account.Id,
+                                            totalQty,
+                                            product.UnitOfMeasure,
+                                            receipt.Id.Value,
+                                            actorId,
+                                            utcNow,
+                                            reason: voidReason,
+                                            sellingMode: product.SellingMode,
+                                            branchId: null,
+                                            unitCost: unitCost);
+
+                                        account.ApplyMovementEffect(reversal.QuantityEffect);
+                                        account.Touch(utcNow);
+                                        await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
+                                        await _inventory.AddMovementAsync(reversal, lockCt).ConfigureAwait(false);
+                                    }
+
+                                    if (failure is not null)
+                                    {
+                                        return;
+                                    }
+
+                                    receipt.Void(utcNow, actorId, voidReason);
+                                    await _receipts.UpdateAsync(receipt, lockCt).ConfigureAwait(false);
+                                    await _unitOfWork.SaveChangesAsync(lockCt).ConfigureAwait(false);
+                                    failure = ApplicationResult<DirectPurchaseReceiptDto>.Success(
+                                        DirectPurchaseReceiptMapper.Map(receipt));
+                                },
+                                ct)
+                            .ConfigureAwait(false);
+
+                        if (failure is not null)
+                        {
+                            return failure;
+                        }
+
+                        var reloaded = await _receipts.GetByIdAsync(orgId, id, ct).ConfigureAwait(false) ?? receipt;
+                        return ApplicationResult<DirectPurchaseReceiptDto>.Success(
+                            DirectPurchaseReceiptMapper.Map(reloaded));
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}

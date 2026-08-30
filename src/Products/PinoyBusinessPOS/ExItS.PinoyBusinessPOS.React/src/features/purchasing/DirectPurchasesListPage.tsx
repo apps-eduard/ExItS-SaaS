@@ -242,7 +242,11 @@ export function DirectPurchasesListPage() {
                     {formatPeso(item.totalCost)}
                     <span className="purchasing-row__uom">{t("purchasing.totalCost")}</span>
                   </span>
-                  <StatusChip tone="success">{t("purchasing.received")}</StatusChip>
+                  <StatusChip tone={item.status === "Voided" ? "danger" : "success"}>
+                    {item.status === "Voided"
+                      ? t("purchasing.receiptStatus.voided")
+                      : t("purchasing.received")}
+                  </StatusChip>
                   <ChevronRight className="purchasing-row__chevron size-4 shrink-0 text-muted" aria-hidden />
                 </span>
               </Link>

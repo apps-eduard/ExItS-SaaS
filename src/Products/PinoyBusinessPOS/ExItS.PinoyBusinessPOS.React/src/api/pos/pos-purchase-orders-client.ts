@@ -126,7 +126,16 @@ export const posGoodsReceiptDtoSchema = z.object({
   receivedAtUtc: z.string(),
   receivedBy: guidSchema,
   lines: z.array(posGoodsReceiptLineDtoSchema),
+  status: z.string().default("Posted"),
+  voidedAtUtc: z.string().nullable().optional(),
+  voidedByUserId: guidSchema.nullable().optional(),
+  voidReason: z.string().nullable().optional(),
 });
+
+export type VoidGoodsReceiptRequest = {
+  reason: string;
+  notes?: string | null;
+};
 
 export const posPurchaseOrderPagedResultSchema = z.object({
   items: z.array(posPurchaseOrderDtoSchema),
@@ -567,6 +576,36 @@ export async function listGoodsReceiptsForPurchaseOrder(
   return z.array(posGoodsReceiptDtoSchema).parse(raw);
 }
 
+/**
+ * Full reverse of a posted goods receipt. Compensating stock out at original receipt cost.
+ * Online-only; preserves the original GRN row as Voided.
+ */
+export async function voidGoodsReceipt(
+  workspace: PosWorkspaceScope,
+  goodsReceiptId: string,
+  body: VoidGoodsReceiptRequest,
+  signal?: AbortSignal,
+): Promise<PosGoodsReceiptDto> {
+  const payload = {
+    reason: body.reason.trim(),
+    ...(body.notes?.trim() ? { notes: body.notes.trim() } : {}),
+  };
+  const headers = await buildPosMutationIdempotencyHeaders(
+    goodsReceiptId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.GoodsReceiptVoid,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${GOODS_RECEIPTS_PATH}/${goodsReceiptId}/void`,
+    body: payload,
+    headers,
+  });
+  return posGoodsReceiptDtoSchema.parse(raw);
+}
+
 /** Client methods that must never be treated as stock-increasing. */
 export const NON_STOCK_PURCHASE_ORDER_METHODS = [
   "listPurchaseOrders",
@@ -578,6 +617,7 @@ export const NON_STOCK_PURCHASE_ORDER_METHODS = [
   "acceptConnectedPurchaseOrderChanges",
   "getGoodsReceipt",
   "listGoodsReceiptsForPurchaseOrder",
+  "voidGoodsReceipt",
 ] as const;
 
 export const STOCK_TOUCHING_PURCHASE_ORDER_METHODS = ["receivePurchaseOrder"] as const;

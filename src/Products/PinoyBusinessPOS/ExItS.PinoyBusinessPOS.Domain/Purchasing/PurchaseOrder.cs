@@ -281,6 +281,47 @@ public sealed class PurchaseOrder
     }
 
     /// <summary>
+    /// Unwinds quantities posted by a goods receipt and recomputes Ordered / PartiallyReceived / Received.
+    /// </summary>
+    public void UnwindGoodsReceipt(GoodsReceipt receipt, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (receipt.PurchaseOrderId != Id || receipt.OrganizationId != OrganizationId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptLine,
+                "Goods receipt does not belong to this purchase order.");
+        }
+
+        if (Status is not (PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived or PurchaseOrderStatus.Received))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Only ordered purchase orders can unwind a goods receipt.");
+        }
+
+        var lineById = _lines.ToDictionary(l => l.Id.Value);
+        foreach (var grnLine in receipt.Lines)
+        {
+            if (!lineById.TryGetValue(grnLine.PurchaseOrderLineId.Value, out var poLine))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseOrderLine,
+                    "Goods receipt line does not match a purchase-order line.");
+            }
+
+            poLine.ReverseReceipt(grnLine.QuantityReceived, grnLine.ShortClosedQty);
+        }
+
+        Status = _lines.All(l => l.OutstandingQty <= 0m)
+            ? PurchaseOrderStatus.Received
+            : _lines.Any(l => l.ReceivedQty > 0m)
+                ? PurchaseOrderStatus.PartiallyReceived
+                : PurchaseOrderStatus.Ordered;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
     /// After explicit create/link, bind buyer product onto unlinked connected lines for this supplier product.
     /// </summary>
     public void BindBuyerProductForSupplierProduct(

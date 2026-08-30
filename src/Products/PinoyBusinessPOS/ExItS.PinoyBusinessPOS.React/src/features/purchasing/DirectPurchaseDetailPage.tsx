@@ -1,23 +1,38 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getDirectPurchaseReceipt } from "@/api/pos/pos-direct-purchase-receipts-client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { canManageInventory } from "@/access/pos-capabilities";
+import { PosApiError } from "@/api/pos/pos-http";
+import {
+  getDirectPurchaseReceipt,
+  voidDirectPurchaseReceipt,
+} from "@/api/pos/pos-direct-purchase-receipts-client";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+const RECEIPT_VOID_REASON_MAX = 512;
+
 export function DirectPurchaseDetailPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const { receiptId } = useParams<{ receiptId: string }>();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const queryClient = useQueryClient();
+  const allowManage = canManageInventory(sessionGrant);
+  const [error, setError] = useState<string | null>(null);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -33,7 +48,10 @@ export function DirectPurchaseDetailPage() {
     queryFn: ({ signal }) => getDirectPurchaseReceipt(workspace!, receiptId!, signal),
   });
 
-  const actors = useActorDirectory(workspace?.organizationId, [query.data?.createdByUserId]);
+  const actors = useActorDirectory(workspace?.organizationId, [
+    query.data?.createdByUserId,
+    query.data?.voidedByUserId,
+  ]);
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -54,6 +72,37 @@ export function DirectPurchaseDetailPage() {
 
   const receipt = query.data;
   const notes = receipt.notes?.trim();
+  const isPosted = (receipt.status ?? "Posted") === "Posted";
+  const isVoided = receipt.status === "Voided";
+
+  async function onVoid() {
+    if (!workspace || !receiptId || !allowManage || !online || voiding || !isPosted) {
+      return;
+    }
+    const reason = voidReason.trim();
+    if (!reason) {
+      setError(t("purchasing.reverseReasonRequired"));
+      return;
+    }
+    setVoiding(true);
+    setError(null);
+    try {
+      const updated = await voidDirectPurchaseReceipt(workspace, receiptId, { reason });
+      queryClient.setQueryData(["direct-purchase", workspace.organizationId, receiptId], updated);
+      await queryClient.invalidateQueries({ queryKey: ["direct-purchases"] });
+      await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      setVoidOpen(false);
+      setVoidReason("");
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.reverseFailed"))
+          : t("purchasing.reverseFailed"),
+      );
+    } finally {
+      setVoiding(false);
+    }
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="direct-purchase-detail-page">
@@ -65,6 +114,8 @@ export function DirectPurchaseDetailPage() {
         backTestId="page-header-back-purchasing"
       />
 
+      {error ? <ErrorState title={t("purchasing.errorTitle")} detail={error} /> : null}
+
       <section aria-labelledby="direct-purchase-info">
         <h2
           id="direct-purchase-info"
@@ -73,6 +124,13 @@ export function DirectPurchaseDetailPage() {
           {t("purchasing.purchaseInformation")}
         </h2>
         <Card className="flex flex-col gap-3 p-3">
+          <div className="flex flex-wrap items-center gap-2" data-testid="direct-purchase-status">
+            <StatusChip tone={isVoided ? "danger" : "success"}>
+              {isVoided
+                ? t("purchasing.receiptStatus.voided")
+                : t("purchasing.receiptStatus.posted")}
+            </StatusChip>
+          </div>
           <dl className="m-0 grid gap-3 sm:grid-cols-2">
             <div>
               <dt className="text-[length:var(--exits-text-sm)] text-muted">
@@ -117,6 +175,21 @@ export function DirectPurchaseDetailPage() {
             isLoading={actors.isResolving}
             testId="direct-purchase-recorded-by"
           />
+          {isVoided && receipt.voidedByUserId ? (
+            <ActorAttribution
+              labelKey="purchasing.reversedBy"
+              actorId={receipt.voidedByUserId}
+              occurredAtUtc={receipt.voidedAtUtc}
+              resolved={actors.resolve(receipt.voidedByUserId)}
+              isLoading={actors.isResolving}
+              testId="direct-purchase-reversed-by"
+            />
+          ) : null}
+          {isVoided && receipt.voidReason ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="direct-purchase-void-reason">
+              {t("purchasing.reverseReason")}: {receipt.voidReason}
+            </p>
+          ) : null}
           {notes ? (
             <div data-testid="direct-purchase-notes">
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -180,6 +253,82 @@ export function DirectPurchaseDetailPage() {
           ))}
         </ul>
       </section>
+
+      {allowManage && isPosted && online ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-fit"
+          onClick={() => {
+            setVoidOpen(true);
+            setError(null);
+          }}
+          data-testid="direct-purchase-reverse"
+        >
+          {t("purchasing.reverseReceipt")}
+        </Button>
+      ) : null}
+
+      {voidOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="direct-purchase-reverse-title"
+          data-testid="direct-purchase-reverse-dialog"
+        >
+          <Card className="flex w-full max-w-md flex-col gap-3 p-4">
+            <h2
+              id="direct-purchase-reverse-title"
+              className="m-0 text-[length:var(--exits-text-lg)] font-semibold"
+            >
+              {t("purchasing.reverseTitle")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.reverseLede")}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)]">
+              {receipt.receiptNumber} · {receipt.purchaseDate}
+              {receipt.sourceNameSnapshot ? ` · ${receipt.sourceNameSnapshot}` : ""}
+            </p>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="font-medium">{t("purchasing.reverseReason")}</span>
+              <textarea
+                className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 py-2"
+                value={voidReason}
+                maxLength={RECEIPT_VOID_REASON_MAX}
+                onChange={(e) => setVoidReason(e.target.value)}
+                data-testid="direct-purchase-reverse-reason"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                className="min-h-11"
+                disabled={voiding || !voidReason.trim()}
+                onClick={() => void onVoid()}
+                data-testid="direct-purchase-reverse-confirm"
+              >
+                {voiding ? t("purchasing.reversing") : t("purchasing.reverseConfirm")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={voiding}
+                onClick={() => {
+                  setVoidOpen(false);
+                  setVoidReason("");
+                }}
+                data-testid="direct-purchase-reverse-cancel"
+              >
+                {t("purchasing.reverseCancel")}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

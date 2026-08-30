@@ -32,6 +32,8 @@ public sealed class StockMovement
     public const string ProductionOutputReversalReason = "Production output reversed";
     public const string WasteLossConsumptionReason = "Waste/loss";
     public const string WasteLossVoidRestorationReason = "Waste/loss void restoration";
+    public const string PurchaseReceiptReversalReason = "Purchase receipt reversed";
+    public const string DirectPurchaseReceiptReversalReason = "Direct purchase reversed";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -884,6 +886,100 @@ public sealed class StockMovement
             utcNow,
             actorId,
             branchId);
+    }
+
+    public static StockMovement PurchaseReceiptReversal(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid goodsReceiptId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (goodsReceiptId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptId,
+                "GoodsReceiptId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reversedReason = string.IsNullOrWhiteSpace(reason)
+            ? PurchaseReceiptReversalReason
+            : NormalizeOptionalReason(reason);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: true);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.PurchaseReceiptReversal,
+            -absolute,
+            reversedReason,
+            StockMovementSourceType.PurchaseReceipt,
+            goodsReceiptId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
+    }
+
+    public static StockMovement DirectPurchaseReceiptReversal(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid directPurchaseReceiptId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        string? reason = null,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null,
+        decimal? unitCost = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (directPurchaseReceiptId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseReceiptId,
+                "DirectPurchaseReceiptId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reversedReason = string.IsNullOrWhiteSpace(reason)
+            ? DirectPurchaseReceiptReversalReason
+            : NormalizeOptionalReason(reason);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.DirectPurchaseReceiptReversal,
+            -absolute,
+            reversedReason,
+            StockMovementSourceType.DirectPurchase,
+            directPurchaseReceiptId,
+            utcNow,
+            actorId,
+            branchId,
+            unitCost: normalizedCost);
     }
 
     public StockMovement WithLot(InventoryLotId lotId) =>

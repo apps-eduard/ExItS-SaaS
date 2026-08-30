@@ -116,6 +116,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExpirationInitializationRequired
             or ApplicationErrorCodes.ExpirationAllocationMismatch
             or DomainErrorCodes.InventoryInsufficientStock
+            or DomainErrorCodes.GoodsReceiptVoidInsufficient
+            or DomainErrorCodes.DirectPurchaseReceiptVoidInsufficient
+            or DomainErrorCodes.ProductionVoidOutputInsufficient
             or DomainErrorCodes.InventoryDisableRequiresZero
             or DomainErrorCodes.InventoryOpeningDuplicate
             or DomainErrorCodes.InventoryUomChangeBlocked
