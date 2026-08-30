@@ -142,6 +142,8 @@ All five locales (`en`, `fil-PH`, `ceb-PH`, `hil-PH`, `ilo-PH`):
 | PASS | 1267 |
 | FAIL | 0 |
 
+**Baseline delta:** +11 tests (1267 vs 1256 trusted baseline).
+
 ## TYPECHECK / LINT / BUILD
 
 | Check | Result |
