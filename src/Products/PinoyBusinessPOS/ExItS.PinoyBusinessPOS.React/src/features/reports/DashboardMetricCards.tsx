@@ -6,6 +6,20 @@ import { cn } from "@/lib/cn";
 
 export type DashboardMetricTone = "default" | "emphasis" | "attention" | "success";
 
+export function DashboardScopeBadge({
+  label,
+  testId,
+}: {
+  label: string;
+  testId?: string;
+}) {
+  return (
+    <span className="dashboard-scope-badge" data-testid={testId}>
+      {label}
+    </span>
+  );
+}
+
 export type PeriodComparisonFacts = {
   absoluteChange?: number | null;
   percentageChange?: number | null;
@@ -19,6 +33,9 @@ export function DashboardHeroMetric({
   children,
   meta,
   trend,
+  scopeLabel,
+  scopeTestId,
+  metricScope,
   testId,
   className,
 }: {
@@ -26,6 +43,9 @@ export function DashboardHeroMetric({
   children: ReactNode;
   meta?: ReactNode;
   trend?: ReactNode;
+  scopeLabel?: string;
+  scopeTestId?: string;
+  metricScope?: "branch" | "organization";
   testId: string;
   className?: string;
 }) {
@@ -33,9 +53,13 @@ export function DashboardHeroMetric({
     <article
       className={cn("dashboard-hero-metric exits-animate-panel", className)}
       data-testid={testId}
+      data-metric-scope={metricScope}
       role="listitem"
     >
-      <span className="dashboard-hero-metric__label">{label}</span>
+      <div className="dashboard-metric-card__head dashboard-hero-metric__head">
+        <span className="dashboard-hero-metric__label">{label}</span>
+        {scopeLabel ? <DashboardScopeBadge label={scopeLabel} testId={scopeTestId} /> : null}
+      </div>
       <div className="dashboard-hero-metric__value">{children}</div>
       {meta ? <div className="dashboard-hero-metric__meta">{meta}</div> : null}
       {trend ? <div className="dashboard-hero-metric__trend">{trend}</div> : null}
@@ -49,6 +73,9 @@ export function DashboardMetricCard({
   meta,
   icon: Icon,
   tone = "default",
+  scopeLabel,
+  scopeTestId,
+  metricScope,
   testId,
   className,
   to,
@@ -58,6 +85,9 @@ export function DashboardMetricCard({
   meta?: ReactNode;
   icon?: LucideIcon;
   tone?: DashboardMetricTone;
+  scopeLabel?: string;
+  scopeTestId?: string;
+  metricScope?: "branch" | "organization";
   testId: string;
   className?: string;
   to?: string;
@@ -80,22 +110,29 @@ export function DashboardMetricCard({
           </span>
         ) : null}
         <span className="dashboard-metric-card__label">{label}</span>
+        {scopeLabel ? <DashboardScopeBadge label={scopeLabel} testId={scopeTestId} /> : null}
       </div>
       <div className="dashboard-metric-card__value">{children}</div>
       {meta ? <div className="dashboard-metric-card__meta">{meta}</div> : null}
     </>
   );
 
+  const scopeProps = {
+    "data-testid": testId,
+    "data-metric-scope": metricScope,
+    role: "listitem" as const,
+  };
+
   if (to) {
     return (
-      <Link to={to} className={cardClassName} data-testid={testId} role="listitem">
+      <Link to={to} className={cardClassName} {...scopeProps}>
         {body}
       </Link>
     );
   }
 
   return (
-    <article className={cardClassName} data-testid={testId} role="listitem">
+    <article className={cardClassName} {...scopeProps}>
       {body}
     </article>
   );

@@ -4519,6 +4519,65 @@ a.dashboard-metric-card:focus-visible {
   gap: 0.2rem;
 }
 
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-section__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dashboard-section__header--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.dashboard-section__lede {
+  margin: 0;
+  font-size: var(--exits-text-sm);
+  color: var(--muted);
+}
+
+.dashboard-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--exits-radius-sm, 0.25rem);
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-hero-metric__head {
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .dashboard-section__header--inline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-scope-badge {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
 .dashboard-breakdown {
   display: flex;
   flex-direction: column;
