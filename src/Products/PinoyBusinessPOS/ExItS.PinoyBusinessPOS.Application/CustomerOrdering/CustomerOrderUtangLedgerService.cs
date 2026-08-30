@@ -13,8 +13,8 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
 /// <summary>
-/// Posts exactly one Business Utang charge when a Personal Utang customer order completes.
-/// Reuses the canonical Product-Based Utang sale + credit entry path without duplicate stock movement.
+/// Posts exactly one settlement sale when a customer order completes, preserving authoritative COGS snapshots.
+/// Personal Utang orders also post one Business Utang credit entry. Inventory was already consumed on completion.
 /// </summary>
 public interface ICustomerOrderUtangLedgerService
 {
@@ -50,19 +50,9 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
         DateTimeOffset utcNow,
         CancellationToken cancellationToken = default)
     {
-        if (order.PaymentMethod != CustomerOrderPaymentMethod.Utang
-            || order.CustomerParty.PartyType != CustomerPartyType.Personal
-            || order.Status != CustomerOrderStatus.Completed)
+        if (order.Status != CustomerOrderStatus.Completed)
         {
             return;
-        }
-
-        if (order.PlatformBusinessCustomerId is not Guid platformBusinessCustomerId
-            || platformBusinessCustomerId == Guid.Empty)
-        {
-            throw new DomainException(
-                ApplicationErrorCodes.CustomerOrderLinkedCustomerRequired,
-                "A linked business customer is required to post Utang for this order.");
         }
 
         var orgId = order.SellerOrganizationId;
@@ -75,14 +65,35 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
             return;
         }
 
-        var posCustomer = await _customers
-            .FindByPlatformBusinessCustomerIdAsync(orgId, platformBusinessCustomerId, cancellationToken)
-            .ConfigureAwait(false);
-        if (posCustomer is null)
+        POSCustomerId? posCustomerId = null;
+        if (order.PlatformBusinessCustomerId is Guid platformBusinessCustomerId
+            && platformBusinessCustomerId != Guid.Empty)
         {
-            throw new DomainException(
-                ApplicationErrorCodes.LinkedCustomerNotFound,
-                "Linked POS customer was not found for this order.");
+            var posCustomer = await _customers
+                .FindByPlatformBusinessCustomerIdAsync(orgId, platformBusinessCustomerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (posCustomer is not null)
+            {
+                posCustomerId = posCustomer.Id;
+            }
+        }
+
+        CreditEntryId? creditEntryId = null;
+        if (order.PaymentMethod == CustomerOrderPaymentMethod.Utang)
+        {
+            if (order.CustomerParty.PartyType != CustomerPartyType.Personal)
+            {
+                return;
+            }
+
+            if (posCustomerId is null)
+            {
+                throw new DomainException(
+                    ApplicationErrorCodes.CustomerOrderLinkedCustomerRequired,
+                    "A linked business customer is required to post Utang for this order.");
+            }
+
+            creditEntryId = CustomerOrderUtangSettlementIds.CreditEntryIdForOrder(order.Id);
         }
 
         var businessDate = SaleNumbers.BusinessDateOf(utcNow);
@@ -90,14 +101,12 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
             .ReserveNextSaleNumberAsync(orgId, businessDate, cancellationToken)
             .ConfigureAwait(false);
 
-        var lineDrafts = CustomerOrderUtangSettlementLines.FromOrder(order);
-        lineDrafts = await _costResolver
-            .EnrichDraftsWithCostsAsync(orgId, lineDrafts, cancellationToken)
+        var lineDrafts = await EnrichOrderLineDraftsWithCostsAsync(orgId, order, cancellationToken)
             .ConfigureAwait(false);
-        var creditEntryId = CustomerOrderUtangSettlementIds.CreditEntryIdForOrder(order.Id);
+        var paymentMethod = CustomerOrderPaymentMethods.ToSalePaymentMethod(order.PaymentMethod);
         var buyerParty = SaleBuyerParty.ExternalCustomer(order.CustomerParty.DisplayNameSnapshot);
 
-        var sale = Sale.RecordCustomerOrderUtangSettlement(
+        var sale = Sale.RecordCustomerOrderSettlement(
             orgId,
             saleNumber,
             order,
@@ -105,25 +114,33 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
             lineDrafts,
             actorId,
             utcNow,
-            posCustomer.Id,
+            paymentMethod,
+            posCustomerId,
             creditEntryId,
             buyerParty,
             PosBranchId.From(order.FulfillmentBranchId),
             settlementSaleId);
 
-        var credit = CreditEntry.Create(
-            orgId,
-            posCustomer.Id,
-            order.Total,
-            ProductBasedUtangRemarks.ForCustomerOrderNumber(order.OrderNumber),
-            utcNow,
-            creditEntryId,
-            sale.Id);
+        CreditEntry? credit = null;
+        if (creditEntryId is not null && posCustomerId is not null)
+        {
+            credit = CreditEntry.Create(
+                orgId,
+                posCustomerId,
+                order.Total,
+                ProductBasedUtangRemarks.ForCustomerOrderNumber(order.OrderNumber),
+                utcNow,
+                creditEntryId,
+                sale.Id);
+        }
 
         try
         {
             await _sales.AddAsync(sale, cancellationToken).ConfigureAwait(false);
-            await _credits.AddAsync(credit, cancellationToken).ConfigureAwait(false);
+            if (credit is not null)
+            {
+                await _credits.AddAsync(credit, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (PersistenceConflictException)
         {
@@ -137,5 +154,40 @@ public sealed class CustomerOrderUtangLedgerService : ICustomerOrderUtangLedgerS
 
             throw;
         }
+    }
+
+    private async Task<IReadOnlyList<SaleLineDraft>> EnrichOrderLineDraftsWithCostsAsync(
+        PosOrganizationId organizationId,
+        CustomerOrder order,
+        CancellationToken cancellationToken)
+    {
+        var lineDrafts = CustomerOrderUtangSettlementLines.FromOrder(order);
+        var inventoryDrafts = lineDrafts
+            .Where(CustomerOrderUtangSettlementLines.IsInventoryCostLine)
+            .ToList();
+        if (inventoryDrafts.Count == 0)
+        {
+            return lineDrafts;
+        }
+
+        var enrichedInventory = await _costResolver
+            .EnrichDraftsWithCostsAsync(organizationId, inventoryDrafts, cancellationToken)
+            .ConfigureAwait(false);
+
+        var enrichedIndex = 0;
+        var result = new SaleLineDraft[lineDrafts.Count];
+        for (var i = 0; i < lineDrafts.Count; i++)
+        {
+            if (CustomerOrderUtangSettlementLines.IsInventoryCostLine(lineDrafts[i]))
+            {
+                result[i] = enrichedInventory[enrichedIndex++];
+            }
+            else
+            {
+                result[i] = lineDrafts[i];
+            }
+        }
+
+        return result;
     }
 }

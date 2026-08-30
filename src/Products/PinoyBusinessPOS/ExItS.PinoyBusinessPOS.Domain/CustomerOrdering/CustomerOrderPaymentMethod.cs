@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 
@@ -62,4 +63,15 @@ public static class CustomerOrderPaymentMethods
             DomainErrorCodes.InvalidCustomerOrderPaymentMethod,
             "Payment method must be Cash, GCash, or Utang.");
     }
+
+    public static SalePaymentMethod ToSalePaymentMethod(CustomerOrderPaymentMethod method) =>
+        method switch
+        {
+            CustomerOrderPaymentMethod.Cash => SalePaymentMethod.Cash,
+            CustomerOrderPaymentMethod.ManualGCash => SalePaymentMethod.ManualGCash,
+            CustomerOrderPaymentMethod.Utang => SalePaymentMethod.Utang,
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentMethod,
+                "Payment method must be Cash, GCash, or Utang.")
+        };
 }

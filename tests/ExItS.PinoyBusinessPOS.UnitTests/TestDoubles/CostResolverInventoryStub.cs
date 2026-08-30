@@ -10,7 +10,7 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 /// <summary>Minimal inventory fake for cost-resolver and utang ledger tests.</summary>
-internal sealed class CostResolverInventoryStub : IInventoryRepository
+internal class CostResolverInventoryStub : IInventoryRepository
 {
     public Dictionary<Guid, decimal> Costs { get; init; } = [];
 
@@ -20,7 +20,7 @@ internal sealed class CostResolverInventoryStub : IInventoryRepository
         CancellationToken cancellationToken = default) =>
         Task.FromResult(Costs.TryGetValue(productId.Value, out var cost) ? (decimal?)cost : null);
 
-    public async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+    public virtual async Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
         PosOrganizationId organizationId,
         IReadOnlyCollection<CatalogProductId> productIds,
         CancellationToken cancellationToken = default)

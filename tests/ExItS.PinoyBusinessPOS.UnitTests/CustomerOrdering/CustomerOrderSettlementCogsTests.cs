@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Reporting;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -15,7 +16,7 @@ using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.CustomerOrdering;
 
-public sealed class CustomerOrderUtangLedgerServiceTests
+public sealed class CustomerOrderSettlementCogsTests
 {
     private static readonly PosOrganizationId Org =
         PosOrganizationId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
@@ -24,125 +25,131 @@ public sealed class CustomerOrderUtangLedgerServiceTests
     private static readonly Guid PersonalUser = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     private static readonly Guid PlatformBusinessCustomerId =
         Guid.Parse("11111111-1111-1111-1111-111111111111");
-    private static readonly CatalogProductId Product =
+    private static readonly CatalogProductId KnownProduct =
         CatalogProductId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static readonly CatalogProductId UnknownProduct =
+        CatalogProductId.From(Guid.Parse("22222222-2222-2222-2222-222222222222"));
     private static readonly DateTimeOffset Utc = new(2026, 8, 24, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Submitted_utang_order_does_not_post_when_complete_hook_skips_non_completed()
+    public async Task Completed_cash_order_snapshots_known_unit_and_line_cost()
     {
-        var order = CreateOrder(CustomerOrderStatus.Submitted, CustomerOrderPaymentMethod.Utang);
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 12.5m } };
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct, 2m, 100m);
         var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, inventory);
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
-        Assert.Empty(sales.Added);
-        Assert.Empty(credits.Added);
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(ProductionCostStatus.Complete, sale.CostStatus);
+        Assert.Equal(25m, sale.TotalCostSnapshot);
+        Assert.Equal(12.5m, sale.Lines[0].UnitCostSnapshot);
+        Assert.Equal(25m, sale.Lines[0].LineCostSnapshot);
     }
 
     [Fact]
-    public async Task Completed_utang_order_posts_one_sale_and_credit_for_authoritative_total()
+    public async Task Completed_order_with_multiple_known_lines_snapshots_total_cost()
     {
-        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.Utang, total: 800m);
+        var inventory = new CostResolverInventoryStub
+        {
+            Costs =
+            {
+                [KnownProduct.Value] = 10m,
+                [UnknownProduct.Value] = 5m,
+            },
+        };
+        var order = CreateCompletedMultiLineOrder(CustomerOrderPaymentMethod.ManualGCash);
         var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, inventory);
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
-        Assert.Single(sales.Added);
-        Assert.Single(credits.Added);
-        Assert.Equal(800m, credits.Added[0].Amount);
-        Assert.Equal(800m, sales.Added[0].Total);
-        Assert.Equal(SaleStockReservationState.Consumed, sales.Added[0].StockReservationState);
-        Assert.Equal(CustomerOrderUtangSettlementIds.SaleIdForOrder(order.Id), sales.Added[0].Id);
-        Assert.Equal(CustomerOrderUtangSettlementIds.CreditEntryIdForOrder(order.Id), credits.Added[0].Id);
-        Assert.Equal(
-            ProductBasedUtangRemarks.ForCustomerOrderNumber(order.OrderNumber),
-            credits.Added[0].Remarks);
-    }
-
-    /// <summary>
-    /// Seller Utang posting needs POS correlation (platformBusinessCustomerId), not an Active Personal link.
-    /// </summary>
-    [Theory]
-    [InlineData("Pending")]
-    [InlineData("Declined")]
-    [InlineData("Revoked")]
-    [InlineData("Blocked")]
-    [InlineData("Unavailable")]
-    public async Task Completed_utang_order_posts_without_requiring_active_personal_link(string connectionState)
-    {
-        _ = connectionState;
-        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.Utang, total: 250m);
-        var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
-
-        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
-
-        Assert.Single(sales.Added);
-        Assert.Single(credits.Added);
-        Assert.Equal(250m, credits.Added[0].Amount);
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(ProductionCostStatus.Complete, sale.CostStatus);
+        Assert.Equal(30m, sale.TotalCostSnapshot);
+        Assert.Equal(20m, sale.Lines[0].LineCostSnapshot);
+        Assert.Equal(10m, sale.Lines[1].LineCostSnapshot);
     }
 
     [Fact]
-    public async Task Completed_cash_order_posts_settlement_sale_without_credit()
+    public async Task Mixed_known_and_unknown_lines_yield_partial_cost_status()
     {
-        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.Cash);
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 8m } };
+        var order = CreateCompletedMultiLineOrder(CustomerOrderPaymentMethod.Cash);
         var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, inventory);
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
-        Assert.Single(sales.Added);
-        Assert.Empty(credits.Added);
-        Assert.Equal(SalePaymentMethod.Cash, sales.Added[0].PaymentMethod);
-        Assert.Equal(SaleStockReservationState.Consumed, sales.Added[0].StockReservationState);
-        Assert.Equal(CustomerOrderUtangSettlementIds.SaleIdForOrder(order.Id), sales.Added[0].Id);
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(ProductionCostStatus.Partial, sale.CostStatus);
+        Assert.Equal(16m, sale.TotalCostSnapshot);
+        Assert.Null(sale.Lines[1].UnitCostSnapshot);
+        Assert.Null(sale.Lines[1].LineCostSnapshot);
     }
 
     [Fact]
-    public async Task Completed_manual_gcash_order_posts_settlement_sale_without_credit()
+    public async Task All_unknown_lines_yield_unavailable_cost_status_without_zeroing()
     {
-        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.ManualGCash);
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, UnknownProduct, 1m, 50m);
         var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, new CostResolverInventoryStub());
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
-        Assert.Single(sales.Added);
-        Assert.Empty(credits.Added);
-        Assert.Equal(SalePaymentMethod.ManualGCash, sales.Added[0].PaymentMethod);
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(ProductionCostStatus.Unavailable, sale.CostStatus);
+        Assert.Null(sale.TotalCostSnapshot);
+        Assert.Null(sale.Lines[0].UnitCostSnapshot);
+        Assert.Null(sale.Lines[0].LineCostSnapshot);
     }
 
     [Fact]
-    public async Task Accepted_utang_order_does_not_post()
+    public async Task Delivery_fee_line_excluded_from_inventory_cost_enrichment()
     {
-        var order = CreateOrder(CustomerOrderStatus.Accepted, CustomerOrderPaymentMethod.Utang);
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 20m } };
+        var order = CreateCompletedDeliveryOrder(CustomerOrderPaymentMethod.Cash);
         var sales = new FakeSales();
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, inventory);
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
-        Assert.Empty(sales.Added);
-        Assert.Empty(credits.Added);
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(ProductionCostStatus.Partial, sale.CostStatus);
+        Assert.Equal(40m, sale.TotalCostSnapshot);
+        var feeLine = Assert.Single(sale.Lines, l => l.NameSnapshot == CustomerOrderUtangSettlementLines.DeliveryFeeLineName);
+        Assert.Null(feeLine.UnitCostSnapshot);
+        Assert.Null(feeLine.LineCostSnapshot);
     }
 
     [Fact]
-    public async Task Retry_is_idempotent_when_settlement_sale_already_exists()
+    public async Task Later_inventory_cost_change_does_not_alter_settlement_snapshot()
     {
-        var order = CreateOrder(CustomerOrderStatus.Completed, CustomerOrderPaymentMethod.Utang);
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 15m } };
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct, 1m, 100m);
+        var sales = new FakeSales();
+        var service = CreateService(sales, inventory);
+
+        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
+        inventory.Costs[KnownProduct.Value] = 99m;
+
+        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
+
+        var sale = Assert.Single(sales.Added);
+        Assert.Equal(15m, sale.Lines[0].UnitCostSnapshot);
+        Assert.Equal(15m, sale.Lines[0].LineCostSnapshot);
+    }
+
+    [Fact]
+    public async Task Retry_is_idempotent_for_cash_settlement_sale()
+    {
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 10m } };
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct, 1m, 100m);
         var settlementSaleId = CustomerOrderUtangSettlementIds.SaleIdForOrder(order.Id);
-        var customerId = POSCustomerId.From(Guid.Parse("99999999-9999-9999-9999-999999999999"));
         var sales = new FakeSales
         {
-            Existing = Sale.RecordCustomerOrderUtangSettlement(
+            Existing = Sale.RecordCustomerOrderSettlement(
                 Org,
                 SaleNumbers.Format(DateOnly.FromDateTime(Utc.UtcDateTime), 1),
                 order,
@@ -150,21 +157,146 @@ public sealed class CustomerOrderUtangLedgerServiceTests
                 CustomerOrderUtangSettlementLines.FromOrder(order),
                 Actor,
                 Utc,
-                customerId,
-                CreditEntryId.New(),
+                SalePaymentMethod.Cash,
                 id: settlementSaleId),
         };
-        var credits = new FakeCredits();
-        var service = CreateService(sales, credits);
+        var service = CreateService(sales, inventory);
 
         await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
 
         Assert.Empty(sales.Added);
-        Assert.Empty(credits.Added);
     }
 
     [Fact]
-    public void Settlement_lines_include_delivery_fee_in_sale_total()
+    public async Task Accepted_order_does_not_post_settlement_sale()
+    {
+        var order = CreateSubmittedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct);
+        order.Accept(Actor, Utc);
+        var sales = new FakeSales();
+        var service = CreateService(sales, new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 10m } });
+
+        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
+
+        Assert.Empty(sales.Added);
+    }
+
+    [Fact]
+    public void Customer_order_settlement_sale_profitability_uses_snapshots()
+    {
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 20m } };
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct, 2m, 100m);
+        var drafts = CustomerOrderUtangSettlementLines.FromOrder(order);
+        var enriched = new InventoryCostResolver(inventory)
+            .EnrichDraftsWithCostsAsync(Org, drafts.Where(CustomerOrderUtangSettlementLines.IsInventoryCostLine).ToList())
+            .GetAwaiter()
+            .GetResult();
+        var sale = Sale.RecordCustomerOrderSettlement(
+            Org,
+            SaleNumbers.Format(DateOnly.FromDateTime(Utc.UtcDateTime), 1),
+            order,
+            order.Total,
+            enriched,
+            Actor,
+            Utc,
+            SalePaymentMethod.Cash);
+
+        var profit = SaleProfitability.Compute(sale);
+        Assert.NotNull(profit);
+        Assert.Equal(160m, profit!.GrossProfit);
+    }
+
+    [Fact]
+    public void Return_cogs_uses_original_customer_order_sale_line_unit_cost_snapshot()
+    {
+        var inventory = new CostResolverInventoryStub { Costs = { [KnownProduct.Value] = 18m } };
+        var order = CreateCompletedOrder(CustomerOrderPaymentMethod.Cash, KnownProduct, 2m, 100m);
+        var drafts = CustomerOrderUtangSettlementLines.FromOrder(order);
+        var enriched = new InventoryCostResolver(inventory)
+            .EnrichDraftsWithCostsAsync(Org, drafts.Where(CustomerOrderUtangSettlementLines.IsInventoryCostLine).ToList())
+            .GetAwaiter()
+            .GetResult();
+        var sale = Sale.RecordCustomerOrderSettlement(
+            Org,
+            SaleNumbers.Format(DateOnly.FromDateTime(Utc.UtcDateTime), 1),
+            order,
+            order.Total,
+            enriched,
+            Actor,
+            Utc,
+            SalePaymentMethod.Cash);
+
+        inventory.Costs[KnownProduct.Value] = 99m;
+
+        var returnCogs = sale.Lines[0].UnitCostSnapshot is null
+            ? 0m
+            : SaleMoney.RoundMoney(sale.Lines[0].UnitCostSnapshot!.Value * 1m);
+        Assert.Equal(18m, returnCogs);
+        Assert.NotEqual(99m, returnCogs);
+    }
+
+    [Fact]
+    public async Task Batch_cost_resolver_invoked_once_for_multi_line_order()
+    {
+        var inventory = new CountingCostResolverInventoryStub
+        {
+            Costs =
+            {
+                [KnownProduct.Value] = 10m,
+                [UnknownProduct.Value] = 5m,
+            },
+        };
+        var order = CreateCompletedMultiLineOrder(CustomerOrderPaymentMethod.Cash);
+        var sales = new FakeSales();
+        var service = CreateService(sales, inventory);
+
+        await service.PostOnCompleteIfNeededAsync(order, Actor, Utc);
+
+        Assert.Equal(1, inventory.BatchLookupCount);
+        Assert.Single(sales.Added);
+    }
+
+    private static CustomerOrderUtangLedgerService CreateService(FakeSales sales, IInventoryRepository inventory) =>
+        new(sales, new FakeCredits(), new FakeCustomers(), new InventoryCostResolver(inventory));
+
+    private static CustomerOrder CreateCompletedOrder(
+        CustomerOrderPaymentMethod paymentMethod,
+        CatalogProductId productId,
+        decimal quantity,
+        decimal unitPrice)
+    {
+        var order = CreateSubmittedOrder(paymentMethod, productId, quantity, unitPrice);
+        order.Accept(Actor, Utc);
+        order.MarkReady(Utc, Actor);
+        order.MarkCollected(Utc, Actor);
+        order.Complete(Actor, Utc);
+        return order;
+    }
+
+    private static CustomerOrder CreateCompletedMultiLineOrder(CustomerOrderPaymentMethod paymentMethod)
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Org,
+            "SO-000002",
+            CustomerOrderParty.Personal(PersonalUser, "Ana"),
+            CustomerOrderFulfillmentType.Pickup,
+            Branch,
+            "Main",
+            [
+                new CustomerOrderLineDraft(KnownProduct, "Known", "KNOWN", UnitOfMeasure.Piece, 2m, 100m),
+                new CustomerOrderLineDraft(UnknownProduct, "Unknown", "UNK", UnitOfMeasure.Piece, 2m, 50m),
+            ],
+            Actor,
+            Utc,
+            paymentMethod: paymentMethod,
+            platformBusinessCustomerId: PlatformBusinessCustomerId);
+        order.Accept(Actor, Utc);
+        order.MarkReady(Utc, Actor);
+        order.MarkCollected(Utc, Actor);
+        order.Complete(Actor, Utc);
+        return order;
+    }
+
+    private static CustomerOrder CreateCompletedDeliveryOrder(CustomerOrderPaymentMethod paymentMethod)
     {
         var order = CustomerOrder.CreateSubmitted(
             Org,
@@ -173,7 +305,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             CustomerOrderFulfillmentType.Delivery,
             Branch,
             "Main",
-            [new CustomerOrderLineDraft(Product, "Rice", "RICE", UnitOfMeasure.Piece, 2m, 250m)],
+            [new CustomerOrderLineDraft(KnownProduct, "Rice", "RICE", UnitOfMeasure.Piece, 2m, 250m)],
             Actor,
             Utc,
             CustomerOrderDeliverySnapshot.Rehydrate(
@@ -197,62 +329,46 @@ public sealed class CustomerOrderUtangLedgerServiceTests
                 0m,
                 50m,
                 false),
-            paymentMethod: CustomerOrderPaymentMethod.Utang,
+            paymentMethod: paymentMethod,
             platformBusinessCustomerId: PlatformBusinessCustomerId);
-
-        var drafts = CustomerOrderUtangSettlementLines.FromOrder(order);
-        var sale = Sale.RecordCustomerOrderUtangSettlement(
-            Org,
-            SaleNumbers.Format(DateOnly.FromDateTime(Utc.UtcDateTime), 2),
-            order,
-            order.Total,
-            drafts,
-            Actor,
-            Utc,
-            POSCustomerId.From(Guid.Parse("99999999-9999-9999-9999-999999999999")),
-            CreditEntryId.New());
-
-        Assert.Equal(550m, sale.Total);
+        order.Accept(Actor, Utc);
+        order.MarkReady(Utc, Actor);
+        order.MarkOutForDelivery(Utc, Actor);
+        order.MarkDelivered(Utc, Actor);
+        order.Complete(Actor, Utc);
+        return order;
     }
 
-    private static CustomerOrderUtangLedgerService CreateService(FakeSales sales, FakeCredits credits) =>
-        new(sales, credits, new FakeCustomers(), new InventoryCostResolver(new CostResolverInventoryStub()));
-
-    private static CustomerOrder CreateOrder(
-        CustomerOrderStatus status,
+    private static CustomerOrder CreateSubmittedOrder(
         CustomerOrderPaymentMethod paymentMethod,
-        decimal total = 500m)
-    {
-        var order = CustomerOrder.CreateSubmitted(
+        CatalogProductId productId,
+        decimal quantity = 1m,
+        decimal unitPrice = 500m) =>
+        CustomerOrder.CreateSubmitted(
             Org,
             "SO-000001",
             CustomerOrderParty.Personal(PersonalUser, "Ana"),
             CustomerOrderFulfillmentType.Pickup,
             Branch,
             "Main",
-            [new CustomerOrderLineDraft(Product, "Rice", "RICE", UnitOfMeasure.Piece, 1m, total)],
+            [new CustomerOrderLineDraft(productId, "Rice", "RICE", UnitOfMeasure.Piece, quantity, unitPrice)],
             Actor,
             Utc,
             paymentMethod: paymentMethod,
             platformBusinessCustomerId: PlatformBusinessCustomerId);
 
-        if (status == CustomerOrderStatus.Accepted)
-        {
-            order.Accept(Actor, Utc);
-        }
-        else if (status == CustomerOrderStatus.Submitted)
-        {
-            // leave submitted
-        }
-        else if (status == CustomerOrderStatus.Completed)
-        {
-            order.Accept(Actor, Utc);
-            order.MarkReady(Utc, Actor);
-            order.MarkCollected(Utc, Actor);
-            order.Complete(Actor, Utc);
-        }
+    private sealed class CountingCostResolverInventoryStub : CostResolverInventoryStub
+    {
+        public int BatchLookupCount { get; private set; }
 
-        return order;
+        public override Task<IReadOnlyDictionary<Guid, decimal?>> GetLatestAcquisitionUnitCostsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default)
+        {
+            BatchLookupCount++;
+            return base.GetLatestAcquisitionUnitCostsAsync(organizationId, productIds, cancellationToken);
+        }
     }
 
     private sealed class FakeCustomers : IPOSCustomerRepository
@@ -276,14 +392,13 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             PosOrganizationId organizationId,
             Guid platformBusinessCustomerId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(
-                organizationId == Org && platformBusinessCustomerId == PlatformBusinessCustomerId ? 1 : 0);
+            Task.FromResult(1);
 
         public Task<POSCustomer?> GetByIdAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<POSCustomer?>(_customer.Id == customerId ? _customer : null);
+            Task.FromResult<POSCustomer?>(_customer);
 
         public Task<POSCustomer?> FindActiveByNormalizedMobileAsync(
             PosOrganizationId organizationId,
@@ -419,7 +534,6 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-
         public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
@@ -456,13 +570,8 @@ public sealed class CustomerOrderUtangLedgerServiceTests
 
     private sealed class FakeCredits : ICreditEntryRepository
     {
-        public List<CreditEntry> Added { get; } = [];
-
-        public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default)
-        {
-            Added.Add(entry);
-            return Task.CompletedTask;
-        }
+        public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task<CreditEntry?> GetByIdAsync(
             PosOrganizationId organizationId,
@@ -483,7 +592,7 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<(IReadOnlyList<CreditEntry>, int)>((Added, Added.Count));
+            Task.FromResult<(IReadOnlyList<CreditEntry>, int)>(([], 0));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
             PosOrganizationId organizationId,
@@ -491,31 +600,31 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<(IReadOnlyList<CreditEntry>, int)>((Added, Added.Count));
+            Task.FromResult<(IReadOnlyList<CreditEntry>, int)>(([], 0));
 
         public Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
             PosOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CreditEntry>>(Added);
+            Task.FromResult<IReadOnlyList<CreditEntry>>([]);
 
         public Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,
             DateOnly toDateUtc,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CreditEntry>>(Added);
+            Task.FromResult<IReadOnlyList<CreditEntry>>([]);
 
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(Added.Where(c => c.Status == CreditEntryStatus.Active).Sum(c => c.Amount));
+            Task.FromResult(0m);
 
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(Added.Count(c => c.Status == CreditEntryStatus.Active));
+            Task.FromResult(0);
 
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

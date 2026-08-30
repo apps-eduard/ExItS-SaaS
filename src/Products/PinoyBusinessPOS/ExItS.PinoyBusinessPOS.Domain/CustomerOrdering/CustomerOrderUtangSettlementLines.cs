@@ -9,6 +9,11 @@ namespace ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 /// </summary>
 public static class CustomerOrderUtangSettlementLines
 {
+    public const string DeliveryFeeLineName = "Delivery fee";
+
+    public static bool IsInventoryCostLine(SaleLineDraft draft) =>
+        !string.Equals(draft.NameSnapshot, DeliveryFeeLineName, StringComparison.Ordinal);
+
     public static IReadOnlyList<SaleLineDraft> FromOrder(CustomerOrder order)
     {
         ArgumentNullException.ThrowIfNull(order);
@@ -35,7 +40,7 @@ public static class CustomerOrderUtangSettlementLines
             var anchor = order.Lines.OrderBy(l => l.LineNumber).First();
             drafts.Add(new SaleLineDraft(
                 anchor.ProductId,
-                "Delivery fee",
+                DeliveryFeeLineName,
                 SkuSnapshot: null,
                 BarcodeSnapshot: null,
                 UnitOfMeasure.Piece,

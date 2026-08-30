@@ -10,7 +10,7 @@
 
 **Should ManageInventory automatically allow write-off, stock use, and production?**
 
-**YES â€” for practical micro/small-business roles.**
+**YES — for practical micro/small-business roles.**
 
 Do **not** invent separate capabilities for Stock Use, Waste/Loss, expired write-off, Production, Stock Count, Transfers, or manual adjust.
 
@@ -26,18 +26,18 @@ Do **not** invent separate capabilities for Stock Use, Waste/Loss, expired write
 | ReportingUser | yes | **no** |
 | Cashier | no | no |
 
-Expired-stock write-off is Waste/Loss with reason Expired â€” **not** Business Utang `WriteOff`.
+Expired-stock write-off is Waste/Loss with reason Expired — **not** Business Utang `WriteOff`.
 
 ## ROOT_CAUSE (React polish)
 
-`canViewInventory` incorrectly aliased `canManageInventory`, so ReportingUser (backend view-only) was denied inventory UI. Mutate forms on Inventory Detail were not consistently gated by ManageInventory (safe only while viewâ‰¡manage). More hub required `ManageCatalog && canViewInventory`, hiding Inventory from InventoryStaff/ReportingUser.
+`canViewInventory` incorrectly aliased `canManageInventory`, so ReportingUser (backend view-only) was denied inventory UI. Mutate forms on Inventory Detail were not consistently gated by ManageInventory (safe only while view≡manage). More hub required `ManageCatalog && canViewInventory`, hiding Inventory from InventoryStaff/ReportingUser.
 
 ## Changes
 
 | Area | Change |
 |------|--------|
 | `pos-capabilities.ts` | Split View vs Manage; document SMB ManageInventory scope |
-| `org-nav-config.ts` | More â†’ Inventory when `canViewInventory` |
+| `org-nav-config.ts` | More → Inventory when `canViewInventory` |
 | `InventoryDetailPage.tsx` | Gate enable/opening/adjust/disable/expiration CTAs on Manage |
 | `InventoryListPage.tsx` | View-only vs manage-scope hints |
 | Denial copy (`en.ts` + locale keys) | Clarify actions need inventory management permission |

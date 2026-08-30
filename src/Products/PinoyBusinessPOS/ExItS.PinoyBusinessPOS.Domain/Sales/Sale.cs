@@ -390,12 +390,12 @@ public sealed class Sale
     }
 
     /// <summary>
-    /// Records a completed Product-Based Utang sale for a fulfilled Personal customer order.
-    /// Inventory was already consumed via the customer-order stock path; this sale is accounting-only.
+    /// Records a completed customer-order settlement sale after inventory was consumed via the customer-order stock path.
+    /// Accounting-only: <see cref="SaleStockReservationState.Consumed"/> prevents duplicate stock deduction.
     /// No cashier shift or register is required. <paramref name="authoritativeTotal"/> must match
     /// <see cref="CustomerOrder.Total"/> exactly.
     /// </summary>
-    public static Sale RecordCustomerOrderUtangSettlement(
+    public static Sale RecordCustomerOrderSettlement(
         PosOrganizationId organizationId,
         string saleNumber,
         CustomerOrder sourceOrder,
@@ -403,8 +403,9 @@ public sealed class Sale
         IReadOnlyList<SaleLineDraft> lines,
         Guid recordedBy,
         DateTimeOffset utcNow,
-        POSCustomerId customerId,
-        CreditEntryId linkedCreditEntryId,
+        SalePaymentMethod paymentMethod,
+        POSCustomerId? customerId = null,
+        CreditEntryId? linkedCreditEntryId = null,
         SaleBuyerParty? buyerParty = null,
         PosBranchId? branchId = null,
         SaleId? id = null)
@@ -425,7 +426,7 @@ public sealed class Sale
         {
             throw new DomainException(
                 DomainErrorCodes.SaleTotalMismatch,
-                "Customer order Utang settlement total must match the authoritative order total.");
+                "Customer order settlement total must match the authoritative order total.");
         }
 
         if (total > MaxTotal)
@@ -433,10 +434,20 @@ public sealed class Sale
             throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
         }
 
-        ValidatePaymentLinkage(SalePaymentMethod.Utang, customerId, linkedCreditEntryId, total);
+        ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
 
-        var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
-        resolvedBuyer.EnsureConsistentWith(customerId);
+        var resolvedBuyer = buyerParty
+            ?? (customerId is not null
+                ? SaleBuyerParty.FromLegacyCustomer(customerId)
+                : SaleBuyerParty.ExternalCustomer(sourceOrder.CustomerParty.DisplayNameSnapshot));
+        if (customerId is not null)
+        {
+            resolvedBuyer.EnsureConsistentWith(customerId);
+        }
+
+        var (amountTendered, changeAmount) = paymentMethod == SalePaymentMethod.Cash
+            ? NormalizeTender(paymentMethod, total, total)
+            : NormalizeTender(paymentMethod, total, null);
 
         var (costStatus, totalCostSnapshot) = ComputeCostSnapshot(saleLines);
 
@@ -445,7 +456,7 @@ public sealed class Sale
             organizationId,
             normalizedNumber,
             SaleStatus.Completed,
-            SalePaymentMethod.Utang,
+            paymentMethod,
             subtotal,
             total,
             taxAmount: 0m,
@@ -454,8 +465,8 @@ public sealed class Sale
             saleDiscountTotal: 0m,
             costStatus,
             totalCostSnapshot,
-            amountTendered: null,
-            changeAmount: null,
+            amountTendered,
+            changeAmount,
             gcashReference: null,
             customerId,
             resolvedBuyer,
@@ -474,6 +485,40 @@ public sealed class Sale
             [],
             []);
     }
+
+    /// <summary>
+    /// Records a completed Product-Based Utang sale for a fulfilled Personal customer order.
+    /// Inventory was already consumed via the customer-order stock path; this sale is accounting-only.
+    /// No cashier shift or register is required. <paramref name="authoritativeTotal"/> must match
+    /// <see cref="CustomerOrder.Total"/> exactly.
+    /// </summary>
+    public static Sale RecordCustomerOrderUtangSettlement(
+        PosOrganizationId organizationId,
+        string saleNumber,
+        CustomerOrder sourceOrder,
+        decimal authoritativeTotal,
+        IReadOnlyList<SaleLineDraft> lines,
+        Guid recordedBy,
+        DateTimeOffset utcNow,
+        POSCustomerId customerId,
+        CreditEntryId linkedCreditEntryId,
+        SaleBuyerParty? buyerParty = null,
+        PosBranchId? branchId = null,
+        SaleId? id = null) =>
+        RecordCustomerOrderSettlement(
+            organizationId,
+            saleNumber,
+            sourceOrder,
+            authoritativeTotal,
+            lines,
+            recordedBy,
+            utcNow,
+            SalePaymentMethod.Utang,
+            customerId,
+            linkedCreditEntryId,
+            buyerParty ?? SaleBuyerParty.ExternalCustomer(sourceOrder.CustomerParty.DisplayNameSnapshot),
+            branchId,
+            id);
 
     /// <summary>
     /// Runs the exact line-building, price-override, and discount math <see cref="Checkout"/> would
