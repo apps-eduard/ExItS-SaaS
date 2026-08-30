@@ -4,8 +4,8 @@
 **Branch:** `feat/organization`  
 **TASK:** POS-CONNECTED-BUYER-CREATE-LINK-TEST-REPAIR-01  
 **START_SHA:** `bc1730063955aa3363dcf97cf119ddfe775da116`  
-**FEATURE_SHA:** _(recorded at feature commit)_  
-**FINAL_SHA:** _(recorded after docs stamp)_
+**FEATURE_SHA:** `f0156f851ba8aae961e730031766c944082b60d7`  
+**FINAL_SHA:** `pending`
 
 ## ORIGINAL_FAILURE
 
