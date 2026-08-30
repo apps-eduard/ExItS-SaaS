@@ -4,6 +4,8 @@
 |-------|-------|
 | **TASK** | POS-PILOT-STOCK-USE-BRANCH-BALANCE-FIX-01 |
 | **START_SHA** | `f802cedc1bcf16c78565c7253b656d53c54633d7` |
+| **FEATURE_SHA** | `bc625cfb0224248f2f5d695645ac29d2a07c2973` |
+| **FINAL_SHA** | `5a60ccd9d7921b749fabb5e63ab8f9cd9cee9c2f` |
 | **PILOT_SOURCE** | `docs/Mobile-React/Pilot/POS-CONTROLLED-SINGLE-BRANCH-PILOT-01.md` |
 | **PILOT_SCENARIO** | 14 |
 
