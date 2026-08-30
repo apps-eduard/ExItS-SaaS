@@ -663,6 +663,7 @@ public sealed class AdjustInventoryStock
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public AdjustInventoryStock(
         IInventoryRepository inventory,
@@ -672,7 +673,8 @@ public sealed class AdjustInventoryStock
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _products = products;
@@ -682,6 +684,7 @@ public sealed class AdjustInventoryStock
         _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
@@ -816,6 +819,7 @@ public sealed class AdjustInventoryStock
                     "Adjustment direction must be In or Out.");
             }
 
+            var orgOnHandBefore = account.OnHandQuantity;
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);
 
@@ -829,12 +833,18 @@ public sealed class AdjustInventoryStock
                 : null;
             if (branch is not null)
             {
-                var balance = await _branchBalances
-                    .GetAsync(orgId, branch, catalogProductId, cancellationToken)
-                    .ConfigureAwait(false)
-                    ?? InventoryBranchBalance.Create(orgId, branch, catalogProductId, 0m, utcNow);
-                balance.Apply(movement.QuantityEffect, utcNow);
-                await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
+                await BranchBalanceMutation
+                    .ApplyAsync(
+                        _branchBalances,
+                        _branches,
+                        orgId,
+                        branch,
+                        catalogProductId,
+                        orgOnHandBefore,
+                        movement.QuantityEffect,
+                        utcNow,
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             if (product.TracksExpiration)

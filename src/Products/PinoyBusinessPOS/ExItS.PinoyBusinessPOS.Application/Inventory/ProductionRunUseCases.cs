@@ -66,6 +66,7 @@ public sealed class CreateProductionRun
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public CreateProductionRun(
         IProductionRunRepository runs,
@@ -76,7 +77,8 @@ public sealed class CreateProductionRun
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _runs = runs;
         _definitions = definitions;
@@ -87,6 +89,7 @@ public sealed class CreateProductionRun
         _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<ProductionRunDto>> ExecuteAsync(
@@ -418,11 +421,19 @@ public sealed class CreateProductionRun
                                             unitCost: line.UnitCostSnapshot);
 
                                         line.AttachInventoryMovement(movement.Id);
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         account.ApplyMovementEffect(movement.QuantityEffect);
                                         account.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
                                         await _inventory.AddMovementAsync(movement, lockCt).ConfigureAwait(false);
-                                        await ApplyBranchAsync(orgId, branch, line.MaterialProductId, movement.QuantityEffect, utcNow, lockCt)
+                                        await ApplyBranchAsync(
+                                                orgId,
+                                                branch,
+                                                line.MaterialProductId,
+                                                orgOnHandBefore,
+                                                movement.QuantityEffect,
+                                                utcNow,
+                                                lockCt)
                                             .ConfigureAwait(false);
                                     }
 
@@ -452,6 +463,7 @@ public sealed class CreateProductionRun
                                                 : null);
 
                                         run.AttachOutputInventoryMovement(outputMovement.Id);
+                                        var outputOrgOnHandBefore = outputAccount.OnHandQuantity;
                                         outputAccount.ApplyMovementEffect(outputMovement.QuantityEffect);
                                         outputAccount.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(outputAccount, lockCt).ConfigureAwait(false);
@@ -460,6 +472,7 @@ public sealed class CreateProductionRun
                                                 orgId,
                                                 branch,
                                                 run.OutputProductId,
+                                                outputOrgOnHandBefore,
                                                 outputMovement.QuantityEffect,
                                                 utcNow,
                                                 lockCt)
@@ -519,6 +532,7 @@ public sealed class CreateProductionRun
         PosOrganizationId orgId,
         PosBranchId? branch,
         CatalogProductId productId,
+        decimal organizationOnHandBeforeDelta,
         decimal quantityEffect,
         DateTimeOffset utcNow,
         CancellationToken ct)
@@ -528,10 +542,18 @@ public sealed class CreateProductionRun
             return;
         }
 
-        var balance = await _branchBalances.GetAsync(orgId, branch, productId, ct).ConfigureAwait(false)
-            ?? InventoryBranchBalance.Create(orgId, branch, productId, 0m, utcNow);
-        balance.Apply(quantityEffect, utcNow);
-        await _branchBalances.UpsertAsync(balance, ct).ConfigureAwait(false);
+        await BranchBalanceMutation
+            .ApplyAsync(
+                _branchBalances,
+                _branches,
+                orgId,
+                branch,
+                productId,
+                organizationOnHandBeforeDelta,
+                quantityEffect,
+                utcNow,
+                ct)
+            .ConfigureAwait(false);
     }
 
     internal static decimal ScaleQuantity(decimal value, decimal scale) =>
@@ -554,6 +576,7 @@ public sealed class VoidProductionRun
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public VoidProductionRun(
         IProductionRunRepository runs,
@@ -562,7 +585,8 @@ public sealed class VoidProductionRun
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _runs = runs;
         _products = products;
@@ -571,6 +595,7 @@ public sealed class VoidProductionRun
         _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<ProductionRunDto>> ExecuteAsync(
@@ -712,6 +737,7 @@ public sealed class VoidProductionRun
                                             sellingMode: material.SellingMode,
                                             branchId: run.BranchId?.Value);
 
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         account.ApplyMovementEffect(restoration.QuantityEffect);
                                         account.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
@@ -720,6 +746,7 @@ public sealed class VoidProductionRun
                                                 orgId,
                                                 run.BranchId,
                                                 line.MaterialProductId,
+                                                orgOnHandBefore,
                                                 restoration.QuantityEffect,
                                                 utcNow,
                                                 lockCt)
@@ -742,6 +769,7 @@ public sealed class VoidProductionRun
                                             sellingMode: outputProduct.SellingMode,
                                             branchId: run.BranchId?.Value);
 
+                                        var outputOrgOnHandBefore = outputAccount.OnHandQuantity;
                                         outputAccount.ApplyMovementEffect(reversal.QuantityEffect);
                                         outputAccount.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(outputAccount, lockCt).ConfigureAwait(false);
@@ -750,6 +778,7 @@ public sealed class VoidProductionRun
                                                 orgId,
                                                 run.BranchId,
                                                 run.OutputProductId,
+                                                outputOrgOnHandBefore,
                                                 reversal.QuantityEffect,
                                                 utcNow,
                                                 lockCt)
@@ -785,6 +814,7 @@ public sealed class VoidProductionRun
         PosOrganizationId orgId,
         PosBranchId? branch,
         CatalogProductId productId,
+        decimal organizationOnHandBeforeDelta,
         decimal quantityEffect,
         DateTimeOffset utcNow,
         CancellationToken ct)
@@ -794,9 +824,17 @@ public sealed class VoidProductionRun
             return;
         }
 
-        var balance = await _branchBalances.GetAsync(orgId, branch, productId, ct).ConfigureAwait(false)
-            ?? InventoryBranchBalance.Create(orgId, branch, productId, 0m, utcNow);
-        balance.Apply(quantityEffect, utcNow);
-        await _branchBalances.UpsertAsync(balance, ct).ConfigureAwait(false);
+        await BranchBalanceMutation
+            .ApplyAsync(
+                _branchBalances,
+                _branches,
+                orgId,
+                branch,
+                productId,
+                organizationOnHandBeforeDelta,
+                quantityEffect,
+                utcNow,
+                ct)
+            .ConfigureAwait(false);
     }
 }

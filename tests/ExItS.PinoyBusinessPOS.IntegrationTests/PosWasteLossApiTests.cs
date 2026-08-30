@@ -198,6 +198,30 @@ public sealed class PosWasteLossApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Opening_stock_then_branch_scoped_waste_succeeds_without_preseed()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Opening Then Waste");
+        await EnableTrackedAsync(client, org, product.ProductId, openingQuantity: 12m, unitCost: 3m);
+
+        using var create = Scoped(HttpMethod.Post, WasteLosses, org, branchId: BranchA);
+        create.Content = JsonContent.Create(
+            new CreateWasteLossRequest(
+                "Damaged",
+                [new CreateWasteLossLineRequest(product.ProductId, 2m)],
+                BranchId: BranchA),
+            options: JsonOptions);
+        using var response = await client.SendAsync(create);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Expected Created after opening stock, got {response.StatusCode}: {body}");
+        Assert.Equal(10m, await OnHandAsync(client, org, product.ProductId));
+    }
+
+    [Fact]
     public async Task Invalid_branch_scope_fails_closed_when_product_belongs_to_other_org()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

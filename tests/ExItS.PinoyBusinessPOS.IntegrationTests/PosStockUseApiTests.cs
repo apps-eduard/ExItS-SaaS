@@ -226,6 +226,103 @@ public sealed class PosStockUseApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Opening_stock_then_branch_scoped_stock_use_succeeds_without_preseed()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Opening Then Stock Use");
+        await EnableTrackedAsync(client, org, product.ProductId, openingQuantity: 20m, unitCost: 4m);
+        Assert.Equal(20m, await OnHandAsync(client, org, product.ProductId));
+
+        using var create = Scoped(HttpMethod.Post, StockUses, org, branchId: BranchA);
+        create.Content = JsonContent.Create(
+            new CreateStockUseRequest(
+                "InternalOperations",
+                [new CreateStockUseLineRequest(product.ProductId, 5m)],
+                BranchId: BranchA),
+            options: JsonOptions);
+        using var response = await client.SendAsync(create);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Expected Created after opening stock, got {response.StatusCode}: {body}");
+        Assert.Equal(15m, await OnHandAsync(client, org, product.ProductId));
+        var dto = await response.Content.ReadFromJsonAsync<StockUseDto>(JsonOptions);
+        Assert.Equal(BranchA, dto!.BranchId);
+    }
+
+    [Fact]
+    public async Task Direct_purchase_then_branch_scoped_stock_use_succeeds()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "DP Then Stock Use");
+        await EnableTrackedAsync(client, org, product.ProductId, openingQuantity: 0m);
+
+        using var dp = Scoped(HttpMethod.Post, "/api/v1/pos/direct-purchase-receipts", org);
+        dp.Content = JsonContent.Create(
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                [new CreateDirectPurchaseReceiptLineRequest(product.ProductId, 10m, 7m)],
+                SourceName: "Cash market",
+                PaidNow: 70m,
+                PaymentMethodAtReceipt: "Cash",
+                IdempotencyKey: Guid.NewGuid().ToString("D")),
+            options: JsonOptions);
+        using var dpResponse = await client.SendAsync(dp);
+        Assert.Equal(HttpStatusCode.Created, dpResponse.StatusCode);
+        Assert.Equal(10m, await OnHandAsync(client, org, product.ProductId));
+
+        using var create = Scoped(HttpMethod.Post, StockUses, org, branchId: BranchA);
+        create.Content = JsonContent.Create(
+            new CreateStockUseRequest(
+                "StaffUse",
+                [new CreateStockUseLineRequest(product.ProductId, 3m)],
+                BranchId: BranchA),
+            options: JsonOptions);
+        using var response = await client.SendAsync(create);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Expected Created after DP, got {response.StatusCode}: {body}");
+        Assert.Equal(7m, await OnHandAsync(client, org, product.ProductId));
+    }
+
+    [Fact]
+    public async Task After_primary_branch_materializes_balance_other_branch_cannot_spend_unallocated()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(client, org, "Multi Branch Guard");
+        await EnableTrackedAsync(client, org, product.ProductId, openingQuantity: 20m, unitCost: 2m);
+
+        using var first = Scoped(HttpMethod.Post, StockUses, org, branchId: BranchA);
+        first.Content = JsonContent.Create(
+            new CreateStockUseRequest(
+                "InternalOperations",
+                [new CreateStockUseLineRequest(product.ProductId, 5m)],
+                BranchId: BranchA),
+            options: JsonOptions);
+        using var firstResponse = await client.SendAsync(first);
+        Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
+        Assert.Equal(15m, await OnHandAsync(client, org, product.ProductId));
+
+        using var second = Scoped(HttpMethod.Post, StockUses, org, branchId: BranchB);
+        second.Content = JsonContent.Create(
+            new CreateStockUseRequest(
+                "InternalOperations",
+                [new CreateStockUseLineRequest(product.ProductId, 1m)],
+                BranchId: BranchB),
+            options: JsonOptions);
+        using var secondResponse = await client.SendAsync(second);
+        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+        Assert.Equal(15m, await OnHandAsync(client, org, product.ProductId));
+    }
+
+    [Fact]
     public async Task Invalid_branch_product_scope_fails_closed_via_org_isolation()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

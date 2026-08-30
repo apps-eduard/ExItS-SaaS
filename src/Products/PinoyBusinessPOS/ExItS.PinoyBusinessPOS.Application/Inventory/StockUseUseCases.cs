@@ -64,6 +64,7 @@ public sealed class CreateStockUse
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public CreateStockUse(
         IStockUseRepository stockUses,
@@ -73,7 +74,8 @@ public sealed class CreateStockUse
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _stockUses = stockUses;
         _products = products;
@@ -83,6 +85,7 @@ public sealed class CreateStockUse
         _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<StockUseDto>> ExecuteAsync(
@@ -354,6 +357,7 @@ public sealed class CreateStockUse
                                             unitCost: line.UnitCostSnapshot);
 
                                         line.AttachInventoryMovement(movement.Id);
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         account.ApplyMovementEffect(movement.QuantityEffect);
                                         account.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
@@ -361,17 +365,18 @@ public sealed class CreateStockUse
 
                                         if (branch is not null)
                                         {
-                                            var balance = await _branchBalances
-                                                .GetAsync(orgId, branch, line.ProductId, lockCt)
-                                                .ConfigureAwait(false)
-                                                ?? InventoryBranchBalance.Create(
+                                            await BranchBalanceMutation
+                                                .ApplyAsync(
+                                                    _branchBalances,
+                                                    _branches,
                                                     orgId,
                                                     branch,
                                                     line.ProductId,
-                                                    0m,
-                                                    utcNow);
-                                            balance.Apply(movement.QuantityEffect, utcNow);
-                                            await _branchBalances.UpsertAsync(balance, lockCt).ConfigureAwait(false);
+                                                    orgOnHandBefore,
+                                                    movement.QuantityEffect,
+                                                    utcNow,
+                                                    lockCt)
+                                                .ConfigureAwait(false);
                                         }
                                     }
 
@@ -442,6 +447,7 @@ public sealed class VoidStockUse
     private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public VoidStockUse(
         IStockUseRepository stockUses,
@@ -450,7 +456,8 @@ public sealed class VoidStockUse
         IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _stockUses = stockUses;
         _products = products;
@@ -459,6 +466,7 @@ public sealed class VoidStockUse
         _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<StockUseDto>> ExecuteAsync(
@@ -558,6 +566,7 @@ public sealed class VoidStockUse
                                             sellingMode: product.SellingMode,
                                             branchId: stockUse.BranchId?.Value);
 
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         account.ApplyMovementEffect(restoration.QuantityEffect);
                                         account.Touch(utcNow);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
@@ -565,17 +574,18 @@ public sealed class VoidStockUse
 
                                         if (stockUse.BranchId is PosBranchId branch)
                                         {
-                                            var balance = await _branchBalances
-                                                .GetAsync(orgId, branch, line.ProductId, lockCt)
-                                                .ConfigureAwait(false)
-                                                ?? InventoryBranchBalance.Create(
+                                            await BranchBalanceMutation
+                                                .ApplyAsync(
+                                                    _branchBalances,
+                                                    _branches,
                                                     orgId,
                                                     branch,
                                                     line.ProductId,
-                                                    0m,
-                                                    utcNow);
-                                            balance.Apply(restoration.QuantityEffect, utcNow);
-                                            await _branchBalances.UpsertAsync(balance, lockCt).ConfigureAwait(false);
+                                                    orgOnHandBefore,
+                                                    restoration.QuantityEffect,
+                                                    utcNow,
+                                                    lockCt)
+                                                .ConfigureAwait(false);
                                         }
                                     }
 
