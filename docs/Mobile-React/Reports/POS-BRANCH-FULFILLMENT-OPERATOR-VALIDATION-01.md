@@ -7,9 +7,9 @@
 | Field | Value |
 |-------|-------|
 | START_SHA | `d534dacd96762a9be3c2a40c0e46454f005ef626` |
-| FEATURE_SHA | *(see FINAL_SHA after fix commits)* |
-| FINAL_SHA | *(filled after push)* |
-| REMOTE_SHA | *(filled after push)* |
+| FEATURE_SHA | `40e2b029856793d92285368ec0140083b53ba56c` |
+| FINAL_SHA | `40e2b029856793d92285368ec0140083b53ba56c` |
+| REMOTE_SHA | `40e2b029856793d92285368ec0140083b53ba56c` |
 
 ## Goal
 
