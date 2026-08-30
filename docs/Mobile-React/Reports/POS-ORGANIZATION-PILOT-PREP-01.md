@@ -4,8 +4,8 @@
 **Branch:** `feat/organization`  
 **TASK:** POS-ORGANIZATION-PILOT-PREP-01  
 **START_SHA:** `47510ef1616be5a5c098df41874f97508c7f339b`  
-**FEATURE_SHA:** _(recorded at feature commit)_  
-**FINAL_SHA:** _(recorded after docs stamp)_  
+**FEATURE_SHA:** `b3380de26b4eadc69c83de4427b98b6edad3758a`  
+**FINAL_SHA:** ``pending``  
 **PILOT_TARGET:** SINGLE_BRANCH_SMALL_STORE
 
 ## AUDIT SUMMARY
