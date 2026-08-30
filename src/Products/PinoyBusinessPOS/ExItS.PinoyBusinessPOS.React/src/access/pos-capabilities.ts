@@ -459,7 +459,7 @@ export function canViewAdvancedReports(grant: PosSessionGrantFacts | null | unde
   return grantHasFeatureCode(grant, FEATURE_STORE_ADVANCED_REPORTS) === true;
 }
 
-/** File export entitlement (store-export). No export UI exists yet — reserved for future actions. */
+/** File export entitlement (`store-export`). Gates Organization report CSV export UI. */
 export function canExportData(grant: PosSessionGrantFacts | null | undefined): boolean {
   return grantHasFeatureCode(grant, FEATURE_STORE_EXPORT) === true;
 }

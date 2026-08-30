@@ -35,6 +35,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { ReportCsvExportButton } from "@/features/reports/ReportCsvExportButton";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import {
@@ -43,6 +44,10 @@ import {
   operationalReportNeedsDates,
   type OperationalReportKind,
 } from "@/features/reports/report-access";
+import {
+  buildOperationalReportExport,
+  resolveReportExportScopeLabel,
+} from "@/features/reports/report-csv-export";
 import {
   canSelectAllBranches,
   reportScopeModeForOperational,
@@ -558,16 +563,44 @@ export function OperationalReportPage() {
         showDates={needsDates}
       />
 
-      <Button
-        type="button"
-        variant="ghost"
-        className="min-h-11 w-fit"
-        data-testid="report-refresh"
-        disabled={activeQuery.isFetching}
-        onClick={() => void activeQuery.refetch()}
-      >
-        {t("dashboard.refresh")}
-      </Button>
+      <div className="flex min-w-0 flex-wrap items-start gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 w-fit"
+          data-testid="report-refresh"
+          disabled={activeQuery.isFetching}
+          onClick={() => void activeQuery.refetch()}
+        >
+          {t("dashboard.refresh")}
+        </Button>
+        <ReportCsvExportButton
+          disabled={activeQuery.isFetching}
+          onExport={(signal) =>
+            buildOperationalReportExport({
+              kind,
+              workspace,
+              range: applied,
+              reportBranchId,
+              rankBy: isProductProfitability ? rankBy : null,
+              productProfitabilityRows: isProductProfitability
+                ? (productProfitQuery.data?.rows ?? null)
+                : null,
+              signal,
+              scope: {
+                organizationName: boundWorkspace?.organizationDisplayName,
+                scopeLabel: resolveReportExportScopeLabel({
+                  scopeMode,
+                  selection: scopeSelection,
+                  currentBranchName: boundWorkspace?.branchName,
+                }),
+                fromDate: needsDates ? applied.fromDate : null,
+                toDate: needsDates ? applied.toDate : null,
+              },
+            })
+          }
+        />
+      </div>
 
       <Card data-testid="report-results">
         {activeQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}

@@ -21,9 +21,14 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { ReportCsvExportButton } from "@/features/reports/ReportCsvExportButton";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import { type ClassicReportKind } from "@/features/reports/report-access";
+import {
+  buildClassicReportExport,
+  resolveReportExportScopeLabel,
+} from "@/features/reports/report-csv-export";
 import {
   canSelectAllBranches,
   reportScopeModeForClassic,
@@ -250,6 +255,29 @@ export function ClassicReportPage() {
         onCustomChange={setCustom}
         onApply={() => setApplied(resolveReportDatePreset(preset, new Date(), custom))}
         loading={query.isFetching}
+      />
+
+      <ReportCsvExportButton
+        disabled={query.isFetching}
+        onExport={(signal) =>
+          buildClassicReportExport({
+            kind,
+            workspace,
+            range: applied,
+            reportBranchId,
+            signal,
+            scope: {
+              organizationName: boundWorkspace?.organizationDisplayName,
+              scopeLabel: resolveReportExportScopeLabel({
+                scopeMode,
+                selection: scopeSelection,
+                currentBranchName: boundWorkspace?.branchName,
+              }),
+              fromDate: applied.fromDate,
+              toDate: applied.toDate,
+            },
+          })
+        }
       />
 
       {query.isLoading ? <LoadingState label={t("reports.loading")} /> : null}

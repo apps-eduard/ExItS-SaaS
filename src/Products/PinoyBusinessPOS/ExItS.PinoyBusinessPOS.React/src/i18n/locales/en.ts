@@ -4302,6 +4302,10 @@ export const en = {
   "reports.errorTitle": "Report error",
   "reports.emptyTitle": "No rows",
   "reports.emptyDetail": "No data for this period.",
+  "reports.export.csv": "Export CSV",
+  "reports.export.preparing": "Preparing export…",
+  "reports.export.noData": "No data to export",
+  "reports.export.failed": "Export failed. Try again.",
   "reports.unknownSupplier": "Supplier",
   "reports.commercialDiscountUnavailable":
     "Commercial discount totals are included in sales reports.",
