@@ -4,7 +4,7 @@
 **Branch:** `feat/organization`  
 **TASK:** POS-SUPPLIER-PAYABLES-01  
 **START_SHA:** `178100d07b2e248f561a491d0b41120483a9844a`
-**FEATURE_SHA:** _(recorded at feature commit)_
+**FEATURE_SHA:** `c045ea25242a108390412bfba7fce506da94ec47`
 **FINAL_SHA:** _(recorded after docs stamp)_
 **ADR:** [ADR-023](../../decisions/ADR-023-organization-supplier-payables.md)
 
