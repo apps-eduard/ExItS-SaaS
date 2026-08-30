@@ -963,6 +963,49 @@ function ReadyStep({
         </li>
       </ul>
 
+      {hasBranch ? (
+        <div
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/40 px-3 py-3"
+          data-testid="onboarding-ready-next-steps"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("onboarding.ready.nextStepsTitle")}
+          </p>
+          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {t("onboarding.ready.nextStepsDetail")}
+          </p>
+          <ul className="m-0 mt-2 grid list-none gap-2 p-0 text-[length:var(--exits-text-sm)]">
+            <li>
+              <Link
+                to="/shifts/open"
+                className="font-semibold text-primary no-underline"
+                data-testid="onboarding-ready-open-shift"
+              >
+                {t("onboarding.ready.openShift")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/inventory"
+                className="font-semibold text-primary no-underline"
+                data-testid="onboarding-ready-opening-stock"
+              >
+                {t("onboarding.ready.openingStock")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/org/staff"
+                className="font-semibold text-primary no-underline"
+                data-testid="onboarding-ready-add-staff"
+              >
+                {t("onboarding.ready.addStaff")}
+              </Link>
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
       {actionError ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]" role="alert">
           {actionError}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart, ChevronRight, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
@@ -42,6 +42,7 @@ import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import {
   canCreateSale,
+  canManageCatalog,
   canOverrideSalePrice,
   canOverrideSalePriceUnlimited,
 } from "@/access/pos-capabilities";
@@ -137,6 +138,7 @@ export function SellFloorPage() {
       }
     : readiness;
   const allowCreateSale = canCreateSale(sessionGrant);
+  const allowManageCatalog = canManageCatalog(sessionGrant);
   const allowOverrideSalePrice = canOverrideSalePrice(sessionGrant);
   const allowOverrideUnlimited = canOverrideSalePriceUnlimited(sessionGrant);
 
@@ -1024,15 +1026,29 @@ export function SellFloorPage() {
             ) : null}
 
             {!productsLoading && visibleProducts.length === 0 ? (
-              <p className="col-span-full m-0 text-center text-[length:var(--exits-text-sm)] text-muted">
-                {debouncedSearch.trim()
-                  ? t("sell.catalogNoResults")
-                  : showOutOfStock
-                    ? t("sell.outOfStockEmpty")
-                    : displayedProducts.length > 0
-                      ? t("sell.outOfStockHiddenEmpty")
-                      : t("sell.catalogEmpty")}
-              </p>
+              <div className="col-span-full flex flex-col items-center gap-2 text-center">
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {debouncedSearch.trim()
+                    ? t("sell.catalogNoResults")
+                    : showOutOfStock
+                      ? t("sell.outOfStockEmpty")
+                      : displayedProducts.length > 0
+                        ? t("sell.outOfStockHiddenEmpty")
+                        : t("sell.catalogEmpty")}
+                </p>
+                {!debouncedSearch.trim() &&
+                !showOutOfStock &&
+                displayedProducts.length === 0 &&
+                allowManageCatalog ? (
+                  <Link
+                    to="/catalog/products/new"
+                    className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+                    data-testid="sell-empty-add-product"
+                  >
+                    {t("sell.catalogEmptyAddProduct")}
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
 
             {visibleProducts.map((product) => (

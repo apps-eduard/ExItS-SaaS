@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, Trash2 } from "lucide-react";
-import { canManageInventory } from "@/access/pos-capabilities";
+import { canManageCatalog, canManageInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -31,8 +31,9 @@ const TRACKING_FILTERS: Array<{
 
 export function InventoryListPage() {
   const { t } = useI18n();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const allowManageCatalog = canManageCatalog(sessionGrant);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>("all");
@@ -49,6 +50,70 @@ export function InventoryListPage() {
         : null,
     [boundWorkspace],
   );
+
+  const multiBranch = useMemo(() => {
+    if (!boundWorkspace) return false;
+    const org = workspaces.find(
+      (item) =>
+        item.organizationId.localeCompare(boundWorkspace.organizationId, undefined, {
+          sensitivity: "accent",
+        }) === 0,
+    );
+    return (org?.branches.length ?? 0) > 1;
+  }, [boundWorkspace, workspaces]);
+
+  const inventoryToolbarItems = useMemo((): ExitsChipItem[] => {
+    const items: ExitsChipItem[] = [
+      {
+        key: "expiring",
+        label: t("inventory.openExpiring"),
+        icon: <CalendarClock />,
+        href: "/inventory/expiration",
+        testId: "open-expiring-stock",
+        emphasis: "primary",
+      },
+      {
+        key: "stock-counts",
+        label: t("inventory.openStockCount"),
+        icon: <ClipboardList />,
+        href: "/inventory/stock-counts",
+        testId: "open-stock-count",
+      },
+    ];
+    if (multiBranch) {
+      items.push({
+        key: "transfers",
+        label: t("inventory.openTransfers"),
+        icon: <ArrowLeftRight />,
+        href: "/inventory/transfers",
+        testId: "open-transfers",
+      });
+    }
+    items.push(
+      {
+        key: "stock-use",
+        label: t("inventory.openStockUse"),
+        icon: <PackageMinus />,
+        href: "/inventory/stock-use",
+        testId: "open-stock-use",
+      },
+      {
+        key: "waste-loss",
+        label: t("inventory.openWasteLoss"),
+        icon: <Trash2 />,
+        href: "/inventory/waste-loss",
+        testId: "open-waste-loss",
+      },
+      {
+        key: "production",
+        label: t("inventory.openProduction"),
+        icon: <Factory />,
+        href: "/inventory/production",
+        testId: "open-production",
+      },
+    );
+    return items;
+  }, [multiBranch, t]);
 
   const query = useQuery({
     queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],
@@ -102,51 +167,7 @@ export function InventoryListPage() {
         ariaLabel={t("inventory.title")}
         testId="inventory-toolbar"
         className="exits-animate-toolbar"
-        items={[
-          {
-            key: "expiring",
-            label: t("inventory.openExpiring"),
-            icon: <CalendarClock />,
-            href: "/inventory/expiration",
-            testId: "open-expiring-stock",
-            emphasis: "primary",
-          },
-          {
-            key: "stock-counts",
-            label: t("inventory.openStockCount"),
-            icon: <ClipboardList />,
-            href: "/inventory/stock-counts",
-            testId: "open-stock-count",
-          },
-          {
-            key: "transfers",
-            label: t("inventory.openTransfers"),
-            icon: <ArrowLeftRight />,
-            href: "/inventory/transfers",
-            testId: "open-transfers",
-          },
-          {
-            key: "stock-use",
-            label: t("inventory.openStockUse"),
-            icon: <PackageMinus />,
-            href: "/inventory/stock-use",
-            testId: "open-stock-use",
-          },
-          {
-            key: "waste-loss",
-            label: t("inventory.openWasteLoss"),
-            icon: <Trash2 />,
-            href: "/inventory/waste-loss",
-            testId: "open-waste-loss",
-          },
-          {
-            key: "production",
-            label: t("inventory.openProduction"),
-            icon: <Factory />,
-            href: "/inventory/production",
-            testId: "open-production",
-          },
-        ]}
+        items={inventoryToolbarItems}
       />
 
       <SearchField
@@ -187,7 +208,21 @@ export function InventoryListPage() {
           <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
         ) : null}
         {query.isSuccess && items.length === 0 ? (
-          <EmptyState title={t("inventory.empty")} detail={t("inventory.emptyDetail")} />
+          <EmptyState
+            title={t("inventory.empty")}
+            detail={t("inventory.emptyDetail")}
+            action={
+              allowManageCatalog ? (
+                <Link
+                  to="/catalog/products/new"
+                  className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+                  data-testid="inventory-empty-add-product"
+                >
+                  {t("inventory.emptyAddProduct")}
+                </Link>
+              ) : null
+            }
+          />
         ) : null}
 
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
