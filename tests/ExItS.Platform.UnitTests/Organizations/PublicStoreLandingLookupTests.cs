@@ -296,6 +296,11 @@ public sealed class PublicStoreLandingLookupTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.TryGetValue(branchId.Value, out var s) ? s : null);
 
+        public Task<IReadOnlyDictionary<Guid, BranchOperatingHoursSchedule>> ListByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, BranchOperatingHoursSchedule>>(_items);
+
         public Task UpsertAsync(
             BranchOperatingHoursSchedule schedule,
             PlatformOrganizationId organizationId,

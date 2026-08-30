@@ -401,6 +401,16 @@ public sealed class PlaceCustomerOrder
                 "Branch delivery policy is not configured.");
         }
 
+        var areaResolution = QuoteCustomerOrderDelivery.ResolveDeliveryServiceArea(
+            branch,
+            delivery.DeliveryServiceAreaId);
+        if (!areaResolution.IsSuccess || areaResolution.Value is null)
+        {
+            return ApplicationResult<CustomerOrderDeliverySnapshot>.Failure(
+                areaResolution.ErrorCode ?? ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid,
+                areaResolution.ErrorMessage ?? "The selected delivery service area is not available for this branch.");
+        }
+
         var distanceKm = StraightLineDeliveryDistance.CalculateKm(
             branch.Latitude.Value,
             branch.Longitude.Value,
@@ -421,12 +431,13 @@ public sealed class PlaceCustomerOrder
         }
 
         var policy = branch.DeliveryPolicy;
+        var citySnapshot = areaResolution.Value.CityMunicipalityName;
         var snapshot = CustomerOrderDeliverySnapshot.Create(
             delivery.RecipientName,
             delivery.RecipientPhone,
             delivery.AddressLine1,
             delivery.AddressLine2,
-            delivery.City,
+            citySnapshot,
             delivery.DeliveryNotes,
             delivery.DestinationLatitude,
             delivery.DestinationLongitude,
@@ -596,6 +607,22 @@ public sealed class QuoteCustomerOrderDelivery
                         MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
             }
 
+            var areaResolution = ResolveDeliveryServiceArea(branch, request.DeliveryServiceAreaId);
+            if (!areaResolution.IsSuccess)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    new QuoteCustomerOrderDeliveryDto(
+                        Available: false,
+                        UnavailableReason: areaResolution.ErrorMessage,
+                        DistanceKm: 0m,
+                        ExtraDistanceKm: 0m,
+                        DistanceCharge: 0m,
+                        DeliveryFee: 0m,
+                        FreeDeliveryApplied: false,
+                        MinimumOrderAmount: branch.DeliveryPolicy.MinimumOrderAmount,
+                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy.MaximumDeliveryDistanceKm));
+            }
+
             var distanceKm = StraightLineDeliveryDistance.CalculateKm(
                 branch.Latitude.Value,
                 branch.Longitude.Value,
@@ -632,6 +659,29 @@ public sealed class QuoteCustomerOrderDelivery
                     MinimumOrderAmount: 0m,
                     MaximumDeliveryDistanceKm: 0m));
         }
+    }
+
+    internal static ApplicationResult<CustomerOrderDeliveryServiceAreaSnapshot> ResolveDeliveryServiceArea(
+        CustomerOrderBranchSnapshot branch,
+        Guid? deliveryServiceAreaId)
+    {
+        var areas = branch.DeliveryServiceAreas ?? [];
+        if (deliveryServiceAreaId is null || deliveryServiceAreaId == Guid.Empty)
+        {
+            return ApplicationResult<CustomerOrderDeliveryServiceAreaSnapshot>.Failure(
+                ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid,
+                "A configured delivery service area is required.");
+        }
+
+        var match = areas.FirstOrDefault(a => a.Id == deliveryServiceAreaId.Value);
+        if (match is null)
+        {
+            return ApplicationResult<CustomerOrderDeliveryServiceAreaSnapshot>.Failure(
+                ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid,
+                "The selected delivery service area is not available for this branch.");
+        }
+
+        return ApplicationResult<CustomerOrderDeliveryServiceAreaSnapshot>.Success(match);
     }
 }
 

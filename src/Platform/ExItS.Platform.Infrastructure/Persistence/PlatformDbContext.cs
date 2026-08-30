@@ -59,6 +59,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
     internal DbSet<BranchOperatingHoursRecord> BranchOperatingHours => Set<BranchOperatingHoursRecord>();
     internal DbSet<BranchDeliveryPolicyRecord> BranchDeliveryPolicies => Set<BranchDeliveryPolicyRecord>();
+    internal DbSet<BranchDeliveryServiceAreaRecord> BranchDeliveryServiceAreas => Set<BranchDeliveryServiceAreaRecord>();
     internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
     internal DbSet<PosDeviceRegistrationTokenRecord> PosDeviceRegistrationTokens => Set<PosDeviceRegistrationTokenRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
@@ -608,6 +609,37 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => e.OrganizationId);
             // Composite tenant FK: policy org must match the branch's organization.
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.BranchId, e.OrganizationId })
+                .HasPrincipalKey(b => new { b.Id, b.OrganizationId })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BranchDeliveryServiceAreaRecord>(entity =>
+        {
+            entity.ToTable("branch_delivery_service_areas");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2).IsRequired();
+            entity.Property(e => e.RegionOrProvinceName).HasColumnName("region_or_province_name").HasMaxLength(100);
+            entity.Property(e => e.CityMunicipalityName).HasColumnName("city_municipality_name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.NormalizedCityMunicipalityName)
+                .HasColumnName("normalized_city_municipality_name")
+                .HasMaxLength(100)
+                .IsRequired();
+            entity.Property(e => e.ExternalAreaCode).HasColumnName("external_area_code").HasMaxLength(64);
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasIndex(e => e.BranchId);
+            entity.HasIndex(e => new { e.BranchId, e.NormalizedCityMunicipalityName })
+                .IsUnique()
+                .HasFilter("is_active = TRUE")
+                .HasDatabaseName("ux_branch_delivery_service_areas_active_city");
             entity.HasOne<OrganizationBranchRecord>()
                 .WithMany()
                 .HasForeignKey(e => new { e.BranchId, e.OrganizationId })

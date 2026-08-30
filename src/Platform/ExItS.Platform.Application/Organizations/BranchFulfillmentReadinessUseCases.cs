@@ -35,7 +35,16 @@ public sealed record BranchFulfillmentReadinessDto(
     IReadOnlyList<string> ReasonCodes,
     string? StoreOpenStatus,
     bool StoreIsOpenNow,
-    string? StoreStatusMessage);
+    string? StoreStatusMessage,
+    bool BranchDetailsComplete = false,
+    bool OperatingHoursComplete = false,
+    bool DeliveryLocationComplete = false,
+    bool DeliveryPolicyComplete = false,
+    bool DeliveryAreasComplete = false,
+    int PickupSectionsComplete = 0,
+    int PickupSectionsTotal = BranchFulfillmentSetupSummary.PickupSectionCount,
+    int DeliverySectionsComplete = 0,
+    int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount);
 
 public sealed record UpsertBranchOperatingHoursCommand(IReadOnlyList<BranchOperatingHoursDayDto> Days);
 
@@ -100,6 +109,7 @@ public sealed class GetBranchFulfillmentReadiness
     private readonly IOrganizationBranchRepository _branches;
     private readonly IBranchOperatingHoursRepository _hours;
     private readonly IBranchDeliveryPolicyRepository _policies;
+    private readonly IBranchDeliveryServiceAreaRepository _areas;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly EntitlementQueryService _entitlements;
     private readonly IBranchFulfillmentReadinessEvaluator _evaluator;
@@ -109,6 +119,7 @@ public sealed class GetBranchFulfillmentReadiness
         IOrganizationBranchRepository branches,
         IBranchOperatingHoursRepository hours,
         IBranchDeliveryPolicyRepository policies,
+        IBranchDeliveryServiceAreaRepository areas,
         IPlatformOrganizationRepository organizations,
         EntitlementQueryService entitlements,
         IBranchFulfillmentReadinessEvaluator evaluator,
@@ -117,6 +128,7 @@ public sealed class GetBranchFulfillmentReadiness
         _branches = branches;
         _hours = hours;
         _policies = policies;
+        _areas = areas;
         _organizations = organizations;
         _entitlements = entitlements;
         _evaluator = evaluator;
@@ -146,6 +158,8 @@ public sealed class GetBranchFulfillmentReadiness
 
         var hours = await _hours.GetByBranchIdAsync(branchId, cancellationToken).ConfigureAwait(false);
         var policy = await _policies.GetByBranchIdAsync(branchId, cancellationToken).ConfigureAwait(false);
+        var areas = await _areas.ListByBranchAsync(branchId, cancellationToken).ConfigureAwait(false);
+        var hasActiveArea = areas.Any(a => a.IsActive);
         var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var result = _evaluator.Evaluate(new BranchFulfillmentReadinessInput(
             branch,
@@ -154,7 +168,8 @@ public sealed class GetBranchFulfillmentReadiness
             org.Profile.TimeZoneId,
             org.Profile.ContactPhone,
             caps,
-            _clock.UtcNow));
+            _clock.UtcNow,
+            hasActiveArea));
 
         return ApplicationResult<BranchFulfillmentReadinessDto>.Success(Map(branch, caps, result));
     }
@@ -203,7 +218,16 @@ public sealed class GetBranchFulfillmentReadiness
             result.ReasonCodes,
             result.StoreOpenState?.Status.ToString(),
             result.StoreOpenState?.IsOpenNow ?? false,
-            BuildStoreStatusMessage(result.StoreOpenState));
+            BuildStoreStatusMessage(result.StoreOpenState),
+            result.SetupSummary.BranchDetailsComplete,
+            result.SetupSummary.OperatingHoursComplete,
+            result.SetupSummary.DeliveryLocationComplete,
+            result.SetupSummary.DeliveryPolicyComplete,
+            result.SetupSummary.DeliveryAreasComplete,
+            result.SetupSummary.PickupSectionsComplete,
+            result.SetupSummary.PickupSectionsTotal,
+            result.SetupSummary.DeliverySectionsComplete,
+            result.SetupSummary.DeliverySectionsTotal);
 
     internal static string? BuildStoreStatusMessage(BranchStoreOpenState? state)
     {

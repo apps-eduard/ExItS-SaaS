@@ -94,6 +94,7 @@ describe("personal merchant cart", () => {
         pickupOperational: true,
         deliveryOperational: false,
         onlineOrdersPaused: false,
+        deliveryServiceAreas: null,
         storeStatusMessage: null,
       },
     ];

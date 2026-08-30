@@ -16,6 +16,8 @@ internal sealed class PosCustomerOrderBranchDirectory(
     IOptions<PlatformAuthOptions> options,
     IHostEnvironment environment) : ICustomerOrderBranchDirectory
 {
+    private static readonly Guid TestingAreaId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -67,7 +69,15 @@ internal sealed class PosCustomerOrderBranchDirectory(
                         IncludedDistanceKm: 2m,
                         AdditionalFeePerKm: 10m,
                         MaximumDeliveryDistanceKm: 15m,
-                        FreeDeliveryThreshold: 500m))
+                        FreeDeliveryThreshold: 500m),
+                    IsPrimary: true,
+                    DeliveryServiceAreas:
+                    [
+                        new CustomerOrderDeliveryServiceAreaSnapshot(
+                            TestingAreaId,
+                            "Manila",
+                            "NCR")
+                    ])
             ];
         }
 
@@ -154,6 +164,17 @@ internal sealed class PosCustomerOrderBranchDirectory(
                 branch.DeliveryPolicy.FreeDeliveryThreshold);
         }
 
+        IReadOnlyList<CustomerOrderDeliveryServiceAreaSnapshot>? areas = null;
+        if (branch.ActiveDeliveryServiceAreas is { Count: > 0 })
+        {
+            areas = branch.ActiveDeliveryServiceAreas
+                .Select(a => new CustomerOrderDeliveryServiceAreaSnapshot(
+                    a.Id,
+                    a.CityMunicipalityName,
+                    a.RegionOrProvinceName))
+                .ToList();
+        }
+
         return new CustomerOrderBranchSnapshot(
             branch.Id,
             string.IsNullOrWhiteSpace(branch.Name) ? branch.Code : branch.Name,
@@ -168,6 +189,7 @@ internal sealed class PosCustomerOrderBranchDirectory(
             branch.Latitude,
             branch.Longitude,
             policy,
-            branch.IsPrimary);
+            branch.IsPrimary,
+            areas);
     }
 }

@@ -130,6 +130,46 @@ internal static class OrganizationBranchDeviceEntityMapper
         record.UpdatedAtUtc = policy.UpdatedAtUtc;
     }
 
+    public static BranchDeliveryServiceArea ToDomain(BranchDeliveryServiceAreaRecord record) =>
+        BranchDeliveryServiceArea.Rehydrate(
+            BranchDeliveryServiceAreaId.From(record.Id),
+            PlatformOrganizationId.From(record.OrganizationId),
+            OrganizationBranchId.From(record.BranchId),
+            record.CountryCode,
+            record.RegionOrProvinceName,
+            record.CityMunicipalityName,
+            record.NormalizedCityMunicipalityName,
+            record.ExternalAreaCode,
+            record.IsActive,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    public static BranchDeliveryServiceAreaRecord ToRecord(BranchDeliveryServiceArea area) => new()
+    {
+        Id = area.Id.Value,
+        OrganizationId = area.OrganizationId.Value,
+        BranchId = area.BranchId.Value,
+        CountryCode = area.CountryCode,
+        RegionOrProvinceName = area.RegionOrProvinceName,
+        CityMunicipalityName = area.CityMunicipalityName,
+        NormalizedCityMunicipalityName = area.NormalizedCityMunicipalityName,
+        ExternalAreaCode = area.ExternalAreaCode,
+        IsActive = area.IsActive,
+        CreatedAtUtc = area.CreatedAtUtc,
+        UpdatedAtUtc = area.UpdatedAtUtc
+    };
+
+    public static void ApplyToRecord(BranchDeliveryServiceArea area, BranchDeliveryServiceAreaRecord record)
+    {
+        record.CountryCode = area.CountryCode;
+        record.RegionOrProvinceName = area.RegionOrProvinceName;
+        record.CityMunicipalityName = area.CityMunicipalityName;
+        record.NormalizedCityMunicipalityName = area.NormalizedCityMunicipalityName;
+        record.ExternalAreaCode = area.ExternalAreaCode;
+        record.IsActive = area.IsActive;
+        record.UpdatedAtUtc = area.UpdatedAtUtc;
+    }
+
     public static PosDevice ToDomain(PosDeviceRecord record) =>
         PosDevice.Rehydrate(PosDeviceId.From(record.Id), PlatformOrganizationId.From(record.OrganizationId), OrganizationBranchId.From(record.BranchId),
             record.InstallationDeviceId, record.FriendlyName, record.Platform, record.Model, record.AppVersion, Enum.Parse<PosDeviceStatus>(record.Status),

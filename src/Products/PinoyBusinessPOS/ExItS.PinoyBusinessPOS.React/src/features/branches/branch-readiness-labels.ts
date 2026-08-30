@@ -11,6 +11,7 @@ const REQUIREMENT_KEYS: Record<string, MessageKey> = {
   delivery_entitlement: "branches.missing.deliveryEntitlement",
   map_location: "branches.missing.mapLocation",
   delivery_policy: "branches.missing.deliveryPolicy",
+  delivery_area: "branches.missing.deliveryArea",
 };
 
 const REASON_KEYS: Record<string, MessageKey> = {
@@ -28,6 +29,7 @@ const REASON_KEYS: Record<string, MessageKey> = {
   map_location_missing: "branches.reason.mapLocationMissing",
   delivery_policy_missing: "branches.reason.deliveryPolicyMissing",
   delivery_policy_incomplete: "branches.reason.deliveryPolicyIncomplete",
+  delivery_area_missing: "branches.reason.deliveryAreaMissing",
   online_orders_paused: "branches.reason.onlineOrdersPaused",
   store_closed: "branches.reason.storeClosed",
 };
@@ -43,6 +45,7 @@ const REQUIREMENT_COVERED_REASONS: Record<string, readonly string[]> = {
   delivery_entitlement: ["delivery_entitlement_missing"],
   map_location: ["map_location_missing"],
   delivery_policy: ["delivery_policy_missing", "delivery_policy_incomplete"],
+  delivery_area: ["delivery_area_missing"],
 };
 
 export function missingRequirementMessageKey(code: string): MessageKey {

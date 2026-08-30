@@ -116,7 +116,8 @@ public sealed record PlaceCustomerOrderDeliveryRequest(
     string? City,
     string? DeliveryNotes,
     decimal DestinationLatitude,
-    decimal DestinationLongitude);
+    decimal DestinationLongitude,
+    Guid? DeliveryServiceAreaId = null);
 
 public sealed record PlaceCustomerOrderRequest(
     string FulfillmentType,
@@ -137,7 +138,8 @@ public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
     decimal MerchandiseSubtotal,
     decimal DestinationLatitude,
-    decimal DestinationLongitude);
+    decimal DestinationLongitude,
+    Guid? DeliveryServiceAreaId = null);
 
 public sealed record QuoteCustomerOrderDeliveryDto(
     bool Available,

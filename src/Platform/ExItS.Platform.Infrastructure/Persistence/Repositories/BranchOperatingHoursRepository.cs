@@ -29,6 +29,26 @@ internal sealed class BranchOperatingHoursRepository : IBranchOperatingHoursRepo
         return BranchOperatingHoursSchedule.Rehydrate(branchId, days);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, BranchOperatingHoursSchedule>> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.BranchOperatingHours.AsNoTracking()
+            .Where(h => h.OrganizationId == organizationId.Value)
+            .OrderBy(h => h.BranchId)
+            .ThenBy(h => h.DayOfWeek)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records
+            .GroupBy(r => r.BranchId)
+            .ToDictionary(
+                g => g.Key,
+                g => BranchOperatingHoursSchedule.Rehydrate(
+                    OrganizationBranchId.From(g.Key),
+                    g.Select(ToDomain).ToList()));
+    }
+
     public async Task UpsertAsync(
         BranchOperatingHoursSchedule schedule,
         PlatformOrganizationId organizationId,

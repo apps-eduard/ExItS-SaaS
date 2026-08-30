@@ -17,6 +17,7 @@ public static class FulfillmentReadinessReasonCodes
     public const string MapLocationMissing = "map_location_missing";
     public const string DeliveryPolicyMissing = "delivery_policy_missing";
     public const string DeliveryPolicyIncomplete = "delivery_policy_incomplete";
+    public const string DeliveryAreaMissing = "delivery_area_missing";
     public const string OnlineOrdersPaused = "online_orders_paused";
     public const string StoreClosed = "store_closed";
 }

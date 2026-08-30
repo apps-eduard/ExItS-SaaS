@@ -9,158 +9,119 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.CustomerOrdering;
 
-public sealed class PlaceCustomerOrderCapabilityTests
+/// <summary>
+/// Service-area + distance defense-in-depth for quote and place delivery.
+/// </summary>
+public sealed class DeliveryServiceAreaQuotePlaceTests
 {
     private static readonly Guid Seller = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Branch = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly Guid ProductGuid = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    private static readonly Guid ServiceArea = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid AreaA = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid AreaForeign = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid TamperedArea = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid BusinessCustomer = Guid.Parse("44444444-4444-4444-4444-444444444444");
     private static readonly DateTimeOffset Utc = new(2026, 8, 17, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Place_fails_when_seller_cannot_accept_customer_orders()
+    public async Task Quote_available_for_valid_area_inside_radius()
     {
-        var useCase = CreateUseCase(canOrder: false, canDelivery: false);
-        var result = await useCase.ExecuteAsync(Seller, PickupRequest(), Actor);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.CustomerOrderOrderingUnavailable, result.ErrorCode);
+        var quote = await CreateQuote().ExecuteAsync(Seller, Quote(AreaA, 14.6m, 120.98m));
+        Assert.True(quote.IsSuccess);
+        Assert.True(quote.Value!.Available);
     }
 
     [Fact]
-    public async Task Delivery_fails_when_seller_lacks_delivery_feature()
+    public async Task Quote_unavailable_when_service_area_missing()
     {
-        var useCase = CreateUseCase(canOrder: true, canDelivery: false);
-        var result = await useCase.ExecuteAsync(Seller, DeliveryRequest(), Actor);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.CustomerOrderOrderingUnavailable, result.ErrorCode);
+        var quote = await CreateQuote().ExecuteAsync(Seller, Quote(null, 14.6m, 120.98m));
+        Assert.True(quote.IsSuccess);
+        Assert.False(quote.Value!.Available);
+        Assert.Contains("service area", quote.Value.UnavailableReason!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task Pickup_succeeds_when_seller_can_accept_orders()
+    public async Task Quote_unavailable_for_foreign_area_id()
     {
-        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
-        var result = await useCase.ExecuteAsync(Seller, PickupRequest(), Actor);
+        var quote = await CreateQuote().ExecuteAsync(Seller, Quote(AreaForeign, 14.6m, 120.98m));
+        Assert.True(quote.IsSuccess);
+        Assert.False(quote.Value!.Available);
+    }
+
+    [Fact]
+    public async Task Quote_unavailable_for_tampered_area_id()
+    {
+        var quote = await CreateQuote().ExecuteAsync(Seller, Quote(TamperedArea, 14.6m, 120.98m));
+        Assert.True(quote.IsSuccess);
+        Assert.False(quote.Value!.Available);
+    }
+
+    [Fact]
+    public async Task Quote_unavailable_when_outside_maximum_distance()
+    {
+        // ~111km north of branch coordinates — beyond 15km max.
+        var quote = await CreateQuote().ExecuteAsync(Seller, Quote(AreaA, 15.6m, 120.98m));
+        Assert.True(quote.IsSuccess);
+        Assert.False(quote.Value!.Available);
+    }
+
+    [Fact]
+    public async Task Place_succeeds_with_valid_area_and_snapshots_city()
+    {
+        var result = await CreatePlace().ExecuteAsync(Seller, Delivery(AreaA), Actor);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Bacolod City", result.Value!.Delivery!.City);
+    }
+
+    [Fact]
+    public async Task Place_rejects_missing_service_area()
+    {
+        var result = await CreatePlace().ExecuteAsync(Seller, Delivery(null), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Place_rejects_tampered_service_area()
+    {
+        var result = await CreatePlace().ExecuteAsync(Seller, Delivery(TamperedArea), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Place_rejects_foreign_service_area()
+    {
+        var result = await CreatePlace().ExecuteAsync(Seller, Delivery(AreaForeign), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerOrderDeliveryServiceAreaInvalid, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Pickup_does_not_require_delivery_service_area()
+    {
+        var result = await CreatePlace().ExecuteAsync(Seller, PickupRequest(), Actor);
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Equal("Pickup", result.Value!.FulfillmentType);
     }
 
-    [Fact]
-    public async Task Idempotency_key_returns_existing_order()
-    {
-        var orders = new FakeOrders();
-        var useCase = CreateUseCase(canOrder: true, canDelivery: true, orders);
-        var first = await useCase.ExecuteAsync(Seller, PickupRequest("idem-1"), Actor);
-        Assert.True(first.IsSuccess, first.ErrorMessage);
-        var second = await useCase.ExecuteAsync(Seller, PickupRequest("idem-1"), Actor);
-        Assert.True(second.IsSuccess, second.ErrorMessage);
-        Assert.Equal(first.Value!.OrderId, second.Value!.OrderId);
-        Assert.Equal(1, orders.PlaceCount);
-    }
+    private static QuoteCustomerOrderDelivery CreateQuote() =>
+        new(new FakeBranches(), new FixedCapability(Seller, true, true));
 
-    [Theory]
-    [InlineData(null, "Cash")]
-    [InlineData("Cash", "Cash")]
-    [InlineData("GCash", "ManualGCash")]
-    [InlineData("ManualGCash", "ManualGCash")]
-    [InlineData("Utang", "Utang")]
-    public async Task Place_persists_manual_payment_method_and_stays_unpaid(string? requested, string expected)
-    {
-        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
-        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: requested), Actor);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.Equal(expected, result.Value!.PaymentMethod);
-        Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), result.Value.PaymentStatus);
-    }
-
-    [Fact]
-    public async Task Place_rejects_invalid_payment_method()
-    {
-        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
-        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: "Card"), Actor);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentMethod, result.ErrorCode);
-    }
-
-    [Fact]
-    public void Dto_and_query_map_preserve_selected_payment_method()
-    {
-        var order = CustomerOrder.CreateSubmitted(
-            PosOrganizationId.From(Seller),
-            "SO-000001",
-            CustomerOrderParty.Personal(Actor, "Ana"),
-            CustomerOrderFulfillmentType.Pickup,
-            Branch,
-            "Main",
-            [new CustomerOrderLineDraft(
-                CatalogProductId.From(ProductGuid),
-                "Rice",
-                "RICE",
-                UnitOfMeasure.Piece,
-                2m,
-                25m)],
-            Actor,
-            Utc,
-            paymentMethod: CustomerOrderPaymentMethod.Utang);
-
-        var dto = CustomerOrderMaps.Map(order);
-        Assert.Equal(nameof(CustomerOrderPaymentMethod.Utang), dto.PaymentMethod);
-        Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), dto.PaymentStatus);
-    }
-
-    [Fact]
-    public void Place_use_case_does_not_create_payment_attempts_or_utang_ledger()
-    {
-        var source = File.ReadAllText(Path.Combine(
-            FindRepoRoot(),
-            "src",
-            "Products",
-            "PinoyBusinessPOS",
-            "ExItS.PinoyBusinessPOS.Application",
-            "CustomerOrdering",
-            "CustomerOrderUseCases.cs"));
-        Assert.DoesNotContain("IPaymentAttempt", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("PaymentAttempt", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ICreditEntryRepository", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("ProductBasedUtang", source, StringComparison.Ordinal);
-    }
-
-    private static PlaceCustomerOrder CreateUseCase(
-        bool canOrder,
-        bool canDelivery,
-        FakeOrders? orders = null)
-    {
-        orders ??= new FakeOrders();
-        return new PlaceCustomerOrder(
-            orders,
+    private static PlaceCustomerOrder CreatePlace() =>
+        new(
+            new FakeOrders(),
             new FakeProducts(),
             new FakeBranches(),
             new FakeStock(),
             new FixedClock(Utc),
-            new FixedCapability(Seller, canOrder, canDelivery));
-    }
+            new FixedCapability(Seller, true, true));
 
-    private static readonly Guid BusinessCustomer = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static QuoteCustomerOrderDeliveryRequest Quote(Guid? areaId, decimal lat, decimal lng) =>
+        new(Branch, MerchandiseSubtotal: 100m, DestinationLatitude: lat, DestinationLongitude: lng, areaId);
 
-    private static PlaceCustomerOrderRequest PickupRequest(
-        string? idempotencyKey = null,
-        string? paymentMethod = null) =>
-        new(
-            "Pickup",
-            Branch,
-            "Personal",
-            "Ana",
-            Actor,
-            BusinessCustomer,
-            null,
-            null,
-            [new PlaceCustomerOrderLineRequest(ProductGuid, 2m)],
-            null,
-            null,
-            idempotencyKey,
-            paymentMethod);
-
-    private static PlaceCustomerOrderRequest DeliveryRequest() =>
+    private static PlaceCustomerOrderRequest Delivery(Guid? areaId) =>
         new(
             "Delivery",
             Branch,
@@ -176,11 +137,23 @@ public sealed class PlaceCustomerOrderCapabilityTests
                 "09171234567",
                 "123 Main",
                 null,
-                "Manila",
+                "Ignored Free Text City",
                 null,
                 14.6m,
                 120.98m,
-                ServiceArea));
+                areaId));
+
+    private static PlaceCustomerOrderRequest PickupRequest() =>
+        new(
+            "Pickup",
+            Branch,
+            "Personal",
+            "Ana",
+            Actor,
+            BusinessCustomer,
+            null,
+            null,
+            [new PlaceCustomerOrderLineRequest(ProductGuid, 1m)]);
 
     private sealed class FixedCapability(Guid orgId, bool canOrder, bool canDelivery)
         : ISellerCustomerOrderingCapability
@@ -202,19 +175,18 @@ public sealed class PlaceCustomerOrderCapabilityTests
             Guid sellerOrganizationId,
             Guid branchId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<CustomerOrderBranchSnapshot?>(OperationalBranch(Branch, "Main"));
+            Task.FromResult<CustomerOrderBranchSnapshot?>(
+                branchId == Branch ? Operational() : null);
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
             Guid sellerOrganizationId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([
-                OperationalBranch(Branch, "Main")
-            ]);
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([Operational()]);
 
-        private static CustomerOrderBranchSnapshot OperationalBranch(Guid branchId, string name) =>
+        private static CustomerOrderBranchSnapshot Operational() =>
             new(
-                branchId,
-                name,
+                Branch,
+                "Main",
                 CustomerOrderingEnabled: true,
                 PickupEnabled: true,
                 DeliveryEnabled: true,
@@ -229,7 +201,7 @@ public sealed class PlaceCustomerOrderCapabilityTests
                 IsPrimary: true,
                 DeliveryServiceAreas:
                 [
-                    new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
+                    new CustomerOrderDeliveryServiceAreaSnapshot(AreaA, "Bacolod City", "Negros Occidental")
                 ]);
     }
 
@@ -347,9 +319,6 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
     private sealed class FakeOrders : ICustomerOrderRepository
     {
-        private readonly Dictionary<string, CustomerOrder> _byIdempotency = new(StringComparer.Ordinal);
-        public int PlaceCount { get; private set; }
-
         public Task<CustomerOrder?> GetByIdAsync(
             PosOrganizationId sellerOrganizationId,
             CustomerOrderId orderId,
@@ -360,7 +329,7 @@ public sealed class PlaceCustomerOrderCapabilityTests
             PosOrganizationId sellerOrganizationId,
             string idempotencyKey,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_byIdempotency.TryGetValue(idempotencyKey, out var order) ? order : null);
+            Task.FromResult<CustomerOrder?>(null);
 
         public Task<(IReadOnlyList<CustomerOrder> Items, int TotalCount)> ListAsync(
             PosOrganizationId sellerOrganizationId,
@@ -391,35 +360,10 @@ public sealed class PlaceCustomerOrderCapabilityTests
             PosOrganizationId sellerOrganizationId,
             Func<string, CustomerOrder> createOrder,
             Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
-            CancellationToken cancellationToken = default)
-        {
-            PlaceCount++;
-            var order = createOrder("SO-000001");
-            if (!string.IsNullOrWhiteSpace(order.IdempotencyKey))
-            {
-                _byIdempotency[order.IdempotencyKey] = order;
-            }
-
-            return Task.FromResult(order);
-        }
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(createOrder("SO-000001"));
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
-    }
-
-    private static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null)
-        {
-            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
-            {
-                return dir.FullName;
-            }
-
-            dir = dir.Parent;
-        }
-
-        throw new InvalidOperationException("Repository root not found.");
     }
 }

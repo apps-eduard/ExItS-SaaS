@@ -13,7 +13,8 @@ public sealed record BranchFulfillmentReadinessResult(
     bool DeliveryOperational,
     IReadOnlyList<string> MissingRequirements,
     IReadOnlyList<string> ReasonCodes,
-    BranchStoreOpenState? StoreOpenState);
+    BranchStoreOpenState? StoreOpenState,
+    BranchFulfillmentSetupSummary SetupSummary);
 
 public sealed record BranchFulfillmentReadinessInput(
     OrganizationBranch Branch,
@@ -22,7 +23,8 @@ public sealed record BranchFulfillmentReadinessInput(
     string? OrganizationTimeZoneId,
     string? OrganizationContactPhone,
     BranchEntitlementCapabilities Entitlements,
-    DateTimeOffset EvaluationInstantUtc);
+    DateTimeOffset EvaluationInstantUtc,
+    bool HasActiveDeliveryServiceArea);
 
 public interface IBranchFulfillmentReadinessEvaluator
 {
@@ -109,9 +111,14 @@ public sealed class BranchFulfillmentReadinessEvaluator : IBranchFulfillmentRead
         {
             Add(deliveryMissing, deliveryReasons, "delivery_policy", FulfillmentReadinessReasonCodes.DeliveryPolicyMissing);
         }
-        else if (!IsDeliveryPolicyComplete(input.DeliveryPolicy))
+        else if (!BranchFulfillmentSetupSummary.IsDeliveryPolicyComplete(input.DeliveryPolicy))
         {
             Add(deliveryMissing, deliveryReasons, "delivery_policy", FulfillmentReadinessReasonCodes.DeliveryPolicyIncomplete);
+        }
+
+        if (!input.HasActiveDeliveryServiceArea)
+        {
+            Add(deliveryMissing, deliveryReasons, "delivery_area", FulfillmentReadinessReasonCodes.DeliveryAreaMissing);
         }
 
         var deliveryReady = deliveryMissing.Count == 0;
@@ -146,6 +153,8 @@ public sealed class BranchFulfillmentReadinessEvaluator : IBranchFulfillmentRead
             deliveryReasons.Add(FulfillmentReadinessReasonCodes.StoreClosed);
         }
 
+        var setupSummary = BranchFulfillmentSetupSummary.Compute(input);
+
         return new BranchFulfillmentReadinessResult(
             orderingReady,
             pickupReady,
@@ -155,15 +164,9 @@ public sealed class BranchFulfillmentReadinessEvaluator : IBranchFulfillmentRead
             deliveryOperational,
             missing.Concat(deliveryMissing.Where(x => !missing.Contains(x))).Distinct(StringComparer.Ordinal).ToList(),
             reasons.Concat(deliveryReasons).Distinct(StringComparer.Ordinal).ToList(),
-            openState);
+            openState,
+            setupSummary);
     }
-
-    private static bool IsDeliveryPolicyComplete(BranchDeliveryPolicy policy) =>
-        policy.MaximumDeliveryDistanceKm > 0m
-        && policy.BaseDeliveryFee >= 0m
-        && policy.IncludedDistanceKm >= 0m
-        && policy.AdditionalFeePerKm >= 0m
-        && policy.MinimumOrderAmount >= 0m;
 
     private static string? ResolveEffectiveTimeZone(OrganizationBranch branch, string? organizationTimeZoneId) =>
         string.IsNullOrWhiteSpace(branch.TimeZoneId) ? organizationTimeZoneId : branch.TimeZoneId;

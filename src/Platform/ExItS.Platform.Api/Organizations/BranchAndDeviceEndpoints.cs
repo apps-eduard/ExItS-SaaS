@@ -447,6 +447,91 @@ internal static class BranchAndDeviceEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        root.MapGet("/branches/{branchId:guid}/delivery-service-areas", async (
+            Guid organizationId,
+            Guid branchId,
+            ListBranchDeliveryServiceAreas useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        root.MapPost("/branches/{branchId:guid}/delivery-service-areas", async (
+            Guid organizationId,
+            Guid branchId,
+            AddBranchDeliveryServiceAreaRequest body,
+            AddBranchDeliveryServiceArea useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.OrganizationBranchDeliveryServiceAreaAdded,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                new AddBranchDeliveryServiceAreaCommand(
+                    body.CountryCode ?? string.Empty,
+                    body.CityMunicipalityName ?? string.Empty,
+                    body.RegionOrProvinceName,
+                    body.ExternalAreaCode),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchDeliveryServiceAreaAdded,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.BranchConfigSummary(branchId, "Added delivery service area"),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        root.MapDelete("/branches/{branchId:guid}/delivery-service-areas/{areaId:guid}", async (
+            Guid organizationId,
+            Guid branchId,
+            Guid areaId,
+            DeactivateBranchDeliveryServiceArea useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.OrganizationBranchDeliveryServiceAreaDeactivated,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                BranchDeliveryServiceAreaId.From(areaId),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.OrganizationBranchDeliveryServiceAreaDeactivated,
+                    nameof(OrganizationBranch),
+                    branchId.ToString("D"),
+                    organizationId,
+                    summary: OrganizationGovernanceAuditWriter.BranchConfigSummary(branchId, "Deactivated delivery service area"),
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         root.MapGet("/pos-devices", async (Guid organizationId, ListDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
@@ -704,3 +789,9 @@ internal sealed record UpdateBranchFulfillmentSettingsRequest(
     bool? DeliveryEnabled = null);
 
 internal sealed record SetBranchOnlineOrdersPausedRequest(bool Paused, string? Reason = null);
+
+internal sealed record AddBranchDeliveryServiceAreaRequest(
+    string? CountryCode,
+    string? CityMunicipalityName,
+    string? RegionOrProvinceName = null,
+    string? ExternalAreaCode = null);

@@ -1,5 +1,10 @@
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
+public sealed record CustomerOrderDeliveryServiceAreaSnapshot(
+    Guid Id,
+    string CityMunicipalityName,
+    string? RegionOrProvinceName);
+
 /// <summary>
 /// Fulfillment branch snapshot for customer-order place/quote. Faked in unit tests;
 /// production loads from Platform branches.
@@ -18,7 +23,8 @@ public sealed record CustomerOrderBranchSnapshot(
     decimal? Latitude,
     decimal? Longitude,
     CustomerOrderBranchDeliveryPolicySnapshot? DeliveryPolicy,
-    bool IsPrimary = false);
+    bool IsPrimary = false,
+    IReadOnlyList<CustomerOrderDeliveryServiceAreaSnapshot>? DeliveryServiceAreas = null);
 
 public sealed record CustomerOrderBranchDeliveryPolicySnapshot(
     decimal MinimumOrderAmount,

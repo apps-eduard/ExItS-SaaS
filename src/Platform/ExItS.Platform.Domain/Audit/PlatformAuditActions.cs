@@ -40,6 +40,8 @@ public static class PlatformAuditActions
     public const string OrganizationBranchHoursUpdated = "platform.organization.branch.hours_updated";
     public const string OrganizationBranchFulfillmentUpdated = "platform.organization.branch.fulfillment_updated";
     public const string OrganizationBranchDeliveryPolicyUpdated = "platform.organization.branch.delivery_policy_updated";
+    public const string OrganizationBranchDeliveryServiceAreaAdded = "platform.organization.branch.delivery_service_area_added";
+    public const string OrganizationBranchDeliveryServiceAreaDeactivated = "platform.organization.branch.delivery_service_area_deactivated";
     public const string OrganizationBranchOrdersPaused = "platform.organization.branch.orders_paused";
     public const string PosDeviceRegistered = "platform.pos_device.registered";
     public const string PosDeviceReactivated = "platform.pos_device.reactivated";

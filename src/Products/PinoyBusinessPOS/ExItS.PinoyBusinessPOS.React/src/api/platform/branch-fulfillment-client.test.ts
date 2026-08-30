@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  addBranchDeliveryServiceArea,
+  deleteBranchDeliveryServiceArea,
+  listBranchDeliveryServiceAreas,
   listOrganizationBranchesForFulfillment,
+  normalizeDeliveryServiceArea,
   normalizeFulfillmentReadiness,
   normalizeOrganizationBranch,
   updateBranchFulfillmentSettings,
@@ -23,6 +27,7 @@ import {
   missingRequirementMessageKey,
   pickupEnablementLabel,
 } from "@/features/branches/branch-readiness-labels";
+import { resolveFulfillmentToggle } from "@/features/branches/fulfillment-toggle";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -109,6 +114,7 @@ describe("RMAP-18 readiness labels", () => {
   it("maps server missing codes without inventing rules", () => {
     expect(missingRequirementMessageKey("map_location")).toBe("branches.missing.mapLocation");
     expect(missingRequirementMessageKey("delivery_policy")).toBe("branches.missing.deliveryPolicy");
+    expect(missingRequirementMessageKey("delivery_area")).toBe("branches.missing.deliveryArea");
     expect(pickupEnablementLabel({ pickupEnabled: true, pickupReady: true })).toBe("enabled");
     expect(pickupEnablementLabel({ pickupEnabled: false, pickupReady: false })).toBe("notReady");
     expect(deliveryEnablementLabel({ deliveryEnabled: false, deliveryReady: true })).toBe(
@@ -119,17 +125,67 @@ describe("RMAP-18 readiness labels", () => {
   it("drops reason codes already covered by missing requirements", () => {
     expect(
       filterRedundantReasonCodes(
-        ["timezone", "map_location", "branch_address"],
+        ["timezone", "map_location", "branch_address", "delivery_area"],
         [
           "timezone_missing",
           "map_location_missing",
           "branch_address_incomplete",
+          "delivery_area_missing",
           "pickup_disabled",
           "delivery_disabled",
           "customer_ordering_disabled",
         ],
       ),
     ).toEqual(["pickup_disabled", "delivery_disabled", "customer_ordering_disabled"]);
+  });
+});
+
+describe("branch fulfillment toggles", () => {
+  it("disables enabling pickup when not ready", () => {
+    const decision = resolveFulfillmentToggle({
+      channel: "pickup",
+      enabled: false,
+      ready: false,
+      canUseDelivery: true,
+    });
+    expect(decision.disabled).toBe(true);
+    expect(decision.enableBlocked).toBe(true);
+    expect(decision.hintKey).toBe("branches.toggle.completeSetupFirst");
+  });
+
+  it("allows turning pickup off even when not ready", () => {
+    const decision = resolveFulfillmentToggle({
+      channel: "pickup",
+      enabled: true,
+      ready: false,
+      canUseDelivery: true,
+    });
+    expect(decision.checked).toBe(true);
+    expect(decision.disabled).toBe(false);
+    expect(decision.enableBlocked).toBe(false);
+  });
+
+  it("blocks delivery enable when entitlement missing", () => {
+    const decision = resolveFulfillmentToggle({
+      channel: "delivery",
+      enabled: false,
+      ready: true,
+      canUseDelivery: false,
+    });
+    expect(decision.disabled).toBe(true);
+    expect(decision.hintKey).toBe("branches.toggle.deliveryNotInPlan");
+  });
+
+  it("allows enabling delivery when ready and entitled", () => {
+    const decision = resolveFulfillmentToggle({
+      channel: "delivery",
+      enabled: false,
+      ready: true,
+      canUseDelivery: true,
+    });
+    expect(decision.disabled).toBe(false);
+    expect(decision.enableBlocked).toBe(false);
+    expect(decision.hintKey).toBeNull();
   });
 });
 
@@ -185,7 +241,7 @@ describe("RMAP-18 capabilities", () => {
 });
 
 describe("RMAP-18 branch fulfillment client", () => {
-  it("normalizes branch + readiness payloads", () => {
+  it("normalizes branch + readiness payloads including setup summary", () => {
     const branch = normalizeOrganizationBranch({
       Id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
       OrganizationId: "11111111-1111-1111-1111-111111111111",
@@ -197,6 +253,19 @@ describe("RMAP-18 branch fulfillment client", () => {
       Longitude: 120.9,
       PickupEnabled: true,
       DeliveryEnabled: false,
+      PickupReady: true,
+      DeliveryReady: false,
+      CanUseDelivery: true,
+      BranchDetailsComplete: true,
+      OperatingHoursComplete: true,
+      DeliveryLocationComplete: true,
+      DeliveryPolicyComplete: false,
+      DeliveryAreasComplete: false,
+      PickupSectionsComplete: 2,
+      PickupSectionsTotal: 2,
+      DeliverySectionsComplete: 3,
+      DeliverySectionsTotal: 5,
+      MissingRequirements: ["delivery_policy", "delivery_area"],
       ContactPhone: "09171234567",
       DeliveryPolicy: {
         BranchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -213,6 +282,10 @@ describe("RMAP-18 branch fulfillment client", () => {
     });
     expect(branch.latitude).toBe(14.6);
     expect(branch.deliveryPolicy?.baseDeliveryFee).toBe(40);
+    expect(branch.pickupReady).toBe(true);
+    expect(branch.branchDetailsComplete).toBe(true);
+    expect(branch.deliverySectionsComplete).toBe(3);
+    expect(branch.missingRequirements).toEqual(["delivery_policy", "delivery_area"]);
 
     const readiness = normalizeFulfillmentReadiness({
       BranchId: branch.id,
@@ -228,18 +301,132 @@ describe("RMAP-18 branch fulfillment client", () => {
       CustomerOrderingOperational: false,
       PickupOperational: false,
       DeliveryOperational: false,
-      MissingRequirements: ["branch_address", "map_location"],
-      ReasonCodes: ["branch_address_incomplete"],
+      MissingRequirements: ["branch_address", "map_location", "delivery_area"],
+      ReasonCodes: ["branch_address_incomplete", "delivery_area_missing"],
       StoreIsOpenNow: false,
+      BranchDetailsComplete: false,
+      DeliveryAreasComplete: false,
+      PickupSectionsComplete: 0,
+      PickupSectionsTotal: 2,
+      DeliverySectionsComplete: 0,
+      DeliverySectionsTotal: 5,
     });
-    expect(readiness.missingRequirements).toEqual(["branch_address", "map_location"]);
+    expect(readiness.missingRequirements).toEqual([
+      "branch_address",
+      "map_location",
+      "delivery_area",
+    ]);
+    expect(readiness.deliveryAreasComplete).toBe(false);
+    expect(readiness.pickupSectionsTotal).toBe(2);
   });
 
-  it("calls Platform branch fulfillment endpoints", async () => {
+  it("normalizes delivery service areas", () => {
+    const area = normalizeDeliveryServiceArea({
+      Id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      OrganizationId: "11111111-1111-1111-1111-111111111111",
+      BranchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      CountryCode: "PH",
+      RegionOrProvinceName: "Metro Manila",
+      CityMunicipalityName: "Makati",
+      NormalizedCityMunicipalityName: "MAKATI",
+      IsActive: true,
+      CreatedAtUtc: "2026-08-01T00:00:00Z",
+      UpdatedAtUtc: "2026-08-01T00:00:00Z",
+    });
+    expect(area.cityMunicipalityName).toBe("Makati");
+    expect(area.regionOrProvinceName).toBe("Metro Manila");
+  });
+
+  it("calls Platform branch fulfillment endpoints including delivery areas", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const method = init?.method ?? "GET";
-      if (url.includes("/branches") && method === "GET" && !url.includes("fulfillment")) {
+      if (url.includes("/delivery-service-areas/") && method === "DELETE") {
+        return new Response(
+          JSON.stringify({
+            branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            canUseCustomerOrdering: true,
+            canUseDelivery: true,
+            customerOrderingEnabled: true,
+            pickupEnabled: true,
+            deliveryEnabled: false,
+            onlineOrdersPaused: false,
+            customerOrderingReady: true,
+            pickupReady: true,
+            deliveryReady: false,
+            customerOrderingOperational: false,
+            pickupOperational: false,
+            deliveryOperational: false,
+            missingRequirements: ["delivery_area"],
+            reasonCodes: ["delivery_area_missing"],
+            storeIsOpenNow: false,
+            deliveryAreasComplete: false,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/delivery-service-areas") && method === "POST") {
+        return new Response(
+          JSON.stringify({
+            branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            canUseCustomerOrdering: true,
+            canUseDelivery: true,
+            customerOrderingEnabled: true,
+            pickupEnabled: true,
+            deliveryEnabled: false,
+            onlineOrdersPaused: false,
+            customerOrderingReady: true,
+            pickupReady: true,
+            deliveryReady: true,
+            customerOrderingOperational: false,
+            pickupOperational: false,
+            deliveryOperational: false,
+            missingRequirements: [],
+            reasonCodes: [],
+            storeIsOpenNow: false,
+            deliveryAreasComplete: true,
+            deliverySectionsComplete: 5,
+            deliverySectionsTotal: 5,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (url.includes("/delivery-service-areas") && method === "GET") {
+        return new Response(
+          JSON.stringify([
+            {
+              id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              organizationId: "11111111-1111-1111-1111-111111111111",
+              branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              countryCode: "PH",
+              regionOrProvinceName: "Metro Manila",
+              cityMunicipalityName: "Makati",
+              normalizedCityMunicipalityName: "MAKATI",
+              isActive: true,
+              createdAtUtc: "2026-08-01T00:00:00Z",
+              updatedAtUtc: "2026-08-01T00:00:00Z",
+            },
+            {
+              id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              organizationId: "11111111-1111-1111-1111-111111111111",
+              branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              countryCode: "PH",
+              cityMunicipalityName: "Pasig",
+              normalizedCityMunicipalityName: "PASIG",
+              isActive: false,
+              createdAtUtc: "2026-08-01T00:00:00Z",
+              updatedAtUtc: "2026-08-01T00:00:00Z",
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (
+        url.includes("/branches") &&
+        method === "GET" &&
+        !url.includes("fulfillment") &&
+        !url.includes("delivery")
+      ) {
         return new Response(
           JSON.stringify([
             {
@@ -249,6 +436,10 @@ describe("RMAP-18 branch fulfillment client", () => {
               name: "Main",
               isPrimary: true,
               status: "Active",
+              pickupReady: true,
+              deliveryReady: false,
+              canUseDelivery: true,
+              branchDetailsComplete: true,
             },
           ]),
           { status: 200, headers: { "Content-Type": "application/json" } },
@@ -346,6 +537,32 @@ describe("RMAP-18 branch fulfillment client", () => {
       "11111111-1111-1111-1111-111111111111",
     );
     expect(listed[0]?.name).toBe("Main");
+    expect(listed[0]?.pickupReady).toBe(true);
+
+    const areas = await listBranchDeliveryServiceAreas(
+      "11111111-1111-1111-1111-111111111111",
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
+    expect(areas).toHaveLength(1);
+    expect(areas[0]?.cityMunicipalityName).toBe("Makati");
+
+    const added = await addBranchDeliveryServiceArea(
+      "11111111-1111-1111-1111-111111111111",
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      {
+        countryCode: "PH",
+        cityMunicipalityName: "Quezon City",
+        regionOrProvinceName: "Metro Manila",
+      },
+    );
+    expect(added.deliveryAreasComplete).toBe(true);
+
+    const removed = await deleteBranchDeliveryServiceArea(
+      "11111111-1111-1111-1111-111111111111",
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    );
+    expect(removed.missingRequirements).toContain("delivery_area");
 
     const updated = await updateOrganizationBranch(
       "11111111-1111-1111-1111-111111111111",

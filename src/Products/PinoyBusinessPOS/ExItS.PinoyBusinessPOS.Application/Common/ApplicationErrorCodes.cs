@@ -200,6 +200,7 @@ public static class ApplicationErrorCodes
     public const string CustomerOrderBranchCapability = "pos.customer_order.branch.capability";
     public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";
+    public const string CustomerOrderDeliveryServiceAreaInvalid = "pos.customer_order.delivery.service_area.invalid";
     public const string CustomerOrderOrderingUnavailable = "pos.customer_order.ordering.unavailable";
     public const string CustomerOrderLinkedCustomerRequired = "pos.customer_order.linked_customer.required";
 }

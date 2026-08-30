@@ -70,6 +70,7 @@ export function MerchantCheckoutPage() {
 
   const [fulfillmentType, setFulfillmentType] = useState(FulfillmentPickup);
   const [branchId, setBranchId] = useState<string | null>(null);
+  const [deliveryServiceAreaId, setDeliveryServiceAreaId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHOD_CODES[0]);
   const [recipientName, setRecipientName] = useState(session?.displayName ?? "");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -142,6 +143,32 @@ export function MerchantCheckoutPage() {
     }
   }, [selection, branchId, fulfillmentType]);
 
+  const selectedBranch = useMemo(() => {
+    if (!storefrontQuery.data || !branchId) {
+      return null;
+    }
+    return storefrontQuery.data.branches.find((b) => b.branchId === branchId) ?? null;
+  }, [storefrontQuery.data, branchId]);
+
+  const deliveryAreas = selectedBranch?.deliveryServiceAreas ?? [];
+  const deliveryAreaIdsKey = deliveryAreas.map((area) => area.id).join(",");
+
+  useEffect(() => {
+    if (selection?.fulfillmentType !== FulfillmentDelivery) {
+      setDeliveryServiceAreaId(null);
+      return;
+    }
+    if (!deliveryAreaIdsKey) {
+      setDeliveryServiceAreaId(null);
+      return;
+    }
+    const ids = deliveryAreaIdsKey.split(",");
+    if (deliveryServiceAreaId && ids.includes(deliveryServiceAreaId)) {
+      return;
+    }
+    setDeliveryServiceAreaId(ids[0] ?? null);
+  }, [selection?.fulfillmentType, deliveryAreaIdsKey, deliveryServiceAreaId]);
+
   const latNum = Number.parseFloat(latitude);
   const lngNum = Number.parseFloat(longitude);
   const coordsValid =
@@ -157,6 +184,7 @@ export function MerchantCheckoutPage() {
       "delivery-quote",
       organizationId,
       branchId,
+      deliveryServiceAreaId,
       merchandiseSubtotal,
       latitude,
       longitude,
@@ -166,6 +194,7 @@ export function MerchantCheckoutPage() {
       tokenReady &&
       selection?.fulfillmentType === FulfillmentDelivery &&
       Boolean(branchId) &&
+      Boolean(deliveryServiceAreaId) &&
       coordsValid &&
       cart.lines.length > 0,
     queryFn: () =>
@@ -174,6 +203,7 @@ export function MerchantCheckoutPage() {
         merchandiseSubtotal,
         destinationLatitude: latNum,
         destinationLongitude: lngNum,
+        deliveryServiceAreaId,
       }),
   });
 
@@ -209,6 +239,14 @@ export function MerchantCheckoutPage() {
     if (isDelivery) {
       if (!recipientName.trim() || !addressLine1.trim() || !coordsValid) {
         setError(t("orders.deliveryFieldsRequired"));
+        return;
+      }
+      if (!deliveryServiceAreaId) {
+        setError(
+          deliveryAreas.length === 0
+            ? t("orders.deliveryAreaEmpty")
+            : t("orders.deliveryAreaRequired"),
+        );
         return;
       }
       if (!quoteQuery.data?.available) {
@@ -249,6 +287,7 @@ export function MerchantCheckoutPage() {
               deliveryNotes: deliveryNotes.trim() || null,
               destinationLatitude: latNum,
               destinationLongitude: lngNum,
+              deliveryServiceAreaId,
             }
           : null,
         clientOrderId,
@@ -474,6 +513,35 @@ export function MerchantCheckoutPage() {
 
           {selection.fulfillmentType === FulfillmentDelivery ? (
             <div className="flex flex-col gap-3" data-testid="delivery-fields">
+              <label className="pc-field">
+                <span className="pc-field__label">{t("orders.deliveryArea")}</span>
+                {deliveryAreas.length === 0 ? (
+                  <p
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid="delivery-area-empty"
+                  >
+                    {t("orders.deliveryAreaEmpty")}
+                  </p>
+                ) : (
+                  <select
+                    className="pc-field__control"
+                    data-testid="checkout-delivery-area-select"
+                    value={deliveryServiceAreaId ?? ""}
+                    onChange={(e) => setDeliveryServiceAreaId(e.target.value || null)}
+                  >
+                    {deliveryAreas.map((area) => {
+                      const label = [area.cityMunicipalityName, area.regionOrProvinceName]
+                        .filter(Boolean)
+                        .join(", ");
+                      return (
+                        <option key={area.id} value={area.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </label>
               <label className="pc-field">
                 <span className="pc-field__label">{t("orders.recipientName")}</span>
                 <input

@@ -43,3 +43,18 @@ internal sealed class BranchDeliveryPolicyRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }
+
+internal sealed class BranchDeliveryServiceAreaRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
+    public string CountryCode { get; set; } = string.Empty;
+    public string? RegionOrProvinceName { get; set; }
+    public string CityMunicipalityName { get; set; } = string.Empty;
+    public string NormalizedCityMunicipalityName { get; set; } = string.Empty;
+    public string? ExternalAreaCode { get; set; }
+    public bool IsActive { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+}

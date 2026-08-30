@@ -50,14 +50,34 @@ public sealed record OrganizationBranchDto(
     bool CanOfferPickup = false,
     bool CanOfferDeliveryLocation = false,
     bool CustomerOrderingReady = false,
+    bool PickupReady = false,
+    bool DeliveryReady = false,
     bool CustomerOrderingOperational = false,
     bool PickupOperational = false,
     bool DeliveryOperational = false,
+    bool CanUseCustomerOrdering = false,
+    bool CanUseDelivery = false,
     string? StoreStatusMessage = null,
     BranchDeliveryPolicyDto? DeliveryPolicy = null,
     DateTimeOffset? SuspendedAtUtc = null,
     Guid? SuspendedByUserId = null,
-    string? SuspensionReason = null);
+    string? SuspensionReason = null,
+    IReadOnlyList<string>? MissingRequirements = null,
+    bool BranchDetailsComplete = false,
+    bool OperatingHoursComplete = false,
+    bool DeliveryLocationComplete = false,
+    bool DeliveryPolicyComplete = false,
+    bool DeliveryAreasComplete = false,
+    int PickupSectionsComplete = 0,
+    int PickupSectionsTotal = BranchFulfillmentSetupSummary.PickupSectionCount,
+    int DeliverySectionsComplete = 0,
+    int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
+    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null);
+
+public sealed record BranchDeliveryServiceAreaPublicDto(
+    Guid Id,
+    string CityMunicipalityName,
+    string? RegionOrProvinceName);
 
 public sealed record BranchCapacityDto(int Used, int Allowed);
 
@@ -116,6 +136,7 @@ public sealed class ListBranches(
     IOrganizationBranchRepository branches,
     IBranchDeliveryPolicyRepository policies,
     IBranchOperatingHoursRepository hours,
+    IBranchDeliveryServiceAreaRepository areas,
     IPlatformOrganizationRepository organizations,
     EntitlementQueryService entitlements,
     IBranchFulfillmentReadinessEvaluator readinessEvaluator,
@@ -137,6 +158,22 @@ public sealed class ListBranches(
         }
         var policyList = await policies.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var policiesByBranchId = policyList.ToDictionary(p => p.BranchId.Value);
+        var hoursByBranchId = await hours.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var activeAreaCounts = await areas
+            .CountActiveByBranchIdsAsync(organizationId, list.Select(b => b.Id).ToList(), cancellationToken)
+            .ConfigureAwait(false);
+        var orgAreas = await areas.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var activeAreasByBranch = orgAreas
+            .Where(a => a.IsActive)
+            .GroupBy(a => a.BranchId.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<BranchDeliveryServiceAreaPublicDto>)g
+                    .Select(a => new BranchDeliveryServiceAreaPublicDto(
+                        a.Id.Value,
+                        a.CityMunicipalityName,
+                        a.RegionOrProvinceName))
+                    .ToList());
         var org = await organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var utcNow = clock.UtcNow;
@@ -144,7 +181,8 @@ public sealed class ListBranches(
         foreach (var branch in list)
         {
             policiesByBranchId.TryGetValue(branch.Id.Value, out var policy);
-            var schedule = await hours.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
+            hoursByBranchId.TryGetValue(branch.Id.Value, out var schedule);
+            var hasActiveArea = activeAreaCounts.TryGetValue(branch.Id.Value, out var count) && count > 0;
             var readiness = readinessEvaluator.Evaluate(new BranchFulfillmentReadinessInput(
                 branch,
                 schedule,
@@ -152,8 +190,10 @@ public sealed class ListBranches(
                 org?.Profile.TimeZoneId,
                 org?.Profile.ContactPhone,
                 caps,
-                utcNow));
-            result.Add(BranchMapper.ToDto(branch, policy, readiness));
+                utcNow,
+                hasActiveArea));
+            activeAreasByBranch.TryGetValue(branch.Id.Value, out var branchAreas);
+            result.Add(BranchMapper.ToDto(branch, policy, readiness, caps, branchAreas));
         }
 
         return result;
@@ -637,7 +677,9 @@ internal static class BranchMapper
     public static OrganizationBranchDto ToDto(
         OrganizationBranch x,
         BranchDeliveryPolicy? policy = null,
-        BranchFulfillmentReadinessResult? readiness = null) =>
+        BranchFulfillmentReadinessResult? readiness = null,
+        BranchEntitlementCapabilities? entitlements = null,
+        IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? activeDeliveryServiceAreas = null) =>
         new(
             x.Id.Value,
             x.OrganizationId.Value,
@@ -665,14 +707,29 @@ internal static class BranchMapper
             x.CanOfferPickup,
             x.CanOfferDeliveryLocation,
             readiness?.CustomerOrderingReady ?? false,
+            readiness?.PickupReady ?? false,
+            readiness?.DeliveryReady ?? false,
             readiness?.CustomerOrderingOperational ?? false,
             readiness?.PickupOperational ?? false,
             readiness?.DeliveryOperational ?? false,
+            entitlements?.CanUseCustomerOrdering ?? false,
+            entitlements?.CanUseDelivery ?? false,
             GetBranchFulfillmentReadiness.BuildStoreStatusMessage(readiness?.StoreOpenState),
             policy is null ? null : ToDto(policy),
             x.SuspendedAtUtc,
             x.SuspendedByUserId?.Value,
-            x.SuspensionReason);
+            x.SuspensionReason,
+            readiness?.MissingRequirements,
+            readiness?.SetupSummary.BranchDetailsComplete ?? false,
+            readiness?.SetupSummary.OperatingHoursComplete ?? false,
+            readiness?.SetupSummary.DeliveryLocationComplete ?? false,
+            readiness?.SetupSummary.DeliveryPolicyComplete ?? false,
+            readiness?.SetupSummary.DeliveryAreasComplete ?? false,
+            readiness?.SetupSummary.PickupSectionsComplete ?? 0,
+            readiness?.SetupSummary.PickupSectionsTotal ?? BranchFulfillmentSetupSummary.PickupSectionCount,
+            readiness?.SetupSummary.DeliverySectionsComplete ?? 0,
+            readiness?.SetupSummary.DeliverySectionsTotal ?? BranchFulfillmentSetupSummary.DeliverySectionCount,
+            activeDeliveryServiceAreas);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

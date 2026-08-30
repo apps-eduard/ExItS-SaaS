@@ -68,14 +68,34 @@ public sealed record OrganizationBranchDto(
     bool CanOfferPickup = false,
     bool CanOfferDeliveryLocation = false,
     bool CustomerOrderingReady = false,
+    bool PickupReady = false,
+    bool DeliveryReady = false,
     bool CustomerOrderingOperational = false,
     bool PickupOperational = false,
     bool DeliveryOperational = false,
+    bool CanUseCustomerOrdering = false,
+    bool CanUseDelivery = false,
     string? StoreStatusMessage = null,
     BranchDeliveryPolicyDto? DeliveryPolicy = null,
     DateTimeOffset? SuspendedAtUtc = null,
     Guid? SuspendedByUserId = null,
-    string? SuspensionReason = null);
+    string? SuspensionReason = null,
+    IReadOnlyList<string>? MissingRequirements = null,
+    bool BranchDetailsComplete = false,
+    bool OperatingHoursComplete = false,
+    bool DeliveryLocationComplete = false,
+    bool DeliveryPolicyComplete = false,
+    bool DeliveryAreasComplete = false,
+    int PickupSectionsComplete = 0,
+    int PickupSectionsTotal = 2,
+    int DeliverySectionsComplete = 0,
+    int DeliverySectionsTotal = 5,
+    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null);
+
+public sealed record BranchDeliveryServiceAreaPublicDto(
+    Guid Id,
+    string CityMunicipalityName,
+    string? RegionOrProvinceName);
 
 public static class PlatformGovernanceActionCodes
 {

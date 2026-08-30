@@ -25,6 +25,7 @@ public sealed class PersonalStorefrontAuthorizationTests
     private static readonly Guid Branch = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly Guid ProductGuid = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static readonly Guid ServiceArea = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     private static readonly DateTimeOffset Utc = new(2026, 8, 17, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -157,7 +158,7 @@ public sealed class PersonalStorefrontAuthorizationTests
     }
 
     private static QuoteCustomerOrderDeliveryRequest QuoteRequest() =>
-        new(Branch, MerchandiseSubtotal: 100m, DestinationLatitude: 14.6m, DestinationLongitude: 120.98m);
+        new(Branch, MerchandiseSubtotal: 100m, DestinationLatitude: 14.6m, DestinationLongitude: 120.98m, ServiceArea);
 
     private static readonly Guid BusinessCustomer = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
@@ -192,7 +193,8 @@ public sealed class PersonalStorefrontAuthorizationTests
                 "Manila",
                 null,
                 14.6m,
-                120.98m));
+                120.98m,
+                ServiceArea));
 
     private static GetCustomerStorefront CreateStorefront(
         ISellerCustomerOrderingCapability capability,
@@ -280,7 +282,12 @@ public sealed class PersonalStorefrontAuthorizationTests
                 StoreStatusMessage: "Open",
                 14.5995m,
                 120.9842m,
-                new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m));
+                new CustomerOrderBranchDeliveryPolicySnapshot(0m, 49m, 2m, 10m, 15m, 500m),
+                IsPrimary: true,
+                DeliveryServiceAreas:
+                [
+                    new CustomerOrderDeliveryServiceAreaSnapshot(ServiceArea, "Manila", "NCR")
+                ]);
     }
 
     private sealed class CountingStock : ICustomerOrderStockService

@@ -23,12 +23,15 @@ public sealed class BranchListBulkPolicyTests
 
         var branches = new FakeBranchRepository([branchA, branchB]);
         var policies = new FakePolicyRepository([policyA, policyB]);
+        var hours = new FakeHoursRepository();
+        var areas = new FakeAreasRepository();
         var orgRepo = new InMemoryPlatformOrganizationRepository();
         await orgRepo.AddAsync(PlatformOrganization.Create("Test Org", "test-org", T0));
         var useCase = new ListBranches(
             branches,
             policies,
-            new FakeHoursRepository(),
+            hours,
+            areas,
             orgRepo,
             new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
@@ -40,6 +43,9 @@ public sealed class BranchListBulkPolicyTests
         Assert.Equal(2, result.Count);
         Assert.Equal(1, policies.ListByOrganizationCallCount);
         Assert.Equal(0, policies.GetByBranchIdCallCount);
+        Assert.Equal(1, hours.ListByOrganizationCallCount);
+        Assert.Equal(0, hours.GetByBranchIdCallCount);
+        Assert.Equal(1, areas.CountActiveByBranchIdsCallCount);
         Assert.All(result, dto => Assert.NotNull(dto.DeliveryPolicy));
     }
 
@@ -102,16 +108,66 @@ public sealed class BranchListBulkPolicyTests
 
     private sealed class FakeHoursRepository : IBranchOperatingHoursRepository
     {
+        public int ListByOrganizationCallCount { get; private set; }
+        public int GetByBranchIdCallCount { get; private set; }
+
         public Task<BranchOperatingHoursSchedule?> GetByBranchIdAsync(
             OrganizationBranchId branchId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<BranchOperatingHoursSchedule?>(null);
+            CancellationToken cancellationToken = default)
+        {
+            GetByBranchIdCallCount++;
+            return Task.FromResult<BranchOperatingHoursSchedule?>(null);
+        }
+
+        public Task<IReadOnlyDictionary<Guid, BranchOperatingHoursSchedule>> ListByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default)
+        {
+            ListByOrganizationCallCount++;
+            return Task.FromResult<IReadOnlyDictionary<Guid, BranchOperatingHoursSchedule>>(
+                new Dictionary<Guid, BranchOperatingHoursSchedule>());
+        }
 
         public Task UpsertAsync(
             BranchOperatingHoursSchedule schedule,
             PlatformOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class FakeAreasRepository : IBranchDeliveryServiceAreaRepository
+    {
+        public int CountActiveByBranchIdsCallCount { get; private set; }
+
+        public Task<BranchDeliveryServiceArea?> GetByIdAsync(
+            BranchDeliveryServiceAreaId id,
+            CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<IReadOnlyList<BranchDeliveryServiceArea>> ListByBranchAsync(
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<IReadOnlyList<BranchDeliveryServiceArea>> ListByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BranchDeliveryServiceArea>>([]);
+
+        public Task<IReadOnlyDictionary<Guid, int>> CountActiveByBranchIdsAsync(
+            PlatformOrganizationId organizationId,
+            IReadOnlyCollection<OrganizationBranchId> branchIds,
+            CancellationToken cancellationToken = default)
+        {
+            CountActiveByBranchIdsCallCount++;
+            return Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
+        }
+
+        public Task AddAsync(BranchDeliveryServiceArea area, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task UpdateAsync(BranchDeliveryServiceArea area, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
     }
 
     private sealed class AllowAllBranchAccess : IOrganizationBranchAccessService

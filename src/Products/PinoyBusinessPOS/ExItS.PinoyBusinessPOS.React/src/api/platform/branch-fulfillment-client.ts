@@ -39,6 +39,11 @@ function readNumber(raw: Record<string, unknown>, camel: string, pascal: string)
   return Number.isFinite(n) ? n : null;
 }
 
+function readInt(raw: Record<string, unknown>, camel: string, pascal: string, fallback = 0): number {
+  const n = readNumber(raw, camel, pascal);
+  return n == null ? fallback : Math.trunc(n);
+}
+
 function readStringList(raw: Record<string, unknown>, camel: string, pascal: string): string[] {
   const value = raw[camel] ?? raw[pascal];
   if (!Array.isArray(value)) {
@@ -58,6 +63,18 @@ export type BranchDeliveryPolicyDto = {
   freeDeliveryThreshold: number | null;
   createdAtUtc: string;
   updatedAtUtc: string;
+};
+
+export type BranchFulfillmentSetupSummaryFields = {
+  branchDetailsComplete: boolean;
+  operatingHoursComplete: boolean;
+  deliveryLocationComplete: boolean;
+  deliveryPolicyComplete: boolean;
+  deliveryAreasComplete: boolean;
+  pickupSectionsComplete: number;
+  pickupSectionsTotal: number;
+  deliverySectionsComplete: number;
+  deliverySectionsTotal: number;
 };
 
 export type OrganizationBranchDto = {
@@ -84,12 +101,17 @@ export type OrganizationBranchDto = {
   canOfferPickup: boolean;
   canOfferDeliveryLocation: boolean;
   customerOrderingReady: boolean;
+  pickupReady: boolean;
+  deliveryReady: boolean;
   customerOrderingOperational: boolean;
   pickupOperational: boolean;
   deliveryOperational: boolean;
+  canUseCustomerOrdering: boolean;
+  canUseDelivery: boolean;
   storeStatusMessage: string | null;
   deliveryPolicy: BranchDeliveryPolicyDto | null;
-};
+  missingRequirements: string[];
+} & BranchFulfillmentSetupSummaryFields;
 
 export type BranchOperatingHoursDayDto = {
   dayOfWeek: string;
@@ -119,6 +141,27 @@ export type BranchFulfillmentReadinessDto = {
   storeOpenStatus: string | null;
   storeIsOpenNow: boolean;
   storeStatusMessage: string | null;
+} & BranchFulfillmentSetupSummaryFields;
+
+export type BranchDeliveryServiceAreaDto = {
+  id: string;
+  organizationId: string;
+  branchId: string;
+  countryCode: string;
+  regionOrProvinceName: string | null;
+  cityMunicipalityName: string;
+  normalizedCityMunicipalityName: string;
+  externalAreaCode: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+};
+
+export type AddBranchDeliveryServiceAreaRequest = {
+  countryCode: string;
+  cityMunicipalityName: string;
+  regionOrProvinceName?: string | null;
+  externalAreaCode?: string | null;
 };
 
 export type UpdateBranchRequest = {
@@ -160,6 +203,20 @@ export type UpsertBranchDeliveryPolicyRequest = {
   maximumDeliveryDistanceKm: number;
   freeDeliveryThreshold?: number | null;
 };
+
+function normalizeSetupSummary(r: Record<string, unknown>): BranchFulfillmentSetupSummaryFields {
+  return {
+    branchDetailsComplete: readBool(r, "branchDetailsComplete", "BranchDetailsComplete"),
+    operatingHoursComplete: readBool(r, "operatingHoursComplete", "OperatingHoursComplete"),
+    deliveryLocationComplete: readBool(r, "deliveryLocationComplete", "DeliveryLocationComplete"),
+    deliveryPolicyComplete: readBool(r, "deliveryPolicyComplete", "DeliveryPolicyComplete"),
+    deliveryAreasComplete: readBool(r, "deliveryAreasComplete", "DeliveryAreasComplete"),
+    pickupSectionsComplete: readInt(r, "pickupSectionsComplete", "PickupSectionsComplete"),
+    pickupSectionsTotal: readInt(r, "pickupSectionsTotal", "PickupSectionsTotal", 2),
+    deliverySectionsComplete: readInt(r, "deliverySectionsComplete", "DeliverySectionsComplete"),
+    deliverySectionsTotal: readInt(r, "deliverySectionsTotal", "DeliverySectionsTotal", 5),
+  };
+}
 
 function normalizeDeliveryPolicy(raw: unknown): BranchDeliveryPolicyDto | null {
   if (raw == null) {
@@ -208,6 +265,8 @@ export function normalizeOrganizationBranch(raw: unknown): OrganizationBranchDto
     canOfferPickup: readBool(r, "canOfferPickup", "CanOfferPickup"),
     canOfferDeliveryLocation: readBool(r, "canOfferDeliveryLocation", "CanOfferDeliveryLocation"),
     customerOrderingReady: readBool(r, "customerOrderingReady", "CustomerOrderingReady"),
+    pickupReady: readBool(r, "pickupReady", "PickupReady"),
+    deliveryReady: readBool(r, "deliveryReady", "DeliveryReady"),
     customerOrderingOperational: readBool(
       r,
       "customerOrderingOperational",
@@ -215,8 +274,12 @@ export function normalizeOrganizationBranch(raw: unknown): OrganizationBranchDto
     ),
     pickupOperational: readBool(r, "pickupOperational", "PickupOperational"),
     deliveryOperational: readBool(r, "deliveryOperational", "DeliveryOperational"),
+    canUseCustomerOrdering: readBool(r, "canUseCustomerOrdering", "CanUseCustomerOrdering"),
+    canUseDelivery: readBool(r, "canUseDelivery", "CanUseDelivery"),
     storeStatusMessage: readString(r, "storeStatusMessage", "StoreStatusMessage"),
     deliveryPolicy: normalizeDeliveryPolicy(r.deliveryPolicy ?? r.DeliveryPolicy),
+    missingRequirements: readStringList(r, "missingRequirements", "MissingRequirements"),
+    ...normalizeSetupSummary(r),
   };
 }
 
@@ -257,6 +320,26 @@ export function normalizeFulfillmentReadiness(raw: unknown): BranchFulfillmentRe
     storeOpenStatus: readString(r, "storeOpenStatus", "StoreOpenStatus"),
     storeIsOpenNow: readBool(r, "storeIsOpenNow", "StoreIsOpenNow"),
     storeStatusMessage: readString(r, "storeStatusMessage", "StoreStatusMessage"),
+    ...normalizeSetupSummary(r),
+  };
+}
+
+export function normalizeDeliveryServiceArea(raw: unknown): BranchDeliveryServiceAreaDto {
+  const r = asRecord(raw);
+  return {
+    id: String(r.id ?? r.Id ?? ""),
+    organizationId: String(r.organizationId ?? r.OrganizationId ?? ""),
+    branchId: String(r.branchId ?? r.BranchId ?? ""),
+    countryCode: String(r.countryCode ?? r.CountryCode ?? ""),
+    regionOrProvinceName: readString(r, "regionOrProvinceName", "RegionOrProvinceName"),
+    cityMunicipalityName: String(r.cityMunicipalityName ?? r.CityMunicipalityName ?? ""),
+    normalizedCityMunicipalityName: String(
+      r.normalizedCityMunicipalityName ?? r.NormalizedCityMunicipalityName ?? "",
+    ),
+    externalAreaCode: readString(r, "externalAreaCode", "ExternalAreaCode"),
+    isActive: readBool(r, "isActive", "IsActive", true),
+    createdAtUtc: String(r.createdAtUtc ?? r.CreatedAtUtc ?? ""),
+    updatedAtUtc: String(r.updatedAtUtc ?? r.UpdatedAtUtc ?? ""),
   };
 }
 
@@ -374,4 +457,46 @@ export async function upsertBranchDeliveryPolicy(
     throw new Error("Delivery policy response was empty.");
   }
   return policy;
+}
+
+export async function listBranchDeliveryServiceAreas(
+  organizationId: string,
+  branchId: string,
+  signal?: AbortSignal,
+): Promise<BranchDeliveryServiceAreaDto[]> {
+  const body = await platformRequest<unknown>({
+    path: `${branchPath(organizationId, branchId)}/delivery-service-areas`,
+    signal,
+  });
+  const items = Array.isArray(body) ? body : [];
+  return items.map(normalizeDeliveryServiceArea).filter((area) => area.isActive);
+}
+
+export async function addBranchDeliveryServiceArea(
+  organizationId: string,
+  branchId: string,
+  request: AddBranchDeliveryServiceAreaRequest,
+  signal?: AbortSignal,
+): Promise<BranchFulfillmentReadinessDto> {
+  const body = await platformRequest<unknown>({
+    method: "POST",
+    path: `${branchPath(organizationId, branchId)}/delivery-service-areas`,
+    body: request,
+    signal,
+  });
+  return normalizeFulfillmentReadiness(body);
+}
+
+export async function deleteBranchDeliveryServiceArea(
+  organizationId: string,
+  branchId: string,
+  areaId: string,
+  signal?: AbortSignal,
+): Promise<BranchFulfillmentReadinessDto> {
+  const body = await platformRequest<unknown>({
+    method: "DELETE",
+    path: `${branchPath(organizationId, branchId)}/delivery-service-areas/${areaId}`,
+    signal,
+  });
+  return normalizeFulfillmentReadiness(body);
 }

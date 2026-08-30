@@ -170,7 +170,13 @@ public sealed class GetCustomerStorefront
                 b.PickupOperational,
                 b.DeliveryOperational && capability.CanCustomerDelivery,
                 b.OnlineOrdersPaused,
-                b.StoreStatusMessage))
+                b.StoreStatusMessage,
+                (b.DeliveryServiceAreas ?? [])
+                    .Select(a => new CustomerStorefrontDeliveryServiceAreaDto(
+                        a.Id,
+                        a.CityMunicipalityName,
+                        a.RegionOrProvinceName))
+                    .ToList()))
             .ToList();
 
         return ApplicationResult<CustomerStorefrontDto>.Success(new CustomerStorefrontDto(

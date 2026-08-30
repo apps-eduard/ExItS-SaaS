@@ -249,7 +249,8 @@ public sealed class LookupPublicStoreLanding(
                 organization.Profile.TimeZoneId,
                 organization.Profile.ContactPhone,
                 caps,
-                now));
+                now,
+                HasActiveDeliveryServiceArea: false));
 
             if (result.CustomerOrderingReady)
             {

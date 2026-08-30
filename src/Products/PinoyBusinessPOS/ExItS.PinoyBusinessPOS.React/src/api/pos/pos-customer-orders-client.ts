@@ -137,6 +137,12 @@ export const storefrontProductSchema = z.object({
   imageSource: z.string().optional().default("None"),
 });
 
+export const storefrontDeliveryServiceAreaSchema = z.object({
+  id: guidSchema,
+  cityMunicipalityName: z.string(),
+  regionOrProvinceName: z.string().nullable().optional(),
+});
+
 export const storefrontBranchSchema = z.object({
   branchId: guidSchema,
   name: z.string(),
@@ -147,6 +153,8 @@ export const storefrontBranchSchema = z.object({
   deliveryOperational: z.boolean(),
   onlineOrdersPaused: z.boolean(),
   storeStatusMessage: z.string().nullable().optional(),
+  /** Optional until POS storefront DTO ships delivery areas. */
+  deliveryServiceAreas: z.array(storefrontDeliveryServiceAreaSchema).nullish().default([]),
 });
 
 export const customerStorefrontSchema = z.object({
@@ -197,6 +205,7 @@ export type PlaceCustomerOrderDeliveryRequest = {
   deliveryNotes?: string | null;
   destinationLatitude: number;
   destinationLongitude: number;
+  deliveryServiceAreaId?: string | null;
 };
 
 export type PlaceCustomerOrderRequest = {
@@ -220,6 +229,7 @@ export type QuoteCustomerOrderDeliveryRequest = {
   merchandiseSubtotal: number;
   destinationLatitude: number;
   destinationLongitude: number;
+  deliveryServiceAreaId?: string | null;
 };
 
 export type RejectCustomerOrderRequest = {

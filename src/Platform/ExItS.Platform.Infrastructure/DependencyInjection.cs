@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddSingleton<IBranchOperatingHoursEvaluator, BranchOperatingHoursEvaluator>();
         services.AddSingleton<IBranchFulfillmentReadinessEvaluator, BranchFulfillmentReadinessEvaluator>();
         services.AddScoped<IBranchDeliveryPolicyRepository, BranchDeliveryPolicyRepository>();
+        services.AddScoped<IBranchDeliveryServiceAreaRepository, BranchDeliveryServiceAreaRepository>();
         services.AddSingleton<IDeliveryDistanceCalculator, HaversineDeliveryDistanceCalculator>();
         services.AddScoped<IPosDeviceRepository, PosDeviceRepository>();
         services.AddScoped<IPosDeviceRegistrationTokenRepository, PosDeviceRegistrationTokenRepository>();

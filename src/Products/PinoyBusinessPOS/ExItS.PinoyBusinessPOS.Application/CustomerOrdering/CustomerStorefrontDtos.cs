@@ -17,6 +17,11 @@ public sealed record CustomerStorefrontProductDto(
     int? ImageVersion = null,
     string ImageSource = "None");
 
+public sealed record CustomerStorefrontDeliveryServiceAreaDto(
+    Guid Id,
+    string CityMunicipalityName,
+    string? RegionOrProvinceName);
+
 public sealed record CustomerStorefrontBranchDto(
     Guid BranchId,
     string Name,
@@ -26,7 +31,8 @@ public sealed record CustomerStorefrontBranchDto(
     bool PickupOperational,
     bool DeliveryOperational,
     bool OnlineOrdersPaused,
-    string? StoreStatusMessage);
+    string? StoreStatusMessage,
+    IReadOnlyList<CustomerStorefrontDeliveryServiceAreaDto>? DeliveryServiceAreas = null);
 
 public sealed record CustomerStorefrontDto(
     Guid OrganizationId,
