@@ -231,11 +231,13 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal("PartiallyReceived", replay.Status);
         Assert.Equal(29m, await OnHandAsync(client, org, product.ProductId));
 
-        var destLots = await ListLotsAsync(client, org, product.ProductId);
+        // Lot list is branch-scoped (exact BranchId); query destination and source separately.
+        var destLots = await ListLotsAsync(client, org, product.ProductId, BranchB);
         Assert.Equal(3m, destLots.Single(l => l.ExpirationDate == early && l.BranchId == BranchB).QuantityOnHand);
         Assert.Equal(6m, destLots.Single(l => l.ExpirationDate == later && l.BranchId == BranchB).QuantityOnHand);
-        Assert.Equal(6m, destLots.Single(l => l.LotId == lotA.LotId).QuantityOnHand);
-        Assert.Equal(14m, destLots.Single(l => l.LotId == lotB.LotId).QuantityOnHand);
+        var sourceLots = await ListLotsAsync(client, org, product.ProductId, BranchA);
+        Assert.Equal(6m, sourceLots.Single(l => l.LotId == lotA.LotId).QuantityOnHand);
+        Assert.Equal(14m, sourceLots.Single(l => l.LotId == lotB.LotId).QuantityOnHand);
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(
@@ -293,9 +295,14 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
     private static async Task<IReadOnlyList<PosInventoryLotDto>> ListLotsAsync(
         HttpClient client,
         Guid org,
-        Guid productId)
+        Guid productId,
+        Guid? branchId = null)
     {
-        using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}/lots?includeDepleted=true", org, BranchA);
+        using var get = Scoped(
+            HttpMethod.Get,
+            $"{Inventory}/{productId:D}/lots?includeDepleted=true",
+            org,
+            branchId ?? BranchA);
         using var response = await client.SendAsync(get);
         response.EnsureSuccessStatusCode();
         var page = await response.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
