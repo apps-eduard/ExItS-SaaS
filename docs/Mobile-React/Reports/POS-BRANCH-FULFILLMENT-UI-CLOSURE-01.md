@@ -8,8 +8,8 @@
 |-------|-------|
 | START_SHA | `d783da24807f9726d91d6b0019f5e1e4f73d82b7` |
 | FEATURE_SHA | `5aeb07ce365c9ac562fa8db6dfbdddb7e3653373` |
-| FINAL_SHA | `5aeb07ce365c9ac562fa8db6dfbdddb7e3653373` |
-| REMOTE_SHA | *(pending push)* |
+| FINAL_SHA | `1fec7a303716465e44df098d0cb2d992ad572df9` |
+| REMOTE_SHA | `1fec7a303716465e44df098d0cb2d992ad572df9` |
 
 ## Goal
 
