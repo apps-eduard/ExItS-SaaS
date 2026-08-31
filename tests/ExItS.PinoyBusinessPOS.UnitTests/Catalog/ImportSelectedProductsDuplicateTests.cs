@@ -116,7 +116,9 @@ public sealed class ImportSelectedProductsDuplicateTests
             products,
             new FakePlatform(entitled),
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
     private sealed class FixedClock : IClock
     {

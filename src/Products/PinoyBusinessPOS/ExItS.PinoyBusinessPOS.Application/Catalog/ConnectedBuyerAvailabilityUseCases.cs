@@ -107,7 +107,22 @@ internal static class ConnectedBuyerAvailabilityGuard
             CategoryId: category,
             Search: query,
             CanExposeToConnectedBuyers: canExpose,
-            UncategorizedOnly: uncategorizedOnly);
+            UncategorizedOnly: uncategorizedOnly,
+            Scope: CatalogProductScope.OrganizationStandard);
+    }
+
+    public static ApplicationResult RequireOrganizationGovernance(
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
+    {
+        if (!governance.CanManageStandardAvailability(actorAccessor.GetActor()))
+        {
+            return ApplicationResult.Failure(
+                ApplicationErrorCodes.ProductAvailabilityForbidden,
+                "Only organization Owner/Administrator may manage Connected Buyer catalog sharing.");
+        }
+
+        return ApplicationResult.Success();
     }
 }
 
@@ -116,15 +131,21 @@ public sealed class QueryConnectedBuyerAvailability
     private readonly ICatalogProductRepository _products;
     private readonly IProductCategoryRepository _categories;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public QueryConnectedBuyerAvailability(
         ICatalogProductRepository products,
         IProductCategoryRepository categories,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _products = products;
         _categories = categories;
         _access = access;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<ConnectedBuyerAvailabilityQueryResultDto>> ExecuteAsync(
@@ -142,6 +163,13 @@ public sealed class QueryConnectedBuyerAvailability
         {
             return ConnectedBuyerAvailabilityGuard.Failure<ConnectedBuyerAvailabilityQueryResultDto>(
                 gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var orgGov = ConnectedBuyerAvailabilityGuard.RequireOrganizationGovernance(_governance, _actorAccessor);
+        if (!orgGov.IsSuccess)
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<ConnectedBuyerAvailabilityQueryResultDto>(
+                orgGov.ErrorCode!, orgGov.ErrorMessage!);
         }
 
         var org = PosOrganizationId.From(organizationId);
@@ -203,19 +231,25 @@ public sealed class BulkMutateConnectedBuyerAvailability
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public BulkMutateConnectedBuyerAvailability(
         ICatalogProductRepository products,
         ISupplierProductExposureRepository exposures,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _products = products;
         _exposures = exposures;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _access = access;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<BulkConnectedBuyerAvailabilityMutationResultDto>> ExecuteAsync(
@@ -228,6 +262,13 @@ public sealed class BulkMutateConnectedBuyerAvailability
         {
             return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
                 gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var orgGov = ConnectedBuyerAvailabilityGuard.RequireOrganizationGovernance(_governance, _actorAccessor);
+        if (!orgGov.IsSuccess)
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
+                orgGov.ErrorCode!, orgGov.ErrorMessage!);
         }
 
         var enable = string.Equals(request.Operation, "enable", StringComparison.OrdinalIgnoreCase);
@@ -270,6 +311,13 @@ public sealed class BulkMutateConnectedBuyerAvailability
         {
             foreach (var product in products)
             {
+                if (product.Scope == CatalogProductScope.BranchLocal)
+                {
+                    return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
+                        ApplicationErrorCodes.ProductScopeForbidden,
+                        "BranchLocal products cannot join organization Connected Buyer sharing. Promote to OrganizationStandard first.");
+                }
+
                 if (product.Status != CatalogProductStatus.Active)
                 {
                     return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
@@ -367,6 +415,13 @@ public sealed class BulkMutateConnectedBuyerAvailability
                 "One or more products were not found in this organization.");
         }
 
+        if (loaded.Any(p => p.Scope == CatalogProductScope.BranchLocal))
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<IReadOnlyList<Guid>>(
+                ApplicationErrorCodes.ProductScopeForbidden,
+                "BranchLocal products cannot join organization Connected Buyer sharing. Promote to OrganizationStandard first.");
+        }
+
         return ApplicationResult<IReadOnlyList<Guid>>.Success(idsExplicit);
     }
 }
@@ -375,13 +430,19 @@ public sealed class PreviewDefaultConnectedPoPricing
 {
     private readonly ICatalogProductRepository _products;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public PreviewDefaultConnectedPoPricing(
         ICatalogProductRepository products,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _products = products;
         _access = access;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public Task<ApplicationResult<BulkDefaultConnectedPoPricingPreviewDto>> ExecuteAsync(
@@ -402,6 +463,13 @@ public sealed class PreviewDefaultConnectedPoPricing
         {
             return ConnectedBuyerAvailabilityGuard.Failure<BulkDefaultConnectedPoPricingPreviewDto>(
                 gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var orgGov = ConnectedBuyerAvailabilityGuard.RequireOrganizationGovernance(_governance, _actorAccessor);
+        if (!orgGov.IsSuccess)
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<BulkDefaultConnectedPoPricingPreviewDto>(
+                orgGov.ErrorCode!, orgGov.ErrorMessage!);
         }
 
         if (!Enum.TryParse<ConnectedBuyerAvailabilityPricingMode>(request.Mode, ignoreCase: true, out var mode))
@@ -439,6 +507,13 @@ public sealed class PreviewDefaultConnectedPoPricing
         foreach (var id in productIds)
         {
             var product = byId[id];
+            if (product.Scope == CatalogProductScope.BranchLocal)
+            {
+                return ConnectedBuyerAvailabilityGuard.Failure<BulkDefaultConnectedPoPricingPreviewDto>(
+                    ApplicationErrorCodes.ProductScopeForbidden,
+                    "BranchLocal products cannot join organization Connected Buyer sharing. Promote to OrganizationStandard first.");
+            }
+
             if (product.Status != CatalogProductStatus.Active)
             {
                 return ConnectedBuyerAvailabilityGuard.Failure<BulkDefaultConnectedPoPricingPreviewDto>(
@@ -523,6 +598,13 @@ public sealed class PreviewDefaultConnectedPoPricing
                 "One or more products were not found in this organization.");
         }
 
+        if (loaded.Any(p => p.Scope == CatalogProductScope.BranchLocal))
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<IReadOnlyList<Guid>>(
+                ApplicationErrorCodes.ProductScopeForbidden,
+                "BranchLocal products cannot join organization Connected Buyer sharing. Promote to OrganizationStandard first.");
+        }
+
         return ApplicationResult<IReadOnlyList<Guid>>.Success(idsExplicit);
     }
 }
@@ -535,6 +617,8 @@ public sealed class ApplyDefaultConnectedPoPricing
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public ApplyDefaultConnectedPoPricing(
         PreviewDefaultConnectedPoPricing preview,
@@ -542,7 +626,9 @@ public sealed class ApplyDefaultConnectedPoPricing
         ISupplierProductExposureRepository exposures,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _preview = preview;
         _products = products;
@@ -550,6 +636,8 @@ public sealed class ApplyDefaultConnectedPoPricing
         _unitOfWork = unitOfWork;
         _clock = clock;
         _access = access;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<BulkConnectedBuyerAvailabilityMutationResultDto>> ExecuteAsync(
@@ -557,6 +645,13 @@ public sealed class ApplyDefaultConnectedPoPricing
         BulkDefaultConnectedPoPricingRequest request,
         CancellationToken ct = default)
     {
+        var orgGov = ConnectedBuyerAvailabilityGuard.RequireOrganizationGovernance(_governance, _actorAccessor);
+        if (!orgGov.IsSuccess)
+        {
+            return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
+                orgGov.ErrorCode!, orgGov.ErrorMessage!);
+        }
+
         var preview = await _preview.BuildAsync(organizationId, request, apply: true, ct).ConfigureAwait(false);
         if (!preview.IsSuccess)
         {

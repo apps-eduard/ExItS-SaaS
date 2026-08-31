@@ -13,7 +13,21 @@ public sealed record CatalogProductFilter(
     bool UncategorizedOnly = false,
     ProductBrandId? BrandId = null,
     /// <summary>When set, filters by authoritative <c>CanBeSold</c> (Resale sell-floor eligibility).</summary>
-    bool? CanBeSold = null);
+    bool? CanBeSold = null,
+    /// <summary>
+    /// When true, membership is limited to products commercially offered at <see cref="ActingBranchId"/>.
+    /// Distinct from <see cref="CanBeSold"/> (usage capability). Requires ActingBranchId.
+    /// </summary>
+    bool CommerciallyOfferedAtBranch = false,
+    /// <summary>Acting/workspace branch for commercial offering and/or BranchLocal visibility.</summary>
+    Guid? ActingBranchId = null,
+    /// <summary>
+    /// When true, exclude BranchLocal products whose OriginBranchId != ActingBranchId.
+    /// Owner/Admin management lists set this false. Requires ActingBranchId when true.
+    /// </summary>
+    bool RestrictBranchLocalToActingBranch = false,
+    /// <summary>When set, restrict to an exact product scope (e.g. OrganizationStandard for Connected Buyer).</summary>
+    CatalogProductScope? Scope = null);
 
 public interface ICatalogProductRepository
 {

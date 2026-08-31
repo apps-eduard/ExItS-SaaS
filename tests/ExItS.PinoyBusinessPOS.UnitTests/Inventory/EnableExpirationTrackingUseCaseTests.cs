@@ -11,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Returns;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.UnitTests.Catalog;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
@@ -207,7 +208,9 @@ public sealed class EnableExpirationTrackingUseCaseTests
             new NoOpBrands(),
             fx.Inventory,
             fx.UnitOfWork,
-            fx.Clock);
+            fx.Clock,
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
         var product = fx.Products.Items[0];
         var result = await update.ExecuteAsync(
             OrgId,
@@ -233,7 +236,9 @@ public sealed class EnableExpirationTrackingUseCaseTests
             new NoOpBrands(),
             fx.Inventory,
             fx.UnitOfWork,
-            fx.Clock);
+            fx.Clock,
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
         var product = fx.Products.Items[0];
         var result = await update.ExecuteAsync(
             OrgId,

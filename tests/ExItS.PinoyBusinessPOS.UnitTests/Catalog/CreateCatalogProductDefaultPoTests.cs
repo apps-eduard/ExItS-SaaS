@@ -52,7 +52,9 @@ public sealed class CreateCatalogProductDefaultPoTests
             new MemoryCategories(),
             new MemoryBrands(),
             new ImmediateUnitOfWork(),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
     private sealed class ImmediateUnitOfWork : IPosUnitOfWork
     {

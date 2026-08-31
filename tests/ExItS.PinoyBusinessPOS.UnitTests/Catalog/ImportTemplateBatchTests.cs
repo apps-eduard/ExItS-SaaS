@@ -21,7 +21,14 @@ public sealed class ImportTemplateBatchTests
         var platform = new RecordingPlatform(BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2));
         var imports = new MemoryImports();
         var products = new MemoryProducts();
-        var useCase = new ImportTemplateBatch(imports, products, platform, new FakeUnitOfWork(), new FixedClock());
+        var useCase = new ImportTemplateBatch(
+            imports,
+            products,
+            platform,
+            new FakeUnitOfWork(),
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -54,7 +61,9 @@ public sealed class ImportTemplateBatchTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -85,7 +94,9 @@ public sealed class ImportTemplateBatchTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -109,7 +120,9 @@ public sealed class ImportTemplateBatchTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -131,7 +144,9 @@ public sealed class ImportTemplateBatchTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -153,7 +168,9 @@ public sealed class ImportTemplateBatchTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,

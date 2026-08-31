@@ -206,8 +206,8 @@ public sealed class ImportTemplateBatch
     private readonly IPlatformMerchantCatalogClient _platform;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
-    private readonly CatalogProductGovernanceAuthority? _governance;
-    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public ImportTemplateBatch(
         ICatalogImportJobRepository imports,
@@ -215,8 +215,8 @@ public sealed class ImportTemplateBatch
         IPlatformMerchantCatalogClient platform,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        CatalogProductGovernanceAuthority? governance = null,
-        ICatalogGovernanceActorAccessor? actorAccessor = null)
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _imports = imports;
         _products = products;
@@ -253,8 +253,7 @@ public sealed class ImportTemplateBatch
         string? idempotencyKey,
         CancellationToken cancellationToken)
     {
-        if (_governance is not null && _actorAccessor is not null
-            && !_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
+        if (!_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
         {
             return ApplicationResult<PosCatalogImportJobDto>.Failure(
                 ApplicationErrorCodes.ProductScopeForbidden,
@@ -560,8 +559,8 @@ public sealed class ImportSelectedProducts
     private readonly IPlatformMerchantCatalogClient _platform;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
-    private readonly CatalogProductGovernanceAuthority? _governance;
-    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
 
     public ImportSelectedProducts(
         ICatalogImportJobRepository imports,
@@ -569,8 +568,8 @@ public sealed class ImportSelectedProducts
         IPlatformMerchantCatalogClient platform,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        CatalogProductGovernanceAuthority? governance = null,
-        ICatalogGovernanceActorAccessor? actorAccessor = null)
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
     {
         _imports = imports;
         _products = products;
@@ -589,8 +588,7 @@ public sealed class ImportSelectedProducts
         string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
-        if (_governance is not null && _actorAccessor is not null
-            && !_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
+        if (!_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
         {
             return ApplicationResult<PosCatalogImportJobDto>.Failure(
                 ApplicationErrorCodes.ProductScopeForbidden,

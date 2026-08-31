@@ -223,6 +223,7 @@ export function SellFloorPage() {
           status: "Active",
           categoryId: activeCategory === "all" ? undefined : activeCategory,
           canBeSold: true,
+          commerciallyOffered: true,
           page: 1,
           pageSize: CATALOG_BROWSE_PAGE_SIZE,
         },
@@ -479,6 +480,7 @@ export function SellFloorPage() {
       status: "Active",
       categoryId: activeCategory === "all" ? undefined : activeCategory,
       canBeSold: true,
+      commerciallyOffered: true,
     })
       .then((result) => {
         if (cancelled) {

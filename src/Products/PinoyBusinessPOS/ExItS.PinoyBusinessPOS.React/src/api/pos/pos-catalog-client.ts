@@ -31,6 +31,11 @@ export type ListCatalogProductsOptions = {
   brandId?: string | null;
   /** When true, only products that can appear on the Sell floor (Resale). */
   canBeSold?: boolean;
+  /**
+   * When true, only products commercially offered at the workspace branch.
+   * Distinct from canBeSold. Sell floor must send this with canBeSold.
+   */
+  commerciallyOffered?: boolean;
   page?: number;
   pageSize?: number;
 };
@@ -250,6 +255,7 @@ export function listCatalogProducts(
       categoryId: options.categoryId,
       brandId: options.brandId ?? undefined,
       canBeSold: options.canBeSold,
+      commerciallyOffered: options.commerciallyOffered,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? CATALOG_BROWSE_PAGE_SIZE,
     }),
@@ -328,13 +334,16 @@ export function lookupCatalogProductBySku(
   workspace: PosWorkspaceScope,
   sku: string,
   signal?: AbortSignal,
+  options?: { commerciallyOffered?: boolean },
 ): Promise<PosCatalogProductDto> {
   const encoded = encodeURIComponent(sku.trim());
   return posRequest({
     method: "GET",
     workspace,
     signal,
-    path: `${PRODUCTS_PATH}/by-sku/${encoded}`,
+    path: appendQuery(`${PRODUCTS_PATH}/by-sku/${encoded}`, {
+      commerciallyOffered: options?.commerciallyOffered,
+    }),
   });
 }
 
@@ -342,13 +351,16 @@ export function lookupCatalogProductByBarcode(
   workspace: PosWorkspaceScope,
   barcode: string,
   signal?: AbortSignal,
+  options?: { commerciallyOffered?: boolean },
 ): Promise<PosCatalogProductDto> {
   const encoded = encodeURIComponent(barcode.trim());
   return posRequest({
     method: "GET",
     workspace,
     signal,
-    path: `${PRODUCTS_PATH}/by-barcode/${encoded}`,
+    path: appendQuery(`${PRODUCTS_PATH}/by-barcode/${encoded}`, {
+      commerciallyOffered: options?.commerciallyOffered,
+    }),
   });
 }
 

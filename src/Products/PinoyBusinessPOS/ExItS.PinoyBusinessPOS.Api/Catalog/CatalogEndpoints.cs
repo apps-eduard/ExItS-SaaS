@@ -286,9 +286,6 @@ internal static class CatalogEndpoints
             int? page,
             int? pageSize,
             CatalogProductQueryService queries,
-            ICatalogProductRepository products,
-            ICatalogProductAvailabilityResolver availability,
-            CatalogProductGovernanceAuthority governance,
             ICatalogGovernanceActorAccessor actorAccessor,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
@@ -345,18 +342,26 @@ internal static class CatalogEndpoints
                 parsedBrand = ProductBrandId.From(brandId.Value);
             }
 
-            var filterCommercial = canBeSold == true || commerciallyOffered == true;
-            Guid? actingBranchId = null;
-            if (filterCommercial)
+            var commercial = commerciallyOffered == true;
+            if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranchId))
             {
-                if (!PosOrganizationScope.TryGetOptionalBranchId(request, out actingBranchId)
-                    || actingBranchId is null)
-                {
-                    return PosApiResults.Problem(
-                        ApplicationErrorCodes.ProductActingBranchRequired,
-                        "X-Pos-Branch-Id is required when listing commercially offered products.",
-                        StatusCodes.Status400BadRequest);
-                }
+                actingBranchId = null;
+            }
+
+            if (commercial && actingBranchId is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.ProductActingBranchRequired,
+                    "X-Pos-Branch-Id is required when listing commercially offered products.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var actor = actorAccessor.GetActor();
+            var restrictLocal = !actor.IsOrganizationGovernance && !commercial;
+            if (restrictLocal && actingBranchId is null)
+            {
+                // No branch context: non-governance actors must not see any BranchLocal.
+                actingBranchId = Guid.Empty;
             }
 
             var filter = new CatalogProductFilter(
@@ -365,58 +370,20 @@ internal static class CatalogEndpoints
                 parsedUnit,
                 search,
                 BrandId: parsedBrand,
-                CanBeSold: canBeSold);
-            var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
-            var actor = actorAccessor.GetActor();
+                CanBeSold: canBeSold,
+                CommerciallyOfferedAtBranch: commercial,
+                ActingBranchId: commercial || restrictLocal ? actingBranchId : null,
+                RestrictBranchLocalToActingBranch: restrictLocal);
 
-            if (filterCommercial)
+            var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
+            if (commercial)
             {
-                var orgId = Domain.Customers.PosOrganizationId.From(organizationId);
-                var branch = Domain.Inventory.PosBranchId.From(actingBranchId!.Value);
-                var domainProducts = await products
-                    .ListByIdsAsync(
-                        orgId,
-                        result.Items.Select(i => CatalogProductId.From(i.ProductId)).ToList(),
-                        ct)
-                    .ConfigureAwait(false);
-                var offering = await availability
-                    .ResolveForBranchAsync(orgId, branch, domainProducts, ct)
-                    .ConfigureAwait(false);
-                var offeredIds = offering
-                    .Where(kv => kv.Value.IsOffered)
-                    .Select(kv => kv.Key)
-                    .ToHashSet();
-                var filtered = result.Items
-                    .Where(i => offeredIds.Contains(i.ProductId))
+                var marked = result.Items
                     .Select(i => i with { IsOfferedAtBranch = true })
                     .ToList();
                 return Results.Ok(new PagedResult<PosCatalogProductDto>(
-                    filtered,
-                    filtered.Count,
-                    result.Page,
-                    result.PageSize));
-            }
-
-            // Management list: hide foreign BranchLocal from non-governance actors.
-            if (!actor.IsOrganizationGovernance)
-            {
-                var visible = result.Items
-                    .Where(i =>
-                    {
-                        if (!string.Equals(i.Scope, nameof(CatalogProductScope.BranchLocal), StringComparison.OrdinalIgnoreCase))
-                        {
-                            return true;
-                        }
-
-                        var origin = i.OriginBranchId is Guid oid
-                            ? Domain.Inventory.PosBranchId.From(oid)
-                            : null;
-                        return governance.CanViewBranchLocalInManagement(actor, origin);
-                    })
-                    .ToList();
-                return Results.Ok(new PagedResult<PosCatalogProductDto>(
-                    visible,
-                    visible.Count,
+                    marked,
+                    result.TotalCount,
                     result.Page,
                     result.PageSize));
             }
@@ -601,19 +568,12 @@ internal static class CatalogEndpoints
             }
 
             var actor = actorAccessor.GetActor();
-            if (!actor.IsOrganizationGovernance
-                && string.Equals(product.Scope, nameof(CatalogProductScope.BranchLocal), StringComparison.OrdinalIgnoreCase))
+            if (!IsManagementVisible(actor, governance, product.Scope, product.OriginBranchId))
             {
-                var origin = product.OriginBranchId is Guid oid
-                    ? Domain.Inventory.PosBranchId.From(oid)
-                    : null;
-                if (!governance.CanViewBranchLocalInManagement(actor, origin))
-                {
-                    return PosApiResults.Problem(
-                        ApplicationErrorCodes.ProductNotFound,
-                        "Product was not found.",
-                        StatusCodes.Status404NotFound);
-                }
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.ProductNotFound,
+                    "Product was not found.",
+                    StatusCodes.Status404NotFound);
             }
 
             return Results.Ok(product);
@@ -750,7 +710,12 @@ internal static class CatalogEndpoints
             HttpRequest request,
             string sku,
             bool? includeInactive,
+            bool? commerciallyOffered,
             CatalogProductQueryService queries,
+            CatalogProductGovernanceAuthority governance,
+            ICatalogGovernanceActorAccessor actorAccessor,
+            ICatalogProductAvailabilityResolver availability,
+            ICatalogProductRepository products,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -762,14 +727,29 @@ internal static class CatalogEndpoints
             var result = await queries
                 .LookupBySkuAsync(organizationId, sku, includeInactive ?? false, ct)
                 .ConfigureAwait(false);
-            return PosApiResults.FromResult(result, Results.Ok);
+            return await FinalizeProductLookupAsync(
+                    request,
+                    organizationId,
+                    result,
+                    commerciallyOffered == true,
+                    governance,
+                    actorAccessor,
+                    availability,
+                    products,
+                    ct)
+                .ConfigureAwait(false);
         });
 
         group.MapGet("/by-barcode/{barcode}", async (
             HttpRequest request,
             string barcode,
             bool? includeInactive,
+            bool? commerciallyOffered,
             CatalogProductQueryService queries,
+            CatalogProductGovernanceAuthority governance,
+            ICatalogGovernanceActorAccessor actorAccessor,
+            ICatalogProductAvailabilityResolver availability,
+            ICatalogProductRepository products,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -781,7 +761,17 @@ internal static class CatalogEndpoints
             var result = await queries
                 .LookupByBarcodeAsync(organizationId, barcode, includeInactive ?? false, ct)
                 .ConfigureAwait(false);
-            return PosApiResults.FromResult(result, Results.Ok);
+            return await FinalizeProductLookupAsync(
+                    request,
+                    organizationId,
+                    result,
+                    commerciallyOffered == true,
+                    governance,
+                    actorAccessor,
+                    availability,
+                    products,
+                    ct)
+                .ConfigureAwait(false);
         });
 
         group.MapPut("/{productId:guid}/image", async (
@@ -829,12 +819,25 @@ internal static class CatalogEndpoints
             Guid productId,
             string variant,
             GetCatalogProductImage useCase,
+            CatalogProductQueryService queries,
+            CatalogProductGovernanceAuthority governance,
+            ICatalogGovernanceActorAccessor actorAccessor,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
             {
                 return problem!;
+            }
+
+            var product = await queries.GetByIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+            if (product is null
+                || !IsManagementVisible(actorAccessor.GetActor(), governance, product.Scope, product.OriginBranchId))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.ProductNotFound,
+                    "Product was not found.",
+                    StatusCodes.Status404NotFound);
             }
 
             return PosApiResults.FromResult(
@@ -905,6 +908,93 @@ internal static class CatalogEndpoints
         }
 
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
+    }
+
+    private static bool IsManagementVisible(
+        CatalogGovernanceActor actor,
+        CatalogProductGovernanceAuthority governance,
+        string? scope,
+        Guid? originBranchId)
+    {
+        if (!string.Equals(scope, nameof(CatalogProductScope.BranchLocal), StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var origin = originBranchId is Guid oid
+            ? Domain.Inventory.PosBranchId.From(oid)
+            : null;
+        return governance.CanViewBranchLocalInManagement(actor, origin);
+    }
+
+    private static async Task<IResult> FinalizeProductLookupAsync(
+        HttpRequest request,
+        Guid organizationId,
+        ApplicationResult<PosCatalogProductDto> result,
+        bool commerciallyOffered,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor,
+        ICatalogProductAvailabilityResolver availability,
+        ICatalogProductRepository products,
+        CancellationToken ct)
+    {
+        if (!result.IsSuccess)
+        {
+            return PosApiResults.FromResult(result, Results.Ok);
+        }
+
+        var dto = result.Value!;
+        var actor = actorAccessor.GetActor();
+        if (!IsManagementVisible(actor, governance, dto.Scope, dto.OriginBranchId))
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        if (!commerciallyOffered)
+        {
+            return Results.Ok(dto);
+        }
+
+        if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var actingBranchId)
+            || actingBranchId is null)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.ProductActingBranchRequired,
+                "X-Pos-Branch-Id is required for commercial product lookup.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var orgId = Domain.Customers.PosOrganizationId.From(organizationId);
+        var product = await products
+            .GetByIdAsync(orgId, CatalogProductId.From(dto.ProductId), ct)
+            .ConfigureAwait(false);
+        if (product is null)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        var offering = await availability
+            .ResolveForBranchAsync(
+                orgId,
+                Domain.Inventory.PosBranchId.From(actingBranchId.Value),
+                [product],
+                ct)
+            .ConfigureAwait(false);
+        if (!offering.TryGetValue(product.Id.Value, out var offer) || !offer.IsOffered)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.",
+                StatusCodes.Status404NotFound);
+        }
+
+        return Results.Ok(dto with { IsOfferedAtBranch = true });
     }
 
     private static bool TryParseCategoryStatus(

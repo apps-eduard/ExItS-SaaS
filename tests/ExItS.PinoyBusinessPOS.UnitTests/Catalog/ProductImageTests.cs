@@ -110,9 +110,21 @@ public sealed class CatalogProductImageUseCaseTests
         var products = new FakeProducts();
         var images = new MemoryImageRepository();
         var store = new MemoryObjectStore();
-        var set = new SetCatalogProductImage(products, images, new MagickProductImageProcessor(), store, new FixedClock(Utc));
+        var set = new SetCatalogProductImage(
+            products,
+            images,
+            new MagickProductImageProcessor(),
+            store,
+            new FixedClock(Utc),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
         var get = new GetCatalogProductImage(products, images, store);
-        var remove = new RemoveCatalogProductImage(products, images, store);
+        var remove = new RemoveCatalogProductImage(
+            products,
+            images,
+            store,
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var first = await set.ExecuteAsync(Org, ProductId, MagickProductImageProcessorTests.MakeJpeg());
         Assert.True(first.IsSuccess);
@@ -148,7 +160,14 @@ public sealed class CatalogProductImageUseCaseTests
         var images = new MemoryImageRepository();
         var store = new MemoryObjectStore();
         var processor = new SequenceProcessor();
-        var set = new SetCatalogProductImage(products, images, processor, store, new FixedClock(Utc));
+        var set = new SetCatalogProductImage(
+            products,
+            images,
+            processor,
+            store,
+            new FixedClock(Utc),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var ok = await set.ExecuteAsync(Org, ProductId, MagickProductImageProcessorTests.MakeJpeg());
         Assert.True(ok.IsSuccess);

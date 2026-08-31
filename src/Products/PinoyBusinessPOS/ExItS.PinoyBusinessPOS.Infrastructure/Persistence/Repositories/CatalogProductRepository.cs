@@ -153,8 +153,12 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         CancellationToken cancellationToken = default)
     {
         var statusName = CatalogProductStatus.Active.ToString();
+        var standardScope = CatalogProductScopes.ToCode(CatalogProductScope.OrganizationStandard);
         var baseQuery = _db.CatalogProducts.AsNoTracking()
-            .Where(p => p.OrganizationId == organizationId.Value && p.Status == statusName);
+            .Where(p =>
+                p.OrganizationId == organizationId.Value
+                && p.Status == statusName
+                && p.Scope == standardScope);
 
         var total = await baseQuery.CountAsync(cancellationToken).ConfigureAwait(false);
         var available = await baseQuery
@@ -226,6 +230,47 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         {
             var canBeSold = filter.CanBeSold.Value;
             query = query.Where(p => p.CanBeSold == canBeSold);
+        }
+
+        if (filter.Scope is not null)
+        {
+            var scopeCode = CatalogProductScopes.ToCode(filter.Scope.Value);
+            query = query.Where(p => p.Scope == scopeCode);
+        }
+
+        var standardScope = CatalogProductScopes.ToCode(CatalogProductScope.OrganizationStandard);
+        var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
+
+        if (filter.CommerciallyOfferedAtBranch)
+        {
+            if (filter.ActingBranchId is null || filter.ActingBranchId == Guid.Empty)
+            {
+                throw new InvalidOperationException(
+                    "ActingBranchId is required when CommerciallyOfferedAtBranch is true.");
+            }
+
+            var branchId = filter.ActingBranchId.Value;
+            // Offered = (Standard OR Local@origin) AND no explicit IsOffered=false row for this branch.
+            query = query.Where(p =>
+                (p.Scope == standardScope
+                 || (p.Scope == localScope && p.OriginBranchId == branchId))
+                && !_db.BranchProductAvailabilities.Any(a =>
+                    a.OrganizationId == p.OrganizationId
+                    && a.BranchId == branchId
+                    && a.ProductId == p.Id
+                    && !a.IsOffered));
+        }
+        else if (filter.RestrictBranchLocalToActingBranch)
+        {
+            if (filter.ActingBranchId is null || filter.ActingBranchId == Guid.Empty)
+            {
+                throw new InvalidOperationException(
+                    "ActingBranchId is required when RestrictBranchLocalToActingBranch is true.");
+            }
+
+            var branchId = filter.ActingBranchId.Value;
+            query = query.Where(p =>
+                p.Scope != localScope || p.OriginBranchId == branchId);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))

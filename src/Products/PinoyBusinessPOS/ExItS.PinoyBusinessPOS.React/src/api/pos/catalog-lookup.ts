@@ -46,7 +46,9 @@ export async function resolveCatalogLookup(
   // ("Barcode must contain digits only") and must fall through to name search.
   if (looksLikeBarcodeScan(term)) {
     try {
-      const product = await lookupCatalogProductByBarcode(workspace, term, signal);
+      const product = await lookupCatalogProductByBarcode(workspace, term, signal, {
+        commerciallyOffered: listOptions.commerciallyOffered,
+      });
       return { kind: "exact", product, matchedBy: "barcode" };
     } catch (error) {
       if (isLookupMiss(error)) {
@@ -59,7 +61,9 @@ export async function resolveCatalogLookup(
   }
 
   try {
-    const product = await lookupCatalogProductBySku(workspace, term, signal);
+    const product = await lookupCatalogProductBySku(workspace, term, signal, {
+      commerciallyOffered: listOptions.commerciallyOffered,
+    });
     return { kind: "exact", product, matchedBy: "sku" };
   } catch (error) {
     if (!isLookupMiss(error)) {
@@ -73,7 +77,12 @@ export async function resolveCatalogLookup(
 
   const page = await listCatalogProducts(
     workspace,
-    { ...listOptions, search: term, canBeSold: listOptions.canBeSold ?? true },
+    {
+      ...listOptions,
+      search: term,
+      canBeSold: listOptions.canBeSold ?? true,
+      commerciallyOffered: listOptions.commerciallyOffered,
+    },
     signal,
   );
   return {

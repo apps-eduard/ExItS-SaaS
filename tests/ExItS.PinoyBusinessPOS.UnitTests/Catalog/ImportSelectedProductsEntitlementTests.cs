@@ -22,7 +22,9 @@ public sealed class ImportSelectedProductsEntitlementTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
@@ -43,7 +45,9 @@ public sealed class ImportSelectedProductsEntitlementTests
             new MemoryProducts(),
             platform,
             new FakeUnitOfWork(),
-            new FixedClock());
+            new FixedClock(),
+            new CatalogProductGovernanceAuthority(),
+            FixedCatalogGovernanceActorAccessor.Owner());
 
         var result = await useCase.ExecuteAsync(
             Org.Value,
