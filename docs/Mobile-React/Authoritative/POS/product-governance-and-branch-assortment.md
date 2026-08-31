@@ -1,13 +1,14 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED — TARGET remaining for 01C–01D
+**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX — TARGET remaining for 01D
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
+**01C report:** [POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md)
 
 ---
 
@@ -23,7 +24,14 @@
   - SKU/barcode/image management visibility blocks foreign BranchLocal; commercial exact lookup optionally rejects Not offered.
   - Connected Buyer: Owner/Admin only; OrganizationStandard only; BranchLocal = promote first (`NOT_SUPPORTED_V1_PROMOTE_FIRST`).
   - Security-critical use cases require non-optional governance dependencies.
-- **Not yet:** React governance UX (MB2-01C), branch inventory (MB2-02), branch pricing (MB2-03).
+- **MB2-01C React UX:**
+  - Merchant wording: Organization product / Branch product.
+  - Catalog scope filters via server `scope=` (before pagination).
+  - Owner create Standard vs BranchLocal; branch actor creates BranchLocal only; origin server-derived.
+  - Standard master read-only for normal branch actors; Local editable at origin / Owner.
+  - Promote UX; Owner branch-availability toggles; Today's Prices matches interim price authority.
+  - Global import + Connected Buyer org mutations gated to org governance.
+- **Not yet:** MB2-01D closure validation, branch inventory (MB2-02), branch pricing (MB2-03).
 
 ---
 

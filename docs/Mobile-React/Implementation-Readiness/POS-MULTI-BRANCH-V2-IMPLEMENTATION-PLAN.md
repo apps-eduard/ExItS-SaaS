@@ -6,10 +6,12 @@
 **MB2-01A status:** COMPLETE_VALIDATED_FOUNDATION
 **MB2-01B status:** COMPLETE_VALIDATED_AUTHORITY
 **MB2-01B-H1 status:** COMPLETE_VALIDATED
-**HARD STOP:** Do not start MB2-01C until explicitly authorized as a separate task.
+**MB2-01C status:** COMPLETE_VALIDATED_UX
+**HARD STOP:** Do not start MB2-01D until explicitly authorized as a separate task.
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
+**01C report:** [POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md)
 
 ---
 
@@ -134,7 +136,8 @@ Responsive 360 / 768 / 1024 / 1440; full i18n.
 
 **HARD STOP** before MB2-01D.
 
-**MB2_01C_READY:** YES (after 01B)
+**MB2_01C_STATUS:** COMPLETE_VALIDATED_UX
+**NEXT:** MB2_01D (when authorized)
 
 ---
 
@@ -239,4 +242,4 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_01C`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start React governance UX in this package.
+**NEXT=`MB2_01D`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-01D validation closure in this package.
