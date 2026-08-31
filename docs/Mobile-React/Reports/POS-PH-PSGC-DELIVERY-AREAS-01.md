@@ -14,8 +14,8 @@
 | BRANCH | feat/organization |
 | START_SHA | 0b5872fc970ce177abc1262de521a1043c2d39c8 |
 | FEATURE_SHA | 6ca6748a3389a3f63ad5f9cbb6a9cbf26fc6c06f |
-| FINAL_SHA | *(set after this docs commit + push)* |
-| REMOTE_SHA | *(set after this docs commit + push)* |
+| FINAL_SHA | c4482eb1f275d53d108dddd034eeec57be80fac6 |
+| REMOTE_SHA | c4482eb1f275d53d108dddd034eeec57be80fac6 |
 
 ## PSGC dataset
 
