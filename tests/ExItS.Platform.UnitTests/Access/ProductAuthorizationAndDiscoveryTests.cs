@@ -25,6 +25,8 @@ public sealed class ProductAuthorizationAndDiscoveryTests
         Assert.Equal("Owner", ProductLocalRoleCodes.MapToPosRoleCode("Owner"));
         Assert.Equal("StoreManager", ProductLocalRoleCodes.MapToPosRoleCode("Manager"));
         Assert.Equal("Cashier", ProductLocalRoleCodes.MapToPosRoleCode("Cashier"));
+        Assert.Equal("InventoryStaff", ProductLocalRoleCodes.MapToPosRoleCode("InventoryStaff"));
+        Assert.Equal("ReportingUser", ProductLocalRoleCodes.MapToPosRoleCode("ReportingUser"));
         Assert.Equal("ReportingUser", ProductLocalRoleCodes.MapToPosRoleCode("Viewer"));
         Assert.Throws<DomainException>(() => ProductLocalRoleCodes.MapToPosRoleCode("Doctor"));
     }

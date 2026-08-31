@@ -2,9 +2,9 @@
 
 TASK=POS-ORG-ROLE-MANAGEMENT-01  
 START_SHA=ff39879df983e5eaf726de7a46d77fb21998d8c4  
-FEATURE_SHA=(see FINAL_SHA)  
-FINAL_SHA=(recorded after push)  
-REMOTE_SHA=(recorded after push)
+FEATURE_SHA=d9c50a5cdceaaaad2046af95d38185ca65ca136b  
+FINAL_SHA=4f735080141a430b353e9dfb28d7e4d9466e2654  
+REMOTE_SHA=(after push)
 
 ## Architecture
 

@@ -73,10 +73,12 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
 const orgId = "22222222-2222-4222-8222-222222222222";
 const ownerUserId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const staffUserId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const noRoleUserId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const ownerMembershipId = "11111111-1111-4111-8111-111111111111";
-const staffMembershipId = "22222222-2222-4222-8222-222222222222";
-const ownerGrantId = "33333333-3333-4333-8333-333333333333";
-const staffGrantId = "44444444-4444-4444-8444-444444444444";
+const staffMembershipId = "33333333-3333-4333-8333-333333333333";
+const noRoleMembershipId = "44444444-4444-4444-8444-444444444444";
+const ownerGrantId = "55555555-5555-4555-8555-555555555555";
+const staffGrantId = "66666666-6666-4666-8666-666666666666";
 
 function renderPage() {
   const client = new QueryClient({
@@ -129,6 +131,15 @@ describe("OrgStaffPage owner protection", () => {
           displayName: "Juan Dela Cruz",
           email: "juan@example.com",
         },
+        {
+          id: noRoleMembershipId,
+          organizationId: orgId,
+          userId: noRoleUserId,
+          role: "OrganizationMember",
+          status: "Active",
+          displayName: "Ana Reyes",
+          email: "ana@example.com",
+        },
       ],
     });
     vi.mocked(rolesClient.listProductLocalRoles).mockResolvedValue({
@@ -176,34 +187,34 @@ describe("OrgStaffPage owner protection", () => {
     expect(ownerRow).toHaveAttribute("data-owner-protected", "true");
     expect(within(ownerRow).getByText("Organization Owner")).toBeInTheDocument();
     expect(within(ownerRow).getByText("POS Owner")).toBeInTheDocument();
-    expect(within(ownerRow).getByText("This is the business owner.")).toBeInTheDocument();
-    expect(within(ownerRow).queryByText("Transfer ownership")).not.toBeInTheDocument();
+    expect(within(ownerRow).getByText("Protected account")).toBeInTheDocument();
     expect(within(ownerRow).queryByText("Assign POS role")).not.toBeInTheDocument();
-    expect(within(ownerRow).queryByText("Suspend")).not.toBeInTheDocument();
-    expect(within(ownerRow).queryByText("Remove")).not.toBeInTheDocument();
-    expect(within(ownerRow).queryByLabelText(/Revoke role/i)).not.toBeInTheDocument();
+    expect(within(ownerRow).queryByText("Change POS role")).not.toBeInTheDocument();
+    expect(within(ownerRow).queryByTestId(`org-staff-more-${ownerMembershipId}`)).not.toBeInTheDocument();
 
     const staffRow = screen.getByTestId(`org-staff-row-${staffMembershipId}`);
     expect(staffRow).not.toHaveAttribute("data-owner-protected");
-    expect(within(staffRow).getByTestId(`org-staff-assign-${staffMembershipId}`)).toBeInTheDocument();
-    expect(within(staffRow).getByTestId(`org-staff-suspend-${staffMembershipId}`)).toBeInTheDocument();
-    expect(within(staffRow).getByTestId(`org-staff-remove-${staffMembershipId}`)).toBeInTheDocument();
-    expect(within(staffRow).getByLabelText(/Revoke role Cashier/i)).toBeInTheDocument();
+    expect(within(staffRow).getByText("Staff member")).toBeInTheDocument();
+    expect(within(staffRow).getByText("Cashier")).toBeInTheDocument();
+    expect(within(staffRow).getByText("Change POS role")).toBeInTheDocument();
+    expect(within(staffRow).getByTestId(`org-staff-more-${staffMembershipId}`)).toBeInTheDocument();
+
+    const noRoleRow = screen.getByTestId(`org-staff-row-${noRoleMembershipId}`);
+    expect(within(noRoleRow).getByText("No POS role")).toBeInTheDocument();
+    expect(within(noRoleRow).getByText("Assign POS role")).toBeInTheDocument();
   });
 
-  it("hides suspend and remove on the signed-in staff member's own row", async () => {
+  it("hides membership actions on the signed-in staff member's own row", async () => {
     sessionMock.userId = staffUserId;
     renderPage();
 
     const staffRow = await screen.findByTestId(`org-staff-row-${staffMembershipId}`);
-    expect(within(staffRow).getByTestId(`org-staff-assign-${staffMembershipId}`)).toBeInTheDocument();
-    expect(within(staffRow).queryByTestId(`org-staff-suspend-${staffMembershipId}`)).not.toBeInTheDocument();
-    expect(within(staffRow).queryByTestId(`org-staff-remove-${staffMembershipId}`)).not.toBeInTheDocument();
-    expect(within(staffRow).queryByLabelText(/Revoke role/i)).not.toBeInTheDocument();
+    expect(within(staffRow).queryByText("Change POS role")).not.toBeInTheDocument();
+    expect(within(staffRow).queryByTestId(`org-staff-more-${staffMembershipId}`)).not.toBeInTheDocument();
   });
 
   it("lists pending invitations with cancel action", async () => {
-    const inviteId = "55555555-5555-4555-8555-555555555555";
+    const inviteId = "77777777-7777-4777-8777-777777777777";
     vi.mocked(inviteClient.listOrganizationInvitations).mockResolvedValue([
       {
         id: inviteId,
@@ -212,7 +223,7 @@ describe("OrgStaffPage owner protection", () => {
         role: "OrganizationMember",
         status: "Pending",
         inviteeDisplayName: "Maria Santos",
-        productRole: "Cashier",
+        productRole: "InventoryStaff",
         targetPublicUserId: "EX-1234-5678",
       },
     ]);
