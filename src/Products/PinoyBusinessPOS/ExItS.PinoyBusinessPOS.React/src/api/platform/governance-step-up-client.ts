@@ -12,6 +12,12 @@ import {
 export const POS_DEVICE_REVOKE_ACTION = "platform.pos_device.revoke";
 export const TARGET_POS_DEVICE = "PosDevice";
 
+export const BRANCH_SUSPEND_ACTION = "platform.organization.branch.suspend";
+export const BRANCH_ARCHIVE_ACTION = "platform.organization.branch.archive";
+export const BRANCH_REACTIVATE_ACTION = "platform.organization.branch.reactivate";
+export const BRANCH_SET_PRIMARY_ACTION = "platform.organization.branch.set_primary";
+export const TARGET_ORGANIZATION_BRANCH = "OrganizationBranch";
+
 export type GovernanceStepUpRequest = {
   actionCode: string;
   targetType: string;
@@ -146,7 +152,7 @@ export async function issueGovernanceStepUp(
   }
 }
 
-/** Convenience wrapper for the only POS governance action this client performs. */
+/** Convenience wrapper for POS device revoke step-up. */
 export async function issuePosDeviceRevokeStepUp(
   organizationId: string,
   posDeviceId: string,
@@ -161,6 +167,85 @@ export async function issuePosDeviceRevokeStepUp(
       targetId: posDeviceId,
       currentPassword,
     },
+    signal,
+  );
+}
+
+async function issueBranchGovernanceStepUp(
+  organizationId: string,
+  branchId: string,
+  actionCode: string,
+  currentPassword: string,
+  signal?: AbortSignal,
+): Promise<GovernanceStepUpResult> {
+  return issueGovernanceStepUp(
+    organizationId,
+    {
+      actionCode,
+      targetType: TARGET_ORGANIZATION_BRANCH,
+      targetId: branchId,
+      currentPassword,
+    },
+    signal,
+  );
+}
+
+export function issueBranchSuspendStepUp(
+  organizationId: string,
+  branchId: string,
+  currentPassword: string,
+  signal?: AbortSignal,
+): Promise<GovernanceStepUpResult> {
+  return issueBranchGovernanceStepUp(
+    organizationId,
+    branchId,
+    BRANCH_SUSPEND_ACTION,
+    currentPassword,
+    signal,
+  );
+}
+
+export function issueBranchArchiveStepUp(
+  organizationId: string,
+  branchId: string,
+  currentPassword: string,
+  signal?: AbortSignal,
+): Promise<GovernanceStepUpResult> {
+  return issueBranchGovernanceStepUp(
+    organizationId,
+    branchId,
+    BRANCH_ARCHIVE_ACTION,
+    currentPassword,
+    signal,
+  );
+}
+
+export function issueBranchReactivateStepUp(
+  organizationId: string,
+  branchId: string,
+  currentPassword: string,
+  signal?: AbortSignal,
+): Promise<GovernanceStepUpResult> {
+  return issueBranchGovernanceStepUp(
+    organizationId,
+    branchId,
+    BRANCH_REACTIVATE_ACTION,
+    currentPassword,
+    signal,
+  );
+}
+
+export function issueBranchSetPrimaryStepUp(
+  organizationId: string,
+  branchId: string,
+  currentPassword: string,
+  signal?: AbortSignal,
+): Promise<GovernanceStepUpResult> {
+  return issueBranchGovernanceStepUp(
+    organizationId,
+    branchId,
+    BRANCH_SET_PRIMARY_ACTION,
+    currentPassword,
     signal,
   );
 }

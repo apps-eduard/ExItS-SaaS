@@ -230,7 +230,7 @@ export function BranchFulfillmentEditPage() {
 
   const branch = detailQuery.data.branch;
   const currentReadiness = readiness ?? detailQuery.data.readiness;
-  const branchBackPath = branchFulfillmentBackPath(detailQuery.data.branchCount);
+  const branchBackPath = branchFulfillmentBackPath(branchId);
   const branchBackLabel =
     detailQuery.data.branchCount === 1
       ? t(pageBackNav.org.labelKey)

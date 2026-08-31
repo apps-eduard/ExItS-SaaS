@@ -131,6 +131,13 @@ export function OrgEssentialsPage() {
         to: "/org/roles",
       },
       {
+        key: "branches",
+        label: t("org.branchesLink"),
+        icon: MapPin,
+        testId: "open-branch-management",
+        to: "/org/branches",
+      },
+      {
         key: "ownership",
         label: t("org.ownershipTransfer.tile"),
         icon: KeyRound,
@@ -147,13 +154,6 @@ export function OrgEssentialsPage() {
         icon: MonitorSmartphone,
         testId: "open-org-devices",
         to: "/org/devices",
-      },
-      {
-        key: "branches",
-        label: t("org.branchesLink"),
-        icon: MapPin,
-        testId: "open-branch-fulfillment",
-        to: "/org/branches",
       },
       {
         key: "cash",

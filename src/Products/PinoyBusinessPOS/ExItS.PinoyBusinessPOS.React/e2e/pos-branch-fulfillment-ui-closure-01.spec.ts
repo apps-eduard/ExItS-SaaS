@@ -72,21 +72,13 @@ async function signInLive(
 
 async function openBranchList(page: Page) {
   await clientNavigate(page, "/org/branches");
-  await expect(page.getByTestId("branch-fulfillment-list")).toBeVisible({ timeout: 30000 });
-  await expect(page.getByTestId(`branch-fulfillment-card-${BRANCH_ID}`)).toBeVisible();
+  await expect(page.getByTestId("branch-mgmt-list")).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId(`branch-mgmt-card-${BRANCH_ID}`)).toBeVisible();
 }
 
 async function openBranchEdit(page: Page) {
-  const target = `/org/branches/${BRANCH_ID}`;
-  const openLink = page.getByTestId(`open-branch-fulfillment-${BRANCH_ID}`);
-  if (await openLink.count()) {
-    await Promise.all([
-      page.waitForURL(new RegExp(`${BRANCH_ID}$`), { timeout: 30000 }),
-      openLink.first().click({ force: true }),
-    ]);
-  } else {
-    await clientNavigate(page, target);
-  }
+  const target = `/org/branches/${BRANCH_ID}/fulfillment`;
+  await clientNavigate(page, target);
 
   const edit = page.getByTestId("branch-fulfillment-edit");
   try {
@@ -95,9 +87,7 @@ async function openBranchEdit(page: Page) {
     // Soft recovery: re-bind Manage Business then navigate again (viewport/session edge).
     await page.goto(`${APP}/workspace`);
     await bindOwnerManageBusiness(page);
-    await clientNavigate(page, "/org/branches");
-    await expect(page.getByTestId("branch-fulfillment-list")).toBeVisible({ timeout: 30000 });
-    await page.getByTestId(`open-branch-fulfillment-${BRANCH_ID}`).click({ force: true });
+    await clientNavigate(page, target);
     await expect(edit).toBeVisible({ timeout: 45000 });
   }
   await expect(page.getByTestId("branch-setup-tabs")).toBeVisible({ timeout: 30000 });
@@ -138,23 +128,20 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
   test.use({ serviceWorkers: "block" });
   test.describe.configure({ mode: "serial" });
 
-  test("FUL-UI-01 branch list switches independent from navigation", async ({ page, request }) => {
+  test("FUL-UI-01 branch management list and fulfillment overview switches", async ({ page, request }) => {
     const { email, password } = await requireLiveApis(request);
     await signInLive(page, email, password, "owner");
     await openBranchList(page);
 
-    const card = page.getByTestId(`branch-fulfillment-card-${BRANCH_ID}`);
+    const card = page.getByTestId(`branch-mgmt-card-${BRANCH_ID}`);
     await expect(card.getByText("Main Branch")).toBeVisible();
     await expect(card.getByText("Active")).toBeVisible();
 
-    const pickup = page.getByTestId(`pickup-switch-${BRANCH_ID}`);
-    const delivery = page.getByTestId(`delivery-switch-${BRANCH_ID}`);
+    await openBranchEdit(page);
+    const pickup = page.getByTestId("overview-pickup-switch");
+    const delivery = page.getByTestId("overview-delivery-switch");
     await expect(pickup).toBeVisible();
     await expect(delivery).toBeVisible();
-    await expect(card.getByText("Active")).toBeVisible();
-    const toggles = page.getByTestId(`branch-toggles-${BRANCH_ID}`);
-    await expect(toggles.getByText("Pickup", { exact: true })).toBeVisible();
-    await expect(toggles.getByText("Delivery", { exact: true })).toBeVisible();
 
     // Ensure known starting state ON/ON via API if needed
     if ((await pickup.getAttribute("aria-checked")) !== "true") {
@@ -173,8 +160,7 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
     await expect(pickup).toHaveAttribute("aria-checked", "false", { timeout: 15000 });
     await waitSwitchIdle(pickup);
     await expect(delivery).toHaveAttribute("aria-checked", "true");
-    expect(page.url()).toContain("/org/branches");
-    expect(page.url()).not.toContain(BRANCH_ID);
+    expect(page.url()).toContain(`/org/branches/${BRANCH_ID}/fulfillment`);
 
     // Restore pickup ON
     await pickup.click();
@@ -186,21 +172,17 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
     await expect(delivery).toHaveAttribute("aria-checked", "false", { timeout: 15000 });
     await waitSwitchIdle(delivery);
     await expect(pickup).toHaveAttribute("aria-checked", "true");
-    expect(page.url()).not.toContain(BRANCH_ID);
 
     // H — OFF always possible (already OFF); restore ON
     await delivery.click();
     await expect(delivery).toHaveAttribute("aria-checked", "true", { timeout: 15000 });
     await waitSwitchIdle(delivery);
 
-    // E — keyboard focus reaches switches separately from nav link
+    // E — keyboard focus reaches switches
     await pickup.focus();
     await expect(pickup).toBeFocused();
     await delivery.focus();
     await expect(delivery).toBeFocused();
-    const nav = page.getByTestId(`open-branch-fulfillment-${BRANCH_ID}`);
-    await nav.focus();
-    await expect(nav).toBeFocused();
 
     // F — pending state prevents duplicate mutations
     let putCount = 0;
@@ -248,7 +230,7 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
     // D — navigation works; C — switches did not navigate
     await nav.click();
     await expect(page.getByTestId("branch-fulfillment-edit")).toBeVisible({ timeout: 15000 });
-    expect(page.url()).toContain(`/org/branches/${BRANCH_ID}`);
+    expect(page.url()).toContain(`/org/branches/${BRANCH_ID}/fulfillment`);
   });
 
   test("FUL-UI-02 setup tabs and checkmarks", async ({ page, request }) => {
@@ -431,9 +413,7 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
 
       await openBranchList(page);
       await assertNoBodyHorizontalOverflow(page);
-      await expect(page.getByTestId(`pickup-switch-${BRANCH_ID}`)).toBeVisible();
-      await expect(page.getByTestId(`delivery-switch-${BRANCH_ID}`)).toBeVisible();
-      await expect(page.getByTestId(`open-branch-fulfillment-${BRANCH_ID}`)).toBeVisible();
+      await expect(page.getByTestId(`branch-mgmt-open-${BRANCH_ID}`)).toBeVisible();
 
       await openBranchEdit(page);
       await expect(page.getByTestId("branch-setup-tabs")).toBeVisible();

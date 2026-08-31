@@ -65,8 +65,10 @@ import { OperationalReportPage } from "@/features/reports/OperationalReportPage"
 import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
+import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
-import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillmentListPage";
+import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
+import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
@@ -522,8 +524,31 @@ export const appRoutes = [
               },
               { path: "devices", element: <OrgPosDevicesPage /> },
               { path: "cash-handling", element: <CashHandlingSettingsPage /> },
-              { path: "branches", element: <BranchFulfillmentListPage /> },
-              { path: "branches/:branchId", element: <BranchFulfillmentEditPage /> },
+              {
+                path: "branches",
+                element: (
+                  <RequireInviteStaff>
+                    <BranchManagementListPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "branches/new",
+                element: (
+                  <RequireInviteStaff>
+                    <BranchCreatePage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "branches/:branchId",
+                element: (
+                  <RequireInviteStaff>
+                    <BranchManagementDetailPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              { path: "branches/:branchId/fulfillment", element: <BranchFulfillmentEditPage /> },
             ],
           },
           {

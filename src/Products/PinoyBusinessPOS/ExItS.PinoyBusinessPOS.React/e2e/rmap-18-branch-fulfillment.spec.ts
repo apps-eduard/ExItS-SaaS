@@ -142,6 +142,44 @@ async function mockBranchFulfillmentApi(
       });
     }
 
+    if (method === "GET" && pathname.endsWith(`/organizations/${E2E_ORG_ID}/branches/capacity`)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ used: 1, allowed: 3 }),
+      });
+    }
+
+    if (method === "GET" && pathname.endsWith(`/organizations/${E2E_ORG_ID}/branches/management-summary`)) {
+      const branch = branchBody(state);
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: branch.id,
+            organizationId: branch.organizationId,
+            code: branch.code,
+            name: branch.name,
+            isPrimary: branch.isPrimary,
+            status: branch.status,
+            city: branch.city,
+            region: branch.region,
+            addressLine1: branch.addressLine1,
+            pickupEnabled: branch.pickupEnabled,
+            deliveryEnabled: branch.deliveryEnabled,
+            customerOrderingEnabled: branch.customerOrderingEnabled,
+            assignedStaffCount: 0,
+            activeDeviceCount: 0,
+            pickupSectionsComplete: branch.pickupSectionsComplete,
+            pickupSectionsTotal: branch.pickupSectionsTotal,
+            deliverySectionsComplete: branch.deliverySectionsComplete,
+            deliverySectionsTotal: branch.deliverySectionsTotal,
+          },
+        ]),
+      });
+    }
+
     if (pathname.includes(`/branches/${UNKNOWN_BRANCH_ID}`)) {
       return route.fulfill({
         status: 404,
@@ -306,11 +344,11 @@ test.describe("RMAP-18 branch fulfillment", () => {
     const state = await mockBranchFulfillmentApi(page);
     await signInOwnerManageBusiness(page);
     await clientNavigate(page, "/org/branches");
-    await expect(page.getByTestId("branch-fulfillment-list")).toBeVisible();
+    await expect(page.getByTestId("branch-mgmt-list")).toBeVisible();
     await expect(page.getByText("Main Branch")).toBeVisible();
-    await expect(page.getByText("Pickup: Disabled")).toBeVisible();
 
-    await page.getByTestId(`open-branch-fulfillment-${E2E_BRANCH_ID}`).click();
+    await page.getByTestId(`branch-mgmt-open-${E2E_BRANCH_ID}`).click();
+    await page.getByTestId("branch-mgmt-configure-fulfillment").click();
     await expect(page.getByTestId("branch-fulfillment-edit")).toBeVisible();
     await expect(page.getByTestId("branch-map-fallback")).toBeVisible();
     await expect(page.getByTestId("branch-address1")).toHaveValue("123 Rizal St");
@@ -367,7 +405,7 @@ test.describe("RMAP-18 branch fulfillment", () => {
     state.addressLine1 = "";
     state.city = "";
     await signInOwnerManageBusiness(page);
-    await clientNavigate(page, `/org/branches/${E2E_BRANCH_ID}`);
+    await clientNavigate(page, `/org/branches/${E2E_BRANCH_ID}/fulfillment`);
     await expect(page.getByTestId("branch-missing-requirements")).toBeVisible();
     await expect(page.getByTestId("branch-missing-requirements")).toContainText("address");
     await expect(page.getByTestId("branch-missing-requirements")).toContainText("coordinates");
@@ -386,7 +424,7 @@ test.describe("RMAP-18 branch fulfillment", () => {
     await mockBoundOwnerSession(page);
     await mockBranchFulfillmentApi(page);
     await signInOwnerManageBusiness(page);
-    await clientNavigate(page, `/org/branches/${UNKNOWN_BRANCH_ID}`);
+    await clientNavigate(page, `/org/branches/${UNKNOWN_BRANCH_ID}/fulfillment`);
     await expect(page.getByTestId("branch-fulfillment-not-found")).toBeVisible();
   });
 
@@ -398,7 +436,7 @@ test.describe("RMAP-18 branch fulfillment", () => {
     for (const viewport of VIEWPORTS) {
       await page.setViewportSize(viewport);
       await clientNavigate(page, "/org/branches");
-      await expect(page.getByTestId("branch-fulfillment-list")).toBeVisible();
+      await expect(page.getByTestId("branch-mgmt-list")).toBeVisible();
       await assertNoHorizontalOverflow(page);
     }
 
@@ -408,7 +446,7 @@ test.describe("RMAP-18 branch fulfillment", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "fil-PH");
     await page.getByTestId("preferences-close").click();
     await clientNavigate(page, "/org/branches");
-    await expect(page.getByTestId("branch-fulfillment-list")).toBeVisible();
-    await expect(page.getByTestId("branch-fulfillment-list")).toContainText(/fulfillment/i);
+    await expect(page.getByTestId("branch-mgmt-list")).toBeVisible();
+    await expect(page.getByTestId("branch-mgmt-list")).toContainText(/branch/i);
   });
 });

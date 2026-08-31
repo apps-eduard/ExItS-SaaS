@@ -76,11 +76,11 @@ describe("BranchSetupTabLinks", () => {
 
     expect(screen.getByTestId("list-branch-branch-1-setup-tab-overview")).toHaveAttribute(
       "href",
-      "/org/branches/branch-1",
+      "/org/branches/branch-1/fulfillment",
     );
     expect(screen.getByTestId("list-branch-branch-1-setup-tab-location")).toHaveAttribute(
       "href",
-      "/org/branches/branch-1?tab=location",
+      "/org/branches/branch-1/fulfillment?tab=location",
     );
   });
 });

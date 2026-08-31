@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { BranchFulfillmentListPage } from "@/features/branches/BranchFulfillmentListPage";
@@ -80,17 +80,13 @@ describe("BranchFulfillmentListPage routing", () => {
     vi.clearAllMocks();
   });
 
-  it("redirects a single branch to overview", async () => {
+  it("keeps a single branch on the list (no auto-redirect)", async () => {
     listOrganizationBranchesForFulfillment.mockResolvedValue([branch]);
 
     renderListPage();
 
-    await waitFor(() => {
-      expect(screen.getByTestId("location-probe")).toHaveTextContent(
-        "/org/branches/22222222-2222-2222-2222-222222222222",
-      );
-    });
-    expect(screen.queryByTestId("branch-fulfillment-list")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("branch-fulfillment-list")).toBeInTheDocument();
+    expect(screen.queryByTestId("location-probe")).not.toBeInTheDocument();
   });
 
   it("keeps the list for multiple branches", async () => {

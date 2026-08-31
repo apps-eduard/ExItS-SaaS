@@ -64,7 +64,7 @@ test.describe("POS-BRANCH-DELIVERY-MAP-AND-CUSTOMER-DISTANCE-EXCEPTION-01", () =
   test("MAP-01/02/04 location picker and isolated Save location", async ({ page, request }) => {
     const { email, password } = await requireLiveApis(request);
     await signInOwner(page, email, password);
-    await clientNavigate(page, `/org/branches/${BRANCH_ID}`);
+    await clientNavigate(page, `/org/branches/${BRANCH_ID}/fulfillment`);
     await expect(page.getByTestId("branch-setup-tabs")).toBeVisible({ timeout: 30000 });
     await page.getByTestId("branch-tab-location").click();
     await expect(page.getByTestId("branch-map-section")).toBeVisible();

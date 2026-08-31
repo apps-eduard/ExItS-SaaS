@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
@@ -141,10 +141,6 @@ export function BranchFulfillmentListPage() {
         <ErrorState title={t("branches.loadError")} detail={t("branches.listLede")} />
       </div>
     );
-  }
-
-  if (branches.length === 1) {
-    return <Navigate to={branchFulfillmentEditPath(branches[0].id)} replace />;
   }
 
   return (

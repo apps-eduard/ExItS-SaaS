@@ -32,16 +32,19 @@ export function branchFulfillmentEditPath(
   branchId: string,
   tab: BranchSetupTab = "overview",
 ): string {
-  const base = `/org/branches/${branchId}`;
+  const base = `/org/branches/${branchId}/fulfillment`;
   if (tab === "overview") {
     return base;
   }
   return `${base}?tab=${tab}`;
 }
 
-/** Single-branch orgs skip the list and land on overview; multi-branch uses the list. */
-export function branchFulfillmentBackPath(branchCount: number): string {
-  return branchCount === 1 ? "/org" : "/org/branches";
+/** Back from fulfillment editor → management detail when known, otherwise management list. */
+export function branchFulfillmentBackPath(branchId?: string | null): string {
+  if (branchId) {
+    return `/org/branches/${branchId}`;
+  }
+  return "/org/branches";
 }
 
 export function branchSetupTabComplete(

@@ -5,6 +5,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   ListChecks,
+  MapPin,
   MonitorSmartphone,
   PackagePlus,
   Receipt,
@@ -153,6 +154,7 @@ export type OrgMoreLink = {
     | "org.more.reports"
     | "org.more.organization"
     | "org.more.devices"
+    | "org.more.branches"
     | "org.more.staff"
     | "org.more.roles"
     | "org.more.preferences"
@@ -288,6 +290,12 @@ export function buildOrgMoreSections(
     });
   }
   if (canInviteOrganizationStaff(grant)) {
+    organization.push({
+      to: "/org/branches",
+      labelKey: "org.more.branches",
+      testId: "org-more-branches",
+      icon: MapPin,
+    });
     organization.push({
       to: "/org/staff",
       labelKey: "org.more.staff",

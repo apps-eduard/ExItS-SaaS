@@ -26,13 +26,14 @@ describe("branch-setup-tabs", () => {
   });
 
   it("builds edit paths with optional tab query", () => {
-    expect(branchFulfillmentEditPath("abc")).toBe("/org/branches/abc");
-    expect(branchFulfillmentEditPath("abc", "hours")).toBe("/org/branches/abc?tab=hours");
+    expect(branchFulfillmentEditPath("abc")).toBe("/org/branches/abc/fulfillment");
+    expect(branchFulfillmentEditPath("abc", "hours")).toBe("/org/branches/abc/fulfillment?tab=hours");
   });
 
-  it("routes single-branch back to org and multi-branch back to list", () => {
-    expect(branchFulfillmentBackPath(1)).toBe("/org");
-    expect(branchFulfillmentBackPath(2)).toBe("/org/branches");
+  it("routes fulfillment back to management detail or list", () => {
+    expect(branchFulfillmentBackPath("abc")).toBe("/org/branches/abc");
+    expect(branchFulfillmentBackPath()).toBe("/org/branches");
+    expect(branchFulfillmentBackPath(null)).toBe("/org/branches");
   });
 
   it("maps setup completion flags per tab", () => {

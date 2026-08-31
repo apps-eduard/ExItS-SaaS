@@ -72,7 +72,7 @@ async function signInLive(
 }
 
 async function openBranchAreas(page: Page) {
-  await clientNavigate(page, `/org/branches/${BRANCH_ID}`);
+  await clientNavigate(page, `/org/branches/${BRANCH_ID}/fulfillment`);
   await expect(page.getByTestId("branch-fulfillment-edit")).toBeVisible({ timeout: 45000 });
   await page.getByTestId("branch-tab-areas").click();
   await expect(page.getByTestId("branch-delivery-areas")).toBeVisible();

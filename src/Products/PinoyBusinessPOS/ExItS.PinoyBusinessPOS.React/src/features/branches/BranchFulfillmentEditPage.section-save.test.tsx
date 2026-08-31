@@ -107,7 +107,7 @@ const readiness = {
   deliveryAreasComplete: true,
 };
 
-function renderPage(client?: QueryClient, initialEntry = `/org/branches/${branchId}`) {
+function renderPage(client?: QueryClient, initialEntry = `/org/branches/${branchId}/fulfillment`) {
   const queryClient =
     client ??
     new QueryClient({
@@ -118,7 +118,7 @@ function renderPage(client?: QueryClient, initialEntry = `/org/branches/${branch
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/org/branches" element={<div data-testid="branch-list">list</div>} />
-          <Route path="/org/branches/:branchId" element={<BranchFulfillmentEditPage />} />
+          <Route path="/org/branches/:branchId/fulfillment" element={<BranchFulfillmentEditPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -182,7 +182,7 @@ describe("BranchFulfillmentEditPage section saves", () => {
   });
 
   it("opens the requested setup tab from the URL query", async () => {
-    renderPage(undefined, `/org/branches/${branchId}?tab=location`);
+    renderPage(undefined, `/org/branches/${branchId}/fulfillment?tab=location`);
     expect(await screen.findByTestId("branch-choose-on-map")).toBeInTheDocument();
     expect(screen.getByTestId("branch-tab-location")).toHaveAttribute("aria-selected", "true");
   });
