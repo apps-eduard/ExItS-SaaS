@@ -18,7 +18,7 @@ const todo: PersonalTodoDto = {
   title: "Bayaran ang ospital",
   notes: "dalhin ang resibo",
   dueAtUtc: "2026-09-01T00:00:00.000Z",
-  reminderAtUtc: "2026-08-31T00:00:00.000Z",
+  reminderAtUtc: "2026-07-15T00:00:00.000Z",
   reminderNotifiedAtUtc: null,
   priority: "High",
   status: "Open",
@@ -60,7 +60,7 @@ describe("RMAP-21G Personal To-do cache", () => {
     expect(raw).not.toContain("Bayaran ang ospital");
     expect(raw).not.toContain("dalhin ang resibo");
     expect(raw).not.toContain("2026-09-01");
-    expect(raw).not.toContain("2026-08-31");
+    expect(raw).not.toContain("2026-07-15");
     expect(raw).not.toContain("High");
     expect(raw).not.toContain("PersonalContact");
     expect(raw).not.toContain("22222222-2222-4222-8222-222222222222");

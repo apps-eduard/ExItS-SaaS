@@ -35,11 +35,12 @@ Prevents future sessions from blindly re-running every suite. Use with `POS-MAST
 | Customer Utang / AR | Customer/Utang API + React customer tests | |
 | Costing / profitability | SaleCostProfit + profitability suites | |
 | Customer-order COGS | CustomerOrderSettlementCogs tests | |
-| React UI feature area | Targeted Vitest + related Playwright | Full 1344 only if shared shell/nav/session/i18n infra |
+| React UI feature area | Targeted Vitest + related Playwright | Full 1354 only if shared shell/nav/session/i18n infra |
 | Shared React harness / session | Full `npx vitest run` | |
+| Branch fulfillment / customer-ordering UI | UI-CLOSURE-01 live Playwright + targeted React; full vitest if React prod/shared infra changed | Backend already closed in OPERATOR-VALIDATION-01 — do not re-blind-run Platform/POS suites |
 | Schema / migration | Affected Postgres integration suite | |
 
-**Full React suite (baseline 1344/1344):** run at major release checkpoint or when shared React infrastructure / broad UI / permission navigation changes. Do **not** re-run solely for documentation or operator-observation packages.
+**Full React suite (baseline 1354/1354 as of POS-BRANCH-FULFILLMENT-UI-CLOSURE-01):** run at major release checkpoint or when shared React infrastructure / broad UI / permission navigation changes. Do **not** re-run solely for documentation packages. Branch Fulfillment UI evidence is closed — retest **NOT_REQUIRED** unless fulfillment/customer ordering/shared React infrastructure changes.
 
 ---
 

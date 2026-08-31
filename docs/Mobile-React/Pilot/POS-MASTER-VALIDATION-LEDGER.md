@@ -150,7 +150,20 @@ DOMAIN · FEATURE · TEST_OR_SCENARIO · STATUS · EVIDENCE_TYPE · EVIDENCE_SOU
 | SECURITY | Cross-org / branch guards / idempotency | Pilot + Stock Use isolation | PASS | POSTGRES_INTEGRATION | CONTROLLED SC22; StockUse ApiTests | `34d6f093` | `34d6f093` | UNAFFECTED | NO | — | EVIDENCE_REUSED |
 | I18N | en + fil/ceb/hil/ilo parity | Locale parity 02 | PASS | REACT_TEST | POS-I18N-LOCALE-PARITY-02 | `dd775a97` | `dd775a97` | UNAFFECTED | NO | — | EVIDENCE_REUSED |
 | HARNESS | Org session React suite | 74→0 fail repair | PASS | REACT_TEST | POS-REACT-TEST-HARNESS-ORG-SESSION-REPAIR-01 | `6dc05a81` | `6dc05a81` | UNAFFECTED | NO | — | EVIDENCE_REUSED |
-| REACT | Full vitest | 1344/1344 | PASS | BUILD_VALIDATION | COMPLETION-01 | `0abc15da` | `0abc15da` | UNAFFECTED | NO | Docs-only tip; no React prod change | EVIDENCE_REUSED |
+| REACT | Full vitest | 1354/1354 | PASS | BUILD_VALIDATION | POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | Fulfillment UI closure + P1 capability forward | NO | Permanent React baseline after P1 | CURRENT_RUN |
+
+---
+
+## BRANCH FULFILLMENT
+
+| DOMAIN | FEATURE | TEST_OR_SCENARIO | STATUS | EVIDENCE_TYPE | EVIDENCE_SOURCE | EVIDENCE_SHA | LAST_VALIDATED_SHA | CURRENT_CODE_IMPACT | RERUN_REQUIRED | RERUN_REASON | CURRENT_RESULT |
+|--------|---------|------------------|--------|---------------|-----------------|--------------|--------------------|---------------------|----------------|--------------|----------------|
+| FULFILLMENT | Backend readiness / areas / quote / place | Operator validation matrix | PASS | CONTROLLED_PILOT | POS-BRANCH-FULFILLMENT-OPERATOR-VALIDATION-01 | `40e2b029` | `d783da24` | UNAFFECTED | NO | Backend reused | EVIDENCE_REUSED |
+| FULFILLMENT | Branch list switches + setup tabs UI | FUL-UI-01/02 live | PASS | MANUAL_UI | POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | Auth UI closed | NO | Not unless fulfillment UI changes | CURRENT_RUN |
+| FULFILLMENT | Coord-only save preserves address UI | FUL-UI-03 | PASS | MANUAL_UI | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | BUG_FULFILLMENT_01 regression | NO | — | CURRENT_RUN |
+| FULFILLMENT | Delivery areas add/dup/remove UI | FUL-UI-04 | PASS | MANUAL_UI | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | — | NO | — | CURRENT_RUN |
+| FULFILLMENT | Personal checkout area selector + quote | FUL-UI-05 | PASS | MANUAL_UI | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | BUG_FULFILLMENT_03 | NO | — | CURRENT_RUN |
+| FULFILLMENT | Responsive 360/768/1440 fulfillment pages | FUL-UI-06/07/08 | PASS | MANUAL_UI | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | Actual fulfillment routes | NO | — | CURRENT_RUN |
 
 ---
 

@@ -608,3 +608,77 @@ describe("RMAP-18 branch fulfillment client", () => {
     expect(policy.maximumDeliveryDistanceKm).toBe(8);
   });
 });
+
+describe("BUG_FULFILLMENT_01 React coordinate-only save payload contract", () => {
+  it("sends trimmed address strings with latitude/longitude (never || null wipe)", async () => {
+    let putBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        putBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            organizationId: "11111111-1111-1111-1111-111111111111",
+            code: "MAIN",
+            name: "Main Branch",
+            addressLine1: putBody.addressLine1,
+            addressLine2: putBody.addressLine2,
+            city: putBody.city,
+            region: putBody.region,
+            postalCode: putBody.postalCode,
+            countryCode: putBody.countryCode,
+            isPrimary: true,
+            status: "Active",
+            latitude: putBody.latitude,
+            longitude: putBody.longitude,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }),
+    );
+
+    // Mirrors BranchFulfillmentEditPage.saveAll field mapping after P1 fix.
+    const addressLine1 = "  123 Lacson St  ";
+    const addressLine2 = " Near Public Plaza ";
+    const city = " Bacolod City ";
+    const region = " Negros Occidental ";
+    const postalCode = " 6100 ";
+    const countryCode = " PH ";
+    const payload = {
+      name: "Main Branch",
+      addressLine1: addressLine1.trim(),
+      addressLine2: addressLine2.trim(),
+      city: city.trim(),
+      region: region.trim(),
+      postalCode: postalCode.trim(),
+      countryCode: countryCode.trim(),
+      latitude: 10.6766,
+      longitude: 122.951,
+      clearCoordinates: false,
+      contactPhone: "+63 917 111 2222",
+      timeZoneId: "Asia/Manila",
+    };
+
+    const updated = await updateOrganizationBranch(
+      "11111111-1111-1111-1111-111111111111",
+      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      payload,
+    );
+
+    const body = putBody;
+    expect(body).not.toBeNull();
+    expect(body).toMatchObject({
+      addressLine1: "123 Lacson St",
+      addressLine2: "Near Public Plaza",
+      city: "Bacolod City",
+      region: "Negros Occidental",
+      postalCode: "6100",
+      countryCode: "PH",
+      latitude: 10.6766,
+      longitude: 122.951,
+    });
+    expect(updated.addressLine1).toBe("123 Lacson St");
+    expect(updated.city).toBe("Bacolod City");
+  });
+});

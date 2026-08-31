@@ -80,7 +80,9 @@ internal sealed class PosSellerCustomerOrderingCapability(
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"api/v1/personal/linked-merchants/{sellerOrganizationId:D}/ordering-capability");
-        ForwardAuthHeaders(platformRequest);
+        // React sends product Bearer to POS and keeps Platform session in HttpOnly cookie.
+        // Platform personal APIs need cookie / session header — not product Bearer.
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
 
         try
         {
@@ -138,22 +140,5 @@ internal sealed class PosSellerCustomerOrderingCapability(
         }
 
         client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
-    }
-
-    private void ForwardAuthHeaders(HttpRequestMessage platformRequest)
-    {
-        var source = httpContextAccessor.HttpContext?.Request;
-        if (source is null)
-        {
-            return;
-        }
-
-        foreach (var name in new[] { "Authorization", "X-ExItS-Session-Token", "X-Dev-Platform-User-Id" })
-        {
-            if (source.Headers.TryGetValue(name, out var value))
-            {
-                platformRequest.Headers.TryAddWithoutValidation(name, value.ToArray());
-            }
-        }
     }
 }

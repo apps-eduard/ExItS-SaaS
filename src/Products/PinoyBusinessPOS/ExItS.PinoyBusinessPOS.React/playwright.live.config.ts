@@ -4,7 +4,10 @@ const clientRoot = import.meta.dirname;
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "**/workspace-live-runtime.spec.ts",
+  testMatch: [
+    "**/workspace-live-runtime.spec.ts",
+    "**/pos-branch-fulfillment-ui-closure-01.spec.ts",
+  ],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
