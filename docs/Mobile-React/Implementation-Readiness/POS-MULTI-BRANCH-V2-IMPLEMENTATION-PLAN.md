@@ -5,9 +5,11 @@
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 **MB2-01A status:** COMPLETE_VALIDATED_FOUNDATION
 **MB2-01B status:** COMPLETE_VALIDATED_AUTHORITY
+**MB2-01B-H1 status:** COMPLETE_VALIDATED
 **HARD STOP:** Do not start MB2-01C until explicitly authorized as a separate task.
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
+**01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
 
 ---
 
@@ -84,6 +86,24 @@ Cross-surface polish may remain MB2-06.
 **HARD STOP** before MB2-01C.
 
 **MB2_01B_STATUS:** COMPLETE_VALIDATED_AUTHORITY
+**NEXT:** MB2_01B-H1 (hardening) then MB2_01C
+
+---
+
+## MB2-01B-H1 — Product Authority Hardening
+
+**Scope:**
+
+- Pre-pagination SQL membership for scope + commercial offering
+- Correct filtered TotalCount
+- Split CanBeSold vs commerciallyOffered
+- Foreign BranchLocal blocked on SKU/barcode/image management reads
+- Connected Buyer org-governance only; Standard-only; Local promote-first
+- Mandatory (non-optional) governance dependencies on security-sensitive use cases
+
+**HARD STOP** before MB2-01C.
+
+**MB2_01B_H1_STATUS:** COMPLETE_VALIDATED
 **NEXT:** MB2_01C (when authorized)
 
 ---

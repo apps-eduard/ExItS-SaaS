@@ -1,33 +1,29 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY — TARGET remaining for 01C–01D
+**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED — TARGET remaining for 01C–01D
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-01A → MB2-01B → MB2-01C → MB2-01D
+**Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
+**01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
 
 ---
 
-## 1. CURRENT_PROVEN (after MB2-01B)
+## 1. CURRENT_PROVEN (after MB2-01B-H1)
 
 - One `CatalogProduct` per org product identity (`OrganizationId` + `ProductId`).
 - Unique filtered indexes: org `NormalizedSku`, org `Barcode` (shared across scopes).
 - **MB2-01A schema:** `CatalogProductScope`, `OriginBranchId`, sparse `BranchProductAvailability`.
-- **MB2-01B authority:** `CatalogProductGovernanceAuthority` + `CatalogProductAvailabilityResolver` (bulk).
-  - OrganizationStandard master / org SellingPrice / availability / promotion: Owner/Admin (or Platform org management authority). StoreManager ManageCatalog does **not** grant Standard governance. Primary branch grants nothing extra.
-  - BranchLocal create: authorized ManageCatalog actor; omitted scope → Local; OriginBranchId from server `X-Pos-Branch-Id` (not client body).
-  - Owner/Admin omitted create scope → OrganizationStandard.
-  - BranchLocal edit/view (management): origin branch or Owner/Admin; foreign Local → not found / hidden.
-  - STANDARD_PRICE_BRANCH_MUTATION=`DENIED_UNTIL_MB2_03`.
-  - Promote Local→Standard: same ProductId; keep OriginBranchId + SellingPrice; no BranchPriceOverride. Already-Standard → domain invalid (not silent no-op). PROMOTION_CUSTOM_DEFAULT_WITH_ORIGIN_OVERRIDE=`DEFERRED_TO_MB2_03`.
-  - Sparse restore offered → delete false override row (no fan-out).
-  - Commercial enforcement (bulk): Sell list (`canBeSold`/`commerciallyOffered`), CheckoutSale when branch present, storefront by FulfillmentBranchId, PlaceCustomerOrder by FulfillmentBranchId.
-  - Delivery **quote** remains fee/distance only (no merchandise lines); merchandise gate is storefront + place (independent revalidation).
-  - Global catalog import: creates OrganizationStandard; narrowed to org governance (not widened).
-  - Historical sales/returns/stock not invalidated by Not offered.
-- **Not yet:** React governance UX (MB2-01C), branch inventory authority (MB2-02), branch pricing (MB2-03).
+- **MB2-01B authority:** governance, bulk availability resolver, commercial gates, promote, import org-governance.
+- **MB2-01B-H1 hardening:**
+  - List membership (scope + commercial offering) applied in SQL **before** Count/Skip/Take; `TotalCount` is full filtered total.
+  - `CanBeSold` ≠ `commerciallyOffered` (Sell sends both).
+  - SKU/barcode/image management visibility blocks foreign BranchLocal; commercial exact lookup optionally rejects Not offered.
+  - Connected Buyer: Owner/Admin only; OrganizationStandard only; BranchLocal = promote first (`NOT_SUPPORTED_V1_PROMOTE_FIRST`).
+  - Security-critical use cases require non-optional governance dependencies.
+- **Not yet:** React governance UX (MB2-01C), branch inventory (MB2-02), branch pricing (MB2-03).
 
 ---
 
