@@ -6,8 +6,9 @@ namespace ExItS.Platform.Domain.Organizations;
 public static class ProductRoleDisplay
 {
     public const string PosOwner = "POS Owner";
-    public const string StoreManager = "Store Manager";
+    public const string StoreManager = "Manager";
     public const string Cashier = "Cashier";
+    public const string InventoryStaff = "Inventory Staff";
     public const string ReportingUser = "Reporting User";
 
     public static string ToDisplayLabel(string? roleCode)
@@ -17,13 +18,15 @@ public static class ProductRoleDisplay
             return string.Empty;
         }
 
-        return roleCode.Trim() switch
+        return ProductLocalRoleCodes.NormalizeCatalogCode(roleCode) switch
         {
             ProductLocalRoleCodes.Owner or "POS Owner" or "PosOwner" => PosOwner,
             ProductLocalRoleCodes.Manager or "StoreManager" or "Store Manager" => StoreManager,
             ProductLocalRoleCodes.Cashier => Cashier,
-            ProductLocalRoleCodes.Viewer or "ReportingUser" or "Reporting User" => ReportingUser,
-            _ => roleCode
+            ProductLocalRoleCodes.InventoryStaff => InventoryStaff,
+            ProductLocalRoleCodes.ReportingUser or ProductLocalRoleCodes.Viewer or "Reporting User" =>
+                ReportingUser,
+            _ => roleCode.Trim()
         };
     }
 }

@@ -49,29 +49,48 @@ public static class ProductLocalRoleCodes
     public const string Owner = "Owner";
     public const string Manager = "Manager";
     public const string Cashier = "Cashier";
+    public const string InventoryStaff = "InventoryStaff";
+    public const string ReportingUser = "ReportingUser";
+
+    /// <summary>Legacy alias for <see cref="ReportingUser"/>.</summary>
     public const string Viewer = "Viewer";
 
     /// <summary>Legacy alias used by Start a Business (WP08).</summary>
     public const string PosOwnerRoleCode = Owner;
 
-    public static readonly IReadOnlyList<string> All = [Owner, Manager, Cashier, Viewer];
+    public static readonly IReadOnlyList<string> All =
+        [Owner, Manager, Cashier, InventoryStaff, ReportingUser];
+
+    public static readonly IReadOnlyList<string> Assignable =
+        [Owner, Manager, Cashier, InventoryStaff, ReportingUser];
 
     public static bool IsKnown(string? roleCode) =>
         !string.IsNullOrWhiteSpace(roleCode)
-        && All.Contains(Normalize(roleCode), StringComparer.Ordinal);
+        && (All.Contains(Normalize(roleCode), StringComparer.Ordinal)
+            || string.Equals(Normalize(roleCode), Viewer, StringComparison.Ordinal));
 
     public static string Normalize(string roleCode) => roleCode.Trim();
+
+    /// <summary>Canonical catalog code; legacy Viewer maps to ReportingUser.</summary>
+    public static string NormalizeCatalogCode(string roleCode) =>
+        Normalize(roleCode) switch
+        {
+            Viewer => ReportingUser,
+            var code when All.Contains(code, StringComparer.Ordinal) => code,
+            _ => Normalize(roleCode)
+        };
 
     /// <summary>
     /// Maps Platform product-local role codes onto PinoyBusinessPOS role codes for product DB sync.
     /// </summary>
     public static string MapToPosRoleCode(string roleCode) =>
-        Normalize(roleCode) switch
+        NormalizeCatalogCode(roleCode) switch
         {
             Owner => "Owner",
             Manager => "StoreManager",
             Cashier => "Cashier",
-            Viewer => "ReportingUser",
+            InventoryStaff => "InventoryStaff",
+            ReportingUser => "ReportingUser",
             _ => throw new DomainException(
                 DomainErrorCodes.InvalidProductLocalRoleCode,
                 $"Unrecognized product-local role '{roleCode}'.")
@@ -79,12 +98,12 @@ public static class ProductLocalRoleCodes
 
     public static string EnsureKnown(string roleCode)
     {
-        var normalized = Normalize(roleCode);
-        if (!IsKnown(normalized))
+        var normalized = NormalizeCatalogCode(roleCode);
+        if (!All.Contains(normalized, StringComparer.Ordinal))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidProductLocalRoleCode,
-                $"Unrecognized product-local role '{roleCode}'. Expected Owner, Manager, Cashier, or Viewer.");
+                $"Unrecognized product-local role '{roleCode}'. Expected Owner, Manager, Cashier, InventoryStaff, or ReportingUser.");
         }
 
         return normalized;

@@ -5,44 +5,20 @@ import { cn } from "@/lib/cn";
 import { listOrganizationMembers } from "@/api/platform/organization-members-client";
 import {
   assignProductLocalRole,
+  changeProductLocalRole,
   friendlyPosRoleLabel,
   listProductLocalRoles,
-  POS_LOCAL_ROLE_CASHIER,
-  POS_LOCAL_ROLE_MANAGER,
   POS_LOCAL_ROLE_OWNER,
-  type PosLocalRoleCode,
 } from "@/api/platform/product-local-roles-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { useProductLocalRoleCatalog } from "@/features/staff/useProductLocalRoleCatalog";
 import { useI18n } from "@/i18n/I18nProvider";
-import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-const ROLE_OPTIONS: ReadonlyArray<{
-  code: PosLocalRoleCode;
-  labelKey: MessageKey;
-  descKey: MessageKey;
-}> = [
-  {
-    code: POS_LOCAL_ROLE_OWNER,
-    labelKey: "staffAssign.roleOwner",
-    descKey: "staffAssign.roleOwnerDesc",
-  },
-  {
-    code: POS_LOCAL_ROLE_MANAGER,
-    labelKey: "staffAssign.roleManager",
-    descKey: "staffAssign.roleManagerDesc",
-  },
-  {
-    code: POS_LOCAL_ROLE_CASHIER,
-    labelKey: "staffAssign.roleCashier",
-    descKey: "staffAssign.roleCashierDesc",
-  },
-];
 
 export function OrgStaffAssignPage() {
   const { t } = useI18n();
@@ -52,9 +28,12 @@ export function OrgStaffAssignPage() {
   const organizationId = boundWorkspace?.organizationId ?? null;
   const userId = searchParams.get("userId")?.trim() || null;
 
-  const [selectedRole, setSelectedRole] = useState<PosLocalRoleCode | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [ownerConfirmOpen, setOwnerConfirmOpen] = useState(false);
+  const [changeConfirmOpen, setChangeConfirmOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const catalogQuery = useProductLocalRoleCatalog(organizationId);
 
   const userQuery = useQuery({
     queryKey: ["org-staff-assign-user", organizationId, userId],
@@ -85,6 +64,7 @@ export function OrgStaffAssignPage() {
       return {
         displayName,
         email: member?.email?.trim() || null,
+        membershipStatus: member?.status ?? "Unknown",
         existingRoleCode: existingGrant?.roleCode ?? null,
         existingRoleLabel: existingGrant
           ? friendlyPosRoleLabel(
@@ -98,16 +78,26 @@ export function OrgStaffAssignPage() {
   });
 
   const assignMutation = useMutation({
-    mutationFn: async (roleCode: PosLocalRoleCode) => {
+    mutationFn: async (roleCode: string) => {
       if (!organizationId || !userId) {
         throw new Error(t("staffAssign.validation"));
       }
-      const result = await assignProductLocalRole({
-        organizationId,
-        userIdentityId: userId,
-        roleCode,
-        reason: "Assigned from POS client",
-      });
+      const reason = userQuery.data?.existingRoleCode
+        ? "Changed from POS client"
+        : "Assigned from POS client";
+      const result = userQuery.data?.existingRoleCode
+        ? await changeProductLocalRole({
+            organizationId,
+            userIdentityId: userId,
+            roleCode,
+            reason,
+          })
+        : await assignProductLocalRole({
+            organizationId,
+            userIdentityId: userId,
+            roleCode,
+            reason,
+          });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("staffAssign.error"));
       }
@@ -119,10 +109,17 @@ export function OrgStaffAssignPage() {
     onError: (error: Error) => {
       setSubmitError(error.message);
       setOwnerConfirmOpen(false);
+      setChangeConfirmOpen(false);
     },
   });
 
-  const canSubmit = Boolean(organizationId && userId && selectedRole && !assignMutation.isPending);
+  const isChanging = Boolean(userQuery.data?.existingRoleCode);
+  const sameRoleSelected =
+    Boolean(selectedRole && userQuery.data?.existingRoleCode) &&
+    selectedRole === userQuery.data?.existingRoleCode;
+  const canSubmit =
+    Boolean(organizationId && userId && selectedRole && !assignMutation.isPending && !sameRoleSelected) &&
+    userQuery.data?.membershipStatus === "Active";
 
   const replaceHint = useMemo(() => {
     if (!userQuery.data?.existingRoleLabel) {
@@ -131,13 +128,25 @@ export function OrgStaffAssignPage() {
     return t("staffAssign.replaceHint").replace("{role}", userQuery.data.existingRoleLabel);
   }, [t, userQuery.data?.existingRoleLabel]);
 
-  function requestAssign() {
+  const selectedRoleLabel = useMemo(() => {
     if (!selectedRole) {
+      return "";
+    }
+    const fromCatalog = catalogQuery.data?.find((role) => role.code === selectedRole);
+    return fromCatalog?.displayName ?? friendlyPosRoleLabel(null, selectedRole);
+  }, [catalogQuery.data, selectedRole]);
+
+  function requestAssign() {
+    if (!selectedRole || sameRoleSelected) {
       return;
     }
     setSubmitError(null);
     if (selectedRole === POS_LOCAL_ROLE_OWNER) {
       setOwnerConfirmOpen(true);
+      return;
+    }
+    if (isChanging) {
+      setChangeConfirmOpen(true);
       return;
     }
     assignMutation.mutate(selectedRole);
@@ -149,8 +158,8 @@ export function OrgStaffAssignPage() {
       data-testid="org-staff-assign-page"
     >
       <PageHeader
-        title={t("staffAssign.title")}
-        description={t("staffAssign.lede")}
+        title={isChanging ? t("staffAssign.changeTitle") : t("staffAssign.title")}
+        description={isChanging ? t("staffAssign.changeLede") : t("staffAssign.lede")}
         backTo={pageBackNav.orgStaff.to}
         backLabel={t(pageBackNav.orgStaff.labelKey)}
         backTestId="page-header-back-staff"
@@ -160,13 +169,19 @@ export function OrgStaffAssignPage() {
         <ErrorState title={t("error.title")} detail={t("staffAssign.validation")} />
       ) : null}
 
-      {userQuery.isLoading ? <LoadingSkeleton count={2} label={t("loading.label")} /> : null}
+      {userQuery.isLoading || catalogQuery.isLoading ? (
+        <LoadingSkeleton count={2} label={t("loading.label")} />
+      ) : null}
 
-      {userQuery.isError ? (
+      {userQuery.isError || catalogQuery.isError ? (
         <ErrorState
           title={t("error.title")}
           detail={
-            userQuery.error instanceof Error ? userQuery.error.message : t("staffManage.loadError")
+            userQuery.error instanceof Error
+              ? userQuery.error.message
+              : catalogQuery.error instanceof Error
+                ? catalogQuery.error.message
+                : t("staffManage.loadError")
           }
         />
       ) : null}
@@ -193,53 +208,66 @@ export function OrgStaffAssignPage() {
           {replaceHint ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{replaceHint}</p>
           ) : null}
+          {userQuery.data.membershipStatus !== "Active" ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("staffManage.suspendedRoleHint")}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
-      <section
-        className="catalog-form-section exits-animate-panel gap-3"
-        aria-labelledby="assign-role-heading"
-      >
-        <h2 id="assign-role-heading" className="catalog-form-section__title">
-          {t("staffAssign.roleSection")}
-        </h2>
-        <div
-          className="staff-assign-roles"
-          role="radiogroup"
+      {catalogQuery.isSuccess ? (
+        <section
+          className="catalog-form-section exits-animate-panel gap-3"
           aria-labelledby="assign-role-heading"
         >
-          {ROLE_OPTIONS.map((option) => {
-            const selected = selectedRole === option.code;
-            return (
-              <button
-                key={option.code}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                disabled={!userId || assignMutation.isPending}
-                data-testid={`org-staff-role-${option.code.toLowerCase()}`}
-                className={cn(
-                  "staff-assign-role",
-                  selected && "staff-assign-role--selected",
-                )}
-                onClick={() => {
-                  setSelectedRole(option.code);
-                  setSubmitError(null);
-                  setOwnerConfirmOpen(false);
-                }}
-              >
-                <span className="staff-assign-role__check" aria-hidden>
-                  {selected ? "✓" : ""}
-                </span>
-                <span className="staff-assign-role__copy">
-                  <span className="staff-assign-role__label">{t(option.labelKey)}</span>
-                  <span className="staff-assign-role__desc">{t(option.descKey)}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+          <h2 id="assign-role-heading" className="catalog-form-section__title">
+            {t("staffAssign.roleSection")}
+          </h2>
+          <div
+            className="staff-assign-roles"
+            role="radiogroup"
+            aria-labelledby="assign-role-heading"
+          >
+            {catalogQuery.data.map((option) => {
+              const selected = selectedRole === option.code;
+              const isCurrent = userQuery.data?.existingRoleCode === option.code;
+              return (
+                <button
+                  key={option.code}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={!userId || assignMutation.isPending || userQuery.data?.membershipStatus !== "Active"}
+                  data-testid={`org-staff-role-${option.code.toLowerCase()}`}
+                  className={cn(
+                    "staff-assign-role",
+                    selected && "staff-assign-role--selected",
+                    isCurrent && "staff-assign-role--current",
+                  )}
+                  onClick={() => {
+                    setSelectedRole(option.code);
+                    setSubmitError(null);
+                    setOwnerConfirmOpen(false);
+                    setChangeConfirmOpen(false);
+                  }}
+                >
+                  <span className="staff-assign-role__check" aria-hidden>
+                    {selected ? "✓" : ""}
+                  </span>
+                  <span className="staff-assign-role__copy">
+                    <span className="staff-assign-role__label">
+                      {option.displayName}
+                      {isCurrent ? ` (${t("staffAssign.currentRole")})` : ""}
+                    </span>
+                    <span className="staff-assign-role__desc">{option.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {submitError ? (
         <div className="exits-alert exits-alert--error" role="alert">
@@ -255,7 +283,11 @@ export function OrgStaffAssignPage() {
           data-testid="org-staff-assign-submit"
           onClick={requestAssign}
         >
-          {assignMutation.isPending ? t("staffAssign.submitting") : t("staffAssign.submit")}
+          {assignMutation.isPending
+            ? t("staffAssign.submitting")
+            : isChanging
+              ? t("staffAssign.changeConfirmAction")
+              : t("staffAssign.submit")}
         </Button>
       </div>
 
@@ -272,6 +304,24 @@ export function OrgStaffAssignPage() {
           }
         }}
         testId="org-staff-owner-confirm"
+      />
+
+      <ConfirmationDialog
+        open={changeConfirmOpen}
+        title={t("staffAssign.changeConfirmTitle")}
+        detail={t("staffAssign.changeConfirmDetail")
+          .replace("{name}", userQuery.data?.displayName ?? "")
+          .replace("{from}", userQuery.data?.existingRoleLabel ?? "")
+          .replace("{to}", selectedRoleLabel)}
+        confirmLabel={t("staffAssign.changeConfirmAction")}
+        cancelLabel={t("staffManage.cancel")}
+        onCancel={() => setChangeConfirmOpen(false)}
+        onConfirm={() => {
+          if (selectedRole) {
+            assignMutation.mutate(selectedRole);
+          }
+        }}
+        testId="org-staff-change-confirm"
       />
     </div>
   );

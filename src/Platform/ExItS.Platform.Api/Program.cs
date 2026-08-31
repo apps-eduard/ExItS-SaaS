@@ -512,6 +512,7 @@ builder.Services.AddScoped<DiscoverEnabledProducts>();
 builder.Services.AddScoped<AssignProductLocalRole>();
 builder.Services.AddScoped<RevokeProductLocalRole>();
 builder.Services.AddScoped<ProductLocalRoleGrantQueryService>();
+builder.Services.AddScoped<ProductLocalRoleDefinitionQueryService>();
 
 builder.Services.AddScoped<SubscriptionQueryService>();
 builder.Services.AddScoped<StartTrialSubscription>();

@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, UserRound } from "lucide-react";
+import { MoreHorizontal, Plus, UserRound } from "lucide-react";
 import {
-  friendlyMembershipRoleLabel,
   listOrganizationMembers,
   revokeOrganizationMembership,
   suspendOrganizationMembership,
@@ -28,8 +27,10 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -54,7 +55,7 @@ type StaffRow = {
 type PendingAction =
   | { kind: "suspend"; membershipId: string; name: string }
   | { kind: "remove"; membershipId: string; name: string }
-  | { kind: "revokeRole"; grantId: string; roleLabel: string; name: string }
+  | { kind: "removePosAccess"; grantId: string; name: string }
   | { kind: "cancelInvite"; invitationId: string; name: string };
 
 function statusTone(status: string): "success" | "warning" | "danger" | "info" {
@@ -86,6 +87,27 @@ export function isOrganizationOwnerMembershipRole(role: string): boolean {
   return (
     role.trim().localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0
   );
+}
+
+function organizationAccessLabel(
+  membershipRole: string,
+  t: (key: MessageKey) => string,
+): string {
+  if (isOrganizationOwnerMembershipRole(membershipRole)) {
+    return t("staffManage.organizationOwnerRole");
+  }
+  if (
+    membershipRole.trim().localeCompare("OrganizationAdministrator", undefined, {
+      sensitivity: "accent",
+    }) === 0
+  ) {
+    return t("staffManage.organizationAdminRole");
+  }
+  return t("staffManage.staffMemberRole");
+}
+
+function primaryPosGrant(row: StaffRow): StaffGrant | null {
+  return row.posGrants[0] ?? null;
 }
 
 function staffPosRoleLabel(grant: StaffGrant): string {
@@ -233,7 +255,7 @@ export function OrgStaffPage() {
       const result = await revokeProductLocalRole({
         organizationId,
         grantId: action.grantId,
-        reason: "Revoked from POS client",
+        reason: "Removed POS access from POS client",
       });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("staffManage.actionError"));
@@ -282,13 +304,14 @@ export function OrgStaffPage() {
         confirmLabel: t("staffManage.cancelInvite"),
       };
     }
-    return {
-      title: t("staffManage.revokeRoleConfirmTitle"),
-      detail: t("staffManage.revokeRoleConfirmDetail")
-        .replace("{role}", pending.roleLabel)
-        .replace("{name}", pending.name),
-      confirmLabel: t("staffManage.revokeRole"),
-    };
+    if (pending.kind === "removePosAccess") {
+      return {
+        title: t("staffManage.removePosAccessConfirmTitle"),
+        detail: t("staffManage.removePosAccessConfirmDetail").replace("{name}", pending.name),
+        confirmLabel: t("staffManage.removePosAccess"),
+      };
+    }
+    return null;
   }, [pending, t]);
 
   if (!organizationId) {
@@ -377,154 +400,16 @@ export function OrgStaffPage() {
           data-testid="org-staff-list"
           aria-label={t("staffManage.title")}
         >
-          {rows.map((row) => {
-            const isOwner = isOrganizationOwnerMembershipRole(row.membershipRole);
-            const isSelf = Boolean(currentUserId && row.userId === currentUserId);
-            const isActive =
-              row.membershipStatus.localeCompare("Active", undefined, {
-                sensitivity: "accent",
-              }) === 0;
-            const canMutateMembership = !isOwner && !isSelf && isActive;
-            const canRevokePosRole = !isOwner && !isSelf;
-            const canAssignPosRole = !isOwner;
-
-            return (
-              <li key={row.membershipId}>
-                <article
-                  className={
-                    isOwner
-                      ? "exits-list__card staff-row staff-row--owner min-w-0"
-                      : "exits-list__card staff-row min-w-0"
-                  }
-                  data-testid={`org-staff-row-${row.membershipId}`}
-                  data-owner-protected={isOwner ? "true" : undefined}
-                >
-                  <span className="staff-row__avatar" aria-hidden>
-                    {initials(row.displayName)}
-                  </span>
-                  <div className="staff-row__main min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
-                      <StatusChip tone={statusTone(row.membershipStatus)}>
-                        {row.membershipStatus}
-                      </StatusChip>
-                    </div>
-                    <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {friendlyMembershipRoleLabel(row.membershipRole)}
-                      {row.email ? ` · ${row.email}` : null}
-                    </p>
-
-                    <div
-                      className="staff-row__roles"
-                      data-testid={`org-staff-roles-${row.membershipId}`}
-                      aria-label={t("staffAssign.roleSection")}
-                    >
-                      {isOwner ? (
-                        <span className="staff-role-chip staff-role-chip--readonly">
-                          <span>{t("staffManage.organizationOwnerRole")}</span>
-                        </span>
-                      ) : null}
-                      {row.posGrants.length === 0 && !isOwner ? (
-                        <span className="staff-row__roles-empty">{t("staffManage.noPosRoles")}</span>
-                      ) : (
-                        row.posGrants.map((grant) => {
-                          const label = staffPosRoleLabel(grant);
-                          return (
-                            <span
-                              key={grant.id}
-                              className={
-                                canRevokePosRole
-                                  ? "staff-role-chip"
-                                  : "staff-role-chip staff-role-chip--readonly"
-                              }
-                            >
-                              <span>{label}</span>
-                              {canRevokePosRole ? (
-                                <button
-                                  type="button"
-                                  className="staff-role-chip__revoke"
-                                  disabled={busyMutation.isPending}
-                                  aria-label={`${t("staffManage.revokeRole")} ${label}`}
-                                  onClick={() =>
-                                    setPending({
-                                      kind: "revokeRole",
-                                      grantId: grant.id,
-                                      roleLabel: label,
-                                      name: row.displayName,
-                                    })
-                                  }
-                                >
-                                  ×
-                                </button>
-                              ) : null}
-                            </span>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {isOwner ? (
-                      <p
-                        className="staff-row__owner-note m-0"
-                        data-testid={`org-staff-owner-note-${row.membershipId}`}
-                      >
-                        {t("staffManage.ownerProtectedNote")}
-                      </p>
-                    ) : (
-                      <div className="staff-row__actions">
-                        {canAssignPosRole ? (
-                          <Button asChild variant="outline" className="staff-row__action">
-                            <Link
-                              to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
-                              data-testid={`org-staff-assign-${row.membershipId}`}
-                            >
-                              {t("staffManage.assignRole")}
-                            </Link>
-                          </Button>
-                        ) : null}
-                        {canMutateMembership ? (
-                          <>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="staff-row__action"
-                              disabled={busyMutation.isPending}
-                              data-testid={`org-staff-suspend-${row.membershipId}`}
-                              onClick={() =>
-                                setPending({
-                                  kind: "suspend",
-                                  membershipId: row.membershipId,
-                                  name: row.displayName,
-                                })
-                              }
-                            >
-                              {t("staffManage.suspend")}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              className="staff-row__action"
-                              disabled={busyMutation.isPending}
-                              data-testid={`org-staff-remove-${row.membershipId}`}
-                              onClick={() =>
-                                setPending({
-                                  kind: "remove",
-                                  membershipId: row.membershipId,
-                                  name: row.displayName,
-                                })
-                              }
-                            >
-                              {t("staffManage.remove")}
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              </li>
-            );
-          })}
+          {rows.map((row) => (
+            <StaffMemberRow
+              key={row.membershipId}
+              row={row}
+              currentUserId={currentUserId}
+              busy={busyMutation.isPending}
+              t={t}
+              onPending={setPending}
+            />
+          ))}
         </ul>
       ) : null}
 
@@ -611,5 +496,178 @@ export function OrgStaffPage() {
         testId="org-staff-confirm"
       />
     </div>
+  );
+}
+
+type StaffMemberRowProps = {
+  row: StaffRow;
+  currentUserId: string | null;
+  busy: boolean;
+  t: (key: MessageKey) => string;
+  onPending: (action: PendingAction) => void;
+};
+
+function StaffMemberRow({ row, currentUserId, busy, t, onPending }: StaffMemberRowProps) {
+  const menu = useDismissibleOpen(false);
+  const isOwner = isOrganizationOwnerMembershipRole(row.membershipRole);
+  const isSelf = Boolean(currentUserId && row.userId === currentUserId);
+  const isActive =
+    row.membershipStatus.localeCompare("Active", undefined, { sensitivity: "accent" }) === 0;
+  const posGrant = primaryPosGrant(row);
+  const posRoleLabel = posGrant ? staffPosRoleLabel(posGrant) : null;
+  const canManagePosRole = !isOwner && !isSelf && isActive;
+  const canMutateMembership = !isOwner && !isSelf && isActive;
+  const showPosRoleAction = canManagePosRole;
+  const showMoreMenu =
+    canManagePosRole && (posGrant !== null || canMutateMembership);
+
+  return (
+    <li>
+      <article
+        className={
+          isOwner
+            ? "exits-list__card staff-row staff-row--owner min-w-0"
+            : "exits-list__card staff-row min-w-0"
+        }
+        data-testid={`org-staff-row-${row.membershipId}`}
+        data-owner-protected={isOwner ? "true" : undefined}
+      >
+        <span className="staff-row__avatar" aria-hidden>
+          {initials(row.displayName)}
+        </span>
+        <div className="staff-row__main min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
+            <StatusChip tone={statusTone(row.membershipStatus)}>{row.membershipStatus}</StatusChip>
+          </div>
+          {row.email ? (
+            <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+              {row.email}
+            </p>
+          ) : null}
+
+          <div className="staff-access-grid" data-testid={`org-staff-access-${row.membershipId}`}>
+            <div className="staff-access-block">
+              <p className="staff-access-block__label m-0">{t("staffManage.organizationAccess")}</p>
+              <p className="staff-access-block__value m-0">
+                {organizationAccessLabel(row.membershipRole, t)}
+              </p>
+            </div>
+            <div className="staff-access-block">
+              <p className="staff-access-block__label m-0">
+                {isOwner ? t("staffManage.posAccess") : t("staffManage.posRole")}
+              </p>
+              <p
+                className="staff-access-block__value m-0"
+                data-testid={`org-staff-pos-role-${row.membershipId}`}
+              >
+                {isOwner
+                  ? posRoleLabel ?? t("staffManage.posOwnerEquivalent")
+                  : posRoleLabel ?? t("staffManage.noPosRoles")}
+              </p>
+            </div>
+          </div>
+
+          {!isActive && !isOwner ? (
+            <p className="staff-row__owner-note m-0">{t("staffManage.suspendedRoleHint")}</p>
+          ) : null}
+
+          {isOwner ? (
+            <p
+              className="staff-row__owner-note m-0"
+              data-testid={`org-staff-owner-note-${row.membershipId}`}
+            >
+              {t("staffManage.protectedAccount")}
+            </p>
+          ) : (
+            <div className="staff-row__actions">
+              {showPosRoleAction ? (
+                <Button asChild variant="outline" className="staff-row__action">
+                  <Link
+                    to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
+                    data-testid={`org-staff-assign-${row.membershipId}`}
+                  >
+                    {posGrant ? t("staffManage.changePosRole") : t("staffManage.assignRole")}
+                  </Link>
+                </Button>
+              ) : null}
+              {showMoreMenu ? (
+                <DropdownMenu
+                  open={menu.open}
+                  onOpenChange={menu.setOpen}
+                  align="end"
+                  menuLabel={t("staffManage.moreActions")}
+                  trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+                    <Button
+                      id={id}
+                      type="button"
+                      variant="outline"
+                      className="staff-row__action min-w-11 px-3"
+                      aria-expanded={expanded}
+                      aria-controls={controls}
+                      aria-label={t("staffManage.moreActions")}
+                      disabled={busy}
+                      data-testid={`org-staff-more-${row.membershipId}`}
+                      onClick={onClick}
+                      onKeyDown={onKeyDown}
+                    >
+                      <MoreHorizontal className="size-4" aria-hidden />
+                      <span className="sr-only">{t("staffManage.moreActions")}</span>
+                    </Button>
+                  )}
+                >
+                  {posGrant && canManagePosRole ? (
+                    <MenuItem
+                      data-testid={`org-staff-remove-pos-${row.membershipId}`}
+                      onSelect={() => {
+                        menu.close();
+                        onPending({
+                          kind: "removePosAccess",
+                          grantId: posGrant.id,
+                          name: row.displayName,
+                        });
+                      }}
+                    >
+                      {t("staffManage.removePosAccess")}
+                    </MenuItem>
+                  ) : null}
+                  {canMutateMembership ? (
+                    <MenuItem
+                      data-testid={`org-staff-suspend-${row.membershipId}`}
+                      onSelect={() => {
+                        menu.close();
+                        onPending({
+                          kind: "suspend",
+                          membershipId: row.membershipId,
+                          name: row.displayName,
+                        });
+                      }}
+                    >
+                      {t("staffManage.suspend")}
+                    </MenuItem>
+                  ) : null}
+                  {canMutateMembership ? (
+                    <MenuItem
+                      destructive
+                      data-testid={`org-staff-remove-${row.membershipId}`}
+                      onSelect={() => {
+                        menu.close();
+                        onPending({
+                          kind: "remove",
+                          membershipId: row.membershipId,
+                          name: row.displayName,
+                        });
+                      }}
+                    >
+                      {t("staffManage.remove")}
+                    </MenuItem>
+                  ) : null}
+                </DropdownMenu>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </article>
+    </li>
   );
 }

@@ -26,11 +26,18 @@ export type ProductLocalRoleGrantWire = {
 export const POS_LOCAL_ROLE_OWNER = "Owner";
 export const POS_LOCAL_ROLE_MANAGER = "Manager";
 export const POS_LOCAL_ROLE_CASHIER = "Cashier";
+export const POS_LOCAL_ROLE_INVENTORY_STAFF = "InventoryStaff";
+export const POS_LOCAL_ROLE_REPORTING_USER = "ReportingUser";
+
+/** Legacy Platform alias for reporting user. */
+export const POS_LOCAL_ROLE_VIEWER = "Viewer";
 
 export const POS_LOCAL_ROLE_CODES = [
   POS_LOCAL_ROLE_OWNER,
   POS_LOCAL_ROLE_MANAGER,
   POS_LOCAL_ROLE_CASHIER,
+  POS_LOCAL_ROLE_INVENTORY_STAFF,
+  POS_LOCAL_ROLE_REPORTING_USER,
 ] as const;
 
 export type PosLocalRoleCode = (typeof POS_LOCAL_ROLE_CODES)[number];
@@ -56,6 +63,35 @@ export async function listProductLocalRoles(
       path: rolesPath(organizationId, status),
     });
     return { ok: true, grants: Array.isArray(grants) ? grants : [] };
+  } catch (error) {
+    if (error instanceof PlatformApiError) {
+      return { ok: false, status: error.status, body: error.problem };
+    }
+    throw error;
+  }
+}
+
+export async function changeProductLocalRole(input: {
+  organizationId: string;
+  userIdentityId: string;
+  roleCode: string;
+  productCode?: string;
+  reason?: string;
+}): Promise<
+  | { ok: true; grant: ProductLocalRoleGrantWire }
+  | { ok: false; status: number; body: PlatformProblemDetails | null }
+> {
+  try {
+    const grant = await platformRequest<ProductLocalRoleGrantWire>({
+      method: "PUT",
+      path: `/api/v1/organizations/${input.organizationId}/product-local-roles/users/${input.userIdentityId}`,
+      body: {
+        productCode: input.productCode ?? POS_PRODUCT_CODE,
+        roleCode: input.roleCode,
+        reason: input.reason ?? null,
+      },
+    });
+    return { ok: true, grant };
   } catch (error) {
     if (error instanceof PlatformApiError) {
       return { ok: false, status: error.status, body: error.problem };
@@ -127,13 +163,19 @@ export function friendlyPosRoleLabel(
   }
   const code = (mappedPosRoleCode ?? roleCode ?? "").trim().toLowerCase();
   if (code === "owner" || code === "posowner") {
-    return "Owner";
+    return "POS Owner";
   }
   if (code === "manager" || code === "storemanager") {
     return "Manager";
   }
   if (code === "cashier") {
     return "Cashier";
+  }
+  if (code === "inventorystaff") {
+    return "Inventory Staff";
+  }
+  if (code === "reportinguser" || code === "viewer") {
+    return "Reporting User";
   }
   return roleCode?.trim() || mappedPosRoleCode?.trim() || "Role";
 }

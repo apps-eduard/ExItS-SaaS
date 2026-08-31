@@ -10,6 +10,7 @@ import {
   Receipt,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Truck,
   Users,
   Wallet,
@@ -153,6 +154,7 @@ export type OrgMoreLink = {
     | "org.more.organization"
     | "org.more.devices"
     | "org.more.staff"
+    | "org.more.roles"
     | "org.more.preferences"
     | "org.more.finishSetup";
   testId: string;
@@ -291,6 +293,12 @@ export function buildOrgMoreSections(
       labelKey: "org.more.staff",
       testId: "org-more-staff",
       icon: Users,
+    });
+    organization.push({
+      to: "/org/roles",
+      labelKey: "org.more.roles",
+      testId: "org-more-roles",
+      icon: ShieldCheck,
     });
   }
 

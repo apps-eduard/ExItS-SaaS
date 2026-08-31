@@ -7921,6 +7921,133 @@ a.exits-chip--primary:hover {
   }
 }
 
+/* Organization roles & permissions */
+.org-roles-page > header,
+.org-role-detail-page > header {
+  animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.org-roles-list {
+  grid-template-columns: 1fr;
+}
+
+.org-role-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.org-role-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.org-role-card__title {
+  font-size: var(--exits-text-md);
+  line-height: 1.25;
+}
+
+.org-role-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--exits-border);
+  background: var(--exits-surface-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  color: var(--exits-text-muted);
+}
+
+.org-role-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--exits-touch-target-min);
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--exits-radius-md);
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+  color: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
+}
+
+.org-role-card__link:hover {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+}
+
+.org-role-card__link:focus-visible {
+  outline: 2px solid var(--exits-ring, var(--exits-primary));
+  outline-offset: 2px;
+}
+
+.org-role-permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.org-role-permission-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: var(--exits-text-sm);
+  line-height: 1.35;
+}
+
+.org-role-permission-item__icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  color: var(--exits-text-muted);
+}
+
+.org-role-permission-item__icon--allowed {
+  color: var(--exits-primary);
+}
+
+.staff-access-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .staff-access-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.staff-access-block__label {
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--exits-text-muted);
+}
+
+.staff-access-block__value {
+  margin-top: 0.125rem;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+}
+
+.staff-assign-role--current {
+  border-style: dashed;
+}
+
 /* Account context switch — Personal ↔ Organization profile change */
 .exits-context-switch__visual {
   position: relative;

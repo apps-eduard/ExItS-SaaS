@@ -179,6 +179,100 @@ internal static class ProductNavigationEndpoints
             return Results.Ok(items);
         });
 
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/product-local-role-definitions", async (
+            Guid organizationId,
+            ProductLocalRoleDefinitionQueryService definitions,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(ProductLocalRoleGrant),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "List Pinoy Business POS product-local role definitions.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var items = await definitions
+                .ListPinoyBusinessPosDefinitionsAsync(PlatformOrganizationId.From(organizationId), ct)
+                .ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
+        app.MapPut("/api/v1/organizations/{organizationId:guid}/product-local-roles/users/{userId:guid}", async (
+            Guid organizationId,
+            Guid userId,
+            ChangeProductLocalRoleRequest body,
+            AssignProductLocalRole useCase,
+            ProductLocalRoleGrantQueryService queries,
+            PlatformMembershipAuthz membershipAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.ProductLocalRoleGranted,
+                nameof(ProductLocalRoleGrant),
+                userId.ToString("D"),
+                organizationId,
+                reason: body.Reason,
+                summary: "Change effective product-local role.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var actor = authz.CurrentActor;
+            if (actor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.AccountScopeDenied,
+                    "Authenticated organization user is required.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            try
+            {
+                var result = await useCase
+                    .ExecuteAsync(
+                        PlatformOrganizationId.From(organizationId),
+                        PlatformUserId.From(userId),
+                        body.ProductCode,
+                        body.RoleCode,
+                        actor.PlatformUserId,
+                        body.Reason,
+                        ct)
+                    .ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    await authz.AuditSucceededAsync(
+                        PlatformAuditActions.ProductLocalRoleGranted,
+                        nameof(ProductLocalRoleGrant),
+                        result.Value!.Id.Value.ToString("D"),
+                        organizationId,
+                        body.ProductCode,
+                        reason: body.Reason,
+                        cancellationToken: ct).ConfigureAwait(false);
+                }
+
+                if (!result.IsSuccess)
+                {
+                    return PlatformApiResults.FromResult(result, _ => Results.Ok());
+                }
+
+                var dto = await queries.MapAsync(result.Value!, ct).ConfigureAwait(false);
+                return Results.Ok(dto);
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
+        });
+
         app.MapPost("/api/v1/organizations/{organizationId:guid}/product-local-roles", async (
             Guid organizationId,
             AssignProductLocalRoleRequest body,
@@ -406,6 +500,11 @@ internal static class ProductNavigationEndpoints
 
 internal sealed record AssignProductLocalRoleRequest(
     Guid UserIdentityId,
+    string ProductCode,
+    string RoleCode,
+    string? Reason);
+
+internal sealed record ChangeProductLocalRoleRequest(
     string ProductCode,
     string RoleCode,
     string? Reason);

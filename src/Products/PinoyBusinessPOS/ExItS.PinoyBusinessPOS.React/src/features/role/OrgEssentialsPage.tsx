@@ -11,6 +11,7 @@ import {
   MonitorSmartphone,
   Package,
   QrCode,
+  ShieldCheck,
   ShoppingCart,
   Users,
 } from "lucide-react";
@@ -121,6 +122,13 @@ export function OrgEssentialsPage() {
         icon: Users,
         testId: "open-staff-manage",
         to: "/org/staff",
+      },
+      {
+        key: "roles",
+        label: t("orgRoles.title"),
+        icon: ShieldCheck,
+        testId: "open-org-roles",
+        to: "/org/roles",
       },
       {
         key: "ownership",

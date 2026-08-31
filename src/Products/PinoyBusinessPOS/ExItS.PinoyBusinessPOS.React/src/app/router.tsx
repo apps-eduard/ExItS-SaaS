@@ -153,6 +153,8 @@ import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDe
 import { OrgStaffAssignPage } from "@/features/staff/OrgStaffAssignPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { OrgStaffPage } from "@/features/staff/OrgStaffPage";
+import { OrgRoleDetailPage } from "@/features/staff/OrgRoleDetailPage";
+import { OrgRolesPage } from "@/features/staff/OrgRolesPage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
 import { NoAccessibleBranchPage } from "@/features/workspace/NoAccessibleBranchPage";
 import { WorkspaceChooserPage } from "@/features/workspace/WorkspaceChooserPage";
@@ -499,6 +501,22 @@ export const appRoutes = [
                 element: (
                   <RequireInviteStaff>
                     <OrgStaffAssignPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "roles",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgRolesPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "roles/:roleCode",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgRoleDetailPage />
                   </RequireInviteStaff>
                 ),
               },

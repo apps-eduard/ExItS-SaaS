@@ -1,20 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   createStaffInvitationByExItsId,
   resolveStaffInviteTarget,
   type StaffInviteTargetWire,
 } from "@/api/platform/staff-invitation-client";
-import {
-  POS_LOCAL_ROLE_CASHIER,
-  POS_LOCAL_ROLE_MANAGER,
-  POS_LOCAL_ROLE_OWNER,
-} from "@/api/platform/product-local-roles-client";
+import { POS_LOCAL_ROLE_CASHIER, POS_LOCAL_ROLE_OWNER } from "@/api/platform/product-local-roles-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
+import { useProductLocalRoleCatalog } from "@/features/staff/useProductLocalRoleCatalog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -22,22 +20,21 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Step = "find" | "confirm" | "access" | "sent";
 
-const POS_ROLE_OPTIONS = [
-  { code: POS_LOCAL_ROLE_CASHIER, labelKey: "staffInvite.posRoleCashier" },
-  { code: POS_LOCAL_ROLE_MANAGER, labelKey: "staffInvite.posRoleManager" },
-  { code: POS_LOCAL_ROLE_OWNER, labelKey: "staffInvite.posRoleOwner" },
-] as const;
-
 export function OrgStaffInvitePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace } = useWorkspace();
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const catalogQuery = useProductLocalRoleCatalog(organizationId);
   const [step, setStep] = useState<Step>("find");
   const [target, setTarget] = useState<StaffInviteTargetWire | null>(null);
   const [productRole, setProductRole] = useState<string>(POS_LOCAL_ROLE_CASHIER);
+  const [ownerConfirmOpen, setOwnerConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const roleOptions = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
 
   async function resolveInput(raw: string) {
     if (!boundWorkspace) {
@@ -65,7 +62,7 @@ export function OrgStaffInvitePage() {
     setStep("confirm");
   }
 
-  async function sendInvite() {
+  async function sendInvite(roleCode: string) {
     if (!boundWorkspace || !target) return;
     if (!online) {
       setError(t("staffInvite.onlineRequired"));
@@ -76,14 +73,23 @@ export function OrgStaffInvitePage() {
     const result = await createStaffInvitationByExItsId({
       organizationId: boundWorkspace.organizationId,
       publicUserIdOrQrPayload: target.publicUserId,
-      productRole,
+      productRole: roleCode,
     });
     setSubmitting(false);
+    setOwnerConfirmOpen(false);
     if (!result.ok) {
       setError(result.body?.detail ?? t("staffInvite.error"));
       return;
     }
     setStep("sent");
+  }
+
+  function requestSendInvite() {
+    if (productRole === POS_LOCAL_ROLE_OWNER) {
+      setOwnerConfirmOpen(true);
+      return;
+    }
+    void sendInvite(productRole);
   }
 
   if (!boundWorkspace) {
@@ -202,9 +208,19 @@ export function OrgStaffInvitePage() {
             <legend className="mb-2 text-[length:var(--exits-text-sm)] font-semibold">
               {t("staffInvite.posRoleLabel")}
             </legend>
-            <div className="flex flex-col gap-2">
-              {POS_ROLE_OPTIONS.map((option) => (
-                <label key={option.code} className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+            {catalogQuery.isLoading ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("loading.label")}</p>
+            ) : null}
+            {catalogQuery.isError ? (
+              <ErrorState title={t("error.title")} detail={t("orgRoles.loadError")} />
+            ) : null}
+            <div className="flex flex-col gap-2" role="radiogroup" aria-label={t("staffInvite.posRoleLabel")}>
+              {roleOptions.map((option) => (
+                <label
+                  key={option.code}
+                  className="flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]"
+                  data-testid={`staff-invite-role-${option.code.toLowerCase()}`}
+                >
                   <input
                     type="radio"
                     name="pos-role"
@@ -212,20 +228,31 @@ export function OrgStaffInvitePage() {
                     checked={productRole === option.code}
                     onChange={() => setProductRole(option.code)}
                   />
-                  {t(option.labelKey)}
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-semibold">{option.displayName}</span>
+                    <span className="text-muted">{option.description}</span>
+                  </span>
                 </label>
               ))}
             </div>
           </fieldset>
+          {productRole === POS_LOCAL_ROLE_OWNER ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="staff-invite-pos-owner-warning"
+            >
+              {t("staffInvite.posOwnerWarning")}
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={submitting} onClick={() => setStep("confirm")}>
               {t("staffInvite.back")}
             </Button>
             <Button
               type="button"
-              disabled={submitting || !online}
+              disabled={submitting || !online || catalogQuery.isLoading || roleOptions.length === 0}
               data-testid="staff-invite-send"
-              onClick={() => void sendInvite()}
+              onClick={requestSendInvite}
             >
               {submitting ? t("staffInvite.submitting") : t("staffInvite.send")}
             </Button>
@@ -241,6 +268,17 @@ export function OrgStaffInvitePage() {
       >
         {t("staffInvite.cancel")}
       </Button>
+
+      <ConfirmationDialog
+        open={ownerConfirmOpen}
+        title={t("staffAssign.ownerConfirmTitle")}
+        detail={t("staffAssign.ownerConfirmMessage")}
+        confirmLabel={t("staffAssign.ownerConfirmAction")}
+        cancelLabel={t("staffManage.cancel")}
+        onCancel={() => setOwnerConfirmOpen(false)}
+        onConfirm={() => void sendInvite(POS_LOCAL_ROLE_OWNER)}
+        testId="staff-invite-owner-confirm"
+      />
     </div>
   );
 }
