@@ -107,15 +107,18 @@ const readiness = {
   deliveryAreasComplete: true,
 };
 
-function renderPage() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+function renderPage(client?: QueryClient) {
+  const queryClient =
+    client ??
+    new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
   return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/org/branches/${branchId}/fulfillment`]}>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[`/org/branches/${branchId}`]}>
         <Routes>
-          <Route path="/org/branches/:branchId/fulfillment" element={<BranchFulfillmentEditPage />} />
+          <Route path="/org/branches" element={<div data-testid="branch-list">list</div>} />
+          <Route path="/org/branches/:branchId" element={<BranchFulfillmentEditPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -176,5 +179,19 @@ describe("BranchFulfillmentEditPage section saves", () => {
     await user.click(screen.getByTestId("branch-tab-location"));
     expect(await screen.findByTestId("branch-choose-on-map")).toBeInTheDocument();
     expect(screen.getByTestId("branch-save")).toHaveTextContent("branches.saveLocation");
+  });
+
+  it("renders after remount when query data is cached", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    const { unmount } = renderPage(client);
+
+    await screen.findByTestId("branch-setup-tabs");
+    unmount();
+    renderPage(client);
+
+    await screen.findByTestId("branch-setup-tabs");
+    expect(screen.queryByTestId("branch-fulfillment-not-found")).not.toBeInTheDocument();
   });
 });

@@ -113,24 +113,29 @@ export function BranchFulfillmentEditPage() {
   const [okMessage, setOkMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [hydratedBranchId, setHydratedBranchId] = useState<string | null>(null);
+  const isHydrated = hydratedBranchId === branchId && Boolean(branchId);
+
+  // Reset tab and hydration marker before repopulating local draft state.
+  useEffect(() => {
+    setActiveTab("overview");
+    setHydratedBranchId(null);
+  }, [branchId, organizationId]);
 
   useEffect(() => {
     const data = detailQuery.data;
-    if (!data?.branch || hydrated) {
+    if (!data?.branch || data.branch.id !== branchId) {
+      return;
+    }
+    if (hydratedBranchId === branchId) {
       return;
     }
     applyBranch(data.branch);
     setReadiness(data.readiness);
     setHours(hoursFromDto(data.hours));
     setAreas(data.areas);
-    setHydrated(true);
-  }, [detailQuery.data, hydrated]);
-
-  useEffect(() => {
-    setHydrated(false);
-    setActiveTab("overview");
-  }, [branchId, organizationId]);
+    setHydratedBranchId(branchId);
+  }, [detailQuery.data, branchId, organizationId, hydratedBranchId]);
 
   function applyBranch(branch: OrganizationBranchDto) {
     setName(branch.name);
@@ -200,7 +205,7 @@ export function BranchFulfillmentEditPage() {
     );
   }
 
-  if (!hydrated) {
+  if (!isHydrated) {
     return <LoadingState label={t("loading.label")} />;
   }
 
