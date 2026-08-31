@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listCatalogProducts, updateCatalogProductPrices } from "@/api/pos/pos-catalog-client";
-import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,44 +10,38 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
-import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
+import {
+  applySuccessfulPriceSave,
+  canSavePriceDraft,
+  isPriceDraftDirty,
+  mergePriceDraftMap,
+  parseDraftPrice,
+  type PriceDraft,
+} from "@/features/catalog/todays-prices-draft";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
-type PriceDraft = {
-  productId: string;
-  name: string;
-  brandName?: string | null;
-  currentPrice: number;
-  draftPrice: string;
-  expectedUpdatedAtUtc: string;
-  rowError: string | null;
-};
-
-function toDrafts(products: PosCatalogProductDto[]): PriceDraft[] {
-  return products.map((product) => ({
-    productId: product.productId,
-    name: product.name,
-    brandName: product.brandName,
-    currentPrice: product.sellingPrice,
-    draftPrice: String(product.sellingPrice),
-    expectedUpdatedAtUtc: product.updatedAtUtc,
-    rowError: null,
-  }));
+function conflictMessage(errorCode: string | null | undefined, fallback: string, conflictLabel: string): string {
+  if ((errorCode ?? "").toLowerCase().includes("concurrency")) {
+    return conflictLabel;
+  }
+  return fallback;
 }
 
 export function TodaysPricesPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const workspace = usePosWorkspaceScope();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [drafts, setDrafts] = useState<PriceDraft[]>([]);
-  const [bannerError, setBannerError] = useState<string | null>(null);
-  const [bannerSuccess, setBannerSuccess] = useState<string | null>(null);
+  const [draftById, setDraftById] = useState<Record<string, PriceDraft>>({});
+  const [visibleIds, setVisibleIds] = useState<string[]>([]);
+  const [savingIds, setSavingIds] = useState<Record<string, true>>({});
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -67,76 +60,84 @@ export function TodaysPricesPage() {
   });
 
   useEffect(() => {
-    if (query.data) {
-      setDrafts(toDrafts(query.data.items));
-      setBannerError(null);
-      setBannerSuccess(null);
+    if (!query.data) {
+      return;
     }
+    setDraftById((previous) => mergePriceDraftMap(previous, query.data.items));
+    setVisibleIds(query.data.items.map((item) => item.productId));
   }, [query.data]);
 
-  const dirty = drafts.filter(
-    (row) => Number(row.draftPrice) !== row.currentPrice && row.draftPrice.trim() !== "",
+  const visibleDrafts = useMemo(
+    () => visibleIds.map((id) => draftById[id]).filter((row): row is PriceDraft => Boolean(row)),
+    [visibleIds, draftById],
   );
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!workspace) {
-        throw new Error("Workspace required");
+  function updateDraft(productId: string, updater: (row: PriceDraft) => PriceDraft) {
+    setDraftById((current) => {
+      const row = current[productId];
+      if (!row) {
+        return current;
       }
-      const items = dirty.map((row) => ({
-        productId: row.productId,
-        sellingPrice: Number(row.draftPrice),
-        expectedUpdatedAtUtc: row.expectedUpdatedAtUtc,
-      }));
-      if (items.length === 0) {
-        throw new Error(t("prices.nothingToSave"));
-      }
-      return updateCatalogProductPrices(workspace, { items });
-    },
-    onSuccess: async (response) => {
-      setDrafts((current) =>
-        current.map((row) => {
-          const result = response.results.find((item) => item.productId === row.productId);
-          if (!result) {
-            return row;
-          }
-          if (!result.succeeded) {
-            return {
-              ...row,
-              rowError: result.errorMessage ?? t("prices.itemFailed"),
-            };
-          }
-          const nextPrice = result.product?.sellingPrice ?? Number(row.draftPrice);
-          const nextToken = result.product?.updatedAtUtc ?? row.expectedUpdatedAtUtc;
-          return {
-            ...row,
-            currentPrice: nextPrice,
-            draftPrice: String(nextPrice),
-            expectedUpdatedAtUtc: nextToken,
-            rowError: null,
-          };
-        }),
-      );
-      if (response.failedCount > 0) {
-        setBannerSuccess(null);
-        setBannerError(
-          t("prices.partialFailure")
-            .replace("{failed}", String(response.failedCount))
-            .replace("{succeeded}", String(response.succeededCount)),
+      return { ...current, [productId]: updater(row) };
+    });
+  }
+
+  async function saveProduct(productId: string) {
+    if (!workspace) {
+      return;
+    }
+    const row = draftById[productId];
+    if (!row || savingIds[productId] || !canSavePriceDraft(row)) {
+      return;
+    }
+    const parsed = parseDraftPrice(row.draftPrice);
+    if (!parsed.ok) {
+      return;
+    }
+
+    setSavingIds((current) => ({ ...current, [productId]: true }));
+    try {
+      const response = await updateCatalogProductPrices(workspace, {
+        items: [
+          {
+            productId,
+            sellingPrice: parsed.value,
+            expectedUpdatedAtUtc: row.expectedUpdatedAtUtc,
+          },
+        ],
+      });
+      const result = response.results.find((item) => item.productId === productId);
+      if (!result || !result.succeeded) {
+        const message = conflictMessage(
+          result?.errorCode,
+          result?.errorMessage ?? t("prices.itemFailed"),
+          t("prices.staleConflict"),
         );
+        updateDraft(productId, (current) => ({ ...current, rowError: message }));
         return;
       }
-      setBannerError(null);
-      setBannerSuccess(t("prices.success").replace("{changed}", String(response.changedCount)));
-      await queryClient.invalidateQueries({ queryKey: ["catalog"] });
-    },
-    onError: (err) => {
-      setBannerSuccess(null);
-      setBannerError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+
+      const nextPrice = result.product?.sellingPrice ?? parsed.value;
+      const nextToken = result.product?.updatedAtUtc ?? row.expectedUpdatedAtUtc;
+      updateDraft(productId, (current) => applySuccessfulPriceSave(current, nextPrice, nextToken));
+      showToast(
+        t("prices.updatedToast")
+          .replace("{product}", row.name)
+          .replace("{price}", formatPeso(nextPrice)),
       );
-    },
-  });
+      await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+    } catch (err) {
+      const message =
+        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message;
+      updateDraft(productId, (current) => ({ ...current, rowError: message }));
+    } finally {
+      setSavingIds((current) => {
+        const next = { ...current };
+        delete next[productId];
+        return next;
+      });
+    }
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -165,67 +166,108 @@ export function TodaysPricesPage() {
         containerClassName="catalog-prices-page__search exits-page__search exits-animate-toolbar"
       />
 
-      {bannerError ? <ErrorState title={t("prices.resultTitle")} detail={bannerError} /> : null}
-      {bannerSuccess ? (
-        <div className="exits-alert exits-alert--success" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{bannerSuccess}</p>
-        </div>
-      ) : null}
-
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
-      {query.isSuccess && drafts.length === 0 ? (
+      {query.isSuccess && visibleDrafts.length === 0 ? (
         <EmptyState title={t("catalog.emptyProducts")} detail={t("prices.emptyDetail")} />
       ) : null}
 
       <ul className="catalog-prices-list exits-list m-0 grid list-none gap-2 p-0">
-        {drafts.map((row) => {
-          const isDirty = Number(row.draftPrice) !== row.currentPrice;
+        {visibleDrafts.map((row) => {
+          const dirty = isPriceDraftDirty(row);
+          const parsed = parseDraftPrice(row.draftPrice);
+          const canSave = canSavePriceDraft(row);
+          const saving = Boolean(savingIds[row.productId]);
+          const invalidDirty = dirty && !parsed.ok;
+
           return (
             <li key={row.productId}>
               <article
                 className={cn(
                   "catalog-prices-row exits-list__card",
-                  isDirty && "catalog-prices-row--dirty",
+                  dirty && "catalog-prices-row--dirty",
                   row.rowError && "catalog-prices-row--error",
                 )}
                 data-testid={`price-row-${row.productId}`}
               >
                 <div className="catalog-prices-row__main min-w-0">
-                  <p className="exits-list__name m-0 truncate font-semibold">{row.name}</p>
+                  <p className="catalog-prices-row__name exits-list__name m-0 font-semibold">
+                    {row.name}
+                  </p>
                   {row.brandName ? (
-                    <p className="m-0 mt-0.5 truncate text-[length:var(--exits-text-sm)] text-muted">
+                    <p className="catalog-prices-row__brand m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
                       {row.brandName}
                     </p>
                   ) : null}
-                  <div className="catalog-prices-row__meta mt-1 flex flex-wrap items-center gap-2">
-                    <span className="text-[length:var(--exits-text-sm)] text-muted">
-                      {t("prices.current")}: {formatPeso(row.currentPrice)}
-                    </span>
-                    {isDirty ? <StatusChip tone="info">{t("prices.dirty")}</StatusChip> : null}
-                  </div>
+                  <p className="catalog-prices-row__current m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("prices.current")}: {formatPeso(row.currentPrice)}
+                  </p>
                 </div>
 
                 <div className="catalog-prices-row__editor">
-                  <Input
-                    label={t("prices.newPrice")}
-                    name={`price-${row.productId}`}
-                    inputMode="decimal"
-                    value={row.draftPrice}
-                    onChange={(event) =>
-                      setDrafts((current) =>
-                        current.map((item) =>
-                          item.productId === row.productId
-                            ? { ...item, draftPrice: event.target.value, rowError: null }
-                            : item,
-                        ),
-                      )
-                    }
-                  />
+                  <div className="catalog-prices-row__edit-row">
+                    <div className="catalog-prices-row__input-wrap min-w-0 flex-1">
+                      <Input
+                        label={t("prices.newPrice")}
+                        name={`price-${row.productId}`}
+                        inputMode="decimal"
+                        autoComplete="off"
+                        value={row.draftPrice}
+                        aria-invalid={Boolean(row.rowError) || invalidDirty}
+                        aria-describedby={
+                          row.rowError || invalidDirty
+                            ? `price-error-${row.productId}`
+                            : undefined
+                        }
+                        onChange={(event) =>
+                          updateDraft(row.productId, (current) => ({
+                            ...current,
+                            draftPrice: event.target.value,
+                            rowError: null,
+                          }))
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") {
+                            return;
+                          }
+                          event.preventDefault();
+                          void saveProduct(row.productId);
+                        }}
+                      />
+                    </div>
+                    {dirty ? (
+                      <Button
+                        type="button"
+                        className="catalog-prices-row__save min-h-11 shrink-0"
+                        disabled={!canSave || saving}
+                        onClick={() => void saveProduct(row.productId)}
+                        data-testid={`price-save-${row.productId}`}
+                        aria-label={t("prices.saveOneAria").replace("{product}", row.name)}
+                      >
+                        {saving ? (
+                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                        ) : (
+                          <Save className="size-4 shrink-0" aria-hidden />
+                        )}
+                        {saving ? t("prices.savingOne") : t("prices.saveOne")}
+                      </Button>
+                    ) : null}
+                  </div>
+                  {invalidDirty ? (
+                    <p
+                      id={`price-error-${row.productId}`}
+                      className="catalog-prices-row__error m-0 text-[length:var(--exits-text-sm)] text-destructive"
+                    >
+                      {t("prices.invalidPrice")}
+                    </p>
+                  ) : null}
                   {row.rowError ? (
-                    <p className="catalog-prices-row__error m-0 text-[length:var(--exits-text-sm)] text-destructive">
+                    <p
+                      id={`price-error-${row.productId}`}
+                      className="catalog-prices-row__error m-0 text-[length:var(--exits-text-sm)] text-destructive"
+                    >
                       {row.rowError}
                     </p>
                   ) : null}
@@ -235,34 +277,6 @@ export function TodaysPricesPage() {
           );
         })}
       </ul>
-
-      <div className="catalog-form-actions catalog-prices-actions">
-        <div className="catalog-form-actions__primary">
-          <p className="catalog-prices-actions__summary m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {dirty.length > 0
-              ? t("prices.pendingCount").replace("{count}", String(dirty.length))
-              : t("prices.noChanges")}
-          </p>
-        </div>
-        <div className="catalog-form-actions__secondary">
-          <Button
-            type="button"
-            className="catalog-form-actions__save min-h-11"
-            disabled={dirty.length === 0 || saveMutation.isPending}
-            onClick={() => saveMutation.mutate()}
-            data-testid="prices-save"
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <Save className="size-4 shrink-0" aria-hidden />
-            )}
-            {saveMutation.isPending
-              ? t("catalog.saving")
-              : t("prices.save").replace("{count}", String(dirty.length))}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "./mock-pos-catalog-admin-route";
 
 const VIEWPORTS = [
+  { width: 360, height: 800 },
   { width: 375, height: 812 },
   { width: 768, height: 1024 },
   { width: 1024, height: 768 },
@@ -27,7 +28,7 @@ const COKE_TOKEN = "2026-01-01T00:00:00Z";
 test.describe("RMAP-06 today's prices", () => {
   test.use({ serviceWorkers: "block" });
 
-  test("manager updates dirty row and sends concurrency token", async ({ page }) => {
+  test("manager saves one dirty product with concurrency token and toast", async ({ page }) => {
     let capturedBody: {
       items: Array<{ productId: string; sellingPrice: number; expectedUpdatedAtUtc: string }>;
     } | null = null;
@@ -74,92 +75,25 @@ test.describe("RMAP-06 today's prices", () => {
     await expect(page.getByText("Coke 330ml")).toBeVisible();
 
     const cokeRow = page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`);
+    const chipsRow = page.getByTestId(`price-row-${MOCK_CHIPS_PRODUCT_ID}`);
     await cokeRow.getByRole("textbox", { name: "New price" }).fill("30");
-    await expect(cokeRow.getByText(/Changed|Binago/i)).toBeVisible();
-    await page.getByTestId("prices-save").click();
-    await expect(page.getByText(/Saved|Na-save/i)).toBeVisible();
+    await expect(cokeRow.getByTestId(`price-save-${MOCK_COKE_PRODUCT_ID}`)).toBeVisible();
+    await expect(chipsRow.getByTestId(`price-save-${MOCK_CHIPS_PRODUCT_ID}`)).toHaveCount(0);
+    await expect(page.getByTestId("prices-save")).toHaveCount(0);
+
+    await cokeRow.getByTestId(`price-save-${MOCK_COKE_PRODUCT_ID}`).click();
+    await expect(page.getByTestId("exits-toast")).toContainText(/Coke 330ml/i);
+    await expect(page.getByTestId("exits-toast")).toContainText(/₱30\.00/);
 
     expect(capturedBody?.items).toHaveLength(1);
     expect(capturedBody?.items[0]?.productId).toBe(MOCK_COKE_PRODUCT_ID);
     expect(capturedBody?.items[0]?.sellingPrice).toBe(30);
     expect(capturedBody?.items[0]?.expectedUpdatedAtUtc).toBe(COKE_TOKEN);
-    await expect(cokeRow.getByText(/Changed|Binago/i)).toHaveCount(0);
+    await expect(cokeRow.getByTestId(`price-save-${MOCK_COKE_PRODUCT_ID}`)).toHaveCount(0);
+    await expect(cokeRow.getByText(/Current:.*₱30\.00/i)).toBeVisible();
   });
 
-  test("partial failure keeps failed dirty row and does not claim full success", async ({
-    page,
-  }) => {
-    await mockBoundManagerSession(page);
-    await mockPosCatalogAdminApi(page);
-    await page.route("**/pos-api/**/catalog/products/prices", async (route) => {
-      if (route.request().method() !== "POST") {
-        return route.fallback();
-      }
-      const body = route.request().postDataJSON() as {
-        items: Array<{ productId: string; sellingPrice: number; expectedUpdatedAtUtc: string }>;
-      };
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          results: body.items.map((item) => {
-            if (item.productId === MOCK_COKE_PRODUCT_ID) {
-              return {
-                productId: item.productId,
-                succeeded: false,
-                changed: false,
-                errorCode: "pos.catalog.concurrency_conflict",
-                errorMessage: "Product was modified by another user.",
-              };
-            }
-            return {
-              productId: item.productId,
-              succeeded: true,
-              changed: true,
-              product: {
-                productId: item.productId,
-                organizationId: "11111111-1111-1111-1111-111111111111",
-                name: "Potato Chips",
-                unitOfMeasure: "Piece",
-                sellingMode: "PerItem",
-                sellingPrice: item.sellingPrice,
-                status: "Active",
-                createdAtUtc: "2026-01-01T00:00:00Z",
-                updatedAtUtc: new Date().toISOString(),
-              },
-            };
-          }),
-          succeededCount: body.items.filter((i) => i.productId !== MOCK_COKE_PRODUCT_ID).length,
-          failedCount: 1,
-          changedCount: body.items.filter((i) => i.productId !== MOCK_COKE_PRODUCT_ID).length,
-        }),
-      });
-    });
-
-    await signInAndBindManager(page);
-    await page.getByTestId("open-catalog").click();
-    await page.getByRole("link", { name: "Today's Prices" }).click();
-    await page
-      .getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`)
-      .getByRole("textbox", { name: "New price" })
-      .fill("31");
-    await page
-      .getByTestId(`price-row-${MOCK_CHIPS_PRODUCT_ID}`)
-      .getByRole("textbox", { name: "New price" })
-      .fill("18");
-    await page.getByTestId("prices-save").click();
-
-    await expect(page.getByText(/failed/i)).toBeVisible();
-    await expect(page.getByText(/Saved\./i)).toHaveCount(0);
-    await expect(
-      page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`).getByText(/modified by another/i),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`).getByText(/Changed|Binago/i),
-    ).toBeVisible();
-  });
-
-  test("stale concurrency conflict surfaces understandable feedback", async ({ page }) => {
+  test("row failure preserves draft without global success banner", async ({ page }) => {
     await mockBoundManagerSession(page);
     await mockPosCatalogAdminApi(page);
     await page.route("**/pos-api/**/catalog/products/prices", async (route) => {
@@ -190,12 +124,69 @@ test.describe("RMAP-06 today's prices", () => {
     await signInAndBindManager(page);
     await page.getByTestId("open-catalog").click();
     await page.getByRole("link", { name: "Today's Prices" }).click();
-    await page
-      .getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`)
-      .getByRole("textbox", { name: "New price" })
-      .fill("40");
-    await page.getByTestId("prices-save").click();
-    await expect(page.getByText(/modified by another/i)).toBeVisible();
+    const cokeRow = page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`);
+    await cokeRow.getByRole("textbox", { name: "New price" }).fill("40");
+    await cokeRow.getByTestId(`price-save-${MOCK_COKE_PRODUCT_ID}`).click();
+    await expect(cokeRow.getByText(/changed elsewhere|modified by another/i)).toBeVisible();
+    await expect(cokeRow.getByRole("textbox", { name: "New price" })).toHaveValue("40");
+    await expect(page.getByText(/Saved\./i)).toHaveCount(0);
+  });
+
+  test("Enter saves only the focused product", async ({ page }) => {
+    let capturedBody: {
+      items: Array<{ productId: string; sellingPrice: number }>;
+    } | null = null;
+
+    await mockBoundManagerSession(page);
+    await mockPosCatalogAdminApi(page);
+    await page.route("**/pos-api/**/catalog/products/prices", async (route) => {
+      if (route.request().method() !== "POST") {
+        return route.fallback();
+      }
+      capturedBody = route.request().postDataJSON() as typeof capturedBody;
+      const body = capturedBody!;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          results: body.items.map((item) => ({
+            productId: item.productId,
+            succeeded: true,
+            changed: true,
+            product: {
+              productId: item.productId,
+              organizationId: "11111111-1111-1111-1111-111111111111",
+              name: "Coke 330ml",
+              unitOfMeasure: "Piece",
+              sellingMode: "PerItem",
+              sellingPrice: item.sellingPrice,
+              status: "Active",
+              createdAtUtc: "2026-01-01T00:00:00Z",
+              updatedAtUtc: new Date().toISOString(),
+            },
+          })),
+          succeededCount: body.items.length,
+          failedCount: 0,
+          changedCount: body.items.length,
+        }),
+      });
+    });
+
+    await signInAndBindManager(page);
+    await page.getByTestId("open-catalog").click();
+    await page.getByRole("link", { name: "Today's Prices" }).click();
+    const cokeRow = page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`);
+    const chipsRow = page.getByTestId(`price-row-${MOCK_CHIPS_PRODUCT_ID}`);
+    await chipsRow.getByRole("textbox", { name: "New price" }).fill("18");
+    const cokeInput = cokeRow.getByRole("textbox", { name: "New price" });
+    await cokeInput.fill("31");
+    await cokeInput.press("Enter");
+
+    await expect.poll(() => capturedBody?.items.length ?? 0).toBe(1);
+    expect(capturedBody?.items[0]?.productId).toBe(MOCK_COKE_PRODUCT_ID);
+    expect(capturedBody?.items[0]?.sellingPrice).toBe(31);
+    await expect(chipsRow.getByRole("textbox", { name: "New price" })).toHaveValue("18");
+    await expect(chipsRow.getByTestId(`price-save-${MOCK_CHIPS_PRODUCT_ID}`)).toBeVisible();
   });
 
   test("cashier denied today's prices", async ({ page }) => {
@@ -228,11 +219,11 @@ test.describe("RMAP-06 today's prices", () => {
       const cokeRow = page.getByTestId(`price-row-${MOCK_COKE_PRODUCT_ID}`);
       const priceInput = cokeRow.getByRole("textbox", { name: "New price" });
       await priceInput.fill("999999.99");
-      await expect(cokeRow.getByText(/Changed|Binago/i)).toBeVisible();
+      const save = cokeRow.getByTestId(`price-save-${MOCK_COKE_PRODUCT_ID}`);
+      await expect(save).toBeVisible();
       await assertMinTouchTarget(priceInput);
-      await assertMinTouchTarget(page.getByTestId("prices-save"));
-      await expect(page.getByTestId("prices-save")).toBeVisible();
-      await page.getByTestId("prices-save").scrollIntoViewIfNeeded();
+      await assertMinTouchTarget(save);
+      await expect(page.getByTestId("prices-save")).toHaveCount(0);
       await assertNoHorizontalOverflow(page);
     });
   }
