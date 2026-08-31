@@ -70,8 +70,8 @@ Columns: ID · DOMAIN · SCENARIO · TEST_TYPE · SOURCE_REPORT · SOURCE_SHA ·
 | I18N-001 | I18N | Locale parity 5 locales | REACT_TEST | I18N-LOCALE-PARITY-02 | `dd775a97` | `dd775a97` | NO | YES | NO | NO | PASS | |
 | REACT-001 | REACT | Full vitest 1344 | BUILD_VALIDATION | COMPLETION-01 | `0abc15da` | `0abc15da` | NO | YES | NO | NO | PASS | Do not re-run docs-only |
 | MB-MAP | MULTI | MB_01–MB_14 | POSTGRES_INTEGRATION | MULTI-BRANCH-HARDENING-01 | START_SHA | START_SHA | NO | NO | YES | YES | See MB report | Targeted re-proof |
-| FUL-UI | FULFILLMENT | Branch list/tabs/areas/checkout/responsive | MANUAL_UI + PLAYWRIGHT | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | NO | YES (this package) | NO | YES | PASS 6/6 | Future retest NOT_REQUIRED unless fulfillment/customer-ordering/shared session infra changes |
-| REACT-001 | REACT | Full vitest 1354 | BUILD_VALIDATION | UI-CLOSURE-01 | FEATURE_SHA | FEATURE_SHA | NO | YES | NO | YES | PASS | New permanent React baseline |
+| FUL-UI | FULFILLMENT | Branch list/tabs/areas/checkout/responsive | MANUAL_UI + PLAYWRIGHT | UI-CLOSURE-01 | `5aeb07ce` | `5aeb07ce` | NO | YES (this package) | NO | YES | PASS 6/6 | Future retest NOT_REQUIRED unless fulfillment/customer-ordering/shared session infra changes |
+| REACT-001 | REACT | Full vitest 1354 | BUILD_VALIDATION | UI-CLOSURE-01 | `5aeb07ce` | `5aeb07ce` | NO | YES | NO | YES | PASS | New permanent React baseline |
 
 ---
 
