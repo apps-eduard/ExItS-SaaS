@@ -260,7 +260,9 @@ public sealed class CatalogProductQueryService
                         product.CanBeSold,
                         product.CanBeUsedAsIngredient,
                         product.IsProduced,
-                        product.UsagePreset))));
+                        product.UsagePreset))),
+            CatalogProductScopes.ToCode(product.Scope),
+            product.OriginBranchId?.Value);
     }
 
     private async Task<string?> ResolveBrandNameAsync(
@@ -300,7 +302,10 @@ public sealed class CreateCatalogProduct
     private readonly IProductBrandRepository _brands;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
     private readonly ISupplierProductExposureRepository? _exposures;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public CreateCatalogProduct(
         ICatalogProductRepository products,
@@ -309,7 +314,10 @@ public sealed class CreateCatalogProduct
         IProductBrandRepository brands,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        ISupplierProductExposureRepository? exposures = null)
+        ISupplierProductExposureRepository? exposures = null,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _products = products;
         _units = units;
@@ -318,6 +326,9 @@ public sealed class CreateCatalogProduct
         _unitOfWork = unitOfWork;
         _clock = clock;
         _exposures = exposures;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -343,10 +354,45 @@ public sealed class CreateCatalogProduct
         bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null,
         string? businessUsage = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? scope = null)
     {
         try
         {
+            CatalogProductScope productScope = CatalogProductScope.OrganizationStandard;
+            PosBranchId? originBranchId = null;
+            if (_governance is not null && _actorAccessor is not null)
+            {
+                var actor = _actorAccessor.GetActor();
+                var resolvedScope = _governance.ResolveCreateScope(actor, scope);
+                if (!resolvedScope.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        resolvedScope.ErrorCode!,
+                        resolvedScope.ErrorMessage!);
+                }
+
+                (productScope, originBranchId) = resolvedScope.Value;
+            }
+            else if (!string.IsNullOrWhiteSpace(scope)
+                     && CatalogProductScopes.TryParse(scope, out var parsedScope))
+            {
+                productScope = parsedScope;
+            }
+
+            if (productScope == CatalogProductScope.BranchLocal && originBranchId is not null && _branches is not null)
+            {
+                var active = await _branches
+                    .IsActiveInOrganizationAsync(organizationId, originBranchId.Value, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!active)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        ApplicationErrorCodes.ProductBranchInvalid,
+                        "Acting branch is not an active branch in this organization.");
+                }
+            }
+
             var staged = await CatalogProductCreateCore.StageAsync(
                 _products,
                 _units,
@@ -376,7 +422,9 @@ public sealed class CreateCatalogProduct
                 canExposeToConnectedBuyers,
                 defaultConnectedPoPrice,
                 cancellationToken,
-                businessUsage).ConfigureAwait(false);
+                businessUsage,
+                productScope,
+                originBranchId).ConfigureAwait(false);
             if (!staged.IsSuccess)
             {
                 return ApplicationResult<CatalogProduct>.Failure(staged.ErrorCode!, staged.ErrorMessage!);
@@ -406,6 +454,8 @@ public sealed class UpdateCatalogProduct
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly ISupplierProductExposureRepository? _exposures;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public UpdateCatalogProduct(
         ICatalogProductRepository products,
@@ -415,7 +465,9 @@ public sealed class UpdateCatalogProduct
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock,
-        ISupplierProductExposureRepository? exposures = null)
+        ISupplierProductExposureRepository? exposures = null,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _units = units;
@@ -425,6 +477,8 @@ public sealed class UpdateCatalogProduct
         _unitOfWork = unitOfWork;
         _clock = clock;
         _exposures = exposures;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -462,6 +516,22 @@ public sealed class UpdateCatalogProduct
             return ApplicationResult<CatalogProduct>.Failure(
                 ApplicationErrorCodes.ProductNotFound,
                 "Product was not found.");
+        }
+
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            var actor = _actorAccessor.GetActor();
+            var masterAuth = _governance.EnsureCanEditMaster(actor, product);
+            if (!masterAuth.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(masterAuth.ErrorCode!, masterAuth.ErrorMessage!);
+            }
+
+            var priceAuth = _governance.EnsureCanMutateSellingPrice(actor, product);
+            if (!priceAuth.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(priceAuth.ErrorCode!, priceAuth.ErrorMessage!);
+            }
         }
 
         if (CatalogConcurrency.IsStale(expectedUpdatedAtUtc, product.UpdatedAtUtc))
@@ -733,15 +803,21 @@ public sealed class DeactivateCatalogProduct
     private readonly ICatalogProductRepository _products;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public DeactivateCatalogProduct(
         ICatalogProductRepository products,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -760,6 +836,15 @@ public sealed class DeactivateCatalogProduct
             return ApplicationResult<CatalogProduct>.Failure(
                 ApplicationErrorCodes.ProductNotFound,
                 "Product was not found.");
+        }
+
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            var masterAuth = _governance.EnsureCanEditMaster(_actorAccessor.GetActor(), product);
+            if (!masterAuth.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(masterAuth.ErrorCode!, masterAuth.ErrorMessage!);
+            }
         }
 
         try
@@ -785,15 +870,21 @@ public sealed class ReactivateCatalogProduct
     private readonly ICatalogProductRepository _products;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public ReactivateCatalogProduct(
         ICatalogProductRepository products,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -812,6 +903,15 @@ public sealed class ReactivateCatalogProduct
             return ApplicationResult<CatalogProduct>.Failure(
                 ApplicationErrorCodes.ProductNotFound,
                 "Product was not found.");
+        }
+
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            var masterAuth = _governance.EnsureCanEditMaster(_actorAccessor.GetActor(), product);
+            if (!masterAuth.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(masterAuth.ErrorCode!, masterAuth.ErrorMessage!);
+            }
         }
 
         try
@@ -844,19 +944,25 @@ public sealed class UpdateCatalogProductPrices
     private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public UpdateCatalogProductPrices(
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _units = units;
         _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<UpdatePosCatalogProductPricesResponse>> ExecuteAsync(
@@ -877,6 +983,11 @@ public sealed class UpdateCatalogProductPrices
         var productsById = new Dictionary<Guid, CatalogProduct>();
         var now = _clock.UtcNow;
         var anyChanged = false;
+        CatalogGovernanceActor? actor = null;
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            actor = _actorAccessor.GetActor();
+        }
 
         for (var i = 0; i < items.Count; i++)
         {
@@ -903,6 +1014,18 @@ public sealed class UpdateCatalogProductPrices
             {
                 results[i] = Fail(item.ProductId, ApplicationErrorCodes.ProductNotFound, "Product was not found.");
                 continue;
+            }
+
+            if (actor is not null && _governance is not null)
+            {
+                var priceAuth = _governance.EnsureCanMutateSellingPrice(actor, product);
+                if (!priceAuth.IsSuccess)
+                {
+                    // Fail the whole bulk when any product is denied by price governance.
+                    return ApplicationResult<UpdatePosCatalogProductPricesResponse>.Failure(
+                        priceAuth.ErrorCode!,
+                        priceAuth.ErrorMessage!);
+                }
             }
 
             if (CatalogConcurrency.IsStaleOrMissing(item.ExpectedUpdatedAtUtc, product.UpdatedAtUtc))
@@ -1034,7 +1157,9 @@ internal static class CatalogProductCreateCore
         bool canExposeToConnectedBuyers,
         decimal? defaultConnectedPoPrice,
         CancellationToken cancellationToken,
-        string? businessUsage = null)
+        string? businessUsage = null,
+        CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
+        PosBranchId? originBranchId = null)
     {
         var orgId = PosOrganizationId.From(organizationId);
 
@@ -1102,7 +1227,9 @@ internal static class CatalogProductCreateCore
             mode,
             tracksExpiration,
             expirationWarningDays,
-            usage);
+            usage,
+            scope: scope,
+            originBranchId: originBranchId);
         var conflict = await CatalogAssignment
             .FindIdentifierConflictAsync(
                 products,

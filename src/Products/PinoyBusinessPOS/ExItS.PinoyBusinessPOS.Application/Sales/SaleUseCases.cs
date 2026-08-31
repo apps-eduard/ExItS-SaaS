@@ -286,6 +286,7 @@ public sealed class CheckoutSale
     private readonly IOfflinePriceAuthorityService _priceAuthorities;
     private readonly InventoryCostResolver _costResolver;
     private readonly IClock _clock;
+    private readonly ICatalogProductAvailabilityResolver? _availability;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -300,7 +301,8 @@ public sealed class CheckoutSale
         IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
         IOfflinePriceAuthorityService priceAuthorities,
         InventoryCostResolver costResolver,
-        IClock clock)
+        IClock clock,
+        ICatalogProductAvailabilityResolver? availability = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -315,6 +317,7 @@ public sealed class CheckoutSale
         _operationalSetups = operationalSetups;
         _taxConfiguration = taxConfiguration;
         _clock = clock;
+        _availability = availability;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -892,6 +895,15 @@ public sealed class CheckoutSale
             .ConfigureAwait(false);
         var byId = products.ToDictionary(p => p.Id.Value);
 
+        // Commercial offering is branch-scoped. When branchId is omitted (tests / legacy), skip the check.
+        IReadOnlyDictionary<Guid, CatalogProductOfferingResult>? offerings = null;
+        if (branchId is Guid bid && bid != Guid.Empty && _availability is not null)
+        {
+            offerings = await _availability
+                .ResolveForBranchAsync(orgId, PosBranchId.From(bid), products, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var drafts = new List<SaleLineDraft>();
         var usesPriceAuthorities = CheckoutSaleLineAuthorities.RequestUsesOfflinePriceAuthorities(lines);
         if (usesPriceAuthorities && !allowOfflinePriceAuthorities)
@@ -998,6 +1010,15 @@ public sealed class CheckoutSale
                         $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
                 }
 
+                if (offerings is not null
+                    && offerings.TryGetValue(product.Id.Value, out var offer)
+                    && !offer.IsOffered)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.ProductNotOfferedAtBranch,
+                        $"'{product.Name}' is not offered at this branch.");
+                }
+
                 CatalogProductUnit? authoritySellingUnit = null;
                 if (line.SellingUnitId is not null)
                 {
@@ -1051,6 +1072,15 @@ public sealed class CheckoutSale
                         $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
                 }
 
+                if (offerings is not null
+                    && offerings.TryGetValue(product.Id.Value, out var offer)
+                    && !offer.IsOffered)
+                {
+                    return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                        ApplicationErrorCodes.ProductNotOfferedAtBranch,
+                        $"'{product.Name}' is not offered at this branch.");
+                }
+
                 CatalogProductUnit? sellingUnit = null;
                 if (line.SellingUnitId is not null)
                 {
@@ -1099,6 +1129,15 @@ public sealed class CheckoutSale
                         return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
                             ApplicationErrorCodes.SaleProductNotSellable,
                             $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
+                    }
+
+                    if (offerings is not null
+                        && offerings.TryGetValue(product.Id.Value, out var offer)
+                        && !offer.IsOffered)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.ProductNotOfferedAtBranch,
+                            $"'{product.Name}' is not offered at this branch.");
                     }
 
                     CatalogProductUnit? sellingUnit = null;
@@ -1150,6 +1189,15 @@ public sealed class CheckoutSale
                         return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
                             ApplicationErrorCodes.SaleProductNotSellable,
                             $"'{product.Name}' is not sold as-is and cannot be added to a sale.");
+                    }
+
+                    if (offerings is not null
+                        && offerings.TryGetValue(product.Id.Value, out var offer)
+                        && !offer.IsOffered)
+                    {
+                        return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
+                            ApplicationErrorCodes.ProductNotOfferedAtBranch,
+                            $"'{product.Name}' is not offered at this branch.");
                     }
 
                     drafts.Add(new SaleLineDraft(

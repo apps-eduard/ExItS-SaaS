@@ -38,6 +38,13 @@ public static class ApplicationErrorCodes
     public const string CatalogPriceBulkEmpty = "pos.catalog.price_bulk_empty";
     public const string CatalogPriceBulkDuplicate = "pos.catalog.price_bulk_duplicate";
     public const string CatalogBulkValidation = "pos.catalog.bulk_validation";
+    public const string ProductScopeForbidden = "pos.catalog.product_scope_forbidden";
+    public const string ProductOriginBranchForbidden = "pos.catalog.product_origin_branch_forbidden";
+    public const string ProductNotOfferedAtBranch = "pos.catalog.product_not_offered_at_branch";
+    public const string ProductPromotionForbidden = "pos.catalog.product_promotion_forbidden";
+    public const string ProductAvailabilityForbidden = "pos.catalog.product_availability_forbidden";
+    public const string ProductActingBranchRequired = "pos.catalog.product_acting_branch_required";
+    public const string ProductBranchInvalid = "pos.catalog.product_branch_invalid";
 
     public const string SaleNotFound = "pos.sale.not_found";
     public const string TaxDocumentIssuanceNotAvailable =

@@ -87,7 +87,12 @@ public sealed record PosCatalogProductDto(
     Guid? BrandId = null,
     string? BrandName = null,
     /// <summary>Buyer-owned business usage: Resale | Ingredient | InternalUse.</summary>
-    string BusinessUsage = "Resale");
+    string BusinessUsage = "Resale",
+    /// <summary>OrganizationStandard or BranchLocal (MB2 product governance).</summary>
+    string Scope = "OrganizationStandard",
+    Guid? OriginBranchId = null,
+    /// <summary>Populated when listing a commercially offered branch assortment; otherwise null.</summary>
+    bool? IsOfferedAtBranch = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -122,7 +127,9 @@ public sealed record CreatePosCatalogProductRequest(
     IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
     bool CanExposeToConnectedBuyers = false,
     decimal? DefaultConnectedPoPrice = null,
-    string? BusinessUsage = null);
+    string? BusinessUsage = null,
+    /// <summary>Optional create scope: OrganizationStandard | BranchLocal. Omitted → actor default.</summary>
+    string? Scope = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -187,3 +194,5 @@ public sealed record PosCatalogProductPagedResult(
     int TotalCount,
     int Page,
     int PageSize);
+
+public sealed record SetBranchProductAvailabilityRequest(bool IsOffered);

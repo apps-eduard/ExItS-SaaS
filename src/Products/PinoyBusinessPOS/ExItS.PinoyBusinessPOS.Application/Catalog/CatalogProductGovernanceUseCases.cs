@@ -1,0 +1,256 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
+
+namespace ExItS.PinoyBusinessPOS.Application.Catalog;
+
+public sealed record BranchProductAvailabilityDto(
+    Guid OrganizationId,
+    Guid BranchId,
+    Guid ProductId,
+    bool IsOffered,
+    string Reason,
+    bool HasExplicitOverride);
+
+/// <summary>Owner/Admin branch assortment override for OrganizationStandard products.</summary>
+public sealed class SetBranchProductAvailability
+{
+    private readonly ICatalogProductRepository _products;
+    private readonly IBranchProductAvailabilityRepository _availability;
+    private readonly IOrganizationBranchDirectory _branches;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
+
+    public SetBranchProductAvailability(
+        ICatalogProductRepository products,
+        IBranchProductAvailabilityRepository availability,
+        IOrganizationBranchDirectory branches,
+        IPosUnitOfWork unitOfWork,
+        IClock clock,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
+    {
+        _products = products;
+        _availability = availability;
+        _branches = branches;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
+    }
+
+    public async Task<ApplicationResult<BranchProductAvailabilityDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid productId,
+        Guid branchId,
+        bool isOffered,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = _actorAccessor.GetActor();
+        if (!_governance.CanManageStandardAvailability(actor))
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(
+                ApplicationErrorCodes.ProductAvailabilityForbidden,
+                "Only organization Owner/Administrator may configure OrganizationStandard branch availability.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var branch = PosBranchId.From(branchId);
+        var active = await _branches
+            .IsActiveInOrganizationAsync(organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!active)
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(
+                ApplicationErrorCodes.ProductBranchInvalid,
+                "Branch is not an active branch in this organization.");
+        }
+
+        var product = await _products
+            .GetByIdAsync(orgId, CatalogProductId.From(productId), cancellationToken)
+            .ConfigureAwait(false);
+        if (product is null)
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.");
+        }
+
+        if (product.Scope != CatalogProductScope.OrganizationStandard)
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(
+                ApplicationErrorCodes.ProductAvailabilityForbidden,
+                "Branch availability overrides apply to OrganizationStandard products only.");
+        }
+
+        try
+        {
+            var now = _clock.UtcNow;
+            var existing = await _availability
+                .GetAsync(orgId, branch, product.Id, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (isOffered)
+            {
+                // Restore default offered: remove sparse false override.
+                if (existing is not null)
+                {
+                    await _availability.DeleteAsync(orgId, branch, product.Id, cancellationToken).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                return ApplicationResult<BranchProductAvailabilityDto>.Success(
+                    new BranchProductAvailabilityDto(
+                        organizationId,
+                        branchId,
+                        productId,
+                        true,
+                        nameof(CatalogProductOfferingReason.DefaultOrganizationStandard),
+                        HasExplicitOverride: false));
+            }
+
+            if (existing is null)
+            {
+                await _availability
+                    .AddAsync(BranchProductAvailability.Create(orgId, branch, product.Id, false, now), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else if (existing.IsOffered)
+            {
+                existing.SetOffered(false, now);
+                await _availability.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<BranchProductAvailabilityDto>.Success(
+                new BranchProductAvailabilityDto(
+                    organizationId,
+                    branchId,
+                    productId,
+                    false,
+                    nameof(CatalogProductOfferingReason.ExplicitlyNotOffered),
+                    HasExplicitOverride: true));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<BranchProductAvailabilityDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+/// <summary>Promotes BranchLocal → OrganizationStandard (same ProductId; price preserved).</summary>
+public sealed class PromoteCatalogProductToOrganizationStandard
+{
+    private readonly ICatalogProductRepository _products;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
+    private readonly CatalogProductQueryService _queries;
+
+    public PromoteCatalogProductToOrganizationStandard(
+        ICatalogProductRepository products,
+        IPosUnitOfWork unitOfWork,
+        IClock clock,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor,
+        CatalogProductQueryService queries)
+    {
+        _products = products;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
+        _queries = queries;
+    }
+
+    public async Task<ApplicationResult<PosCatalogProductDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid productId,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = _actorAccessor.GetActor();
+        if (!_governance.CanPromote(actor))
+        {
+            return ApplicationResult<PosCatalogProductDto>.Failure(
+                ApplicationErrorCodes.ProductPromotionForbidden,
+                "Only organization Owner/Administrator may promote BranchLocal products.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var product = await _products
+            .GetByIdAsync(orgId, CatalogProductId.From(productId), cancellationToken)
+            .ConfigureAwait(false);
+        if (product is null)
+        {
+            return ApplicationResult<PosCatalogProductDto>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.");
+        }
+
+        try
+        {
+            product.PromoteToOrganizationStandard(_clock.UtcNow);
+            await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            var dto = await _queries
+                .GetByIdAsync(organizationId, product.Id.Value, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<PosCatalogProductDto>.Success(dto!);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosCatalogProductDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosCatalogProductDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+/// <summary>Shared commercial offering gate for Sell/checkout/storefront/orders.</summary>
+public static class CatalogProductCommercialOfferingGate
+{
+    public static async Task<ApplicationResult> EnsureOfferedAsync(
+        ICatalogProductAvailabilityResolver resolver,
+        PosOrganizationId organizationId,
+        Guid branchId,
+        IReadOnlyList<CatalogProduct> products,
+        CancellationToken cancellationToken)
+    {
+        if (products.Count == 0)
+        {
+            return ApplicationResult.Success();
+        }
+
+        var branch = PosBranchId.From(branchId);
+        var offered = await resolver
+            .ResolveForBranchAsync(organizationId, branch, products, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var product in products)
+        {
+            if (!offered.TryGetValue(product.Id.Value, out var result) || !result.IsOffered)
+            {
+                return ApplicationResult.Failure(
+                    ApplicationErrorCodes.ProductNotOfferedAtBranch,
+                    "One or more products are not offered at this branch.");
+            }
+        }
+
+        return ApplicationResult.Success();
+    }
+}

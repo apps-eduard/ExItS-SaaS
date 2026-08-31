@@ -29,4 +29,10 @@ public interface IBranchProductAvailabilityRepository
     Task AddAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
 }

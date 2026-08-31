@@ -13,19 +13,25 @@ public sealed class SetCatalogProductImage
     private readonly IProductImageProcessor _processor;
     private readonly IProductImageObjectStore _store;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public SetCatalogProductImage(
         ICatalogProductRepository products,
         ICatalogProductImageRepository images,
         IProductImageProcessor processor,
         IProductImageObjectStore store,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _images = images;
         _processor = processor;
         _store = store;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<PosCatalogProductImageDto>> ExecuteAsync(
@@ -42,6 +48,17 @@ public sealed class SetCatalogProductImage
             return ApplicationResult<PosCatalogProductImageDto>.Failure(
                 ApplicationErrorCodes.ProductNotFound,
                 "Product was not found.");
+        }
+
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            var masterAuth = _governance.EnsureCanEditMaster(_actorAccessor.GetActor(), product);
+            if (!masterAuth.IsSuccess)
+            {
+                return ApplicationResult<PosCatalogProductImageDto>.Failure(
+                    masterAuth.ErrorCode!,
+                    masterAuth.ErrorMessage!);
+            }
         }
 
         var processed = _processor.Process(uploadBytes);
@@ -111,15 +128,21 @@ public sealed class RemoveCatalogProductImage
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductImageRepository _images;
     private readonly IProductImageObjectStore _store;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public RemoveCatalogProductImage(
         ICatalogProductRepository products,
         ICatalogProductImageRepository images,
-        IProductImageObjectStore store)
+        IProductImageObjectStore store,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _products = products;
         _images = images;
         _store = store;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult> ExecuteAsync(
@@ -133,6 +156,15 @@ public sealed class RemoveCatalogProductImage
         if (product is null)
         {
             return ApplicationResult.Failure(ApplicationErrorCodes.ProductNotFound, "Product was not found.");
+        }
+
+        if (_governance is not null && _actorAccessor is not null)
+        {
+            var masterAuth = _governance.EnsureCanEditMaster(_actorAccessor.GetActor(), product);
+            if (!masterAuth.IsSuccess)
+            {
+                return ApplicationResult.Failure(masterAuth.ErrorCode!, masterAuth.ErrorMessage!);
+            }
         }
 
         var current = await _images.GetByProductIdAsync(orgId, catalogId, cancellationToken).ConfigureAwait(false);

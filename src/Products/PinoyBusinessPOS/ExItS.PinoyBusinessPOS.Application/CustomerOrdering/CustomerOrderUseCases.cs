@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
@@ -98,6 +99,7 @@ public sealed class PlaceCustomerOrder
     private readonly ILinkedCustomerPlatformAuthorization? _linkedCustomerAuth;
     private readonly IPOSCustomerRepository? _customers;
     private readonly IClock _clock;
+    private readonly ICatalogProductAvailabilityResolver? _availability;
 
     public PlaceCustomerOrder(
         ICustomerOrderRepository orders,
@@ -108,7 +110,8 @@ public sealed class PlaceCustomerOrder
         ISellerCustomerOrderingCapability? sellerCapability = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null,
-        IPOSCustomerRepository? customers = null)
+        IPOSCustomerRepository? customers = null,
+        ICatalogProductAvailabilityResolver? availability = null)
     {
         _orders = orders;
         _products = products;
@@ -119,6 +122,7 @@ public sealed class PlaceCustomerOrder
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _linkedCustomerAuth = linkedCustomerAuth;
         _customers = customers;
+        _availability = availability;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -252,6 +256,15 @@ public sealed class PlaceCustomerOrder
             var productIds = request.Lines.Select(l => CatalogProductId.From(l.ProductId)).Distinct().ToList();
             var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
             var byId = products.ToDictionary(p => p.Id.Value);
+            var offerings = _availability is null
+                ? null
+                : await _availability
+                    .ResolveForBranchAsync(
+                        orgId,
+                        PosBranchId.From(request.FulfillmentBranchId),
+                        products,
+                        cancellationToken)
+                    .ConfigureAwait(false);
 
             var drafts = new List<CustomerOrderLineDraft>(request.Lines.Count);
             foreach (var line in request.Lines)
@@ -267,6 +280,15 @@ public sealed class PlaceCustomerOrder
                 {
                     return ApplicationResult<CustomerOrderDto>.Failure(
                         ApplicationErrorCodes.SaleProductNotActive,
+                        "One or more products are not available for sale.");
+                }
+
+                if (offerings is not null
+                    && offerings.TryGetValue(product.Id.Value, out var offer)
+                    && !offer.IsOffered)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        ApplicationErrorCodes.ProductNotOfferedAtBranch,
                         "One or more products are not available for sale.");
                 }
 

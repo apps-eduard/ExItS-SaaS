@@ -206,19 +206,25 @@ public sealed class ImportTemplateBatch
     private readonly IPlatformMerchantCatalogClient _platform;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public ImportTemplateBatch(
         ICatalogImportJobRepository imports,
         ICatalogProductRepository products,
         IPlatformMerchantCatalogClient platform,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _imports = imports;
         _products = products;
         _platform = platform;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public Task<ApplicationResult<PosCatalogImportJobDto>> ExecuteAsync(
@@ -247,6 +253,14 @@ public sealed class ImportTemplateBatch
         string? idempotencyKey,
         CancellationToken cancellationToken)
     {
+        if (_governance is not null && _actorAccessor is not null
+            && !_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
+        {
+            return ApplicationResult<PosCatalogImportJobDto>.Failure(
+                ApplicationErrorCodes.ProductScopeForbidden,
+                "Global catalog import creates OrganizationStandard products and requires organization Owner/Administrator.");
+        }
+
         try
         {
             var orgId = PosOrganizationId.From(organizationId);
@@ -546,19 +560,25 @@ public sealed class ImportSelectedProducts
     private readonly IPlatformMerchantCatalogClient _platform;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly CatalogProductGovernanceAuthority? _governance;
+    private readonly ICatalogGovernanceActorAccessor? _actorAccessor;
 
     public ImportSelectedProducts(
         ICatalogImportJobRepository imports,
         ICatalogProductRepository products,
         IPlatformMerchantCatalogClient platform,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        CatalogProductGovernanceAuthority? governance = null,
+        ICatalogGovernanceActorAccessor? actorAccessor = null)
     {
         _imports = imports;
         _products = products;
         _platform = platform;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<PosCatalogImportJobDto>> ExecuteAsync(
@@ -569,6 +589,14 @@ public sealed class ImportSelectedProducts
         string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
+        if (_governance is not null && _actorAccessor is not null
+            && !_governance.CanCreateOrganizationStandard(_actorAccessor.GetActor()))
+        {
+            return ApplicationResult<PosCatalogImportJobDto>.Failure(
+                ApplicationErrorCodes.ProductScopeForbidden,
+                "Global catalog import creates OrganizationStandard products and requires organization Owner/Administrator.");
+        }
+
         try
         {
             var orgId = PosOrganizationId.From(organizationId);

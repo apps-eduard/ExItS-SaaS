@@ -472,6 +472,31 @@ public sealed class CatalogProduct
         return true;
     }
 
+    /// <summary>
+    /// Promotes BranchLocal → OrganizationStandard. Same ProductId; preserves OriginBranchId and SellingPrice.
+    /// </summary>
+    public void PromoteToOrganizationStandard(DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        if (Scope == CatalogProductScope.OrganizationStandard)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogProductPromotion,
+                "Product is already OrganizationStandard.");
+        }
+
+        if (Scope != CatalogProductScope.BranchLocal)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogProductPromotion,
+                "Only BranchLocal products can be promoted.");
+        }
+
+        CatalogProductScopes.EnsureOriginValid(CatalogProductScope.OrganizationStandard, OriginBranchId);
+        Scope = CatalogProductScope.OrganizationStandard;
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>Allows connected-buyer eligibility (clears global block). Does not auto-init PO price.</summary>
     public void AllowForConnectedBuyers(DateTimeOffset utcNow)
     {

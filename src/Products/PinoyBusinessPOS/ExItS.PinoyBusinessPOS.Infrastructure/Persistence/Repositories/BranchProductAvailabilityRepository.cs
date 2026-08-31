@@ -92,4 +92,23 @@ internal sealed class BranchProductAvailabilityRepository : IBranchProductAvaila
 
         CatalogEntityMapper.ApplyToRecord(availability, record);
     }
+
+    public async Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.BranchProductAvailabilities
+            .FirstOrDefaultAsync(
+                a => a.OrganizationId == organizationId.Value
+                    && a.BranchId == branchId.Value
+                    && a.ProductId == productId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (record is not null)
+        {
+            _db.BranchProductAvailabilities.Remove(record);
+        }
+    }
 }

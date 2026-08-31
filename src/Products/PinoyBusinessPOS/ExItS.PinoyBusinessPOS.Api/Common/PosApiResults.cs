@@ -181,7 +181,11 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ExtendedHistoryRequired
             or ApplicationErrorCodes.InventoryTransferBranchForbidden
             or ApplicationErrorCodes.CustomerOrderOrderingUnavailable
-            or ApplicationErrorCodes.CustomerOrderPartyMismatch => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.CustomerOrderPartyMismatch
+            or ApplicationErrorCodes.ProductScopeForbidden
+            or ApplicationErrorCodes.ProductOriginBranchForbidden
+            or ApplicationErrorCodes.ProductPromotionForbidden
+            or ApplicationErrorCodes.ProductAvailabilityForbidden => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.PlatformAuthUnavailable
             or ApplicationErrorCodes.CatalogImportPlatformUnavailable => StatusCodes.Status503ServiceUnavailable,

@@ -17,6 +17,7 @@ public sealed class GetCustomerStorefront
     private readonly ICatalogProductImageRepository _images;
     private readonly IPlatformMerchantCatalogClient? _platform;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly ICatalogProductAvailabilityResolver? _availability;
 
     public GetCustomerStorefront(
         ISellerCustomerOrderingCapability capability,
@@ -26,7 +27,8 @@ public sealed class GetCustomerStorefront
         ICustomerOrderBranchDirectory branches,
         ICatalogProductImageRepository images,
         IPlatformMerchantCatalogClient? platform = null,
-        IInventoryBranchBalanceRepository? branchBalances = null)
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        ICatalogProductAvailabilityResolver? availability = null)
     {
         _capability = capability;
         _products = products;
@@ -36,6 +38,7 @@ public sealed class GetCustomerStorefront
         _images = images;
         _platform = platform;
         _branchBalances = branchBalances;
+        _availability = availability;
     }
 
     public async Task<ApplicationResult<CustomerStorefrontDto>> ExecuteAsync(
@@ -84,6 +87,33 @@ public sealed class GetCustomerStorefront
             .ThenBy(p => p.Id.Value)
             .ToList();
 
+        var branches = await _branches
+            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
+        if (fulfillmentBranchId is Guid requested
+            && requested != Guid.Empty
+            && selectedBranchId is null)
+        {
+            return ApplicationResult<CustomerStorefrontDto>.Failure(
+                ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                "The selected fulfillment branch was not found for this merchant.");
+        }
+
+        if (_availability is not null && selectedBranchId is Guid offerBranchId && sellable.Count > 0)
+        {
+            var offerings = await _availability
+                .ResolveForBranchAsync(
+                    orgId,
+                    PosBranchId.From(offerBranchId),
+                    sellable,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            sellable = sellable
+                .Where(p => offerings.TryGetValue(p.Id.Value, out var offer) && offer.IsOffered)
+                .ToList();
+        }
+
         var pageItems = sellable.Skip(skip).Take(take).ToList();
         var productIds = pageItems.Select(p => p.Id).ToList();
         var accounts = productIds.Count == 0
@@ -104,19 +134,6 @@ public sealed class GetCustomerStorefront
                 TimeSpan.FromSeconds(2),
                 cancellationToken)
             .ConfigureAwait(false);
-
-        var branches = await _branches
-            .ListBranchesAsync(sellerOrganizationId, cancellationToken)
-            .ConfigureAwait(false);
-        var selectedBranchId = ResolveStorefrontBranchId(branches, fulfillmentBranchId);
-        if (fulfillmentBranchId is Guid requested
-            && requested != Guid.Empty
-            && selectedBranchId is null)
-        {
-            return ApplicationResult<CustomerStorefrontDto>.Failure(
-                ApplicationErrorCodes.CustomerOrderBranchNotFound,
-                "The selected fulfillment branch was not found for this merchant.");
-        }
 
         IReadOnlyList<InventoryBranchBalance> balances = [];
         if (_branchBalances is not null && productIds.Count > 0 && selectedBranchId is not null)
