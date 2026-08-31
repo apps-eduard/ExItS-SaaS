@@ -62,6 +62,15 @@ $env:PlatformEmail__UseSsl = 'false'
 $env:PlatformEmail__FromAddress = 'noreply@exits.local'
 $env:PlatformEmail__FromDisplayName = 'ExItS Local Validation'
 $env:PlatformEmail__AdminPublicBaseUrl = $adminOrigin
+# Required so activation/reset emails can embed http://127.0.0.1:8095 (and LAN) links.
+$env:PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
+# Personal/POS React (:5177) signup uses PublicSurface=pinoy-business-pos — links go to /activate-account.
+$posOrigin = if ($env:EXITS_POS_PUBLIC_BASE_URL) {
+    [string]$env:EXITS_POS_PUBLIC_BASE_URL
+} else {
+    'http://127.0.0.1:5177'
+}
+$env:PlatformEmail__PinoyBusinessPosPublicBaseUrl = $posOrigin
 $env:PlatformAuthentication__Password__MinimumLength = '1'
 $env:PlatformAuthentication__Password__RequireUppercase = 'false'
 $env:PlatformAuthentication__Password__RequireLowercase = 'false'
@@ -69,7 +78,8 @@ $env:PlatformAuthentication__Password__RequireDigit = 'false'
 $env:PlatformAuthentication__Password__RequireNonAlphanumeric = 'false'
 
 Write-Host "Platform API:     http://127.0.0.1:8091 (bound 0.0.0.0)"
-Write-Host "Activation links: $adminOrigin"
+Write-Host "Admin activation: $adminOrigin"
+Write-Host "POS activation:   $posOrigin"
 if ($publicHost) {
     Write-Host "Mailpit (Tailscale): http://${publicHost}:${mailpitUiPort}/"
 } else {
