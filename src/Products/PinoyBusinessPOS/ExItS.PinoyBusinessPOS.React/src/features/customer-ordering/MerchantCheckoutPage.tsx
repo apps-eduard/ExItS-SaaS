@@ -179,6 +179,8 @@ export function MerchantCheckoutPage() {
     lngNum >= -180 &&
     lngNum <= 180;
 
+  const platformBusinessCustomerId = merchantContextQuery.data?.businessCustomerId ?? null;
+
   const quoteQuery = useQuery({
     queryKey: [
       "delivery-quote",
@@ -188,6 +190,7 @@ export function MerchantCheckoutPage() {
       merchandiseSubtotal,
       latitude,
       longitude,
+      platformBusinessCustomerId,
     ],
     enabled:
       Boolean(workspace) &&
@@ -204,6 +207,7 @@ export function MerchantCheckoutPage() {
         destinationLatitude: latNum,
         destinationLongitude: lngNum,
         deliveryServiceAreaId,
+        platformBusinessCustomerId,
       }),
   });
 
@@ -665,6 +669,14 @@ export function MerchantCheckoutPage() {
               <span>{t("orders.deliveryFee")}</span>
               <strong>{money(deliveryFee)}</strong>
             </div>
+            {quoteQuery.data?.distanceExceptionApplied ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="checkout-distance-exception"
+              >
+                {t("customers.delivery.extendedApproved")}
+              </p>
+            ) : null}
             <div className="pc-checkout-totals__row pc-checkout-totals__row--grand">
               <span>{t("orders.total")}</span>
               <strong>{money(total)}</strong>

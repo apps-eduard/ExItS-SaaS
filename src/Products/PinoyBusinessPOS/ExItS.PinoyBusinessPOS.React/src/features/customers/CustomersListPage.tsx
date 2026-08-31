@@ -8,6 +8,7 @@ import {
   type BusinessCustomer,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
+import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
@@ -134,6 +135,25 @@ export function CustomersListPage() {
     queryFn: ({ signal }) =>
       listBusinessCustomers(workspace!, { search: debounced || undefined }, signal),
   });
+
+  const deliveryExceptionQuery = useQuery({
+    queryKey: ["customers", "delivery-exception-ids", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && showPeople,
+    queryFn: async ({ signal }) => {
+      const page = await listOrganizationBusinessCustomers(workspace!.organizationId, {
+        page: 1,
+        pageSize: 100,
+        signal,
+      });
+      return new Set(
+        page.items
+          .filter((c) => c.allowDeliveryBeyondNormalDistance)
+          .map((c) => c.id),
+      );
+    },
+  });
+
+  const distanceExceptionIds = deliveryExceptionQuery.data;
 
   useEffect(() => {
     if (!offlineContext || !peopleQuery.isSuccess || !online) {
@@ -302,6 +322,14 @@ export function CustomersListPage() {
                         overlay={customerLinkOverlay}
                         className="customer-row__badges"
                       />
+                      {customer.platformBusinessCustomerId &&
+                      distanceExceptionIds?.has(customer.platformBusinessCustomerId) ? (
+                        <StatusChip tone="info">
+                          <span data-testid={`customer-distance-exception-badge-${customer.customerId}`}>
+                            {t("customers.delivery.distanceExceptionBadge")}
+                          </span>
+                        </StatusChip>
+                      ) : null}
                     </span>
                     <span className="customer-row__aside">
                       <StatusChip tone={customerStatusTone(customer.status)}>{customer.status}</StatusChip>

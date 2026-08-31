@@ -180,6 +180,7 @@ export const quoteDeliverySchema = z.object({
   freeDeliveryApplied: z.boolean(),
   minimumOrderAmount: z.number(),
   maximumDeliveryDistanceKm: z.number(),
+  distanceExceptionApplied: z.boolean().optional().default(false),
 });
 
 export type CustomerOrderDto = z.infer<typeof customerOrderSchema>;
@@ -230,6 +231,8 @@ export type QuoteCustomerOrderDeliveryRequest = {
   destinationLatitude: number;
   destinationLongitude: number;
   deliveryServiceAreaId?: string | null;
+  /** Correlation id only — server resolves distance exception; never a client override flag. */
+  platformBusinessCustomerId?: string | null;
 };
 
 export type RejectCustomerOrderRequest = {

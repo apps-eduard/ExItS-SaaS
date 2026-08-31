@@ -11,6 +11,11 @@ import {
 } from "@/api/platform/customer-link-status-client";
 import { useMutation } from "@tanstack/react-query";
 import {
+  getOrganizationBusinessCustomer,
+  updateBusinessCustomerDeliveryPreferences,
+} from "@/api/platform/business-customer-delivery-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
+import {
   deactivateCustomer,
   getCustomer,
   getCustomerCreditSummary,
@@ -19,6 +24,7 @@ import {
   reactivateCustomer,
   type PosCustomerListItem,
 } from "@/api/pos/pos-customers-client";
+import { CustomerDeliveryExceptionSection } from "@/features/customers/CustomerDeliveryExceptionSection";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -113,6 +119,52 @@ export function CustomerDetailPage() {
     enabled: enabledOnline && Boolean(platformCustomerId),
     queryFn: ({ signal }) =>
       listCustomerLinkRequestHistory(workspace!.organizationId, platformCustomerId!, signal),
+  });
+
+  const deliveryPrefsQuery = useQuery({
+    queryKey: [
+      "customers",
+      "delivery-preferences",
+      workspace?.organizationId,
+      platformCustomerId,
+    ],
+    enabled: enabledOnline && Boolean(platformCustomerId),
+    queryFn: ({ signal }) =>
+      getOrganizationBusinessCustomer(workspace!.organizationId, platformCustomerId!, signal),
+  });
+
+  const deliveryExceptionMutation = useMutation({
+    mutationFn: async (next: boolean) => {
+      if (!workspace || !platformCustomerId) {
+        throw new Error("missing-customer");
+      }
+      return updateBusinessCustomerDeliveryPreferences(
+        workspace.organizationId,
+        platformCustomerId,
+        next,
+      );
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({
+        queryKey: [
+          "customers",
+          "delivery-preferences",
+          workspace?.organizationId,
+          platformCustomerId,
+        ],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["customers", "delivery-exception-ids", workspace?.organizationId],
+      });
+    },
+    onError: (error) => {
+      setActionError(
+        error instanceof PlatformApiError
+          ? (error.problem.detail ?? t("customers.delivery.updateFailed"))
+          : t("customers.delivery.updateFailed"),
+      );
+    },
   });
 
   async function invalidateLinkQueries() {
@@ -402,6 +454,16 @@ export function CustomerDetailPage() {
               : t("customers.linkInviteAgain")}
           </Button>
         </Card>
+      ) : null}
+
+      {platformCustomerId && online ? (
+        <CustomerDeliveryExceptionSection
+          allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
+          canEdit={allowEdit && !deliveryPrefsQuery.isLoading}
+          pending={deliveryExceptionMutation.isPending}
+          t={t}
+          onToggle={(next) => deliveryExceptionMutation.mutate(next)}
+        />
       ) : null}
 
       {usingCachedCustomer ? (

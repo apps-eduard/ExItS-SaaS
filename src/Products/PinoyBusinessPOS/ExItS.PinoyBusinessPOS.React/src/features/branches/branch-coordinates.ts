@@ -83,3 +83,11 @@ export function formatCoordinate(value: number | null | undefined): string {
   }
   return String(value);
 }
+
+/** Display helper (~6 decimal places). Does not reduce persisted precision. */
+export function formatCoordinateDisplay(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return "";
+  }
+  return value.toFixed(6);
+}

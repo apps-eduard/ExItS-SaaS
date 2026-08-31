@@ -217,7 +217,91 @@ export function BranchFulfillmentEditPage() {
     setReadiness(nextReadiness);
   }
 
-  async function saveAll() {
+  async function afterSectionSave(okKey: MessageKey) {
+    if (!organizationId) {
+      return;
+    }
+    const refreshed = await getBranchFulfillmentReadiness(organizationId, branchId);
+    setReadiness(refreshed);
+    await queryClient.invalidateQueries({
+      queryKey: ["branch-fulfillment-list", organizationId],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["branch-fulfillment-detail", organizationId, branchId],
+    });
+    setOkMessage(t(okKey));
+  }
+
+  async function saveBranchDetails() {
+    if (!organizationId || busy) {
+      return;
+    }
+    if (!name.trim()) {
+      setError(t("branches.nameRequired"));
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    setOkMessage(null);
+    try {
+      // Details-only: omit coordinates so a location draft does not wipe address readiness.
+      const updated = await updateOrganizationBranch(organizationId, branchId, {
+        name: name.trim(),
+        addressLine1: addressLine1.trim(),
+        addressLine2: addressLine2.trim() || null,
+        city: city.trim(),
+        region: region.trim(),
+        postalCode: postalCode.trim() || null,
+        countryCode: countryCode.trim(),
+        contactPhone: contactPhone.trim() || null,
+        timeZoneId: timeZoneId.trim() || null,
+      });
+      applyBranch(updated);
+      await afterSectionSave("branches.savedDetails");
+    } catch (err) {
+      setError(
+        err instanceof PlatformApiError
+          ? (err.problem.detail ?? t("branches.saveFailed"))
+          : t("branches.saveFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveOperatingHours() {
+    if (!organizationId || busy) {
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    setOkMessage(null);
+    try {
+      const hoursResult = await upsertBranchOperatingHours(organizationId, branchId, {
+        days: hoursToRequest(hours),
+      });
+      setReadiness(hoursResult);
+      await queryClient.invalidateQueries({
+        queryKey: ["branch-fulfillment-list", organizationId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["branch-fulfillment-detail", organizationId, branchId],
+      });
+      setOkMessage(t("branches.savedHours"));
+    } catch (err) {
+      setError(
+        err instanceof PlatformApiError
+          ? (err.problem.detail ?? t("branches.saveFailed"))
+          : t("branches.saveFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveDeliveryLocation() {
     if (!organizationId || busy) {
       return;
     }
@@ -232,54 +316,21 @@ export function BranchFulfillmentEditPage() {
       }
       return;
     }
-    if (!name.trim()) {
-      setError(t("branches.nameRequired"));
-      return;
-    }
 
     setBusy(true);
     setError(null);
     setOkMessage(null);
     try {
+      // Coordinate-only merge-patch: Name is required by UpdateBranch; omit address fields
+      // so they are preserved server-side (null = omit). Never call policy/hours here.
       const updated = await updateOrganizationBranch(organizationId, branchId, {
-        name: name.trim(),
-        addressLine1: addressLine1.trim(),
-        addressLine2: addressLine2.trim(),
-        city: city.trim(),
-        region: region.trim(),
-        postalCode: postalCode.trim(),
-        countryCode: countryCode.trim(),
+        name: name.trim() || branch.name,
         latitude: coords.latitude,
         longitude: coords.longitude,
         clearCoordinates: coords.clearCoordinates,
-        contactPhone: contactPhone.trim(),
-        timeZoneId: timeZoneId.trim(),
       });
       applyBranch(updated);
-
-      const hoursResult = await upsertBranchOperatingHours(organizationId, branchId, {
-        days: hoursToRequest(hours),
-      });
-      setReadiness(hoursResult);
-
-      await upsertBranchDeliveryPolicy(organizationId, branchId, {
-        minimumOrderAmount: Number(minimumOrder) || 0,
-        baseDeliveryFee: Number(baseFee) || 0,
-        includedDistanceKm: Number(includedKm) || 0,
-        additionalFeePerKm: Number(additionalPerKm) || 0,
-        maximumDeliveryDistanceKm: Number(maximumKm) || 0,
-        freeDeliveryThreshold: freeThreshold.trim() ? Number(freeThreshold) : null,
-      });
-
-      const refreshed = await getBranchFulfillmentReadiness(organizationId, branchId);
-      setReadiness(refreshed);
-      await queryClient.invalidateQueries({
-        queryKey: ["branch-fulfillment-list", organizationId],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["branch-fulfillment-detail", organizationId, branchId],
-      });
-      setOkMessage(t("branches.saved"));
+      await afterSectionSave("branches.savedLocation");
     } catch (err) {
       setError(
         err instanceof PlatformApiError
@@ -290,6 +341,64 @@ export function BranchFulfillmentEditPage() {
       setBusy(false);
     }
   }
+
+  async function saveDeliveryPolicy() {
+    if (!organizationId || busy) {
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    setOkMessage(null);
+    try {
+      await upsertBranchDeliveryPolicy(organizationId, branchId, {
+        minimumOrderAmount: Number(minimumOrder) || 0,
+        baseDeliveryFee: Number(baseFee) || 0,
+        includedDistanceKm: Number(includedKm) || 0,
+        additionalFeePerKm: Number(additionalPerKm) || 0,
+        maximumDeliveryDistanceKm: Number(maximumKm) || 0,
+        freeDeliveryThreshold: freeThreshold.trim() ? Number(freeThreshold) : null,
+      });
+      await afterSectionSave("branches.savedPolicy");
+    } catch (err) {
+      setError(
+        err instanceof PlatformApiError
+          ? (err.problem.detail ?? t("branches.saveFailed"))
+          : t("branches.saveFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function runActiveTabSave() {
+    if (activeTab === "details") {
+      void saveBranchDetails();
+      return;
+    }
+    if (activeTab === "hours") {
+      void saveOperatingHours();
+      return;
+    }
+    if (activeTab === "location") {
+      void saveDeliveryLocation();
+      return;
+    }
+    if (activeTab === "policy") {
+      void saveDeliveryPolicy();
+    }
+  }
+
+  const saveLabelKey: MessageKey =
+    activeTab === "details"
+      ? "branches.saveDetails"
+      : activeTab === "hours"
+        ? "branches.saveHours"
+        : activeTab === "location"
+          ? "branches.saveLocation"
+          : activeTab === "policy"
+            ? "branches.savePolicy"
+            : "branches.save";
 
   async function toggleFulfillment(partial: {
     customerOrderingEnabled?: boolean;
@@ -659,7 +768,7 @@ export function BranchFulfillmentEditPage() {
               type="button"
               className="catalog-form-actions__save"
               disabled={busy}
-              onClick={() => void saveAll()}
+              onClick={() => runActiveTabSave()}
               data-testid="branch-save"
             >
               {busy ? (
@@ -670,7 +779,7 @@ export function BranchFulfillmentEditPage() {
               ) : (
                 <>
                   <Save className="size-4 shrink-0" aria-hidden />
-                  {t("branches.save")}
+                  {t(saveLabelKey)}
                 </>
               )}
             </Button>
