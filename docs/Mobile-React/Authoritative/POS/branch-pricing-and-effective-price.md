@@ -1,10 +1,11 @@
 # Branch Pricing and Effective Price Authority
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** TARGET_LOCKED (MB2-00)
+**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-03 (core), MB2-06 (cross-surface/offline)
 **CURRENT price contract:** [pricing-and-price-authority.md](pricing-and-price-authority.md)
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---
 
@@ -14,7 +15,7 @@
 - Today's Prices: `POST .../catalog/products/prices` with `expectedUpdatedAtUtc` (per-product UX as of POS-TODAYS-PRICES-PER-PRODUCT-SAVE-UX-01).
 - Sale-line price override (RMAP-B01): transaction exception; **never** rewrites catalog.
 - Offline `OfflinePriceAuthority` lease includes OrganizationId + optional BranchId + ProductId + SellingUnitId; **price bytes come from org catalog**, not a branch price book.
-- Client cache key today: `productId::sellingUnitId|base` (no branch in key) — **OD-05** when branch prices land.
+- Client cache key today: `productId::sellingUnitId|base` (no branch in key) — closed by OD-05 for MB2-03.
 
 WP12 / pricing doc: **no branch price overrides** — CURRENT.
 
@@ -34,6 +35,8 @@ EffectivePrice(branch, product, unit?) =
 
 Applies to **base product** and **CatalogProductUnit** sell prices independently.
 
+Until MB2-03 ships, Today's Prices remains CURRENT org-wide price authority.
+
 ---
 
 ## 3. Conceptual model — BranchPriceOverride
@@ -51,6 +54,8 @@ Applies to **base product** and **CatalogProductUnit** sell prices independently
 **Uniqueness:** `(OrganizationId, BranchId, ProductId, ProductUnitId)` with null-unit uniqueness matching PostgreSQL null semantics (use sentinel or filtered unique as in existing POS patterns).
 
 Indexes: lookup by `(org, branch, product)`; bulk resolve by `(org, branch)` + product set.
+
+**MB2-01 must not depend on this table.** See promotion price phasing below.
 
 ---
 
@@ -82,25 +87,53 @@ Changing org price, branch override, promotion, or availability must **not** rew
 
 ---
 
-## 7. Offline — TARGET
+## 7. Offline — TARGET (OD-05 CLOSED)
 
-- Lease identity: Organization + Branch + Product + Selling Unit.
-- Branch A offline must never consume Branch B effective price.
-- Cache key/version strategy in MB2-03/MB2-06; invalidate on workspace branch switch.
-- Fail closed if lease branch ≠ bound/selected operational branch (existing WrongBranch direction).
+### OD-05 = CLOSED — BRANCH_AWARE_OFFLINE_PRICE_KEY_AT_MB2_03
+
+When branch effective pricing lands, cache/lease identity must include:
+
+- OrganizationId
+- BranchId
+- ProductId
+- ProductUnitId-or-base
+
+Conceptually: `org::branch::product::unit`
+
+Do **not** retain product-only keys for authoritative effective pricing.
+
+MB2-03 must:
+
+- bump offline price cache/schema version
+- invalidate or safely migrate legacy organization-only keys
+- never guess branch for a legacy cached effective price
+- fail closed/refetch when branch identity is ambiguous
+- invalidate effective-price state when workspace branch changes
+
+Branch A offline must never consume Branch B effective price.
 
 ---
 
 ## 8. Today's Prices — TARGET evolution
 
 - Remain the merchant tool for price edits.
-- Branch-aware: edit org default **or** selected-branch override (capability-gated).
+- Branch-aware: edit org default **or** selected-branch override (capability-gated) — after MB2-03.
 - Reuse per-product Save UX; do not reintroduce global sticky Save as primary.
 - Creating override only when value ≠ org default (or explicit “set override”).
 
 ---
 
-## 9. Acceptance IDs
+## 9. Promotion pricing dependency — LOCKED
+
+`PROMOTION_CUSTOM_DEFAULT_WITH_ORIGIN_OVERRIDE=DEFERRED_TO_MB2_03`
+
+MB2-01 promotion preserves Local SellingPrice as OrganizationDefaultPrice with no BranchPriceOverride.
+
+Only after MB2-03 may enhanced promotion set Organization default ≠ origin while retaining origin via BranchPriceOverride.
+
+---
+
+## 10. Acceptance IDs
 
 | ID | Expectation |
 |----|-------------|
@@ -112,7 +145,7 @@ Changing org price, branch override, promotion, or availability must **not** rew
 
 ---
 
-## 10. Migration (MB2-03)
+## 11. Migration (MB2-03)
 
 - Existing org prices become OrganizationDefaultPrice (no row rewrite beyond semantics).
 - **No** automatic branch override rows for existing data.

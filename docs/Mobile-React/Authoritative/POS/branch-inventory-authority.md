@@ -1,9 +1,10 @@
 # Branch Inventory Authority
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** TARGET_LOCKED (MB2-00)
+**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-02
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---
 
@@ -43,6 +44,23 @@ Example:
 
 `InventoryAccount` remains aggregate / control / reconciliation authority — not the selected-branch display quantity.
 
+### OD-04 = CLOSED — BRANCH_INVENTORY_BY_DEFAULT
+
+Normal workspace inventory APIs must resolve **organization + selected branch** and return branch on-hand as:
+
+`onHandQuantity`
+
+Do **not** return organization aggregate under the same field while the user is operating a branch.
+
+Organization aggregate may be exposed through:
+
+- an explicit organization summary endpoint, **or**
+- an unmistakably named field such as `organizationOnHandQuantity` on authorized management surfaces
+
+Never overload one field with two meanings.
+
+Main=100 / Remote=25 must return: Main workspace → 100; Remote workspace → 25; **not** 125 for both.
+
 ---
 
 ## 3. Operation matrix (CURRENT → TARGET)
@@ -54,7 +72,7 @@ Example:
 | Opening stock | — | Org account | Org + **branch balance** | Acting branch | +qty | +qty | No branch write | MB2-02 |
 | Enable/disable tracking | Org product/account | Org | Org master + branch visibility rules | — | Policy | N/A | Align assortment | MB2-01/02 |
 | Adjustment | Org | Org + overlay if branch | Branch-required for branch ops | Acting branch | Δ | Δ | Enforce branch | MB2-02 |
-| Stock count | Session | Overlay paths | Branch session | Acting branch | Reconcile | Apply | Verify | MB2-02 |
+| Stock count | Session | Overlay paths | Branch session | Acting | Reconcile | Apply | Verify | MB2-02 |
 | Reorder level/qty | Org account fields | Org | **Branch-specific** settings | Branch | — | Config row | Evolve | MB2-02 |
 | Direct purchase receipt | — | Org; lots often null branch | Org + branch overlay | Acting / receive branch | + | + | No branch write | MB2-02 |
 | PO/GRN receipt | — | Org | Org + branch | Receive branch | + | + | Same | MB2-02 |

@@ -2,9 +2,10 @@
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Package:** MB2-00 (Documentation & Architecture Lock)
-**Status:** TARGET_LOCKED (awaiting owner review before MB2-01)
-**Classification key:** CURRENT_PROVEN | TARGET_LOCKED | GAP | SUPERSEDED | DEFERRED | OPEN_DECISION
+**Status:** OWNER_APPROVED (MB2-00A) — ready for MB2-01A when authorized
+**Classification key:** CURRENT_PROVEN | TARGET_LOCKED | GAP | SUPERSEDED | DEFERRED | CLOSED_DECISION
 **Start SHA (MB2-00):** `dcc2b268894feb84eb742c3f26a0f855e5d330d9`
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 Related:
 
@@ -13,7 +14,7 @@ Related:
 - [Branch pricing & effective price](branch-pricing-and-effective-price.md)
 - [Branch customer & supplier access](branch-customer-supplier-access.md)
 - [Branch guided setup](branch-guided-setup.md)
-- [Implementation plan MB2-01…07](../../Implementation-Readiness/POS-MULTI-BRANCH-V2-IMPLEMENTATION-PLAN.md)
+- [Implementation plan MB2-01A…07](../../Implementation-Readiness/POS-MULTI-BRANCH-V2-IMPLEMENTATION-PLAN.md)
 
 ---
 
@@ -22,6 +23,8 @@ Related:
 Lock the next major multi-branch phase so implementation is deliberate, secure, privacy-aware, migration-safe, and package-ordered.
 
 This document is the **master contract**. It does not claim TARGET behavior already ships.
+
+**OWNER_REVIEW (MB2-00A):** `APPROVED_WITH_DOCUMENTATION_AMENDMENTS`. Architecture approved. Foundational locks below remain locked; OD-01…05 closed; MB2-01 split into 01A–01D; promotion custom-default+origin-override deferred to MB2-03.
 
 ---
 
@@ -91,12 +94,12 @@ Evidence audit (code + prior reports):
 
 | AREA | CURRENT | TARGET | GAP | PACKAGE |
 |------|---------|--------|-----|---------|
-| Product master | Org `CatalogProduct` | Same ProductId; master org-owned | Scope fields missing | MB2-01 |
-| Product scope | Implicit org-wide | OrganizationStandard \| BranchLocal | No scope enum | MB2-01 |
-| Product visibility | All sellable products org-wide | Standard: default all + disable; Local: origin only | No availability model | MB2-01 |
-| Local product | N/A | BranchLocal + OriginBranchId | Missing | MB2-01 |
-| Promotion | N/A | Local→Standard, same ProductId, one-way | Missing | MB2-01 |
-| Barcode/SKU | Org unique | Same org identity space for both scopes | Enforcement exists; Local create UX must reuse | MB2-01 |
+| Product master | Org `CatalogProduct` | Same ProductId; master org-owned | Scope fields missing | MB2-01A–D |
+| Product scope | Implicit org-wide | OrganizationStandard \| BranchLocal | No scope enum | MB2-01A–D |
+| Product visibility | All sellable products org-wide | Standard: default all + disable; Local: origin only | No availability model | MB2-01A–D |
+| Local product | N/A | BranchLocal + OriginBranchId | Missing | MB2-01A–D |
+| Promotion | N/A | Local→Standard, same ProductId, one-way | Missing | MB2-01B–D |
+| Barcode/SKU | Org unique | Same org identity space for both scopes | Enforcement exists; Local create UX must reuse | MB2-01B–D |
 | Base price | Org SellingPrice | OrganizationDefaultPrice | Rename semantics only | MB2-03 |
 | Sell-unit price | Org unit prices | Org default + branch unit overrides | No branch override | MB2-03 |
 | Inventory aggregate | InventoryAccount | Org control / aggregate | Clarify display vs authority | MB2-02 |
@@ -217,36 +220,38 @@ Validate: isolation of stock/price/privacy; Owner sees Bangus; promotion keeps P
 ## 11. Package dependency graph
 
 ```
-MB2-00 Documentation (this package)
+MB2-00 / MB2-00A (owner-approved)
   ↓
-MB2-01 Product Governance & Branch Assortment
+MB2-01A → MB2-01B → MB2-01C → MB2-01D
   ↓
-MB2-02 Branch Inventory Authority Hardening
+MB2-02 Inventory Authority
   ↓
-MB2-03 Branch Pricing & Effective Price Authority
+MB2-03 Branch Pricing
   ↓
-MB2-04 Customer & Supplier Branch Access
+MB2-04 Party Access
   ↓
-MB2-05 New Branch Guided Setup
+MB2-05 Branch Setup Wizard
   ↓
-MB2-06 Cross-Surface + Offline Hardening
+MB2-06 Cross-Surface Hardening
   ↓
-MB2-07 Multi-Branch V2 E2E Closure
+MB2-07 E2E Closure
 ```
 
-Correctness over parallelism. Do not start MB2-01 until owner review of MB2-00.
+Correctness over parallelism. **NEXT=`MB2_01A`** only when explicitly authorized.
 
 ---
 
-## 12. Open decisions
+## 12. Closed decisions (MB2-00A)
 
-| ID | Question | Options | Recommended | Blocks |
-|----|----------|---------|-------------|--------|
-| OD-01 | Disable Standard product availability with nonzero branch stock? | A allow+warn B block | **A allow + warn**; block new commercial offer; retain stock mgmt | MB2-01 |
-| OD-02 | Customer/supplier backfill provenance | Infer from transactions / Primary-only / all branches | Prefer inferred access + Primary-only for unknown; **OPEN** until data sample | MB2-04 |
-| OD-03 | Setup progress storage | Derived / persisted / hybrid | **Hybrid**: checklist derived; optional progress row for resume UX | MB2-05 |
-| OD-04 | Inventory list API shape | Always branch-resolved / dual org+branch | Always show **selected branch** stock; optional org aggregate | MB2-02 |
-| OD-05 | Offline IndexedDB key | Add org+branch now vs at MB2-03 | Include org+branch when effective price lands | MB2-03 |
+| ID | Decision | Package |
+|----|----------|---------|
+| OD-01 | **CLOSED** ALLOW_DISABLE_WITH_NONZERO_STOCK_WITH_WARNING — availability = commercial offer, not inventory existence | MB2-01 |
+| OD-02 | **CLOSED** PRIVACY_FIRST_PROVENANCE_BACKFILL — infer only reliable branch provenance; else Primary/Main only | MB2-04 |
+| OD-03 | **CLOSED** HYBRID_SETUP_PROGRESS — derived checklist; optional UX visit metadata only | MB2-05 |
+| OD-04 | **CLOSED** BRANCH_INVENTORY_BY_DEFAULT — `onHandQuantity` = branch; org aggregate separately named | MB2-02 |
+| OD-05 | **CLOSED** BRANCH_AWARE_OFFLINE_PRICE_KEY_AT_MB2_03 — `org::branch::product::unit` | MB2-03 |
+
+**OPEN_DECISIONS_COUNT=0**
 
 ---
 

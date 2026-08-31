@@ -1,9 +1,10 @@
 # Branch Guided Setup
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** TARGET_LOCKED (MB2-00)
+**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-05 (consumes MB2-01…04)
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---
 
@@ -39,9 +40,33 @@ SETUP WORKFLOW (resumable)
 
 Not one giant DB transaction. Each step: safe, idempotent mutations. Resume later.
 
-**Setup progress ≠ Branch Status.** Branch may be Active while Setup = In progress.
+**Setup progress ≠ Branch Status.** Branch may be Active while Setup = In progress. Branch lifecycle remains separate.
 
-**OD-03 recommended:** Hybrid — derive checklist from data; optional persisted progress for UX resume.
+### OD-03 = CLOSED — HYBRID_SETUP_PROGRESS
+
+Underlying domain data remains the **source of truth**.
+
+Do **not** persist duplicate authoritative booleans such as:
+
+- `ProductsComplete`
+- `PricesComplete`
+- `StockComplete`
+
+if completion can be derived.
+
+Optional persisted setup workflow metadata may store only UX state such as:
+
+- OrganizationId
+- BranchId
+- LastVisitedStep
+- StartedAtUtc
+- LastVisitedAtUtc
+- CompletedAtUtc (nullable)
+- DismissedAtUtc (nullable)
+- optional explicitly-skipped optional steps if truly necessary
+- version/concurrency as appropriate
+
+Checklist readiness/completion should be derived from actual domains where practical.
 
 ---
 
@@ -52,6 +77,8 @@ Default template: Main/Primary. Future: copy reference from Main, another Active
 Template means **configuration reference**, never:
 
 clone DB, history, stock quantities, customer balances, devices, shifts, sales.
+
+Primary/Main is reference/template, **not** security authority.
 
 ---
 
@@ -70,7 +97,7 @@ clone DB, history, stock quantities, customer balances, devices, shifts, sales.
 - Only offered products.
 - Baseline = organization default.
 - Default: inherit (no override row).
-- Override only when user changes value.
+- Override only when user changes value (requires MB2-03 BranchPriceOverride).
 - UX pattern: per-product Save (Today’s Prices interaction).
 
 ### 3 — Starting stock

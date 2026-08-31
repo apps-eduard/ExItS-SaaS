@@ -1,9 +1,10 @@
 # Branch Customer and Supplier Access
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** TARGET_LOCKED (MB2-00)
+**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-04
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---
 
@@ -77,18 +78,29 @@ Not automatic: expose all org customers/suppliers to every new branch.
 
 ---
 
-## 6. Migration strategy — OPEN_DECISION (OD-02) with recommendation
+## 6. Migration strategy — OD-02 CLOSED
 
-Do **not** default to “grant all to every branch.”
+### OD-02 = CLOSED — PRIVACY_FIRST_PROVENANCE_BACKFILL
 
-**Recommended direction to validate on pilot data:**
+For existing customer/supplier branch access migration:
 
-1. Owner/Admin retain org-wide governance visibility.
-2. Derive branch access from reliable branch-attributed sales/orders/receipts where possible.
-3. Legacy records **without** reliable provenance → default access to **Primary/Main only**.
-4. No destructive moves; owner expands access later.
+1. Owner/Admin retain organization-governance visibility.
+2. Infer branch access **ONLY** from reliable branch-attributed records.
 
-If history cannot support inference safely → keep **OPEN_DECISION**; implement explicit Owner tools before silent fan-out.
+   Examples when actually reliable:
+
+   - `Sale.BranchId`
+   - `CustomerOrder.FulfillmentBranchId`
+   - branch-attributed purchasing/receipt records
+   - other audited branch provenance discovered by MB2-04
+
+3. Never infer from weak assumptions.
+4. Legacy party records with no trustworthy branch provenance: grant **Primary/Main access only**.
+5. Never automatically fan out ambiguous customers/suppliers to every branch.
+6. No party duplication.
+7. Owner/Admin may expand branch access after migration.
+
+MB2-04 must still audit real schema/data provenance before migration, but the **fallback policy is no longer OPEN**.
 
 ---
 

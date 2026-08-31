@@ -1,149 +1,217 @@
 # POS Multi-Branch Commerce V2 — Implementation Plan
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Package map:** MB2-01 … MB2-07
 **Architecture lock:** [multi-branch-commerce-v2.md](../Authoritative/POS/multi-branch-commerce-v2.md)
-**MB2-00 status:** DOCUMENTED_READY_FOR_OWNER_REVIEW
-**HARD STOP:** Do not start MB2-01 until owner review.
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
+**MB2-00 / MB2-00A status:** OWNER_APPROVED_READY_FOR_MB2_01A
+**HARD STOP:** Do not start MB2-01A until explicitly authorized as a separate task.
 
 ---
 
 ## Dependency graph
 
 ```
-MB2-00 → MB2-01 → MB2-02 → MB2-03 → MB2-04 → MB2-05 → MB2-06 → MB2-07
+MB2-00 → MB2-00A (owner review closure)
+  ↓
+MB2-01A Product Governance Data Foundation
+  ↓
+MB2-01B Product Authority & Availability Enforcement
+  ↓
+MB2-01C Product Governance React UX
+  ↓
+MB2-01D Product Governance Validation Closure
+  ↓
+MB2-02 → MB2-03 → MB2-04 → MB2-05 → MB2-06 → MB2-07
 ```
 
 ---
 
-## MB2-01 — Product Governance & Branch Assortment
+## MB2-01A — Product Governance Data Foundation
 
-**Scope:** CatalogProductScope, OriginBranchId, BranchProductAvailability, backfill existing→OrganizationStandard, barcode/SKU protections, org vs branch edit authority, promotion Local→Standard (same ProductId, one-way), API/React foundation, tests, migration.
+**Scope:**
 
-**Must complete before:** branch setup wizard.
+- `CatalogProductScope`: OrganizationStandard | BranchLocal
+- `OriginBranchId`
+- `BranchProductAvailability` persistence
+- constraints/indexes
+- existing product backfill → OrganizationStandard
+- no ProductId rewrite
+- no automatic availability rows where Standard default=true
+- repository/domain mapping
+- migration + migration tests
+- architecture guards
 
-**Hard stops:** ProductId clone; demotion; Local multi-branch share; Platform Global Catalog confusion.
+**Out of scope:** React feature completion; promotion UX; branch pricing.
 
-**Tests:** PRODUCT-01…06; architecture guards; migration apply/rollback plan.
+**HARD STOP** before MB2-01B.
 
-**Migration:** Add scope + origin + availability; backfill Standard; no ProductId rewrite.
+**MB2_01A_READY:** YES
 
-**MB2_01_READY:** YES (docs locked; needs owner review of OD-01).
+---
+
+## MB2-01B — Product Authority & Availability Enforcement
+
+**Scope:**
+
+- central server-side product availability/scope resolver
+- org governance for Standard master
+- origin-branch authority for BranchLocal
+- Owner/Admin visibility across Local
+- BranchLocal create/edit; other-branch Local deny
+- Standard branch master edit deny
+- Standard branch availability configuration
+- promotion Local → Standard with **same ProductId**
+- **MB2-01 promotion price preservation** (current Local SellingPrice continues as OrganizationDefaultPrice; no BranchPriceOverride)
+- barcode/SKU collision protection
+- bulk availability queries (no N+1)
+- API contracts
+
+**CRITICAL:** Availability is **server enforced**. Not-offered or foreign Local must not be sellable via React bypass.
+
+Enforce at minimum for:
+
+- sell catalog query
+- sale/checkout validation
+- storefront query
+- customer-order quote/place
+
+Cross-surface polish may remain MB2-06.
+
+**HARD STOP** before MB2-01C.
+
+**MB2_01B_READY:** YES (after 01A)
+
+---
+
+## MB2-01C — Product Governance React UX
+
+**Scope:**
+
+Organization catalog/governance filters:
+
+- All products / Organization products / Branch products
+
+Branch product presentation:
+
+- scope/status, origin branch
+- master read-only when OrganizationStandard
+- BranchLocal editing at origin only
+- availability management for org governance
+- promotion review/confirmation
+- bulk availability management where appropriate
+
+Merchant wording: Organization product, Branch product, Not offered at this branch.
+Avoid Platform Global Catalog confusion.
+
+Responsive 360 / 768 / 1024 / 1440; full i18n.
+
+**Out of scope:** Branch price override UI; Today's Prices remains CURRENT price authority until MB2-03.
+
+**HARD STOP** before MB2-01D.
+
+**MB2_01C_READY:** YES (after 01B)
+
+---
+
+## MB2-01D — Product Governance Validation Closure
+
+**Scope:** PRODUCT-01…06; API/integration; architecture/security; migration apply; React; Playwright; responsive; duplicate barcode/SKU; availability bypass; cross-branch Local access; promotion identity/history; Sell/storefront/order regression; typecheck/lint/build; full affected suites; report; authoritative CURRENT/TARGET update.
+
+Only MB2-01D may declare:
+
+`MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE`
+
+Then: `NEXT=MB2_02`
+
+**MB2_01D_READY:** YES (after 01C)
 
 ---
 
 ## MB2-02 — Branch Inventory Authority Hardening
 
-**Scope:** List/detail branch correctness; operation matrix (opening, adjust, count, reorder, receipts, lots, returns, production, waste, stock use, transfers); org aggregate reconciliation; migrations if required.
+**Scope:** List/detail branch correctness; operation matrix; org aggregate reconciliation; migrations if required.
+
+**OD-04 closed:** Normal workspace inventory APIs resolve org + selected branch and return branch on-hand as `onHandQuantity`. Org aggregate only via explicit summary endpoint or unmistakably named field (e.g. `organizationOnHandQuantity`).
 
 **Goal:** Selected branch never sees another branch’s stock as its own.
 
-**Hard stops:** Fake stock copy; ignoring BranchStockResolver for display.
-
-**Tests:** STOCK-01…05; receive/open write branch balance; transfer regression.
-
-**MB2_02_READY:** YES after MB2-01 (assortment interactions); inventory can start after product availability exists for “not offered” edge cases — preferred sequence remains after MB2-01.
+**MB2_02_READY:** YES after MB2-01D.
 
 ---
 
 ## MB2-03 — Branch Pricing & Effective Price Authority
 
-**Scope:** Org default + branch overrides (base + unit); central resolver; Today's Prices branch awareness; Sell/checkout/customer ordering baselines; offline lease/cache keys; snapshots; tests/migration.
+**Scope:** Org default + branch overrides (base + unit); central resolver; Today's Prices branch awareness; Sell/checkout/customer ordering; offline lease/cache keys; snapshots; tests/migration.
 
-**Hard stops:** Auto-creating overrides for all products; client-authoritative price; rewriting historical sales.
+**OD-05 closed:** When effective pricing lands, cache/lease identity = `org::branch::product::unit` (or base). Bump schema version; invalidate/migrate legacy product-only keys; never guess branch; fail closed/refetch when ambiguous; invalidate on workspace branch change.
 
-**Tests:** PRICE-01…05; concurrency; offline WrongBranch.
+**Promotion enhancement (deferred from MB2-01):**
 
-**Migration:** No automatic override rows; semantics map existing SellingPrice → org default.
+`PROMOTION_CUSTOM_DEFAULT_WITH_ORIGIN_OVERRIDE=DEFERRED_TO_MB2_03`
 
-**MB2_03_READY:** YES after MB2-01 (product identity stable).
+After MB2-03, promotion may set Organization default ≠ origin and retain origin via BranchPriceOverride.
+
+**MB2_03_READY:** YES after MB2-01D.
 
 ---
 
 ## MB2-04 — Customer & Supplier Branch Access
 
-**Scope:** Access tables; privacy-safe search; branch transaction visibility; Utang privacy; backfill strategy; Owner governance; purchasing/customer integration.
+**Scope:** Access tables; privacy-safe search; branch transaction visibility; Utang privacy; backfill; Owner governance.
 
-**Hard stops:** Silent grant-all; cloning parties; React-only filtering.
+**OD-02 closed:** PRIVACY_FIRST_PROVENANCE_BACKFILL — infer only from reliable branch-attributed records; unknown → Primary/Main only; never fan-out ambiguous parties; no duplication.
 
-**Tests:** PRIVACY-01…05; OD-02 resolution required before migration ship.
+MB2-04 must still audit real schema/data before migration; fallback policy is locked.
 
-**MB2_04_READY:** CONDITIONAL — OD-02 must be closed or explicit Primary-only fallback accepted.
+**MB2_04_READY:** YES (OD-02 closed).
 
 ---
 
 ## MB2-05 — New Branch Guided Setup
 
-**Scope:** Resumable wizard; template reference; products/prices/stock/customers/suppliers/staff/devices/fulfillment/review; setup progress.
+**Scope:** Resumable wizard; template; products/prices/stock/customers/suppliers/staff/devices/fulfillment/review.
 
-**Consumes:** MB2-01…04. Does not duplicate domains.
+**OD-03 closed:** HYBRID_SETUP_PROGRESS — domain data is source of truth; optional UX metadata (LastVisitedStep, timestamps, etc.); no duplicate authoritative `ProductsComplete`-style booleans.
 
-**Hard stops:** Cloning stock/customers/devices; auto-promoting Local; fabricating fulfillment ready.
+**Consumes:** MB2-01D + MB2-02…04.
 
-**Tests:** WIZARD-01…05; Remote North scenario.
-
-**MB2_05_READY:** YES after MB2-01…04.
+**MB2_05_READY:** YES after predecessors.
 
 ---
 
 ## MB2-06 — Cross-Surface + Offline Hardening
 
-**Scope:** Sell, checkout, storefront, orders, returns, purchasing, offline, cache invalidation on branch switch, reports, auth, N+1/performance (bulk availability, effective price, party search, inventory summary).
+**Scope:** Sell, checkout, storefront, orders, returns, purchasing, offline, cache invalidation, reports, auth, N+1/performance.
 
-**Hard stops:** Per-row N+1 wizard/catalog; stale branch caches.
-
-**Tests:** Cross-surface isolation; offline; workspace switch.
-
-**MB2_06_READY:** YES after MB2-05 (or parallel late hardening with care).
+**MB2_06_READY:** YES after MB2-05.
 
 ---
 
 ## MB2-07 — Multi-Branch V2 E2E Closure
 
-**Scope:** Joe Store + Remote North scenarios; security/privacy/price/stock isolation; promotion; wizard; migration compatibility; responsive; offline/online; full regression; finalize authoritative CURRENT stamps.
+**Scope:** Joe Store + Remote North; isolation; promotion; wizard; migration; responsive; offline/online; full regression.
 
 **MB2_07_READY:** YES as terminal package.
 
 ---
 
-## Bulk / performance requirements (design — no implement in MB2-00)
+## Bulk / performance
 
 - Branch product availability summary (bulk)
 - Effective price bulk resolution
 - Branch customer/supplier access search
 - Inventory branch summary
 
-Avoid one-request-per-product wizard designs.
-
----
-
-## Cache / query keys
-
-Branch-specific data caches **must** include `organizationId` + `branchId`:
-
-inventory, effective prices, storefront assortment, sell catalog slice, availability, customer access, supplier access.
-
-Org-master caches may remain organization-scoped. Document stale risk on workspace switch (MB2-06).
+Avoid one-request-per-product designs.
 
 ---
 
 ## Migration safety (all packages)
 
-- No ProductId rewrite
-- No historical sale rewrite
-- No customer/supplier duplication
-- No fake stock creation
-- No automatic branch price overrides for existing data
-- Existing org price → organization default
-- Existing products preserve observable behavior until assortment/price changes
-- Branch inventory must reconcile
-- Privacy/access migration explicit
-- Rollback/forward compatibility per package
+- No ProductId rewrite; no historical sale rewrite; no party duplication; no fake stock; no automatic branch price overrides for existing data; existing org price → organization default; branch inventory must reconcile; privacy/access migration explicit; rollback/forward compatibility.
 
 ---
 
-## Owner review gate
+## Next
 
-**NEXT after MB2-00:** `OWNER_REVIEW_BEFORE_MB2_01`
-
-Do not implement production code until review accepts locked decisions and resolves or defers OPEN_DECISIONS.
+**NEXT=`MB2_01A`** — only when explicitly authorized as a separate implementation task.

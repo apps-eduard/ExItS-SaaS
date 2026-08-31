@@ -1,9 +1,10 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** TARGET_LOCKED (MB2-00)
+**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-01
+**Implements in:** MB2-01A → MB2-01B → MB2-01C → MB2-01D
+**Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---
 
@@ -36,6 +37,17 @@ enum CatalogProductScope {
 | Master edit | Owner/Admin (org catalog authority) | Authorized origin-branch users |
 | Owner/Admin visibility | Yes | Yes (governance) |
 | V1 cross-branch Local share | N/A | **DEFERRED** — promote instead |
+
+### Platform Global Catalog — LOCKED clarification
+
+Platform Global Catalog is a **SOURCE/TEMPLATE** concept only. It does **not** determine organization product scope automatically.
+
+After import into an organization, the resulting `CatalogProduct` must still receive a valid `OrganizationStandard` or `BranchLocal` scope according to the authorized workflow.
+
+- Ordinary branch-level authority must **not** gain power to create OrganizationStandard merely because the source was Platform Global Catalog.
+- Organization-level governance may create/import OrganizationStandard.
+- Authorized branch workflow may create/import BranchLocal for its own branch if import capability is exposed there.
+- No naming collision: merchant “Organization product” / “Branch product” ≠ Platform Global Catalog.
 
 ---
 
@@ -77,7 +89,28 @@ Do not grant org governance merely because a user manages one branch.
 
 Disable ≠ delete/archive/clone. History, balances, overrides retained. Re-enable restores offer without new ProductId.
 
-**OD-01 (recommended):** Allow disable with nonzero stock + warning; block new commercial sell/storefront; stock mgmt remains.
+### OD-01 = CLOSED — ALLOW_DISABLE_WITH_NONZERO_STOCK_WITH_WARNING
+
+Branch product availability controls **commercial offering**, not physical inventory existence.
+
+When OrganizationStandard becomes **Not offered** at Branch A:
+
+**BLOCK new:**
+
+- Sell-floor commercial selection/sale
+- Customer storefront offering
+- New customer-order quote/place for that branch
+
+**RETAIN:**
+
+- Existing ProductId
+- Branch stock, lots/expiry
+- Historical sales/orders
+- Branch price records, stock movements, audit
+
+**ALLOW** legitimate inventory lifecycle (per existing permissions/domain): inventory viewing, stock adjustment, transfer out, valid returns/reversals, stock-use/waste where applicable.
+
+Do **not** hard-delete or force stock to zero. Availability is **not** inventory existence.
 
 ---
 
@@ -91,13 +124,29 @@ Disable ≠ delete/archive/clone. History, balances, overrides retained. Re-enab
 - **BRANCH_LOCAL_MULTI_BRANCH_SHARING = DEFERRED**
 - **LOCAL_PROMOTION_INSIDE_BRANCH_WIZARD = DEFERRED**
 
-### Promotion price — TARGET_LOCKED
+### Promotion price — phased (LOCKED)
 
-1. Owner/Admin must set **OrganizationDefaultPrice** (and unit defaults as applicable).
-2. UI may prefill from origin effective/local price.
-3. Server must not silently invent defaults without explicit command.
-4. If org default equals origin price → origin inherits.
-5. If org default differs → origin may retain prior effective via **branch override** (explicit promotion option).
+**MB2-01 (01B) — price preservation only:**
+
+`BranchLocal → OrganizationStandard`
+
+- Same ProductId
+- Preserve current SellingPrice
+- Current Local selling price becomes/continues as OrganizationDefaultPrice
+- No automatic price change
+- No temporary branch-pricing mechanism
+- **No BranchPriceOverride** (table does not exist until MB2-03)
+- All historical data retained
+
+Example: Remote Local Fresh Bangus = 180 → after promote: OrganizationStandard default = 180; Remote effective = 180.
+
+**MB2-03 enhancement (deferred):**
+
+`PROMOTION_CUSTOM_DEFAULT_WITH_ORIGIN_OVERRIDE=DEFERRED_TO_MB2_03`
+
+Only after BranchPriceOverride exists may promotion support: Organization default = 190 with Remote override = 180.
+
+Do **not** make MB2-01 depend on a nonexistent override table.
 
 ---
 
@@ -111,12 +160,13 @@ On Local create: check existing org catalog (barcode/SKU/rules). Prefer UX: “T
 
 ---
 
-## 7. Existing product backfill — TARGET (MB2-01 migration)
+## 7. Existing product backfill — TARGET (MB2-01A migration)
 
 - All existing `CatalogProduct` → `OrganizationStandard`.
 - No ProductId rewrite; no clones.
 - Availability default preserves current observable behavior (offered at existing branches).
-- No migration files in MB2-00.
+- No automatic availability rows needed where Standard default = true.
+- No migration files in MB2-00 / MB2-00A.
 
 ---
 
@@ -128,11 +178,11 @@ On Local create: check existing org catalog (barcode/SKU/rules). Prefer UX: “T
 | Branch catalog role at branch | Read-only master | Create/edit if capability | Deny | Only if org policy grants (default Deny) |
 | Cashier | Deny master edit | Deny unless capability says otherwise | Deny | Deny |
 
-Server enforces; UI is not the boundary.
+**Server enforces** (MB2-01B); UI is not the boundary. Not-offered or foreign Local must not be sellable by bypassing React.
 
 ---
 
-## 9. Acceptance scenario IDs (MB2-01)
+## 9. Acceptance scenario IDs (MB2-01D)
 
 | ID | Expectation |
 |----|-------------|
@@ -142,6 +192,8 @@ Server enforces; UI is not the boundary.
 | PRODUCT-04 | Branch Manager cannot edit OrganizationStandard master |
 | PRODUCT-05 | Unselected Standard product not offered on branch |
 | PRODUCT-06 | Duplicate barcode rejected across scopes |
+
+Only MB2-01D may declare `MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE`.
 
 ---
 
