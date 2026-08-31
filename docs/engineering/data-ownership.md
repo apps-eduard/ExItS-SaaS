@@ -2,12 +2,15 @@
 
 [Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md)
 
-**Version:** 2.1  
-**Status:** Authoritative  
-**Current phase:** Phase 29 — data integrity hardening (cross-cutting)  
+**Version:** 2.1
+**Status:** Authoritative
+**Current phase:** Phase 29 — data integrity hardening (cross-cutting)
 **Last reconciled:** 2026-08-16
 
 > **Superseding note (P29-WP01):** `OrganizationBranch` is **Platform-owned**. POS and other products may store branch GUIDs as opaque operational references only. Earlier wording that listed “branches / stores” under POS operational ownership is superseded for the branch **master** identity; POS still owns branch-scoped operational balances, transfers, and order fulfillment references.
+
+> **TARGET_EVOLUTION (POS-MULTI-BRANCH-COMMERCE-V2 / MB2-00):**
+> Org-owned masters (catalog, customers, suppliers, org selling price) remain CURRENT. V2 adds branch assortment, branch effective pricing, branch inventory display authority, and customer/supplier **access** without cloning masters — [multi-branch-commerce-v2.md](../Mobile-React/Authoritative/POS/multi-branch-commerce-v2.md).
 
 ---
 

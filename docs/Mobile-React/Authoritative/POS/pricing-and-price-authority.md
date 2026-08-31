@@ -1,5 +1,9 @@
 # Pricing and Price Authority
 
+> **TARGET_EVOLUTION (POS-MULTI-BRANCH-COMMERCE-V2 / MB2-00):**
+> This document remains the **CURRENT** contract: organization catalog/unit selling prices + transaction sale-line override.
+> Branch price overrides and a central effective-price resolver are **TARGET** under [branch-pricing-and-effective-price.md](branch-pricing-and-effective-price.md). Do not treat TARGET as shipped.
+
 ## CURRENT contract
 
 | Capability | Status | Evidence |
@@ -42,8 +46,8 @@ The earlier Fixed / optional CashierAdjustable / min-max product policy draft is
 
 Classification retained for audit trail only:
 
-- ~~`POS_SALE_PRICE_POLICY_CONTRACT_MISSING`~~ → superseded by capability matrix  
-- ~~`POS_CASHIER_PRICE_OVERRIDE_CONTRACT_MISSING`~~ → backend delivered; Cashier remains DENY  
+- ~~`POS_SALE_PRICE_POLICY_CONTRACT_MISSING`~~ → superseded by capability matrix
+- ~~`POS_CASHIER_PRICE_OVERRIDE_CONTRACT_MISSING`~~ → backend delivered; Cashier remains DENY
 - `POS_PRICE_HISTORY_AUDIT_UNRESOLVED` (catalog history table still optional; sale override audit rows exist)
 
 ## Authorization (current)

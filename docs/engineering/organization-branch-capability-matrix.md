@@ -1,7 +1,10 @@
 # Organization + Branch Capability Matrix
 
-**Status:** Authoritative baseline (P28-WP15A)  
+**Status:** Authoritative baseline (P28-WP15A)
 **Related:** [client-experience-boundaries](../architecture/client-experience-boundaries.md) | [organization-web-role-and-workflow-matrix](organization-web-role-and-workflow-matrix.md) | [organization-branches-and-fulfillment-locations](organization-branches-and-fulfillment-locations.md) | [authorization-matrix](authorization-matrix.md) | [P28-WP14 workspace selection](../reports/P28-WP14-unified-organization-branch-workspace-selection.md)
+
+> **TARGET_EVOLUTION (POS-MULTI-BRANCH-COMMERCE-V2 / MB2-00):**
+> Staff branch ACL is **CURRENT_PROVEN** (WP15C). Multi-Branch V2 adds product assortment, branch pricing, inventory display authority, and party access — [multi-branch-commerce-v2.md](../Mobile-React/Authoritative/POS/multi-branch-commerce-v2.md). Do not treat V2 TARGET rows as shipped.
 
 ## Purpose
 
@@ -65,7 +68,7 @@ Switching workspace runs `SelectWorkspaceAsync` (org then branch). Open cashier 
 |---|---|
 | **Primary/Main only** | MAUI surfaces OrganizationGovernance entry points only when workspace `SelectedBranchId` is the org **Primary** branch (`IsPrimary`). |
 | **Exact selected branch** | Action applies only to the workspace-selected branch (or device-bound branch for POS money paths). |
-| **Any permitted branch** | User may act on any Active branch they can access under current resolver (today: owner path = all Active org branches; staff ACL **not implemented**). |
+| **Any permitted branch** | User may act on any Active branch they can access under current resolver (Owner/Admin = all Active org branches; normal staff = explicit `organization_membership_branch_assignments` — WP15C **CURRENT_PROVEN**. Earlier “staff ACL not implemented” wording is **SUPERSEDED**). |
 | **Not Mobile** | Web-only or Platform-only for MVP/practical UX. |
 
 **Organization Web:** Owner/Administrator/Manager use centralized nav; branch hierarchy is informational — **no fake Main selection required**.

@@ -2,6 +2,10 @@
 
 An `OrganizationBranch` is an organization-owned operating location. It remains in the Platform database and is referenced by product operational records only by identifier; products must not query the Platform database directly.
 
+> **TARGET_EVOLUTION (POS-MULTI-BRANCH-COMMERCE-V2 / MB2-00):**
+> This document remains the **CURRENT** contract for branch identity, fulfillment readiness, workspace selection, and P28 Model A ownership (org masters + branch operational overlays).
+> Multi-Branch V2 **extends** ownership with OrganizationStandard / BranchLocal assortment, branch price overrides, branch inventory display authority, and customer/supplier branch access — see [multi-branch-commerce-v2.md](../Mobile-React/Authoritative/POS/multi-branch-commerce-v2.md). Historical P28 reports are not rewritten.
+
 ## Location model
 
 - Structured postal address: two address lines, city/municipality, region, postal code, and country code.
