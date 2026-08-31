@@ -1,21 +1,24 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
+**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION — TARGET remaining for 01B–01D
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-01A → MB2-01B → MB2-01C → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
+**01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 
 ---
 
-## 1. CURRENT_PROVEN
+## 1. CURRENT_PROVEN (after MB2-01A)
 
 - One `CatalogProduct` per org product identity (`OrganizationId` + `ProductId`).
 - Unique filtered indexes: org `NormalizedSku`, org `Barcode`.
 - Master fields include (domain): Name, Description, Sku/NormalizedSku, Barcode, CategoryId, BrandId, UnitOfMeasure, SellingMode, SellingPrice, Status, units (`CatalogProductUnit`), images, expiration-tracking characteristics, Platform import provenance.
-- No `CatalogProductScope`, no `OriginBranchId`, no branch availability table.
+- **MB2-01A:** `CatalogProductScope` (`OrganizationStandard` | `BranchLocal`), `OriginBranchId` (`PosBranchId?`), `BranchProductAvailability` sparse override table. Existing rows backfilled OrganizationStandard; no automatic availability rows.
+- Create / CreateImportedSnapshot still default OrganizationStandard (no observable catalog behavior change).
 - Today's Prices / product edit update **organization** selling price.
 - ManageCatalog (and equivalent) gates catalog mutations; cashiers denied Today's Prices (RMAP-06).
+- **Not yet:** availability resolver, promotion, branch-local APIs, React scope UX (MB2-01B/C).
 
 ---
 

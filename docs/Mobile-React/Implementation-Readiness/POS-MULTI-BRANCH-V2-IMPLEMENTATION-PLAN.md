@@ -3,8 +3,9 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Architecture lock:** [multi-branch-commerce-v2.md](../Authoritative/POS/multi-branch-commerce-v2.md)
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
-**MB2-00 / MB2-00A status:** OWNER_APPROVED_READY_FOR_MB2_01A
-**HARD STOP:** Do not start MB2-01A until explicitly authorized as a separate task.
+**MB2-01A status:** COMPLETE_VALIDATED_FOUNDATION
+**HARD STOP:** Do not start MB2-01B until explicitly authorized as a separate task.
+**01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 
 ---
 
@@ -45,7 +46,8 @@ MB2-02 → MB2-03 → MB2-04 → MB2-05 → MB2-06 → MB2-07
 
 **HARD STOP** before MB2-01B.
 
-**MB2_01A_READY:** YES
+**MB2_01A_STATUS:** COMPLETE_VALIDATED_FOUNDATION
+**NEXT:** MB2_01B (when authorized)
 
 ---
 
@@ -214,4 +216,4 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_01A`** — only when explicitly authorized as a separate implementation task.
+**NEXT=`MB2_01B`** — only when explicitly authorized as a separate implementation task.
