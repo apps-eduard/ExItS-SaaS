@@ -7,9 +7,9 @@ PASS — map-first branch delivery location + org-customer distance exception.
 ```
 TASK=POS-BRANCH-DELIVERY-MAP-AND-CUSTOMER-DISTANCE-EXCEPTION-01
 START_SHA=73721a203e976d07001672b970aac2c9be7e9022
-FEATURE_SHA=(see Git after push)
-FINAL_SHA=(see Git after push)
-REMOTE_SHA=(see Git after push)
+FEATURE_SHA=0073b299976a64b9c65af895535ae2d66c68d41a
+FINAL_SHA=06e17e68df2e0fa7d778a50a5ff066b5d06010f1
+REMOTE_SHA=(pending push)
 
 MAP_LIBRARY=leaflet + react-leaflet
 MAP_LAZY_LOADED=YES
