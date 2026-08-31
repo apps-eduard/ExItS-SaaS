@@ -80,6 +80,8 @@ public static class DomainErrorCodes
     public const string BranchDeliveryServiceAreaDuplicate = "platform.branch_delivery_service_area.duplicate";
     public const string OrganizationBranchPrimaryRequired = "platform.organization_branch.primary.required";
     public const string OrganizationBranchPrimarySuspendForbidden = "platform.organization_branch.primary.suspend_forbidden";
+    public const string OrganizationBranchPrimaryArchiveForbidden = "platform.organization_branch.primary.archive_forbidden";
+    public const string OrganizationBranchPrimaryChangeInvalid = "platform.organization_branch.primary.change_invalid";
     public const string OrganizationBranchSuspendBlockedActiveDevices = "platform.organization_branch.suspend_blocked_active_devices";
     public const string OrganizationBranchSuspensionReasonRequired = "platform.organization_branch.suspension_reason.required";
     public const string InvalidPosDeviceId = "platform.pos_device.id.invalid";

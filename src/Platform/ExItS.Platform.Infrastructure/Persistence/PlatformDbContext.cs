@@ -557,6 +557,11 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
+            // One primary branch per organization (partial unique index).
+            entity.HasIndex(e => e.OrganizationId)
+                .IsUnique()
+                .HasFilter("is_primary = TRUE")
+                .HasDatabaseName("ux_organization_branches_one_primary");
             // Alternate key backs composite tenant FKs; do not also declare a redundant unique HasIndex.
             entity.HasAlternateKey(e => new { e.Id, e.OrganizationId })
                 .HasName("AK_organization_branches_id_organization_id");

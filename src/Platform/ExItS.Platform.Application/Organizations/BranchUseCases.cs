@@ -84,6 +84,39 @@ public sealed record BranchDeliveryServiceAreaPublicDto(
 
 public sealed record BranchCapacityDto(int Used, int Allowed);
 
+public sealed record BranchManagementSummaryItemDto(
+    Guid Id,
+    Guid OrganizationId,
+    string Code,
+    string Name,
+    bool IsPrimary,
+    OrganizationBranchStatus Status,
+    string? City,
+    string? Region,
+    string? AddressLine1,
+    bool PickupEnabled,
+    bool DeliveryEnabled,
+    bool CustomerOrderingEnabled,
+    int AssignedStaffCount,
+    int ActiveDeviceCount,
+    int PickupSectionsComplete,
+    int PickupSectionsTotal,
+    int DeliverySectionsComplete,
+    int DeliverySectionsTotal);
+
+public sealed record BranchStaffAccessItemDto(
+    Guid MembershipId,
+    Guid UserId,
+    string DisplayName,
+    string MembershipRole,
+    string MembershipStatus,
+    string? PosRoleCode,
+    string? PosRoleDisplay,
+    bool HasExplicitAccess,
+    bool HasOrganizationWideAccess);
+
+public sealed record SetPrimaryBranchCommand(string? Reason = null);
+
 public sealed record CreateBranchCommand(
     string Code,
     string Name,
@@ -97,7 +130,9 @@ public sealed record CreateBranchCommand(
     decimal? Longitude = null,
     bool PickupEnabled = false,
     bool DeliveryEnabled = false,
-    bool CustomerOrderingEnabled = false);
+    bool CustomerOrderingEnabled = false,
+    string? ContactPhone = null,
+    string? TimeZoneId = null);
 
 public sealed record UpdateBranchCommand(
     string Name,
@@ -327,6 +362,16 @@ public sealed class CreateBranch(
                 command.PickupEnabled,
                 command.DeliveryEnabled,
                 command.CustomerOrderingEnabled);
+            if (!string.IsNullOrWhiteSpace(command.ContactPhone))
+            {
+                branch.UpdateContactPhone(command.ContactPhone, clock.UtcNow);
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.TimeZoneId))
+            {
+                branch.UpdateTimeZone(command.TimeZoneId, clock.UtcNow);
+            }
+
             policy = BranchDeliveryPolicy.CreateDefault(branch.Id, organizationId, clock.UtcNow);
         }
         catch (DomainException ex)
@@ -494,6 +539,8 @@ public sealed class SuspendBranch(
 public sealed class ReactivateBranch(
     IOrganizationBranchRepository branches,
     IBranchDeliveryPolicyRepository policies,
+    ISubscriptionRepository subscriptions,
+    IPlanRepository plans,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -515,6 +562,23 @@ public sealed class ReactivateBranch(
                 "An archived branch cannot be reactivated.");
         }
 
+        if (branch.Status != OrganizationBranchStatus.Active)
+        {
+            var limit = await PosOrganizationPlanLimits.ResolveAsync(organizationId, subscriptions, plans, cancellationToken).ConfigureAwait(false);
+            if (!limit.IsSuccess || limit.Value is null)
+            {
+                return ApplicationResult<OrganizationBranchDto>.Failure(limit.ErrorCode!, limit.ErrorMessage!);
+            }
+
+            var active = await branches.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            if (active >= limit.Value.MaxBranches)
+            {
+                return ApplicationResult<OrganizationBranchDto>.Failure(
+                    ApplicationErrorCodes.BranchCapacityExceeded,
+                    "The active POS plan branch limit has been reached.");
+            }
+        }
+
         try
         {
             branch.Activate(clock.UtcNow);
@@ -528,6 +592,120 @@ public sealed class ReactivateBranch(
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         var policy = await policies.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(branch, policy));
+    }
+}
+
+public sealed class SetPrimaryBranch(
+    IOrganizationBranchRepository branches,
+    IBranchDeliveryPolicyRepository policies,
+    IPlatformUnitOfWork unitOfWork,
+    IClock clock)
+{
+    public async Task<ApplicationResult<OrganizationBranchDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var target = await branches.GetByIdAsync(branchId, cancellationToken).ConfigureAwait(false);
+        if (target is null || target.OrganizationId != organizationId)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ApplicationErrorCodes.BranchNotFound, "Branch was not found.");
+        }
+
+        if (target.IsPrimary)
+        {
+            var policySame = await policies.GetByBranchIdAsync(target.Id, cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(target, policySame));
+        }
+
+        if (target.Status != OrganizationBranchStatus.Active)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(
+                DomainErrorCodes.OrganizationBranchPrimaryChangeInvalid,
+                "Only an active branch can become the primary branch.");
+        }
+
+        var currentPrimary = await branches.GetPrimaryAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            currentPrimary?.DemoteFromPrimary(clock.UtcNow);
+            target.PromoteToPrimary(clock.UtcNow);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationBranchDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        if (currentPrimary is not null)
+        {
+            await branches.UpdateAsync(currentPrimary, cancellationToken).ConfigureAwait(false);
+        }
+
+        await branches.UpdateAsync(target, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        var policy = await policies.GetByBranchIdAsync(target.Id, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<OrganizationBranchDto>.Success(BranchMapper.ToDto(target, policy));
+    }
+}
+
+public sealed class ListBranchManagementSummaries(
+    ListBranches listBranches,
+    IOrganizationMembershipBranchAssignmentRepository assignments,
+    IPosDeviceRepository devices,
+    IOrganizationMembershipRepository memberships)
+{
+    public async Task<ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var branches = await listBranches.ExecuteAsync(organizationId, actorUserId, cancellationToken).ConfigureAwait(false);
+
+        var membershipPage = await memberships
+            .ListByOrganizationAsync(organizationId, MembershipStatus.Active, skip: 0, take: 500, cancellationToken)
+            .ConfigureAwait(false);
+        var normalStaffMembershipIds = membershipPage.Items
+            .Where(m => m.Role == OrganizationRole.OrganizationMember)
+            .Select(m => m.Id.Value)
+            .ToHashSet();
+
+        var assignmentRows = await assignments.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var staffCounts = assignmentRows
+            .Where(a => normalStaffMembershipIds.Contains(a.MembershipId.Value))
+            .GroupBy(a => a.BranchId.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var deviceList = await devices.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var deviceCounts = deviceList
+            .Where(d => d.Status == PosDeviceStatus.Active)
+            .GroupBy(d => d.BranchId.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var items = branches
+            .OrderByDescending(b => b.IsPrimary)
+            .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(b => new BranchManagementSummaryItemDto(
+                b.Id,
+                b.OrganizationId,
+                b.Code,
+                b.Name,
+                b.IsPrimary,
+                b.Status,
+                b.City,
+                b.Region,
+                b.AddressLine1,
+                b.PickupEnabled,
+                b.DeliveryEnabled,
+                b.CustomerOrderingEnabled,
+                staffCounts.GetValueOrDefault(b.Id, 0),
+                deviceCounts.GetValueOrDefault(b.Id, 0),
+                b.PickupSectionsComplete,
+                b.PickupSectionsTotal,
+                b.DeliverySectionsComplete,
+                b.DeliverySectionsTotal))
+            .ToList();
+
+        return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
     }
 }
 

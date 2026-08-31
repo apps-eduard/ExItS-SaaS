@@ -9,6 +9,7 @@ public static class GovernanceCriticalActionCodes
     public const string BranchSuspend = "platform.organization.branch.suspend";
     public const string BranchArchive = "platform.organization.branch.archive";
     public const string BranchReactivate = "platform.organization.branch.reactivate";
+    public const string BranchSetPrimary = "platform.organization.branch.set_primary";
     public const string MembershipSuspend = "platform.membership.suspend";
     public const string MembershipRevoke = "platform.membership.revoke";
     public const string MembershipRoleChange = "platform.membership.role_change";

@@ -22,6 +22,31 @@ internal sealed class OrganizationMembershipBranchAssignmentRepository(
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.OrganizationMembershipBranchAssignments.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByBranchAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.OrganizationMembershipBranchAssignments.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value && x.BranchId == branchId.Value)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByUserAndOrganizationAsync(
         PlatformUserId userId,
         PlatformOrganizationId organizationId,

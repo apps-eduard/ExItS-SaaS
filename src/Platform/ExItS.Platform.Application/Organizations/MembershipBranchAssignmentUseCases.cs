@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -158,5 +159,73 @@ public sealed class SetMembershipBranchAssignments(
             .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
         return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Success(dtos);
+    }
+}
+
+public sealed class ListBranchStaffAccess(
+    IOrganizationMembershipRepository memberships,
+    IOrganizationMembershipBranchAssignmentRepository assignments,
+    IProductLocalRoleGrantRepository roleGrants,
+    IPlatformUserRepository users)
+{
+    public async Task<ApplicationResult<IReadOnlyList<BranchStaffAccessItemDto>>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var membershipPage = await memberships
+            .ListByOrganizationAsync(organizationId, status: null, skip: 0, take: 500, cancellationToken)
+            .ConfigureAwait(false);
+        var currentMembers = membershipPage.Items
+            .Where(m => m.Status is MembershipStatus.Active or MembershipStatus.Suspended)
+            .ToList();
+
+        var branchAssignments = await assignments
+            .ListByBranchAsync(organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        var assignedMembershipIds = branchAssignments.Select(a => a.MembershipId.Value).ToHashSet();
+
+        var grants = await roleGrants
+            .ListByOrganizationAsync(organizationId, ProductLocalRoleGrantStatus.Active, cancellationToken)
+            .ConfigureAwait(false);
+        var grantByUser = grants
+            .GroupBy(g => g.UserIdentityId.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var userIds = currentMembers.Select(m => m.UserId).Distinct().ToList();
+        var usersById = (await users.ListByIdsAsync(userIds, cancellationToken).ConfigureAwait(false))
+            .ToDictionary(u => u.Id.Value);
+
+        var items = new List<BranchStaffAccessItemDto>();
+        foreach (var membership in currentMembers
+                     .OrderBy(m => m.Role)
+                     .ThenBy(m => usersById.TryGetValue(m.UserId.Value, out var u) ? u.DisplayName : m.UserId.Value.ToString("D"),
+                         StringComparer.OrdinalIgnoreCase))
+        {
+            var wide = OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role);
+            var explicitAccess = assignedMembershipIds.Contains(membership.Id.Value);
+            if (!wide && !explicitAccess)
+            {
+                continue;
+            }
+
+            usersById.TryGetValue(membership.UserId.Value, out var user);
+            var displayName = user?.DisplayName?.Trim()
+                ?? user?.NormalizedEmail?.Trim()
+                ?? membership.UserId.Value.ToString("D");
+            grantByUser.TryGetValue(membership.UserId.Value, out var grant);
+            items.Add(new BranchStaffAccessItemDto(
+                membership.Id.Value,
+                membership.UserId.Value,
+                displayName,
+                membership.Role.ToString(),
+                membership.Status.ToString(),
+                grant?.RoleCode,
+                grant is null ? null : ProductRoleDisplay.ToDisplayLabel(grant.RoleCode),
+                explicitAccess,
+                wide));
+        }
+
+        return ApplicationResult<IReadOnlyList<BranchStaffAccessItemDto>>.Success(items);
     }
 }

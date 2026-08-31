@@ -38,7 +38,7 @@ public sealed class OrganizationBranch
     public string? TimeZoneId { get; private set; }
     public bool OnlineOrdersPaused { get; private set; }
     public OnlineOrdersPauseReason? PauseReason { get; private set; }
-    public bool IsPrimary { get; }
+    public bool IsPrimary { get; private set; }
     public OrganizationBranchStatus Status { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
     public PlatformUserId? SuspendedByUserId { get; private set; }
@@ -377,7 +377,52 @@ public sealed class OrganizationBranch
     }
 
     public void Deactivate(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Inactive, utcNow);
-    public void Archive(DateTimeOffset utcNow) => TransitionTo(OrganizationBranchStatus.Archived, utcNow);
+
+    public void Archive(DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (IsPrimary)
+        {
+            throw new DomainException(
+                DomainErrorCodes.OrganizationBranchPrimaryArchiveForbidden,
+                "The primary branch cannot be archived.");
+        }
+
+        TransitionTo(OrganizationBranchStatus.Archived, utcNow);
+    }
+
+    /// <summary>Demotes this branch from Primary. Caller must promote another Active branch in the same transaction.</summary>
+    public void DemoteFromPrimary(DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (!IsPrimary)
+        {
+            return;
+        }
+
+        IsPrimary = false;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Promotes this Active non-archived branch to Primary. Caller must demote the previous primary in the same transaction.</summary>
+    public void PromoteToPrimary(DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (Status != OrganizationBranchStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.OrganizationBranchNotActive,
+                "Only an active branch can become the primary branch.");
+        }
+
+        if (IsPrimary)
+        {
+            return;
+        }
+
+        IsPrimary = true;
+        UpdatedAtUtc = utcNow;
+    }
 
     public void EnsureActive()
     {

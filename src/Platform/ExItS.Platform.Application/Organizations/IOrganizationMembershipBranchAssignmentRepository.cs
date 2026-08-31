@@ -10,6 +10,15 @@ public interface IOrganizationMembershipBranchAssignmentRepository
         OrganizationMembershipId membershipId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByBranchAsync(
+        PlatformOrganizationId organizationId,
+        OrganizationBranchId branchId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByUserAndOrganizationAsync(
         PlatformUserId userId,
         PlatformOrganizationId organizationId,

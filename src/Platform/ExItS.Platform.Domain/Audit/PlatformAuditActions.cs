@@ -36,6 +36,7 @@ public static class PlatformAuditActions
     public const string OrganizationBranchArchived = "platform.organization.branch.archived";
     public const string OrganizationBranchSuspended = "platform.organization.branch.suspended";
     public const string OrganizationBranchReactivated = "platform.organization.branch.reactivated";
+    public const string OrganizationBranchPrimaryChanged = "platform.organization.branch.primary_changed";
     public const string GovernanceStepUpSucceeded = "platform.governance.step_up_succeeded";
     public const string OrganizationBranchHoursUpdated = "platform.organization.branch.hours_updated";
     public const string OrganizationBranchFulfillmentUpdated = "platform.organization.branch.fulfillment_updated";

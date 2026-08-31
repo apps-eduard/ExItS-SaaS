@@ -81,6 +81,28 @@ internal static class BranchAndDeviceEndpoints
             if (denied is not null) return denied;
             return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false), Results.Ok);
         });
+        root.MapGet("/branches/management-summary", async (
+            Guid organizationId,
+            ListBranchManagementSummaries useCase,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.AccountScopeDenied,
+                    "Authenticated organization user is required.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), actor, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
         root.MapPost("/branches", async (Guid organizationId, CreateBranchRequest body, CreateBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchCreated, ct).ConfigureAwait(false);
@@ -99,7 +121,9 @@ internal static class BranchAndDeviceEndpoints
                     body.Longitude,
                     body.PickupEnabled ?? false,
                     body.DeliveryEnabled ?? false,
-                    body.CustomerOrderingEnabled ?? false), ct).ConfigureAwait(false);
+                    body.CustomerOrderingEnabled ?? false,
+                    body.ContactPhone,
+                    body.TimeZoneId), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
                 await OrganizationGovernanceAuditWriter.WriteBranchAsync(
@@ -283,6 +307,78 @@ internal static class BranchAndDeviceEndpoints
             }
 
             return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+        root.MapPost("/branches/{branchId:guid}/set-primary", async (
+            Guid organizationId,
+            Guid branchId,
+            GovernanceCriticalActionRequest body,
+            SetPrimaryBranch useCase,
+            ConsumeGovernanceStepUpGrant stepUp,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.OrganizationBranchPrimaryChanged,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+
+            var reasonError = GovernanceCriticalActionReason.ValidateRequired(body.Reason);
+            if (reasonError is not null)
+            {
+                return PlatformApiResults.Problem(reasonError.ErrorCode!, reasonError.ErrorMessage!, StatusCodes.Status400BadRequest);
+            }
+
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            var stepUpDenied = await GovernanceStepUpHelper.EnsureConsumedAsync(
+                stepUp,
+                actor,
+                PlatformOrganizationId.From(organizationId),
+                GovernanceCriticalActionCodes.BranchSetPrimary,
+                GovernanceStepUpTargetTypes.OrganizationBranch,
+                branchId,
+                body.StepUpToken,
+                ct).ConfigureAwait(false);
+            if (stepUpDenied is not null) return stepUpDenied;
+
+            var result = await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                ct).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is not null)
+            {
+                await OrganizationGovernanceAuditWriter.WriteBranchAsync(
+                    authz,
+                    PlatformAuditActions.OrganizationBranchPrimaryChanged,
+                    result.Value,
+                    organizationId,
+                    OrganizationGovernanceAuditWriter.BranchSummary(
+                        result.Value,
+                        $"Primary branch changed. Reason: {body.Reason!.Trim()}"),
+                    ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+        root.MapGet("/branches/{branchId:guid}/staff-access", async (
+            Guid organizationId,
+            Guid branchId,
+            ListBranchStaffAccess useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                PlatformAuditActions.PlatformAccessChecked,
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    OrganizationBranchId.From(branchId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
         });
         root.MapPut("/branches/{branchId:guid}/delivery-policy", async (Guid organizationId, Guid branchId, UpsertBranchDeliveryPolicyRequest body, UpsertBranchDeliveryPolicy useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
@@ -742,7 +838,9 @@ internal sealed record CreateBranchRequest(
     decimal? Longitude = null,
     bool? PickupEnabled = null,
     bool? DeliveryEnabled = null,
-    bool? CustomerOrderingEnabled = null);
+    bool? CustomerOrderingEnabled = null,
+    string? ContactPhone = null,
+    string? TimeZoneId = null);
 internal sealed record UpdateBranchRequest(
     string? Name,
     string? AddressLine1 = null,

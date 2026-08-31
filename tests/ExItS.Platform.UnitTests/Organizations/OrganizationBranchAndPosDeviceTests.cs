@@ -61,6 +61,42 @@ public sealed class OrganizationBranchAndPosDeviceTests
     }
 
     [Fact]
+    public void Primary_branch_cannot_be_archived_or_suspended()
+    {
+        var primary = OrganizationBranch.CreateMainBranch(PlatformOrganizationId.New(), T0);
+        Assert.Throws<DomainException>(() => primary.Archive(T0.AddMinutes(1)));
+        Assert.Throws<DomainException>(() =>
+            primary.Suspend(PlatformUserId.New(), "Renovation work ongoing", T0.AddMinutes(1)));
+    }
+
+    [Fact]
+    public void Promote_and_demote_primary_keep_exactly_one_primary_intent()
+    {
+        var org = PlatformOrganizationId.New();
+        var main = OrganizationBranch.CreateMainBranch(org, T0);
+        var east = OrganizationBranch.Create(org, "east", "East Branch", T0);
+
+        main.DemoteFromPrimary(T0.AddMinutes(1));
+        east.PromoteToPrimary(T0.AddMinutes(1));
+
+        Assert.False(main.IsPrimary);
+        Assert.True(east.IsPrimary);
+        Assert.Throws<DomainException>(() =>
+        {
+            east.Suspend(PlatformUserId.New(), "Should not suspend primary", T0.AddMinutes(2));
+        });
+    }
+
+    [Fact]
+    public void Inactive_branch_cannot_be_promoted_to_primary()
+    {
+        var org = PlatformOrganizationId.New();
+        var east = OrganizationBranch.Create(org, "east", "East Branch", T0);
+        east.Suspend(PlatformUserId.New(), "Temporary closure for renovation", T0.AddMinutes(1));
+        Assert.Throws<DomainException>(() => east.PromoteToPrimary(T0.AddMinutes(2)));
+    }
+
+    [Fact]
     public void Customer_link_is_organization_scoped_not_branch_owned()
     {
         Assert.Null(typeof(CustomerLinkRequest).GetProperty("BranchId"));

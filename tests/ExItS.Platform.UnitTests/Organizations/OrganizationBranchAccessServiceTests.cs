@@ -137,6 +137,19 @@ public sealed class OrganizationBranchAccessServiceTests
             Task.FromResult<IReadOnlyList<OrganizationMembershipBranchAssignment>>(
                 items.Where(x => x.MembershipId == membershipId).ToList());
 
+        public Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrganizationMembershipBranchAssignment>>(
+                items.Where(x => x.OrganizationId == organizationId).ToList());
+
+        public Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByBranchAsync(
+            PlatformOrganizationId organizationId,
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrganizationMembershipBranchAssignment>>(
+                items.Where(x => x.OrganizationId == organizationId && x.BranchId == branchId).ToList());
+
         public Task<IReadOnlyList<OrganizationMembershipBranchAssignment>> ListByUserAndOrganizationAsync(
             PlatformUserId userId,
             PlatformOrganizationId organizationId,
