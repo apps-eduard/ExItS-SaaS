@@ -90,6 +90,7 @@ internal sealed class BusinessCustomerRepository(PlatformDbContext db) : IBusine
         record.OwningProductCode = customer.OwningProductCode;
         record.Status = customer.Status.ToString();
         record.LinkedUserIdentityId = customer.LinkedUserIdentityId?.Value;
+        record.AllowDeliveryBeyondNormalDistance = customer.AllowDeliveryBeyondNormalDistance;
         record.UpdatedAtUtc = customer.UpdatedAtUtc;
     }
 
@@ -105,7 +106,8 @@ internal sealed class BusinessCustomerRepository(PlatformDbContext db) : IBusine
             Enum.Parse<BusinessCustomerStatus>(record.Status),
             record.LinkedUserIdentityId is null ? null : PlatformUserId.From(record.LinkedUserIdentityId.Value),
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.AllowDeliveryBeyondNormalDistance);
 
     private static BusinessCustomerRecord ToRecord(BusinessCustomer customer) =>
         new()
@@ -119,6 +121,7 @@ internal sealed class BusinessCustomerRepository(PlatformDbContext db) : IBusine
             OwningProductCode = customer.OwningProductCode,
             Status = customer.Status.ToString(),
             LinkedUserIdentityId = customer.LinkedUserIdentityId?.Value,
+            AllowDeliveryBeyondNormalDistance = customer.AllowDeliveryBeyondNormalDistance,
             CreatedAtUtc = customer.CreatedAtUtc,
             UpdatedAtUtc = customer.UpdatedAtUtc
         };

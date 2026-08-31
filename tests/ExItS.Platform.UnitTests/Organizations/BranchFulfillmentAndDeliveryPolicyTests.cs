@@ -76,6 +76,22 @@ public sealed class BranchFulfillmentAndDeliveryPolicyTests
     }
 
     [Fact]
+    public void Delivery_fee_allows_beyond_max_only_when_exception_flag_set()
+    {
+        var policy = BranchDeliveryPolicy.Create(
+            OrganizationBranchId.New(), Org, 300m, 50m, 3m, 12m, 15m, null, T0);
+        Assert.Throws<DomainException>(() => policy.CalculateFee(400m, 16m));
+
+        var allowed = policy.CalculateFee(400m, 16m, allowBeyondMaximumDistance: true);
+        Assert.Equal(16m, allowed.DistanceKm);
+        Assert.Equal(13m, allowed.ExtraDistanceKm);
+        Assert.Equal(50m + 13m * 12m, allowed.DeliveryFee);
+
+        Assert.Throws<DomainException>(() =>
+            policy.CalculateFee(200m, 16m, allowBeyondMaximumDistance: true));
+    }
+
+    [Fact]
     public void Negative_policy_amounts_are_rejected()
     {
         Assert.Throws<DomainException>(() => BranchDeliveryPolicy.Create(

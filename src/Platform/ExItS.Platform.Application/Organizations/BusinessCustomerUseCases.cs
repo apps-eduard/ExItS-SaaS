@@ -19,7 +19,8 @@ public sealed record BusinessCustomerDto(
     bool IsOrganizationStaff,
     bool IsCreditCustomer,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool AllowDeliveryBeyondNormalDistance = false);
 
 public sealed record CreateBusinessCustomerRequest(
     string DisplayName,
@@ -33,6 +34,9 @@ public sealed record UpdateBusinessCustomerRequest(
     string? Email = null,
     string? Phone = null,
     string? Notes = null);
+
+public sealed record UpdateBusinessCustomerDeliveryPreferencesRequest(
+    bool AllowDeliveryBeyondNormalDistance);
 
 public sealed class BusinessCustomerQueryService
 {
@@ -107,7 +111,8 @@ public sealed class BusinessCustomerQueryService
             IsOrganizationStaff: false,
             isCreditCustomer,
             customer.CreatedAtUtc,
-            customer.UpdatedAtUtc);
+            customer.UpdatedAtUtc,
+            customer.AllowDeliveryBeyondNormalDistance);
 }
 
 public sealed class CreateBusinessCustomer
@@ -212,6 +217,59 @@ public sealed class UpdateBusinessCustomer
                 request.Email,
                 request.Phone,
                 request.Notes,
+                _clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var credit = await _creditCustomers
+                .FindActiveByBusinessCustomerAsync(customer.Id, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<BusinessCustomerDto>.Success(
+                BusinessCustomerQueryService.Map(customer, credit is not null));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<BusinessCustomerDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class UpdateBusinessCustomerDeliveryPreferences
+{
+    private readonly IBusinessCustomerRepository _customers;
+    private readonly ICreditCustomerRepository _creditCustomers;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdateBusinessCustomerDeliveryPreferences(
+        IBusinessCustomerRepository customers,
+        ICreditCustomerRepository creditCustomers,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _creditCustomers = creditCustomers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<BusinessCustomerDto>> ExecuteAsync(
+        BusinessCustomerId customerId,
+        PlatformOrganizationId organizationId,
+        UpdateBusinessCustomerDeliveryPreferencesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var customer = await _customers.GetByIdAsync(customerId, cancellationToken).ConfigureAwait(false);
+        if (customer is null || customer.OrganizationId != organizationId)
+        {
+            return ApplicationResult<BusinessCustomerDto>.Failure(
+                ApplicationErrorCodes.BusinessCustomerNotFound,
+                "Business customer was not found.");
+        }
+
+        try
+        {
+            customer.SetAllowDeliveryBeyondNormalDistance(
+                request.AllowDeliveryBeyondNormalDistance,
                 _clock.UtcNow);
             await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

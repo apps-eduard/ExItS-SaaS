@@ -147,8 +147,13 @@ public sealed class BranchDeliveryPolicy
     /// <summary>
     /// Calculates delivery fee for a known distance and merchandise subtotal.
     /// Throws when unavailable (min order / max distance).
+    /// When <paramref name="allowBeyondMaximumDistance"/> is true, the maximum-distance
+    /// reject is skipped; fee still uses the actual distance (no clamp).
     /// </summary>
-    public DeliveryFeeQuote CalculateFee(decimal merchandiseSubtotal, decimal distanceKm)
+    public DeliveryFeeQuote CalculateFee(
+        decimal merchandiseSubtotal,
+        decimal distanceKm,
+        bool allowBeyondMaximumDistance = false)
     {
         var subtotal = RoundMoney(merchandiseSubtotal);
         var distance = RoundDistance(distanceKm);
@@ -160,7 +165,7 @@ public sealed class BranchDeliveryPolicy
                 $"Merchandise subtotal must be at least {MinimumOrderAmount} for delivery.");
         }
 
-        if (distance > MaximumDeliveryDistanceKm)
+        if (!allowBeyondMaximumDistance && distance > MaximumDeliveryDistanceKm)
         {
             throw new DomainException(
                 DomainErrorCodes.DeliveryDistanceExceedsMaximum,

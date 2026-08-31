@@ -16,7 +16,8 @@ public sealed record AuthorizedLinkedCustomerPlatformContext(
     Guid PersonalUserId,
     Guid OrganizationId,
     Guid PlatformBusinessCustomerId,
-    Guid LinkedCustomerAppUserId);
+    Guid LinkedCustomerAppUserId,
+    bool AllowDeliveryBeyondNormalDistance = false);
 
 /// <summary>
 /// Fail-closed authorization for linked-customer statement access (Platform facts only).
@@ -111,7 +112,8 @@ public sealed class AuthorizeLinkedCustomerAccess
                 currentPersonalUser.Value,
                 organizationId.Value,
                 platformBusinessCustomerId.Value,
-                link.Id.Value));
+                link.Id.Value,
+                customer.AllowDeliveryBeyondNormalDistance));
     }
 
     private static ApplicationResult<AuthorizedLinkedCustomerPlatformContext> NotFound() =>

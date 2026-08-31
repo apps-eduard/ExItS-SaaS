@@ -2064,6 +2064,10 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.OwningProductCode).HasColumnName("owning_product_code").HasMaxLength(64);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.LinkedUserIdentityId).HasColumnName("linked_user_identity_id");
+            entity.Property(e => e.AllowDeliveryBeyondNormalDistance)
+                .HasColumnName("allow_delivery_beyond_normal_distance")
+                .IsRequired()
+                .HasDefaultValue(false);
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)

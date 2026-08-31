@@ -947,6 +947,47 @@ internal static class BusinessCustomerEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        app.MapPatch(basePath + "/{customerId:guid}/delivery-preferences", async (
+            Guid organizationId,
+            Guid customerId,
+            UpdateBusinessCustomerDeliveryPreferencesRequest body,
+            UpdateBusinessCustomerDeliveryPreferences useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.BusinessCustomerUpdated,
+                nameof(BusinessCustomer),
+                customerId.ToString("D"),
+                organizationId,
+                summary: "Update business customer delivery preferences.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(
+                    BusinessCustomerId.From(customerId),
+                    PlatformOrganizationId.From(organizationId),
+                    body,
+                    ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.BusinessCustomerUpdated,
+                    nameof(BusinessCustomer),
+                    customerId.ToString("D"),
+                    organizationId,
+                    summary: "Updated business customer delivery preferences.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         app.MapPost(basePath + "/{customerId:guid}/archive", async (
             Guid organizationId,
             Guid customerId,

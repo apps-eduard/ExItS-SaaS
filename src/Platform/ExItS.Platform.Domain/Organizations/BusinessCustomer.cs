@@ -26,6 +26,11 @@ public sealed class BusinessCustomer
     public string? OwningProductCode { get; private set; }
     public BusinessCustomerStatus Status { get; private set; }
     public PlatformUserId? LinkedUserIdentityId { get; private set; }
+    /// <summary>
+    /// Seller preference: when true, linked personal checkout may place delivery beyond
+    /// <c>MaximumDeliveryDistanceKm</c>. Does not bypass service area, readiness, or min order.
+    /// </summary>
+    public bool AllowDeliveryBeyondNormalDistance { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -39,6 +44,7 @@ public sealed class BusinessCustomer
         string? owningProductCode,
         BusinessCustomerStatus status,
         PlatformUserId? linkedUserIdentityId,
+        bool allowDeliveryBeyondNormalDistance,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -51,6 +57,7 @@ public sealed class BusinessCustomer
         OwningProductCode = owningProductCode;
         Status = status;
         LinkedUserIdentityId = linkedUserIdentityId;
+        AllowDeliveryBeyondNormalDistance = allowDeliveryBeyondNormalDistance;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -78,6 +85,7 @@ public sealed class BusinessCustomer
             NormalizeOptionalProductCode(owningProductCode),
             BusinessCustomerStatus.Active,
             null,
+            allowDeliveryBeyondNormalDistance: false,
             utcNow,
             utcNow);
     }
@@ -93,7 +101,8 @@ public sealed class BusinessCustomer
         BusinessCustomerStatus status,
         PlatformUserId? linkedUserIdentityId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        bool allowDeliveryBeyondNormalDistance = false) =>
         new(
             id,
             organizationId,
@@ -104,6 +113,7 @@ public sealed class BusinessCustomer
             owningProductCode,
             status,
             linkedUserIdentityId,
+            allowDeliveryBeyondNormalDistance,
             createdAtUtc,
             updatedAtUtc);
 
@@ -126,6 +136,24 @@ public sealed class BusinessCustomer
         NormalizedEmail = NormalizeOptionalEmail(email);
         Phone = NormalizeOptionalPhone(phone);
         Notes = NormalizeOptionalNotes(notes);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Seller-only delivery distance exception preference. Kept separate from
+    /// <see cref="UpdateProfile"/> so profile edits never clear this flag.
+    /// </summary>
+    public void SetAllowDeliveryBeyondNormalDistance(bool allow, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status == BusinessCustomerStatus.Archived)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBusinessCustomerStatusTransition,
+                "Archived business customers cannot be edited.");
+        }
+
+        AllowDeliveryBeyondNormalDistance = allow;
         UpdatedAtUtc = utcNow;
     }
 

@@ -9,6 +9,41 @@ public sealed class BusinessCustomerSeparationTests
     private static readonly DateTimeOffset T0 = new(2026, 8, 2, 6, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public void Business_customer_delivery_distance_exception_defaults_false_and_toggles()
+    {
+        var customer = BusinessCustomer.Create(
+            PlatformOrganizationId.New(),
+            "Delivery Customer",
+            T0);
+        Assert.False(customer.AllowDeliveryBeyondNormalDistance);
+
+        customer.SetAllowDeliveryBeyondNormalDistance(true, T0.AddMinutes(1));
+        Assert.True(customer.AllowDeliveryBeyondNormalDistance);
+        Assert.Equal(T0.AddMinutes(1), customer.UpdatedAtUtc);
+
+        customer.UpdateProfile("Delivery Customer", null, null, "note", T0.AddMinutes(2));
+        Assert.True(customer.AllowDeliveryBeyondNormalDistance);
+
+        customer.SetAllowDeliveryBeyondNormalDistance(false, T0.AddMinutes(3));
+        Assert.False(customer.AllowDeliveryBeyondNormalDistance);
+
+        var rehydrated = BusinessCustomer.Rehydrate(
+            customer.Id,
+            customer.OrganizationId,
+            customer.DisplayName,
+            customer.NormalizedEmail,
+            customer.Phone,
+            customer.Notes,
+            customer.OwningProductCode,
+            customer.Status,
+            customer.LinkedUserIdentityId,
+            customer.CreatedAtUtc,
+            customer.UpdatedAtUtc,
+            allowDeliveryBeyondNormalDistance: true);
+        Assert.True(rehydrated.AllowDeliveryBeyondNormalDistance);
+    }
+
+    [Fact]
     public void Business_customer_is_never_organization_staff()
     {
         var customer = BusinessCustomer.Create(

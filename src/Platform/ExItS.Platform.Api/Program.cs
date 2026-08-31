@@ -448,6 +448,7 @@ builder.Services.AddScoped<AcknowledgeSalesDocumentEducation>();
 builder.Services.AddScoped<BusinessCustomerQueryService>();
 builder.Services.AddScoped<CreateBusinessCustomer>();
 builder.Services.AddScoped<UpdateBusinessCustomer>();
+builder.Services.AddScoped<UpdateBusinessCustomerDeliveryPreferences>();
 builder.Services.AddScoped<ArchiveBusinessCustomer>();
 builder.Services.AddScoped<RejectPromoteBusinessCustomerToStaff>();
 builder.Services.AddScoped<CreditCustomerQueryService>();

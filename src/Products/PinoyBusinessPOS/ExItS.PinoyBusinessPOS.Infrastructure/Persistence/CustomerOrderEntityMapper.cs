@@ -209,6 +209,7 @@ internal static class CustomerOrderEntityMapper
         record.DeliveryDistanceCharge = snapshot.DistanceCharge;
         record.DeliveryFinalFee = snapshot.FinalDeliveryFee;
         record.DeliveryFreeApplied = snapshot.FreeDeliveryApplied;
+        record.DeliveryDistanceExceptionApplied = snapshot.DistanceExceptionApplied;
     }
 
     internal static CustomerOrderDeliverySnapshot? TryMapDeliverySnapshot(CustomerOrderRecord record)
@@ -257,6 +258,7 @@ internal static class CustomerOrderEntityMapper
             record.DeliveryFreeThresholdSnapshot,
             record.DeliveryDistanceCharge.Value,
             record.DeliveryFinalFee.Value,
-            record.DeliveryFreeApplied.Value);
+            record.DeliveryFreeApplied.Value,
+            record.DeliveryDistanceExceptionApplied ?? false);
     }
 }

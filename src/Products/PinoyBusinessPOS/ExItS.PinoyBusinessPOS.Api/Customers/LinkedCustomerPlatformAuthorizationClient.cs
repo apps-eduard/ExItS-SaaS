@@ -79,7 +79,8 @@ public sealed class LinkedCustomerPlatformAuthorizationClient(
                     body.PersonalUserId,
                     body.OrganizationId,
                     body.PlatformBusinessCustomerId,
-                    body.LinkedCustomerAppUserId));
+                    body.LinkedCustomerAppUserId,
+                    body.AllowDeliveryBeyondNormalDistance));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -179,5 +180,6 @@ public sealed class LinkedCustomerPlatformAuthorizationClient(
         Guid PersonalUserId,
         Guid OrganizationId,
         Guid PlatformBusinessCustomerId,
-        Guid LinkedCustomerAppUserId);
+        Guid LinkedCustomerAppUserId,
+        bool AllowDeliveryBeyondNormalDistance = false);
 }

@@ -36,6 +36,11 @@ public sealed class CustomerOrderDeliverySnapshot
     public decimal DistanceCharge { get; }
     public decimal FinalDeliveryFee { get; }
     public bool FreeDeliveryApplied { get; }
+    /// <summary>
+    /// True when the max-distance reject was bypassed via seller preference at submit time.
+    /// Immutable — later preference changes must not rewrite historical orders.
+    /// </summary>
+    public bool DistanceExceptionApplied { get; }
 
     private CustomerOrderDeliverySnapshot(
         string recipientName,
@@ -57,7 +62,8 @@ public sealed class CustomerOrderDeliverySnapshot
         decimal? freeDeliveryThresholdSnapshot,
         decimal distanceCharge,
         decimal finalDeliveryFee,
-        bool freeDeliveryApplied)
+        bool freeDeliveryApplied,
+        bool distanceExceptionApplied)
     {
         RecipientName = recipientName;
         RecipientPhone = recipientPhone;
@@ -79,6 +85,7 @@ public sealed class CustomerOrderDeliverySnapshot
         DistanceCharge = distanceCharge;
         FinalDeliveryFee = finalDeliveryFee;
         FreeDeliveryApplied = freeDeliveryApplied;
+        DistanceExceptionApplied = distanceExceptionApplied;
     }
 
     public static CustomerOrderDeliverySnapshot Create(
@@ -101,7 +108,8 @@ public sealed class CustomerOrderDeliverySnapshot
         decimal? freeDeliveryThresholdSnapshot,
         decimal distanceCharge,
         decimal finalDeliveryFee,
-        bool freeDeliveryApplied)
+        bool freeDeliveryApplied,
+        bool distanceExceptionApplied = false)
     {
         var fee = SaleMoney.RoundMoney(finalDeliveryFee);
         var charge = SaleMoney.RoundMoney(distanceCharge);
@@ -145,7 +153,8 @@ public sealed class CustomerOrderDeliverySnapshot
                 : SaleMoney.RoundMoney(freeDeliveryThresholdSnapshot.Value),
             charge,
             fee,
-            freeDeliveryApplied);
+            freeDeliveryApplied,
+            distanceExceptionApplied);
     }
 
     public static CustomerOrderDeliverySnapshot Rehydrate(
@@ -168,7 +177,8 @@ public sealed class CustomerOrderDeliverySnapshot
         decimal? freeDeliveryThresholdSnapshot,
         decimal distanceCharge,
         decimal finalDeliveryFee,
-        bool freeDeliveryApplied) =>
+        bool freeDeliveryApplied,
+        bool distanceExceptionApplied = false) =>
         new(
             recipientName,
             recipientPhone,
@@ -189,7 +199,8 @@ public sealed class CustomerOrderDeliverySnapshot
             freeDeliveryThresholdSnapshot,
             distanceCharge,
             finalDeliveryFee,
-            freeDeliveryApplied);
+            freeDeliveryApplied,
+            distanceExceptionApplied);
 
     private static void EnsureCoordinate(decimal latitude, decimal longitude)
     {

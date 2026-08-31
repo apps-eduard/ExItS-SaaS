@@ -3128,6 +3128,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("linked_user_identity_id");
 
+                    b.Property<bool>("AllowDeliveryBeyondNormalDistance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("allow_delivery_beyond_normal_distance");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")

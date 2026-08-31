@@ -174,6 +174,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("delivery_free_applied");
 
+                    b.Property<bool?>("DeliveryDistanceExceptionApplied")
+                        .HasColumnType("boolean")
+                        .HasColumnName("delivery_distance_exception_applied");
+
                     b.Property<decimal?>("DeliveryFreeThresholdSnapshot")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")

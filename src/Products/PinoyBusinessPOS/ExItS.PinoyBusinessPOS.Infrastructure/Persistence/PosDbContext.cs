@@ -1529,6 +1529,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.DeliveryDistanceCharge).HasColumnName("delivery_distance_charge").HasPrecision(18, 2);
             entity.Property(e => e.DeliveryFinalFee).HasColumnName("delivery_final_fee").HasPrecision(18, 2);
             entity.Property(e => e.DeliveryFreeApplied).HasColumnName("delivery_free_applied");
+            entity.Property(e => e.DeliveryDistanceExceptionApplied)
+                .HasColumnName("delivery_distance_exception_applied");
 
             entity.Property(e => e.StockReservationState).HasColumnName("stock_reservation_state").HasMaxLength(32).IsRequired();
             entity.Property(e => e.RejectReason).HasColumnName("reject_reason").HasMaxLength(64);

@@ -18,7 +18,8 @@ public sealed record LinkedCustomerPlatformAuthorizationProof(
     Guid PersonalUserId,
     Guid OrganizationId,
     Guid PlatformBusinessCustomerId,
-    Guid LinkedCustomerAppUserId);
+    Guid LinkedCustomerAppUserId,
+    bool AllowDeliveryBeyondNormalDistance = false);
 
 public enum LinkedCustomerPlatformAuthorizationOutcome
 {

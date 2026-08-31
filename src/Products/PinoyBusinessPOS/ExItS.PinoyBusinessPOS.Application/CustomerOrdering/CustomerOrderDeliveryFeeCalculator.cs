@@ -19,7 +19,8 @@ public static class CustomerOrderDeliveryFeeCalculator
     public static Quote Calculate(
         CustomerOrderBranchDeliveryPolicySnapshot policy,
         decimal merchandiseSubtotal,
-        decimal distanceKm)
+        decimal distanceKm,
+        bool allowBeyondMaximumDistance = false)
     {
         if (merchandiseSubtotal < policy.MinimumOrderAmount)
         {
@@ -28,7 +29,7 @@ public static class CustomerOrderDeliveryFeeCalculator
                 $"Merchandise subtotal must be at least {policy.MinimumOrderAmount:0.00}.");
         }
 
-        if (distanceKm > policy.MaximumDeliveryDistanceKm)
+        if (!allowBeyondMaximumDistance && distanceKm > policy.MaximumDeliveryDistanceKm)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidCustomerOrderDelivery,

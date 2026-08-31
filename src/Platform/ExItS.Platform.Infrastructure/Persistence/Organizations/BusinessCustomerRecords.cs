@@ -11,6 +11,7 @@ internal sealed class BusinessCustomerRecord
     public string? OwningProductCode { get; set; }
     public string Status { get; set; } = string.Empty;
     public Guid? LinkedUserIdentityId { get; set; }
+    public bool AllowDeliveryBeyondNormalDistance { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

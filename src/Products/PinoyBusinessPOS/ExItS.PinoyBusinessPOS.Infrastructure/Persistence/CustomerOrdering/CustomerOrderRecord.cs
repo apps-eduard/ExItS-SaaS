@@ -44,6 +44,7 @@ internal sealed class CustomerOrderRecord
     public decimal? DeliveryDistanceCharge { get; set; }
     public decimal? DeliveryFinalFee { get; set; }
     public bool? DeliveryFreeApplied { get; set; }
+    public bool? DeliveryDistanceExceptionApplied { get; set; }
 
     public string StockReservationState { get; set; } = string.Empty;
     public string? RejectReason { get; set; }

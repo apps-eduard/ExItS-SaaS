@@ -35,7 +35,8 @@ public sealed record CustomerOrderDeliveryDto(
     decimal? FreeDeliveryThresholdSnapshot,
     decimal DistanceCharge,
     decimal FinalDeliveryFee,
-    bool FreeDeliveryApplied);
+    bool FreeDeliveryApplied,
+    bool DistanceExceptionApplied = false);
 
 public sealed record CustomerOrderDto(
     Guid OrderId,
@@ -139,7 +140,8 @@ public sealed record QuoteCustomerOrderDeliveryRequest(
     decimal MerchandiseSubtotal,
     decimal DestinationLatitude,
     decimal DestinationLongitude,
-    Guid? DeliveryServiceAreaId = null);
+    Guid? DeliveryServiceAreaId = null,
+    Guid? PlatformBusinessCustomerId = null);
 
 public sealed record QuoteCustomerOrderDeliveryDto(
     bool Available,
@@ -150,7 +152,8 @@ public sealed record QuoteCustomerOrderDeliveryDto(
     decimal DeliveryFee,
     bool FreeDeliveryApplied,
     decimal MinimumOrderAmount,
-    decimal MaximumDeliveryDistanceKm);
+    decimal MaximumDeliveryDistanceKm,
+    bool DistanceExceptionApplied = false);
 
 public sealed record RejectCustomerOrderRequest(
     string Reason,
@@ -204,7 +207,8 @@ public static class CustomerOrderMaps
                     order.DeliverySnapshot.FreeDeliveryThresholdSnapshot,
                     order.DeliverySnapshot.DistanceCharge,
                     order.DeliverySnapshot.FinalDeliveryFee,
-                    order.DeliverySnapshot.FreeDeliveryApplied),
+                    order.DeliverySnapshot.FreeDeliveryApplied,
+                    order.DeliverySnapshot.DistanceExceptionApplied),
             order.Lines.Select(l => new CustomerOrderLineDto(
                 l.Id.Value,
                 l.ProductId.Value,

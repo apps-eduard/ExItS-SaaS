@@ -183,6 +183,7 @@ public sealed class PlaceCustomerOrder
                     request.CustomerDisplayName);
 
             Guid? platformBusinessCustomerId = null;
+            var allowDeliveryBeyondNormalDistance = false;
             if (partyType == CustomerPartyType.Personal)
             {
                 var linked = await ValidatePersonalLinkedCustomerAsync(
@@ -191,12 +192,13 @@ public sealed class PlaceCustomerOrder
                         request,
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (!linked.IsSuccess)
+                if (!linked.IsSuccess || linked.Value is null)
                 {
                     return ApplicationResult<CustomerOrderDto>.Failure(linked.ErrorCode!, linked.ErrorMessage!);
                 }
 
-                platformBusinessCustomerId = linked.Value;
+                platformBusinessCustomerId = linked.Value.PlatformBusinessCustomerId;
+                allowDeliveryBeyondNormalDistance = linked.Value.AllowDeliveryBeyondNormalDistance;
             }
 
             var branch = await _branches
@@ -304,6 +306,7 @@ public sealed class PlaceCustomerOrder
                         branch,
                         request.Delivery,
                         merchandiseSubtotal,
+                        allowDeliveryBeyondNormalDistance,
                         cancellationToken)
                     .ConfigureAwait(false);
                 if (!quote.IsSuccess)
@@ -385,6 +388,7 @@ public sealed class PlaceCustomerOrder
         CustomerOrderBranchSnapshot branch,
         PlaceCustomerOrderDeliveryRequest delivery,
         decimal merchandiseSubtotal,
+        bool allowBeyondMaximumDistance,
         CancellationToken cancellationToken)
     {
         if (branch.Latitude is null || branch.Longitude is null)
@@ -417,13 +421,17 @@ public sealed class PlaceCustomerOrder
             delivery.DestinationLatitude,
             delivery.DestinationLongitude);
 
+        var distanceExceptionApplied = allowBeyondMaximumDistance
+            && distanceKm > branch.DeliveryPolicy.MaximumDeliveryDistanceKm;
+
         CustomerOrderDeliveryFeeCalculator.Quote local;
         try
         {
             local = CustomerOrderDeliveryFeeCalculator.Calculate(
                 branch.DeliveryPolicy,
                 merchandiseSubtotal,
-                distanceKm);
+                distanceKm,
+                allowBeyondMaximumDistance);
         }
         catch (DomainException ex)
         {
@@ -452,11 +460,16 @@ public sealed class PlaceCustomerOrder
             policy.FreeDeliveryThreshold,
             local.DistanceCharge,
             local.DeliveryFee,
-            local.FreeDeliveryApplied);
+            local.FreeDeliveryApplied,
+            distanceExceptionApplied);
         return ApplicationResult<CustomerOrderDeliverySnapshot>.Success(snapshot);
     }
 
-    private async Task<ApplicationResult<Guid>> ValidatePersonalLinkedCustomerAsync(
+    private sealed record PersonalLinkedCustomerAuthorization(
+        Guid PlatformBusinessCustomerId,
+        bool AllowDeliveryBeyondNormalDistance);
+
+    private async Task<ApplicationResult<PersonalLinkedCustomerAuthorization>> ValidatePersonalLinkedCustomerAsync(
         PosOrganizationId orgId,
         Guid sellerOrganizationId,
         PlaceCustomerOrderRequest request,
@@ -465,18 +478,19 @@ public sealed class PlaceCustomerOrder
         if (request.PlatformBusinessCustomerId is not Guid platformBusinessCustomerId
             || platformBusinessCustomerId == Guid.Empty)
         {
-            return ApplicationResult<Guid>.Failure(
+            return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(
                 ApplicationErrorCodes.CustomerOrderLinkedCustomerRequired,
                 "A linked business customer is required for personal orders.");
         }
 
         if (request.CustomerPlatformUserId is not Guid personalUserId || personalUserId == Guid.Empty)
         {
-            return ApplicationResult<Guid>.Failure(
+            return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(
                 ApplicationErrorCodes.CustomerOrderPartyMismatch,
                 "Customer party must match the authenticated caller.");
         }
 
+        var allowBeyond = false;
         if (_linkedCustomerAuth is not null)
         {
             var platform = await _linkedCustomerAuth
@@ -487,10 +501,13 @@ public sealed class PlaceCustomerOrder
                 || platform.Proof.PersonalUserId != personalUserId
                 || platform.Proof.OrganizationId != sellerOrganizationId)
             {
-                return ApplicationResult<Guid>.Failure(
+                return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(
                     ApplicationErrorCodes.LinkedCustomerNotFound,
                     "Linked customer was not found.");
             }
+
+            // Exception applies only for an active authorized link; never from a client flag.
+            allowBeyond = platform.Proof.AllowDeliveryBeyondNormalDistance;
         }
 
         if (_customers is not null)
@@ -500,13 +517,14 @@ public sealed class PlaceCustomerOrder
                 .ConfigureAwait(false);
             if (posCustomer is null)
             {
-                return ApplicationResult<Guid>.Failure(
+                return ApplicationResult<PersonalLinkedCustomerAuthorization>.Failure(
                     ApplicationErrorCodes.LinkedCustomerNotFound,
                     "Linked customer was not found.");
             }
         }
 
-        return ApplicationResult<Guid>.Success(platformBusinessCustomerId);
+        return ApplicationResult<PersonalLinkedCustomerAuthorization>.Success(
+            new PersonalLinkedCustomerAuthorization(platformBusinessCustomerId, allowBeyond));
     }
 }
 
@@ -514,13 +532,16 @@ public sealed class QuoteCustomerOrderDelivery
 {
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly ISellerCustomerOrderingCapability _sellerCapability;
+    private readonly ILinkedCustomerPlatformAuthorization? _linkedCustomerAuth;
 
     public QuoteCustomerOrderDelivery(
         ICustomerOrderBranchDirectory branches,
-        ISellerCustomerOrderingCapability? sellerCapability = null)
+        ISellerCustomerOrderingCapability? sellerCapability = null,
+        ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null)
     {
         _branches = branches;
         _sellerCapability = sellerCapability ?? new AllowAllSellerCustomerOrderingCapability();
+        _linkedCustomerAuth = linkedCustomerAuth;
     }
 
     public async Task<ApplicationResult<QuoteCustomerOrderDeliveryDto>> ExecuteAsync(
@@ -547,6 +568,12 @@ public sealed class QuoteCustomerOrderDelivery
                     "This merchant is not accepting delivery orders.");
             }
 
+            var allowBeyond = await ResolveDistanceExceptionAsync(
+                    sellerOrganizationId,
+                    request.PlatformBusinessCustomerId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var branch = await _branches
                 .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)
                 .ConfigureAwait(false);
@@ -560,67 +587,39 @@ public sealed class QuoteCustomerOrderDelivery
             if (!branch.CustomerOrderingOperational)
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
-                    new QuoteCustomerOrderDeliveryDto(
-                        Available: false,
-                        UnavailableReason: branch.OnlineOrdersPaused
+                    UnavailableQuote(
+                        branch.OnlineOrdersPaused
                             ? "This store is temporarily not accepting online orders."
                             : "This store is not accepting online orders right now.",
-                        DistanceKm: 0m,
-                        ExtraDistanceKm: 0m,
-                        DistanceCharge: 0m,
-                        DeliveryFee: 0m,
-                        FreeDeliveryApplied: false,
-                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
-                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
+                        branch.DeliveryPolicy));
             }
 
             if (!branch.DeliveryOperational)
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
-                    new QuoteCustomerOrderDeliveryDto(
-                        Available: false,
-                        UnavailableReason: branch.DeliveryEnabled
+                    UnavailableQuote(
+                        branch.DeliveryEnabled
                             ? "Delivery is not available at this time."
                             : "Delivery is not enabled for this branch.",
-                        DistanceKm: 0m,
-                        ExtraDistanceKm: 0m,
-                        DistanceCharge: 0m,
-                        DeliveryFee: 0m,
-                        FreeDeliveryApplied: false,
-                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
-                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
+                        branch.DeliveryPolicy));
             }
 
             if (!branch.DeliveryEnabled || branch.DeliveryPolicy is null
                 || branch.Latitude is null || branch.Longitude is null)
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
-                    new QuoteCustomerOrderDeliveryDto(
-                        Available: false,
-                        UnavailableReason: "Delivery is not available for this branch.",
-                        DistanceKm: 0m,
-                        ExtraDistanceKm: 0m,
-                        DistanceCharge: 0m,
-                        DeliveryFee: 0m,
-                        FreeDeliveryApplied: false,
-                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
-                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
+                    UnavailableQuote(
+                        "Delivery is not available for this branch.",
+                        branch.DeliveryPolicy));
             }
 
             var areaResolution = ResolveDeliveryServiceArea(branch, request.DeliveryServiceAreaId);
             if (!areaResolution.IsSuccess)
             {
                 return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
-                    new QuoteCustomerOrderDeliveryDto(
-                        Available: false,
-                        UnavailableReason: areaResolution.ErrorMessage,
-                        DistanceKm: 0m,
-                        ExtraDistanceKm: 0m,
-                        DistanceCharge: 0m,
-                        DeliveryFee: 0m,
-                        FreeDeliveryApplied: false,
-                        MinimumOrderAmount: branch.DeliveryPolicy.MinimumOrderAmount,
-                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy.MaximumDeliveryDistanceKm));
+                    UnavailableQuote(
+                        areaResolution.ErrorMessage,
+                        branch.DeliveryPolicy));
             }
 
             var distanceKm = StraightLineDeliveryDistance.CalculateKm(
@@ -629,10 +628,14 @@ public sealed class QuoteCustomerOrderDelivery
                 request.DestinationLatitude,
                 request.DestinationLongitude);
 
+            var distanceExceptionApplied = allowBeyond
+                && distanceKm > branch.DeliveryPolicy.MaximumDeliveryDistanceKm;
+
             var local = CustomerOrderDeliveryFeeCalculator.Calculate(
                 branch.DeliveryPolicy,
                 request.MerchandiseSubtotal,
-                distanceKm);
+                distanceKm,
+                allowBeyond);
             return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
                 new QuoteCustomerOrderDeliveryDto(
                     Available: true,
@@ -643,23 +646,60 @@ public sealed class QuoteCustomerOrderDelivery
                     local.DeliveryFee,
                     local.FreeDeliveryApplied,
                     branch.DeliveryPolicy.MinimumOrderAmount,
-                    branch.DeliveryPolicy.MaximumDeliveryDistanceKm));
+                    branch.DeliveryPolicy.MaximumDeliveryDistanceKm,
+                    distanceExceptionApplied));
         }
         catch (DomainException ex)
         {
             return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
-                new QuoteCustomerOrderDeliveryDto(
-                    Available: false,
-                    UnavailableReason: ex.Message,
-                    DistanceKm: 0m,
-                    ExtraDistanceKm: 0m,
-                    DistanceCharge: 0m,
-                    DeliveryFee: 0m,
-                    FreeDeliveryApplied: false,
-                    MinimumOrderAmount: 0m,
-                    MaximumDeliveryDistanceKm: 0m));
+                UnavailableQuote(ex.Message, policy: null));
         }
     }
+
+    /// <summary>
+    /// Resolves seller distance exception from Platform linked-customer proof only.
+    /// Client override fields are never consulted. Invalid / inactive / unlinked → false.
+    /// </summary>
+    private async Task<bool> ResolveDistanceExceptionAsync(
+        Guid sellerOrganizationId,
+        Guid? platformBusinessCustomerId,
+        CancellationToken cancellationToken)
+    {
+        if (_linkedCustomerAuth is null
+            || platformBusinessCustomerId is not Guid customerId
+            || customerId == Guid.Empty)
+        {
+            return false;
+        }
+
+        var platform = await _linkedCustomerAuth
+            .VerifyAsync(sellerOrganizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+        if (platform.Outcome != LinkedCustomerPlatformAuthorizationOutcome.Authorized
+            || platform.Proof is null
+            || platform.Proof.OrganizationId != sellerOrganizationId
+            || platform.Proof.PlatformBusinessCustomerId != customerId)
+        {
+            return false;
+        }
+
+        return platform.Proof.AllowDeliveryBeyondNormalDistance;
+    }
+
+    private static QuoteCustomerOrderDeliveryDto UnavailableQuote(
+        string? reason,
+        CustomerOrderBranchDeliveryPolicySnapshot? policy) =>
+        new(
+            Available: false,
+            UnavailableReason: reason,
+            DistanceKm: 0m,
+            ExtraDistanceKm: 0m,
+            DistanceCharge: 0m,
+            DeliveryFee: 0m,
+            FreeDeliveryApplied: false,
+            MinimumOrderAmount: policy?.MinimumOrderAmount ?? 0m,
+            MaximumDeliveryDistanceKm: policy?.MaximumDeliveryDistanceKm ?? 0m,
+            DistanceExceptionApplied: false);
 
     internal static ApplicationResult<CustomerOrderDeliveryServiceAreaSnapshot> ResolveDeliveryServiceArea(
         CustomerOrderBranchSnapshot branch,
