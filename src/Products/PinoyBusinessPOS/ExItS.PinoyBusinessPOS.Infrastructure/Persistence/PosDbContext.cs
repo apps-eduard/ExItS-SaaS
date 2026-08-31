@@ -56,6 +56,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     internal DbSet<ProductBrandRecord> ProductBrands => Set<ProductBrandRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
+    internal DbSet<BranchProductAvailabilityRecord> BranchProductAvailabilities => Set<BranchProductAvailabilityRecord>();
     internal DbSet<CatalogProductUnitRecord> CatalogProductUnits => Set<CatalogProductUnitRecord>();
     internal DbSet<CatalogProductImageRecord> CatalogProductImages => Set<CatalogProductImageRecord>();
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
@@ -649,11 +650,22 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_products_expiration_warning_requires_tracking",
                     "tracks_expiration OR expiration_warning_days IS NULL");
+                tb.HasCheckConstraint(
+                    "ck_products_scope",
+                    $"scope IN ({string.Join(", ", CatalogProductScopes.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_products_branch_local_origin",
+                    "scope <> 'BranchLocal' OR origin_branch_id IS NOT NULL");
             });
 
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Scope)
+                .HasColumnName("scope")
+                .HasMaxLength(CatalogProductScopes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.OriginBranchId).HasColumnName("origin_branch_id");
             entity.Property(e => e.Name)
                 .HasColumnName("name")
                 .HasMaxLength(CatalogProduct.NameMaxLength)
@@ -784,6 +796,37 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.BrandId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_products_product_brands");
+        });
+
+        modelBuilder.Entity<BranchProductAvailabilityRecord>(entity =>
+        {
+            entity.ToTable("branch_product_availabilities");
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
+                .HasName("pk_branch_product_availabilities");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.IsOffered).HasColumnName("is_offered").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorId).HasColumnName("updated_by_actor_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId, e.IsOffered })
+                .HasDatabaseName("ix_branch_product_availabilities_org_branch_offered");
+
+            // Tenant-safe composite FK to products. No Platform branch FK (opaque PosBranchId).
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.ProductId, e.OrganizationId })
+                .HasPrincipalKey(p => new { p.Id, p.OrganizationId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_branch_product_availabilities_products");
         });
 
         modelBuilder.Entity<CatalogProductUnitRecord>(entity =>

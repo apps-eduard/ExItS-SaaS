@@ -51,6 +51,8 @@ public static class DomainErrorCodes
     public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";
     public const string InvalidSellingMode = "pos.catalog.selling_mode.invalid";
     public const string InvalidSellingModeUnit = "pos.catalog.selling_mode.unit.invalid";
+    public const string InvalidCatalogProductScope = "pos.catalog.product.scope.invalid";
+    public const string InvalidCatalogProductOriginBranch = "pos.catalog.product.origin_branch.invalid";
     public const string InvalidWeightQuantity = "pos.catalog.weight.quantity.invalid";
     public const string InvalidWeightInputUnit = "pos.catalog.weight.input_unit.invalid";
 

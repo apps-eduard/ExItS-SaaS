@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Catalog;
 
@@ -19,6 +20,16 @@ public sealed class CatalogProduct
 
     public CatalogProductId Id { get; }
     public PosOrganizationId OrganizationId { get; }
+    /// <summary>
+    /// OrganizationStandard (centrally governed) or BranchLocal (origin-branch governed).
+    /// Not Platform Global Catalog.
+    /// </summary>
+    public CatalogProductScope Scope { get; private set; }
+    /// <summary>
+    /// Required when <see cref="CatalogProductScope.BranchLocal"/>. May remain after promotion for audit.
+    /// Opaque Platform branch id — not a POS FK.
+    /// </summary>
+    public PosBranchId? OriginBranchId { get; private set; }
     public string Name { get; private set; }
     public string? Description { get; private set; }
     public string? Sku { get; private set; }
@@ -105,10 +116,15 @@ public sealed class CatalogProduct
         bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null,
         string? platformBarcode = null,
-        int? platformImageVersion = null)
+        int? platformImageVersion = null,
+        CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
+        PosBranchId? originBranchId = null)
     {
+        CatalogProductScopes.EnsureOriginValid(scope, originBranchId);
         Id = id;
         OrganizationId = organizationId;
+        Scope = scope;
+        OriginBranchId = originBranchId;
         Name = name;
         Description = description;
         Sku = sku;
@@ -163,10 +179,13 @@ public sealed class CatalogProduct
         SellingMode sellingMode = SellingMode.PerItem,
         bool tracksExpiration = false,
         int? expirationWarningDays = null,
-        ProductUsageCapabilities? usage = null)
+        ProductUsageCapabilities? usage = null,
+        CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
+        PosBranchId? originBranchId = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
+        CatalogProductScopes.EnsureOriginValid(scope, originBranchId);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
         var resolvedUsage = usage ?? ProductUsageCapabilities.BuyAndSell;
         resolvedUsage.EnsureValid();
@@ -199,7 +218,9 @@ public sealed class CatalogProduct
             resolvedUsage.CanBeSold,
             resolvedUsage.CanBeUsedAsIngredient,
             resolvedUsage.IsProduced,
-            resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode);
+            resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode,
+            scope: scope,
+            originBranchId: originBranchId);
     }
 
     /// <summary>
@@ -312,7 +333,9 @@ public sealed class CatalogProduct
         decimal? defaultConnectedPoPrice = null,
         string? platformBarcode = null,
         int? platformImageVersion = null,
-        ProductBrandId? brandId = null) =>
+        ProductBrandId? brandId = null,
+        CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
+        PosBranchId? originBranchId = null) =>
         new(
             id,
             organizationId,
@@ -346,7 +369,9 @@ public sealed class CatalogProduct
             canExposeToConnectedBuyers,
             defaultConnectedPoPrice,
             platformBarcode,
-            platformImageVersion);
+            platformImageVersion,
+            scope,
+            originBranchId);
 
     /// <summary>Updates how the product participates in buy / sell / ingredient / production flows.</summary>
     public void UpdateUsage(ProductUsageCapabilities usage, DateTimeOffset utcNow)

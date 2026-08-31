@@ -4,6 +4,8 @@ internal sealed class CatalogProductRecord
 {
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
+    public string Scope { get; set; } = "OrganizationStandard";
+    public Guid? OriginBranchId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Sku { get; set; }

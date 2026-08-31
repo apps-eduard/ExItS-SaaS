@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -105,13 +106,19 @@ internal static class CatalogEntityMapper
             defaultConnectedPoPrice: record.DefaultConnectedPoPrice,
             platformBarcode: record.PlatformBarcode,
             platformImageVersion: record.PlatformImageVersion,
-            brandId: record.BrandId is null ? null : ProductBrandId.From(record.BrandId.Value));
+            brandId: record.BrandId is null ? null : ProductBrandId.From(record.BrandId.Value),
+            scope: CatalogProductScopes.Parse(record.Scope),
+            originBranchId: record.OriginBranchId is null
+                ? null
+                : PosBranchId.From(record.OriginBranchId.Value));
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
         {
             Id = product.Id.Value,
             OrganizationId = product.OrganizationId.Value,
+            Scope = CatalogProductScopes.ToCode(product.Scope),
+            OriginBranchId = product.OriginBranchId?.Value,
             Name = product.Name,
             Description = product.Description,
             Sku = product.Sku,
@@ -147,6 +154,8 @@ internal static class CatalogEntityMapper
 
     public static void ApplyToRecord(CatalogProduct product, CatalogProductRecord record)
     {
+        record.Scope = CatalogProductScopes.ToCode(product.Scope);
+        record.OriginBranchId = product.OriginBranchId?.Value;
         record.Name = product.Name;
         record.Description = product.Description;
         record.Sku = product.Sku;
@@ -177,6 +186,35 @@ internal static class CatalogEntityMapper
         record.IsBlockedFromConnectedBuyers = product.IsBlockedFromConnectedBuyers;
         record.DefaultConnectedPoPrice = product.DefaultConnectedPoPrice;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
+    }
+
+    public static BranchProductAvailability ToDomain(BranchProductAvailabilityRecord record) =>
+        BranchProductAvailability.Rehydrate(
+            PosOrganizationId.From(record.OrganizationId),
+            PosBranchId.From(record.BranchId),
+            CatalogProductId.From(record.ProductId),
+            record.IsOffered,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.UpdatedByActorId);
+
+    public static BranchProductAvailabilityRecord ToRecord(BranchProductAvailability availability) =>
+        new()
+        {
+            OrganizationId = availability.OrganizationId.Value,
+            BranchId = availability.BranchId.Value,
+            ProductId = availability.ProductId.Value,
+            IsOffered = availability.IsOffered,
+            CreatedAtUtc = availability.CreatedAtUtc,
+            UpdatedAtUtc = availability.UpdatedAtUtc,
+            UpdatedByActorId = availability.UpdatedByActorId
+        };
+
+    public static void ApplyToRecord(BranchProductAvailability availability, BranchProductAvailabilityRecord record)
+    {
+        record.IsOffered = availability.IsOffered;
+        record.UpdatedAtUtc = availability.UpdatedAtUtc;
+        record.UpdatedByActorId = availability.UpdatedByActorId;
     }
 
     public static CatalogImportJob ToDomain(CatalogImportJobRecord record) =>
