@@ -143,6 +143,7 @@ builder.Services.AddScoped<UpdateCatalogProduct>();
 builder.Services.AddScoped<UpdateCatalogProductPrices>();
 builder.Services.AddScoped<SetBranchProductAvailability>();
 builder.Services.AddScoped<PromoteCatalogProductToOrganizationStandard>();
+builder.Services.AddScoped<QueryProductBranchAvailability>();
 builder.Services.AddScoped<DeactivateCatalogProduct>();
 builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<SetCatalogProductImage>();

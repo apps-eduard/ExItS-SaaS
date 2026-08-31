@@ -19,6 +19,26 @@ vi.mock("@/workspace/use-pos-workspace-scope", () => ({
   }),
 }));
 
+const { pricesSessionGrant } = vi.hoisted(() => ({
+  pricesSessionGrant: {
+    productAccessAllowed: true,
+    organizationManagementAuthority: true,
+    membershipRole: "OrganizationOwner",
+    productRole: "Owner",
+  },
+}));
+
+vi.mock("@/workspace/WorkspaceProvider", () => ({
+  useWorkspace: () => ({
+    boundWorkspace: {
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      branchId: "22222222-2222-2222-2222-222222222222",
+      branchName: "Main branch",
+    },
+    sessionGrant: pricesSessionGrant,
+  }),
+}));
+
 vi.mock("@/navigation/page-back-nav", () => ({
   pageBackNav: { catalog: { to: "/catalog", labelKey: "catalog.title" } },
 }));
@@ -40,6 +60,7 @@ const PRODUCT_A = {
   sellingMode: "PerItem",
   sellingPrice: 28,
   status: "Active",
+  scope: "BranchLocal",
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
 };
@@ -53,8 +74,23 @@ const PRODUCT_B = {
   sellingMode: "PerItem",
   sellingPrice: 15,
   status: "Active",
+  scope: "BranchLocal",
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-02T00:00:00Z",
+};
+
+const STANDARD_PRODUCT = {
+  productId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+  organizationId: "11111111-1111-1111-1111-111111111111",
+  name: "Org Standard Tea",
+  brandName: null,
+  unitOfMeasure: "Piece",
+  sellingMode: "PerItem",
+  sellingPrice: 40,
+  status: "Active",
+  scope: "OrganizationStandard",
+  createdAtUtc: "2026-01-01T00:00:00Z",
+  updatedAtUtc: "2026-01-01T00:00:00Z",
 };
 
 function renderPage() {
@@ -75,6 +111,8 @@ function renderPage() {
 describe("TodaysPricesPage per-product save", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pricesSessionGrant.organizationManagementAuthority = true;
+    pricesSessionGrant.membershipRole = "OrganizationOwner";
     listCatalogProducts.mockResolvedValue({ items: [PRODUCT_A, PRODUCT_B], totalCount: 2 });
   });
 
@@ -234,5 +272,35 @@ describe("TodaysPricesPage per-product save", () => {
     });
     expect(within(rowB).getByRole("textbox", { name: "prices.newPrice" })).toHaveValue("18");
     expect(within(rowB).getByTestId(`price-save-${PRODUCT_B.productId}`)).toBeInTheDocument();
+  });
+});
+
+describe("TodaysPricesPage governance", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pricesSessionGrant.organizationManagementAuthority = false;
+    pricesSessionGrant.membershipRole = "Member";
+    listCatalogProducts.mockResolvedValue({ items: [STANDARD_PRODUCT, PRODUCT_A], totalCount: 2 });
+  });
+
+  it("makes Standard products read-only for non-govern actors", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const standardRow = await screen.findByTestId(`price-row-${STANDARD_PRODUCT.productId}`);
+    expect(within(standardRow).getByTestId(`price-managed-${STANDARD_PRODUCT.productId}`)).toHaveTextContent(
+      "prices.managedByOrganization",
+    );
+    expect(within(standardRow).getByTestId(`price-scope-${STANDARD_PRODUCT.productId}`)).toHaveTextContent(
+      "catalog.governance.organizationProduct",
+    );
+    const input = within(standardRow).getByRole("textbox", { name: "prices.organizationPrice" });
+    expect(input).toBeDisabled();
+    fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+    expect(updateCatalogProductPrices).not.toHaveBeenCalled();
+
+    const localRow = screen.getByTestId(`price-row-${PRODUCT_A.productId}`);
+    await user.clear(within(localRow).getByRole("textbox", { name: "prices.newPrice" }));
+    await user.type(within(localRow).getByRole("textbox", { name: "prices.newPrice" }), "31");
+    expect(within(localRow).getByTestId(`price-save-${PRODUCT_A.productId}`)).toBeInTheDocument();
   });
 });

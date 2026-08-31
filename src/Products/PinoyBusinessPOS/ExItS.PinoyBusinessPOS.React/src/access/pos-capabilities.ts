@@ -540,6 +540,17 @@ export function canManageCatalog(grant: PosSessionGrantFacts | null | undefined)
 }
 
 /**
+ * Organization-level Standard product governance (Owner/Admin / org management).
+ * Distinct from canManageCatalog (branch/local operational catalog authority).
+ * Server remains authoritative.
+ */
+export function canGovernOrganizationCatalog(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return hasOrganizationManagementAuthority(grant);
+}
+
+/**
  * ManageInventory UI gate — PosRoleMatrix Owner/Admin/StoreManager (+ InventoryStaff).
  * Covers quantity mutations: adjust, stock use, waste/loss (incl. expired write-off),
  * production, stock count, and transfers. No separate per-feature capabilities (SMB model).

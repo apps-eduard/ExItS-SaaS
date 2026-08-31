@@ -27,7 +27,9 @@ public sealed record CatalogProductFilter(
     /// </summary>
     bool RestrictBranchLocalToActingBranch = false,
     /// <summary>When set, restrict to an exact product scope (e.g. OrganizationStandard for Connected Buyer).</summary>
-    CatalogProductScope? Scope = null);
+    CatalogProductScope? Scope = null,
+    /// <summary>When set, restrict BranchLocal products to this origin branch (management filter).</summary>
+    Guid? OriginBranchId = null);
 
 public interface ICatalogProductRepository
 {

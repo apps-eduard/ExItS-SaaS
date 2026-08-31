@@ -196,3 +196,19 @@ public sealed record PosCatalogProductPagedResult(
     int PageSize);
 
 public sealed record SetBranchProductAvailabilityRequest(bool IsOffered);
+
+/// <summary>
+/// Bulk branch-offering read for one product. ExplicitRows are sparse overrides only;
+/// React merges with Platform Active branches (missing = offered by default for Standard).
+/// </summary>
+public sealed record ProductBranchAvailabilityReadDto(
+    Guid ProductId,
+    string Scope,
+    Guid? OriginBranchId,
+    IReadOnlyList<ProductBranchOfferingItemDto> ExplicitRows);
+
+public sealed record ProductBranchOfferingItemDto(
+    Guid BranchId,
+    bool IsOffered,
+    string Reason,
+    bool HasExplicitOverride);

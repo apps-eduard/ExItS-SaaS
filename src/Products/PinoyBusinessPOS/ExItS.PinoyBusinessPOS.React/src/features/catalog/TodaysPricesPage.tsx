@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
 import { listCatalogProducts, updateCatalogProductPrices } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,11 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useToast } from "@/components/exits/ToastProvider";
+import {
+  isBranchLocalProduct,
+  isOrganizationStandardProduct,
+  isStandardMasterReadOnlyForActor,
+} from "@/features/catalog/catalog-product-scope";
 import {
   applySuccessfulPriceSave,
   canSavePriceDraft,
@@ -23,6 +29,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 function conflictMessage(errorCode: string | null | undefined, fallback: string, conflictLabel: string): string {
@@ -32,11 +39,20 @@ function conflictMessage(errorCode: string | null | undefined, fallback: string,
   return fallback;
 }
 
+function isPriceRowEditable(canGovern: boolean, row: PriceDraft): boolean {
+  return !isStandardMasterReadOnlyForActor({
+    canGovernOrganizationCatalog: canGovern,
+    product: { scope: row.scope ?? undefined },
+  });
+}
+
 export function TodaysPricesPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const workspace = usePosWorkspaceScope();
+  const { sessionGrant } = useWorkspace();
+  const canGovern = canGovernOrganizationCatalog(sessionGrant);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [draftById, setDraftById] = useState<Record<string, PriceDraft>>({});
@@ -87,7 +103,7 @@ export function TodaysPricesPage() {
       return;
     }
     const row = draftById[productId];
-    if (!row || savingIds[productId] || !canSavePriceDraft(row)) {
+    if (!row || savingIds[productId] || !canSavePriceDraft(row) || !isPriceRowEditable(canGovern, row)) {
       return;
     }
     const parsed = parseDraftPrice(row.draftPrice);
@@ -176,11 +192,19 @@ export function TodaysPricesPage() {
 
       <ul className="catalog-prices-list exits-list m-0 grid list-none gap-2 p-0">
         {visibleDrafts.map((row) => {
-          const dirty = isPriceDraftDirty(row);
+          const editable = isPriceRowEditable(canGovern, row);
+          const dirty = editable && isPriceDraftDirty(row);
           const parsed = parseDraftPrice(row.draftPrice);
-          const canSave = canSavePriceDraft(row);
+          const canSave = editable && canSavePriceDraft(row);
           const saving = Boolean(savingIds[row.productId]);
           const invalidDirty = dirty && !parsed.ok;
+          const isStandard = isOrganizationStandardProduct({ scope: row.scope ?? undefined });
+          const isLocal = isBranchLocalProduct({ scope: row.scope ?? undefined });
+          const priceLabel = isStandard
+            ? t("prices.organizationPrice")
+            : isLocal
+              ? t("catalog.governance.currentBranchProductPrice")
+              : t("prices.current");
 
           return (
             <li key={row.productId}>
@@ -189,6 +213,7 @@ export function TodaysPricesPage() {
                   "catalog-prices-row exits-list__card",
                   dirty && "catalog-prices-row--dirty",
                   row.rowError && "catalog-prices-row--error",
+                  !editable && "catalog-prices-row--readonly",
                 )}
                 data-testid={`price-row-${row.productId}`}
               >
@@ -201,38 +226,66 @@ export function TodaysPricesPage() {
                       {row.brandName}
                     </p>
                   ) : null}
-                  <p className="catalog-prices-row__current m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("prices.current")}: {formatPeso(row.currentPrice)}
+                  <p
+                    className="catalog-prices-row__scope m-0 mt-1"
+                    data-testid={`price-scope-${row.productId}`}
+                  >
+                    <span className="catalog-product-row__badge catalog-product-row__badge--scope">
+                      {isStandard
+                        ? t("catalog.governance.organizationProduct")
+                        : isLocal
+                          ? t("catalog.governance.branchProduct")
+                          : t("catalog.governance.productType")}
+                    </span>
                   </p>
+                  <p className="catalog-prices-row__current m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {priceLabel}: {formatPeso(row.currentPrice)}
+                  </p>
+                  {!editable ? (
+                    <p
+                      className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                      data-testid={`price-managed-${row.productId}`}
+                    >
+                      {t("prices.managedByOrganization")}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="catalog-prices-row__editor">
                   <div className="catalog-prices-row__edit-row">
                     <div className="catalog-prices-row__input-wrap min-w-0 flex-1">
                       <Input
-                        label={t("prices.newPrice")}
+                        label={editable ? t("prices.newPrice") : t("prices.organizationPrice")}
                         name={`price-${row.productId}`}
                         inputMode="decimal"
                         autoComplete="off"
                         value={row.draftPrice}
+                        readOnly={!editable}
+                        disabled={!editable}
                         aria-invalid={Boolean(row.rowError) || invalidDirty}
                         aria-describedby={
                           row.rowError || invalidDirty
                             ? `price-error-${row.productId}`
                             : undefined
                         }
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          if (!editable) {
+                            return;
+                          }
                           updateDraft(row.productId, (current) => ({
                             ...current,
                             draftPrice: event.target.value,
                             rowError: null,
-                          }))
-                        }
+                          }));
+                        }}
                         onKeyDown={(event) => {
                           if (event.key !== "Enter") {
                             return;
                           }
                           event.preventDefault();
+                          if (!editable) {
+                            return;
+                          }
                           void saveProduct(row.productId);
                         }}
                       />

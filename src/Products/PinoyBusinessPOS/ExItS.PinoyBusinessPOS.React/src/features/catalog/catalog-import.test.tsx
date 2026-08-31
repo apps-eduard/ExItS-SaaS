@@ -45,6 +45,12 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       branchName: "Main branch",
       experience: "managing",
     },
+    sessionGrant: {
+      productAccessAllowed: true,
+      organizationManagementAuthority: true,
+      membershipRole: "OrganizationOwner",
+      productRole: "Owner",
+    },
   }),
 }));
 

@@ -33,6 +33,7 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
@@ -40,6 +41,7 @@ import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 type WizardStep = "choose" | "preview" | "confirm";
@@ -84,6 +86,8 @@ export function CatalogTemplateImportPage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const workspace = usePosWorkspaceScope();
+  const { sessionGrant } = useWorkspace();
+  const canGovern = canGovernOrganizationCatalog(sessionGrant);
   const [step, setStep] = useState<WizardStep>("choose");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -182,6 +186,9 @@ export function CatalogTemplateImportPage() {
   const startMutation = useMutation({
     mutationFn: async () => {
       if (!workspace || !selectedId) throw new Error("Missing workspace");
+      if (!canGovern) {
+        throw new Error(t("catalog.governance.importRequiresOrgGovernance"));
+      }
       const status = selectedStatusQuery.data;
       if (status?.canImportNextBatch) {
         return importTemplateNextBatch(workspace, selectedId, {
@@ -509,6 +516,15 @@ export function CatalogTemplateImportPage() {
 
           {startError ? <ErrorState title={t("error.title")} detail={startError} /> : null}
 
+          {!canGovern ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="catalog-import-governance-gate"
+            >
+              {t("catalog.governance.importRequiresOrgGovernance")}
+            </p>
+          ) : null}
+
           <div className="catalog-form-actions">
             <div className="catalog-form-actions__primary">
               <Button
@@ -526,7 +542,7 @@ export function CatalogTemplateImportPage() {
                 type="button"
                 className="catalog-form-actions__save min-h-11"
                 data-testid="catalog-template-start-import"
-                disabled={!confirmed || startMutation.isPending}
+                disabled={!canGovern || !confirmed || startMutation.isPending}
                 onClick={() => {
                   setStartError(null);
                   startMutation.mutate();

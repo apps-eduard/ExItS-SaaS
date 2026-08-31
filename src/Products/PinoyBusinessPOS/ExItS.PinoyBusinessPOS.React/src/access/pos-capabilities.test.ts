@@ -11,6 +11,7 @@ import {
   canEnterSellFloor,
   canInviteOrganizationStaff,
   canManageCatalog,
+  canGovernOrganizationCatalog,
   canManageRegisters,
   canManagePurchasing,
   canManageShifts,
@@ -472,5 +473,22 @@ describe("pos-capabilities", () => {
     });
     expect(canViewReports(reporting)).toBe(false);
     expect(canViewExpenses(reporting)).toBe(true);
+  });
+
+  it("keeps canGovernOrganizationCatalog distinct from canManageCatalog", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      membershipRole: "OrganizationMember",
+      organizationManagementAuthority: false,
+    });
+    expect(canGovernOrganizationCatalog(owner)).toBe(true);
+    expect(canManageCatalog(owner)).toBe(true);
+    expect(canGovernOrganizationCatalog(manager)).toBe(false);
+    expect(canManageCatalog(manager)).toBe(true);
   });
 });

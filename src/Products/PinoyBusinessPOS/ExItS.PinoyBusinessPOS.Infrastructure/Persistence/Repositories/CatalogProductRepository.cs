@@ -238,6 +238,12 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
             query = query.Where(p => p.Scope == scopeCode);
         }
 
+        if (filter.OriginBranchId is not null)
+        {
+            var origin = filter.OriginBranchId.Value;
+            query = query.Where(p => p.OriginBranchId == origin);
+        }
+
         var standardScope = CatalogProductScopes.ToCode(CatalogProductScope.OrganizationStandard);
         var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
 

@@ -4,6 +4,8 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
+import { listOrganizationBranches } from "@/api/platform/platform-auth-client";
 import {
   createCatalogBrand,
   createCatalogCategory,
@@ -17,7 +19,11 @@ import {
   uploadCatalogProductImage,
 } from "@/api/pos/pos-catalog-client";
 
-import type { PosCatalogProductDto, PosProductBrandDto } from "@/api/pos/pos-catalog-types";
+import type {
+  CatalogProductScopeCode,
+  PosCatalogProductDto,
+  PosProductBrandDto,
+} from "@/api/pos/pos-catalog-types";
 
 import {
   DEFAULT_CATALOG_SELLING_MODE,
@@ -61,6 +67,17 @@ import {
 } from "@/features/catalog/product-business-usage";
 
 import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
+import {
+  CatalogBranchAvailabilitySection,
+  CatalogCreateScopeFields,
+  CatalogManagedByOrganizationBanner,
+  CatalogProductScopeSummary,
+  CatalogPromoteControls,
+} from "@/features/catalog/CatalogProductGovernancePanels";
+import {
+  isBranchLocalProduct,
+  isStandardMasterReadOnlyForActor,
+} from "@/features/catalog/catalog-product-scope";
 
 import {
   buildEnableInventoryBody,
@@ -72,6 +89,7 @@ import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
 
 import { useI18n } from "@/i18n/I18nProvider";
 
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 function FormSelect({
@@ -180,6 +198,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const queryClient = useQueryClient();
 
   const workspace = usePosWorkspaceScope();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const canGovern = canGovernOrganizationCatalog(sessionGrant);
+
+  const [createScope, setCreateScope] = useState<CatalogProductScopeCode>(
+    canGovern ? "OrganizationStandard" : "BranchLocal",
+  );
 
   const [name, setName] = useState("");
 
@@ -251,12 +275,46 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   });
 
   const productQuery = useQuery({
-    queryKey: ["catalog", "product", workspace?.organizationId, productId],
+    queryKey: [
+      "catalog",
+      "product",
+      workspace?.organizationId,
+      workspace?.branchId,
+      productId,
+    ],
 
     enabled: Boolean(workspace) && mode === "edit" && Boolean(productId),
 
     queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
+
+  const branchesQuery = useQuery({
+    queryKey: ["catalog", "org-branches", workspace?.organizationId],
+    enabled: Boolean(workspace?.organizationId),
+    staleTime: 60_000,
+    queryFn: async () => {
+      const result = await listOrganizationBranches(workspace!.organizationId);
+      if (!result.ok) {
+        return [];
+      }
+      return result.branches;
+    },
+  });
+
+  const branchNameById = (() => {
+    const map = new Map<string, string>();
+    for (const branch of branchesQuery.data ?? []) {
+      map.set(branch.id, branch.name);
+    }
+    return map;
+  })();
+
+  const readOnly =
+    mode === "edit" &&
+    isStandardMasterReadOnlyForActor({
+      canGovernOrganizationCatalog: canGovern,
+      product: productQuery.data,
+    });
 
   useEffect(() => {
     if (!productQuery.data) {
@@ -344,6 +402,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       if (!workspace) {
         throw new Error("Workspace required");
       }
+      if (readOnly) {
+        throw new Error(t("catalog.governance.managedByOrganization"));
+      }
 
       const price = Number(sellingPrice);
 
@@ -381,6 +442,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           : null;
 
       if (mode === "create") {
+        const resolvedScope: CatalogProductScopeCode = canGovern
+          ? createScope
+          : "BranchLocal";
+        if (resolvedScope === "BranchLocal" && !workspace.branchId) {
+          throw new Error(t("catalog.governance.branchRequiredForBranchProduct"));
+        }
         const body = {
           name: name.trim(),
           description: description.trim() || null,
@@ -395,6 +462,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           units: unitsPayload,
           tracksExpiration: trackStockQuantity && tracksExpiration,
           expirationWarningDays: resolvedWarningDays,
+          scope: resolvedScope,
         };
 
         const product = await createCatalogProduct(workspace, body);
@@ -620,13 +688,22 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
 
+      {readOnly ? <CatalogManagedByOrganizationBanner /> : null}
+
       <form
         className="flex flex-col gap-3"
 
         onSubmit={(event) => {
           event.preventDefault();
-
+          if (readOnly) {
+            return;
+          }
           saveMutation.mutate();
+        }}
+        onKeyDown={(event) => {
+          if (readOnly && event.key === "Enter") {
+            event.preventDefault();
+          }
         }}
       >
         <section className="catalog-form-section exits-animate-panel">
@@ -643,6 +720,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                 value={name}
 
+                disabled={readOnly}
+
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
@@ -655,6 +734,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                 value={description}
 
+                disabled={readOnly}
+
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
@@ -666,6 +747,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
               value={sku}
 
+              disabled={readOnly}
+
               onChange={(e) => setSku(e.target.value)}
             />
 
@@ -676,6 +759,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
               value={barcode}
 
+              disabled={readOnly}
+
               onChange={(e) => setBarcode(e.target.value)}
             />
 
@@ -685,6 +770,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               name="productCategory"
 
               value={categoryId}
+
+              disabled={readOnly}
 
               onChange={setCategoryId}
             >
@@ -706,6 +793,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
               value={brandId}
 
+              disabled={readOnly}
+
               onChange={setBrandId}
             >
               <option value="">{t("catalog.noBrand")}</option>
@@ -720,6 +809,27 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("catalog.brandOptional")}</p>
 
+          {mode === "create" ? (
+            <CatalogCreateScopeFields
+              canGovern={canGovern}
+              createScope={createScope}
+              onCreateScopeChange={setCreateScope}
+              branchName={boundWorkspace?.branchName ?? null}
+              branchId={workspace.branchId ?? null}
+            />
+          ) : null}
+
+          {mode === "edit" && productQuery.data ? (
+            <CatalogProductScopeSummary
+              product={productQuery.data}
+              branchNameById={branchNameById}
+              currentBranchId={workspace.branchId ?? null}
+              canGovern={canGovern}
+            />
+          ) : null}
+
+          {!readOnly ? (
+            <>
           <div className="catalog-form-quick-add">
             <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
             <div className="catalog-form-quick-add__row">
@@ -800,6 +910,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               </Button>
             </div>
           </div>
+            </>
+          ) : null}
         </section>
 
         <section className="catalog-form-section exits-animate-panel">
@@ -810,6 +922,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               <ProductBusinessUsageSelector
                 value={businessUsage}
                 onChange={setBusinessUsage}
+                disabled={readOnly}
               />
             </div>
 
@@ -831,7 +944,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
               value={unitOfMeasure}
 
-              disabled={sellingMode === "ByWeight"}
+              disabled={readOnly || sellingMode === "ByWeight"}
 
               onChange={(value) => setUnitOfMeasure(value as PosUnitOfMeasureCode)}
             >
@@ -850,6 +963,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               testId="catalog-selling-mode"
 
               value={sellingMode}
+
+              disabled={readOnly}
 
               onChange={(value) => setSellingMode(value as PosSellingModeCode)}
             >
@@ -870,6 +985,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               inputMode="decimal"
 
               value={sellingPrice}
+
+              disabled={readOnly}
 
               onChange={(e) => setSellingPrice(e.target.value)}
             />
@@ -1076,6 +1193,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
             testId="catalog-configure-packages"
 
+            disabled={readOnly}
+
             onChange={(next) => {
               setConfigurePackages(next);
 
@@ -1086,7 +1205,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           />
 
           {configurePackages ? (
-            <div className="flex flex-col gap-3" data-testid="catalog-unit-editor">
+            <div
+              className="flex flex-col gap-3"
+              data-testid="catalog-unit-editor"
+              aria-disabled={readOnly || undefined}
+            >
+              <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("catalog.packagesLede")}
               </p>
@@ -1206,11 +1330,21 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   {t("catalog.addSellUnit")}
                 </Button>
               </div>
+              </fieldset>
             </div>
           ) : null}
         </section>
 
-        {mode === "edit" && productId ? (
+        {mode === "edit" && productId && workspace ? (
+          <CatalogBranchAvailabilitySection
+            workspace={workspace}
+            productId={productId}
+            product={productQuery.data}
+            canGovern={canGovern}
+          />
+        ) : null}
+
+        {mode === "edit" && productId && !readOnly ? (
           <section className="catalog-form-section exits-animate-panel">
             <h2 className="catalog-form-section__title">{t("catalog.sectionImage")}</h2>
 
@@ -1246,28 +1380,50 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         ) : null}
 
         <div className="catalog-form-actions" data-testid="catalog-form-actions">
-          <div className="catalog-form-actions__primary">
-            <Button
-              type="submit"
-              className="catalog-form-actions__save"
-              data-testid="catalog-save"
-              disabled={saveMutation.isPending || statusMutation.isPending}
-            >
-              {saveMutation.isPending ? (
-                <>
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                  {t("catalog.saving")}
-                </>
-              ) : (
-                <>
-                  <Save className="size-4 shrink-0" aria-hidden />
-                  {t("catalog.save")}
-                </>
-              )}
-            </Button>
-          </div>
+          {!readOnly ? (
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="submit"
+                className="catalog-form-actions__save"
+                data-testid="catalog-save"
+                disabled={
+                  saveMutation.isPending ||
+                  statusMutation.isPending ||
+                  (mode === "create" &&
+                    (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
+                    !workspace.branchId)
+                }
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    {t("catalog.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4 shrink-0" aria-hidden />
+                    {t("catalog.save")}
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : null}
 
-          {mode === "edit" && productQuery.data?.status === "Active" ? (
+          {mode === "edit" &&
+          canGovern &&
+          productQuery.data &&
+          workspace &&
+          isBranchLocalProduct(productQuery.data) ? (
+            <div className="catalog-form-actions__secondary">
+              <CatalogPromoteControls
+                workspace={workspace}
+                productId={productId!}
+                enabled
+              />
+            </div>
+          ) : null}
+
+          {!readOnly && mode === "edit" && productQuery.data?.status === "Active" ? (
             <div className="catalog-form-actions__secondary">
               <Button
                 type="button"
@@ -1287,7 +1443,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             </div>
           ) : null}
 
-          {mode === "edit" && productQuery.data?.status !== "Active" ? (
+          {!readOnly && mode === "edit" && productQuery.data?.status !== "Active" ? (
             <div className="catalog-form-actions__secondary">
               <Button
                 type="button"

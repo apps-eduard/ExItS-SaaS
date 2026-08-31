@@ -115,6 +115,13 @@ public sealed class CatalogProductCommercialOfferingGateTests
                     .ToList());
         }
 
+        public Task<IReadOnlyList<BranchProductAvailability>> ListByProductAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BranchProductAvailability>>(
+                _rows.Where(r => r.OrganizationId == organizationId && r.ProductId == productId).ToList());
+
         public Task UpdateAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
@@ -155,6 +162,12 @@ public sealed class CatalogProductCommercialOfferingGateTests
             ListByProductIdsCalls++;
             return Task.FromResult<IReadOnlyList<BranchProductAvailability>>([]);
         }
+
+        public Task<IReadOnlyList<BranchProductAvailability>> ListByProductAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BranchProductAvailability>>([]);
 
         public Task UpdateAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

@@ -1,5 +1,6 @@
 import type {
   CatalogProductImageVariant,
+  CatalogProductScopeCode,
   CreatePosCatalogProductRequest,
   CreatePosProductBrandRequest,
   CreatePosProductCategoryRequest,
@@ -9,6 +10,8 @@ import type {
   PosProductBrandPagedResult,
   PosProductCategoryDto,
   PosProductCategoryPagedResult,
+  ProductBranchAvailabilityReadDto,
+  SetBranchProductAvailabilityRequest,
   UpdatePosCatalogProductPricesRequest,
   UpdatePosCatalogProductPricesResponse,
   UpdatePosCatalogProductRequest,
@@ -36,6 +39,10 @@ export type ListCatalogProductsOptions = {
    * Distinct from canBeSold. Sell floor must send this with canBeSold.
    */
   commerciallyOffered?: boolean;
+  /** Management scope filter — applied server-side before pagination. */
+  scope?: CatalogProductScopeCode | string;
+  /** Management origin-branch filter for BranchLocal — applied before pagination. */
+  originBranchId?: string;
   page?: number;
   pageSize?: number;
 };
@@ -256,6 +263,8 @@ export function listCatalogProducts(
       brandId: options.brandId ?? undefined,
       canBeSold: options.canBeSold,
       commerciallyOffered: options.commerciallyOffered,
+      scope: options.scope,
+      originBranchId: options.originBranchId,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? CATALOG_BROWSE_PAGE_SIZE,
     }),
@@ -421,5 +430,47 @@ export function getCatalogProductImage(
     workspace,
     signal,
     path: `${PRODUCTS_PATH}/${productId}/image/${variant}`,
+  });
+}
+
+export function promoteCatalogProduct(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosCatalogProductDto> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/promote`,
+  });
+}
+
+export function setBranchProductAvailability(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  branchId: string,
+  body: SetBranchProductAvailabilityRequest,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/branches/${branchId}/availability`,
+    body,
+  });
+}
+
+export function getProductBranchAvailability(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<ProductBranchAvailabilityReadDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/branch-availability`,
   });
 }

@@ -6781,6 +6781,27 @@ a.dashboard-metric-card:focus-visible {
   background: color-mix(in srgb, var(--exits-warning) 10%, var(--exits-surface));
 }
 
+.catalog-product-row__badge--scope {
+  border-color: color-mix(in srgb, var(--exits-text-muted, #6b7280) 35%, var(--exits-border));
+  color: var(--exits-text-muted, #6b7280);
+  background: color-mix(in srgb, var(--exits-text-muted, #6b7280) 8%, var(--exits-surface));
+  font-weight: 500;
+}
+
+.catalog-product-row__offering {
+  font-size: 0.65rem;
+  line-height: 1.25;
+}
+
+.catalog-governance-banner {
+  border-color: color-mix(in srgb, var(--exits-warning) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 8%, var(--exits-surface));
+}
+
+.catalog-prices-row--readonly {
+  opacity: 0.96;
+}
+
 .exits-pagination,
 .suppliers-pagination {
   display: flex;

@@ -221,6 +221,106 @@ public sealed class PromoteCatalogProductToOrganizationStandard
     }
 }
 
+/// <summary>
+/// Bulk read of sparse branch offering overrides for one product (no N+1).
+/// OrganizationStandard: ExplicitRows only; missing branch = offered by default.
+/// BranchLocal: returns origin-only synthetic offered row (no cross-branch sharing).
+/// </summary>
+public sealed class QueryProductBranchAvailability
+{
+    private readonly ICatalogProductRepository _products;
+    private readonly IBranchProductAvailabilityRepository _availability;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
+
+    public QueryProductBranchAvailability(
+        ICatalogProductRepository products,
+        IBranchProductAvailabilityRepository availability,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor)
+    {
+        _products = products;
+        _availability = availability;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
+    }
+
+    public async Task<ApplicationResult<ProductBranchAvailabilityReadDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid productId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var product = await _products
+            .GetByIdAsync(orgId, CatalogProductId.From(productId), cancellationToken)
+            .ConfigureAwait(false);
+        if (product is null)
+        {
+            return ApplicationResult<ProductBranchAvailabilityReadDto>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.");
+        }
+
+        var actor = _actorAccessor.GetActor();
+        if (product.Scope == CatalogProductScope.BranchLocal
+            && !_governance.CanViewBranchLocalInManagement(actor, product.OriginBranchId))
+        {
+            return ApplicationResult<ProductBranchAvailabilityReadDto>.Failure(
+                ApplicationErrorCodes.ProductNotFound,
+                "Product was not found.");
+        }
+
+        var scopeCode = CatalogProductScopes.ToCode(product.Scope);
+        if (product.Scope == CatalogProductScope.BranchLocal)
+        {
+            if (product.OriginBranchId is null)
+            {
+                return ApplicationResult<ProductBranchAvailabilityReadDto>.Success(
+                    new ProductBranchAvailabilityReadDto(
+                        product.Id.Value,
+                        scopeCode,
+                        null,
+                        []));
+            }
+
+            return ApplicationResult<ProductBranchAvailabilityReadDto>.Success(
+                new ProductBranchAvailabilityReadDto(
+                    product.Id.Value,
+                    scopeCode,
+                    product.OriginBranchId.Value,
+                    [
+                        new ProductBranchOfferingItemDto(
+                            product.OriginBranchId.Value,
+                            true,
+                            nameof(CatalogProductOfferingReason.BranchLocalOrigin),
+                            HasExplicitOverride: false)
+                    ]));
+        }
+
+        var rows = await _availability
+            .ListByProductAsync(orgId, product.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        var items = rows
+            .Select(r => new ProductBranchOfferingItemDto(
+                r.BranchId.Value,
+                r.IsOffered,
+                r.IsOffered
+                    ? nameof(CatalogProductOfferingReason.ExplicitlyOffered)
+                    : nameof(CatalogProductOfferingReason.ExplicitlyNotOffered),
+                HasExplicitOverride: true))
+            .OrderBy(i => i.BranchId)
+            .ToList();
+
+        return ApplicationResult<ProductBranchAvailabilityReadDto>.Success(
+            new ProductBranchAvailabilityReadDto(
+                product.Id.Value,
+                scopeCode,
+                product.OriginBranchId?.Value,
+                items));
+    }
+}
+
 /// <summary>Shared commercial offering gate for Sell/checkout/storefront/orders.</summary>
 public static class CatalogProductCommercialOfferingGate
 {

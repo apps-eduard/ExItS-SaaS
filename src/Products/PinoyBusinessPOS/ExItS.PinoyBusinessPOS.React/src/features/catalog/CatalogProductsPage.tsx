@@ -9,11 +9,14 @@ import {
   Plus,
   Tags,
 } from "lucide-react";
+import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
+import { listOrganizationBranches } from "@/api/platform/platform-auth-client";
 import {
   listCatalogBrands,
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
+import type { CatalogProductScopeCode } from "@/api/pos/pos-catalog-types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -27,9 +30,15 @@ import {
   resolveBusinessUsage,
   type ProductBusinessUsage,
 } from "@/features/catalog/product-business-usage";
+import {
+  isBranchLocalProduct,
+  isOrganizationStandardProduct,
+  type CatalogScopeFilter,
+} from "@/features/catalog/catalog-product-scope";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 const PAGE_SIZE = 20;
@@ -68,13 +77,40 @@ const USAGE_FILTERS: Array<{
   },
 ];
 
+const SCOPE_FILTERS: Array<{
+  value: CatalogScopeFilter;
+  key: string;
+  labelKey:
+    | "catalog.governance.scopeAll"
+    | "catalog.governance.scopeOrganization"
+    | "catalog.governance.scopeBranch";
+  testId: string;
+}> = [
+  { value: "", key: "all", labelKey: "catalog.governance.scopeAll", testId: "catalog-scope-all" },
+  {
+    value: "OrganizationStandard",
+    key: "OrganizationStandard",
+    labelKey: "catalog.governance.scopeOrganization",
+    testId: "catalog-scope-OrganizationStandard",
+  },
+  {
+    value: "BranchLocal",
+    key: "BranchLocal",
+    labelKey: "catalog.governance.scopeBranch",
+    testId: "catalog-scope-BranchLocal",
+  },
+];
+
 export function CatalogProductsPage() {
   const { t } = useI18n();
   const workspace = usePosWorkspaceScope();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const canGovern = canGovernOrganizationCatalog(sessionGrant);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
   const [usageFilter, setUsageFilter] = useState<UsageFilter>("all");
+  const [scopeFilter, setScopeFilter] = useState<CatalogScopeFilter>("");
   const [categoryId, setCategoryId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [page, setPage] = useState(1);
@@ -86,7 +122,7 @@ export function CatalogProductsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debounced, status, categoryId, brandId, usageFilter]);
+  }, [debounced, status, categoryId, brandId, usageFilter, scopeFilter]);
 
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", "filter", workspace?.organizationId, workspace?.branchId],
@@ -103,6 +139,27 @@ export function CatalogProductsPage() {
     queryFn: ({ signal }) =>
       listCatalogBrands(workspace!, { status: "Active", pageSize: 100 }, signal),
   });
+
+  const branchesQuery = useQuery({
+    queryKey: ["catalog", "org-branches", workspace?.organizationId],
+    enabled: Boolean(workspace?.organizationId),
+    staleTime: 60_000,
+    queryFn: async () => {
+      const result = await listOrganizationBranches(workspace!.organizationId);
+      if (!result.ok) {
+        return [];
+      }
+      return result.branches;
+    },
+  });
+
+  const branchNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const branch of branchesQuery.data ?? []) {
+      map.set(branch.id, branch.name);
+    }
+    return map;
+  }, [branchesQuery.data]);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -122,6 +179,7 @@ export function CatalogProductsPage() {
       status,
       categoryId,
       brandId,
+      scopeFilter,
       page,
     ],
     enabled: Boolean(workspace),
@@ -135,6 +193,7 @@ export function CatalogProductsPage() {
           status: status || undefined,
           categoryId: categoryId || undefined,
           brandId: brandId || undefined,
+          scope: (scopeFilter || undefined) as CatalogProductScopeCode | undefined,
           page,
           pageSize: PAGE_SIZE,
         },
@@ -158,6 +217,57 @@ export function CatalogProductsPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const canPrev = page > 1;
   const canNext = page < totalPages && totalCount > 0;
+  const currentBranchName = boundWorkspace?.branchName ?? null;
+
+  const toolbarItems = [
+    {
+      key: "new",
+      label: t("catalog.newProduct"),
+      icon: <Plus />,
+      href: "/catalog/products/new",
+      testId: "catalog-new-product",
+      emphasis: "primary" as const,
+    },
+    ...(canGovern
+      ? [
+          {
+            key: "templates",
+            label: t("catalog.businessTemplate"),
+            icon: <LayoutTemplate />,
+            href: "/catalog/templates",
+            testId: "catalog-open-templates",
+          },
+          {
+            key: "global",
+            label: t("catalog.globalCatalog"),
+            icon: <Globe />,
+            href: "/catalog/global-catalog",
+            testId: "catalog-open-global-catalog",
+          },
+        ]
+      : []),
+    {
+      key: "categories",
+      label: t("catalog.categoriesTitle"),
+      icon: <Tags />,
+      href: "/catalog/categories",
+      testId: "catalog-open-categories",
+    },
+    {
+      key: "brands",
+      label: t("catalog.brandsTitle"),
+      icon: <Award />,
+      href: "/catalog/brands",
+      testId: "catalog-open-brands",
+    },
+    {
+      key: "prices",
+      label: t("prices.title"),
+      icon: <CircleDollarSign />,
+      href: "/catalog/todays-prices",
+      testId: "catalog-open-prices",
+    },
+  ];
 
   return (
     <div className="catalog-page exits-page flex min-w-0 flex-col gap-3" data-testid="catalog-products-page">
@@ -174,51 +284,7 @@ export function CatalogProductsPage() {
         ariaLabel={t("catalog.productsTitle")}
         testId="catalog-toolbar"
         className="exits-animate-toolbar"
-        items={[
-          {
-            key: "new",
-            label: t("catalog.newProduct"),
-            icon: <Plus />,
-            href: "/catalog/products/new",
-            testId: "catalog-new-product",
-            emphasis: "primary",
-          },
-          {
-            key: "templates",
-            label: t("catalog.businessTemplate"),
-            icon: <LayoutTemplate />,
-            href: "/catalog/templates",
-            testId: "catalog-open-templates",
-          },
-          {
-            key: "global",
-            label: t("catalog.globalCatalog"),
-            icon: <Globe />,
-            href: "/catalog/global-catalog",
-            testId: "catalog-open-global-catalog",
-          },
-          {
-            key: "categories",
-            label: t("catalog.categoriesTitle"),
-            icon: <Tags />,
-            href: "/catalog/categories",
-            testId: "catalog-open-categories",
-          },
-          {
-            key: "brands",
-            label: t("catalog.brandsTitle"),
-            icon: <Award />,
-            href: "/catalog/brands",
-            testId: "catalog-open-brands",
-          },
-          {
-            key: "prices",
-            label: t("prices.title"),
-            icon: <CircleDollarSign />,
-            href: "/catalog/todays-prices",
-            testId: "catalog-open-prices",
-          },
-        ]}
+        items={toolbarItems}
       />
 
       <SearchField
@@ -268,6 +334,19 @@ export function CatalogProductsPage() {
 
       <ExitsChipBar
         variant="filter"
+        ariaLabel={t("catalog.governance.scopeFilter")}
+        testId="catalog-scope-filters"
+        items={SCOPE_FILTERS.map((filter) => ({
+          key: filter.key,
+          label: t(filter.labelKey),
+          state: (scopeFilter || "all") === filter.key ? "active" : "idle",
+          testId: filter.testId,
+          onSelect: () => setScopeFilter(filter.value),
+        }))}
+      />
+
+      <ExitsChipBar
+        variant="filter"
         ariaLabel={t("catalog.statusFilter")}
         testId="catalog-status-filters"
         items={STATUS_FILTERS.map((filter) => ({
@@ -312,6 +391,26 @@ export function CatalogProductsPage() {
           const secondaryMeta = [product.brandName, categoryName].filter(Boolean).join(" · ");
           const idsMeta = [product.sku, product.barcode].filter(Boolean).join(" · ");
           const isActive = product.status.toLowerCase() === "active";
+          const isStandard = isOrganizationStandardProduct(product);
+          const isLocal = isBranchLocalProduct(product);
+          const originName = product.originBranchId
+            ? (branchNameById.get(product.originBranchId) ?? null)
+            : null;
+          const scopeBadge = isStandard
+            ? t("catalog.governance.organizationProduct")
+            : isLocal
+              ? originName &&
+                  currentBranchName &&
+                  product.originBranchId === workspace.branchId
+                ? t("catalog.governance.branchProductThisBranch")
+                : originName
+                  ? t("catalog.governance.branchProductOrigin").replace("{branch}", originName)
+                  : t("catalog.governance.branchProduct")
+              : null;
+          const offeringLabel =
+            isStandard && product.isOfferedAtBranch === false
+              ? t("catalog.governance.notOfferedAtBranch")
+              : null;
 
           return (
             <li key={product.productId}>
@@ -335,6 +434,24 @@ export function CatalogProductsPage() {
                   <span className="catalog-product-row__usage mt-0.5 block truncate text-muted">
                     {t(businessUsageLabelKey(usage))}
                   </span>
+                  {scopeBadge ? (
+                    <span
+                      className="catalog-product-row__scope mt-1 inline-flex"
+                      data-testid="catalog-product-scope-badge"
+                    >
+                      <span className="catalog-product-row__badge catalog-product-row__badge--scope">
+                        {scopeBadge}
+                      </span>
+                    </span>
+                  ) : null}
+                  {offeringLabel ? (
+                    <span
+                      className="catalog-product-row__offering mt-1 block text-muted"
+                      data-testid="catalog-product-offering"
+                    >
+                      {offeringLabel}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="catalog-product-row__aside">
                   {product.sellingPrice != null ? (

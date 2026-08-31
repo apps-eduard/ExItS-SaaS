@@ -40,6 +40,8 @@ export type PosCatalogProductUnitInput = {
   unitId?: string | null;
 };
 
+export type CatalogProductScopeCode = "OrganizationStandard" | "BranchLocal";
+
 export type PosCatalogProductDto = {
   productId: string;
   organizationId: string;
@@ -72,6 +74,15 @@ export type PosCatalogProductDto = {
   isTracked?: boolean;
   onHandQuantity?: number;
   stockStatus?: string;
+  /** OrganizationStandard | BranchLocal (MB2 product governance). Unknown values handled defensively. */
+  scope?: CatalogProductScopeCode | string;
+  /** Origin branch for BranchLocal; audit-only after promotion. Server-derived. */
+  originBranchId?: string | null;
+  /**
+   * When workspace branch is present on management list/detail: offered at that branch.
+   * When commerciallyOffered=true list: true for all returned items.
+   */
+  isOfferedAtBranch?: boolean | null;
 };
 
 export type PosProductCategoryDto = {
@@ -149,6 +160,8 @@ export type CreatePosCatalogProductRequest = {
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
+  /** OrganizationStandard | BranchLocal. Origin branch is server-derived — do not send originBranchId. */
+  scope?: CatalogProductScopeCode | string | null;
 };
 
 export type UpdatePosCatalogProductRequest = {
@@ -196,3 +209,22 @@ export type UpdatePosCatalogProductPricesResponse = {
 };
 
 export type CatalogProductImageVariant = "thumb" | "medium";
+
+export type SetBranchProductAvailabilityRequest = {
+  isOffered: boolean;
+};
+
+export type ProductBranchOfferingItemDto = {
+  branchId: string;
+  isOffered: boolean;
+  reason: string;
+  hasExplicitOverride: boolean;
+};
+
+export type ProductBranchAvailabilityReadDto = {
+  productId: string;
+  scope: CatalogProductScopeCode | string;
+  originBranchId?: string | null;
+  /** Sparse overrides only; merge with Platform Active branches for Standard. */
+  explicitRows: ProductBranchOfferingItemDto[];
+};

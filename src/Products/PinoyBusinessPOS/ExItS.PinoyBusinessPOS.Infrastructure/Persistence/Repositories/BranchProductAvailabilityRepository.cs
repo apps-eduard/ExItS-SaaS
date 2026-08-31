@@ -63,6 +63,18 @@ internal sealed class BranchProductAvailabilityRepository : IBranchProductAvaila
         return records.Select(CatalogEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<BranchProductAvailability>> ListByProductAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.BranchProductAvailabilities.AsNoTracking()
+            .Where(a => a.OrganizationId == organizationId.Value && a.ProductId == productId.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(CatalogEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default)
     {
         _db.BranchProductAvailabilities.Add(CatalogEntityMapper.ToRecord(availability));

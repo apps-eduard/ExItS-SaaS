@@ -22,12 +22,14 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
 export function CatalogGlobalBrowsePage() {
@@ -36,6 +38,8 @@ export function CatalogGlobalBrowsePage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const workspace = usePosWorkspaceScope();
+  const { sessionGrant } = useWorkspace();
+  const canGovern = canGovernOrganizationCatalog(sessionGrant);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -99,6 +103,9 @@ export function CatalogGlobalBrowsePage() {
   const importMutation = useMutation({
     mutationFn: async () => {
       if (!workspace) throw new Error("Missing workspace");
+      if (!canGovern) {
+        throw new Error(t("catalog.governance.importRequiresOrgGovernance"));
+      }
       const ids = [...selected].filter((id) => !importedSet.has(id));
       if (ids.length === 0) {
         throw new Error(t("catalogGlobal.nothingToImport"));
@@ -264,7 +271,7 @@ export function CatalogGlobalBrowsePage() {
                   ) : null}
                   {already ? (
                     <StatusChip tone="warning">{t("catalogImport.alreadyAdded")}</StatusChip>
-                  ) : (
+                  ) : canGovern ? (
                     <label className="catalog-global-product-row__select catalog-form-check">
                       <input
                         type="checkbox"
@@ -274,7 +281,7 @@ export function CatalogGlobalBrowsePage() {
                       />
                       <span>{t("catalogGlobal.select")}</span>
                     </label>
-                  )}
+                  ) : null}
                 </div>
               </article>
             </li>
@@ -283,6 +290,15 @@ export function CatalogGlobalBrowsePage() {
       </ul>
 
       {importError ? <ErrorState title={t("error.title")} detail={importError} /> : null}
+
+      {!canGovern ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="catalog-import-governance-gate"
+        >
+          {t("catalog.governance.importRequiresOrgGovernance")}
+        </p>
+      ) : null}
 
       <div className="catalog-form-actions catalog-global-actions">
         <div className="catalog-form-actions__primary">
@@ -295,7 +311,7 @@ export function CatalogGlobalBrowsePage() {
             type="button"
             className="catalog-form-actions__save min-h-11"
             data-testid="catalog-global-import"
-            disabled={selectedNewCount === 0 || importMutation.isPending}
+            disabled={!canGovern || selectedNewCount === 0 || importMutation.isPending}
             onClick={() => {
               setImportError(null);
               importMutation.mutate();

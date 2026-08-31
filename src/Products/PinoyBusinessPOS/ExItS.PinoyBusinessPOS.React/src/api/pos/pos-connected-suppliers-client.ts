@@ -91,6 +91,8 @@ export const connectedBuyerProductShareSchema = z.object({
   categoryNameSnapshot: z.string().nullable().optional(),
   defaultPoPrice: z.number().nullable().optional(),
   isBlockedFromConnectedBuyers: z.boolean().optional(),
+  /** When present, BranchLocal products are not exposable to connected buyers. */
+  scope: z.string().nullable().optional(),
 });
 
 export const buyerProductShareCategoryFacetSchema = z.object({

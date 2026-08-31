@@ -7,6 +7,7 @@ export type PriceDraft = {
   productId: string;
   name: string;
   brandName?: string | null;
+  scope?: string | null;
   currentPrice: number;
   draftPrice: string;
   expectedUpdatedAtUtc: string;
@@ -22,6 +23,7 @@ export function toPriceDraft(product: PosCatalogProductDto): PriceDraft {
     productId: product.productId,
     name: product.name,
     brandName: product.brandName,
+    scope: product.scope ?? null,
     currentPrice: product.sellingPrice,
     draftPrice: String(product.sellingPrice),
     expectedUpdatedAtUtc: product.updatedAtUtc,

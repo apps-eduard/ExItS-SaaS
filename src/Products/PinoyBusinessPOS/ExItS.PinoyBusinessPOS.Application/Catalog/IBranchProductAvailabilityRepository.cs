@@ -26,6 +26,12 @@ public interface IBranchProductAvailabilityRepository
         IReadOnlyCollection<CatalogProductId> productIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>All sparse availability overrides for one product across branches (bulk read).</summary>
+    Task<IReadOnlyList<BranchProductAvailability>> ListByProductAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(BranchProductAvailability availability, CancellationToken cancellationToken = default);

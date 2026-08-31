@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { canManageSuppliers } from "@/access/pos-capabilities";
+import { canGovernOrganizationCatalog, canManageSuppliers } from "@/access/pos-capabilities";
 import {
   applyBuyerProductPricing,
   bulkMutateBuyerProductShares,
@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { isBranchLocalProduct } from "@/features/catalog/catalog-product-scope";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -55,7 +56,8 @@ export function ConnectedSharedProductsPage() {
     [boundWorkspace],
   );
 
-  const allowManage = canManageSuppliers(sessionGrant);
+  const allowManage =
+    canManageSuppliers(sessionGrant) && canGovernOrganizationCatalog(sessionGrant);
 
   const query = useQuery({
     queryKey: [
@@ -153,6 +155,14 @@ export function ConnectedSharedProductsPage() {
     }
   }
 
+  const shareItems = useMemo(
+    () =>
+      (query.data?.items ?? []).filter(
+        (item) => !isBranchLocalProduct({ scope: item.scope ?? undefined }),
+      ),
+    [query.data?.items],
+  );
+
   if (!workspace || !relationshipId) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -217,7 +227,7 @@ export function ConnectedSharedProductsPage() {
           }
         />
       ) : null}
-      {query.isSuccess && query.data.items.length === 0 ? (
+      {query.isSuccess && shareItems.length === 0 ? (
         <EmptyState
           title={t("connected.noProductsForFilter")}
           detail={t("connected.noProductsForFilterHelp")}
@@ -250,7 +260,7 @@ export function ConnectedSharedProductsPage() {
         </div>
       ) : null}
       <ul className="m-0 grid list-none gap-2 p-0" data-testid="connected-share-list">
-        {query.data?.items.map((item) => {
+        {shareItems.map((item) => {
           const customerPrice =
             item.effectiveSupplierOrderPrice
             ?? item.buyerSpecificPoPrice
@@ -281,7 +291,7 @@ export function ConnectedSharedProductsPage() {
                     <StatusChip tone={item.isShared ? "success" : "warning"}>
                       {item.isShared
                         ? t("connected.shared")
-                        : query.data.catalogSharingMode === "AllEligible"
+                        : query.data?.catalogSharingMode === "AllEligible"
                           ? t("connected.excluded")
                           : t("connected.notShared")}
                     </StatusChip>
