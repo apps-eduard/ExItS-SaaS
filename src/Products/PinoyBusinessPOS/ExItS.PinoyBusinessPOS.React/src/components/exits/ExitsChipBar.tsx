@@ -96,6 +96,10 @@ export function ExitsChipBar({
             <Link
               key={item.key}
               to={item.href}
+              role={variant === "filter" ? "tab" : undefined}
+              aria-selected={
+                variant === "filter" ? (item.state ?? "idle") === "active" : undefined
+              }
               data-testid={item.testId}
               className={classNameChip}
             >

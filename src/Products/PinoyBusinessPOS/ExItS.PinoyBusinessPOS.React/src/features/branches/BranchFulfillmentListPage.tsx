@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
@@ -16,6 +16,8 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
+import { BranchSetupTabLinks } from "@/features/branches/BranchSetupTabLinks";
+import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
 import { resolveFulfillmentToggle } from "@/features/branches/fulfillment-toggle";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -141,6 +143,10 @@ export function BranchFulfillmentListPage() {
     );
   }
 
+  if (branches.length === 1) {
+    return <Navigate to={branchFulfillmentEditPath(branches[0].id)} replace />;
+  }
+
   return (
     <div
       className="branch-fulfillment-page exits-page flex min-w-0 flex-col gap-3"
@@ -192,7 +198,7 @@ export function BranchFulfillmentListPage() {
                 >
                   <Link
                     className="branch-row__info min-w-0 text-foreground no-underline"
-                    to={`/org/branches/${branch.id}`}
+                    to={branchFulfillmentEditPath(branch.id)}
                     data-testid={`open-branch-fulfillment-${branch.id}`}
                   >
                     <div className="branch-row__main min-w-0">
@@ -204,13 +210,13 @@ export function BranchFulfillmentListPage() {
                           {meta}
                         </p>
                       ) : null}
-                      <div className="branch-row__chips mt-2 flex flex-wrap gap-1.5">
+                    </div>
+                    <span className="branch-row__aside">
+                      <span className="branch-row__chips shrink-0">
                         <StatusChip tone={branch.status === "Active" ? "success" : "warning"}>
                           {branch.status}
                         </StatusChip>
-                      </div>
-                    </div>
-                    <span className="branch-row__aside">
+                      </span>
                       <span className="sr-only">{t("branches.configure")}</span>
                       <ChevronRight
                         className="branch-row__chevron size-4 shrink-0 text-muted"
@@ -218,6 +224,8 @@ export function BranchFulfillmentListPage() {
                       />
                     </span>
                   </Link>
+
+                  <BranchSetupTabLinks branchId={branch.id} summary={branch} t={t} />
 
                   <div className="branch-row__toggles" data-testid={`branch-toggles-${branch.id}`}>
                     <BranchFulfillmentSwitch

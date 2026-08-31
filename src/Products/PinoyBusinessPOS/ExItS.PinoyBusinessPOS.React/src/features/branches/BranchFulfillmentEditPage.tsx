@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
@@ -46,15 +46,21 @@ import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import {
+  BRANCH_DEFAULT_COUNTRY_CODE,
+  BRANCH_DEFAULT_TIME_ZONE,
+} from "@/features/branches/branch-defaults";
+import {
+  BRANCH_SETUP_TABS,
+  BRANCH_SETUP_TAB_LABEL_KEYS,
+  branchFulfillmentBackPath,
+  branchSetupTabComplete,
+  parseBranchSetupTab,
+  type BranchSetupTab,
+} from "@/features/branches/branch-setup-tabs";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-export type BranchSetupTab =
-  | "overview"
-  | "details"
-  | "hours"
-  | "location"
-  | "policy"
-  | "areas";
+export type { BranchSetupTab } from "@/features/branches/branch-setup-tabs";
 
 function TabCompleteIcon({ complete }: { complete: boolean }) {
   if (!complete) {
@@ -66,13 +72,16 @@ function TabCompleteIcon({ complete }: { complete: boolean }) {
 export function BranchFulfillmentEditPage() {
   const { t } = useI18n();
   const { branchId = "" } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const organizationId = boundWorkspace?.organizationId;
   const mapProviderReady = isMapProviderConfigured();
 
-  const [activeTab, setActiveTab] = useState<BranchSetupTab>("overview");
+  const [activeTab, setActiveTab] = useState<BranchSetupTab>(() =>
+    parseBranchSetupTab(searchParams.get("tab")),
+  );
 
   const detailQuery = useQuery({
     queryKey: ["branch-fulfillment-detail", organizationId, branchId],
@@ -85,19 +94,17 @@ export function BranchFulfillmentEditPage() {
         listBranchDeliveryServiceAreas(organizationId!, branchId, signal),
       ]);
       const branch = branches.find((b) => b.id === branchId) ?? null;
-      return { branch, readiness, hours, areas };
+      return { branch, readiness, hours, areas, branchCount: branches.length };
     },
   });
 
   const [name, setName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [timeZoneId, setTimeZoneId] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [countryCode, setCountryCode] = useState("PH");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [hours, setHours] = useState<HoursDayDraft[]>(defaultHoursSchedule);
@@ -116,11 +123,25 @@ export function BranchFulfillmentEditPage() {
   const [hydratedBranchId, setHydratedBranchId] = useState<string | null>(null);
   const isHydrated = hydratedBranchId === branchId && Boolean(branchId);
 
-  // Reset tab and hydration marker before repopulating local draft state.
+  // Reset hydration marker before repopulating local draft state.
   useEffect(() => {
-    setActiveTab("overview");
     setHydratedBranchId(null);
   }, [branchId, organizationId]);
+
+  useEffect(() => {
+    setActiveTab(parseBranchSetupTab(searchParams.get("tab")));
+  }, [searchParams, branchId]);
+
+  function selectSetupTab(tab: BranchSetupTab) {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams);
+    if (tab === "overview") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tab);
+    }
+    setSearchParams(params, { replace: true });
+  }
 
   useEffect(() => {
     const data = detailQuery.data;
@@ -140,13 +161,11 @@ export function BranchFulfillmentEditPage() {
   function applyBranch(branch: OrganizationBranchDto) {
     setName(branch.name);
     setContactPhone(branch.contactPhone ?? "");
-    setTimeZoneId(branch.timeZoneId ?? "");
     setAddressLine1(branch.addressLine1 ?? "");
     setAddressLine2(branch.addressLine2 ?? "");
     setCity(branch.city ?? "");
     setRegion(branch.region ?? "");
     setPostalCode(branch.postalCode ?? "");
-    setCountryCode(branch.countryCode ?? "PH");
     setLatitude(formatCoordinate(branch.latitude));
     setLongitude(formatCoordinate(branch.longitude));
     const policy = branch.deliveryPolicy;
@@ -211,6 +230,11 @@ export function BranchFulfillmentEditPage() {
 
   const branch = detailQuery.data.branch;
   const currentReadiness = readiness ?? detailQuery.data.readiness;
+  const branchBackPath = branchFulfillmentBackPath(detailQuery.data.branchCount);
+  const branchBackLabel =
+    detailQuery.data.branchCount === 1
+      ? t(pageBackNav.org.labelKey)
+      : t(pageBackNav.orgBranches.labelKey);
 
   async function refreshAreasAndReadiness() {
     if (!organizationId) return;
@@ -258,9 +282,9 @@ export function BranchFulfillmentEditPage() {
         city: city.trim(),
         region: region.trim(),
         postalCode: postalCode.trim() || null,
-        countryCode: countryCode.trim(),
+        countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         contactPhone: contactPhone.trim() || null,
-        timeZoneId: timeZoneId.trim() || null,
+        timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
       });
       applyBranch(updated);
       await afterSectionSave("branches.savedDetails");
@@ -487,67 +511,19 @@ export function BranchFulfillmentEditPage() {
     activeTab === "location" ||
     activeTab === "policy";
 
-  const tabItems = [
-    {
-      key: "overview",
-      label: (
-        <span className="branch-setup-tab-label">
-          {t("branches.tab.overview")}
-        </span>
-      ),
-      testId: "branch-tab-overview",
-    },
-    {
-      key: "details",
-      label: (
-        <span className="branch-setup-tab-label">
-          <TabCompleteIcon complete={currentReadiness.branchDetailsComplete} />
-          {t("branches.tab.details")}
-        </span>
-      ),
-      testId: "branch-tab-details",
-    },
-    {
-      key: "hours",
-      label: (
-        <span className="branch-setup-tab-label">
-          <TabCompleteIcon complete={currentReadiness.operatingHoursComplete} />
-          {t("branches.tab.hours")}
-        </span>
-      ),
-      testId: "branch-tab-hours",
-    },
-    {
-      key: "location",
-      label: (
-        <span className="branch-setup-tab-label">
-          <TabCompleteIcon complete={currentReadiness.deliveryLocationComplete} />
-          {t("branches.tab.location")}
-        </span>
-      ),
-      testId: "branch-tab-location",
-    },
-    {
-      key: "policy",
-      label: (
-        <span className="branch-setup-tab-label">
-          <TabCompleteIcon complete={currentReadiness.deliveryPolicyComplete} />
-          {t("branches.tab.policy")}
-        </span>
-      ),
-      testId: "branch-tab-policy",
-    },
-    {
-      key: "areas",
-      label: (
-        <span className="branch-setup-tab-label">
-          <TabCompleteIcon complete={currentReadiness.deliveryAreasComplete} />
-          {t("branches.tab.areas")}
-        </span>
-      ),
-      testId: "branch-tab-areas",
-    },
-  ];
+  const tabItems = BRANCH_SETUP_TABS.map((key) => {
+      const complete = branchSetupTabComplete(key, currentReadiness);
+      return {
+        key,
+        label: (
+          <span className="branch-setup-tab-label">
+            {complete ? <TabCompleteIcon complete /> : null}
+            {t(BRANCH_SETUP_TAB_LABEL_KEYS[key])}
+          </span>
+        ),
+        testId: `branch-tab-${key}`,
+    };
+  });
 
   return (
     <div
@@ -557,8 +533,8 @@ export function BranchFulfillmentEditPage() {
       <PageHeader
         title={branch.name}
         description={t("branches.editLede")}
-        backTo={pageBackNav.orgBranches.to}
-        backLabel={t(pageBackNav.orgBranches.labelKey)}
+        backTo={branchBackPath}
+        backLabel={branchBackLabel}
         backTestId="page-header-back-org"
       />
 
@@ -591,7 +567,7 @@ export function BranchFulfillmentEditPage() {
         <UnderlineTabBar
           items={tabItems}
           activeKey={activeTab}
-          onChange={(key) => setActiveTab(key as BranchSetupTab)}
+          onChange={(key) => selectSetupTab(key as BranchSetupTab)}
           ariaLabel={t("branches.setupTabsLabel")}
           testId="branch-setup-tabs"
           className="branch-setup-tabs"
@@ -615,24 +591,20 @@ export function BranchFulfillmentEditPage() {
         <BranchDetailsForm
           name={name}
           contactPhone={contactPhone}
-          timeZoneId={timeZoneId}
           addressLine1={addressLine1}
           addressLine2={addressLine2}
           city={city}
           region={region}
           postalCode={postalCode}
-          countryCode={countryCode}
           t={t}
           onChange={(field, value) => {
             if (field === "name") setName(value);
             else if (field === "contactPhone") setContactPhone(value);
-            else if (field === "timeZoneId") setTimeZoneId(value);
             else if (field === "addressLine1") setAddressLine1(value);
             else if (field === "addressLine2") setAddressLine2(value);
             else if (field === "city") setCity(value);
             else if (field === "region") setRegion(value);
             else if (field === "postalCode") setPostalCode(value);
-            else if (field === "countryCode") setCountryCode(value);
           }}
         />
       ) : null}
@@ -791,7 +763,7 @@ export function BranchFulfillmentEditPage() {
           </div>
           <div className="catalog-form-actions__secondary">
             <Button asChild variant="outline" className="min-h-11 w-full sm:w-auto">
-              <Link to="/org/branches">{t("branches.cancel")}</Link>
+              <Link to={branchBackPath}>{t("branches.cancel")}</Link>
             </Button>
           </div>
         </div>

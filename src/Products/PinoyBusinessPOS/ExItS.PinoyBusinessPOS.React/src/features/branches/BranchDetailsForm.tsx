@@ -1,15 +1,17 @@
 import type { MessageKey } from "@/i18n/messages";
+import {
+  BRANCH_DEFAULT_COUNTRY_CODE,
+  BRANCH_DEFAULT_TIME_ZONE,
+} from "@/features/branches/branch-defaults";
 
 type BranchDetailsFormProps = {
   name: string;
   contactPhone: string;
-  timeZoneId: string;
   addressLine1: string;
   addressLine2: string;
   city: string;
   region: string;
   postalCode: string;
-  countryCode: string;
   t: (key: MessageKey) => string;
   onChange: (field: string, value: string) => void;
 };
@@ -17,13 +19,11 @@ type BranchDetailsFormProps = {
 export function BranchDetailsForm({
   name,
   contactPhone,
-  timeZoneId,
   addressLine1,
   addressLine2,
   city,
   region,
   postalCode,
-  countryCode,
   t,
   onChange,
 }: BranchDetailsFormProps) {
@@ -53,10 +53,10 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.timeZone")}
             <input
-              className="catalog-form-select font-normal"
-              value={timeZoneId}
-              onChange={(e) => onChange("timeZoneId", e.target.value)}
-              placeholder="Asia/Manila"
+              className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+              value={BRANCH_DEFAULT_TIME_ZONE}
+              readOnly
+              aria-readonly="true"
               data-testid="branch-timezone"
             />
           </label>
@@ -117,9 +117,10 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.countryCode")}
             <input
-              className="catalog-form-select font-normal"
-              value={countryCode}
-              onChange={(e) => onChange("countryCode", e.target.value)}
+              className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+              value={BRANCH_DEFAULT_COUNTRY_CODE}
+              readOnly
+              aria-readonly="true"
               data-testid="branch-country"
             />
           </label>

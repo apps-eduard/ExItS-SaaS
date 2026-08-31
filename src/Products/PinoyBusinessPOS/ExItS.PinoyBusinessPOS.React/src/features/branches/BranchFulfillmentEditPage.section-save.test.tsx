@@ -107,7 +107,7 @@ const readiness = {
   deliveryAreasComplete: true,
 };
 
-function renderPage(client?: QueryClient) {
+function renderPage(client?: QueryClient, initialEntry = `/org/branches/${branchId}`) {
   const queryClient =
     client ??
     new QueryClient({
@@ -115,7 +115,7 @@ function renderPage(client?: QueryClient) {
     });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/org/branches/${branchId}`]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/org/branches" element={<div data-testid="branch-list">list</div>} />
           <Route path="/org/branches/:branchId" element={<BranchFulfillmentEditPage />} />
@@ -179,6 +179,12 @@ describe("BranchFulfillmentEditPage section saves", () => {
     await user.click(screen.getByTestId("branch-tab-location"));
     expect(await screen.findByTestId("branch-choose-on-map")).toBeInTheDocument();
     expect(screen.getByTestId("branch-save")).toHaveTextContent("branches.saveLocation");
+  });
+
+  it("opens the requested setup tab from the URL query", async () => {
+    renderPage(undefined, `/org/branches/${branchId}?tab=location`);
+    expect(await screen.findByTestId("branch-choose-on-map")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-tab-location")).toHaveAttribute("aria-selected", "true");
   });
 
   it("renders after remount when query data is cached", async () => {
