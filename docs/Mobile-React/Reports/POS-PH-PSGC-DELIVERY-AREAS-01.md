@@ -13,9 +13,9 @@
 | TASK | POS-PH-PSGC-DELIVERY-AREAS-01 |
 | BRANCH | feat/organization |
 | START_SHA | 0b5872fc970ce177abc1262de521a1043c2d39c8 |
-| FEATURE_SHA | *(product commit tip — see push evidence)* |
-| FINAL_SHA | *(branch tip after docs alignment)* |
-| REMOTE_SHA | *(must equal LOCAL tip after push)* |
+| FEATURE_SHA | 6ca6748a3389a3f63ad5f9cbb6a9cbf26fc6c06f |
+| FINAL_SHA | *(set after this docs commit + push)* |
+| REMOTE_SHA | *(set after this docs commit + push)* |
 
 ## PSGC dataset
 
