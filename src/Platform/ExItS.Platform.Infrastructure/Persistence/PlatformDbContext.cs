@@ -636,10 +636,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => e.OrganizationId);
             entity.HasIndex(e => e.BranchId);
-            entity.HasIndex(e => new { e.BranchId, e.NormalizedCityMunicipalityName })
+            entity.HasIndex(e => new { e.BranchId, e.ExternalAreaCode })
                 .IsUnique()
-                .HasFilter("is_active = TRUE")
-                .HasDatabaseName("ux_branch_delivery_service_areas_active_city");
+                .HasFilter("is_active = TRUE AND external_area_code IS NOT NULL")
+                .HasDatabaseName("ux_branch_delivery_service_areas_active_psgc");
+            entity.HasIndex(e => new { e.BranchId, e.NormalizedCityMunicipalityName })
+                .HasDatabaseName("ix_branch_delivery_service_areas_branch_city");
             entity.HasOne<OrganizationBranchRecord>()
                 .WithMany()
                 .HasForeignKey(e => new { e.BranchId, e.OrganizationId })

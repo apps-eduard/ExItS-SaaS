@@ -480,11 +480,7 @@ internal static class BranchAndDeviceEndpoints
             var result = await useCase.ExecuteAsync(
                 PlatformOrganizationId.From(organizationId),
                 OrganizationBranchId.From(branchId),
-                new AddBranchDeliveryServiceAreaCommand(
-                    body.CountryCode ?? string.Empty,
-                    body.CityMunicipalityName ?? string.Empty,
-                    body.RegionOrProvinceName,
-                    body.ExternalAreaCode),
+                new AddBranchDeliveryServiceAreaCommand(body.PsgcCode ?? string.Empty),
                 ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -790,8 +786,4 @@ internal sealed record UpdateBranchFulfillmentSettingsRequest(
 
 internal sealed record SetBranchOnlineOrdersPausedRequest(bool Paused, string? Reason = null);
 
-internal sealed record AddBranchDeliveryServiceAreaRequest(
-    string? CountryCode,
-    string? CityMunicipalityName,
-    string? RegionOrProvinceName = null,
-    string? ExternalAreaCode = null);
+internal sealed record AddBranchDeliveryServiceAreaRequest(string? PsgcCode);

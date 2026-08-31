@@ -32,6 +32,7 @@ public sealed class BranchListBulkPolicyTests
             policies,
             hours,
             areas,
+            new EmptyPhilippineLocalityDirectory(),
             orgRepo,
             new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),

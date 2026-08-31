@@ -550,9 +550,7 @@ describe("RMAP-18 branch fulfillment client", () => {
       "11111111-1111-1111-1111-111111111111",
       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
       {
-        countryCode: "PH",
-        cityMunicipalityName: "Quezon City",
-        regionOrProvinceName: "Metro Manila",
+        psgcCode: "1381300000",
       },
     );
     expect(added.deliveryAreasComplete).toBe(true);

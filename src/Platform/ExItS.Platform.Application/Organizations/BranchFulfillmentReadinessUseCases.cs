@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Reference;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
@@ -110,6 +111,7 @@ public sealed class GetBranchFulfillmentReadiness
     private readonly IBranchOperatingHoursRepository _hours;
     private readonly IBranchDeliveryPolicyRepository _policies;
     private readonly IBranchDeliveryServiceAreaRepository _areas;
+    private readonly IPhilippineLocalityDirectory _directory;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly EntitlementQueryService _entitlements;
     private readonly IBranchFulfillmentReadinessEvaluator _evaluator;
@@ -120,6 +122,7 @@ public sealed class GetBranchFulfillmentReadiness
         IBranchOperatingHoursRepository hours,
         IBranchDeliveryPolicyRepository policies,
         IBranchDeliveryServiceAreaRepository areas,
+        IPhilippineLocalityDirectory directory,
         IPlatformOrganizationRepository organizations,
         EntitlementQueryService entitlements,
         IBranchFulfillmentReadinessEvaluator evaluator,
@@ -129,6 +132,7 @@ public sealed class GetBranchFulfillmentReadiness
         _hours = hours;
         _policies = policies;
         _areas = areas;
+        _directory = directory;
         _organizations = organizations;
         _entitlements = entitlements;
         _evaluator = evaluator;
@@ -159,7 +163,10 @@ public sealed class GetBranchFulfillmentReadiness
         var hours = await _hours.GetByBranchIdAsync(branchId, cancellationToken).ConfigureAwait(false);
         var policy = await _policies.GetByBranchIdAsync(branchId, cancellationToken).ConfigureAwait(false);
         var areas = await _areas.ListByBranchAsync(branchId, cancellationToken).ConfigureAwait(false);
-        var hasActiveArea = areas.Any(a => a.IsActive);
+        var hasActiveVerifiedArea = areas.Any(a =>
+            a.IsActive
+            && !string.IsNullOrWhiteSpace(a.PsgcCode)
+            && _directory.Contains(a.PsgcCode));
         var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var result = _evaluator.Evaluate(new BranchFulfillmentReadinessInput(
             branch,
@@ -169,7 +176,7 @@ public sealed class GetBranchFulfillmentReadiness
             org.Profile.ContactPhone,
             caps,
             _clock.UtcNow,
-            hasActiveArea));
+            hasActiveVerifiedArea));
 
         return ApplicationResult<BranchFulfillmentReadinessDto>.Success(Map(branch, caps, result));
     }

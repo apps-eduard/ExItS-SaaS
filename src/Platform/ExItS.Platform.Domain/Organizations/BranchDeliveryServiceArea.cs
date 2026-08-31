@@ -4,17 +4,22 @@ using ExItS.Platform.Domain.Common;
 namespace ExItS.Platform.Domain.Organizations;
 
 /// <summary>
-/// City/municipality-level delivery coverage for a branch. Soft-deactivated (IsActive=false) areas
-/// no longer count toward fulfillment readiness and free the unique active city slot.
+/// City/municipality-level delivery coverage for a branch.
+/// Authoritative geographic identity is the Philippine PSGC code (<see cref="PsgcCode"/>).
+/// Soft-deactivated (IsActive=false) areas no longer count toward fulfillment readiness
+/// and free the unique active PSGC slot.
+/// Legacy free-text rows may have a null <see cref="PsgcCode"/> and are unverified.
 /// </summary>
 public sealed class BranchDeliveryServiceArea
 {
     public const int MaxCityMunicipalityNameLength = 100;
     public const int MaxRegionOrProvinceNameLength = 100;
     public const int MaxCountryCodeLength = 2;
-    public const int MaxExternalAreaCodeLength = 64;
+    public const int MaxPsgcCodeLength = 64;
+    public const string PhilippinesCountryCode = "PH";
 
     private static readonly Regex CollapseWhitespace = new(@"\s+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex PsgcDigits = new(@"^\d{10}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public BranchDeliveryServiceAreaId Id { get; }
     public PlatformOrganizationId OrganizationId { get; }
@@ -23,10 +28,18 @@ public sealed class BranchDeliveryServiceArea
     public string? RegionOrProvinceName { get; private set; }
     public string CityMunicipalityName { get; private set; }
     public string NormalizedCityMunicipalityName { get; private set; }
-    public string? ExternalAreaCode { get; private set; }
+
+    /// <summary>
+    /// Philippine Standard Geographic Code for this City/Municipality.
+    /// Persisted as column <c>external_area_code</c>. Null for legacy unverified free-text areas.
+    /// </summary>
+    public string? PsgcCode { get; private set; }
+
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+
+    public bool IsPsgcVerified => !string.IsNullOrWhiteSpace(PsgcCode);
 
     private BranchDeliveryServiceArea(
         BranchDeliveryServiceAreaId id,
@@ -36,7 +49,7 @@ public sealed class BranchDeliveryServiceArea
         string? regionOrProvinceName,
         string cityMunicipalityName,
         string normalizedCityMunicipalityName,
-        string? externalAreaCode,
+        string? psgcCode,
         bool isActive,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
@@ -48,46 +61,48 @@ public sealed class BranchDeliveryServiceArea
         RegionOrProvinceName = regionOrProvinceName;
         CityMunicipalityName = cityMunicipalityName;
         NormalizedCityMunicipalityName = normalizedCityMunicipalityName;
-        ExternalAreaCode = externalAreaCode;
+        PsgcCode = psgcCode;
         IsActive = isActive;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
 
-    public static BranchDeliveryServiceArea Create(
+    /// <summary>
+    /// Creates a PSGC-backed delivery area. Country is forced to PH.
+    /// Canonical locality name/region/province must already be resolved by the application layer.
+    /// </summary>
+    public static BranchDeliveryServiceArea CreateFromPsgc(
         PlatformOrganizationId organizationId,
         OrganizationBranchId branchId,
-        string countryCode,
+        string psgcCode,
         string cityMunicipalityName,
         DateTimeOffset utcNow,
         string? regionOrProvinceName = null,
-        string? externalAreaCode = null,
         IEnumerable<BranchDeliveryServiceArea>? existingActiveForBranch = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(branchId);
         DomainTime.EnsureUtc(utcNow);
 
-        var normalizedCountry = NormalizeCountryCode(countryCode);
+        var normalizedPsgc = NormalizePsgcCode(psgcCode);
         var city = NormalizeRequiredName(cityMunicipalityName, MaxCityMunicipalityNameLength, "City/municipality");
         var normalizedCity = NormalizeCityKey(city);
         var region = NormalizeOptionalName(regionOrProvinceName, MaxRegionOrProvinceNameLength);
-        var external = NormalizeOptionalName(externalAreaCode, MaxExternalAreaCodeLength);
 
         if (existingActiveForBranch is not null)
         {
-            EnsureNoDuplicateActiveCity(branchId, normalizedCity, existingActiveForBranch);
+            EnsureNoDuplicateActivePsgc(branchId, normalizedPsgc, existingActiveForBranch);
         }
 
         return new(
             BranchDeliveryServiceAreaId.New(),
             organizationId,
             branchId,
-            normalizedCountry,
+            PhilippinesCountryCode,
             region,
             city,
             normalizedCity,
-            external,
+            normalizedPsgc,
             isActive: true,
             utcNow,
             utcNow);
@@ -101,7 +116,7 @@ public sealed class BranchDeliveryServiceArea
         string? regionOrProvinceName,
         string cityMunicipalityName,
         string normalizedCityMunicipalityName,
-        string? externalAreaCode,
+        string? psgcCode,
         bool isActive,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
@@ -113,7 +128,7 @@ public sealed class BranchDeliveryServiceArea
             regionOrProvinceName,
             cityMunicipalityName,
             normalizedCityMunicipalityName,
-            externalAreaCode,
+            psgcCode,
             isActive,
             createdAtUtc,
             updatedAtUtc);
@@ -143,9 +158,36 @@ public sealed class BranchDeliveryServiceArea
         return collapsed.ToUpperInvariant();
     }
 
-    private static void EnsureNoDuplicateActiveCity(
+    public static string NormalizePsgcCode(string psgcCode)
+    {
+        if (string.IsNullOrWhiteSpace(psgcCode))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchDeliveryServiceArea,
+                "PSGC code is required.");
+        }
+
+        var trimmed = psgcCode.Trim();
+        if (trimmed.Length > MaxPsgcCodeLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchDeliveryServiceArea,
+                $"PSGC code cannot exceed {MaxPsgcCodeLength} characters.");
+        }
+
+        if (!PsgcDigits.IsMatch(trimmed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchDeliveryServiceArea,
+                "PSGC code must be exactly 10 digits.");
+        }
+
+        return trimmed;
+    }
+
+    private static void EnsureNoDuplicateActivePsgc(
         OrganizationBranchId branchId,
-        string normalizedCity,
+        string psgcCode,
         IEnumerable<BranchDeliveryServiceArea> existingActiveForBranch)
     {
         foreach (var existing in existingActiveForBranch)
@@ -155,33 +197,13 @@ public sealed class BranchDeliveryServiceArea
                 continue;
             }
 
-            if (string.Equals(existing.NormalizedCityMunicipalityName, normalizedCity, StringComparison.Ordinal))
+            if (string.Equals(existing.PsgcCode, psgcCode, StringComparison.Ordinal))
             {
                 throw new DomainException(
                     DomainErrorCodes.BranchDeliveryServiceAreaDuplicate,
-                    "An active delivery service area with this city/municipality already exists for the branch.");
+                    "An active delivery service area with this PSGC locality already exists for the branch.");
             }
         }
-    }
-
-    private static string NormalizeCountryCode(string countryCode)
-    {
-        if (string.IsNullOrWhiteSpace(countryCode))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidBranchDeliveryServiceArea,
-                "Country code is required.");
-        }
-
-        var normalized = countryCode.Trim().ToUpperInvariant();
-        if (normalized.Length != MaxCountryCodeLength || !normalized.All(char.IsLetter))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidBranchDeliveryServiceArea,
-                "Country code must be a two-letter ISO code.");
-        }
-
-        return normalized;
     }
 
     private static string NormalizeRequiredName(string value, int maxLength, string fieldLabel)

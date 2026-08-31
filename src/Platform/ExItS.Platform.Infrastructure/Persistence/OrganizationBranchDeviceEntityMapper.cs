@@ -153,7 +153,7 @@ internal static class OrganizationBranchDeviceEntityMapper
         RegionOrProvinceName = area.RegionOrProvinceName,
         CityMunicipalityName = area.CityMunicipalityName,
         NormalizedCityMunicipalityName = area.NormalizedCityMunicipalityName,
-        ExternalAreaCode = area.ExternalAreaCode,
+        ExternalAreaCode = area.PsgcCode,
         IsActive = area.IsActive,
         CreatedAtUtc = area.CreatedAtUtc,
         UpdatedAtUtc = area.UpdatedAtUtc
@@ -165,7 +165,7 @@ internal static class OrganizationBranchDeviceEntityMapper
         record.RegionOrProvinceName = area.RegionOrProvinceName;
         record.CityMunicipalityName = area.CityMunicipalityName;
         record.NormalizedCityMunicipalityName = area.NormalizedCityMunicipalityName;
-        record.ExternalAreaCode = area.ExternalAreaCode;
+        record.ExternalAreaCode = area.PsgcCode;
         record.IsActive = area.IsActive;
         record.UpdatedAtUtc = area.UpdatedAtUtc;
     }

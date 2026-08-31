@@ -151,17 +151,21 @@ export type BranchDeliveryServiceAreaDto = {
   regionOrProvinceName: string | null;
   cityMunicipalityName: string;
   normalizedCityMunicipalityName: string;
-  externalAreaCode: string | null;
+  psgcCode: string | null;
+  localityType: string | null;
+  regionCode: string | null;
+  regionName: string | null;
+  provinceCode: string | null;
+  provinceName: string | null;
+  displayLabel: string;
   isActive: boolean;
+  isVerified: boolean;
   createdAtUtc: string;
   updatedAtUtc: string;
 };
 
 export type AddBranchDeliveryServiceAreaRequest = {
-  countryCode: string;
-  cityMunicipalityName: string;
-  regionOrProvinceName?: string | null;
-  externalAreaCode?: string | null;
+  psgcCode: string;
 };
 
 export type UpdateBranchRequest = {
@@ -326,18 +330,32 @@ export function normalizeFulfillmentReadiness(raw: unknown): BranchFulfillmentRe
 
 export function normalizeDeliveryServiceArea(raw: unknown): BranchDeliveryServiceAreaDto {
   const r = asRecord(raw);
+  const city = String(r.cityMunicipalityName ?? r.CityMunicipalityName ?? "");
+  const regionOrProvince = readString(r, "regionOrProvinceName", "RegionOrProvinceName");
+  const displayLabel =
+    readString(r, "displayLabel", "DisplayLabel") ??
+    [city, regionOrProvince].filter(Boolean).join(" · ");
   return {
     id: String(r.id ?? r.Id ?? ""),
     organizationId: String(r.organizationId ?? r.OrganizationId ?? ""),
     branchId: String(r.branchId ?? r.BranchId ?? ""),
     countryCode: String(r.countryCode ?? r.CountryCode ?? ""),
-    regionOrProvinceName: readString(r, "regionOrProvinceName", "RegionOrProvinceName"),
-    cityMunicipalityName: String(r.cityMunicipalityName ?? r.CityMunicipalityName ?? ""),
+    regionOrProvinceName: regionOrProvince,
+    cityMunicipalityName: city,
     normalizedCityMunicipalityName: String(
       r.normalizedCityMunicipalityName ?? r.NormalizedCityMunicipalityName ?? "",
     ),
-    externalAreaCode: readString(r, "externalAreaCode", "ExternalAreaCode"),
+    psgcCode:
+      readString(r, "psgcCode", "PsgcCode") ??
+      readString(r, "externalAreaCode", "ExternalAreaCode"),
+    localityType: readString(r, "localityType", "LocalityType"),
+    regionCode: readString(r, "regionCode", "RegionCode"),
+    regionName: readString(r, "regionName", "RegionName"),
+    provinceCode: readString(r, "provinceCode", "ProvinceCode"),
+    provinceName: readString(r, "provinceName", "ProvinceName"),
+    displayLabel,
     isActive: readBool(r, "isActive", "IsActive", true),
+    isVerified: readBool(r, "isVerified", "IsVerified", false),
     createdAtUtc: String(r.createdAtUtc ?? r.CreatedAtUtc ?? ""),
     updatedAtUtc: String(r.updatedAtUtc ?? r.UpdatedAtUtc ?? ""),
   };

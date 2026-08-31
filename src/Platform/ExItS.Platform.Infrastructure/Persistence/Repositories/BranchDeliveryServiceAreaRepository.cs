@@ -56,6 +56,8 @@ internal sealed class BranchDeliveryServiceAreaRepository(PlatformDbContext db) 
         var rows = await db.BranchDeliveryServiceAreas.AsNoTracking()
             .Where(x => x.OrganizationId == organizationId.Value
                         && x.IsActive
+                        && x.ExternalAreaCode != null
+                        && x.ExternalAreaCode != ""
                         && ids.Contains(x.BranchId))
             .GroupBy(x => x.BranchId)
             .Select(g => new { BranchId = g.Key, Count = g.Count() })

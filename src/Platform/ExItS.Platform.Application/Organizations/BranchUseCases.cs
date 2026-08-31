@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.Reference;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
@@ -77,7 +78,9 @@ public sealed record OrganizationBranchDto(
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
     string CityMunicipalityName,
-    string? RegionOrProvinceName);
+    string? RegionOrProvinceName,
+    string? PsgcCode = null,
+    bool IsVerified = false);
 
 public sealed record BranchCapacityDto(int Used, int Allowed);
 
@@ -137,6 +140,7 @@ public sealed class ListBranches(
     IBranchDeliveryPolicyRepository policies,
     IBranchOperatingHoursRepository hours,
     IBranchDeliveryServiceAreaRepository areas,
+    IPhilippineLocalityDirectory localityDirectory,
     IPlatformOrganizationRepository organizations,
     EntitlementQueryService entitlements,
     IBranchFulfillmentReadinessEvaluator readinessEvaluator,
@@ -190,15 +194,25 @@ public sealed class ListBranches(
             .ConfigureAwait(false);
         var orgAreas = await areas.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var activeAreasByBranch = orgAreas
-            .Where(a => a.IsActive)
+            .Where(a => a.IsActive
+                        && !string.IsNullOrWhiteSpace(a.PsgcCode)
+                        && localityDirectory.Contains(a.PsgcCode!))
             .GroupBy(a => a.BranchId.Value)
             .ToDictionary(
                 g => g.Key,
                 g => (IReadOnlyList<BranchDeliveryServiceAreaPublicDto>)g
-                    .Select(a => new BranchDeliveryServiceAreaPublicDto(
-                        a.Id.Value,
-                        a.CityMunicipalityName,
-                        a.RegionOrProvinceName))
+                    .Select(a =>
+                    {
+                        var locality = localityDirectory.GetByPsgcCode(a.PsgcCode!);
+                        return new BranchDeliveryServiceAreaPublicDto(
+                            a.Id.Value,
+                            locality is null
+                                ? a.CityMunicipalityName
+                                : PhilippineLocality.FriendlyName(locality.Name),
+                            locality?.ProvinceName ?? locality?.RegionName ?? a.RegionOrProvinceName,
+                            a.PsgcCode,
+                            IsVerified: locality is not null);
+                    })
                     .ToList());
         var org = await organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
@@ -208,7 +222,17 @@ public sealed class ListBranches(
         {
             policiesByBranchId.TryGetValue(branch.Id.Value, out var policy);
             hoursByBranchId.TryGetValue(branch.Id.Value, out var schedule);
-            var hasActiveArea = activeAreaCounts.TryGetValue(branch.Id.Value, out var count) && count > 0;
+            var hasActiveVerifiedArea = activeAreaCounts.TryGetValue(branch.Id.Value, out var count) && count > 0;
+            // CountActive already requires non-null PSGC; still require directory match for readiness.
+            if (hasActiveVerifiedArea)
+            {
+                hasActiveVerifiedArea = orgAreas.Any(a =>
+                    a.IsActive
+                    && a.BranchId == branch.Id
+                    && !string.IsNullOrWhiteSpace(a.PsgcCode)
+                    && localityDirectory.Contains(a.PsgcCode!));
+            }
+
             var readiness = readinessEvaluator.Evaluate(new BranchFulfillmentReadinessInput(
                 branch,
                 schedule,
@@ -217,7 +241,7 @@ public sealed class ListBranches(
                 org?.Profile.ContactPhone,
                 caps,
                 utcNow,
-                hasActiveArea));
+                hasActiveVerifiedArea));
             activeAreasByBranch.TryGetValue(branch.Id.Value, out var branchAreas);
             result.Add(BranchMapper.ToDto(branch, policy, readiness, caps, branchAreas));
         }

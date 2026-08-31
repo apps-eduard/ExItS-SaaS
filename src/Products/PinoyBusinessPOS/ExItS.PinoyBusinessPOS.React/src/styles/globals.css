@@ -4012,13 +4012,16 @@ body {
 
 .branch-switch__row {
   display: flex;
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: flex-start;
+  gap: 0.5rem;
 }
 
 .branch-switch__label {
+  flex: 0 1 auto;
   font-size: var(--exits-text-sm);
   font-weight: 600;
 }
@@ -4146,13 +4149,24 @@ body {
 .branch-area-chip {
   display: inline-flex;
   max-width: 100%;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.35rem;
-  padding: 0.35rem 0.45rem 0.35rem 0.65rem;
+  padding: 0.4rem 0.45rem 0.4rem 0.65rem;
   border: 1px solid var(--exits-border);
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background: color-mix(in srgb, var(--exits-surface-muted) 50%, var(--exits-surface));
   font-size: var(--exits-text-sm);
+}
+
+.branch-area-chip.is-unverified {
+  border-color: color-mix(in srgb, var(--exits-warning, #b45309) 45%, var(--exits-border));
+}
+
+.branch-area-chip__stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
 .branch-area-chip__label {
@@ -4160,14 +4174,41 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
+}
+
+.branch-area-chip__secondary {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs, 0.75rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-area-chip__badge {
+  color: var(--exits-warning, #b45309);
+  font-size: var(--exits-text-xs, 0.75rem);
+  font-weight: 600;
+}
+
+.branch-area-chip__replace {
+  border: none;
+  background: transparent;
+  color: var(--exits-accent, var(--exits-primary));
+  cursor: pointer;
+  font-size: var(--exits-text-xs, 0.75rem);
+  font-weight: 600;
+  min-height: 1.75rem;
+  padding: 0 0.25rem;
 }
 
 .branch-area-chip__remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
   border: none;
   border-radius: 999px;
   background: transparent;
@@ -4183,6 +4224,102 @@ body {
 .branch-area-chip__remove:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.branch-delivery-country {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  max-width: 28rem;
+}
+
+.branch-delivery-country__label {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+}
+
+.branch-delivery-country__value {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.branch-locality-search {
+  position: relative;
+  max-width: 28rem;
+  width: 100%;
+}
+
+.branch-locality-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 18rem;
+  overflow: auto;
+  border: 1px solid var(--exits-border);
+  border-radius: 0.75rem;
+  background: var(--exits-surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--exits-text) 12%, transparent);
+}
+
+.branch-locality-results__hint {
+  padding: 0.75rem 0.9rem;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.branch-locality-results__option {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+}
+
+.branch-locality-results__option:last-child {
+  border-bottom: none;
+}
+
+.branch-locality-results__option.is-active,
+.branch-locality-results__option:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-accent, var(--exits-primary)) 8%, transparent);
+}
+
+.branch-locality-results__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.branch-locality-results__name {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.branch-locality-results__meta,
+.branch-locality-results__region,
+.branch-locality-results__badge {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs, 0.75rem);
+}
+
+.branch-locality-results__badge {
+  font-weight: 600;
+}
+
+@media (max-width: 419px) {
+  .branch-area-chip__secondary {
+    display: none;
+  }
 }
 
 .branch-hours-day {

@@ -185,43 +185,57 @@ public sealed class BranchDeliveryServiceAreaDomainTests
     private static readonly OrganizationBranchId Branch = OrganizationBranchId.From(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
 
     [Fact]
-    public void Create_normalizes_country_and_city_key()
+    public void CreateFromPsgc_forces_PH_and_stores_code()
     {
-        var area = BranchDeliveryServiceArea.Create(
-            Org, Branch, " ph ", "  Makati   City ", T0, regionOrProvinceName: " Metro  Manila ");
+        var area = BranchDeliveryServiceArea.CreateFromPsgc(
+            Org, Branch, "1381300000", "Quezon City", T0, regionOrProvinceName: "National Capital Region (NCR)");
 
         Assert.Equal("PH", area.CountryCode);
-        Assert.Equal("Makati City", area.CityMunicipalityName);
-        Assert.Equal("MAKATI CITY", area.NormalizedCityMunicipalityName);
-        Assert.Equal("Metro Manila", area.RegionOrProvinceName);
+        Assert.Equal("1381300000", area.PsgcCode);
+        Assert.Equal("Quezon City", area.CityMunicipalityName);
+        Assert.Equal("QUEZON CITY", area.NormalizedCityMunicipalityName);
+        Assert.True(area.IsPsgcVerified);
         Assert.True(area.IsActive);
     }
 
     [Fact]
-    public void Create_rejects_blank_city()
+    public void CreateFromPsgc_rejects_blank_code()
     {
         var ex = Assert.Throws<DomainException>(() =>
-            BranchDeliveryServiceArea.Create(Org, Branch, "PH", "   ", T0));
+            BranchDeliveryServiceArea.CreateFromPsgc(Org, Branch, "   ", "Quezon City", T0));
         Assert.Equal(DomainErrorCodes.InvalidBranchDeliveryServiceArea, ex.ErrorCode);
     }
 
     [Fact]
-    public void Create_rejects_duplicate_active_normalized_city()
+    public void CreateFromPsgc_rejects_duplicate_active_psgc()
     {
-        var first = BranchDeliveryServiceArea.Create(Org, Branch, "PH", "Quezon City", T0);
+        var first = BranchDeliveryServiceArea.CreateFromPsgc(Org, Branch, "1381300000", "Quezon City", T0);
         var ex = Assert.Throws<DomainException>(() =>
-            BranchDeliveryServiceArea.Create(
-                Org, Branch, "PH", "  quezon   city ", T0, existingActiveForBranch: [first]));
+            BranchDeliveryServiceArea.CreateFromPsgc(
+                Org, Branch, "1381300000", "Quezon City", T0, existingActiveForBranch: [first]));
         Assert.Equal(DomainErrorCodes.BranchDeliveryServiceAreaDuplicate, ex.ErrorCode);
     }
 
     [Fact]
-    public void Deactivate_frees_city_slot_for_new_active_area()
+    public void CreateFromPsgc_allows_same_name_different_psgc()
     {
-        var first = BranchDeliveryServiceArea.Create(Org, Branch, "PH", "Pasig", T0);
+        var first = BranchDeliveryServiceArea.CreateFromPsgc(
+            Org, Branch, "0405637000", "Quezon", T0, regionOrProvinceName: "Quezon");
+        var second = BranchDeliveryServiceArea.CreateFromPsgc(
+            Org, Branch, "0203122000", "Quezon", T0.AddMinutes(1),
+            regionOrProvinceName: "Isabela",
+            existingActiveForBranch: [first]);
+        Assert.True(second.IsActive);
+        Assert.NotEqual(first.PsgcCode, second.PsgcCode);
+    }
+
+    [Fact]
+    public void Deactivate_frees_psgc_slot_for_new_active_area()
+    {
+        var first = BranchDeliveryServiceArea.CreateFromPsgc(Org, Branch, "1830200000", "City of Bacolod", T0);
         first.Deactivate(T0.AddMinutes(1));
-        var second = BranchDeliveryServiceArea.Create(
-            Org, Branch, "PH", "Pasig", T0.AddMinutes(2), existingActiveForBranch: [first]);
+        var second = BranchDeliveryServiceArea.CreateFromPsgc(
+            Org, Branch, "1830200000", "City of Bacolod", T0.AddMinutes(2), existingActiveForBranch: [first]);
         Assert.True(second.IsActive);
         Assert.False(first.IsActive);
     }

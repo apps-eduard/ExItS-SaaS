@@ -202,9 +202,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             {
                 // Allow organization-scoped governance APIs that still live under /api/v1/platform/*.
                 // These require trusted selected-organization context and server-side authorization.
+                // PH locality reference search is merchant configuration (not Personal customer).
                 return path.StartsWith("/api/v1/platform/organizations", StringComparison.OrdinalIgnoreCase)
                     || path.StartsWith("/api/v1/platform/memberships", StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith("/api/v1/platform/pos-devices", StringComparison.OrdinalIgnoreCase);
+                    || path.StartsWith("/api/v1/platform/pos-devices", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/api/v1/platform/reference/ph/", StringComparison.OrdinalIgnoreCase);
             }
 
             return accountClass is AccountClass.Platform;

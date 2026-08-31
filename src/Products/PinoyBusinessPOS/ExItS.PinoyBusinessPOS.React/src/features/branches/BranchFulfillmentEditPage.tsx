@@ -567,13 +567,41 @@ export function BranchFulfillmentEditPage() {
           areas={areas}
           busy={busy}
           t={t}
-          onAdd={async (input) => {
+          onAdd={async (psgcCode) => {
             if (!organizationId || busy) return;
             setBusy(true);
             setError(null);
             setOkMessage(null);
             try {
-              const next = await addBranchDeliveryServiceArea(organizationId, branchId, input);
+              const next = await addBranchDeliveryServiceArea(organizationId, branchId, {
+                psgcCode,
+              });
+              setReadiness(next);
+              await refreshAreasAndReadiness();
+              await queryClient.invalidateQueries({
+                queryKey: ["branch-fulfillment-list", organizationId],
+              });
+              setOkMessage(t("branches.deliveryAreas.added"));
+            } catch (err) {
+              setError(
+                err instanceof PlatformApiError
+                  ? (err.problem.detail ?? t("branches.deliveryAreas.addFailed"))
+                  : t("branches.deliveryAreas.addFailed"),
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+          onReplace={async (areaId, psgcCode) => {
+            if (!organizationId || busy) return;
+            setBusy(true);
+            setError(null);
+            setOkMessage(null);
+            try {
+              await deleteBranchDeliveryServiceArea(organizationId, branchId, areaId);
+              const next = await addBranchDeliveryServiceArea(organizationId, branchId, {
+                psgcCode,
+              });
               setReadiness(next);
               await refreshAreasAndReadiness();
               await queryClient.invalidateQueries({

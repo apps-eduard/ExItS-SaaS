@@ -95,7 +95,9 @@ public sealed record OrganizationBranchDto(
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
     string CityMunicipalityName,
-    string? RegionOrProvinceName);
+    string? RegionOrProvinceName,
+    string? PsgcCode = null,
+    bool IsVerified = false);
 
 public static class PlatformGovernanceActionCodes
 {
