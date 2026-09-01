@@ -353,6 +353,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.conflict": "Binago ang product sa ibang lugar. I-reload at subukan ulit.",
   "catalog.deactivate": "I-deactivate",
   "catalog.description": "Description",
+  "catalog.duplicate.title": "May produkto nang ganito",
+  "catalog.duplicate.useExisting": "Gamitin ang existing product",
+  "catalog.duplicate.hiddenForeign":
+    "May produkto nang may ganitong pangalan sa inyong organization. Hindi maaaring gumawa ng duplicate. Hilingin sa organization administrator na suriin ito.",
+  "catalog.duplicate.inactive": "May produkto nang ganito pero inactive.",
+  "catalog.duplicate.notOffered":
+    "Nasa organization na ang produktong ito pero hindi pa ino-offer sa branch na ito.",
+  "catalog.duplicate.organizationProduct": "Organization product",
+  "catalog.duplicate.branchProduct": "Branch product",
   "catalog.editProduct": "I-edit ang produkto",
   "catalog.emptyBrands": "Walang nahanap na brands",
   "catalog.emptyBrandsDetail": "Magdagdag ng brand, pagkatapos i-assign sa products.",
@@ -2031,6 +2040,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "offline.queuedReference": "Reperensiya ng device: {reference}",
   "offline.queuedTitle": "Nakaimbak ang benta sa device na ito",
   "offline.requiredCatalogImport": "Kailangan ng internet para mag-import mula sa business template o global catalog.",
+  "online_required.catalog_product_create":
+    "Kailangan ng internet ang paggawa ng produkto para masuri ang mga duplicate sa buong organization.",
+  "online_required.catalog_product_identity_mutation":
+    "Kailangan ng internet ang pagbabago ng pangalan, SKU, o barcode para masuri ang mga duplicate sa buong organization.",
   "offline.requiredContextSwitch": "Kailangan ng internet para lumipat sa negosyo.",
   "offline.requiredCreditExtend": "Kailangan ng internet para magdagdag ng utang.",
   "offline.requiredCreditReverse": "Kailangan ng internet para ibalik ang tala.",

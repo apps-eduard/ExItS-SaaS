@@ -9,6 +9,7 @@
 @inject IConnectivityService Connectivity
 @inject IProductImagePicker ProductImages
 @inject ICatalogProductOfflineSyncService OfflineCreate
+@inject OnlineRequiredGuard OnlineRequired
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="/catalog" />
@@ -244,6 +245,12 @@ else
         _saving = true;
         try
         {
+            if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.CatalogProductCreate))
+            {
+                _formError = L["OnlineRequired_Message"];
+                return;
+            }
+
             IReadOnlyList<PosCatalogProductUnitInput>? units = null;
             if (ShowAdvancedUnits)
             {
@@ -270,16 +277,9 @@ else
             _isOffline = !await Connectivity.IsConnectedAsync();
             if (_isOffline)
             {
-                var queued = await OfflineCreate.QueueCreateAsync(request, _pendingImageBytes);
-                if (!queued.IsSuccess)
-                {
-                    _formError = string.Equals(queued.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal)
-                        ? L["Offline_MutationsUnavailable"]
-                        : queued.ErrorMessage ?? L["Catalog_ErrorTitle"];
-                    return;
-                }
-
-                _queuedOffline = true;
+                // MB2-01C-H1: never create/queue a canonical offline ProductId.
+                var denied = await OfflineCreate.QueueCreateAsync(request, _pendingImageBytes);
+                _formError = denied.ErrorMessage ?? L["OnlineRequired_Message"];
                 return;
             }
 

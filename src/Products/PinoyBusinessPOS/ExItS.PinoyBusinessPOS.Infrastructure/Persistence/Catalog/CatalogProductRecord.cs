@@ -7,6 +7,7 @@ internal sealed class CatalogProductRecord
     public string Scope { get; set; } = "OrganizationStandard";
     public Guid? OriginBranchId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string NormalizedName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Sku { get; set; }
     public string? NormalizedSku { get; set; }

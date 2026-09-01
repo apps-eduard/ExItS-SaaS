@@ -353,6 +353,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "catalog.conflict": "Giilisan ang product sa laing dapit. I-reload ug sulayi pag-usab.",
   "catalog.deactivate": "I-deactivate / hunonga",
   "catalog.description": "Deskripsyon",
+  "catalog.duplicate.title": "Anaa na ang product",
+  "catalog.duplicate.useExisting": "Gamita ang existing product",
+  "catalog.duplicate.hiddenForeign":
+    "Aduna nay product nga may sama nga ngalan sa inyong organization. Dili mahimo ang duplicate. Pangutan-a ang organization administrator aron susihon kini.",
+  "catalog.duplicate.inactive": "Anaa na ang product apan inactive.",
+  "catalog.duplicate.notOffered":
+    "Anaa na kini nga product sa inyong organization apan wala pa ginatanyag niining branch.",
+  "catalog.duplicate.organizationProduct": "Organization product",
+  "catalog.duplicate.branchProduct": "Branch product",
   "catalog.editProduct": "Usba ang product",
   "catalog.emptyBrands": "Walay nakit-an nga brands",
   "catalog.emptyBrandsDetail": "Pagdugang og brand, dayon i-assign kini sa products.",
@@ -2032,6 +2041,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "offline.queuedReference": "Reperensiya sa device: {reference}",
   "offline.queuedTitle": "Natipigan ang baligya sa device",
   "offline.requiredCatalogImport": "Kinahanglan internet aron mag-import gikan sa business template o global catalog.",
+  "online_required.catalog_product_create":
+    "Kinahanglan internet ang paghimo og product aron masusi ang mga duplicate sa tibuok organization.",
+  "online_required.catalog_product_identity_mutation":
+    "Kinahanglan internet ang pag-usab sa ngalan, SKU, o barcode aron masusi ang mga duplicate sa tibuok organization.",
   "offline.requiredContextSwitch": "Kinahanglan internet aron mobalhin sa negosyo.",
   "offline.requiredCreditExtend": "Kinahanglan internet sa pagdugang utang.",
   "offline.requiredCreditReverse": "Kinahanglan internet sa pagbawi sa entry.",

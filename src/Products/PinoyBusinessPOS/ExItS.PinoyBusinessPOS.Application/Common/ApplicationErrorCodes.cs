@@ -32,6 +32,7 @@ public static class ApplicationErrorCodes
     public const string BrandNotAssignable = "pos.brand.not_assignable";
     public const string CategoryNotAssignable = "pos.category.not_assignable";
     public const string ProductNotFound = "pos.product.not_found";
+    public const string ProductNameConflict = "pos.catalog.product.name.conflict";
     public const string ProductSkuConflict = "pos.product.sku.conflict";
     public const string ProductBarcodeConflict = "pos.product.barcode.conflict";
     public const string CatalogConcurrencyConflict = "pos.catalog.concurrency_conflict";

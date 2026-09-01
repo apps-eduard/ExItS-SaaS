@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
@@ -13,62 +12,37 @@ public interface ICatalogProductOfflineSyncService
         CancellationToken cancellationToken = default);
 }
 
-public sealed class CatalogProductOfflineSyncService(
-    IOfflineOperationQueue queue,
-    PendingProductImageStore pendingImages,
-    ICurrentUserContext currentUser,
-    IPosSyncStatusService? syncStatus = null) : ICatalogProductOfflineSyncService
+/// <summary>
+/// MB2-01C-H1: canonical product create is ONLINE_REQUIRED. Do not enqueue offline ProductIds.
+/// Offline product drafts are deferred; a draft is not CatalogProduct authority.
+/// Constructor dependencies retained for existing DI registrations.
+/// </summary>
+public sealed class CatalogProductOfflineSyncService : ICatalogProductOfflineSyncService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true
-    };
+    public const string OnlineRequiredErrorCode = "pos.catalog.product.create.online_required";
 
-    public async Task<ApplicationResult<Guid>> QueueCreateAsync(
+    public CatalogProductOfflineSyncService(
+        IOfflineOperationQueue queue,
+        PendingProductImageStore pendingImages,
+        ICurrentUserContext currentUser,
+        IPosSyncStatusService? syncStatus = null)
+    {
+        _ = queue;
+        _ = pendingImages;
+        _ = currentUser;
+        _ = syncStatus;
+    }
+
+    public Task<ApplicationResult<Guid>> QueueCreateAsync(
         CreatePosCatalogProductRequest request,
         byte[]? pendingImage,
         CancellationToken cancellationToken = default)
     {
-        var organizationId = currentUser.Session?.OrganizationId;
-        if (organizationId is null)
-        {
-            return ApplicationResult<Guid>.Failure(
-                ApplicationErrorCodes.OrganizationRequired,
-                "An organization is required.");
-        }
-
-        var productId = request.ProductId ?? Guid.NewGuid();
-        var payload = request with { ProductId = productId };
-        if (pendingImage is { Length: > 0 })
-        {
-            await pendingImages.SaveAsync(organizationId.Value, productId, pendingImage, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        var operationId = Guid.NewGuid();
-        var plaintext = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
-        try
-        {
-            await queue.EnqueueAsync(
-                    new OfflineEnqueueRequest(
-                        operationId,
-                        OfflineOperationTypes.CatalogProductCreate,
-                        PayloadVersion: 1,
-                        IdempotencyKey: productId.ToString("N"),
-                        plaintext,
-                        EntityId: productId),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (InvalidOperationException)
-        {
-            pendingImages.Delete(organizationId.Value, productId);
-            return ApplicationResult<Guid>.Failure(
-                "offline_mutations_unavailable",
-                "Reconnect to verify access.");
-        }
-        syncStatus?.Refresh();
-        return ApplicationResult<Guid>.Success(productId);
+        _ = request;
+        _ = pendingImage;
+        _ = cancellationToken;
+        return Task.FromResult(ApplicationResult<Guid>.Failure(
+            OnlineRequiredErrorCode,
+            "Creating a product requires an internet connection so we can check for duplicates across your organization."));
     }
 }

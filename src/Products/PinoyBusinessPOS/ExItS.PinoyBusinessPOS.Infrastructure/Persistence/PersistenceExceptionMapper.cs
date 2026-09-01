@@ -18,6 +18,13 @@ internal static class PersistenceExceptionMapper
         }
 
         var constraint = pg.ConstraintName ?? string.Empty;
+        if (constraint.Contains("ux_products_org_normalized_name", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.ProductNameConflict;
+            message = "A product with this name already exists in your organization.";
+            return true;
+        }
+
         if (constraint.Contains("ux_products_org_normalized_sku", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.ProductSkuConflict;

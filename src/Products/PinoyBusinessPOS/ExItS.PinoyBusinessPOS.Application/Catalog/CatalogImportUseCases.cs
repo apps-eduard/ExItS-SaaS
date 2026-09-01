@@ -963,6 +963,31 @@ public sealed class ProcessPosCatalogImportChunk
                 return;
             }
 
+            string normalizedName;
+            try
+            {
+                (_, normalizedName) = CatalogProduct.NormalizeProductName(item.Name);
+            }
+            catch (DomainException ex)
+            {
+                item.MarkFailed(ex.ErrorCode, ex.Message, now);
+                return;
+            }
+
+            var nameConflict = await CatalogAssignment
+                .FindProductNameConflictAsync(
+                    _products,
+                    job.OrganizationId,
+                    normalizedName,
+                    selfId: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (nameConflict is not null)
+            {
+                item.MarkSkipped(nameConflict.ErrorCode!, nameConflict.ErrorMessage!, now);
+                return;
+            }
+
             ProductCategoryId? categoryId = null;
             if (item.SourceGlobalCategoryId is Guid sourceCategoryId)
             {

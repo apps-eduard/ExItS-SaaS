@@ -592,6 +592,15 @@ public sealed class UpdateCatalogProduct
 
             var (_, normalizedSku) = CatalogProduct.NormalizeOptionalSku(sku);
             var normalizedBarcode = CatalogProduct.NormalizeOptionalBarcode(barcode);
+            var (_, normalizedName) = CatalogProduct.NormalizeProductName(name);
+            var nameConflict = await CatalogAssignment
+                .FindProductNameConflictAsync(_products, orgId, normalizedName, product.Id, cancellationToken)
+                .ConfigureAwait(false);
+            if (nameConflict is not null)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(nameConflict.ErrorCode!, nameConflict.ErrorMessage!);
+            }
+
             var conflict = await CatalogAssignment
                 .FindIdentifierConflictAsync(_products, orgId, normalizedSku, normalizedBarcode, product.Id, cancellationToken)
                 .ConfigureAwait(false);
@@ -1225,6 +1234,14 @@ internal static class CatalogProductCreateCore
             usage,
             scope: scope,
             originBranchId: originBranchId);
+        var nameConflict = await CatalogAssignment
+            .FindProductNameConflictAsync(products, orgId, product.NormalizedName, selfId: null, cancellationToken)
+            .ConfigureAwait(false);
+        if (nameConflict is not null)
+        {
+            return ApplicationResult<CatalogProduct>.Failure(nameConflict.ErrorCode!, nameConflict.ErrorMessage!);
+        }
+
         var conflict = await CatalogAssignment
             .FindIdentifierConflictAsync(
                 products,
@@ -1330,6 +1347,49 @@ internal static class CatalogAssignment
         }
 
         return ApplicationResult.Success();
+    }
+
+    public static async Task<ApplicationResult?> FindProductNameConflictAsync(
+        ICatalogProductRepository products,
+        PosOrganizationId organizationId,
+        string normalizedName,
+        CatalogProductId? selfId,
+        CancellationToken cancellationToken)
+    {
+        var existing = await products
+            .FindByNormalizedNameAsync(organizationId, normalizedName, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is not null && (selfId is null || existing.Id != selfId))
+        {
+            return ApplicationResult.Failure(
+                ApplicationErrorCodes.ProductNameConflict,
+                "A product with this name already exists in your organization.");
+        }
+
+        return null;
+    }
+
+    public static async Task<CatalogProduct?> FindExistingByNormalizedNameAsync(
+        ICatalogProductRepository products,
+        PosOrganizationId organizationId,
+        string normalizedName,
+        CatalogProductId? excludeProductId,
+        CancellationToken cancellationToken)
+    {
+        var existing = await products
+            .FindByNormalizedNameAsync(organizationId, normalizedName, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        if (excludeProductId is not null && existing.Id == excludeProductId)
+        {
+            return null;
+        }
+
+        return existing;
     }
 
     public static async Task<ApplicationResult?> FindIdentifierConflictAsync(

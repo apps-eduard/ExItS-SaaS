@@ -353,6 +353,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.conflict": "Giilisan ti product iti laing dapit. I-reload ken padasen manen.",
   "catalog.deactivate": "I-deactivate",
   "catalog.description": "Description",
+  "catalog.duplicate.title": "Addanen ti product",
+  "catalog.duplicate.useExisting": "Usaren ti existing product",
+  "catalog.duplicate.hiddenForeign":
+    "Adda product nga addaan iti daytoy a nagan iti organizationyo. Saan a mabalin ti duplicate. Dawaten ti organization administrator a kitaenna daytoy.",
+  "catalog.duplicate.inactive": "Addanen ti product ngem inactive.",
+  "catalog.duplicate.notOffered":
+    "Addanen daytoy a product iti organizationyo ngem saan pay a maited iti daytoy a branch.",
+  "catalog.duplicate.organizationProduct": "Organization product",
+  "catalog.duplicate.branchProduct": "Branch product",
   "catalog.editProduct": "Sukatan ti product",
   "catalog.emptyBrands": "Awan ti nabirukan a brands",
   "catalog.emptyBrandsDetail": "Manginayon iti brand, dayon i-assign daytoy iti products.",
@@ -2032,6 +2041,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "offline.queuedReference": "Reperensia ti device: {reference}",
   "offline.queuedTitle": "Naidulin ti panaglako iti daytoy a device",
   "offline.requiredCatalogImport": "Masapul ti internet no ag-import manipud ti business template wenno global catalog.",
+  "online_required.catalog_product_create":
+    "Masapul ti internet ti pannakapartuat ti product tapno mausisa dagiti duplicate iti amin a organization.",
+  "online_required.catalog_product_identity_mutation":
+    "Masapul ti internet ti panagsukat ti nagan, SKU, wenno barcode tapno mausisa dagiti duplicate iti amin a organization.",
   "offline.requiredContextSwitch": "Masapul ti internet tapno agbalbaliw iti negosyo.",
   "offline.requiredCreditExtend": "Masapul ti internet no agnayon ti utang.",
   "offline.requiredCreditReverse": "Masapul ti internet no ibabawi ti entry.",

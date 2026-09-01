@@ -212,3 +212,8 @@ public sealed record ProductBranchOfferingItemDto(
     bool IsOffered,
     string Reason,
     bool HasExplicitOverride);
+
+public sealed record CatalogProductNameConflictDto(
+    bool IsDuplicate,
+    bool CanRevealExisting,
+    PosCatalogProductDto? ExistingProduct = null);

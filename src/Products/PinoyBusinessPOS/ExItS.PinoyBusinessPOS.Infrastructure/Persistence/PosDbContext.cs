@@ -670,6 +670,10 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("name")
                 .HasMaxLength(CatalogProduct.NameMaxLength)
                 .IsRequired();
+            entity.Property(e => e.NormalizedName)
+                .HasColumnName("normalized_name")
+                .HasMaxLength(CatalogProduct.NameMaxLength)
+                .IsRequired();
             entity.Property(e => e.Description)
                 .HasColumnName("description")
                 .HasMaxLength(CatalogProduct.DescriptionMaxLength);
@@ -765,6 +769,11 @@ public sealed class PosDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ux_products_org_barcode")
                 .HasFilter("barcode IS NOT NULL");
+
+            // No status/scope filter: Active+Inactive and Standard+Local share one org name identity.
+            entity.HasIndex(e => new { e.OrganizationId, e.NormalizedName })
+                .IsUnique()
+                .HasDatabaseName("ux_products_org_normalized_name");
 
             entity.HasIndex(e => new { e.OrganizationId, e.Name })
                 .HasDatabaseName("ix_products_org_name");

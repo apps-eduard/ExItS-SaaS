@@ -452,6 +452,24 @@ internal static class CatalogEndpoints
             return Results.Ok(result);
         });
 
+        group.MapGet("/name-conflict", async (
+            HttpRequest request,
+            string name,
+            Guid? excludeProductId,
+            QueryCatalogProductNameConflict useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, name, excludeProductId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
         group.MapPost("/", async (
             HttpRequest request,
             CreatePosCatalogProductRequest body,

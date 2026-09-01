@@ -110,7 +110,8 @@ internal static class CatalogEntityMapper
             scope: CatalogProductScopes.Parse(record.Scope),
             originBranchId: record.OriginBranchId is null
                 ? null
-                : PosBranchId.From(record.OriginBranchId.Value));
+                : PosBranchId.From(record.OriginBranchId.Value),
+            normalizedName: record.NormalizedName);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -120,6 +121,7 @@ internal static class CatalogEntityMapper
             Scope = CatalogProductScopes.ToCode(product.Scope),
             OriginBranchId = product.OriginBranchId?.Value,
             Name = product.Name,
+            NormalizedName = product.NormalizedName,
             Description = product.Description,
             Sku = product.Sku,
             NormalizedSku = product.NormalizedSku,
@@ -157,6 +159,7 @@ internal static class CatalogEntityMapper
         record.Scope = CatalogProductScopes.ToCode(product.Scope);
         record.OriginBranchId = product.OriginBranchId?.Value;
         record.Name = product.Name;
+        record.NormalizedName = product.NormalizedName;
         record.Description = product.Description;
         record.Sku = product.Sku;
         record.NormalizedSku = product.NormalizedSku;

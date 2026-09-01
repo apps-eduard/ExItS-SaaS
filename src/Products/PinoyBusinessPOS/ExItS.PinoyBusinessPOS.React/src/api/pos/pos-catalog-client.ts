@@ -1,5 +1,6 @@
 import type {
   CatalogProductImageVariant,
+  CatalogProductNameConflictDto,
   CatalogProductScopeCode,
   CreatePosCatalogProductRequest,
   CreatePosProductBrandRequest,
@@ -281,6 +282,27 @@ export function getCatalogProduct(
     workspace,
     signal,
     path: `${PRODUCTS_PATH}/${productId}`,
+  });
+}
+
+export type CheckCatalogProductNameConflictOptions = {
+  name: string;
+  excludeProductId?: string;
+};
+
+export function checkCatalogProductNameConflict(
+  workspace: PosWorkspaceScope,
+  options: CheckCatalogProductNameConflictOptions,
+  signal?: AbortSignal,
+): Promise<CatalogProductNameConflictDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PRODUCTS_PATH}/name-conflict`, {
+      name: options.name,
+      excludeProductId: options.excludeProductId,
+    }),
   });
 }
 

@@ -1,3 +1,4 @@
+using System.Text;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -31,6 +32,11 @@ public sealed class CatalogProduct
     /// </summary>
     public PosBranchId? OriginBranchId { get; private set; }
     public string Name { get; private set; }
+    /// <summary>
+    /// Organization-wide canonical name identity key (NFC, collapsed whitespace, uppercase invariant).
+    /// Distinct from display <see cref="Name"/>. Same org + NormalizedName = one ProductId.
+    /// </summary>
+    public string NormalizedName { get; private set; }
     public string? Description { get; private set; }
     public string? Sku { get; private set; }
     public string? NormalizedSku { get; private set; }
@@ -87,6 +93,7 @@ public sealed class CatalogProduct
         CatalogProductId id,
         PosOrganizationId organizationId,
         string name,
+        string normalizedName,
         string? description,
         string? sku,
         string? normalizedSku,
@@ -126,6 +133,7 @@ public sealed class CatalogProduct
         Scope = scope;
         OriginBranchId = originBranchId;
         Name = name;
+        NormalizedName = normalizedName;
         Description = description;
         Sku = sku;
         NormalizedSku = normalizedSku;
@@ -186,6 +194,7 @@ public sealed class CatalogProduct
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
         CatalogProductScopes.EnsureOriginValid(scope, originBranchId);
+        var (displayName, normalizedName) = NormalizeProductName(name);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
         var resolvedUsage = usage ?? ProductUsageCapabilities.BuyAndSell;
         resolvedUsage.EnsureValid();
@@ -193,7 +202,8 @@ public sealed class CatalogProduct
         return new CatalogProduct(
             id ?? CatalogProductId.New(),
             organizationId,
-            NormalizeName(name),
+            displayName,
+            normalizedName,
             NormalizeOptionalDescription(description),
             displaySku,
             normalizedSku,
@@ -265,6 +275,7 @@ public sealed class CatalogProduct
                 "Imported snapshots cannot use CatalogSource.Manual.");
         }
 
+        var (displayName, normalizedName) = NormalizeProductName(name);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
         var resolvedUsage = usage ?? ProductUsageCapabilities.BuyAndSell;
         resolvedUsage.EnsureValid();
@@ -272,7 +283,8 @@ public sealed class CatalogProduct
         return new CatalogProduct(
             id ?? CatalogProductId.New(),
             organizationId,
-            NormalizeName(name),
+            displayName,
+            normalizedName,
             NormalizeOptionalDescription(description),
             displaySku,
             normalizedSku,
@@ -335,11 +347,15 @@ public sealed class CatalogProduct
         int? platformImageVersion = null,
         ProductBrandId? brandId = null,
         CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
-        PosBranchId? originBranchId = null) =>
+        PosBranchId? originBranchId = null,
+        string? normalizedName = null) =>
         new(
             id,
             organizationId,
             name,
+            string.IsNullOrWhiteSpace(normalizedName)
+                ? NormalizeProductName(name).Normalized
+                : normalizedName,
             description,
             sku,
             normalizedSku,
@@ -414,8 +430,10 @@ public sealed class CatalogProduct
         }
 
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
+        var (displayName, normalizedName) = NormalizeProductName(name);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
-        Name = NormalizeName(name);
+        Name = displayName;
+        NormalizedName = normalizedName;
         Description = NormalizeOptionalDescription(description);
         Sku = displaySku;
         NormalizedSku = normalizedSku;
@@ -559,22 +577,66 @@ public sealed class CatalogProduct
         UpdatedAtUtc = utcNow;
     }
 
-    public static string NormalizeName(string name)
+    /// <summary>
+    /// Canonical product-name normalization: NFC, trim, collapse whitespace runs to one space,
+    /// then uppercase-invariant identity key. Display preserves caller casing after whitespace cleanup.
+    /// </summary>
+    public static (string Display, string Normalized) NormalizeProductName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new DomainException(DomainErrorCodes.InvalidProductName, "Product name is required.");
         }
 
-        var trimmed = name.Trim();
-        if (trimmed.Length > NameMaxLength)
+        var nfc = name.Normalize(NormalizationForm.FormC);
+        var collapsed = CollapseWhitespace(nfc.Trim());
+        if (collapsed.Length == 0)
+        {
+            throw new DomainException(DomainErrorCodes.InvalidProductName, "Product name is required.");
+        }
+
+        if (collapsed.Length > NameMaxLength)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidProductName,
                 $"Product name must be 1–{NameMaxLength} characters.");
         }
 
-        return trimmed;
+        return (collapsed, collapsed.ToUpperInvariant());
+    }
+
+    /// <summary>Display-name cleanup (NFC + collapsed whitespace). Prefer <see cref="NormalizeProductName"/>.</summary>
+    public static string NormalizeName(string name) => NormalizeProductName(name).Display;
+
+    private static string CollapseWhitespace(string value)
+    {
+        if (value.Length == 0)
+        {
+            return value;
+        }
+
+        Span<char> buffer = value.Length <= 512 ? stackalloc char[value.Length] : new char[value.Length];
+        var written = 0;
+        var previousWasSpace = false;
+        foreach (var ch in value)
+        {
+            if (char.IsWhiteSpace(ch))
+            {
+                if (previousWasSpace)
+                {
+                    continue;
+                }
+
+                buffer[written++] = ' ';
+                previousWasSpace = true;
+                continue;
+            }
+
+            buffer[written++] = ch;
+            previousWasSpace = false;
+        }
+
+        return new string(buffer[..written]);
     }
 
     public static string? NormalizeOptionalDescription(string? description)

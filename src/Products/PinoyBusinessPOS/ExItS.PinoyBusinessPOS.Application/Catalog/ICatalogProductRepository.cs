@@ -39,6 +39,16 @@ public interface ICatalogProductRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Finds a product by normalized name identity key regardless of status/scope/origin.
+    /// Inactive and BranchLocal products still reserve the organization-wide name.
+    /// </summary>
+    Task<CatalogProduct?> FindByNormalizedNameAsync(
+        PosOrganizationId organizationId,
+        string normalizedName,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<CatalogProduct?>(null);
+
+    /// <summary>
     /// Finds a product by normalized SKU regardless of status. SKUs of inactive products stay
     /// reserved so historical identifiers are never silently reused.
     /// </summary>

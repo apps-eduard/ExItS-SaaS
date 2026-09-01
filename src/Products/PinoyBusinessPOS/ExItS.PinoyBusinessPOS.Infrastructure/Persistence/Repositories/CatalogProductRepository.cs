@@ -26,6 +26,19 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         return record is null ? null : CatalogEntityMapper.ToDomain(record);
     }
 
+    public async Task<CatalogProduct?> FindByNormalizedNameAsync(
+        PosOrganizationId organizationId,
+        string normalizedName,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.CatalogProducts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                p => p.OrganizationId == organizationId.Value && p.NormalizedName == normalizedName,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CatalogEntityMapper.ToDomain(record);
+    }
+
     public async Task<CatalogProduct?> FindByNormalizedSkuAsync(
         PosOrganizationId organizationId,
         string normalizedSku,

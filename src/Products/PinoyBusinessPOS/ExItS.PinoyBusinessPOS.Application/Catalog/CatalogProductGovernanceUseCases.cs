@@ -222,6 +222,101 @@ public sealed class PromoteCatalogProductToOrganizationStandard
 }
 
 /// <summary>
+/// Advisory duplicate-name check for React. Server create/update remain authoritative.
+/// Foreign BranchLocal may be reported as duplicate without revealing metadata.
+/// </summary>
+public sealed class QueryCatalogProductNameConflict
+{
+    private readonly ICatalogProductRepository _products;
+    private readonly CatalogProductQueryService _queries;
+    private readonly CatalogProductGovernanceAuthority _governance;
+    private readonly ICatalogGovernanceActorAccessor _actorAccessor;
+    private readonly ICatalogProductAvailabilityResolver _availability;
+
+    public QueryCatalogProductNameConflict(
+        ICatalogProductRepository products,
+        CatalogProductQueryService queries,
+        CatalogProductGovernanceAuthority governance,
+        ICatalogGovernanceActorAccessor actorAccessor,
+        ICatalogProductAvailabilityResolver availability)
+    {
+        _products = products;
+        _queries = queries;
+        _governance = governance;
+        _actorAccessor = actorAccessor;
+        _availability = availability;
+    }
+
+    public async Task<ApplicationResult<CatalogProductNameConflictDto>> ExecuteAsync(
+        Guid organizationId,
+        string name,
+        Guid? excludeProductId,
+        CancellationToken cancellationToken = default)
+    {
+        string normalized;
+        try
+        {
+            (_, normalized) = CatalogProduct.NormalizeProductName(name);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CatalogProductNameConflictDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        CatalogProductId? exclude = excludeProductId is Guid eid && eid != Guid.Empty
+            ? CatalogProductId.From(eid)
+            : null;
+
+        var existing = await CatalogAssignment
+            .FindExistingByNormalizedNameAsync(_products, orgId, normalized, exclude, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is null)
+        {
+            return ApplicationResult<CatalogProductNameConflictDto>.Success(
+                new CatalogProductNameConflictDto(false, false));
+        }
+
+        var actor = _actorAccessor.GetActor();
+        var canReveal = existing.Scope != CatalogProductScope.BranchLocal
+            || _governance.CanViewBranchLocalInManagement(actor, existing.OriginBranchId);
+
+        if (!canReveal)
+        {
+            return ApplicationResult<CatalogProductNameConflictDto>.Success(
+                new CatalogProductNameConflictDto(true, false));
+        }
+
+        var dto = await _queries
+            .GetByIdAsync(organizationId, existing.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (dto is null)
+        {
+            return ApplicationResult<CatalogProductNameConflictDto>.Success(
+                new CatalogProductNameConflictDto(true, false));
+        }
+
+        if (actor.ActingBranchId is Guid branch && branch != Guid.Empty)
+        {
+            var offering = await _availability
+                .ResolveForBranchAsync(
+                    orgId,
+                    PosBranchId.From(branch),
+                    [existing],
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (offering.TryGetValue(existing.Id.Value, out var offer))
+            {
+                dto = dto with { IsOfferedAtBranch = offer.IsOffered };
+            }
+        }
+
+        return ApplicationResult<CatalogProductNameConflictDto>.Success(
+            new CatalogProductNameConflictDto(true, true, dto));
+    }
+}
+
+/// <summary>
 /// Bulk read of sparse branch offering overrides for one product (no N+1).
 /// OrganizationStandard: ExplicitRows only; missing branch = offered by default.
 /// BranchLocal: returns origin-only synthetic offered row (no cross-branch sharing).

@@ -353,6 +353,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.conflict": "Giilisan ang product sa laing dapit. I-reload kag tilawi liwat.",
   "catalog.deactivate": "I-deactivate / hunonga",
   "catalog.description": "Deskripsyon",
+  "catalog.duplicate.title": "May product na nga amo sini",
+  "catalog.duplicate.useExisting": "Gamiton ang existing product",
+  "catalog.duplicate.hiddenForeign":
+    "May product na nga may amo sini nga ngalan sa inyo nga organization. Indi mahimo ang duplicate. Pangayo sa organization administrator nga usisaon ini.",
+  "catalog.duplicate.inactive": "May product na nga amo sini pero inactive.",
+  "catalog.duplicate.notOffered":
+    "Yara na ini nga product sa inyo nga organization pero wala pa ginahatag sa sini nga branch.",
+  "catalog.duplicate.organizationProduct": "Organization product",
+  "catalog.duplicate.branchProduct": "Branch product",
   "catalog.editProduct": "Islan ang product",
   "catalog.emptyBrands": "Wala sing nakit-an nga brands",
   "catalog.emptyBrandsDetail": "Magdugang sang brand, dayon i-assign ini sa products.",
@@ -2032,6 +2041,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "offline.queuedReference": "Reperensiya sang device: {reference}",
   "offline.queuedTitle": "Na-tipigan ang baligya sa sini nga device",
   "offline.requiredCatalogImport": "Kinahanglan internet para mag-import halin sa business template ukon global catalog.",
+  "online_required.catalog_product_create":
+    "Kinahanglan internet ang paghimo sang product agud mausisa ang mga duplicate sa bilog nga organization.",
+  "online_required.catalog_product_identity_mutation":
+    "Kinahanglan internet ang pag-ilis sang ngalan, SKU, ukon barcode agud mausisa ang mga duplicate sa bilog nga organization.",
   "offline.requiredContextSwitch": "Kinahanglan internet para magbalhin sa negosyo.",
   "offline.requiredCreditExtend": "Kinahanglan internet sa pagdugang sang utang.",
   "offline.requiredCreditReverse": "Kinahanglan internet sa pagbawi sang entry.",

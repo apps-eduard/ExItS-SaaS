@@ -41,6 +41,8 @@ export const ONLINE_REQUIRED_CODES = {
   OrgOwnershipTransfer: "online_required.org_ownership_transfer",
   PersonalTodoShare: "online_required.personal_todo_share",
   CatalogImport: "online_required.catalog_import",
+  CatalogProductCreate: "online_required.catalog_product_create",
+  CatalogProductIdentityMutation: "online_required.catalog_product_identity_mutation",
 } as const;
 
 export type OnlineRequiredCode = (typeof ONLINE_REQUIRED_CODES)[keyof typeof ONLINE_REQUIRED_CODES];
@@ -68,6 +70,9 @@ const DETAIL_KEYS: Record<OnlineRequiredCode, MessageKey> = {
   [ONLINE_REQUIRED_CODES.OrgOwnershipTransfer]: "offline.requiredOrgOwnershipTransfer",
   [ONLINE_REQUIRED_CODES.PersonalTodoShare]: "offline.requiredPersonalTodoShare",
   [ONLINE_REQUIRED_CODES.CatalogImport]: "offline.requiredCatalogImport",
+  [ONLINE_REQUIRED_CODES.CatalogProductCreate]: "online_required.catalog_product_create",
+  [ONLINE_REQUIRED_CODES.CatalogProductIdentityMutation]:
+    "online_required.catalog_product_identity_mutation",
 };
 
 export function onlineRequiredDetailKey(code: OnlineRequiredCode): MessageKey {

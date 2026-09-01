@@ -376,6 +376,10 @@ export const en = {
   "offline.personalOwnerUnknown": "Open Utang once while online, then you can add utang offline.",
   "offline.requiredPersonalTodoShare": "Sharing a to-do needs internet.",
   "offline.requiredCatalogImport": "Business template and global catalog import need internet.",
+  "online_required.catalog_product_create":
+    "Creating a product requires an internet connection so we can check for duplicates across your organization.",
+  "online_required.catalog_product_identity_mutation":
+    "Changing product name, SKU, or barcode requires an internet connection so we can check duplicates across your organization.",
   "offline.requiredContextSwitch": "Switching to business needs internet.",
   "offline.requiredHistory": "Purchase history needs internet.",
   "offline.todoCachedNotice": "Showing saved to-dos. They refresh when you reconnect.",
@@ -2486,6 +2490,15 @@ export const en = {
   "catalog.cancelRename": "Cancel rename",
   "catalog.newProduct": "New product",
   "catalog.editProduct": "Edit product",
+  "catalog.duplicate.title": "Product already exists",
+  "catalog.duplicate.useExisting": "Use existing product",
+  "catalog.duplicate.hiddenForeign":
+    "A product with this name already exists in your organization. A duplicate cannot be created. Ask an organization administrator to review it.",
+  "catalog.duplicate.inactive": "Product already exists but is inactive.",
+  "catalog.duplicate.notOffered":
+    "This product is already in your organization but is not currently offered at this branch.",
+  "catalog.duplicate.organizationProduct": "Organization product",
+  "catalog.duplicate.branchProduct": "Branch product",
   "catalog.productFormLede": "SKU and barcode must be unique in the organization when set.",
   "catalog.sectionBasics": "Basics",
   "catalog.sectionPricing": "Pricing & selling",

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
 import { listOrganizationBranches } from "@/api/platform/platform-auth-client";
 import {
+  checkCatalogProductNameConflict,
   createCatalogBrand,
   createCatalogCategory,
   createCatalogProduct,
@@ -20,6 +21,7 @@ import {
 } from "@/api/pos/pos-catalog-client";
 
 import type {
+  CatalogProductNameConflictDto,
   CatalogProductScopeCode,
   PosCatalogProductDto,
   PosProductBrandDto,
@@ -45,11 +47,17 @@ import { ErrorState } from "@/components/exits/ErrorState";
 
 import { LoadingState } from "@/components/exits/LoadingState";
 
+import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
+
 import { PageHeader } from "@/components/exits/PageHeader";
 
 import { StatusChip } from "@/components/exits/StatusChip";
 
+import { useBrowserOnline } from "@/connectivity/browser-online";
+
 import { pageBackNav } from "@/navigation/page-back-nav";
+
+import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 
 import {
   createEmptyUnitDraft,
@@ -76,6 +84,7 @@ import {
 } from "@/features/catalog/CatalogProductGovernancePanels";
 import {
   isBranchLocalProduct,
+  isOrganizationStandardProduct,
   isStandardMasterReadOnlyForActor,
 } from "@/features/catalog/catalog-product-scope";
 
@@ -188,6 +197,91 @@ function FormCheck({
   );
 }
 
+const NAME_CONFLICT_DEBOUNCE_MS = 250;
+const PRODUCT_NAME_CONFLICT_CODE = "pos.catalog.product.name.conflict";
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [delayMs, value]);
+  return debounced;
+}
+
+function isProductNameConflictError(err: unknown): err is PosApiError {
+  return (
+    err instanceof PosApiError &&
+    err.status === 409 &&
+    (err.errorCode === PRODUCT_NAME_CONFLICT_CODE ||
+      err.errorCode?.includes("product.name.conflict") === true)
+  );
+}
+
+function CatalogProductNameConflictPanel({
+  conflict,
+}: {
+  conflict: CatalogProductNameConflictDto;
+}) {
+  const { t } = useI18n();
+  if (!conflict.isDuplicate) {
+    return null;
+  }
+
+  if (!conflict.canRevealExisting || !conflict.existingProduct) {
+    return (
+      <div
+        className="exits-alert catalog-form-field--full"
+        data-testid="catalog-name-conflict"
+        role="status"
+      >
+        <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
+        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          {t("catalog.duplicate.hiddenForeign")}
+        </p>
+      </div>
+    );
+  }
+
+  const existing = conflict.existingProduct;
+  const scopeLabel = isOrganizationStandardProduct(existing)
+    ? t("catalog.duplicate.organizationProduct")
+    : t("catalog.duplicate.branchProduct");
+  const inactive = existing.status.trim().toLowerCase() !== "active";
+  const notOffered = existing.isOfferedAtBranch === false;
+
+  return (
+    <div
+      className="exits-alert catalog-form-field--full"
+      data-testid="catalog-name-conflict"
+      role="status"
+    >
+      <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
+      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]" data-testid="catalog-name-conflict-name">
+        {existing.name}
+      </p>
+      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">{scopeLabel}</p>
+      {inactive ? (
+        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          {t("catalog.duplicate.inactive")}
+        </p>
+      ) : null}
+      {notOffered ? (
+        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          {t("catalog.duplicate.notOffered")}
+        </p>
+      ) : null}
+      <Link
+        to={`/catalog/products/${existing.productId}/edit`}
+        className="mt-2 inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline"
+        data-testid="catalog-name-conflict-use-existing"
+      >
+        {t("catalog.duplicate.useExisting")}
+      </Link>
+    </div>
+  );
+}
+
 export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const { t } = useI18n();
 
@@ -196,6 +290,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const { productId } = useParams();
 
   const queryClient = useQueryClient();
+  const online = useBrowserOnline();
 
   const workspace = usePosWorkspaceScope();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -316,6 +411,30 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       product: productQuery.data,
     });
 
+  const debouncedName = useDebouncedValue(name.trim(), NAME_CONFLICT_DEBOUNCE_MS);
+  const nameConflictExcludeId = mode === "edit" ? productId : undefined;
+
+  const nameConflictQuery = useQuery({
+    queryKey: [
+      "catalog",
+      "name-conflict",
+      workspace?.organizationId,
+      workspace?.branchId,
+      debouncedName,
+      nameConflictExcludeId ?? null,
+    ],
+    enabled: Boolean(workspace) && online && !readOnly && debouncedName.length >= 1,
+    queryFn: ({ signal }) =>
+      checkCatalogProductNameConflict(
+        workspace!,
+        {
+          name: debouncedName,
+          excludeProductId: nameConflictExcludeId,
+        },
+        signal,
+      ),
+  });
+
   useEffect(() => {
     if (!productQuery.data) {
       return;
@@ -395,6 +514,22 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     Number(openingUnitCost),
   );
 
+  const existingProduct = productQuery.data;
+  const identityFieldsDirty =
+    mode === "edit" &&
+    existingProduct != null &&
+    (name.trim() !== existingProduct.name.trim() ||
+      (sku.trim() || "") !== (existingProduct.sku?.trim() ?? "") ||
+      (barcode.trim() || "") !== (existingProduct.barcode?.trim() ?? ""));
+  const identityMutationRequiresOnline = identityFieldsDirty;
+  const createRequiresOnline = mode === "create";
+  const blockedOffline =
+    !online && (createRequiresOnline || identityMutationRequiresOnline);
+  const onlineRequiredCode = createRequiresOnline
+    ? ONLINE_REQUIRED_CODES.CatalogProductCreate
+    : ONLINE_REQUIRED_CODES.CatalogProductIdentityMutation;
+  const isNameDuplicate = nameConflictQuery.data?.isDuplicate === true;
+
   type SaveResult = { kind: "saved"; product: PosCatalogProductDto };
 
   const saveMutation = useMutation({
@@ -404,6 +539,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       }
       if (readOnly) {
         throw new Error(t("catalog.governance.managedByOrganization"));
+      }
+      if (mode === "create" && !online) {
+        throw new Error(t("online_required.catalog_product_create"));
+      }
+      if (identityMutationRequiresOnline && !online) {
+        throw new Error(t("online_required.catalog_product_identity_mutation"));
+      }
+      if (nameConflictQuery.data?.isDuplicate) {
+        throw new Error(t("catalog.duplicate.title"));
       }
 
       const price = Number(sellingPrice);
@@ -513,6 +657,20 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     },
 
     onError: (err) => {
+      if (isProductNameConflictError(err)) {
+        setError(null);
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "catalog",
+            "name-conflict",
+            workspace?.organizationId,
+            workspace?.branchId,
+          ],
+        });
+        void nameConflictQuery.refetch();
+        return;
+      }
+
       if (err instanceof PosApiError) {
         if (err.status === 409) {
           setError(err.problem.detail ?? t("catalog.conflict"));
@@ -690,12 +848,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
       {readOnly ? <CatalogManagedByOrganizationBanner /> : null}
 
+      {blockedOffline ? <OnlineRequiredCard code={onlineRequiredCode} /> : null}
+
       <form
         className="flex flex-col gap-3"
 
         onSubmit={(event) => {
           event.preventDefault();
-          if (readOnly) {
+          if (readOnly || blockedOffline || isNameDuplicate) {
             return;
           }
           saveMutation.mutate();
@@ -725,6 +885,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
+
+            {nameConflictQuery.data?.isDuplicate ? (
+              <CatalogProductNameConflictPanel conflict={nameConflictQuery.data} />
+            ) : null}
 
             <div className="catalog-form-field--full">
               <Input
@@ -1389,6 +1553,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 disabled={
                   saveMutation.isPending ||
                   statusMutation.isPending ||
+                  blockedOffline ||
+                  isNameDuplicate ||
                   (mode === "create" &&
                     (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
                     !workspace.branchId)

@@ -134,6 +134,70 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task PNAME_API_duplicate_name_check_create_and_rename_conflict()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        var product = await CreateProductAsync(client, org, new CreatePosCatalogProductRequest(
+            "Coke 1L",
+            "Piece",
+            50m));
+
+        using var noDup = Scoped(HttpMethod.Get, $"{Products}/name-conflict?name=Pepsi%201L", org);
+        using var noDupResponse = await client.SendAsync(noDup);
+        noDupResponse.EnsureSuccessStatusCode();
+        var noDupBody = await noDupResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.False(noDupBody.GetProperty("isDuplicate").GetBoolean());
+
+        using var hit = Scoped(HttpMethod.Get, $"{Products}/name-conflict?name=coke%20%20%201l", org);
+        using var hitResponse = await client.SendAsync(hit);
+        hitResponse.EnsureSuccessStatusCode();
+        var hitBody = await hitResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.True(hitBody.GetProperty("isDuplicate").GetBoolean());
+        Assert.True(hitBody.GetProperty("canRevealExisting").GetBoolean());
+        Assert.Equal(product.ProductId, hitBody.GetProperty("existingProduct").GetProperty("productId").GetGuid());
+
+        using var exclude = Scoped(
+            HttpMethod.Get,
+            $"{Products}/name-conflict?name=Coke%201L&excludeProductId={product.ProductId:D}",
+            org);
+        using var excludeResponse = await client.SendAsync(exclude);
+        excludeResponse.EnsureSuccessStatusCode();
+        var excludeBody = await excludeResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.False(excludeBody.GetProperty("isDuplicate").GetBoolean());
+
+        using var createDup = Scoped(HttpMethod.Post, Products, org);
+        createDup.Content = JsonContent.Create(new CreatePosCatalogProductRequest(
+            "  COKE   1L ",
+            "Piece",
+            55m));
+        using var createDupResponse = await client.SendAsync(createDup);
+        Assert.Equal(HttpStatusCode.Conflict, createDupResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.ProductNameConflict, await ReadErrorCodeAsync(createDupResponse));
+
+        var other = await CreateProductAsync(client, org, new CreatePosCatalogProductRequest(
+            "Pepsi 1L",
+            "Piece",
+            40m));
+
+        using var rename = Scoped(HttpMethod.Put, $"{Products}/{other.ProductId:D}", org);
+        rename.Content = JsonContent.Create(new UpdatePosCatalogProductRequest(
+            "coke 1l",
+            other.UnitOfMeasure,
+            other.SellingPrice,
+            other.Description,
+            other.Sku,
+            other.Barcode,
+            other.CategoryId,
+            other.BrandId));
+        using var renameResponse = await client.SendAsync(rename);
+        Assert.Equal(HttpStatusCode.Conflict, renameResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.ProductNameConflict, await ReadErrorCodeAsync(renameResponse));
+    }
+
+    [Fact]
     public async Task Duplicate_sku_and_barcode_conflict_and_stay_reserved_while_inactive()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
@@ -597,11 +661,13 @@ public sealed class PosCatalogApiTests(PosPostgreSqlFixture fixture)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);
+            builder.UseSetting("LocalValidation:Enabled", "false");
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:PosDatabase"] = connectionString
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    ["LocalValidation:Enabled"] = "false"
                 });
             });
         }

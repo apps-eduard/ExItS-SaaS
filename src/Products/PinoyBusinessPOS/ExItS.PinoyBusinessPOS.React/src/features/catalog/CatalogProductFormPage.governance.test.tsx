@@ -62,6 +62,10 @@ vi.mock("@/api/pos/pos-catalog-client", () => ({
   promoteCatalogProduct: (...args: unknown[]) => promoteCatalogProduct(...args),
   getProductBranchAvailability: (...args: unknown[]) => getProductBranchAvailability(...args),
   setBranchProductAvailability: (...args: unknown[]) => setBranchProductAvailability(...args),
+  checkCatalogProductNameConflict: vi.fn().mockResolvedValue({
+    isDuplicate: false,
+    canRevealExisting: false,
+  }),
   deactivateCatalogProduct: vi.fn(),
   reactivateCatalogProduct: vi.fn(),
   uploadCatalogProductImage: vi.fn(),

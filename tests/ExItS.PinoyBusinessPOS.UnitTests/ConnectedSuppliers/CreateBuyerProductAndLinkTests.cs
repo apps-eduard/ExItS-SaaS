@@ -66,6 +66,22 @@ public sealed class CreateBuyerProductAndLinkTests
     }
 
     [Fact]
+    public async Task PNAME_PATH_04_Create_and_link_blocks_exact_normalized_name_duplicate()
+    {
+        var harness = CreateHarness();
+        harness.Products.Seed(Product(Buyer, "Coke 1L", "COKE-EXISTING", UnitOfMeasure.Piece, 50m));
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure, name: "  coke   1l  ", sellingPrice: 55m));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ProductNameConflict, result.ErrorCode);
+        Assert.Equal(0, harness.Products.AddCount);
+    }
+
+    [Fact]
     public async Task Unshared_exposure_fails_before_product_is_added()
     {
         var harness = CreateHarness(includeShare: false);
@@ -350,10 +366,11 @@ public sealed class CreateBuyerProductAndLinkTests
     /// </summary>
     private static CreateBuyerProductAndLinkRequest Request(
         SupplierProductExposure exposure,
-        decimal sellingPrice = 72m) =>
+        decimal sellingPrice = 72m,
+        string? name = null) =>
         new(
             exposure.Id.Value,
-            "Buyer Premium Rice",
+            name ?? "Buyer Premium Rice",
             exposure.UnitOfMeasureCode,
             sellingPrice,
             Sku: $"BUY-{Guid.NewGuid():N}",
@@ -660,6 +677,13 @@ public sealed class CreateBuyerProductAndLinkTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Items.FirstOrDefault(x =>
                 x.OrganizationId == organizationId && x.NormalizedSku == normalizedSku));
+
+        public Task<CatalogProduct?> FindByNormalizedNameAsync(
+            PosOrganizationId organizationId,
+            string normalizedName,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(x =>
+                x.OrganizationId == organizationId && x.NormalizedName == normalizedName));
 
         public Task<CatalogProduct?> FindByBarcodeAsync(
             PosOrganizationId organizationId,

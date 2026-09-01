@@ -228,3 +228,10 @@ export type ProductBranchAvailabilityReadDto = {
   /** Sparse overrides only; merge with Platform Active branches for Standard. */
   explicitRows: ProductBranchOfferingItemDto[];
 };
+
+/** Advisory duplicate-name check (MB2-01C-H1). Server create/update remain authoritative. */
+export type CatalogProductNameConflictDto = {
+  isDuplicate: boolean;
+  canRevealExisting: boolean;
+  existingProduct?: PosCatalogProductDto | null;
+};

@@ -87,6 +87,7 @@ internal static class PosApiResults
             or DomainErrorCodes.CreditDueDateUnchanged
             or ApplicationErrorCodes.CategoryNameConflict
             or ApplicationErrorCodes.BrandNameConflict
+            or ApplicationErrorCodes.ProductNameConflict
             or ApplicationErrorCodes.ProductSkuConflict
             or ApplicationErrorCodes.ProductBarcodeConflict
             or ApplicationErrorCodes.CatalogConcurrencyConflict
