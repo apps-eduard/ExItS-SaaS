@@ -17,6 +17,15 @@
 
 **HARD STOP** before MB2-02B write-path hardening unless explicitly authorized.
 
+### MB2-02A-H1 primary branch legacy stock isolation (delivered)
+
+- Operational branch access remains ACL-filtered via Platform `ListBranches` / `CanAccessBranchAsync`.
+- Structural primary branch id resolves via `GET /api/v1/platform/organizations/{orgId}/primary-branch` (org member, not assignment-filtered).
+- `BranchStockResolver` fails closed when primary is unknown (`primaryBranchId == null` → 0, never org unallocated).
+- Unallocated legacy stock belongs only to the **known** structural Primary branch.
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02A-H1-PRIMARY-BRANCH-LEGACY-STOCK-ISOLATION.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02A-H1-PRIMARY-BRANCH-LEGACY-STOCK-ISOLATION.md)
+
 ---
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 

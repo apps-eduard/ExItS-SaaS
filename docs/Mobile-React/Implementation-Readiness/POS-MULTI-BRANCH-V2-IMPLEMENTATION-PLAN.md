@@ -183,7 +183,9 @@ Then: `NEXT=MB2_02`
 
 **HARD STOP** before MB2-02.
 
-**MB2-02A (read authority):** COMPLETE — see [MB2-02A report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md). **NEXT authorized package:** MB2-02B (write-path hardening).
+**MB2-02A (read authority):** COMPLETE — see [MB2-02A report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md).
+**MB2-02A-H1 (primary legacy isolation):** COMPLETE — see [H1 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-H1-PRIMARY-BRANCH-LEGACY-STOCK-ISOLATION.md).
+**NEXT authorized package:** MB2-02B (write-path hardening).
 
 ---
 
