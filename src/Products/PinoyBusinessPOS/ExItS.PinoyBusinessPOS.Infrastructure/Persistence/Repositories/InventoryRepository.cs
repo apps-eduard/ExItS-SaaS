@@ -392,7 +392,7 @@ internal sealed class InventoryRepository : IInventoryRepository
 
         if (filter.BranchId is Guid branchId && branchId != Guid.Empty)
         {
-            var isPrimary = filter.PrimaryBranchId is null || filter.PrimaryBranchId.Value == branchId;
+            var isPrimary = filter.PrimaryBranchId is not null && filter.PrimaryBranchId.Value == branchId;
             query = isPrimary
                 ? query.Where(m => m.BranchId == null || m.BranchId == branchId)
                 : query.Where(m => m.BranchId == branchId);

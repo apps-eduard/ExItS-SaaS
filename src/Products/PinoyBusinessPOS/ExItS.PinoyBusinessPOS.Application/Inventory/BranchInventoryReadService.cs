@@ -109,8 +109,8 @@ public sealed class BranchInventoryReadService
             return (branchSetting.ReorderLevel, branchSetting.ReorderQuantity);
         }
 
-        var isPrimary = context.PrimaryBranchId is null
-            || context.PrimaryBranchId.Value == context.BranchId;
+        var isPrimary = context.PrimaryBranchId is not null
+            && context.PrimaryBranchId.Value == context.BranchId;
         if (isPrimary)
         {
             return (account.ReorderLevel, account.ReorderQuantity);

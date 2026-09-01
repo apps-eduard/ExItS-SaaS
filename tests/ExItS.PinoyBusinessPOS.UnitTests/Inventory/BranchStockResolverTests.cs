@@ -53,4 +53,55 @@ public sealed class BranchStockResolverTests
         Assert.Equal(0m, created.OnHandQuantity);
         Assert.Same(created, balances[0]);
     }
+
+    [Fact]
+    public void H1_PRIMARY_07_unknown_primary_never_assigns_unallocated_to_secondary()
+    {
+        Assert.Equal(0m, BranchStockResolver.ResolveOnHand(BranchB, primaryBranchId: null, 100m, [], Coke));
+    }
+
+    [Fact]
+    public void H1_PRIMARY_08_unknown_primary_still_returns_explicit_secondary_balance()
+    {
+        var balances = new List<InventoryBranchBalance>
+        {
+            InventoryBranchBalance.Create(Org, BranchB, Coke, 25m, T0)
+        };
+
+        Assert.Equal(25m, BranchStockResolver.ResolveOnHand(BranchB, primaryBranchId: null, 125m, balances, Coke));
+    }
+
+    [Fact]
+    public void H1_PRIMARY_01_main_implicit_legacy_stock_on_known_primary()
+    {
+        Assert.Equal(100m, BranchStockResolver.ResolveOnHand(Main, Main.Value, 100m, [], Coke));
+    }
+
+    [Fact]
+    public void H1_PRIMARY_02_remote_only_actor_sees_zero_without_explicit_balance()
+    {
+        Assert.Equal(0m, BranchStockResolver.ResolveOnHand(BranchB, Main.Value, 100m, [], Coke));
+    }
+
+    [Fact]
+    public void H1_PRIMARY_04_partial_legacy_main_implicit_when_remote_explicit()
+    {
+        var balances = new List<InventoryBranchBalance>
+        {
+            InventoryBranchBalance.Create(Org, BranchB, Coke, 25m, T0)
+        };
+
+        Assert.Equal(100m, BranchStockResolver.ResolveOnHand(Main, Main.Value, 125m, balances, Coke));
+    }
+
+    [Fact]
+    public void H1_PRIMARY_05_remote_explicit_balance()
+    {
+        var balances = new List<InventoryBranchBalance>
+        {
+            InventoryBranchBalance.Create(Org, BranchB, Coke, 25m, T0)
+        };
+
+        Assert.Equal(25m, BranchStockResolver.ResolveOnHand(BranchB, Main.Value, 125m, balances, Coke));
+    }
 }

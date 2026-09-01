@@ -7,7 +7,9 @@ namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 /// <summary>
 /// Resolves sellable on-hand for one branch without cloning organization catalog or
 /// attributing another branch's stock. Missing rows are zero except unallocated org
-/// stock, which stays on the primary/default branch until transferred or received.
+/// stock on the <em>known</em> primary branch until transferred or received.
+/// When <paramref name="primaryBranchId"/> is unknown, fail closed (0) — never treat
+/// an arbitrary branch as primary.
 /// </summary>
 public static class BranchStockResolver
 {
@@ -30,7 +32,12 @@ public static class BranchStockResolver
             .Where(b => b.BranchId != targetBranchId)
             .Sum(b => b.OnHandQuantity);
         var unallocated = Math.Max(0m, organizationOnHand - other);
-        if (primaryBranchId is null || primaryBranchId.Value == targetBranchId.Value)
+        if (primaryBranchId is null)
+        {
+            return 0m;
+        }
+
+        if (primaryBranchId.Value == targetBranchId.Value)
         {
             return unallocated;
         }

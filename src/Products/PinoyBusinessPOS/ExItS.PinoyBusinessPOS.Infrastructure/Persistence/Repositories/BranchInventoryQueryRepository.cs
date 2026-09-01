@@ -75,13 +75,13 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             let unallocated = orgOnHand - otherSum < 0m ? 0m : orgOnHand - otherSum
             let branchOnHand = explicitBal != null
                 ? explicitBal.OnHandQuantity
-                : (primaryBranchId == null || primaryBranchId == branchId ? unallocated : 0m)
+                : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
             let reorderLevel = reorder != null
                 ? reorder.ReorderLevel
-                : (primaryBranchId == null || primaryBranchId == branchId ? a.ReorderLevel : null)
+                : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderLevel : null)
             let reorderQuantity = reorder != null
                 ? reorder.ReorderQuantity
-                : (primaryBranchId == null || primaryBranchId == branchId ? a.ReorderQuantity : null)
+                : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderQuantity : null)
             let isTracked = a != null && a.IsTracked
             select new
             {

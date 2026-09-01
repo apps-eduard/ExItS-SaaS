@@ -8,8 +8,9 @@ using Microsoft.Extensions.Options;
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
 
 /// <summary>
-/// Resolves Platform organization branches for POS transfer authorization. Testing allows any
-/// non-empty branch id so WebApplicationFactory suites do not require a live Platform.
+/// Platform organization branch directory for POS (transfers, inventory context, reporting).
+/// Operational branch existence/active checks use caller-access-filtered branch lists.
+/// <see cref="GetPrimaryBranchIdAsync"/> uses structural primary lookup (not assignment-filtered).
 /// </summary>
 internal sealed class PosOrganizationBranchDirectory(
     HttpClient client,
@@ -186,7 +187,7 @@ internal sealed class PosOrganizationBranchDirectory(
 
         using var platformRequest = new HttpRequestMessage(
             HttpMethod.Get,
-            $"api/v1/platform/organizations/{organizationId:D}/branches");
+            $"api/v1/platform/organizations/{organizationId:D}/primary-branch");
         PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
 
         try
@@ -197,11 +198,10 @@ internal sealed class PosOrganizationBranchDirectory(
                 return null;
             }
 
-            var branches = await response.Content
-                .ReadFromJsonAsync<IReadOnlyList<OrganizationBranchDto>>(JsonOptions, cancellationToken)
-                .ConfigureAwait(false)
-                ?? [];
-            return branches.FirstOrDefault(b => b.IsPrimary)?.Id;
+            var primary = await response.Content
+                .ReadFromJsonAsync<OrganizationPrimaryBranchResponse>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+            return primary?.BranchId;
         }
         catch (HttpRequestException)
         {
@@ -212,4 +212,6 @@ internal sealed class PosOrganizationBranchDirectory(
             return null;
         }
     }
+
+    private sealed record OrganizationPrimaryBranchResponse(Guid BranchId);
 }

@@ -258,7 +258,8 @@ public sealed class InventoryQueryService
     {
         if (movement.BranchId is null)
         {
-            return context.PrimaryBranchId is null || context.PrimaryBranchId.Value == context.BranchId;
+            return context.PrimaryBranchId is not null
+                && context.PrimaryBranchId.Value == context.BranchId;
         }
 
         return movement.BranchId.Value == context.BranchId;

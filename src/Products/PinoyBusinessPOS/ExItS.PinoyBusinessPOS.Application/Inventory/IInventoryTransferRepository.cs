@@ -65,6 +65,9 @@ public interface IOrganizationBranchDirectory
         IReadOnlyCollection<Guid> branchIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Organization structural primary branch id (not staff assignment-filtered).
+    /// </summary>
     Task<Guid?> GetPrimaryBranchIdAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default) =>

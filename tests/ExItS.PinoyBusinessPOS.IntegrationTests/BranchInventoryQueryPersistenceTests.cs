@@ -49,6 +49,32 @@ public sealed class BranchInventoryQueryPersistenceTests(PosPostgreSqlFixture fi
     }
 
     [Fact]
+    public async Task H1_PRIMARY_07_null_primary_remote_sees_zero_not_org_stock()
+    {
+        var options = CreateOptions();
+        await MigrateAsync(options);
+
+        var org = Guid.NewGuid();
+        var product = CatalogProduct.Create(
+            PosOrganizationId.From(org),
+            "Null Primary",
+            UnitOfMeasure.Piece,
+            25m,
+            Now);
+        await SaveProductAsync(options, product);
+        await SeedTrackedAccountAsync(fixture.ConnectionString, org, product.Id.Value, 100m);
+
+        await using var db = new PosDbContext(options);
+        var repo = new BranchInventoryQueryRepository(db);
+        var context = new BranchInventoryContext(org, RemoteBranch, PrimaryBranchId: null, OrganizationGovernance: false);
+        var (items, total) = await repo.ListAsync(context, new BranchInventoryListFilter(), skip: 0, take: 50);
+
+        Assert.Equal(1, total);
+        Assert.Single(items);
+        Assert.Equal(0m, items[0].BranchOnHand);
+    }
+
+    [Fact]
     public async Task BINV_PAGE_02_remote_low_stock_pagination_before_skip_take()
     {
         var options = CreateOptions();

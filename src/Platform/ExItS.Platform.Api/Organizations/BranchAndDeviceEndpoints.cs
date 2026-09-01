@@ -40,6 +40,22 @@ internal static class BranchAndDeviceEndpoints
                 actor,
                 ct).ConfigureAwait(false));
         });
+        root.MapGet("/primary-branch", async (
+            Guid organizationId,
+            GetOrganizationPrimaryBranch useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), ct).ConfigureAwait(false),
+                dto => Results.Ok(dto));
+        });
         root.MapPut("/branch-context", async (
             Guid organizationId,
             SelectBranchContextRequest body,

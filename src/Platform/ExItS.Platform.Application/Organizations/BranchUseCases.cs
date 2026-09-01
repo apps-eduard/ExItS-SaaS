@@ -24,6 +24,8 @@ public sealed record BranchDeliveryPolicyDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record OrganizationPrimaryBranchDto(Guid BranchId);
+
 public sealed record OrganizationBranchDto(
     Guid Id,
     Guid OrganizationId,
@@ -169,6 +171,31 @@ public sealed record DeliveryFeePreviewDto(
     bool FreeDeliveryApplied,
     bool Available,
     string? UnavailableReason = null);
+
+/// <summary>
+/// Returns the organization's structural primary branch id for inventory/reconciliation metadata.
+/// Does not apply staff branch-assignment filtering (MB2-02A-H1).
+/// </summary>
+public sealed class GetOrganizationPrimaryBranch(IOrganizationBranchRepository branches)
+{
+    public async Task<ApplicationResult<OrganizationPrimaryBranchDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var primary = await branches
+            .GetPrimaryAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (primary is null)
+        {
+            return ApplicationResult<OrganizationPrimaryBranchDto>.Failure(
+                ApplicationErrorCodes.BranchNotFound,
+                "The organization has no primary branch configured.");
+        }
+
+        return ApplicationResult<OrganizationPrimaryBranchDto>.Success(
+            new OrganizationPrimaryBranchDto(primary.Id.Value));
+    }
+}
 
 public sealed class ListBranches(
     IOrganizationBranchRepository branches,
