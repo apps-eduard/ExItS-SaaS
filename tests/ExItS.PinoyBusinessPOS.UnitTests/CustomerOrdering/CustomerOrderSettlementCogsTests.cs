@@ -423,8 +423,7 @@ public sealed class CustomerOrderSettlementCogsTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<POSCustomer>, int)>(([_customer], 1));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(

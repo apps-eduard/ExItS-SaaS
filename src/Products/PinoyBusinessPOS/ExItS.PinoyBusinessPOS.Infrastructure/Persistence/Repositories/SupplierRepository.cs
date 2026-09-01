@@ -37,10 +37,21 @@ internal sealed class SupplierRepository : ISupplierRepository
         SupplierFilter filter,
         int skip,
         int take,
+        IReadOnlyCollection<Guid>? restrictToSupplierIds = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Suppliers.AsNoTracking()
             .Where(s => s.OrganizationId == organizationId.Value);
+
+        if (restrictToSupplierIds is not null)
+        {
+            if (restrictToSupplierIds.Count == 0)
+            {
+                return ([], 0);
+            }
+
+            query = query.Where(s => restrictToSupplierIds.Contains(s.Id));
+        }
 
         if (filter.Status is not null)
         {

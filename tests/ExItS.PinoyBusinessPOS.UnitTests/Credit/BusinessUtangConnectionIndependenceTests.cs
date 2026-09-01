@@ -224,8 +224,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -237,7 +236,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,

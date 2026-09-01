@@ -40,6 +40,7 @@ public interface IPOSCustomerRepository
         string? search,
         int skip,
         int take,
+        IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(

@@ -33,6 +33,8 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Parties;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -47,6 +49,8 @@ public sealed class PosDbContext : DbContext
     }
 
     internal DbSet<POSCustomerRecord> Customers => Set<POSCustomerRecord>();
+    internal DbSet<CustomerBranchAccessRecord> CustomerBranchAccess => Set<CustomerBranchAccessRecord>();
+    internal DbSet<SupplierBranchAccessRecord> SupplierBranchAccess => Set<SupplierBranchAccessRecord>();
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
@@ -202,6 +206,38 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => e.OrganizationId)
                 .HasDatabaseName("ix_customers_organization_id");
+        });
+
+        modelBuilder.Entity<CustomerBranchAccessRecord>(entity =>
+        {
+            entity.ToTable("customer_branch_access", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_customer_branch_access_grant_source",
+                    "grant_source IN ('ExplicitAssign', 'CreateAtBranch', 'Transaction', 'SetupCopy', 'MigrationBackfill')");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.CustomerId })
+                .HasName("pk_customer_branch_access");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.GrantSource)
+                .HasColumnName("grant_source")
+                .HasMaxLength(PartyBranchGrantSources.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.GrantedByActorId).HasColumnName("granted_by_actor_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_customer_branch_access_org_branch");
+
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.CustomerId, e.OrganizationId })
+                .HasPrincipalKey(c => new { c.Id, c.OrganizationId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_customer_branch_access_customers");
         });
 
         modelBuilder.Entity<CreditEntryRecord>(entity =>
@@ -3654,6 +3690,38 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.NormalizedTaxOrRegistrationNumber })
                 .HasDatabaseName("ix_suppliers_org_normalized_tax")
                 .HasFilter("normalized_tax_or_registration_number IS NOT NULL");
+        });
+
+        modelBuilder.Entity<SupplierBranchAccessRecord>(entity =>
+        {
+            entity.ToTable("supplier_branch_access", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_supplier_branch_access_grant_source",
+                    "grant_source IN ('ExplicitAssign', 'CreateAtBranch', 'Transaction', 'SetupCopy', 'MigrationBackfill')");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.SupplierId })
+                .HasName("pk_supplier_branch_access");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.GrantSource)
+                .HasColumnName("grant_source")
+                .HasMaxLength(PartyBranchGrantSources.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.GrantedAtUtc).HasColumnName("granted_at_utc");
+            entity.Property(e => e.GrantedByActorId).HasColumnName("granted_by_actor_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_supplier_branch_access_org_branch");
+
+            entity.HasOne<SupplierRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.SupplierId, e.OrganizationId })
+                .HasPrincipalKey(s => new { s.Id, s.OrganizationId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_supplier_branch_access_suppliers");
         });
 
         modelBuilder.Entity<SupplierCodeSequenceRecord>(entity =>

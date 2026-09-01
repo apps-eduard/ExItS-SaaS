@@ -102,8 +102,7 @@ public sealed class RequestConnectionBusinessQrTests
             PosOrganizationId organizationId,
             SupplierFilter filter,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
+            int take, IReadOnlyCollection<Guid>? restrictToSupplierIds = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<Supplier>, int)>(([], 0));
 
         public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default) =>

@@ -95,12 +95,12 @@ public sealed class WriteOffUseCaseTests
             Task.FromResult(0);
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, CancellationToken cancellationToken = default) =>
+            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(((IReadOnlyList<POSCustomer>)Array.Empty<POSCustomer>(), 0));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
             PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take, CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId, IReadOnlyCollection<POSCustomerId> customerIds, CancellationToken cancellationToken = default) =>

@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
@@ -15,6 +16,7 @@ using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -288,6 +290,7 @@ public sealed class CheckoutSale
     private readonly IClock _clock;
     private readonly ICatalogProductAvailabilityResolver? _availability;
     private readonly IEffectivePriceResolver? _effectivePrices;
+    private readonly PartyBranchAccessService? _branchAccess;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -304,7 +307,8 @@ public sealed class CheckoutSale
         InventoryCostResolver costResolver,
         IClock clock,
         ICatalogProductAvailabilityResolver? availability = null,
-        IEffectivePriceResolver? effectivePrices = null)
+        IEffectivePriceResolver? effectivePrices = null,
+        PartyBranchAccessService? branchAccess = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -321,6 +325,7 @@ public sealed class CheckoutSale
         _clock = clock;
         _availability = availability;
         _effectivePrices = effectivePrices;
+        _branchAccess = branchAccess;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -648,6 +653,21 @@ public sealed class CheckoutSale
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
+
+            if (_branchAccess is not null
+                && sale.CustomerId is not null
+                && sale.BranchId is not null)
+            {
+                await _branchAccess
+                    .GrantCustomerAccessAsync(
+                        organizationId,
+                        sale.BranchId.Value,
+                        sale.CustomerId.Value,
+                        PartyBranchGrantSource.Transaction,
+                        actorId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             return ApplicationResult<Sale>.Success(sale);
         }

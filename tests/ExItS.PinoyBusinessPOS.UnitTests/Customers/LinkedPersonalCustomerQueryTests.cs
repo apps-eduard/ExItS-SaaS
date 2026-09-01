@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Customers;
 
@@ -13,7 +14,8 @@ public sealed class LinkedPersonalCustomerQueryTests
         var orgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         var publicId = "EX-4827-1936";
         var repo = new LinkedPersonalInMemoryCustomerRepository();
-        var queries = new POSCustomerQueryService(repo);
+        var (service, actor) = PartyBranchAccessTestSupport.Create();
+        var queries = new POSCustomerQueryService(repo, service, actor);
 
         var now = DateTimeOffset.Parse("2026-08-01T00:00:00Z");
         var active = POSCustomer.Create(
@@ -106,8 +108,7 @@ public sealed class LinkedPersonalCustomerQueryTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(((IReadOnlyList<POSCustomer>)Array.Empty<POSCustomer>(), 0));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(

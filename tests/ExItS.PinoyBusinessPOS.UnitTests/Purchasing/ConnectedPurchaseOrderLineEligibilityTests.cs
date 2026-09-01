@@ -621,7 +621,7 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
             Task.FromResult<Supplier?>(null);
         public Task<Supplier?> GetByIdAsync(PosOrganizationId organizationId, SupplierId supplierId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.FirstOrDefault(x => x.OrganizationId == organizationId && x.Id == supplierId));
-        public Task<(IReadOnlyList<Supplier> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, SupplierFilter filter, int skip, int take, CancellationToken cancellationToken = default) =>
+        public Task<(IReadOnlyList<Supplier> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, SupplierFilter filter, int skip, int take, IReadOnlyCollection<Guid>? restrictToSupplierIds = null, CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<Supplier>, int)>((_items.Where(x => x.OrganizationId == organizationId).ToList(), _items.Count));
         public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default) => Task.CompletedTask;
 

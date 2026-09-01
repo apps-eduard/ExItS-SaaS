@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Onboarding;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
@@ -50,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<ICatalogProductRepository, CatalogProductRepository>();
         services.AddScoped<IBranchProductAvailabilityRepository, BranchProductAvailabilityRepository>();
         services.AddScoped<IBranchProductPriceOverrideRepository, BranchProductPriceOverrideRepository>();
+        services.AddScoped<ICustomerBranchAccessRepository, CustomerBranchAccessRepository>();
+        services.AddScoped<ISupplierBranchAccessRepository, SupplierBranchAccessRepository>();
         services.AddScoped<ICatalogProductUnitRepository, CatalogProductUnitRepository>();
         services.AddScoped<ICatalogProductImageRepository, CatalogProductImageRepository>();
         services.Configure<ProductImageStorageOptions>(config.GetSection(ProductImageStorageOptions.SectionName));

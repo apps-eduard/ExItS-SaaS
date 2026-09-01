@@ -11,6 +11,9 @@ public static class ApplicationErrorCodes
     public const string PlatformBusinessCustomerCorrelationConflict =
         "pos.customer.platform_business_customer.correlation_conflict";
     public const string CustomerConcurrencyConflict = "pos.customer.concurrency_conflict";
+    public const string CustomerBranchAccessForbidden = "pos.customer.branch_access_forbidden";
+    public const string SupplierBranchAccessForbidden = "pos.supplier.branch_access_forbidden";
+    public const string PartyActingBranchRequired = "pos.party.acting_branch_required";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
     public const string RepaymentNotFound = "pos.repayment.not_found";
     public const string WriteOffNotFound = "pos.write_off.not_found";

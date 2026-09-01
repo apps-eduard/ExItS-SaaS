@@ -100,10 +100,21 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         string? search,
         int skip,
         int take,
+        IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Customers.AsNoTracking()
             .Where(c => c.OrganizationId == organizationId.Value);
+
+        if (restrictToCustomerIds is not null)
+        {
+            if (restrictToCustomerIds.Count == 0)
+            {
+                return ([], 0);
+            }
+
+            query = query.Where(c => restrictToCustomerIds.Contains(c.Id));
+        }
 
         if (status is not null)
         {

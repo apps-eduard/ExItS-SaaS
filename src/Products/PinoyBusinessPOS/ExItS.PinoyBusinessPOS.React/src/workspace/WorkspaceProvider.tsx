@@ -812,6 +812,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setFailureDiagnostic(null);
       setStatus("bound");
 
+      if (previousBranchId && previousBranchId !== destination.branchId) {
+        void queryClient.invalidateQueries({ queryKey: ["customers"] });
+        void queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      }
+
       const hydratedDevice = await hydratePosDeviceContext({
         organizationId: destination.organizationId,
         branchId: destination.branchId,

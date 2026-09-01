@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Customers;
 
@@ -211,7 +212,8 @@ public sealed class LinkedCustomerAuthorizationUseCaseTests
     public async Task Create_still_rejects_duplicate_correlation()
     {
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(T0));
+        var (service, actor) = PartyBranchAccessTestSupport.Create();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(T0), service, actor);
         Assert.True((await create.ExecuteAsync(OrgA, "One", null, null, null, platformBusinessCustomerId: PlatformCustomer)).IsSuccess);
         var second = await create.ExecuteAsync(OrgA, "Two", null, null, null, platformBusinessCustomerId: PlatformCustomer);
         Assert.False(second.IsSuccess);
@@ -320,8 +322,7 @@ public sealed class LinkedCustomerAuthorizationUseCaseTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -333,7 +334,7 @@ public sealed class LinkedCustomerAuthorizationUseCaseTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,

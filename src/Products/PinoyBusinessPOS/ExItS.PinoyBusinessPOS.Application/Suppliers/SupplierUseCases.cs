@@ -1,9 +1,11 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Application.Suppliers;
@@ -88,8 +90,20 @@ public static class SupplierMapper
 public sealed class SupplierQueryService
 {
     private readonly ISupplierRepository _suppliers;
+    private readonly PartyBranchAccessService _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor _actorAccessor;
 
-    public SupplierQueryService(ISupplierRepository suppliers) => _suppliers = suppliers;
+    public SupplierQueryService(
+        ISupplierRepository suppliers,
+        PartyBranchAccessService branchAccess,
+        IPartyBranchAccessActorAccessor actorAccessor)
+    {
+        _suppliers = suppliers;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
+    }
+
+    private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
 
     public async Task<PosSupplierDto?> GetByIdAsync(
         Guid organizationId,
@@ -99,7 +113,22 @@ public sealed class SupplierQueryService
         var supplier = await _suppliers
             .GetByIdAsync(PosOrganizationId.From(organizationId), SupplierId.From(supplierId), cancellationToken)
             .ConfigureAwait(false);
-        return supplier is null ? null : SupplierMapper.Map(supplier);
+        if (supplier is null)
+        {
+            return null;
+        }
+
+        if (!await _branchAccess.EnsureCanViewSupplierOrNotFoundAsync(
+                organizationId,
+                supplierId,
+                Actor,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return SupplierMapper.Map(supplier);
     }
 
     public async Task<PagedResult<PosSupplierDto>> ListAsync(
@@ -110,8 +139,11 @@ public sealed class SupplierQueryService
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var restrict = await _branchAccess
+            .FilterSupplierIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+            .ConfigureAwait(false);
         var (items, total) = await _suppliers
-            .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, cancellationToken)
+            .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, restrict, cancellationToken)
             .ConfigureAwait(false);
         return new PagedResult<PosSupplierDto>(
             items.Select(SupplierMapper.Map).ToList(),
@@ -191,17 +223,23 @@ public sealed class CreateSupplier
     private readonly ISupplierRepository _suppliers;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly PartyBranchAccessService _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor _actorAccessor;
     private readonly TimeProvider _clock;
 
     public CreateSupplier(
         ISupplierRepository suppliers,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
+        PartyBranchAccessService branchAccess,
+        IPartyBranchAccessActorAccessor actorAccessor,
         TimeProvider? clock = null)
     {
         _suppliers = suppliers;
         _unitOfWork = unitOfWork;
         _access = access;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -253,7 +291,24 @@ public sealed class CreateSupplier
                 request.Notes);
 
             await _suppliers.AddAsync(supplier, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            var actor = _actorAccessor.GetActor();
+            if (actor.ActingBranchId is Guid branchId && branchId != Guid.Empty)
+            {
+                await _branchAccess.GrantSupplierAccessAsync(
+                        organizationId,
+                        branchId,
+                        supplier.Id.Value,
+                        PartyBranchGrantSource.CreateAtBranch,
+                        grantedByActorId: null,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             return ApplicationResult<PosSupplierDto>.Success(SupplierMapper.Map(supplier));
         }
         catch (DomainException ex)

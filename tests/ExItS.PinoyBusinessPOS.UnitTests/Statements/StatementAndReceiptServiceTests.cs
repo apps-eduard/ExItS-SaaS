@@ -204,8 +204,7 @@ public sealed class StatementAndReceiptServiceTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
         {
             var q = _items.Values.Where(c => c.OrganizationId == organizationId);
             if (status is not null)
@@ -223,7 +222,7 @@ public sealed class StatementAndReceiptServiceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,

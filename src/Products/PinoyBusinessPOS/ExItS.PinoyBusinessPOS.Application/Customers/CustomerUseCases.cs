@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 
 namespace ExItS.PinoyBusinessPOS.Application.Customers;
 
@@ -30,8 +32,20 @@ public sealed record CustomerSyncPageDto(
 public sealed class POSCustomerQueryService
 {
     private readonly IPOSCustomerRepository _customers;
+    private readonly PartyBranchAccessService _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor _actorAccessor;
 
-    public POSCustomerQueryService(IPOSCustomerRepository customers) => _customers = customers;
+    public POSCustomerQueryService(
+        IPOSCustomerRepository customers,
+        PartyBranchAccessService branchAccess,
+        IPartyBranchAccessActorAccessor actorAccessor)
+    {
+        _customers = customers;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
+    }
+
+    private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
 
     public async Task<POSCustomerDto?> GetByIdAsync(
         Guid organizationId,
@@ -41,7 +55,22 @@ public sealed class POSCustomerQueryService
         var customer = await _customers
             .GetByIdAsync(PosOrganizationId.From(organizationId), POSCustomerId.From(customerId), cancellationToken)
             .ConfigureAwait(false);
-        return customer is null ? null : Map(customer);
+        if (customer is null)
+        {
+            return null;
+        }
+
+        if (!await _branchAccess.EnsureCanViewCustomerOrNotFoundAsync(
+                organizationId,
+                customerId,
+                Actor,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return Map(customer);
     }
 
     public async Task<POSCustomerDto?> GetByPlatformBusinessCustomerIdAsync(
@@ -60,7 +89,22 @@ public sealed class POSCustomerQueryService
                 platformBusinessCustomerId,
                 cancellationToken)
             .ConfigureAwait(false);
-        return customer is null ? null : Map(customer);
+        if (customer is null)
+        {
+            return null;
+        }
+
+        if (!await _branchAccess.EnsureCanViewCustomerOrNotFoundAsync(
+                organizationId,
+                customer.Id.Value,
+                Actor,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return Map(customer);
     }
 
     /// <summary>
@@ -87,6 +131,16 @@ public sealed class POSCustomerQueryService
             return null;
         }
 
+        if (!await _branchAccess.EnsureCanViewCustomerOrNotFoundAsync(
+                organizationId,
+                customer.Id.Value,
+                Actor,
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return null;
+        }
+
         return new CheckoutCustomerSearchItemDto(
             customer.Id.Value,
             customer.DisplayName,
@@ -103,8 +157,11 @@ public sealed class POSCustomerQueryService
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var restrict = await _branchAccess
+            .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+            .ConfigureAwait(false);
         var (items, total) = await _customers
-            .ListAsync(PosOrganizationId.From(organizationId), status, search, skip, take, cancellationToken)
+            .ListAsync(PosOrganizationId.From(organizationId), status, search, skip, take, restrict, cancellationToken)
             .ConfigureAwait(false);
 
         return new PagedResult<POSCustomerDto>(
@@ -127,6 +184,9 @@ public sealed class POSCustomerQueryService
         var take = Math.Clamp(pageSize ?? 20, 1, 20);
         var pageNumber = Math.Max(page ?? 1, 1);
         var skip = (pageNumber - 1) * take;
+        var restrict = await _branchAccess
+            .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+            .ConfigureAwait(false);
         var (items, total) = await _customers
             .ListAsync(
                 PosOrganizationId.From(organizationId),
@@ -134,6 +194,7 @@ public sealed class POSCustomerQueryService
                 search,
                 skip,
                 take,
+                restrict,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -190,12 +251,21 @@ public sealed class CreatePOSCustomer
     private readonly IPOSCustomerRepository _customers;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly PartyBranchAccessService _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor _actorAccessor;
 
-    public CreatePOSCustomer(IPOSCustomerRepository customers, IPosUnitOfWork unitOfWork, IClock clock)
+    public CreatePOSCustomer(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock,
+        PartyBranchAccessService branchAccess,
+        IPartyBranchAccessActorAccessor actorAccessor)
     {
         _customers = customers;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
@@ -278,7 +348,7 @@ public sealed class CreatePOSCustomer
 
                 var notesTag = "exits-id:" + customer.LinkedPersonalPublicUserId;
                 var (searchHits, _) = await _customers
-                    .ListAsync(orgId, CustomerStatus.Active, customer.LinkedPersonalPublicUserId, 0, 20, cancellationToken)
+                    .ListAsync(orgId, CustomerStatus.Active, customer.LinkedPersonalPublicUserId, 0, 20, null, cancellationToken)
                     .ConfigureAwait(false);
                 if (searchHits.Any(c =>
                     string.Equals(
@@ -308,7 +378,24 @@ public sealed class CreatePOSCustomer
             }
 
             await _customers.AddAsync(customer, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            var actor = _actorAccessor.GetActor();
+            if (actor.ActingBranchId is Guid branchId && branchId != Guid.Empty)
+            {
+                await _branchAccess.GrantCustomerAccessAsync(
+                        organizationId,
+                        branchId,
+                        customer.Id.Value,
+                        PartyBranchGrantSource.CreateAtBranch,
+                        grantedByActorId: null,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             return ApplicationResult<POSCustomer>.Success(customer);
         }
         catch (DomainException ex)

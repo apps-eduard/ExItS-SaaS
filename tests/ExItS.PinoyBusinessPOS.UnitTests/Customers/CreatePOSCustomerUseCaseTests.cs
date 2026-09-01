@@ -3,18 +3,31 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Customers;
 
 public sealed class CreatePOSCustomerUseCaseTests
 {
+    private static CreatePOSCustomer CreateUseCase(InMemoryCustomerRepository repo, IClock clock)
+    {
+        var (service, actor) = PartyBranchAccessTestSupport.Create();
+        return new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), clock, service, actor);
+    }
+
+    private static POSCustomerQueryService CreateQueries(InMemoryCustomerRepository repo)
+    {
+        var (service, actor) = PartyBranchAccessTestSupport.Create();
+        return new POSCustomerQueryService(repo, service, actor);
+    }
+
     [Fact]
     public async Task Create_rejects_duplicate_active_mobile_in_same_organization()
     {
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var repo = new InMemoryCustomerRepository();
         var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), clock);
+        var create = CreateUseCase(repo, clock);
 
         var first = await create.ExecuteAsync(org, "One", "09171234567", null, null);
         Assert.True(first.IsSuccess);
@@ -30,7 +43,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var clientId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         var result = await create.ExecuteAsync(org, "Client Id Customer", "09170001111", "Addr", "Notes", clientId);
         Assert.True(result.IsSuccess);
@@ -43,7 +56,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var repo = new InMemoryCustomerRepository();
         var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), clock);
+        var create = CreateUseCase(repo, clock);
         var update = new UpdatePOSCustomer(repo, new ImmediateUnitOfWork(), clock);
 
         var created = await create.ExecuteAsync(org, "Original", "09175556666", null, null);
@@ -69,7 +82,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var orgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var orgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         Assert.True((await create.ExecuteAsync(orgA, "A", "09171234567", null, null)).IsSuccess);
         Assert.True((await create.ExecuteAsync(orgB, "B", "09171234567", null, null)).IsSuccess);
@@ -81,7 +94,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         var first = await create.ExecuteAsync(org, "One", null, null, null, platformBusinessCustomerId: platformId);
         Assert.True(first.IsSuccess);
@@ -98,7 +111,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var orgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         Assert.True((await create.ExecuteAsync(orgA, "A", null, null, null, platformBusinessCustomerId: platformId)).IsSuccess);
         Assert.True((await create.ExecuteAsync(orgB, "B", null, null, null, platformBusinessCustomerId: platformId)).IsSuccess);
@@ -109,7 +122,7 @@ public sealed class CreatePOSCustomerUseCaseTests
     {
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         var first = await create.ExecuteAsync(org, "One", null, null, null, linkedPersonalPublicUserId: "EX-4827-1936");
         Assert.True(first.IsSuccess);
@@ -125,7 +138,7 @@ public sealed class CreatePOSCustomerUseCaseTests
     {
         var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var repo = new InMemoryCustomerRepository();
-        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+        var create = CreateUseCase(repo, new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
 
         var legacy = await create.ExecuteAsync(org, "Eduardo", null, null, "exits-id:EX-4827-1936");
         Assert.True(legacy.IsSuccess);
@@ -145,7 +158,7 @@ public sealed class CreatePOSCustomerUseCaseTests
         var repo = new InMemoryCustomerRepository();
         var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
         var uow = new ImmediateUnitOfWork();
-        var create = new CreatePOSCustomer(repo, uow, clock);
+        var create = CreateUseCase(repo, clock);
         var correlate = new CorrelatePOSCustomerToPlatformBusinessCustomer(repo, uow, clock);
 
         var first = await create.ExecuteAsync(org, "One", null, null, null);
@@ -176,9 +189,9 @@ public sealed class CreatePOSCustomerUseCaseTests
         var repo = new InMemoryCustomerRepository();
         var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
         var uow = new ImmediateUnitOfWork();
-        var create = new CreatePOSCustomer(repo, uow, clock);
+        var create = CreateUseCase(repo, clock);
         var clear = new ClearPOSCustomerPlatformCorrelation(repo, uow, clock);
-        var queries = new POSCustomerQueryService(repo);
+        var queries = CreateQueries(repo);
 
         var created = await create.ExecuteAsync(orgA, "Rosa", null, null, null, platformBusinessCustomerId: platformId);
         Assert.True(created.IsSuccess);
@@ -262,8 +275,7 @@ public sealed class CreatePOSCustomerUseCaseTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
         {
             var query = _items.Where(c => c.OrganizationId == organizationId);
             if (status is not null)

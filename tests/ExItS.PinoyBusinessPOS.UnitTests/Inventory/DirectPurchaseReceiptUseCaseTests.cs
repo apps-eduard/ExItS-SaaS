@@ -444,8 +444,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             PosOrganizationId organizationId,
             SupplierFilter filter,
             int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
+            int take, IReadOnlyCollection<Guid>? restrictToSupplierIds = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
         public Task<Supplier?> FindActiveByNormalizedNameAsync(PosOrganizationId organizationId, string normalizedName, CancellationToken cancellationToken = default) =>

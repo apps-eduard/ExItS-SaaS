@@ -603,7 +603,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
                 c.OrganizationId == organizationId && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, CancellationToken cancellationToken = default)
+            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -611,7 +611,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
             PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take, CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId, IReadOnlyCollection<POSCustomerId> customerIds, CancellationToken cancellationToken = default)

@@ -2,12 +2,14 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
@@ -101,6 +103,7 @@ public sealed class PlaceCustomerOrder
     private readonly IClock _clock;
     private readonly ICatalogProductAvailabilityResolver? _availability;
     private readonly IEffectivePriceResolver? _effectivePrices;
+    private readonly PartyBranchAccessService? _branchAccess;
 
     public PlaceCustomerOrder(
         ICustomerOrderRepository orders,
@@ -113,7 +116,8 @@ public sealed class PlaceCustomerOrder
         ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null,
         IPOSCustomerRepository? customers = null,
         ICatalogProductAvailabilityResolver? availability = null,
-        IEffectivePriceResolver? effectivePrices = null)
+        IEffectivePriceResolver? effectivePrices = null,
+        PartyBranchAccessService? branchAccess = null)
     {
         _orders = orders;
         _products = products;
@@ -126,6 +130,7 @@ public sealed class PlaceCustomerOrder
         _customers = customers;
         _availability = availability;
         _effectivePrices = effectivePrices;
+        _branchAccess = branchAccess;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -411,6 +416,37 @@ public sealed class PlaceCustomerOrder
                         $"{created.OrderNumber} was submitted.",
                         cancellationToken)
                     .ConfigureAwait(false);
+            }
+
+            if (_branchAccess is not null && _customers is not null)
+            {
+                POSCustomer? posCustomer = null;
+                if (platformBusinessCustomerId is Guid pbcId)
+                {
+                    posCustomer = await _customers
+                        .FindByPlatformBusinessCustomerIdAsync(orgId, pbcId, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else if (partyType == CustomerPartyType.Organization
+                    && request.CustomerBuyerOrganizationId is Guid buyerOrgId)
+                {
+                    posCustomer = await _customers
+                        .FindByLinkedBuyerOrganizationIdAsync(orgId, buyerOrgId, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                if (posCustomer is not null)
+                {
+                    await _branchAccess
+                        .GrantCustomerAccessAsync(
+                            sellerOrganizationId,
+                            request.FulfillmentBranchId,
+                            posCustomer.Id.Value,
+                            PartyBranchGrantSource.Transaction,
+                            actorId,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
 
             return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(created));
