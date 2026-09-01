@@ -24,6 +24,7 @@ public interface ISupplierRepository
         SupplierFilter filter,
         int skip,
         int take,
+        IReadOnlyCollection<Guid>? restrictToSupplierIds = null,
         CancellationToken cancellationToken = default);
 
     Task<Supplier?> FindActiveByNormalizedNameAsync(
