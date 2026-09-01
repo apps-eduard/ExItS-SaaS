@@ -1,7 +1,7 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX; MB2-01C-H1 COMPLETE_VALIDATED_PRODUCT_IDENTITY (pending validation) — TARGET remaining for 01D
+**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX; MB2-01C-H1 COMPLETE_VALIDATED_PRODUCT_IDENTITY; **MB2-01D COMPLETE_VALIDATED_BASELINE** — **MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE**; NEXT=MB2-02
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01C-H1 → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
@@ -10,6 +10,7 @@
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
 **01C report:** [POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md)
 **01C-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md)
+**01D report:** [POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md)
 
 ---
 
@@ -37,7 +38,8 @@
   - Unique index + create/rename/import/Connected Supplier guards; advisory name-conflict API.
   - React: no Create anyway; foreign Local privacy; identity mutations ONLINE_REQUIRED.
   - `OFFLINE_PRODUCT_DRAFT=DEFERRED`; `PRODUCT_MERGE=NO`.
-- **Not yet:** MB2-01D closure validation, branch inventory (MB2-02), branch pricing (MB2-03).
+- **MB2-01D final closure:** PGA-HARD-PAGE PostgreSQL pagination proof; H1 test-fixture repairs (`normalized_name` SQL, LocalValidation disable); React suite green; **MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE**.
+- **Not yet:** branch inventory (MB2-02), branch pricing (MB2-03).
 
 ---
 

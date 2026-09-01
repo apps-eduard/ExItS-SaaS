@@ -8,7 +8,10 @@
 **MB2-01B-H1 status:** COMPLETE_VALIDATED
 **MB2-01C status:** COMPLETE_VALIDATED_UX
 **MB2-01C-H1 status:** COMPLETE_VALIDATED_PRODUCT_IDENTITY
-**HARD STOP:** Do not start MB2-01D until explicitly authorized as a separate task.
+**MB2-01D status:** COMPLETE_VALIDATED_BASELINE
+**MB2_01_STATUS:** COMPLETE_VALIDATED_BASELINE
+**HARD STOP:** Do not start MB2-02 until explicitly authorized as a separate task.
+**01D report:** [POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md)
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
@@ -30,7 +33,7 @@ MB2-01C Product Governance React UX
   ↓
 MB2-01C-H1 Strong Product Duplicate Identity
   ↓
-MB2-01D Product Governance Validation Closure
+MB2-01D Product Governance Validation Closure ★ COMPLETE_VALIDATED_BASELINE
   ↓
 MB2-02 → MB2-03 → MB2-04 → MB2-05 → MB2-06 → MB2-07
 ```
@@ -166,15 +169,19 @@ Responsive 360 / 768 / 1024 / 1440; full i18n.
 
 ## MB2-01D — Product Governance Validation Closure
 
-**Scope:** PRODUCT-01…06; API/integration; architecture/security; migration apply; React; Playwright; responsive; duplicate barcode/SKU; availability bypass; cross-branch Local access; promotion identity/history; Sell/storefront/order regression; typecheck/lint/build; full affected suites; report; authoritative CURRENT/TARGET update.
+**Status:** COMPLETE_VALIDATED_BASELINE
 
-Only MB2-01D may declare:
+**Scope delivered:** PRODUCT-01…06 validation; PGA-HARD-PAGE PostgreSQL pagination proof; migration/API/React/offline identity locks; regression fixes for H1 fixtures; authoritative status update.
+
+Declared:
 
 `MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE`
 
 Then: `NEXT=MB2_02`
 
-**MB2_01D_READY:** YES (after 01C-H1)
+**Report:** [POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md)
+
+**HARD STOP** before MB2-02.
 
 ---
 
@@ -265,4 +272,4 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_01D`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-01D until after MB2-01C-H1 and explicit authorization.
+**NEXT=`MB2_02`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-02 in this package.
