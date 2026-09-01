@@ -486,6 +486,8 @@ app.MapSaleEndpoints();
 app.MapOfflinePriceAuthorityEndpoints();
 app.MapOfflineOperatingGrantEndpoints();
 app.MapOperationalBranchEndpoints();
+app.MapBranchReadinessEndpoints();
+app.MapPartyBranchAccessEndpoints();
 app.MapCustomerOrderEndpoints();
 app.MapSaleReturnEndpoints();
 app.MapInventoryEndpoints();
