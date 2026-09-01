@@ -3,7 +3,21 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-02
+**Implements in:** MB2-02 (02A read authority delivered; 02B writes deferred)
+
+### MB2-02A read authority (delivered)
+
+- Normal workspace inventory APIs require selected branch (`X-Pos-Branch-Id` / workspace scope).
+- `onHandQuantity` = branch on-hand via `BranchStockResolver` (no org aggregate mislabel).
+- `InventoryBranchReorderSetting` per `(OrganizationId, BranchId, ProductId)`; primary legacy reorder fallback from org account only.
+- Low-stock and reorder-suggestion pagination filters branch membership in SQL before `Count`/`Skip`/`Take`.
+- Reconciliation endpoint returns explicit org aggregate fields (not branch `onHandQuantity`).
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md)
+
+**HARD STOP** before MB2-02B write-path hardening unless explicitly authorized.
+
+---
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---

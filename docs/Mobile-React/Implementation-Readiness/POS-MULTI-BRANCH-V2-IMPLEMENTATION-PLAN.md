@@ -183,6 +183,8 @@ Then: `NEXT=MB2_02`
 
 **HARD STOP** before MB2-02.
 
+**MB2-02A (read authority):** COMPLETE — see [MB2-02A report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md). **NEXT authorized package:** MB2-02B (write-path hardening).
+
 ---
 
 ## MB2-02 — Branch Inventory Authority Hardening
@@ -272,4 +274,4 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_02`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-02 in this package.
+**NEXT=`MB2_02B`** — branch inventory write-path hardening (explicit authorization required). MB2-02A read authority is complete on `feat/organization`.
