@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -12,6 +13,7 @@ public sealed class PurchaseOrderDomainTests
     private static readonly Guid ProductA = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     private static readonly Guid ProductB = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid SupplierA = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid ReceivingBranch = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     private static readonly DateTimeOffset Now = new(2026, 7, 31, 0, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -119,7 +121,8 @@ public sealed class PurchaseOrderDomainTests
             po,
             [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 4m)],
             Guid.NewGuid(),
-            Now);
+            Now,
+            receivingBranchId: PosBranchId.From(ReceivingBranch));
         Assert.Single(grn.Lines);
         Assert.Equal(SupplierA, grn.SupplierId.Value);
         Assert.Equal(4m, grn.Lines.Single().QuantityReceived);

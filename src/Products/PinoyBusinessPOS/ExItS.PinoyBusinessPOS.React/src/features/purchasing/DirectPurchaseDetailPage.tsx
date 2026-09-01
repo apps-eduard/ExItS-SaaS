@@ -26,7 +26,7 @@ export function DirectPurchaseDetailPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const { receiptId } = useParams<{ receiptId: string }>();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const queryClient = useQueryClient();
   const allowManage = canManageInventory(sessionGrant);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +71,14 @@ export function DirectPurchaseDetailPage() {
   }
 
   const receipt = query.data;
+  const receivingBranchName = (() => {
+    if (!receipt.receivingBranchId) {
+      return null;
+    }
+    const org = workspaces.find((item) => item.organizationId === workspace.organizationId);
+    const branch = org?.branches.find((item) => item.branchId === receipt.receivingBranchId);
+    return branch?.name ?? receipt.receivingBranchId;
+  })();
   const notes = receipt.notes?.trim();
   const isPosted = (receipt.status ?? "Posted") === "Posted";
   const isVoided = receipt.status === "Voided";
@@ -150,6 +158,16 @@ export function DirectPurchaseDetailPage() {
                 {receipt.sourceNameSnapshot ?? t("purchasing.sourceEmpty")}
               </dd>
             </div>
+            {receivingBranchName ? (
+              <div>
+                <dt className="text-[length:var(--exits-text-sm)] text-muted">
+                  {t("purchasing.receivingBranch")}
+                </dt>
+                <dd className="m-0" data-testid="direct-purchase-receiving-branch">
+                  {t("purchasing.receivedAtBranch").replace("{name}", receivingBranchName)}
+                </dd>
+              </div>
+            ) : null}
             {receipt.referenceNumber ? (
               <div>
                 <dt className="text-[length:var(--exits-text-sm)] text-muted">

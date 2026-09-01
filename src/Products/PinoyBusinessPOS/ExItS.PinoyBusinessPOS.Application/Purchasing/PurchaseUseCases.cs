@@ -1700,6 +1700,7 @@ public sealed class ReceivePurchaseOrder
         Guid purchaseOrderId,
         ReceivePurchaseOrderRequest request,
         Guid actorId,
+        Guid receivingBranchId,
         CancellationToken cancellationToken = default)
     {
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
@@ -1713,6 +1714,13 @@ public sealed class ReceivePurchaseOrder
             return ApplicationResult<PosGoodsReceiptDto>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required to receive goods.");
+        }
+
+        if (receivingBranchId == Guid.Empty)
+        {
+            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A receiving branch is required for goods receipts.");
         }
 
         try
@@ -1827,6 +1835,7 @@ public sealed class ReceivePurchaseOrder
 
             var utcNow = _clock.GetUtcNow();
             var businessDate = GoodsReceiptNumbers.BusinessDateOf(utcNow);
+            var receivingBranch = PosBranchId.From(receivingBranchId);
 
             var (_, receipt) = await _orders.ReceiveAsync(
                     org,
@@ -1846,6 +1855,7 @@ public sealed class ReceivePurchaseOrder
                             receivedDate: request.ReceivedDate,
                             deliveryReference: request.DeliveryReference,
                             notes: request.Notes,
+                            receivingBranchId: receivingBranch,
                             id: request.GoodsReceiptId is Guid grnId && grnId != Guid.Empty
                                 ? GoodsReceiptId.From(grnId)
                                 : null);
@@ -1951,27 +1961,36 @@ public sealed class VoidGoodsReceipt
     private readonly IPurchaseOrderRepository _orders;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public VoidGoodsReceipt(
         IPurchaseOrderRepository orders,
         ICatalogProductRepository products,
         IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _orders = orders;
         _products = products;
         _inventory = inventory;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<PosGoodsReceiptDto>> ExecuteAsync(
@@ -2019,6 +2038,28 @@ public sealed class VoidGoodsReceipt
 
                         var utcNow = _clock.UtcNow;
                         var voidReason = request.Reason.Trim();
+                        if (_branches is null)
+                        {
+                            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                ApplicationErrorCodes.InventoryBranchRequired,
+                                "Branch directory is unavailable.");
+                        }
+
+                        var branchResolved = await BranchInventoryMutationService
+                            .ResolvePhysicalBranchAsync(
+                                receipt.ReceivingBranchId?.Value,
+                                _branches,
+                                organizationId,
+                                ct)
+                            .ConfigureAwait(false);
+                        if (!branchResolved.IsSuccess)
+                        {
+                            return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                                branchResolved.ErrorCode!,
+                                branchResolved.ErrorMessage!);
+                        }
+
+                        var receivingBranch = branchResolved.Value!;
 
                         await _createPayable
                             .EnsureVoidOrBlockForReceiptReversalAsync(
@@ -2142,11 +2183,24 @@ public sealed class VoidGoodsReceipt
                                             utcNow,
                                             reason: voidReason,
                                             sellingMode: product.SellingMode,
-                                            branchId: null,
+                                            branchId: receivingBranch.Value,
                                             unitCost: line.BaseUnitCost);
 
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         account.ApplyMovementEffect(reversal.QuantityEffect);
                                         account.Touch(utcNow);
+                                        await _branchMutations
+                                            .ApplyBranchDeltaAsync(
+                                                _branchBalances,
+                                                _branches,
+                                                orgId,
+                                                receivingBranch,
+                                                line.ProductId,
+                                                orgOnHandBefore,
+                                                reversal.QuantityEffect,
+                                                utcNow,
+                                                lockCt)
+                                            .ConfigureAwait(false);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
                                         await _inventory.AddMovementAsync(reversal, lockCt).ConfigureAwait(false);
                                     }

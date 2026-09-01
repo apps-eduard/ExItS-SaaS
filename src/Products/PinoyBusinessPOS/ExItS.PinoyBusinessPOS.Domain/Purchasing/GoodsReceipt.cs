@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -28,6 +29,7 @@ public sealed class GoodsReceipt
     public string? Notes { get; }
     public DateTimeOffset ReceivedAtUtc { get; }
     public Guid ReceivedBy { get; }
+    public PosBranchId? ReceivingBranchId { get; }
     public GoodsReceiptStatus Status { get; private set; }
     public DateTimeOffset? VoidedAtUtc { get; private set; }
     public Guid? VoidedByUserId { get; private set; }
@@ -46,6 +48,7 @@ public sealed class GoodsReceipt
         string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
+        PosBranchId? receivingBranchId,
         List<GoodsReceiptLine> lines,
         GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
@@ -62,6 +65,7 @@ public sealed class GoodsReceipt
         Notes = notes;
         ReceivedAtUtc = receivedAtUtc;
         ReceivedBy = receivedBy;
+        ReceivingBranchId = receivingBranchId;
         Status = status;
         VoidedAtUtc = voidedAtUtc;
         VoidedByUserId = voidedByUserId;
@@ -80,10 +84,18 @@ public sealed class GoodsReceipt
         DateOnly? receivedDate = null,
         string? deliveryReference = null,
         string? notes = null,
+        PosBranchId? receivingBranchId = null,
         GoodsReceiptId? id = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(receivedBy);
+
+        if (receivingBranchId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchId,
+                "A receiving branch is required for goods receipts.");
+        }
 
         if (receiveLines is null || receiveLines.Count == 0)
         {
@@ -132,6 +144,7 @@ public sealed class GoodsReceipt
             NormalizeOptional(notes, NotesMaxLength, DomainErrorCodes.InvalidGoodsReceiptNotes, "Notes"),
             utcNow,
             receivedBy,
+            receivingBranchId,
             lines,
             GoodsReceiptStatus.Posted);
     }
@@ -175,6 +188,7 @@ public sealed class GoodsReceipt
         string? notes,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
+        PosBranchId? receivingBranchId,
         IReadOnlyList<GoodsReceiptLine> lines,
         GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
@@ -191,6 +205,7 @@ public sealed class GoodsReceipt
             notes,
             receivedAtUtc,
             receivedBy,
+            receivingBranchId,
             lines.ToList(),
             status,
             voidedAtUtc,

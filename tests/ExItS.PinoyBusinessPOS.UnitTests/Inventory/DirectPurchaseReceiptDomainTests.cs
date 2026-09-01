@@ -13,6 +13,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     private static readonly CatalogProductId ProductB = CatalogProductId.From(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
     private static readonly SupplierId Supplier = SupplierId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"));
     private static readonly Guid Actor = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly PosBranchId Branch = PosBranchId.From(Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"));
     private static readonly DateTimeOffset Now = new(2026, 8, 17, 10, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -34,7 +35,8 @@ public sealed class DirectPurchaseReceiptDomainTests
             Actor,
             Now,
             Supplier,
-            "Acme Trading");
+            "Acme Trading",
+            receivingBranchId: Branch);
 
         Assert.Equal(Supplier, receipt.SupplierId);
         Assert.Equal("Acme Trading", receipt.SourceNameSnapshot);
@@ -52,7 +54,8 @@ public sealed class DirectPurchaseReceiptDomainTests
             [Line(ProductA, "Coke", 1m, 10m)],
             Actor,
             Now,
-            sourceName: "Wet market stall");
+            sourceName: "Wet market stall",
+            receivingBranchId: Branch);
         Assert.Null(withSource.SupplierId);
         Assert.Equal("Wet market stall", withSource.SourceNameSnapshot);
 
@@ -62,7 +65,8 @@ public sealed class DirectPurchaseReceiptDomainTests
             DateOnly.FromDateTime(Now.UtcDateTime),
             [Line(ProductA, "Coke", 1m, 10m)],
             Actor,
-            Now);
+            Now,
+            receivingBranchId: Branch);
         Assert.Null(noSource.SupplierId);
         Assert.Null(noSource.SourceNameSnapshot);
     }
@@ -79,7 +83,8 @@ public sealed class DirectPurchaseReceiptDomainTests
                 Line(ProductB, "Sprite", 3m, 8m)
             ],
             Actor,
-            Now);
+            Now,
+            receivingBranchId: Branch);
         Assert.Equal(2, receipt.Lines.Count);
         Assert.Equal(44m, receipt.TotalCost);
 
@@ -90,7 +95,8 @@ public sealed class DirectPurchaseReceiptDomainTests
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [],
                 Actor,
-                Now));
+                Now,
+                receivingBranchId: Branch));
         Assert.Equal(DomainErrorCodes.DirectPurchaseRequiresLines, empty.ErrorCode);
 
         var zeroQty = Assert.Throws<DomainException>(() =>
@@ -100,7 +106,8 @@ public sealed class DirectPurchaseReceiptDomainTests
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [Line(ProductA, "Coke", 0m, 10m)],
                 Actor,
-                Now));
+                Now,
+                receivingBranchId: Branch));
         Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseQuantity, zeroQty.ErrorCode);
 
         var zeroCost = Assert.Throws<DomainException>(() =>
@@ -110,7 +117,8 @@ public sealed class DirectPurchaseReceiptDomainTests
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [Line(ProductA, "Coke", 1m, 0m)],
                 Actor,
-                Now));
+                Now,
+                receivingBranchId: Branch));
         Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseUnitCost, zeroCost.ErrorCode);
     }
 
@@ -145,7 +153,8 @@ public sealed class DirectPurchaseReceiptDomainTests
             Actor,
             Now,
             Supplier,
-            "Paul Supply");
+            "Paul Supply",
+            receivingBranchId: Branch);
 
         Assert.Equal("Canned Corned Beef", receipt.Lines[0].ProductNameSnapshot);
         Assert.Equal("CCB-1", receipt.Lines[0].SkuSnapshot);

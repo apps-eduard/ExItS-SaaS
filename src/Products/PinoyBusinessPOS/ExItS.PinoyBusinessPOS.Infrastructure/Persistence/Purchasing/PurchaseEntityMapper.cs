@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -152,6 +153,7 @@ internal static class PurchaseEntityMapper
             record.Notes,
             record.ReceivedAtUtc,
             record.ReceivedBy,
+            record.ReceivingBranchId is null ? null : PosBranchId.From(record.ReceivingBranchId.Value),
             lines,
             GoodsReceiptStatuses.Parse(record.Status),
             record.VoidedAtUtc,
@@ -172,6 +174,7 @@ internal static class PurchaseEntityMapper
             Notes = receipt.Notes,
             ReceivedAtUtc = receipt.ReceivedAtUtc,
             ReceivedBy = receipt.ReceivedBy,
+            ReceivingBranchId = receipt.ReceivingBranchId?.Value,
             Status = GoodsReceiptStatuses.ToCode(receipt.Status),
             VoidedAtUtc = receipt.VoidedAtUtc,
             VoidedByUserId = receipt.VoidedByUserId,

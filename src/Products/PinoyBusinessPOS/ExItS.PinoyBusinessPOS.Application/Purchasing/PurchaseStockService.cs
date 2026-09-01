@@ -27,16 +27,25 @@ public sealed class PurchaseStockService : IPurchaseStockService
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public PurchaseStockService(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
-        InventoryLotStockService lots)
+        IInventoryBranchBalanceRepository branchBalances,
+        InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _products = products;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
+        _branches = branches;
     }
 
     public async Task ApplyReceiptAsync(
@@ -47,6 +56,14 @@ public sealed class PurchaseStockService : IPurchaseStockService
         DateTimeOffset utcNow,
         CancellationToken cancellationToken = default)
     {
+        if (receipt.ReceivingBranchId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchId,
+                "Goods receipt is missing receiving branch provenance.");
+        }
+
+        var receivingBranch = receipt.ReceivingBranchId;
         var productIds = receipt.Lines.Select(l => l.ProductId).Distinct().ToList();
         var accounts = await _inventory
             .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
@@ -62,7 +79,6 @@ public sealed class PurchaseStockService : IPurchaseStockService
         {
             if (line.QuantityReceived <= 0m)
             {
-                // Damaged/rejected/short-only lines never enter usable inventory.
                 continue;
             }
 
@@ -92,21 +108,19 @@ public sealed class PurchaseStockService : IPurchaseStockService
                     "Expiry date is required when receiving expiration-tracked stock.");
             }
 
-            var sellingMode = product.SellingMode;
-
-            // Inventory ledger is always in base units. Purchase-unit receipts convert via
-            // GoodsReceiptLine.BaseQuantity; UnitCost is cost per base unit (snapshot ÷ multiplier).
+            var orgOnHandBefore = account.OnHandQuantity;
             var movement = StockMovement.PurchaseReceipt(
-                organizationId,
-                line.ProductId,
-                account.Id,
-                line.BaseQuantity,
-                line.UomSnapshot,
-                receipt.Id.Value,
-                actorId,
-                utcNow,
-                sellingMode: sellingMode,
-                unitCost: line.BaseUnitCost);
+                    organizationId,
+                    line.ProductId,
+                    account.Id,
+                    line.BaseQuantity,
+                    line.UomSnapshot,
+                    receipt.Id.Value,
+                    actorId,
+                    utcNow,
+                    sellingMode: product.SellingMode,
+                    unitCost: line.BaseUnitCost)
+                .WithBranch(receivingBranch.Value);
 
             if (product.TracksExpiration)
             {
@@ -120,7 +134,7 @@ public sealed class PurchaseStockService : IPurchaseStockService
                         utcNow,
                         StockMovementType.PurchaseReceipt,
                         StockMovementSourceType.PurchaseReceipt,
-                        branchId: null,
+                        receivingBranch,
                         lotNumber: line.LotNumber,
                         sourceId: receipt.Id.Value,
                         stockMovementId: movement.Id.Value,
@@ -132,6 +146,18 @@ public sealed class PurchaseStockService : IPurchaseStockService
             line.AttachInventoryMovement(movement.Id);
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);
+            await _branchMutations
+                .ApplyBranchDeltaAsync(
+                    _branchBalances,
+                    _branches,
+                    organizationId,
+                    receivingBranch,
+                    line.ProductId,
+                    orgOnHandBefore,
+                    movement.QuantityEffect,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
             await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
         }

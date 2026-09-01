@@ -22,6 +22,7 @@ public sealed class StockCount
 
     public StockCountId Id { get; }
     public PosOrganizationId OrganizationId { get; }
+    public PosBranchId? BranchId { get; }
     public string? CountNumber { get; private set; }
     public StockCountStatus Status { get; private set; }
     public DateOnly CountDate { get; private set; }
@@ -42,6 +43,7 @@ public sealed class StockCount
     private StockCount(
         StockCountId id,
         PosOrganizationId organizationId,
+        PosBranchId? branchId,
         string? countNumber,
         StockCountStatus status,
         DateOnly countDate,
@@ -60,6 +62,7 @@ public sealed class StockCount
     {
         Id = id;
         OrganizationId = organizationId;
+        BranchId = branchId;
         CountNumber = countNumber;
         Status = status;
         CountDate = countDate;
@@ -83,12 +86,20 @@ public sealed class StockCount
         DateTimeOffset utcNow,
         string title,
         Guid createdBy,
+        PosBranchId? branchId = null,
         DateOnly? countDate = null,
         string? notes = null,
         StockCountId? id = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(createdBy);
+        if (branchId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchId,
+                "A branch is required for stock counts.");
+        }
+
         EnsureLines(lines);
 
         var countId = id ?? StockCountId.New();
@@ -97,6 +108,7 @@ public sealed class StockCount
         return new StockCount(
             countId,
             organizationId,
+            branchId,
             countNumber: null,
             StockCountStatus.Draft,
             countDate ?? DateOnly.FromDateTime(utcNow.UtcDateTime),
@@ -382,6 +394,7 @@ public sealed class StockCount
     public static StockCount Rehydrate(
         StockCountId id,
         PosOrganizationId organizationId,
+        PosBranchId? branchId,
         string? countNumber,
         StockCountStatus status,
         DateOnly countDate,
@@ -400,6 +413,7 @@ public sealed class StockCount
         new(
             id,
             organizationId,
+            branchId,
             countNumber,
             status,
             countDate,

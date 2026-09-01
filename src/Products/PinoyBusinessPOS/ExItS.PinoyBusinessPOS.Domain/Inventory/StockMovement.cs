@@ -999,6 +999,23 @@ public sealed class StockMovement
             lotId,
             UnitCost);
 
+    public StockMovement WithBranch(Guid? branchId) =>
+        new(
+            Id,
+            OrganizationId,
+            ProductId,
+            InventoryAccountId,
+            MovementType,
+            QuantityEffect,
+            Reason,
+            SourceType,
+            SourceId,
+            RecordedAtUtc,
+            RecordedBy,
+            branchId,
+            InventoryLotId,
+            UnitCost);
+
     public static StockMovement Rehydrate(
         StockMovementId id,
         PosOrganizationId organizationId,

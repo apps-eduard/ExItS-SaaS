@@ -69,6 +69,7 @@ internal sealed class GoodsReceiptRecord
     public string? Notes { get; set; }
     public DateTimeOffset ReceivedAtUtc { get; set; }
     public Guid ReceivedBy { get; set; }
+    public Guid? ReceivingBranchId { get; set; }
     public string Status { get; set; } = nameof(GoodsReceiptStatus.Posted);
     public DateTimeOffset? VoidedAtUtc { get; set; }
     public Guid? VoidedByUserId { get; set; }

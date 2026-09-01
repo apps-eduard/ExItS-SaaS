@@ -156,6 +156,10 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
                 actorId,
                 utcNow,
                 sellingMode: sellingMode);
+            if (originalSale.BranchId is not null)
+            {
+                movement = movement.WithBranch(originalSale.BranchId.Value);
+            }
 
             foreach (var line in group.Lines)
             {

@@ -66,6 +66,7 @@ internal static class InventoryEndpoints
             CreateStockCountRequest body,
             CreateStockCount useCase,
             StockCountQueryService queries,
+            BranchInventoryContextResolver branchResolver,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -75,7 +76,15 @@ internal static class InventoryEndpoints
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, body, actorId, ct).ConfigureAwait(false);
+            var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+            if (!branchResolved.Success)
+            {
+                return branchResolved.Problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, body, actorId, branchResolved.Context!.BranchId, ct)
+                .ConfigureAwait(false);
             return await FromStockCountResultAsync(organizationId, result, queries, ct).ConfigureAwait(false);
         });
 
@@ -435,6 +444,7 @@ internal static class InventoryEndpoints
                 organizationId,
                 productId,
                 actorId,
+                branchResolved.Context!.BranchId,
                 body.OpeningQuantity,
                 body.ReorderLevel,
                 body.ExpirationDate,
@@ -472,6 +482,7 @@ internal static class InventoryEndpoints
                 organizationId,
                 productId,
                 actorId,
+                branchResolved.Context!.BranchId,
                 body.OpeningQuantity,
                 body.UnitCost,
                 body.ExpirationDate,

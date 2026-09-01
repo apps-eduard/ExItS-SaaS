@@ -77,6 +77,48 @@ export function ReceiveStockPage() {
   const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
   const [paidNowTouched, setPaidNowTouched] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
+  const draftBranchIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentBranchId = boundWorkspace?.branchId ?? null;
+    if (!currentBranchId) {
+      return;
+    }
+    if (draftBranchIdRef.current === null) {
+      draftBranchIdRef.current = currentBranchId;
+      return;
+    }
+    if (draftBranchIdRef.current === currentBranchId) {
+      return;
+    }
+    const hadDraft =
+      lines.length > 0 ||
+      supplierId.trim().length > 0 ||
+      sourceName.trim().length > 0 ||
+      referenceNumber.trim().length > 0 ||
+      notes.trim().length > 0;
+    draftBranchIdRef.current = currentBranchId;
+    idempotencyKeyRef.current = null;
+    setLines([]);
+    setSupplierId("");
+    setSourceName("");
+    setReferenceNumber("");
+    setNotes("");
+    setSheetProduct(null);
+    setReviewing(false);
+    setStatusLocked(false);
+    if (hadDraft) {
+      setError(t("purchasing.branchSwitchDraftReset"));
+    }
+  }, [
+    boundWorkspace?.branchId,
+    lines.length,
+    notes,
+    referenceNumber,
+    sourceName,
+    supplierId,
+    t,
+  ]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -336,6 +378,14 @@ export function ReceiveStockPage() {
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
         {t("purchasing.receiveStockHelper")}
       </p>
+      {boundWorkspace?.branchName ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+          data-testid="direct-purchase-receiving-branch"
+        >
+          {t("purchasing.receivingIntoBranch").replace("{name}", boundWorkspace.branchName)}
+        </p>
+      ) : null}
       {!online ? (
         <Card>
           <p className="m-0">{t("purchasing.offline")}</p>

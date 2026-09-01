@@ -15,6 +15,48 @@ public sealed class BranchBalanceMutationTests
     private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-08-30T12:00:00Z");
 
     [Fact]
+    public async Task Inflow_materializes_primary_from_pre_mutation_org_before_credit()
+    {
+        var repo = new RecordingBalances();
+        var branches = new FixedPrimary(Primary.Value);
+
+        await BranchBalanceMutation.ApplyAsync(
+            repo,
+            branches,
+            Org,
+            Primary,
+            Product,
+            organizationOnHandBeforeDelta: 100m,
+            signedQuantity: 20m,
+            utcNow: T0);
+
+        var balance = Assert.Single(repo.Items);
+        Assert.Equal(Primary, balance.BranchId);
+        Assert.Equal(120m, balance.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task Secondary_inflow_materializes_zero_before_credit()
+    {
+        var repo = new RecordingBalances();
+        var branches = new FixedPrimary(Primary.Value);
+
+        await BranchBalanceMutation.ApplyAsync(
+            repo,
+            branches,
+            Org,
+            Other,
+            Product,
+            organizationOnHandBeforeDelta: 100m,
+            signedQuantity: 10m,
+            utcNow: T0);
+
+        var balance = Assert.Single(repo.Items);
+        Assert.Equal(Other, balance.BranchId);
+        Assert.Equal(10m, balance.OnHandQuantity);
+    }
+
+    [Fact]
     public async Task Ensure_seeds_unallocated_on_primary_then_applies_outflow()
     {
         var repo = new RecordingBalances();

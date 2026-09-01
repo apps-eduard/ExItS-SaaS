@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -212,6 +213,7 @@ internal static class PurchaseOrderEndpoints
             Guid purchaseOrderId,
             ReceivePurchaseOrderRequest body,
             ReceivePurchaseOrder useCase,
+            BranchInventoryContextResolver branchResolver,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
@@ -221,9 +223,19 @@ internal static class PurchaseOrderEndpoints
                 return problem!;
             }
 
-            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+                || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
             {
                 return problem!;
+            }
+
+            var branchResolved = await branchResolver.ResolveAsync(organizationId, branchId, ct).ConfigureAwait(false);
+            if (!branchResolved.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    branchResolved.ErrorCode ?? ApplicationErrorCodes.InventoryBranchRequired,
+                    branchResolved.ErrorMessage ?? "A selected branch is required.",
+                    StatusCodes.Status400BadRequest);
             }
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
@@ -231,7 +243,13 @@ internal static class PurchaseOrderEndpoints
                     organizationId,
                     OfflineOperationTypes.PurchaseOrderReceive,
                     idempotency,
-                    ct2 => useCase.ExecuteAsync(organizationId, purchaseOrderId, body, actorId, ct2),
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        purchaseOrderId,
+                        body,
+                        actorId,
+                        branchResolved.Value!.BranchId,
+                        ct2),
                     dto => dto,
                     dto => Results.Created($"/api/v1/pos/goods-receipts/{dto.GoodsReceiptId:D}", dto),
                     ct)

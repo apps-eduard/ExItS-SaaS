@@ -11,6 +11,7 @@ public sealed class AdvancedInventoryDomainTests
     private static readonly PosOrganizationId Org = PosOrganizationId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static readonly CatalogProductId Product = CatalogProductId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
     private static readonly Guid Actor = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static readonly PosBranchId Branch = PosBranchId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"));
     private static readonly DateTimeOffset Utc = new(2026, 7, 31, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -76,7 +77,8 @@ public sealed class AdvancedInventoryDomainTests
             [new StockCountLineDraft(Product, null)],
             Utc,
             "Weekly count",
-            Actor);
+            Actor,
+            Branch);
         draft.Start("CNT-20260731-000001", new Dictionary<Guid, decimal> { [Product.Value] = 7m }, Actor, Utc.AddMinutes(1));
 
         Assert.Equal(StockCountStatus.InProgress, draft.Status);
@@ -93,7 +95,8 @@ public sealed class AdvancedInventoryDomainTests
             [new StockCountLineDraft(Product, null)],
             Utc,
             "Monthly count",
-            Actor);
+            Actor,
+            Branch);
         draft.Start("CNT-20260731-000002", new Dictionary<Guid, decimal> { [Product.Value] = 4m }, Actor, Utc.AddMinutes(1));
 
         var ex = Assert.Throws<DomainException>(() => draft.MarkCompleted(Actor, Utc.AddMinutes(2)));

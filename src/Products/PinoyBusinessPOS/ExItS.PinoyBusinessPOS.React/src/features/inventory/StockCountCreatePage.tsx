@@ -233,7 +233,11 @@ export function StockCountCreatePage() {
         backTestId="page-header-back-stock-counts"
       />
 
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockCount.orgScopeNote")}</p>
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+        {boundWorkspace?.branchName
+          ? t("stockCount.orgScopeNote").replace("{name}", boundWorkspace.branchName)
+          : t("stockCount.branchRequired")}
+      </p>
 
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockCount.offline")}</p>

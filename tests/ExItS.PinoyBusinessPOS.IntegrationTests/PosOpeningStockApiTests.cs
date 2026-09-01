@@ -21,6 +21,7 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
     };
 
     private static readonly Guid Actor = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid PrimaryBranch = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     private const string Inventory = "/api/v1/pos/inventory";
     private const string Products = "/api/v1/pos/catalog/products";
@@ -242,7 +243,7 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
         return (await response.Content.ReadFromJsonAsync<PosCatalogProductDto>(JsonOptions))!;
     }
 
-    private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId)
+    private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId, Guid? branchId = null)
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation(
@@ -251,6 +252,9 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
         request.Headers.TryAddWithoutValidation(
             PosOrganizationHeaders.ActorHeaderName,
             Actor.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.BranchHeaderName,
+            (branchId ?? PrimaryBranch).ToString("D"));
         return request;
     }
 

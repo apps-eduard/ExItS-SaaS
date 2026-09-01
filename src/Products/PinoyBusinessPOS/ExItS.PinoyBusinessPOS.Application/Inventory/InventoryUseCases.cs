@@ -73,7 +73,8 @@ public sealed class InventoryQueryService
                 .ListOnHandAsync(orgId, catalogProductId, branch, includeDepleted: false, cancellationToken)
                 .ConfigureAwait(false);
             if (context.PrimaryBranchId is not null
-                && context.PrimaryBranchId.Value == context.BranchId)
+                && context.PrimaryBranchId.Value == context.BranchId
+                && lots.Count == 0)
             {
                 var legacyLots = await _lots
                     .ListOnHandAsync(orgId, catalogProductId, branchId: null, includeDepleted: false, cancellationToken)
@@ -418,28 +419,38 @@ public sealed class EnableInventoryTracking
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public EnableInventoryTracking(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _products = products;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
         Guid organizationId,
         Guid productId,
         Guid actorId,
+        Guid branchId,
         decimal? openingQuantity = null,
         decimal? reorderLevel = null,
         DateOnly? expirationDate = null,
@@ -454,8 +465,16 @@ public sealed class EnableInventoryTracking
                 "An actor identifier is required to enable inventory tracking.");
         }
 
+        if (branchId == Guid.Empty)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A branch is required to enable inventory tracking.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
+        var actingBranch = PosBranchId.From(branchId);
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
         if (product is null)
         {
@@ -487,6 +506,7 @@ public sealed class EnableInventoryTracking
             var hadOpening = await _inventory
                 .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
                 .ConfigureAwait(false);
+            var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.Enable(
                 openingQuantity,
                 product.UnitOfMeasure,
@@ -512,6 +532,20 @@ public sealed class EnableInventoryTracking
 
             if (opening is not null)
             {
+                opening = opening.WithBranch(actingBranch.Value);
+                await _branchMutations
+                    .ApplyBranchDeltaAsync(
+                        _branchBalances,
+                        _branches,
+                        orgId,
+                        actingBranch,
+                        catalogProductId,
+                        orgOnHandBefore,
+                        opening.QuantityEffect,
+                        utcNow,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
                 if (product.TracksExpiration)
                 {
                     if (expirationDate is null)
@@ -531,6 +565,7 @@ public sealed class EnableInventoryTracking
                             utcNow,
                             StockMovementType.OpeningStock,
                             StockMovementSourceType.Opening,
+                            actingBranch,
                             lotNumber: lotNumber,
                             stockMovementId: opening.Id.Value,
                             cancellationToken: cancellationToken)
@@ -559,28 +594,38 @@ public sealed class AddOpeningStock
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public AddOpeningStock(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _products = products;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
         Guid organizationId,
         Guid productId,
         Guid actorId,
+        Guid branchId,
         decimal openingQuantity,
         decimal unitCost,
         DateOnly? expirationDate = null,
@@ -594,8 +639,16 @@ public sealed class AddOpeningStock
                 "An actor identifier is required to add opening stock.");
         }
 
+        if (branchId == Guid.Empty)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A branch is required to add opening stock.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
+        var actingBranch = PosBranchId.From(branchId);
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
         if (product is null)
         {
@@ -634,6 +687,7 @@ public sealed class AddOpeningStock
                 .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
                 .ConfigureAwait(false);
             var utcNow = _clock.UtcNow;
+            var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.RecordOpeningStock(
                 openingQuantity,
                 product.UnitOfMeasure,
@@ -642,6 +696,20 @@ public sealed class AddOpeningStock
                 hadOpening,
                 product.SellingMode,
                 unitCost);
+            opening = opening.WithBranch(actingBranch.Value);
+
+            await _branchMutations
+                .ApplyBranchDeltaAsync(
+                    _branchBalances,
+                    _branches,
+                    orgId,
+                    actingBranch,
+                    catalogProductId,
+                    orgOnHandBefore,
+                    opening.QuantityEffect,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             if (product.TracksExpiration)
             {
@@ -662,6 +730,7 @@ public sealed class AddOpeningStock
                         utcNow,
                         StockMovementType.OpeningStock,
                         StockMovementSourceType.Opening,
+                        actingBranch,
                         lotNumber: lotNumber,
                         stockMovementId: opening.Id.Value,
                         cancellationToken: cancellationToken)
@@ -913,6 +982,17 @@ public sealed class AdjustInventoryStock
                     "Adjustment direction must be In or Out.");
             }
 
+            PosBranchId? branch = branchId is Guid locationId && locationId != Guid.Empty
+                ? PosBranchId.From(locationId)
+                : null;
+            if (branch is null)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    ApplicationErrorCodes.InventoryBranchRequired,
+                    "A branch is required to adjust stock.");
+            }
+
+            movement = movement.WithBranch(branch.Value);
             var orgOnHandBefore = account.OnHandQuantity;
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);
@@ -922,12 +1002,7 @@ public sealed class AdjustInventoryStock
                 account.SetReorderLevel(reorderLevel, product.UnitOfMeasure, utcNow);
             }
 
-            PosBranchId? branch = branchId is Guid locationId && locationId != Guid.Empty
-                ? PosBranchId.From(locationId)
-                : null;
-            if (branch is not null)
-            {
-                await BranchBalanceMutation
+            await BranchBalanceMutation
                     .ApplyAsync(
                         _branchBalances,
                         _branches,
@@ -939,7 +1014,6 @@ public sealed class AdjustInventoryStock
                         utcNow,
                         cancellationToken)
                     .ConfigureAwait(false);
-            }
 
             if (product.TracksExpiration)
             {
@@ -1377,7 +1451,8 @@ public sealed class SaleStockService : ISaleStockService
 
                         account.ConsumeReservation(line.Quantity);
                         account.Touch(utcNow);
-                        var movement = StockMovement.SaleDeduction(
+                        var reservedPhysicalBranchId = branchId ?? sale.BranchId?.Value;
+                        var reservedMovement = StockMovement.SaleDeduction(
                             sale.OrganizationId,
                             line.ProductId,
                             account.Id,
@@ -1387,9 +1462,13 @@ public sealed class SaleStockService : ISaleStockService
                             actorId,
                             utcNow,
                             sellingMode: line.SellingModeSnapshot);
+                        if (reservedPhysicalBranchId is Guid reservedBranch && reservedBranch != Guid.Empty)
+                        {
+                            reservedMovement = reservedMovement.WithBranch(reservedBranch);
+                        }
                         // Overlay was taken at reserve; ConsumeReservation applies org on-hand only.
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
-                        await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
+                        await _inventory.AddMovementAsync(reservedMovement, ct).ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -1496,6 +1575,8 @@ public sealed class SaleStockService : ISaleStockService
                 $"Insufficient stock for '{product.Name}'. Available: {account.AvailableQuantity}, required: {line.Quantity}.");
         }
 
+        var physicalBranchId = branchId ?? sale.BranchId?.Value;
+        var orgOnHandBefore = account.OnHandQuantity;
         var movement = StockMovement.SaleDeduction(
             organizationId,
             line.ProductId,
@@ -1507,6 +1588,10 @@ public sealed class SaleStockService : ISaleStockService
             utcNow,
             sellingMode: line.SellingModeSnapshot,
             unitCost: line.UnitCostSnapshot);
+        if (physicalBranchId is Guid movementBranch && movementBranch != Guid.Empty)
+        {
+            movement = movement.WithBranch(movementBranch);
+        }
         account.ApplyMovementEffect(movement.QuantityEffect);
         account.Touch(utcNow);
         await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
@@ -1515,9 +1600,9 @@ public sealed class SaleStockService : ISaleStockService
         {
             await ApplyBranchDeltaAsync(
                     organizationId,
-                    branchId,
+                    physicalBranchId,
                     line.ProductId,
-                    account.OnHandQuantity - movement.QuantityEffect,
+                    orgOnHandBefore,
                     movement.QuantityEffect,
                     utcNow,
                     cancellationToken)
@@ -1584,6 +1669,11 @@ public sealed class SaleStockService : ISaleStockService
                 utcNow,
                 reason,
                 sellingMode: sellingMode);
+            var voidPhysicalBranchId = branchId ?? sale.BranchId?.Value;
+            if (voidPhysicalBranchId is Guid voidBranch && voidBranch != Guid.Empty)
+            {
+                restoration = restoration.WithBranch(voidBranch);
+            }
             account.ApplyMovementEffect(restoration.QuantityEffect);
             account.Touch(utcNow);
             await _lots
@@ -1600,7 +1690,7 @@ public sealed class SaleStockService : ISaleStockService
             await _inventory.AddMovementAsync(restoration, cancellationToken).ConfigureAwait(false);
             await ApplyBranchDeltaAsync(
                     organizationId,
-                    branchId,
+                    voidPhysicalBranchId,
                     deduction.ProductId,
                     account.OnHandQuantity - restoration.QuantityEffect,
                     restoration.QuantityEffect,

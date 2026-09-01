@@ -163,7 +163,8 @@ public sealed record PosStockCountDto(
     Guid? CancelledBy,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    IReadOnlyList<PosStockCountLineDto> Lines);
+    IReadOnlyList<PosStockCountLineDto> Lines,
+    Guid? BranchId = null);
 
 public sealed record CreateStockCountLineRequest(Guid ProductId, decimal? CountedQuantity = null);
 

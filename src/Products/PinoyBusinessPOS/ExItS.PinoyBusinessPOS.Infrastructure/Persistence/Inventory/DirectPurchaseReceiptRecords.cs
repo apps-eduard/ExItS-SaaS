@@ -16,6 +16,7 @@ internal sealed class DirectPurchaseReceiptRecord
     public Guid CreatedByUserId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public string? IdempotencyKey { get; set; }
+    public Guid? ReceivingBranchId { get; set; }
     public string Status { get; set; } = nameof(DirectPurchaseReceiptStatus.Posted);
     public DateTimeOffset? VoidedAtUtc { get; set; }
     public Guid? VoidedByUserId { get; set; }

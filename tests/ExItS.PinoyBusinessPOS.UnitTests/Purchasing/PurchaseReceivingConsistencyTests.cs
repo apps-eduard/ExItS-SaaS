@@ -15,6 +15,7 @@ public sealed class PurchaseReceivingConsistencyTests
     private static readonly CatalogProductId Product =
         CatalogProductId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
     private static readonly Guid Actor = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    private static readonly PosBranchId Branch = PosBranchId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"));
     private static readonly DateTimeOffset Utc = new(2026, 8, 28, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -111,7 +112,8 @@ public sealed class PurchaseReceivingConsistencyTests
             po,
             [receive],
             Actor,
-            Utc.AddMinutes(2));
+            Utc.AddMinutes(2),
+            receivingBranchId: Branch);
 
         var line = Assert.Single(grn.Lines);
         Assert.Equal(2m, line.QuantityReceived);
@@ -156,7 +158,8 @@ public sealed class PurchaseReceivingConsistencyTests
             po,
             [receive],
             Actor,
-            Utc.AddMinutes(2));
+            Utc.AddMinutes(2),
+            receivingBranchId: Branch);
 
         var line = Assert.Single(grn.Lines);
         Assert.Equal(new DateOnly(2027, 12, 30), line.ExpiryDate);
@@ -199,7 +202,8 @@ public sealed class PurchaseReceivingConsistencyTests
             po,
             [receive],
             Actor,
-            Utc.AddMinutes(2));
+            Utc.AddMinutes(2),
+            receivingBranchId: Branch);
 
         var line = Assert.Single(grn.Lines);
         Assert.Equal(0m, line.QuantityReceived);

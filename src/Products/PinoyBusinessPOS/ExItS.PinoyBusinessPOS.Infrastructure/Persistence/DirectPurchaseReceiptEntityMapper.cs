@@ -24,6 +24,7 @@ internal static class DirectPurchaseReceiptEntityMapper
             record.CreatedByUserId,
             record.CreatedAtUtc,
             record.IdempotencyKey,
+            record.ReceivingBranchId is null ? null : PosBranchId.From(record.ReceivingBranchId.Value),
             lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
             DirectPurchaseReceiptStatuses.Parse(record.Status),
             record.VoidedAtUtc,
@@ -62,6 +63,7 @@ internal static class DirectPurchaseReceiptEntityMapper
             CreatedByUserId = receipt.CreatedByUserId,
             CreatedAtUtc = receipt.CreatedAtUtc,
             IdempotencyKey = receipt.IdempotencyKey,
+            ReceivingBranchId = receipt.ReceivingBranchId?.Value,
             Status = DirectPurchaseReceiptStatuses.ToCode(receipt.Status),
             VoidedAtUtc = receipt.VoidedAtUtc,
             VoidedByUserId = receipt.VoidedByUserId,
@@ -99,6 +101,7 @@ internal static class DirectPurchaseReceiptEntityMapper
         record.CreatedByUserId = receipt.CreatedByUserId;
         record.CreatedAtUtc = receipt.CreatedAtUtc;
         record.IdempotencyKey = receipt.IdempotencyKey;
+        record.ReceivingBranchId = receipt.ReceivingBranchId?.Value;
         record.Status = DirectPurchaseReceiptStatuses.ToCode(receipt.Status);
         record.VoidedAtUtc = receipt.VoidedAtUtc;
         record.VoidedByUserId = receipt.VoidedByUserId;

@@ -280,7 +280,8 @@ public sealed class StockCountQueryService
             count.CancelledBy,
             count.CreatedAtUtc,
             count.UpdatedAtUtc,
-            lineDtos);
+            lineDtos,
+            count.BranchId?.Value);
     }
 }
 
@@ -310,6 +311,7 @@ public sealed class CreateStockCount
         Guid organizationId,
         CreateStockCountRequest request,
         Guid actorId,
+        Guid branchId,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -317,6 +319,13 @@ public sealed class CreateStockCount
             return ApplicationResult<StockCount>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required to create a stock count.");
+        }
+
+        if (branchId == Guid.Empty)
+        {
+            return ApplicationResult<StockCount>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A branch is required for stock counts.");
         }
 
         var orgId = PosOrganizationId.From(organizationId);
@@ -331,6 +340,7 @@ public sealed class CreateStockCount
                 _clock.UtcNow,
                 request.Title,
                 actorId,
+                PosBranchId.From(branchId),
                 request.CountDate,
                 request.Notes);
             await _counts.AddAsync(count, cancellationToken).ConfigureAwait(false);
@@ -497,19 +507,25 @@ public sealed class StartStockCount
 {
     private readonly IStockCountRepository _counts;
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public StartStockCount(
         IStockCountRepository counts,
         IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository branchBalances,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _counts = counts;
         _inventory = inventory;
+        _branchBalances = branchBalances;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<StockCount>> ExecuteAsync(
@@ -542,12 +558,30 @@ public sealed class StartStockCount
 
         try
         {
+            if (existing.BranchId is null)
+            {
+                return ApplicationResult<StockCount>.Failure(
+                    ApplicationErrorCodes.InventoryBranchRequired,
+                    "Stock count is missing branch provenance.");
+            }
+
             var businessDate = StockCountNumbers.BusinessDateOf(_clock.UtcNow);
             var productIds = existing.Lines.Select(l => l.ProductId).ToList();
-            var accounts = await _inventory
-                .ListByProductIdsAsync(orgId, productIds, cancellationToken)
+            Guid? primaryBranchId = _branches is not null
+                ? await _branches
+                    .GetPrimaryBranchIdAsync(organizationId, cancellationToken)
+                    .ConfigureAwait(false)
+                : null;
+            var onHandByProduct = await BranchInventoryMutationService
+                .ResolveBranchOnHandSnapshotsAsync(
+                    orgId,
+                    existing.BranchId,
+                    primaryBranchId,
+                    productIds,
+                    _inventory,
+                    _branchBalances,
+                    cancellationToken)
                 .ConfigureAwait(false);
-            var onHandByProduct = accounts.ToDictionary(a => a.ProductId.Value, a => a.OnHandQuantity);
 
             var started = await _counts.StartAsync(
                     orgId,
@@ -578,18 +612,27 @@ public sealed class CompleteStockCount
     private readonly IStockCountRepository _counts;
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
+    private readonly BranchInventoryMutationService _branchMutations;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IClock _clock;
 
     public CompleteStockCount(
         IStockCountRepository counts,
         IInventoryRepository inventory,
         ICatalogProductRepository products,
-        IClock clock)
+        IInventoryBranchBalanceRepository branchBalances,
+        BranchInventoryMutationService branchMutations,
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _counts = counts;
         _inventory = inventory;
         _products = products;
+        _branchBalances = branchBalances;
+        _branchMutations = branchMutations;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<StockCount>> ExecuteAsync(
@@ -622,7 +665,15 @@ public sealed class CompleteStockCount
 
         try
         {
+            if (existing.BranchId is null)
+            {
+                return ApplicationResult<StockCount>.Failure(
+                    ApplicationErrorCodes.InventoryBranchRequired,
+                    "Stock count is missing branch provenance.");
+            }
+
             var utcNow = _clock.UtcNow;
+            var countBranch = existing.BranchId;
             var productIds = existing.Lines.Select(l => l.ProductId).ToList();
             var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
             var productById = products.ToDictionary(p => p.Id.Value);
@@ -677,7 +728,8 @@ public sealed class CompleteStockCount
                                     count.Id.Value,
                                     actorId,
                                     utcNow,
-                                    sellingMode: product.SellingMode);
+                                    sellingMode: product.SellingMode)
+                                    .WithBranch(countBranch.Value);
                             }
                             else
                             {
@@ -698,11 +750,25 @@ public sealed class CompleteStockCount
                                     count.Id.Value,
                                     actorId,
                                     utcNow,
-                                    sellingMode: product.SellingMode);
+                                    sellingMode: product.SellingMode)
+                                    .WithBranch(countBranch.Value);
                             }
 
+                            var orgOnHandBefore = account.OnHandQuantity;
                             account.ApplyMovementEffect(movement.QuantityEffect);
                             account.Touch(utcNow);
+                            await _branchMutations
+                                .ApplyBranchDeltaAsync(
+                                    _branchBalances,
+                                    _branches,
+                                    orgId,
+                                    countBranch,
+                                    line.ProductId,
+                                    orgOnHandBefore,
+                                    movement.QuantityEffect,
+                                    utcNow,
+                                    ct)
+                                .ConfigureAwait(false);
                             await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                             await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                         }

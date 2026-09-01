@@ -63,16 +63,31 @@ internal static class DirectPurchaseReceiptEndpoints
             HttpRequest request,
             CreateDirectPurchaseReceiptRequest body,
             CreateDirectPurchaseReceipt useCase,
+            BranchInventoryContextResolver branchResolver,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
-                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+                || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+                || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
             {
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, body, actorId, ct).ConfigureAwait(false);
+            var branchResolved = await branchResolver
+                .ResolveAsync(organizationId, branchId, ct)
+                .ConfigureAwait(false);
+            if (!branchResolved.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    branchResolved.ErrorCode ?? ApplicationErrorCodes.InventoryBranchRequired,
+                    branchResolved.ErrorMessage ?? "A selected branch is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, body, actorId, branchResolved.Value!.BranchId, ct)
+                .ConfigureAwait(false);
             return PosApiResults.FromResult(
                 result,
                 dto => Results.Created($"/api/v1/pos/direct-purchase-receipts/{dto.DirectPurchaseReceiptId:D}", dto));

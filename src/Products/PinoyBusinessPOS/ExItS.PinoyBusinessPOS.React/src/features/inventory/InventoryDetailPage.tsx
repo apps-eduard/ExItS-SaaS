@@ -722,6 +722,12 @@ export function InventoryDetailPage() {
                 <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
                   {t("inventory.stockAdjustment")}
                 </h2>
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="inventory-adjust-branch"
+                >
+                  {t("inventory.adjustingAtBranch").replace("{name}", branchLabel)}
+                </p>
 
             <fieldset className="m-0 border-0 p-0">
               <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">

@@ -45,6 +45,7 @@ export const directPurchaseReceiptDtoSchema = z.object({
   voidedAtUtc: z.string().nullable().optional(),
   voidedByUserId: guidSchema.nullable().optional(),
   voidReason: z.string().nullable().optional(),
+  receivingBranchId: guidSchema.nullable().optional(),
 });
 
 export const directPurchaseReceiptListItemDtoSchema = z.object({

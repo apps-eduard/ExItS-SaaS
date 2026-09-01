@@ -24,9 +24,21 @@ const ownerGrant = {
 
 let sessionGrant: typeof ownerGrant = ownerGrant;
 
+const remoteBranchId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: workspace,
+    workspaces: [
+      {
+        organizationId: workspace.organizationId,
+        displayName: "Test Org",
+        branches: [
+          { branchId: workspace.branchId, name: "Main Branch", secondaryLine: "", isPrimary: true, isActive: true },
+          { branchId: remoteBranchId, name: "Remote Branch", secondaryLine: "", isPrimary: false, isActive: true },
+        ],
+      },
+    ],
     get sessionGrant() {
       return sessionGrant;
     },
@@ -74,6 +86,7 @@ function postedReceipt(
     voidedAtUtc: null,
     voidedByUserId: null,
     voidReason: null,
+    receivingBranchId: remoteBranchId,
     lines: [
       {
         lineId: "11111111-1111-4111-8111-111111111111",
@@ -122,6 +135,7 @@ describe("DirectPurchaseDetailPage cost UX", () => {
     });
     expect(screen.getByText("DP-000045")).toBeInTheDocument();
     expect(screen.getByTestId("direct-purchase-source")).toHaveTextContent("ABC Trading");
+    expect(screen.getByTestId("direct-purchase-receiving-branch")).toHaveTextContent("Remote Branch");
     expect(screen.getByTestId("direct-purchase-reference")).toHaveTextContent("OR-12345");
     expect(screen.getByTestId("direct-purchase-notes")).toHaveTextContent("Morning delivery");
     expect(screen.getByTestId("direct-purchase-total")).toHaveTextContent(formatPeso(4500));

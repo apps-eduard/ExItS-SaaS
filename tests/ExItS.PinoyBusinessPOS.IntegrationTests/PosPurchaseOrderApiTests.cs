@@ -26,6 +26,7 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
     };
 
     private static readonly Guid Actor = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid PrimaryBranch = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     private const string PurchaseOrders = "/api/v1/pos/purchase-orders";
     private const string Suppliers = "/api/v1/pos/suppliers";
@@ -272,11 +273,14 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         return problem.TryGetProperty("errorCode", out var code) ? code.GetString() : null;
     }
 
-    private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId)
+    private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId, Guid? branchId = null)
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.OrganizationHeaderName, organizationId.ToString("D"));
         request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.ActorHeaderName, Actor.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.BranchHeaderName,
+            (branchId ?? PrimaryBranch).ToString("D"));
         return request;
     }
 

@@ -22,6 +22,7 @@ public sealed class DirectPurchaseReceiptUseCaseTests
     private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid OrgB = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+    private static readonly Guid RemoteBranch = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     private static readonly DateTimeOffset Utc = new(2026, 8, 17, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -34,7 +35,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 2m, 12.5m)],
                 SupplierId: fx.SupplierId),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.True(withSupplier.IsSuccess);
         Assert.Equal(fx.SupplierId, withSupplier.Value!.SupplierId);
         Assert.Equal("Acme Trading", withSupplier.Value.SourceNameSnapshot);
@@ -46,7 +48,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 10m)],
                 SourceName: "Wet market"),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.True(adHoc.IsSuccess);
         Assert.Null(adHoc.Value!.SupplierId);
         Assert.Equal("Wet market", adHoc.Value.SourceNameSnapshot);
@@ -56,7 +59,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             new CreateDirectPurchaseReceiptRequest(
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 10m)]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.True(noSource.IsSuccess);
         Assert.Null(noSource.Value!.SourceNameSnapshot);
     }
@@ -73,7 +77,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                     new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 3m, 10m),
                     new CreateDirectPurchaseReceiptLineRequest(fx.SpriteId, 2m, 8m)
                 ]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.True(result.IsSuccess);
         Assert.Equal(13m, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.Equal(7m, fx.Inventory.GetOnHand(fx.SpriteId));
@@ -105,7 +110,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             new CreateDirectPurchaseReceiptRequest(
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 0m, 10m)]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseQuantity, zeroQty.ErrorCode);
         Assert.Equal(before, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.DirectPurchaseReceipt);
@@ -115,7 +121,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             new CreateDirectPurchaseReceiptRequest(
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 0m)]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.Equal(DomainErrorCodes.InvalidDirectPurchaseUnitCost, zeroCost.ErrorCode);
         Assert.Equal(before, fx.Inventory.GetOnHand(fx.CokeId));
     }
@@ -137,7 +144,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             new CreateDirectPurchaseReceiptRequest(
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(otherProduct.Id.Value, 1m, 5m)]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.Equal(ApplicationErrorCodes.PurchaseProductNotFound, productCross.ErrorCode);
 
         var supplierCross = await fx.Create.ExecuteAsync(
@@ -146,7 +154,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 5m)],
                 SupplierId: Guid.NewGuid()),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.Equal(ApplicationErrorCodes.SupplierNotFound, supplierCross.ErrorCode);
     }
 
@@ -159,12 +168,12 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 4m, 9m)],
             IdempotencyKey: "dpr-key-1");
 
-        var first = await fx.Create.ExecuteAsync(OrgA, request, Actor);
+        var first = await fx.Create.ExecuteAsync(OrgA, request, Actor, RemoteBranch);
         Assert.True(first.IsSuccess);
         Assert.Equal(14m, fx.Inventory.GetOnHand(fx.CokeId));
         Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.DirectPurchaseReceipt));
 
-        var second = await fx.Create.ExecuteAsync(OrgA, request, Actor);
+        var second = await fx.Create.ExecuteAsync(OrgA, request, Actor, RemoteBranch);
         Assert.True(second.IsSuccess);
         Assert.Equal(first.Value!.DirectPurchaseReceiptId, second.Value!.DirectPurchaseReceiptId);
         Assert.Equal(14m, fx.Inventory.GetOnHand(fx.CokeId));
@@ -180,7 +189,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             new CreateDirectPurchaseReceiptRequest(
                 DateOnly.FromDateTime(Utc.UtcDateTime),
                 [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 1m, 5m)]),
-            Actor);
+            Actor,
+            RemoteBranch);
         Assert.Equal(DomainErrorCodes.InventoryNotTracked, result.ErrorCode);
     }
 
@@ -217,6 +227,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public InMemoryLots Lots { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
+        public InMemoryBranchBalances BranchBalances { get; } = new();
+        public FixedPrimaryBranches Branches { get; } = new(RemoteBranch);
         public CreateDirectPurchaseReceipt Create { get; }
 
         public Fixture()
@@ -226,10 +238,13 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 Products,
                 Suppliers,
                 Inventory,
+                BranchBalances,
                 new InventoryLotStockService(Lots),
+                new BranchInventoryMutationService(),
                 UnitOfWork,
                 new CreateSupplierPayableFromReceipt(new NoOpSupplierPayableRepository()),
-                Clock);
+                Clock,
+                Branches);
         }
 
         public Task AddProductAsync(Guid productId, string name, decimal opening, bool track)
@@ -256,6 +271,52 @@ public sealed class DirectPurchaseReceiptUseCaseTests
                 }
             }
 
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FixedPrimaryBranches(Guid primaryId) : IOrganizationBranchDirectory
+    {
+        public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
+            Guid organizationId,
+            IReadOnlyCollection<Guid> branchIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, string>>(
+                branchIds.ToDictionary(id => id, id => id.ToString("D")));
+
+        public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Guid?>(primaryId);
+    }
+
+    private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
+    {
+        public List<InventoryBranchBalance> Items { get; } = [];
+
+        public Task<InventoryBranchBalance?> GetAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(b =>
+                b.OrganizationId == organizationId && b.BranchId == branchId && b.ProductId == productId));
+
+        public Task<IReadOnlyList<InventoryBranchBalance>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>(
+                Items.Where(b => b.OrganizationId == organizationId && productIds.Contains(b.ProductId)).ToList());
+
+        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
+        {
+            Items.RemoveAll(b =>
+                b.OrganizationId == balance.OrganizationId
+                && b.BranchId == balance.BranchId
+                && b.ProductId == balance.ProductId);
+            Items.Add(balance);
             return Task.CompletedTask;
         }
     }

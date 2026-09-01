@@ -56,12 +56,9 @@ internal static class PosInventoryOpsIntegrationSupport
         request.Headers.TryAddWithoutValidation(
             PosOrganizationHeaders.ActorHeaderName,
             (actorId ?? OwnerActor).ToString("D"));
-        if (branchId is Guid branch)
-        {
-            request.Headers.TryAddWithoutValidation(
-                PosOrganizationHeaders.BranchHeaderName,
-                branch.ToString("D"));
-        }
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.BranchHeaderName,
+            (branchId ?? BranchA).ToString("D"));
 
         if (status is not null)
         {
@@ -125,9 +122,10 @@ internal static class PosInventoryOpsIntegrationSupport
         decimal? unitCost = null,
         DateOnly? expirationDate = null,
         string? lotNumber = null,
-        Guid? actorId = null)
+        Guid? actorId = null,
+        Guid? branchId = null)
     {
-        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", org, actorId);
+        using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", org, actorId, branchId ?? BranchA);
         enable.Content = JsonContent.Create(
             openingQuantity > 0m
                 ? new EnableInventoryTrackingRequest(
@@ -146,9 +144,10 @@ internal static class PosInventoryOpsIntegrationSupport
         Guid org,
         Guid productId,
         decimal quantity,
-        Guid? actorId = null)
+        Guid? actorId = null,
+        Guid? branchId = null)
     {
-        using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org, actorId);
+        using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org, actorId, branchId ?? BranchA);
         adjust.Content = JsonContent.Create(
             new AdjustInventoryRequest("In", quantity, "Seed without acquisition cost"),
             options: JsonOptions);

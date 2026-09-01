@@ -2215,6 +2215,7 @@ public sealed class PosDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.CountNumber).HasColumnName("count_number").HasMaxLength(StockCountNumbers.MaxLength);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.CountDate).HasColumnName("count_date").IsRequired();
@@ -2242,6 +2243,8 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.Status, e.UpdatedAtUtc })
                 .HasDatabaseName("ix_stock_counts_org_status_updated");
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_stock_counts_org_branch");
         });
 
         modelBuilder.Entity<StockCountLineRecord>(entity =>
@@ -2463,6 +2466,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.IdempotencyKey)
                 .HasColumnName("idempotency_key")
                 .HasMaxLength(DirectPurchaseReceipt.IdempotencyKeyMaxLength);
+            entity.Property(e => e.ReceivingBranchId).HasColumnName("receiving_branch_id");
             entity.Property(e => e.Status)
                 .HasColumnName("status")
                 .HasMaxLength(DirectPurchaseReceiptStatuses.CodeMaxLength)
@@ -2485,6 +2489,8 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_direct_purchase_receipts_org_purchase_date");
             entity.HasIndex(e => new { e.OrganizationId, e.SupplierId })
                 .HasDatabaseName("ix_direct_purchase_receipts_org_supplier_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceivingBranchId })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_receiving_branch");
             entity.HasIndex(e => new { e.OrganizationId, e.ReferenceNumber })
                 .HasDatabaseName("ix_direct_purchase_receipts_org_reference");
             entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
@@ -3769,6 +3775,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(GoodsReceipt.NotesMaxLength);
             entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
             entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
+            entity.Property(e => e.ReceivingBranchId).HasColumnName("receiving_branch_id");
             entity.Property(e => e.Status)
                 .HasColumnName("status")
                 .HasMaxLength(GoodsReceiptStatuses.CodeMaxLength)
@@ -3789,6 +3796,8 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.Status })
                 .HasDatabaseName("ix_goods_receipts_org_status");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceivingBranchId })
+                .HasDatabaseName("ix_goods_receipts_org_receiving_branch");
 
             entity.HasOne<PurchaseOrderRecord>()
                 .WithMany()

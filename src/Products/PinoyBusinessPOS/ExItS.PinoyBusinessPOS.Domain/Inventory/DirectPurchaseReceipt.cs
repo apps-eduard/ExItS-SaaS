@@ -32,6 +32,7 @@ public sealed class DirectPurchaseReceipt
     public Guid CreatedByUserId { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public string? IdempotencyKey { get; }
+    public PosBranchId? ReceivingBranchId { get; }
     public DirectPurchaseReceiptStatus Status { get; private set; }
     public DateTimeOffset? VoidedAtUtc { get; private set; }
     public Guid? VoidedByUserId { get; private set; }
@@ -52,6 +53,7 @@ public sealed class DirectPurchaseReceipt
         Guid createdByUserId,
         DateTimeOffset createdAtUtc,
         string? idempotencyKey,
+        PosBranchId? receivingBranchId,
         List<DirectPurchaseReceiptLine> lines,
         DirectPurchaseReceiptStatus status = DirectPurchaseReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
@@ -70,6 +72,7 @@ public sealed class DirectPurchaseReceipt
         CreatedByUserId = createdByUserId;
         CreatedAtUtc = createdAtUtc;
         IdempotencyKey = idempotencyKey;
+        ReceivingBranchId = receivingBranchId;
         Status = status;
         VoidedAtUtc = voidedAtUtc;
         VoidedByUserId = voidedByUserId;
@@ -89,10 +92,18 @@ public sealed class DirectPurchaseReceipt
         string? referenceNumber = null,
         string? notes = null,
         string? idempotencyKey = null,
+        PosBranchId? receivingBranchId = null,
         DirectPurchaseReceiptId? id = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(createdByUserId);
+
+        if (receivingBranchId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidBranchId,
+                "A receiving branch is required for direct purchase receipts.");
+        }
 
         if (lines is null || lines.Count == 0)
         {
@@ -123,6 +134,7 @@ public sealed class DirectPurchaseReceipt
             createdByUserId,
             utcNow,
             NormalizeIdempotencyKey(idempotencyKey),
+            receivingBranchId,
             built,
             DirectPurchaseReceiptStatus.Posted);
     }
@@ -168,6 +180,7 @@ public sealed class DirectPurchaseReceipt
         Guid createdByUserId,
         DateTimeOffset createdAtUtc,
         string? idempotencyKey,
+        PosBranchId? receivingBranchId,
         IReadOnlyList<DirectPurchaseReceiptLine> lines,
         DirectPurchaseReceiptStatus status = DirectPurchaseReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
@@ -186,6 +199,7 @@ public sealed class DirectPurchaseReceipt
             createdByUserId,
             createdAtUtc,
             idempotencyKey,
+            receivingBranchId,
             lines.ToList(),
             status,
             voidedAtUtc,

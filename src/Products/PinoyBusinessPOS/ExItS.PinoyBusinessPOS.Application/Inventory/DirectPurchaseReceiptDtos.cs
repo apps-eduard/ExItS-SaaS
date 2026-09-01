@@ -32,7 +32,8 @@ public sealed record DirectPurchaseReceiptDto(
     string Status = "Posted",
     DateTimeOffset? VoidedAtUtc = null,
     Guid? VoidedByUserId = null,
-    string? VoidReason = null);
+    string? VoidReason = null,
+    Guid? ReceivingBranchId = null);
 
 public sealed record VoidDirectPurchaseReceiptRequest(string Reason, string? Notes = null);
 
@@ -86,7 +87,8 @@ public static class DirectPurchaseReceiptMapper
             DirectPurchaseReceiptStatuses.ToCode(receipt.Status),
             receipt.VoidedAtUtc,
             receipt.VoidedByUserId,
-            receipt.VoidReason);
+            receipt.VoidReason,
+            receipt.ReceivingBranchId?.Value);
 
     public static DirectPurchaseReceiptListItemDto MapListItem(DirectPurchaseReceipt receipt) =>
         new(

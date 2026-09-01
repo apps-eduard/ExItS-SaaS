@@ -11,6 +11,7 @@ internal static class StockCountEntityMapper
         StockCount.Rehydrate(
             StockCountId.From(record.Id),
             PosOrganizationId.From(record.OrganizationId),
+            record.BranchId is null ? null : PosBranchId.From(record.BranchId.Value),
             record.CountNumber,
             StockCountStatuses.Parse(record.Status),
             record.CountDate,
@@ -42,6 +43,7 @@ internal static class StockCountEntityMapper
         {
             Id = count.Id.Value,
             OrganizationId = count.OrganizationId.Value,
+            BranchId = count.BranchId?.Value,
             CountNumber = count.CountNumber,
             Status = StockCountStatuses.ToCode(count.Status),
             CountDate = count.CountDate,

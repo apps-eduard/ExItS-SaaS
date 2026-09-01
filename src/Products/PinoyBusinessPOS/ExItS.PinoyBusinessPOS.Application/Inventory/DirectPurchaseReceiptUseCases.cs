@@ -58,35 +58,45 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly ICatalogProductRepository _products;
     private readonly ISupplierRepository _suppliers;
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public CreateDirectPurchaseReceipt(
         IDirectPurchaseReceiptRepository receipts,
         ICatalogProductRepository products,
         ISupplierRepository suppliers,
         IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _receipts = receipts;
         _products = products;
         _suppliers = suppliers;
         _inventory = inventory;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<DirectPurchaseReceiptDto>> ExecuteAsync(
         Guid organizationId,
         CreateDirectPurchaseReceiptRequest request,
         Guid actorId,
+        Guid receivingBranchId,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -94,6 +104,13 @@ public sealed class CreateDirectPurchaseReceipt
             return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required to create a direct purchase receipt.");
+        }
+
+        if (receivingBranchId == Guid.Empty)
+        {
+            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A receiving branch is required for direct purchase receipts.");
         }
 
         if (request.Lines is null || request.Lines.Count == 0)
@@ -104,6 +121,7 @@ public sealed class CreateDirectPurchaseReceipt
         }
 
         var orgId = PosOrganizationId.From(organizationId);
+        var receivingBranch = PosBranchId.From(receivingBranchId);
         var idempotencyKey = string.IsNullOrWhiteSpace(request.IdempotencyKey)
             ? null
             : request.IdempotencyKey.Trim();
@@ -237,7 +255,8 @@ public sealed class CreateDirectPurchaseReceipt
                             sourceName,
                             request.ReferenceNumber,
                             request.Notes,
-                            idempotencyKey);
+                            idempotencyKey,
+                            receivingBranch);
 
                         foreach (var line in receipt.Lines)
                         {
@@ -250,6 +269,7 @@ public sealed class CreateDirectPurchaseReceipt
                             }
 
                             var product = productsById[line.ProductId.Value];
+                            var orgOnHandBefore = account.OnHandQuantity;
                             var movement = StockMovement.DirectPurchaseReceipt(
                                 orgId,
                                 line.ProductId,
@@ -260,7 +280,8 @@ public sealed class CreateDirectPurchaseReceipt
                                 actorId,
                                 utcNow,
                                 sellingMode: product.SellingMode,
-                                unitCost: line.UnitCost);
+                                unitCost: line.UnitCost)
+                                .WithBranch(receivingBranch.Value);
 
                             if (product.TracksExpiration)
                             {
@@ -274,7 +295,7 @@ public sealed class CreateDirectPurchaseReceipt
                                         utcNow,
                                         movement.MovementType,
                                         StockMovementSourceType.DirectPurchase,
-                                        branchId: null,
+                                        receivingBranch,
                                         line.LotNumber,
                                         sourceId: receipt.Id.Value,
                                         stockMovementId: movement.Id.Value,
@@ -286,6 +307,18 @@ public sealed class CreateDirectPurchaseReceipt
                             line.AttachInventoryMovement(movement.Id);
                             account.ApplyMovementEffect(movement.QuantityEffect);
                             account.Touch(utcNow);
+                            await _branchMutations
+                                .ApplyBranchDeltaAsync(
+                                    _branchBalances,
+                                    _branches,
+                                    orgId,
+                                    receivingBranch,
+                                    line.ProductId,
+                                    orgOnHandBefore,
+                                    movement.QuantityEffect,
+                                    utcNow,
+                                    ct)
+                                .ConfigureAwait(false);
                             await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                             await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                         }
@@ -341,27 +374,36 @@ public sealed class VoidDirectPurchaseReceipt
     private readonly IDirectPurchaseReceiptRepository _receipts;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly InventoryLotStockService _lots;
+    private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly IClock _clock;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public VoidDirectPurchaseReceipt(
         IDirectPurchaseReceiptRepository receipts,
         ICatalogProductRepository products,
         IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository branchBalances,
         InventoryLotStockService lots,
+        BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
-        IClock clock)
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _receipts = receipts;
         _products = products;
         _inventory = inventory;
+        _branchBalances = branchBalances;
         _lots = lots;
+        _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<DirectPurchaseReceiptDto>> ExecuteAsync(
@@ -413,6 +455,28 @@ public sealed class VoidDirectPurchaseReceipt
                         var productsById = products.ToDictionary(p => p.Id.Value);
                         var utcNow = _clock.UtcNow;
                         var voidReason = request.Reason.Trim();
+                        if (_branches is null)
+                        {
+                            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                ApplicationErrorCodes.InventoryBranchRequired,
+                                "Branch directory is unavailable.");
+                        }
+
+                        var branchResolved = await BranchInventoryMutationService
+                            .ResolvePhysicalBranchAsync(
+                                receipt.ReceivingBranchId?.Value,
+                                _branches,
+                                organizationId,
+                                ct)
+                            .ConfigureAwait(false);
+                        if (!branchResolved.IsSuccess)
+                        {
+                            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
+                                branchResolved.ErrorCode!,
+                                branchResolved.ErrorMessage!);
+                        }
+
+                        var receivingBranch = branchResolved.Value!;
 
                         await _createPayable
                             .EnsureVoidOrBlockForReceiptReversalAsync(
@@ -511,6 +575,7 @@ public sealed class VoidDirectPurchaseReceipt
 
                                         // Preserve original receipt unit cost (first line in group when uniform).
                                         var unitCost = lineGroup.First().UnitCost;
+                                        var orgOnHandBefore = account.OnHandQuantity;
                                         var reversal = StockMovement.DirectPurchaseReceiptReversal(
                                             orgId,
                                             productId,
@@ -522,11 +587,23 @@ public sealed class VoidDirectPurchaseReceipt
                                             utcNow,
                                             reason: voidReason,
                                             sellingMode: product.SellingMode,
-                                            branchId: null,
+                                            branchId: receivingBranch.Value,
                                             unitCost: unitCost);
 
                                         account.ApplyMovementEffect(reversal.QuantityEffect);
                                         account.Touch(utcNow);
+                                        await _branchMutations
+                                            .ApplyBranchDeltaAsync(
+                                                _branchBalances,
+                                                _branches,
+                                                orgId,
+                                                receivingBranch,
+                                                productId,
+                                                orgOnHandBefore,
+                                                reversal.QuantityEffect,
+                                                utcNow,
+                                                lockCt)
+                                            .ConfigureAwait(false);
                                         await _inventory.UpdateAccountAsync(account, lockCt).ConfigureAwait(false);
                                         await _inventory.AddMovementAsync(reversal, lockCt).ConfigureAwait(false);
                                     }
