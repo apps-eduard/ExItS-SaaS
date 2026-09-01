@@ -7,6 +7,8 @@
 **Start SHA:** `7b5fb86a45e59a241dc7d0835be1d5f99e88aa05`  
 **Hard stop:** YES — do not start MB2-02C in this package.
 
+**H1 follow-up:** Reservation must not reduce branch OnHand. Mixed-lot `lots.Count == 0` heuristic was unsafe. See [MB2-02B-H1](POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md).
+
 ---
 
 ## Summary

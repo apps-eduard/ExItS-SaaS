@@ -3,7 +3,16 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-02 (02A read authority delivered; 02B write authority delivered; 02C reconciliation deferred)
+**Implements in:** MB2-02 (02A read authority delivered; 02B write authority delivered; 02B-H1 reservation/primary/lot hardening delivered; 02C reconciliation deferred)
+
+### MB2-02B-H1 reservation, unknown-primary writes, and mixed lots (delivered)
+
+- `InventoryBranchBalance.OnHandQuantity` is physical only. Reservations use `ReservedQuantity` (`Available = OnHand − Reserved`).
+- Missing branch balance + unknown structural Primary: physical mutation fails closed (`pos.inventory.primary_unavailable`); no zero-seed orphaning.
+- Mutation APIs accept resolved `primaryBranchId`; Platform primary lookup is cached per scoped directory (≤1 HTTP per request).
+- Primary effective lots = branch-scoped lots ∪ remaining `BranchId=null` lots (dedup by lot id). Secondary never sees legacy null lots.
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md)
 
 ### MB2-02B write authority (delivered)
 
@@ -46,7 +55,7 @@
 | Store | Role |
 |-------|------|
 | `InventoryAccount` | Org/product projection: OnHand, Reserved, Available; unique `(OrganizationId, ProductId)` |
-| `InventoryBranchBalance` | Branch overlay PK `(OrganizationId, BranchId, ProductId)` |
+| `InventoryBranchBalance` | Branch overlay PK `(OrganizationId, BranchId, ProductId)`: physical OnHand + Reserved |
 | `BranchStockResolver` | Explicit branch row → else unallocated attributed to **primary**; non-primary missing → 0 |
 
 **Writes that update branch overlay today (examples):** adjustments with branchId, Stock Use / Waste / Production paths using `BranchBalanceMutation`, transfers, sale/customer-order **reserve** with branch.

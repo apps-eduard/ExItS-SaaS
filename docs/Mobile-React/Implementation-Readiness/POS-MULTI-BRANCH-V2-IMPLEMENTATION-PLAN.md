@@ -186,7 +186,8 @@ Then: `NEXT=MB2_02`
 **MB2-02A (read authority):** COMPLETE — see [MB2-02A report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md).
 **MB2-02A-H1 (primary legacy isolation):** COMPLETE — see [H1 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-H1-PRIMARY-BRANCH-LEGACY-STOCK-ISOLATION.md).
 **MB2-02B (write authority):** COMPLETE — see [MB2-02B report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-PHYSICAL-INVENTORY-WRITE-AUTHORITY.md).
-**NEXT authorized package:** MB2-02C (lot/movement reconciliation polish).
+**MB2-02B-H1 (reservation / unknown-primary writes / mixed lots):** COMPLETE — see [MB2-02B-H1 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md).
+**NEXT authorized package:** MB2-02C (lot/movement reconciliation polish). **HARD STOP — do not start MB2-02C without authorization.**
 
 ---
 
