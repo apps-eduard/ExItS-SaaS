@@ -394,7 +394,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
             PosOrganizationId organizationId, POSCustomerId customerId, int skip, int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = All.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId).ToList();
             return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -416,13 +416,13 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Task.FromResult<IReadOnlyList<CreditEntry>>(Array.Empty<CreditEntry>());
 
         public Task<decimal> SumActiveAmountAsync(
-            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) =>
             Task.FromResult(All.Where(e =>
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active)
                 .Sum(e => e.Amount));
 
         public Task<int> CountActiveAsync(
-            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) =>
             Task.FromResult(All.Count(e =>
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
     }

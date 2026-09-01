@@ -590,7 +590,7 @@ public sealed class CustomerOrderSettlementCogsTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) =>
             Task.FromResult<(IReadOnlyList<CreditEntry>, int)>(([], 0));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
@@ -616,14 +616,14 @@ public sealed class CustomerOrderSettlementCogsTests
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(0m);
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(0m);
 
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(0);
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(0);
 
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

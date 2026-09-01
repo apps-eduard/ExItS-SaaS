@@ -722,7 +722,7 @@ public sealed class LinkedCustomerSaleProjectionTests
             Task.FromResult(All.FirstOrDefault(e => e.OrganizationId == organizationId && e.Id == entryId));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
-            PosOrganizationId organizationId, POSCustomerId customerId, int skip, int take, CancellationToken cancellationToken = default)
+            PosOrganizationId organizationId, POSCustomerId customerId, int skip, int take, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = All.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
                 .OrderByDescending(e => e.CreatedAtUtc).ThenByDescending(e => e.Id.Value).ToList();
@@ -743,13 +743,13 @@ public sealed class LinkedCustomerSaleProjectionTests
             Task.FromResult<IReadOnlyList<CreditEntry>>(Array.Empty<CreditEntry>());
 
         public Task<decimal> SumActiveAmountAsync(
-            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) =>
             Task.FromResult(All.Where(e =>
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active)
                 .Sum(e => e.Amount));
 
         public Task<int> CountActiveAsync(
-            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) =>
             Task.FromResult(All.Count(e =>
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
     }

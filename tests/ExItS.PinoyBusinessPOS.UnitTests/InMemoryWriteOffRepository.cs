@@ -48,8 +48,7 @@ internal sealed class InMemoryWriteOffRepository : IWriteOffRepository
     public Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(_items
+        CancellationToken cancellationToken = default) => Task.FromResult(_items
             .Where(e => e.OrganizationId == organizationId
                         && e.CustomerId == customerId
                         && e.Status == WriteOffStatus.Active)
@@ -69,8 +68,7 @@ internal sealed class InMemoryWriteOffRepository : IWriteOffRepository
     public Task<int> CountActiveAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(_items.Count(e =>
+        CancellationToken cancellationToken = default) => Task.FromResult(_items.Count(e =>
             e.OrganizationId == organizationId
             && e.CustomerId == customerId
             && e.Status == WriteOffStatus.Active));

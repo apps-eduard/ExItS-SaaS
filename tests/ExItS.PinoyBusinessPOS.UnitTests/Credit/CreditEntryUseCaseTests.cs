@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -47,7 +49,10 @@ public sealed class CreditEntryUseCaseTests
         var reversed = await reverse.ExecuteAsync(OrgId, customer.Id.Value, first.Value!.Id.Value, "Mistake", default);
         Assert.True(reversed.IsSuccess);
 
-        var queries = new CreditEntryQueryService(entries, outstanding);
+        var historyScope = new PartyBranchHistoryScopeService(
+            new PartyBranchAccessGovernanceAuthority(),
+            FixedPartyBranchAccessActorAccessor.Owner());
+        var queries = new CreditEntryQueryService(entries, outstanding, historyScope);
         var summary = await queries.GetSummaryAsync(OrgId, customer.Id.Value);
         Assert.Equal(40m, summary.OutstandingAmount);
         Assert.Equal(1, summary.ActiveEntryCount);
@@ -173,7 +178,7 @@ public sealed class CreditEntryUseCaseTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = _items
                 .Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
@@ -200,8 +205,8 @@ public sealed class CreditEntryUseCaseTests
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items
                 .Where(e => e.OrganizationId == organizationId
                             && e.CustomerId == customerId
                             && e.Status == CreditEntryStatus.Active)
@@ -210,8 +215,8 @@ public sealed class CreditEntryUseCaseTests
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(e =>
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Count(e =>
                 e.OrganizationId == organizationId
                 && e.CustomerId == customerId
                 && e.Status == CreditEntryStatus.Active));
@@ -270,8 +275,7 @@ public sealed class CreditEntryUseCaseTests
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(0m);
+            CancellationToken cancellationToken = default) => Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,
@@ -281,8 +285,7 @@ public sealed class CreditEntryUseCaseTests
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(0);
+            CancellationToken cancellationToken = default) => Task.FromResult(0);
 
         public Task AddAsync(Repayment repayment, CancellationToken cancellationToken = default) => Task.CompletedTask;
 

@@ -48,14 +48,17 @@ internal static class PartyBranchAccessTestSupport
 
 internal sealed class InMemoryCustomerBranchAccessRepository : ICustomerBranchAccessRepository
 {
-    private readonly HashSet<(Guid Org, Guid Branch, Guid Customer)> _rows = new();
+    private readonly HashSet<(Guid Org, Guid Branch, Guid Customer, PartyBranchGrantSource Source)> _rows = new();
 
     public Task<bool> HasAccessAsync(
         PosOrganizationId organizationId,
         PosBranchId branchId,
         POSCustomerId customerId,
         CancellationToken cancellationToken = default) =>
-        Task.FromResult(_rows.Contains((organizationId.Value, branchId.Value, customerId.Value)));
+        Task.FromResult(_rows.Any(r =>
+            r.Org == organizationId.Value
+            && r.Branch == branchId.Value
+            && r.Customer == customerId.Value));
 
     public Task<IReadOnlyList<POSCustomerId>> ListAccessibleCustomerIdsAsync(
         PosOrganizationId organizationId,
@@ -65,6 +68,7 @@ internal sealed class InMemoryCustomerBranchAccessRepository : ICustomerBranchAc
         var ids = _rows
             .Where(r => r.Org == organizationId.Value && r.Branch == branchId.Value)
             .Select(r => POSCustomerId.From(r.Customer))
+            .Distinct()
             .ToList();
         return Task.FromResult<IReadOnlyList<POSCustomerId>>(ids);
     }
@@ -79,27 +83,42 @@ internal sealed class InMemoryCustomerBranchAccessRepository : ICustomerBranchAc
         var ids = _rows
             .Where(r => r.Org == organizationId.Value && r.Branch == branchId.Value && wanted.Contains(r.Customer))
             .Select(r => POSCustomerId.From(r.Customer))
+            .Distinct()
             .ToList();
         return Task.FromResult<IReadOnlyList<POSCustomerId>>(ids);
     }
 
     public Task GrantAsync(CustomerBranchAccess access, CancellationToken cancellationToken = default)
     {
-        _rows.Add((access.OrganizationId.Value, access.BranchId.Value, access.CustomerId.Value));
+        _rows.Add((access.OrganizationId.Value, access.BranchId.Value, access.CustomerId.Value, access.GrantSource));
+        return Task.CompletedTask;
+    }
+
+    public Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        POSCustomerId customerId,
+        PartyBranchGrantSource grantSource,
+        CancellationToken cancellationToken = default)
+    {
+        _rows.Remove((organizationId.Value, branchId.Value, customerId.Value, grantSource));
         return Task.CompletedTask;
     }
 }
 
 internal sealed class InMemorySupplierBranchAccessRepository : ISupplierBranchAccessRepository
 {
-    private readonly HashSet<(Guid Org, Guid Branch, Guid Supplier)> _rows = new();
+    private readonly HashSet<(Guid Org, Guid Branch, Guid Supplier, PartyBranchGrantSource Source)> _rows = new();
 
     public Task<bool> HasAccessAsync(
         PosOrganizationId organizationId,
         PosBranchId branchId,
         SupplierId supplierId,
         CancellationToken cancellationToken = default) =>
-        Task.FromResult(_rows.Contains((organizationId.Value, branchId.Value, supplierId.Value)));
+        Task.FromResult(_rows.Any(r =>
+            r.Org == organizationId.Value
+            && r.Branch == branchId.Value
+            && r.Supplier == supplierId.Value));
 
     public Task<IReadOnlyList<SupplierId>> ListAccessibleSupplierIdsAsync(
         PosOrganizationId organizationId,
@@ -109,6 +128,7 @@ internal sealed class InMemorySupplierBranchAccessRepository : ISupplierBranchAc
         var ids = _rows
             .Where(r => r.Org == organizationId.Value && r.Branch == branchId.Value)
             .Select(r => SupplierId.From(r.Supplier))
+            .Distinct()
             .ToList();
         return Task.FromResult<IReadOnlyList<SupplierId>>(ids);
     }
@@ -123,13 +143,25 @@ internal sealed class InMemorySupplierBranchAccessRepository : ISupplierBranchAc
         var ids = _rows
             .Where(r => r.Org == organizationId.Value && r.Branch == branchId.Value && wanted.Contains(r.Supplier))
             .Select(r => SupplierId.From(r.Supplier))
+            .Distinct()
             .ToList();
         return Task.FromResult<IReadOnlyList<SupplierId>>(ids);
     }
 
     public Task GrantAsync(SupplierBranchAccess access, CancellationToken cancellationToken = default)
     {
-        _rows.Add((access.OrganizationId.Value, access.BranchId.Value, access.SupplierId.Value));
+        _rows.Add((access.OrganizationId.Value, access.BranchId.Value, access.SupplierId.Value, access.GrantSource));
+        return Task.CompletedTask;
+    }
+
+    public Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        SupplierId supplierId,
+        PartyBranchGrantSource grantSource,
+        CancellationToken cancellationToken = default)
+    {
+        _rows.Remove((organizationId.Value, branchId.Value, supplierId.Value, grantSource));
         return Task.CompletedTask;
     }
 }

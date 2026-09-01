@@ -280,7 +280,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = _items
                 .Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
@@ -306,8 +306,8 @@ public sealed class BusinessUtangConnectionIndependenceTests
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items
                 .Where(e => e.OrganizationId == organizationId
                             && e.CustomerId == customerId
                             && e.Status == CreditEntryStatus.Active)
@@ -316,8 +316,8 @@ public sealed class BusinessUtangConnectionIndependenceTests
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(e =>
+            CancellationToken cancellationToken = default,
+            IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Count(e =>
                 e.OrganizationId == organizationId
                 && e.CustomerId == customerId
                 && e.Status == CreditEntryStatus.Active));
@@ -384,8 +384,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
         public Task<decimal> SumActiveAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items
+            CancellationToken cancellationToken = default) => Task.FromResult(_items
                 .Where(r => r.OrganizationId == organizationId
                             && r.CustomerId == customerId
                             && r.Status == RepaymentStatus.Active)
@@ -403,8 +402,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
         public Task<int> CountActiveAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(r =>
+            CancellationToken cancellationToken = default) => Task.FromResult(_items.Count(r =>
                 r.OrganizationId == organizationId
                 && r.CustomerId == customerId
                 && r.Status == RepaymentStatus.Active));

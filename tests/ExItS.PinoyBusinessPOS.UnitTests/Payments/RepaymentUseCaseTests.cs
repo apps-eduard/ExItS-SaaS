@@ -164,7 +164,7 @@ public sealed class RepaymentUseCaseTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = _items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId).ToList();
             return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -185,11 +185,9 @@ public sealed class RepaymentUseCaseTests
             DateOnly toDateUtc,
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<CreditEntry>)Array.Empty<CreditEntry>());
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));
 
-        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
+        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
             PosOrganizationId organizationId,
@@ -253,8 +251,7 @@ public sealed class RepaymentUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active).Sum(e => e.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active).Sum(e => e.Amount));
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,
@@ -265,8 +262,7 @@ public sealed class RepaymentUseCaseTests
                     .GroupBy(e => e.CustomerId.Value)
                     .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount)));
 
-        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active));
+        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == RepaymentStatus.Active));
 
         public Task AddAsync(Repayment repayment, CancellationToken cancellationToken = default)
         {

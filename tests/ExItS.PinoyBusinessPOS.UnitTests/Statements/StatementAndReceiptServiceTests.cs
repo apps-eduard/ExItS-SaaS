@@ -259,7 +259,7 @@ public sealed class StatementAndReceiptServiceTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null)
         {
             var list = _items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
                 .OrderBy(e => e.CreatedAtUtc).ThenBy(e => e.Id.Value).ToList();
@@ -275,11 +275,9 @@ public sealed class StatementAndReceiptServiceTests
             DateOnly toDateUtc,
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<CreditEntry>)Array.Empty<CreditEntry>());
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active).Sum(e => e.Amount));
 
-        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
+        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null) => Task.FromResult(_items.Count(e => e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
 
         public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
             PosOrganizationId organizationId,
@@ -346,8 +344,7 @@ public sealed class StatementAndReceiptServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,
@@ -358,8 +355,7 @@ public sealed class StatementAndReceiptServiceTests
                     .GroupBy(r => r.CustomerId.Value)
                     .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount)));
 
-        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.Count(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active));
+        public Task<int> CountActiveAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Count(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active));
     }
 
     private sealed class InMemoryLedger(InMemoryCredits credits, InMemoryRepayments repayments) : IUtangLedgerQuery
@@ -369,7 +365,7 @@ public sealed class StatementAndReceiptServiceTests
             POSCustomerId customerId,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null, bool hideOrgWideAdjustments = false)
         {
             var all = await ListAllChronologicalAsync(organizationId, customerId, cancellationToken).ConfigureAwait(false);
             return (all.Skip(skip).Take(take).ToList(), all.Count);
@@ -378,7 +374,7 @@ public sealed class StatementAndReceiptServiceTests
         public async Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default, IReadOnlySet<Guid>? historyBranchIds = null, bool hideOrgWideAdjustments = false)
         {
             var (creditItems, _) = await credits.ListByCustomerAsync(organizationId, customerId, 0, 10_000, cancellationToken);
             var (repaymentItems, _) = await repayments.ListByCustomerAsync(organizationId, customerId, 0, 10_000, cancellationToken);
