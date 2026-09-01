@@ -38,6 +38,7 @@ export type PosStockMovementDto = {
   reason: string;
   sourceType: string;
   sourceId?: string | null;
+  branchId?: string | null;
   recordedAtUtc: string;
   recordedBy: string;
   expirationDate?: string | null;
@@ -90,6 +91,23 @@ export type PosInventoryLotPagedResult = {
   totalCount: number;
   page: number;
   pageSize: number;
+};
+
+export type PosInventoryBranchBreakdownDto = {
+  branchId: string;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+};
+
+export type PosOrganizationInventoryProductDto = {
+  productId: string;
+  productName: string;
+  unitOfMeasure: string;
+  organizationOnHandQuantity: number;
+  organizationReservedQuantity: number;
+  organizationAvailableQuantity: number;
+  branches: PosInventoryBranchBreakdownDto[];
 };
 
 export type PosExpiringLotPagedResult = {
@@ -173,6 +191,19 @@ export function getInventoryProduct(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}`,
+  });
+}
+
+export function getOrganizationInventorySummary(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosOrganizationInventoryProductDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/organization-summary`,
   });
 }
 

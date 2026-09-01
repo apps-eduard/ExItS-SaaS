@@ -410,7 +410,8 @@ public sealed class InventoryQueryService
             lot?.ExpirationDate,
             lot?.LotNumber,
             movement.UnitCost,
-            stockValue);
+            stockValue,
+            movement.BranchId);
     }
 }
 

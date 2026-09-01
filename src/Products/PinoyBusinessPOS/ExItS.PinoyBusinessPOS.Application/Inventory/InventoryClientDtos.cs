@@ -46,7 +46,8 @@ public sealed record PosStockMovementDto(
     DateOnly? ExpirationDate = null,
     string? LotNumber = null,
     decimal? UnitCost = null,
-    decimal? StockValue = null);
+    decimal? StockValue = null,
+    Guid? BranchId = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,
@@ -131,11 +132,15 @@ public sealed record SetInventoryReorderRequest(
 public sealed record PosInventoryReconciliationDto(
     Guid ProductId,
     decimal OrganizationOnHandQuantity,
+    decimal OrganizationReservedQuantity,
+    decimal OrganizationAvailableQuantity,
     decimal SumExplicitBranchOnHand,
+    decimal SumExplicitBranchReserved,
     decimal UnallocatedQuantity,
     decimal MovementSum,
     decimal Difference,
-    bool IsBalanced);
+    bool IsBalanced,
+    IReadOnlyList<PosInventoryBranchBreakdownDto> BranchBreakdown);
 
 public sealed record PosStockCountLineDto(
     Guid LineId,

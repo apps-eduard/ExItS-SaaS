@@ -140,7 +140,7 @@ describe("Stock Count React flow", () => {
     expect(await screen.findByTestId("stock-count-list-page")).toBeInTheDocument();
     expect(await screen.findByText("No stock counts yet")).toBeInTheDocument();
     expect(screen.getByTestId("stock-count-empty-cta")).toBeInTheDocument();
-    expect(screen.getByTestId("stock-count-scope-note")).toHaveTextContent(/organization-level/i);
+    expect(screen.getByTestId("stock-count-scope-note")).toHaveTextContent(/organization total/i);
   });
 
   it("lists stock counts with status filters and pagination hooks", async () => {

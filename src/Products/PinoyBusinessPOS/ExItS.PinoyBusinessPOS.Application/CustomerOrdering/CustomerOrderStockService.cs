@@ -48,15 +48,18 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly InventoryLotStockService? _lots;
 
     public CustomerOrderStockService(
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository? branchBalances = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        InventoryLotStockService? lots = null)
     {
         _inventory = inventory;
         _branchBalances = branchBalances;
         _branches = branches;
+        _lots = lots;
     }
 
     public Task<ApplicationResult> EnsureAvailableAsync(
@@ -306,6 +309,35 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                             throw new DomainException(
                                 ApplicationErrorCodes.SaleProductNotFound,
                                 "One or more products on the order were not found.");
+                        }
+
+                        if (product.TracksExpiration && _lots is not null)
+                        {
+                            var today = InventoryLot.BusinessDateOf(utcNow);
+                            try
+                            {
+                                await _lots
+                                    .ConsumeFefoAsync(
+                                        order.SellerOrganizationId,
+                                        line.ProductId,
+                                        line.Quantity,
+                                        today,
+                                        actorId,
+                                        utcNow,
+                                        StockMovementType.SaleDeduction,
+                                        StockMovementSourceType.CustomerOrder,
+                                        branchId: branchId,
+                                        sourceId: order.Id.Value,
+                                        cancellationToken: cancellationToken,
+                                        primaryBranchId: primaryId)
+                                    .ConfigureAwait(false);
+                            }
+                            catch (DomainException)
+                            {
+                                throw new DomainException(
+                                    ApplicationErrorCodes.InsufficientStock,
+                                    $"Insufficient non-expired stock for '{product.Name}'. Required: {line.Quantity}.");
+                            }
                         }
 
                         account.ConsumeReservation(line.Quantity);

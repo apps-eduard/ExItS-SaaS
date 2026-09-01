@@ -9,6 +9,7 @@ import {
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
+  getOrganizationInventorySummary,
   getStockMovement,
   listInventoryMovements,
   listProductLots,
@@ -101,6 +102,12 @@ export function InventoryDetailPage() {
     queryKey: ["inventory", "product", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => getInventoryProduct(workspace!, productId!, signal),
+  });
+
+  const orgSummaryQuery = useQuery({
+    queryKey: ["inventory", "organization-summary", workspace?.organizationId, productId],
+    enabled: Boolean(workspace) && Boolean(productId) && accountQuery.data?.isTracked === true,
+    queryFn: ({ signal }) => getOrganizationInventorySummary(workspace!, productId!, signal),
   });
 
   const tracksExpiration = accountQuery.data?.tracksExpiration === true;
@@ -469,6 +476,56 @@ export function InventoryDetailPage() {
                 .replace("{qty}", String(account.onHandQuantity))
                 .replace("{uom}", account.unitOfMeasure)}
             </p>
+            {orgSummaryQuery.data ? (
+              <div
+                className="mt-3 flex flex-col gap-2 border-t border-border pt-3"
+                data-testid="inventory-organization-summary"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("inventory.organizationInventory")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-on-hand">
+                  {t("inventory.organizationOnHand")
+                    .replace("{qty}", String(orgSummaryQuery.data.organizationOnHandQuantity))
+                    .replace("{uom}", account.unitOfMeasure)}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-reserved">
+                  {t("inventory.organizationReserved").replace(
+                    "{qty}",
+                    String(orgSummaryQuery.data.organizationReservedQuantity),
+                  )}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-available">
+                  {t("inventory.organizationAvailable").replace(
+                    "{qty}",
+                    String(orgSummaryQuery.data.organizationAvailableQuantity),
+                  )}
+                </p>
+                {orgSummaryQuery.data.branches.length > 0 ? (
+                  <div className="flex flex-col gap-1" data-testid="inventory-branch-breakdown">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("inventory.branchBreakdown")}
+                    </p>
+                    {orgSummaryQuery.data.branches.map((row) => (
+                      <p
+                        key={row.branchId}
+                        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                        data-testid={`inventory-branch-row-${row.branchId}`}
+                      >
+                        {t("inventory.branchBreakdownRow")
+                          .replace(
+                            "{branch}",
+                            row.branchId === workspace?.branchId ? branchLabel : row.branchId.slice(0, 8),
+                          )
+                          .replace("{onHand}", String(row.onHandQuantity))
+                          .replace("{reserved}", String(row.reservedQuantity))
+                          .replace("{available}", String(row.availableQuantity))}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <p
               className="mt-2 mb-0 text-[length:var(--exits-text-sm)] font-semibold"
               data-testid="inventory-expiration-status"

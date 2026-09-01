@@ -28,6 +28,8 @@ internal static class InventoryEndpoints
         group.MapGet("/{productId:guid}", GetByProduct);
         group.MapPut("/{productId:guid}/reorder", SetReorder);
         group.MapGet("/{productId:guid}/reconciliation", GetReconciliation);
+        group.MapGet("/{productId:guid}/organization-summary", GetOrganizationSummary);
+        group.MapGet("/physical-audit", GetPhysicalAudit);
         group.MapPost("/{productId:guid}/enable", Enable);
         group.MapPost("/{productId:guid}/opening-stock", AddOpeningStock);
         group.MapPost("/{productId:guid}/disable", Disable);
@@ -414,6 +416,37 @@ internal static class InventoryEndpoints
 
         var result = await query.GetAsync(organizationId, productId, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetOrganizationSummary(
+        HttpRequest request,
+        Guid productId,
+        OrganizationInventoryQuery query,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await query.GetProductAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetPhysicalAudit(
+        HttpRequest request,
+        IInventoryPhysicalAudit audit,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await audit.AuditAsync(organizationId, ct).ConfigureAwait(false);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> Enable(

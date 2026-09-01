@@ -98,6 +98,28 @@ function renderPage() {
 describe("InventoryDetailPage expiration UX", () => {
   beforeEach(() => {
     vi.spyOn(inventoryClient, "getInventoryProduct").mockResolvedValue(baseAccount() as never);
+    vi.spyOn(inventoryClient, "getOrganizationInventorySummary").mockResolvedValue({
+      productId,
+      productName: "Milk 1L",
+      unitOfMeasure: "Piece",
+      organizationOnHandQuantity: 85,
+      organizationReservedQuantity: 4,
+      organizationAvailableQuantity: 81,
+      branches: [
+        {
+          branchId: workspace.branchId,
+          onHandQuantity: 40,
+          reservedQuantity: 4,
+          availableQuantity: 36,
+        },
+        {
+          branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          onHandQuantity: 45,
+          reservedQuantity: 0,
+          availableQuantity: 45,
+        },
+      ],
+    });
     vi.spyOn(inventoryClient, "listInventoryMovements").mockResolvedValue({
       items: [],
       totalCount: 0,
@@ -142,6 +164,15 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(screen.queryByTestId("inventory-expiration-summary")).not.toBeInTheDocument();
     expect(screen.queryByTestId("inventory-lots")).not.toBeInTheDocument();
     expect(screen.getByTestId("inventory-adjust-form")).toBeInTheDocument();
+  });
+
+  it("shows organization inventory aggregate and branch breakdown", async () => {
+    renderPage();
+    await screen.findByTestId("inventory-organization-summary");
+    expect(screen.getByTestId("inventory-org-on-hand")).toHaveTextContent("85");
+    expect(screen.getByTestId("inventory-org-reserved")).toHaveTextContent("4");
+    expect(screen.getByTestId("inventory-org-available")).toHaveTextContent("81");
+    expect(screen.getByTestId("inventory-branch-breakdown")).toBeInTheDocument();
   });
 
   it("shows expiry-required increase form and summary when tracking is on", async () => {

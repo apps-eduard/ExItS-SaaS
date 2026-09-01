@@ -180,11 +180,15 @@ internal static class ProductionEndpoints
                 return problem!;
             }
 
-            if (body.BranchId is null
-                && PosOrganizationScope.TryGetOptionalBranchId(request, out var headerBranch)
-                && headerBranch is Guid branchFromHeader)
+            var branchResolved = InventoryBranchBodyResolver.ResolveMutationBranch(request, body.BranchId);
+            if (!branchResolved.Success)
             {
-                body = body with { BranchId = branchFromHeader };
+                return branchResolved.Problem!;
+            }
+
+            if (branchResolved.BranchId is Guid branchId)
+            {
+                body = body with { BranchId = branchId };
             }
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(

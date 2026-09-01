@@ -180,20 +180,33 @@ public sealed class InventoryReconciliationQuery
             .ListByProductIdsAsync(orgId, [catalogProductId], cancellationToken)
             .ConfigureAwait(false);
         var explicitSum = balances.Sum(b => b.OnHandQuantity);
+        var explicitReservedSum = balances.Sum(b => b.ReservedQuantity);
         var unallocated = Math.Max(0m, account.OnHandQuantity - explicitSum);
         var movementSum = await _inventory
             .SumMovementEffectsAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
         var difference = account.OnHandQuantity - movementSum;
+        var branchBreakdown = balances
+            .OrderBy(b => b.BranchId.Value)
+            .Select(b => new PosInventoryBranchBreakdownDto(
+                b.BranchId.Value,
+                b.OnHandQuantity,
+                b.ReservedQuantity,
+                b.AvailableQuantity))
+            .ToList();
         return ApplicationResult<PosInventoryReconciliationDto>.Success(
             new PosInventoryReconciliationDto(
                 productId,
                 account.OnHandQuantity,
+                account.ReservedQuantity,
+                account.AvailableQuantity,
                 explicitSum,
+                explicitReservedSum,
                 unallocated,
                 movementSum,
                 difference,
-                difference == 0m));
+                difference == 0m,
+                branchBreakdown));
     }
 }
 
