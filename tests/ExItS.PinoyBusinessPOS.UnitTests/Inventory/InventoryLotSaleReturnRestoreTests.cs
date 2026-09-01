@@ -184,6 +184,14 @@ public sealed class InventoryLotSaleReturnRestoreTests
             Task.FromResult<IReadOnlyList<InventoryLot>>(
                 Lots.Where(l => l.OrganizationId == organizationId && l.ProductId == productId).ToList());
 
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLot>>(
+                Lots.Where(l => l.OrganizationId == organizationId && l.ProductId == productId && l.BranchId is null).ToList());
+
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

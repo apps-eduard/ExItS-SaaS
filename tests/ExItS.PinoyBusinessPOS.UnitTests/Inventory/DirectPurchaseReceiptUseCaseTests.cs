@@ -194,6 +194,30 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         Assert.Equal(DomainErrorCodes.InventoryNotTracked, result.ErrorCode);
     }
 
+    [Fact]
+    public async Task H1_PERF_PRIMARY_01_thirty_line_direct_purchase_looks_up_primary_once()
+    {
+        var fx = await SeedAsync();
+        var lines = new List<CreateDirectPurchaseReceiptLineRequest>();
+        for (var i = 0; i < 30; i++)
+        {
+            var productId = Guid.Parse($"bbbbbbbb-bbbb-bbbb-bbbb-{i + 1:D12}");
+            await fx.AddProductAsync(productId, $"Sku {i}", 0m, track: true);
+            lines.Add(new CreateDirectPurchaseReceiptLineRequest(productId, 1m, 1m));
+        }
+
+        var result = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                lines),
+            Actor,
+            RemoteBranch);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(fx.Branches.PrimaryLookupCount <= 1, $"Primary lookups: {fx.Branches.PrimaryLookupCount}");
+    }
+
     private static async Task<Fixture> SeedAsync(
         decimal cokeOnHand = 0m,
         decimal spriteOnHand = 0m,
@@ -277,6 +301,8 @@ public sealed class DirectPurchaseReceiptUseCaseTests
 
     private sealed class FixedPrimaryBranches(Guid primaryId) : IOrganizationBranchDirectory
     {
+        public int PrimaryLookupCount { get; private set; }
+
         public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
             Task.FromResult(true);
 
@@ -287,8 +313,11 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
                 branchIds.ToDictionary(id => id, id => id.ToString("D")));
 
-        public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Guid?>(primaryId);
+        public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
+        {
+            PrimaryLookupCount++;
+            return Task.FromResult<Guid?>(primaryId);
+        }
     }
 
     private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
@@ -668,6 +697,14 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             bool includeDepleted,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryLot>>(Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId).ToList());
+
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLot>>(
+                Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId && l.BranchId is null).ToList());
 
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,

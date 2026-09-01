@@ -3195,6 +3195,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_inventory_branch_balances_on_hand_non_negative",
                     "on_hand_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_reserved_non_negative",
+                    "reserved_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_reserved_not_over_on_hand",
+                    "reserved_quantity <= on_hand_quantity");
             });
 
             entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
@@ -3204,6 +3210,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.OnHandQuantity)
                 .HasColumnName("on_hand_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ReservedQuantity)
+                .HasColumnName("reserved_quantity")
                 .HasPrecision(18, 3)
                 .IsRequired();
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");

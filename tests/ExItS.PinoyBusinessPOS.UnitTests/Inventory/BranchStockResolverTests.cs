@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -32,7 +33,7 @@ public sealed class BranchStockResolverTests
 
         Assert.Equal(70m, BranchStockResolver.ResolveOnHand(Main, Main.Value, 100m, balances, Coke));
         Assert.Equal(30m, BranchStockResolver.ResolveOnHand(BranchB, Main.Value, 100m, balances, Coke));
-        Assert.Equal(30m, BranchStockResolver.ResolveAvailable(30m, 100m));
+        Assert.Equal(30m, BranchStockResolver.ResolveAvailable(30m, 0m));
     }
 
     [Fact]
@@ -41,8 +42,16 @@ public sealed class BranchStockResolverTests
         var main = InventoryBranchBalance.Create(Org, Main, Coke, 100m, T0);
         var available = BranchStockResolver.ResolveAvailable(
             BranchStockResolver.ResolveOnHand(BranchB, Main.Value, 100m, [main], Coke),
-            organizationAvailable: 100m);
+            branchReserved: 0m);
         Assert.Equal(0m, available);
+    }
+
+    [Fact]
+    public void H1_WRITE_PRIMARY_ensure_throws_when_missing_and_primary_unknown()
+    {
+        var ex = Assert.Throws<DomainException>(() =>
+            BranchStockResolver.EnsureBalance(Org, Main, Coke, 100m, primaryBranchId: null, [], T0));
+        Assert.Equal(DomainErrorCodes.InventoryPrimaryUnavailable, ex.ErrorCode);
     }
 
     [Fact]

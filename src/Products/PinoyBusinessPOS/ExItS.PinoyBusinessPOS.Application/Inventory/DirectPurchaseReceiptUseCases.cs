@@ -258,6 +258,10 @@ public sealed class CreateDirectPurchaseReceipt
                             idempotencyKey,
                             receivingBranch);
 
+                        var primaryBranchId = await _branches
+                            .GetPrimaryBranchIdAsync(orgId.Value, ct)
+                            .ConfigureAwait(false);
+
                         foreach (var line in receipt.Lines)
                         {
                             var account = accountsByProduct[line.ProductId.Value];
@@ -310,9 +314,9 @@ public sealed class CreateDirectPurchaseReceipt
                             await _branchMutations
                                 .ApplyBranchDeltaAsync(
                                     _branchBalances,
-                                    _branches,
                                     orgId,
                                     receivingBranch,
+                                    primaryBranchId,
                                     line.ProductId,
                                     orgOnHandBefore,
                                     movement.QuantityEffect,
@@ -477,6 +481,9 @@ public sealed class VoidDirectPurchaseReceipt
                         }
 
                         var receivingBranch = branchResolved.Value!;
+                        var primaryBranchId = await _branches
+                            .GetPrimaryBranchIdAsync(orgId.Value, ct)
+                            .ConfigureAwait(false);
 
                         await _createPayable
                             .EnsureVoidOrBlockForReceiptReversalAsync(
@@ -595,9 +602,9 @@ public sealed class VoidDirectPurchaseReceipt
                                         await _branchMutations
                                             .ApplyBranchDeltaAsync(
                                                 _branchBalances,
-                                                _branches,
                                                 orgId,
                                                 receivingBranch,
+                                                primaryBranchId,
                                                 productId,
                                                 orgOnHandBefore,
                                                 reversal.QuantityEffect,

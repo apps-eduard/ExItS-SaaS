@@ -63,6 +63,29 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         return records.Select(InventoryEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value
+            && l.ProductId == productId.Value
+            && l.BranchId == null);
+        if (!includeDepleted)
+        {
+            query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        var records = await query
+            .OrderBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

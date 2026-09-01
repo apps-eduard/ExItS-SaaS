@@ -127,7 +127,8 @@ public sealed class InventoryLotStockService
         PosBranchId? branchId = null,
         Guid? sourceId = null,
         Guid? stockMovementId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? primaryBranchId = null)
     {
         if (sourceId is Guid existingSource)
         {
@@ -143,6 +144,13 @@ public sealed class InventoryLotStockService
         var lots = await _lots
             .ListOnHandAsync(organizationId, productId, branchId, includeDepleted: false, cancellationToken)
             .ConfigureAwait(false);
+        if (InventoryLotCompatibility.IncludeLegacyNullLots(primaryBranchId, branchId))
+        {
+            var legacy = await _lots
+                .ListOrgLevelOnHandAsync(organizationId, productId, includeDepleted: false, cancellationToken)
+                .ConfigureAwait(false);
+            lots = InventoryLotCompatibility.UnionByLotId(lots, legacy);
+        }
         var allocations = InventoryLotFefo.AllocateSellable(lots, quantity, today);
         foreach (var allocation in allocations)
         {

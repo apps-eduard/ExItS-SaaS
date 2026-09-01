@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -45,10 +46,20 @@ public static class BranchStockResolver
         return 0m;
     }
 
-    public static decimal ResolveAvailable(
-        decimal branchOnHand,
-        decimal organizationAvailable) =>
-        Math.Min(Math.Max(0m, branchOnHand), Math.Max(0m, organizationAvailable));
+    public static decimal ResolveReserved(
+        PosBranchId targetBranchId,
+        IEnumerable<InventoryBranchBalance> balances,
+        CatalogProductId productId)
+    {
+        ArgumentNullException.ThrowIfNull(balances);
+        var explicitBalance = balances.FirstOrDefault(b =>
+            b.ProductId == productId && b.BranchId == targetBranchId);
+        return explicitBalance?.ReservedQuantity ?? 0m;
+    }
+
+    /// <summary>Branch available = physical on-hand minus branch reservations.</summary>
+    public static decimal ResolveAvailable(decimal branchOnHand, decimal branchReserved) =>
+        Math.Max(0m, branchOnHand - branchReserved);
 
     public static InventoryBranchBalance EnsureBalance(
         PosOrganizationId organizationId,
@@ -63,6 +74,13 @@ public static class BranchStockResolver
         if (existing is not null)
         {
             return existing;
+        }
+
+        if (primaryBranchId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryPrimaryUnavailable,
+                "Cannot materialize branch stock while the structural primary branch is unavailable.");
         }
 
         var seed = ResolveOnHand(branchId, primaryBranchId, organizationOnHand, balances, productId);

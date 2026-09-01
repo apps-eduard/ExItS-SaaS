@@ -2060,6 +2060,9 @@ public sealed class VoidGoodsReceipt
                         }
 
                         var receivingBranch = branchResolved.Value!;
+                        var primaryBranchId = await _branches
+                            .GetPrimaryBranchIdAsync(organizationId, ct)
+                            .ConfigureAwait(false);
 
                         await _createPayable
                             .EnsureVoidOrBlockForReceiptReversalAsync(
@@ -2192,9 +2195,9 @@ public sealed class VoidGoodsReceipt
                                         await _branchMutations
                                             .ApplyBranchDeltaAsync(
                                                 _branchBalances,
-                                                _branches,
                                                 orgId,
                                                 receivingBranch,
+                                                primaryBranchId,
                                                 line.ProductId,
                                                 orgOnHandBefore,
                                                 reversal.QuantityEffect,

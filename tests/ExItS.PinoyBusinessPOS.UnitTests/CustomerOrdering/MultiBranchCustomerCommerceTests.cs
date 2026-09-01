@@ -58,6 +58,27 @@ public sealed class MultiBranchCustomerCommerceTests
     }
 
     [Fact]
+    public async Task H1_RES_01_reserve_at_branch_b_does_not_reduce_physical_on_hand()
+    {
+        var account = TrackedAccount(100m);
+        var inventory = new FakeInventoryRepository(account);
+        var balances = new InMemoryBalances();
+        balances.Items.Add(InventoryBranchBalance.Create(Org, PosBranchId.From(MainId), ProductId, 70m, T0));
+        balances.Items.Add(InventoryBranchBalance.Create(Org, PosBranchId.From(BranchBId), ProductId, 30m, T0));
+        var stock = new CustomerOrderStockService(inventory, balances, new PrimaryDirectory(MainId));
+        var order = Submitted(BranchBId, "Branch B", 10m);
+
+        order.Accept(Guid.Parse("66666666-6666-6666-6666-666666666666"), T0);
+        await stock.ReserveForAcceptAsync(order, Guid.Parse("66666666-6666-6666-6666-666666666666"), T0);
+
+        Assert.Equal(70m, balances.OnHand(MainId, ProductId.Value));
+        Assert.Equal(30m, balances.OnHand(BranchBId, ProductId.Value));
+        Assert.Equal(10m, balances.Items.Single(b => b.BranchId.Value == BranchBId).ReservedQuantity);
+        Assert.Equal(10m, account.ReservedQuantity);
+        Assert.Equal(100m, account.OnHandQuantity);
+    }
+
+    [Fact]
     public void Catalog_and_customer_link_stay_organization_owned()
     {
         Assert.Null(typeof(CatalogProduct).GetProperty("BranchId"));

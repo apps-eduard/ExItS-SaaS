@@ -74,6 +74,9 @@ public sealed class PurchaseStockService : IPurchaseStockService
             .ListByIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var productsById = catalogProducts.ToDictionary(p => p.Id.Value);
+        Guid? primaryBranchId = _branches is null
+            ? null
+            : await _branches.GetPrimaryBranchIdAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
 
         foreach (var line in receipt.Lines.OrderBy(l => l.LineNumber))
         {
@@ -149,9 +152,9 @@ public sealed class PurchaseStockService : IPurchaseStockService
             await _branchMutations
                 .ApplyBranchDeltaAsync(
                     _branchBalances,
-                    _branches,
                     organizationId,
                     receivingBranch,
+                    primaryBranchId,
                     line.ProductId,
                     orgOnHandBefore,
                     movement.QuantityEffect,

@@ -91,13 +91,15 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             var available = account.AvailableQuantity;
             if (branchId is not null)
             {
+                var productId = CatalogProductId.From(group.Key);
                 var onHand = BranchStockResolver.ResolveOnHand(
                     branchId,
                     primaryId,
                     account.OnHandQuantity,
                     balances,
-                    CatalogProductId.From(group.Key));
-                available = BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity);
+                    productId);
+                var reserved = BranchStockResolver.ResolveReserved(branchId, balances, productId);
+                available = BranchStockResolver.ResolveAvailable(onHand, reserved);
             }
 
             if (available < needed)
@@ -152,13 +154,23 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                             continue;
                         }
 
-                        var onHand = BranchStockResolver.ResolveOnHand(
-                            branchId,
-                            primaryId,
-                            account.OnHandQuantity,
-                            balances,
-                            line.ProductId);
-                        if (BranchStockResolver.ResolveAvailable(onHand, account.AvailableQuantity) < line.Quantity)
+                        if (_branchBalances is not null)
+                        {
+                            var onHand = BranchStockResolver.ResolveOnHand(
+                                branchId,
+                                primaryId,
+                                account.OnHandQuantity,
+                                balances,
+                                line.ProductId);
+                            var reserved = BranchStockResolver.ResolveReserved(branchId, balances, line.ProductId);
+                            if (BranchStockResolver.ResolveAvailable(onHand, reserved) < line.Quantity)
+                            {
+                                throw new DomainException(
+                                    ApplicationErrorCodes.InsufficientStock,
+                                    "Insufficient available stock for this fulfillment branch.");
+                            }
+                        }
+                        else if (account.AvailableQuantity < line.Quantity)
                         {
                             throw new DomainException(
                                 ApplicationErrorCodes.InsufficientStock,
@@ -168,14 +180,15 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                         account.Reserve(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
-                        await ApplyBranchDeltaAsync(
+                        await ApplyBranchReservationAsync(
                                 order.SellerOrganizationId,
                                 branchId,
                                 line.ProductId,
                                 account.OnHandQuantity,
                                 primaryId,
                                 balances,
-                                -line.Quantity,
+                                line.Quantity,
+                                BranchReservationEffect.Reserve,
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
@@ -220,7 +233,7 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                         account.Release(line.Quantity);
                         account.Touch(utcNow);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
-                        await ApplyBranchDeltaAsync(
+                        await ApplyBranchReservationAsync(
                                 order.SellerOrganizationId,
                                 branchId,
                                 line.ProductId,
@@ -228,6 +241,7 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                 primaryId,
                                 balances,
                                 line.Quantity,
+                                BranchReservationEffect.Release,
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
@@ -264,6 +278,11 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                 async (accounts, ct) =>
                 {
                     var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    var balances = await LoadBalanceListAsync(order.SellerOrganizationId, productIds, ct)
+                        .ConfigureAwait(false);
+                    var primaryId = await ResolvePrimaryAsync(order.SellerOrganizationId.Value, ct)
+                        .ConfigureAwait(false);
+                    var branchId = PosBranchId.From(order.FulfillmentBranchId);
                     foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
                     {
                         if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -300,9 +319,22 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                             order.Id.Value,
                             actorId,
                             utcNow,
-                            sellingMode: product.SellingMode);
+                            sellingMode: product.SellingMode)
+                            .WithBranch(order.FulfillmentBranchId);
                         await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                         await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
+                        await ApplyBranchReservationAsync(
+                                order.SellerOrganizationId,
+                                branchId,
+                                line.ProductId,
+                                account.OnHandQuantity + line.Quantity,
+                                primaryId,
+                                balances,
+                                line.Quantity,
+                                BranchReservationEffect.Consume,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
                     }
                 },
                 cancellationToken)
@@ -345,18 +377,19 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         return await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task ApplyBranchDeltaAsync(
+    private async Task ApplyBranchReservationAsync(
         PosOrganizationId organizationId,
         PosBranchId branchId,
         CatalogProductId productId,
         decimal organizationOnHand,
         Guid? primaryId,
         List<InventoryBranchBalance> balances,
-        decimal signedQuantity,
+        decimal quantity,
+        BranchReservationEffect effect,
         DateTimeOffset utcNow,
         CancellationToken cancellationToken)
     {
-        if (_branchBalances is null || signedQuantity == 0m)
+        if (_branchBalances is null || quantity == 0m)
         {
             return;
         }
@@ -369,7 +402,22 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             primaryId,
             balances,
             utcNow);
-        balance.Apply(signedQuantity, utcNow);
+
+        switch (effect)
+        {
+            case BranchReservationEffect.Reserve:
+                balance.Reserve(quantity, utcNow);
+                break;
+            case BranchReservationEffect.Release:
+                balance.Release(quantity, utcNow);
+                break;
+            case BranchReservationEffect.Consume:
+                balance.ConsumeReservation(quantity, utcNow);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(effect), effect, null);
+        }
+
         await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
     }
 }

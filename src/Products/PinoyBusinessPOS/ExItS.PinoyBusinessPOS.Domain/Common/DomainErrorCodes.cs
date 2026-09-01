@@ -188,6 +188,7 @@ public static class DomainErrorCodes
     public const string InventoryAlreadyTracked = "pos.inventory.already_tracked";
     public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
+    public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
     public const string InventoryAdjustmentReasonRequired = "pos.inventory.adjustment_reason_required";
     public const string InventoryReorderLevelInvalid = "pos.inventory.reorder_level.invalid";
     public const string InventoryReorderQuantityInvalid = "pos.inventory.reorder_quantity.invalid";

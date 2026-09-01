@@ -110,7 +110,8 @@ internal static class InventoryTransferEntityMapper
             PosBranchId.From(record.BranchId),
             CatalogProductId.From(record.ProductId),
             record.OnHandQuantity,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.ReservedQuantity);
 
     public static InventoryBranchBalanceRecord ToRecord(InventoryBranchBalance balance) =>
         new()
@@ -119,6 +120,7 @@ internal static class InventoryTransferEntityMapper
             BranchId = balance.BranchId.Value,
             ProductId = balance.ProductId.Value,
             OnHandQuantity = balance.OnHandQuantity,
+            ReservedQuantity = balance.ReservedQuantity,
             UpdatedAtUtc = balance.UpdatedAtUtc
         };
 

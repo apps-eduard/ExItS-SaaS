@@ -677,6 +677,9 @@ public sealed class CompleteStockCount
             var productIds = existing.Lines.Select(l => l.ProductId).ToList();
             var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
             var productById = products.ToDictionary(p => p.Id.Value);
+            Guid? primaryBranchId = _branches is null
+                ? null
+                : await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
 
             var completed = await _counts.CompleteAsync(
                     orgId,
@@ -760,9 +763,9 @@ public sealed class CompleteStockCount
                             await _branchMutations
                                 .ApplyBranchDeltaAsync(
                                     _branchBalances,
-                                    _branches,
                                     orgId,
                                     countBranch,
+                                    primaryBranchId,
                                     line.ProductId,
                                     orgOnHandBefore,
                                     movement.QuantityEffect,

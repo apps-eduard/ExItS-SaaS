@@ -45,17 +45,7 @@ public sealed class InventoryLotQueryService
             return new PagedResult<PosInventoryLotDto>([], 0, Math.Max(page ?? 1, 1), take);
         }
 
-        // Match OnHandQuery: when branch is bound, only that branch's lots (exact BranchId match;
-        // org-level null-branch lots are not included — same as inventory on-hand semantics).
         PosBranchId? branch = branchId is { } id && id != Guid.Empty ? PosBranchId.From(id) : null;
-        if (branch is not null)
-        {
-            await _lots
-                .AdoptOrgLevelLotsForBranchAsync(orgId, catalogProductId, branch, cancellationToken)
-                .ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-
         var (items, total) = await _lots
             .ListPagedAsync(orgId, catalogProductId, branch, includeDepleted, skip, take, cancellationToken)
             .ConfigureAwait(false);

@@ -3068,6 +3068,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("on_hand_quantity");
 
+                    b.Property<decimal>("ReservedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("reserved_quantity");
+
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
@@ -3080,6 +3085,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("inventory_branch_balances", "pos", t =>
                         {
                             t.HasCheckConstraint("ck_inventory_branch_balances_on_hand_non_negative", "on_hand_quantity >= 0");
+                            t.HasCheckConstraint("ck_inventory_branch_balances_reserved_non_negative", "reserved_quantity >= 0");
+                            t.HasCheckConstraint("ck_inventory_branch_balances_reserved_not_over_on_hand", "reserved_quantity <= on_hand_quantity");
                         });
                 });
 

@@ -757,6 +757,13 @@ public sealed class ProductionUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryLot>>([]);
 
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLot>>([]);
+
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

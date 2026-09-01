@@ -829,6 +829,22 @@ public sealed class EnableExpirationTrackingUseCaseTests
             return Task.FromResult<IReadOnlyList<InventoryLot>>(query.ToList());
         }
 
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default)
+        {
+            var query = Items.Where(l =>
+                l.OrganizationId == organizationId && l.ProductId == productId && l.BranchId is null);
+            if (!includeDepleted)
+            {
+                query = query.Where(l => l.QuantityOnHand > 0m);
+            }
+
+            return Task.FromResult<IReadOnlyList<InventoryLot>>(query.ToList());
+        }
+
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

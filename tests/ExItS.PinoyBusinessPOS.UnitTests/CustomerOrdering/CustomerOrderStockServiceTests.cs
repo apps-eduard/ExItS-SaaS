@@ -62,6 +62,7 @@ public sealed class CustomerOrderStockServiceTests
         order.Accept(Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
         await stock.ReserveForAcceptAsync(order, Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
 
+        Assert.Equal(10m, inventory.Account.OnHandQuantity);
         Assert.Equal(3m, inventory.Account.ReservedQuantity);
         Assert.Equal(7m, inventory.Account.AvailableQuantity);
         Assert.Equal(CustomerOrderStockReservationState.Reserved, order.StockReservationState);

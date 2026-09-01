@@ -26,6 +26,13 @@ public interface IInventoryLotRepository
         bool includeDepleted,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Lots with <c>BranchId</c> null (legacy org-level stock). Never includes branch-scoped lots.</summary>
+    Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        bool includeDepleted,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

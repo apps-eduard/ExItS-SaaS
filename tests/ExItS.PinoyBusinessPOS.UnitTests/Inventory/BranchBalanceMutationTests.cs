@@ -18,13 +18,12 @@ public sealed class BranchBalanceMutationTests
     public async Task Inflow_materializes_primary_from_pre_mutation_org_before_credit()
     {
         var repo = new RecordingBalances();
-        var branches = new FixedPrimary(Primary.Value);
 
         await BranchBalanceMutation.ApplyAsync(
             repo,
-            branches,
             Org,
             Primary,
+            Primary.Value,
             Product,
             organizationOnHandBeforeDelta: 100m,
             signedQuantity: 20m,
@@ -33,19 +32,19 @@ public sealed class BranchBalanceMutationTests
         var balance = Assert.Single(repo.Items);
         Assert.Equal(Primary, balance.BranchId);
         Assert.Equal(120m, balance.OnHandQuantity);
+        Assert.Equal(0m, balance.ReservedQuantity);
     }
 
     [Fact]
     public async Task Secondary_inflow_materializes_zero_before_credit()
     {
         var repo = new RecordingBalances();
-        var branches = new FixedPrimary(Primary.Value);
 
         await BranchBalanceMutation.ApplyAsync(
             repo,
-            branches,
             Org,
             Other,
+            Primary.Value,
             Product,
             organizationOnHandBeforeDelta: 100m,
             signedQuantity: 10m,
@@ -60,13 +59,12 @@ public sealed class BranchBalanceMutationTests
     public async Task Ensure_seeds_unallocated_on_primary_then_applies_outflow()
     {
         var repo = new RecordingBalances();
-        var branches = new FixedPrimary(Primary.Value);
 
         await BranchBalanceMutation.ApplyAsync(
             repo,
-            branches,
             Org,
             Primary,
+            Primary.Value,
             Product,
             organizationOnHandBeforeDelta: 20m,
             signedQuantity: -5m,
@@ -81,14 +79,13 @@ public sealed class BranchBalanceMutationTests
     public async Task Non_primary_does_not_receive_unallocated_org_stock()
     {
         var repo = new RecordingBalances();
-        var branches = new FixedPrimary(Primary.Value);
 
         await Assert.ThrowsAsync<DomainException>(() =>
             BranchBalanceMutation.ApplyAsync(
                 repo,
-                branches,
                 Org,
                 Other,
+                Primary.Value,
                 Product,
                 organizationOnHandBeforeDelta: 20m,
                 signedQuantity: -1m,
@@ -101,13 +98,12 @@ public sealed class BranchBalanceMutationTests
     {
         var repo = new RecordingBalances();
         repo.Items.Add(InventoryBranchBalance.Create(Org, Primary, Product, 8m, T0));
-        var branches = new FixedPrimary(Primary.Value);
 
         await BranchBalanceMutation.ApplyAsync(
             repo,
-            branches,
             Org,
             Primary,
+            Primary.Value,
             Product,
             organizationOnHandBeforeDelta: 20m,
             signedQuantity: -3m,
@@ -117,25 +113,66 @@ public sealed class BranchBalanceMutationTests
         Assert.Equal(5m, repo.Items[0].OnHandQuantity);
     }
 
-    private sealed class FixedPrimary(Guid primaryId) : IOrganizationBranchDirectory
+    [Fact]
+    public async Task H1_WRITE_PRIMARY_missing_balance_unknown_primary_does_not_create_row()
     {
-        public Task<bool> ExistsInOrganizationAsync(
-            Guid organizationId,
-            Guid branchId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(true);
+        var repo = new RecordingBalances();
 
-        public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
-            Guid organizationId,
-            IReadOnlyCollection<Guid> branchIds,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyDictionary<Guid, string>>(
-                branchIds.ToDictionary(id => id, id => id.ToString("D")));
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            BranchBalanceMutation.ApplyAsync(
+                repo,
+                Org,
+                Primary,
+                primaryBranchId: null,
+                Product,
+                organizationOnHandBeforeDelta: 100m,
+                signedQuantity: 20m,
+                utcNow: T0));
 
-        public Task<Guid?> GetPrimaryBranchIdAsync(
-            Guid organizationId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<Guid?>(primaryId);
+        Assert.Equal(DomainErrorCodes.InventoryPrimaryUnavailable, ex.ErrorCode);
+        Assert.Empty(repo.Items);
+    }
+
+    [Fact]
+    public async Task H1_WRITE_PRIMARY_explicit_remote_can_mutate_when_primary_unknown()
+    {
+        var repo = new RecordingBalances();
+        repo.Items.Add(InventoryBranchBalance.Create(Org, Other, Product, 25m, T0));
+
+        await BranchBalanceMutation.ApplyAsync(
+            repo,
+            Org,
+            Other,
+            primaryBranchId: null,
+            Product,
+            organizationOnHandBeforeDelta: 125m,
+            signedQuantity: -5m,
+            utcNow: T0);
+
+        Assert.Equal(20m, repo.Items[0].OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task Reserve_does_not_change_on_hand()
+    {
+        var repo = new RecordingBalances();
+        repo.Items.Add(InventoryBranchBalance.Create(Org, Other, Product, 5m, T0));
+
+        await BranchBalanceMutation.ApplyReservationAsync(
+            repo,
+            Org,
+            Other,
+            Primary.Value,
+            Product,
+            organizationOnHandBeforeReservation: 85m,
+            quantity: 4m,
+            BranchReservationEffect.Reserve,
+            T0);
+
+        var balance = Assert.Single(repo.Items);
+        Assert.Equal(5m, balance.OnHandQuantity);
+        Assert.Equal(4m, balance.ReservedQuantity);
+        Assert.Equal(1m, balance.AvailableQuantity);
     }
 
     private sealed class RecordingBalances : IInventoryBranchBalanceRepository

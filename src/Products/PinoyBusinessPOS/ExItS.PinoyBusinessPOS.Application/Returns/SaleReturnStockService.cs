@@ -277,15 +277,19 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
         }
 
         await ApplyBranchDeltaAsync(
-                organizationId,
-                branchId,
-                productId,
-                organizationOnHandBeforeDelta,
-                signedQuantity,
-                utcNow,
-                cancellationToken)
+            organizationId,
+            branchId,
+            productId,
+            organizationOnHandBeforeDelta,
+            signedQuantity,
+            utcNow,
+            cancellationToken)
             .ConfigureAwait(false);
     }
+
+    private Guid? _primaryCacheOrg;
+    private Guid? _primaryCache;
+    private bool _primaryLoaded;
 
     private async Task ApplyBranchDeltaAsync(
         PosOrganizationId organizationId,
@@ -302,38 +306,37 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
         }
 
         var primaryId = await ResolvePrimaryAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
-        var existing = await _branchBalances
-            .GetAsync(organizationId, PosBranchId.From(location), productId, cancellationToken)
+        await BranchBalanceMutation
+            .ApplyAsync(
+                _branchBalances,
+                organizationId,
+                PosBranchId.From(location),
+                primaryId,
+                productId,
+                organizationOnHandBeforeDelta,
+                signedQuantity,
+                utcNow,
+                cancellationToken)
             .ConfigureAwait(false);
-        var balances = existing is null ? new List<InventoryBranchBalance>() : [existing];
-        if (existing is null)
-        {
-            var related = await _branchBalances
-                .ListByProductIdsAsync(organizationId, [productId], cancellationToken)
-                .ConfigureAwait(false);
-            balances = related.ToList();
-        }
-
-        var balance = BranchStockResolver.EnsureBalance(
-            organizationId,
-            PosBranchId.From(location),
-            productId,
-            organizationOnHandBeforeDelta,
-            primaryId,
-            balances,
-            utcNow);
-        balance.Apply(signedQuantity, utcNow);
-        await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Guid?> ResolvePrimaryAsync(Guid organizationId, CancellationToken cancellationToken)
     {
-        if (_branches is null)
+        if (_primaryLoaded && _primaryCacheOrg == organizationId)
         {
-            return null;
+            return _primaryCache;
         }
 
-        return await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        Guid? primary = null;
+        if (_branches is not null)
+        {
+            primary = await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        }
+
+        _primaryCacheOrg = organizationId;
+        _primaryCache = primary;
+        _primaryLoaded = true;
+        return primary;
     }
 
     private sealed record RestockGroup(

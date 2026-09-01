@@ -803,6 +803,14 @@ public sealed class WasteLossUseCaseTests
             Task.FromResult<IReadOnlyList<InventoryLot>>(
                 Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId).ToList());
 
+        public Task<IReadOnlyList<InventoryLot>> ListOrgLevelOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLot>>(
+                Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId && l.BranchId is null).ToList());
+
         public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,

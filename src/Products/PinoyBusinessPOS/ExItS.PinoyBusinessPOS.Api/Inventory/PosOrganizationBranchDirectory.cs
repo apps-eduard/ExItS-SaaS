@@ -23,6 +23,10 @@ internal sealed class PosOrganizationBranchDirectory(
         PropertyNameCaseInsensitive = true
     };
 
+    private Guid? _primaryOrganizationId;
+    private Guid? _cachedPrimaryBranchId;
+    private bool _primaryResolved;
+
     public async Task<bool> ExistsInOrganizationAsync(
         Guid organizationId,
         Guid branchId,
@@ -169,11 +173,31 @@ internal sealed class PosOrganizationBranchDirectory(
         Guid organizationId,
         CancellationToken cancellationToken = default)
     {
-        if (environment.IsEnvironment("Testing"))
+        if (_primaryResolved && _primaryOrganizationId == organizationId)
         {
-            return Guid.Parse("11111111-1111-1111-1111-111111111111");
+            return _cachedPrimaryBranchId;
         }
 
+        Guid? primary;
+        if (environment.IsEnvironment("Testing"))
+        {
+            primary = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        }
+        else
+        {
+            primary = await FetchPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        }
+
+        _primaryOrganizationId = organizationId;
+        _cachedPrimaryBranchId = primary;
+        _primaryResolved = true;
+        return primary;
+    }
+
+    private async Task<Guid?> FetchPrimaryBranchIdAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
         if (client.BaseAddress is null)
         {
             var baseUrl = options.Value.BaseUrl;

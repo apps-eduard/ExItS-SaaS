@@ -17,9 +17,9 @@ public sealed class BranchInventoryMutationService
     /// </summary>
     public Task ApplyBranchDeltaAsync(
         IInventoryBranchBalanceRepository branchBalances,
-        IOrganizationBranchDirectory branches,
         PosOrganizationId organizationId,
         PosBranchId branchId,
+        Guid? primaryBranchId,
         CatalogProductId productId,
         decimal organizationOnHandBeforeDelta,
         decimal signedBranchDelta,
@@ -27,14 +27,47 @@ public sealed class BranchInventoryMutationService
         CancellationToken cancellationToken = default) =>
         BranchBalanceMutation.ApplyAsync(
             branchBalances,
-            branches,
             organizationId,
             branchId,
+            primaryBranchId,
             productId,
             organizationOnHandBeforeDelta,
             signedBranchDelta,
             utcNow,
             cancellationToken);
+
+    /// <summary>
+    /// Compatibility wrapper. Resolves structural primary once, then applies the delta.
+    /// Callers looping products should resolve primary themselves and use the overload
+    /// that accepts <c>primaryBranchId</c>.
+    /// </summary>
+    public async Task ApplyBranchDeltaAsync(
+        IInventoryBranchBalanceRepository branchBalances,
+        IOrganizationBranchDirectory branches,
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        decimal organizationOnHandBeforeDelta,
+        decimal signedBranchDelta,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(branches);
+        var primaryId = await branches
+            .GetPrimaryBranchIdAsync(organizationId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        await ApplyBranchDeltaAsync(
+                branchBalances,
+                organizationId,
+                branchId,
+                primaryId,
+                productId,
+                organizationOnHandBeforeDelta,
+                signedBranchDelta,
+                utcNow,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Resolves persisted branch provenance, falling back to structural Primary for legacy null rows only.
