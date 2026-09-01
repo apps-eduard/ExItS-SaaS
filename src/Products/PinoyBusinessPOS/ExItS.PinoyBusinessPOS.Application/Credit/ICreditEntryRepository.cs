@@ -21,7 +21,8 @@ public interface ICreditEntryRepository
         POSCustomerId customerId,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null);
 
     Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
         PosOrganizationId organizationId,
@@ -46,12 +47,14 @@ public interface ICreditEntryRepository
     Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null);
 
     Task<int> CountActiveAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null);
 
     Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default);
 

@@ -34,6 +34,7 @@ internal sealed class CustomerBranchAccessRepository : ICustomerBranchAccessRepo
         var ids = await _db.CustomerBranchAccess.AsNoTracking()
             .Where(a => a.OrganizationId == organizationId.Value && a.BranchId == branchId.Value)
             .Select(a => a.CustomerId)
+            .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return ids.Select(POSCustomerId.From).ToList();
@@ -56,6 +57,7 @@ internal sealed class CustomerBranchAccessRepository : ICustomerBranchAccessRepo
                 && a.BranchId == branchId.Value
                 && wanted.Contains(a.CustomerId))
             .Select(a => a.CustomerId)
+            .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return ids.Select(POSCustomerId.From).ToList();
@@ -63,11 +65,13 @@ internal sealed class CustomerBranchAccessRepository : ICustomerBranchAccessRepo
 
     public async Task GrantAsync(CustomerBranchAccess access, CancellationToken cancellationToken = default)
     {
-        var exists = await _db.CustomerBranchAccess
+        var record = PartyBranchAccessEntityMapper.ToRecord(access);
+        var exists = await _db.CustomerBranchAccess.AsNoTracking()
             .AnyAsync(
-                a => a.OrganizationId == access.OrganizationId.Value
-                    && a.BranchId == access.BranchId.Value
-                    && a.CustomerId == access.CustomerId.Value,
+                a => a.OrganizationId == record.OrganizationId
+                    && a.BranchId == record.BranchId
+                    && a.CustomerId == record.CustomerId
+                    && a.GrantSource == record.GrantSource,
                 cancellationToken)
             .ConfigureAwait(false);
         if (exists)
@@ -75,7 +79,24 @@ internal sealed class CustomerBranchAccessRepository : ICustomerBranchAccessRepo
             return;
         }
 
-        _db.CustomerBranchAccess.Add(PartyBranchAccessEntityMapper.ToRecord(access));
+        _db.CustomerBranchAccess.Add(record);
+    }
+
+    public async Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        POSCustomerId customerId,
+        PartyBranchGrantSource grantSource,
+        CancellationToken cancellationToken = default)
+    {
+        var sourceCode = PartyBranchGrantSources.ToCode(grantSource);
+        await _db.CustomerBranchAccess
+            .Where(a => a.OrganizationId == organizationId.Value
+                && a.BranchId == branchId.Value
+                && a.CustomerId == customerId.Value
+                && a.GrantSource == sourceCode)
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 
@@ -105,6 +126,7 @@ internal sealed class SupplierBranchAccessRepository : ISupplierBranchAccessRepo
         var ids = await _db.SupplierBranchAccess.AsNoTracking()
             .Where(a => a.OrganizationId == organizationId.Value && a.BranchId == branchId.Value)
             .Select(a => a.SupplierId)
+            .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return ids.Select(SupplierId.From).ToList();
@@ -127,6 +149,7 @@ internal sealed class SupplierBranchAccessRepository : ISupplierBranchAccessRepo
                 && a.BranchId == branchId.Value
                 && wanted.Contains(a.SupplierId))
             .Select(a => a.SupplierId)
+            .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         return ids.Select(SupplierId.From).ToList();
@@ -134,11 +157,13 @@ internal sealed class SupplierBranchAccessRepository : ISupplierBranchAccessRepo
 
     public async Task GrantAsync(SupplierBranchAccess access, CancellationToken cancellationToken = default)
     {
-        var exists = await _db.SupplierBranchAccess
+        var record = PartyBranchAccessEntityMapper.ToRecord(access);
+        var exists = await _db.SupplierBranchAccess.AsNoTracking()
             .AnyAsync(
-                a => a.OrganizationId == access.OrganizationId.Value
-                    && a.BranchId == access.BranchId.Value
-                    && a.SupplierId == access.SupplierId.Value,
+                a => a.OrganizationId == record.OrganizationId
+                    && a.BranchId == record.BranchId
+                    && a.SupplierId == record.SupplierId
+                    && a.GrantSource == record.GrantSource,
                 cancellationToken)
             .ConfigureAwait(false);
         if (exists)
@@ -146,6 +171,23 @@ internal sealed class SupplierBranchAccessRepository : ISupplierBranchAccessRepo
             return;
         }
 
-        _db.SupplierBranchAccess.Add(PartyBranchAccessEntityMapper.ToRecord(access));
+        _db.SupplierBranchAccess.Add(record);
+    }
+
+    public async Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        SupplierId supplierId,
+        PartyBranchGrantSource grantSource,
+        CancellationToken cancellationToken = default)
+    {
+        var sourceCode = PartyBranchGrantSources.ToCode(grantSource);
+        await _db.SupplierBranchAccess
+            .Where(a => a.OrganizationId == organizationId.Value
+                && a.BranchId == branchId.Value
+                && a.SupplierId == supplierId.Value
+                && a.GrantSource == sourceCode)
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 }

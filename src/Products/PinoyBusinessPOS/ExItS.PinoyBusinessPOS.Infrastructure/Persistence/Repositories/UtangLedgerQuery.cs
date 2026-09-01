@@ -1,163 +1,441 @@
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
 
 /// <summary>
+
 /// Unified chronological ledger read model (credits ∪ repayments). Does not persist a separate ledger table.
+
 /// Ordering: RecordedAtUtc ASC, EntryId ASC. Running balance is computed chronologically.
+
 /// </summary>
+
 internal sealed class UtangLedgerQuery : IUtangLedgerQuery
+
 {
+
     private readonly PosDbContext _db;
+
+
 
     public UtangLedgerQuery(PosDbContext db) => _db = db;
 
+
+
     public async Task<(IReadOnlyList<LedgerEntryDto> Items, int TotalCount)> ListAsync(
+
         PosOrganizationId organizationId,
+
         POSCustomerId customerId,
+
         int skip,
+
         int take,
-        CancellationToken cancellationToken = default)
+
+        CancellationToken cancellationToken = default,
+
+        IReadOnlySet<Guid>? historyBranchIds = null,
+
+        bool hideOrgWideAdjustments = false)
+
     {
-        var withBalance = await LoadAllAsync(organizationId, customerId, cancellationToken).ConfigureAwait(false);
-        var page = withBalance.Skip(skip).Take(take).ToList();
-        return (page, withBalance.Count);
-    }
 
-    public Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
-        PosOrganizationId organizationId,
-        POSCustomerId customerId,
-        CancellationToken cancellationToken = default) =>
-        LoadAllAsync(organizationId, customerId, cancellationToken);
+        var withBalance = await LoadAllAsync(
 
-    private async Task<IReadOnlyList<LedgerEntryDto>> LoadAllAsync(
-        PosOrganizationId organizationId,
-        POSCustomerId customerId,
-        CancellationToken cancellationToken)
-    {
-        // Load full chronological set for this customer to compute running balances correctly.
-        // MVP-scale history; not a materialized ledger table.
-        const string sql =
-            """
-            SELECT
-                id AS "EntryId",
-                entry_type AS "EntryType",
-                organization_id AS "OrganizationId",
-                customer_id AS "CustomerId",
-                amount AS "Amount",
-                signed_effect AS "SignedEffect",
-                remarks AS "Remarks",
-                status AS "Status",
-                recorded_at_utc AS "RecordedAtUtc",
-                recorded_by AS "RecordedBy",
-                reversed_at_utc AS "ReversedAtUtc",
-                reversal_reason AS "ReversalReason",
-                reversed_by AS "ReversedBy"
-            FROM (
-                SELECT
-                    c.id,
-                    'Credit'::text AS entry_type,
-                    c.organization_id,
-                    c.customer_id,
-                    c.amount,
-                    CASE WHEN c.status = 'Active' THEN c.amount ELSE 0 END AS signed_effect,
-                    c.remarks,
-                    c.status,
-                    c.created_at_utc AS recorded_at_utc,
-                    NULL::uuid AS recorded_by,
-                    c.reversed_at_utc,
-                    c.reversal_reason,
-                    NULL::uuid AS reversed_by
-                FROM pos.credit_entries c
-                WHERE c.organization_id = @org AND c.customer_id = @customer
-                UNION ALL
-                SELECT
-                    r.id,
-                    'Repayment'::text AS entry_type,
-                    r.organization_id,
-                    r.customer_id,
-                    r.amount,
-                    CASE WHEN r.status = 'Active' THEN -r.amount ELSE 0 END AS signed_effect,
-                    r.remarks,
-                    r.status,
-                    r.recorded_at_utc,
-                    r.recorded_by,
-                    r.reversed_at_utc,
-                    r.reversal_reason,
-                    r.reversed_by
-                FROM pos.repayments r
-                WHERE r.organization_id = @org AND r.customer_id = @customer
-                UNION ALL
-                SELECT
-                    w.id,
-                    'WriteOff'::text AS entry_type,
-                    w.organization_id,
-                    w.customer_id,
-                    w.amount,
-                    CASE WHEN w.status = 'Active' THEN -w.amount ELSE 0 END AS signed_effect,
-                    w.reason AS remarks,
-                    w.status,
-                    w.recorded_at_utc,
-                    w.recorded_by,
-                    w.reversed_at_utc,
-                    w.reversal_reason,
-                    w.reversed_by
-                FROM pos.write_offs w
-                WHERE w.organization_id = @org AND w.customer_id = @customer
-            ) ledger
-            ORDER BY recorded_at_utc ASC, id ASC
-            """;
+                organizationId,
 
-        var rows = await _db.Database
-            .SqlQueryRaw<LedgerSqlRow>(
-                sql,
-                new NpgsqlParameter("org", organizationId.Value),
-                new NpgsqlParameter("customer", customerId.Value))
-            .ToListAsync(cancellationToken)
+                customerId,
+
+                historyBranchIds,
+
+                hideOrgWideAdjustments,
+
+                cancellationToken)
+
             .ConfigureAwait(false);
 
-        decimal running = 0m;
-        var withBalance = new List<LedgerEntryDto>(rows.Count);
-        foreach (var row in rows)
+        var page = withBalance.Skip(skip).Take(take).ToList();
+
+        return (page, withBalance.Count);
+
+    }
+
+
+
+    public Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
+
+        PosOrganizationId organizationId,
+
+        POSCustomerId customerId,
+
+        CancellationToken cancellationToken = default,
+
+        IReadOnlySet<Guid>? historyBranchIds = null,
+
+        bool hideOrgWideAdjustments = false) =>
+
+        LoadAllAsync(
+
+            organizationId,
+
+            customerId,
+
+            historyBranchIds,
+
+            hideOrgWideAdjustments,
+
+            cancellationToken);
+
+
+
+    private async Task<IReadOnlyList<LedgerEntryDto>> LoadAllAsync(
+
+        PosOrganizationId organizationId,
+
+        POSCustomerId customerId,
+
+        IReadOnlySet<Guid>? historyBranchIds,
+
+        bool hideOrgWideAdjustments,
+
+        CancellationToken cancellationToken)
+
+    {
+
+        if (historyBranchIds is not null && historyBranchIds.Count == 0)
+
         {
-            running += row.SignedEffect;
-            withBalance.Add(new LedgerEntryDto(
-                row.EntryId,
-                row.EntryType,
-                row.OrganizationId,
-                row.CustomerId,
-                row.Amount,
-                row.SignedEffect,
-                row.Remarks,
-                row.Status,
-                row.RecordedAtUtc,
-                row.RecordedBy,
-                row.ReversedAtUtc,
-                row.ReversalReason,
-                row.ReversedBy,
-                running));
+
+            return [];
+
         }
 
+
+
+        var orgId = organizationId.Value;
+
+        var custId = customerId.Value;
+
+        var entries = new List<LedgerEntryDto>();
+
+
+
+        var creditQuery = _db.CreditEntries.AsNoTracking()
+
+            .Where(c => c.OrganizationId == orgId && c.CustomerId == custId);
+
+        creditQuery = ApplyCreditBranchFilter(creditQuery, orgId, historyBranchIds);
+
+
+
+        var credits = await creditQuery
+
+            .Select(c => new
+
+            {
+
+                c.Id,
+
+                c.OrganizationId,
+
+                c.CustomerId,
+
+                c.Amount,
+
+                c.Remarks,
+
+                c.Status,
+
+                c.CreatedAtUtc,
+
+                c.ReversedAtUtc,
+
+                c.ReversalReason,
+
+            })
+
+            .ToListAsync(cancellationToken)
+
+            .ConfigureAwait(false);
+
+
+
+        foreach (var c in credits)
+
+        {
+
+            var signed = c.Status == CreditEntryStatus.Active.ToString() ? c.Amount : 0m;
+
+            entries.Add(new LedgerEntryDto(
+
+                c.Id,
+
+                "Credit",
+
+                c.OrganizationId,
+
+                c.CustomerId,
+
+                c.Amount,
+
+                signed,
+
+                c.Remarks,
+
+                c.Status,
+
+                c.CreatedAtUtc,
+
+                null,
+
+                c.ReversedAtUtc,
+
+                c.ReversalReason,
+
+                null,
+
+                null));
+
+        }
+
+
+
+        if (!hideOrgWideAdjustments)
+
+        {
+
+            var repayments = await _db.Repayments.AsNoTracking()
+
+                .Where(r => r.OrganizationId == orgId && r.CustomerId == custId)
+
+                .Select(r => new
+
+                {
+
+                    r.Id,
+
+                    r.OrganizationId,
+
+                    r.CustomerId,
+
+                    r.Amount,
+
+                    r.Remarks,
+
+                    r.Status,
+
+                    r.RecordedAtUtc,
+
+                    r.RecordedBy,
+
+                    r.ReversedAtUtc,
+
+                    r.ReversalReason,
+
+                    r.ReversedBy,
+
+                })
+
+                .ToListAsync(cancellationToken)
+
+                .ConfigureAwait(false);
+
+
+
+            foreach (var r in repayments)
+
+            {
+
+                var signed = r.Status == RepaymentStatus.Active.ToString() ? -r.Amount : 0m;
+
+                entries.Add(new LedgerEntryDto(
+
+                    r.Id,
+
+                    "Repayment",
+
+                    r.OrganizationId,
+
+                    r.CustomerId,
+
+                    r.Amount,
+
+                    signed,
+
+                    r.Remarks,
+
+                    r.Status,
+
+                    r.RecordedAtUtc,
+
+                    r.RecordedBy,
+
+                    r.ReversedAtUtc,
+
+                    r.ReversalReason,
+
+                    r.ReversedBy,
+
+                    null));
+
+            }
+
+
+
+            var writeOffs = await _db.WriteOffs.AsNoTracking()
+
+                .Where(w => w.OrganizationId == orgId && w.CustomerId == custId)
+
+                .Select(w => new
+
+                {
+
+                    w.Id,
+
+                    w.OrganizationId,
+
+                    w.CustomerId,
+
+                    w.Amount,
+
+                    w.Reason,
+
+                    w.Status,
+
+                    w.RecordedAtUtc,
+
+                    w.RecordedBy,
+
+                    w.ReversedAtUtc,
+
+                    w.ReversalReason,
+
+                    w.ReversedBy,
+
+                })
+
+                .ToListAsync(cancellationToken)
+
+                .ConfigureAwait(false);
+
+
+
+            foreach (var w in writeOffs)
+
+            {
+
+                var signed = w.Status == WriteOffStatus.Active.ToString() ? -w.Amount : 0m;
+
+                entries.Add(new LedgerEntryDto(
+
+                    w.Id,
+
+                    "WriteOff",
+
+                    w.OrganizationId,
+
+                    w.CustomerId,
+
+                    w.Amount,
+
+                    signed,
+
+                    w.Reason,
+
+                    w.Status,
+
+                    w.RecordedAtUtc,
+
+                    w.RecordedBy,
+
+                    w.ReversedAtUtc,
+
+                    w.ReversalReason,
+
+                    w.ReversedBy,
+
+                    null));
+
+            }
+
+        }
+
+
+
+        var ordered = entries
+
+            .OrderBy(e => e.RecordedAtUtc)
+
+            .ThenBy(e => e.EntryId)
+
+            .ToList();
+
+
+
+        decimal running = 0m;
+
+        var withBalance = new List<LedgerEntryDto>(ordered.Count);
+
+        foreach (var entry in ordered)
+
+        {
+
+            running += entry.SignedEffect;
+
+            withBalance.Add(entry with { RunningBalance = running });
+
+        }
+
+
+
         return withBalance;
+
     }
 
-    private sealed class LedgerSqlRow
+
+
+    private IQueryable<CreditEntryRecord> ApplyCreditBranchFilter(
+
+        IQueryable<CreditEntryRecord> query,
+
+        Guid organizationId,
+
+        IReadOnlySet<Guid>? historyBranchIds)
+
     {
-        public Guid EntryId { get; set; }
-        public string EntryType { get; set; } = string.Empty;
-        public Guid OrganizationId { get; set; }
-        public Guid CustomerId { get; set; }
-        public decimal Amount { get; set; }
-        public decimal SignedEffect { get; set; }
-        public string? Remarks { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public DateTimeOffset RecordedAtUtc { get; set; }
-        public Guid? RecordedBy { get; set; }
-        public DateTimeOffset? ReversedAtUtc { get; set; }
-        public string? ReversalReason { get; set; }
-        public Guid? ReversedBy { get; set; }
+
+        if (historyBranchIds is null)
+
+        {
+
+            return query;
+
+        }
+
+
+
+        var branchIds = historyBranchIds.ToList();
+
+        return query.Where(c =>
+
+            c.SourceSaleId != null
+
+            && _db.Sales.Any(s =>
+
+                s.Id == c.SourceSaleId
+
+                && s.OrganizationId == organizationId
+
+                && s.BranchId != null
+
+                && branchIds.Contains(s.BranchId.Value)));
+
     }
+
 }

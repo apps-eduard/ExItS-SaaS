@@ -33,6 +33,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Purchasing;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Branches;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<POSCustomerRecord> Customers => Set<POSCustomerRecord>();
     internal DbSet<CustomerBranchAccessRecord> CustomerBranchAccess => Set<CustomerBranchAccessRecord>();
     internal DbSet<SupplierBranchAccessRecord> SupplierBranchAccess => Set<SupplierBranchAccessRecord>();
+    internal DbSet<BranchSetupProgressRecord> BranchSetupProgress => Set<BranchSetupProgressRecord>();
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
@@ -217,7 +219,7 @@ public sealed class PosDbContext : DbContext
                     "grant_source IN ('ExplicitAssign', 'CreateAtBranch', 'Transaction', 'SetupCopy', 'MigrationBackfill')");
             });
 
-            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.CustomerId })
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.CustomerId, e.GrantSource })
                 .HasName("pk_customer_branch_access");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
@@ -3701,7 +3703,7 @@ public sealed class PosDbContext : DbContext
                     "grant_source IN ('ExplicitAssign', 'CreateAtBranch', 'Transaction', 'SetupCopy', 'MigrationBackfill')");
             });
 
-            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.SupplierId })
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.SupplierId, e.GrantSource })
                 .HasName("pk_supplier_branch_access");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
@@ -3722,6 +3724,19 @@ public sealed class PosDbContext : DbContext
                 .HasPrincipalKey(s => new { s.Id, s.OrganizationId })
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_supplier_branch_access_suppliers");
+        });
+
+        modelBuilder.Entity<BranchSetupProgressRecord>(entity =>
+        {
+            entity.ToTable("branch_setup_progress");
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId })
+                .HasName("pk_branch_setup_progress");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.LastVisitedStep).HasColumnName("last_visited_step").HasMaxLength(64);
+            entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
+            entity.Property(e => e.LastVisitedAtUtc).HasColumnName("last_visited_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
         });
 
         modelBuilder.Entity<SupplierCodeSequenceRecord>(entity =>

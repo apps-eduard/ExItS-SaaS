@@ -388,13 +388,12 @@ public sealed class CreatePOSCustomer
                         customer.Id.Value,
                         PartyBranchGrantSource.CreateAtBranch,
                         grantedByActorId: null,
-                        cancellationToken)
+                        cancellationToken,
+                        persistChanges: false)
                     .ConfigureAwait(false);
             }
-            else
-            {
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<POSCustomer>.Success(customer);
         }

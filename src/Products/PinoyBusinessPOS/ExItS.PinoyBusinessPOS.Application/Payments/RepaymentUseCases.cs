@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -199,8 +200,13 @@ public sealed class RepaymentQueryService
 public sealed class UtangLedgerQueryService
 {
     private readonly IUtangLedgerQuery _ledger;
+    private readonly PartyBranchHistoryScopeService _historyScope;
 
-    public UtangLedgerQueryService(IUtangLedgerQuery ledger) => _ledger = ledger;
+    public UtangLedgerQueryService(IUtangLedgerQuery ledger, PartyBranchHistoryScopeService historyScope)
+    {
+        _ledger = ledger;
+        _historyScope = historyScope;
+    }
 
     public async Task<PagedResult<LedgerEntryDto>> ListAsync(
         Guid organizationId,
@@ -209,6 +215,8 @@ public sealed class UtangLedgerQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        var branchIds = _historyScope.GetPermittedHistoryBranchIds(organizationId);
+        var hideAdjustments = _historyScope.ShouldHideOrgWideLedgerAdjustments();
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var (items, total) = await _ledger
             .ListAsync(
@@ -216,7 +224,9 @@ public sealed class UtangLedgerQueryService
                 POSCustomerId.From(customerId),
                 skip,
                 take,
-                cancellationToken)
+                cancellationToken,
+                branchIds,
+                hideAdjustments)
             .ConfigureAwait(false);
 
         return new PagedResult<LedgerEntryDto>(

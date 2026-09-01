@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -39,11 +40,16 @@ public sealed class CreditEntryQueryService
 {
     private readonly ICreditEntryRepository _entries;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly PartyBranchHistoryScopeService _historyScope;
 
-    public CreditEntryQueryService(ICreditEntryRepository entries, IOutstandingBalanceService outstanding)
+    public CreditEntryQueryService(
+        ICreditEntryRepository entries,
+        IOutstandingBalanceService outstanding,
+        PartyBranchHistoryScopeService historyScope)
     {
         _entries = entries;
         _outstanding = outstanding;
+        _historyScope = historyScope;
     }
 
     public async Task<CreditEntryDto?> GetByIdAsync(
@@ -69,6 +75,7 @@ public sealed class CreditEntryQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        var branchIds = _historyScope.GetPermittedHistoryBranchIds(organizationId);
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var (items, total) = await _entries
             .ListByCustomerAsync(
@@ -76,7 +83,8 @@ public sealed class CreditEntryQueryService
                 POSCustomerId.From(customerId),
                 skip,
                 take,
-                cancellationToken)
+                cancellationToken,
+                branchIds)
             .ConfigureAwait(false);
 
         return new PagedResult<CreditEntryDto>(
@@ -119,9 +127,13 @@ public sealed class CreditEntryQueryService
     {
         var orgId = PosOrganizationId.From(organizationId);
         var custId = POSCustomerId.From(customerId);
-        var outstanding = await _outstanding.GetOutstandingAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-        var activeCount = await _entries.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
-        var (_, total) = await _entries.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken).ConfigureAwait(false);
+        var branchIds = _historyScope.GetPermittedHistoryBranchIds(organizationId);
+        var hideAdjustments = _historyScope.ShouldHideOrgWideLedgerAdjustments();
+        var outstanding = hideAdjustments
+            ? await _entries.SumActiveAmountAsync(orgId, custId, cancellationToken, branchIds).ConfigureAwait(false)
+            : await _outstanding.GetOutstandingAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var activeCount = await _entries.CountActiveAsync(orgId, custId, cancellationToken, branchIds).ConfigureAwait(false);
+        var (_, total) = await _entries.ListByCustomerAsync(orgId, custId, 0, 1, cancellationToken, branchIds).ConfigureAwait(false);
 
         return new CustomerCreditSummaryDto(customerId, organizationId, outstanding, activeCount, total);
     }

@@ -47,10 +47,14 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
         POSCustomerId customerId,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null)
     {
-        var query = _db.CreditEntries.AsNoTracking()
-            .Where(e => e.OrganizationId == organizationId.Value && e.CustomerId == customerId.Value);
+        var query = ApplyHistoryBranchFilter(
+            _db.CreditEntries.AsNoTracking()
+                .Where(e => e.OrganizationId == organizationId.Value && e.CustomerId == customerId.Value),
+            organizationId,
+            historyBranchIds);
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
@@ -134,30 +138,60 @@ internal sealed class CreditEntryRepository : ICreditEntryRepository
     public async Task<decimal> SumActiveAmountAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null)
     {
         var active = CreditEntryStatus.Active.ToString();
-        return await _db.CreditEntries.AsNoTracking()
-            .Where(e => e.OrganizationId == organizationId.Value
-                        && e.CustomerId == customerId.Value
-                        && e.Status == active)
-            .SumAsync(e => e.Amount, cancellationToken)
-            .ConfigureAwait(false);
+        var query = ApplyHistoryBranchFilter(
+            _db.CreditEntries.AsNoTracking()
+                .Where(e => e.OrganizationId == organizationId.Value
+                            && e.CustomerId == customerId.Value
+                            && e.Status == active),
+            organizationId,
+            historyBranchIds);
+        return await query.SumAsync(e => e.Amount, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<int> CountActiveAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null)
     {
         var active = CreditEntryStatus.Active.ToString();
-        return await _db.CreditEntries.AsNoTracking()
-            .CountAsync(
-                e => e.OrganizationId == organizationId.Value
-                     && e.CustomerId == customerId.Value
-                     && e.Status == active,
-                cancellationToken)
-            .ConfigureAwait(false);
+        var query = ApplyHistoryBranchFilter(
+            _db.CreditEntries.AsNoTracking()
+                .Where(e => e.OrganizationId == organizationId.Value
+                            && e.CustomerId == customerId.Value
+                            && e.Status == active),
+            organizationId,
+            historyBranchIds);
+        return await query.CountAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private IQueryable<CreditEntryRecord> ApplyHistoryBranchFilter(
+        IQueryable<CreditEntryRecord> query,
+        PosOrganizationId organizationId,
+        IReadOnlySet<Guid>? historyBranchIds)
+    {
+        if (historyBranchIds is null)
+        {
+            return query;
+        }
+
+        if (historyBranchIds.Count == 0)
+        {
+            return query.Where(_ => false);
+        }
+
+        var branchIds = historyBranchIds.ToList();
+        return query.Where(e =>
+            e.SourceSaleId != null
+            && _db.Sales.Any(s =>
+                s.Id == e.SourceSaleId
+                && s.OrganizationId == organizationId.Value
+                && s.BranchId != null
+                && branchIds.Contains(s.BranchId.Value)));
     }
 
     public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default)

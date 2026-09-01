@@ -89,7 +89,8 @@ public sealed class PartyBranchAccessService
         Guid customerId,
         PartyBranchGrantSource source,
         Guid? grantedByActorId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool persistChanges = true)
     {
         if (branchId == Guid.Empty || customerId == Guid.Empty)
         {
@@ -105,7 +106,10 @@ public sealed class PartyBranchAccessService
             grantedByActorId);
 
         await _customerAccess.GrantAsync(access, cancellationToken).ConfigureAwait(false);
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        if (persistChanges)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async Task GrantSupplierAccessAsync(
@@ -114,7 +118,8 @@ public sealed class PartyBranchAccessService
         Guid supplierId,
         PartyBranchGrantSource source,
         Guid? grantedByActorId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool persistChanges = true)
     {
         if (branchId == Guid.Empty || supplierId == Guid.Empty)
         {
@@ -130,7 +135,68 @@ public sealed class PartyBranchAccessService
             grantedByActorId);
 
         await _supplierAccess.GrantAsync(access, cancellationToken).ConfigureAwait(false);
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        if (persistChanges)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public Task RevokeCustomerExplicitAssignAsync(
+        Guid organizationId,
+        Guid branchId,
+        Guid customerId,
+        CancellationToken cancellationToken = default) =>
+        _customerAccess.RevokeGrantAsync(
+            PosOrganizationId.From(organizationId),
+            PosBranchId.From(branchId),
+            POSCustomerId.From(customerId),
+            PartyBranchGrantSource.ExplicitAssign,
+            cancellationToken);
+
+    public Task RevokeSupplierExplicitAssignAsync(
+        Guid organizationId,
+        Guid branchId,
+        Guid supplierId,
+        CancellationToken cancellationToken = default) =>
+        _supplierAccess.RevokeGrantAsync(
+            PosOrganizationId.From(organizationId),
+            PosBranchId.From(branchId),
+            SupplierId.From(supplierId),
+            PartyBranchGrantSource.ExplicitAssign,
+            cancellationToken);
+
+    public async Task GrantCustomerExplicitAssignAsync(
+        Guid organizationId,
+        Guid branchId,
+        Guid customerId,
+        Guid? grantedByActorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await GrantCustomerAccessAsync(
+                organizationId,
+                branchId,
+                customerId,
+                PartyBranchGrantSource.ExplicitAssign,
+                grantedByActorId,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task GrantSupplierExplicitAssignAsync(
+        Guid organizationId,
+        Guid branchId,
+        Guid supplierId,
+        Guid? grantedByActorId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await GrantSupplierAccessAsync(
+                organizationId,
+                branchId,
+                supplierId,
+                PartyBranchGrantSource.ExplicitAssign,
+                grantedByActorId,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>

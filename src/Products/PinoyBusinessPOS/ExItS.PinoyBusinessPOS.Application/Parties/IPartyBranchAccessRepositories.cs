@@ -29,6 +29,13 @@ public interface ICustomerBranchAccessRepository
     Task GrantAsync(
         CustomerBranchAccess access,
         CancellationToken cancellationToken = default);
+
+    Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        POSCustomerId customerId,
+        PartyBranchGrantSource grantSource,
+        CancellationToken cancellationToken = default);
 }
 
 public interface ISupplierBranchAccessRepository
@@ -52,5 +59,12 @@ public interface ISupplierBranchAccessRepository
 
     Task GrantAsync(
         SupplierBranchAccess access,
+        CancellationToken cancellationToken = default);
+
+    Task RevokeGrantAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        SupplierId supplierId,
+        PartyBranchGrantSource grantSource,
         CancellationToken cancellationToken = default);
 }

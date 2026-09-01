@@ -49,13 +49,17 @@ public interface IUtangLedgerQuery
         POSCustomerId customerId,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null,
+        bool hideOrgWideAdjustments = false);
 
     /// <summary>Full chronological ledger with running balances (no paging).</summary>
     Task<IReadOnlyList<LedgerEntryDto>> ListAllChronologicalAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        IReadOnlySet<Guid>? historyBranchIds = null,
+        bool hideOrgWideAdjustments = false);
 }
 
 public interface IOutstandingBalanceService

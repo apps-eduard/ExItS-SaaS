@@ -1,12 +1,14 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -63,6 +65,7 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
+    private readonly PartyBranchAccessService? _branchAccess;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
 
@@ -77,7 +80,8 @@ public sealed class CreateDirectPurchaseReceipt
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        PartyBranchAccessService? branchAccess = null)
     {
         _receipts = receipts;
         _products = products;
@@ -88,6 +92,7 @@ public sealed class CreateDirectPurchaseReceipt
         _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
+        _branchAccess = branchAccess;
         _clock = clock;
         _branches = branches;
     }
@@ -344,6 +349,20 @@ public sealed class CreateDirectPurchaseReceipt
                             return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
                                 payableResult.ErrorCode!,
                                 payableResult.ErrorMessage!);
+                        }
+
+                        if (_branchAccess is not null && supplierId is not null)
+                        {
+                            await _branchAccess
+                                .GrantSupplierAccessAsync(
+                                    organizationId,
+                                    receivingBranchId,
+                                    supplierId.Value,
+                                    PartyBranchGrantSource.Transaction,
+                                    actorId,
+                                    persistChanges: false,
+                                    cancellationToken: ct)
+                                .ConfigureAwait(false);
                         }
 
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);

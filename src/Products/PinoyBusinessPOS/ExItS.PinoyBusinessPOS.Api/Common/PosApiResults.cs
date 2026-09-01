@@ -186,7 +186,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ProductScopeForbidden
             or ApplicationErrorCodes.ProductOriginBranchForbidden
             or ApplicationErrorCodes.ProductPromotionForbidden
-            or ApplicationErrorCodes.ProductAvailabilityForbidden => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.ProductAvailabilityForbidden
+            or ApplicationErrorCodes.CustomerBranchAccessForbidden => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.PlatformAuthUnavailable
             or ApplicationErrorCodes.CatalogImportPlatformUnavailable => StatusCodes.Status503ServiceUnavailable,

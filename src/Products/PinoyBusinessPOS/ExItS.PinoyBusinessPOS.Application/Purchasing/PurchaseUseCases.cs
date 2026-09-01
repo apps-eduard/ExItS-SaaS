@@ -4,12 +4,14 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -1671,6 +1673,7 @@ public sealed class ReceivePurchaseOrder
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
+    private readonly PartyBranchAccessService? _branchAccess;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -1682,7 +1685,8 @@ public sealed class ReceivePurchaseOrder
         CreateSupplierPayableFromReceipt createPayable,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IBuyerSupplierProductLinkRepository? links = null)
+        IBuyerSupplierProductLinkRepository? links = null,
+        PartyBranchAccessService? branchAccess = null)
     {
         _orders = orders;
         _products = products;
@@ -1692,6 +1696,7 @@ public sealed class ReceivePurchaseOrder
         _links = links;
         _access = access;
         _createPayable = createPayable;
+        _branchAccess = branchAccess;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -1876,6 +1881,19 @@ public sealed class ReceivePurchaseOrder
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
+                        if (_branchAccess is not null && po.SupplierId is not null)
+                        {
+                            await _branchAccess
+                                .GrantSupplierAccessAsync(
+                                    organizationId,
+                                    receivingBranchId,
+                                    po.SupplierId.Value,
+                                    PartyBranchGrantSource.Transaction,
+                                    actorId,
+                                    persistChanges: false,
+                                    cancellationToken: ct)
+                                .ConfigureAwait(false);
+                        }
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
