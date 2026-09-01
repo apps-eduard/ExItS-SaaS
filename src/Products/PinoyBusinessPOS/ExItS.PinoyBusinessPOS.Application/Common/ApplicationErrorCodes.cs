@@ -207,6 +207,14 @@ public static class ApplicationErrorCodes
     public const string SaleBranchRequired = "pos.sale.branch_required";
     public const string InventoryBranchRequired = "pos.inventory.branch_required";
     public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
+    public const string InventoryBranchReservationCutoverUnresolvedSaleBranch =
+        "pos.inventory.branch_reservation_cutover.unresolved_sale_branch";
+    public const string InventoryBranchReservationCutoverMissingBalance =
+        "pos.inventory.branch_reservation_cutover.missing_balance";
+    public const string InventoryBranchReservationCutoverOverReserved =
+        "pos.inventory.branch_reservation_cutover.over_reserved";
+    public const string InventoryBranchReservationCutoverOrgMismatch =
+        "pos.inventory.branch_reservation_cutover.org_mismatch";
     public const string CustomerOrderBranchCapability = "pos.customer_order.branch.capability";
     public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";

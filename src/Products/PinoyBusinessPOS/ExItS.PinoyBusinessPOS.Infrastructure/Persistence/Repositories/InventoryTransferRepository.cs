@@ -318,7 +318,6 @@ internal sealed class InventoryBranchBalanceRepository : IInventoryBranchBalance
             return;
         }
 
-        record.OnHandQuantity = balance.OnHandQuantity;
-        record.UpdatedAtUtc = balance.UpdatedAtUtc;
+        InventoryTransferEntityMapper.ApplyToRecord(balance, record);
     }
 }

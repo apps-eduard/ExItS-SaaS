@@ -189,6 +189,14 @@ public static class DomainErrorCodes
     public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
     public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
+    public const string InventoryBranchReservationCutoverUnresolvedSaleBranch =
+        "pos.inventory.branch_reservation_cutover.unresolved_sale_branch";
+    public const string InventoryBranchReservationCutoverMissingBalance =
+        "pos.inventory.branch_reservation_cutover.missing_balance";
+    public const string InventoryBranchReservationCutoverOverReserved =
+        "pos.inventory.branch_reservation_cutover.over_reserved";
+    public const string InventoryBranchReservationCutoverOrgMismatch =
+        "pos.inventory.branch_reservation_cutover.org_mismatch";
     public const string InventoryAdjustmentReasonRequired = "pos.inventory.adjustment_reason_required";
     public const string InventoryReorderLevelInvalid = "pos.inventory.reorder_level.invalid";
     public const string InventoryReorderQuantityInvalid = "pos.inventory.reorder_quantity.invalid";

@@ -124,6 +124,13 @@ internal static class InventoryTransferEntityMapper
             UpdatedAtUtc = balance.UpdatedAtUtc
         };
 
+    public static void ApplyToRecord(InventoryBranchBalance balance, InventoryBranchBalanceRecord record)
+    {
+        record.OnHandQuantity = balance.OnHandQuantity;
+        record.ReservedQuantity = balance.ReservedQuantity;
+        record.UpdatedAtUtc = balance.UpdatedAtUtc;
+    }
+
     public static InventoryBranchReorderSetting ToDomain(InventoryBranchReorderSettingRecord record) =>
         InventoryBranchReorderSetting.Rehydrate(
             PosOrganizationId.From(record.OrganizationId),
