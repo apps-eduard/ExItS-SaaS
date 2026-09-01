@@ -3,8 +3,9 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2  
 **Package:** MB2-02C  
 **Branch:** `feat/organization`  
-**Status:** COMPLETE_VALIDATED  
+**Status:** COMPLETE_VALIDATED_NO_INVENTORY_P2
 **Start SHA:** `91ee64b9dc53e2a24e8dd028d2541a567832338d`
+**H1 closure SHA:** see `POS-MULTI-BRANCH-V2-MB2-02C-H1-DEDICATED-SECURITY-CONCURRENCY-AND-E2E-PROOF-CLOSURE.md`
 
 ---
 
@@ -80,9 +81,9 @@ Lots are **optional** — expiration-tracked products only. No global `branch On
 
 ## Explicit exclusions / deferred labels
 
-- Dedicated `BWRITE-SEC-03` … `SEC-08` staff/ACL matrix → MB2-04 (header/body authority fixed in 02C)
-- Dedicated `BWRITE-CONC-02` … `CONC-04` HTTP labels → partial overlap with payment concurrency suite
-- Full API-driven Mica store scripted E2E → service-level `MICA_02C` + 02C sale/audit tests
+- ~~Dedicated `BWRITE-SEC-03` … `SEC-08` staff/ACL matrix~~ → closed in **MB2-02C-H1**
+- ~~Dedicated `BWRITE-CONC-02` … `CONC-04` HTTP labels~~ → closed in **MB2-02C-H1**
+- ~~Full API-driven Mica store scripted E2E~~ → closed in **MB2-02C-H1** (`MICA_FULL_API_E2E`)
 - MB2-02D / MB2-03+ not started
 
 ---
