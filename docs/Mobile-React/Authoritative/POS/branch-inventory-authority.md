@@ -14,6 +14,14 @@
 
 **Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md)
 
+### MB2-02B-H2 branch reservation persistence and cutover (delivered)
+
+- Existing-row `UpsertAsync` now persists `ReservedQuantity` (H1 UPDATE omission fixed).
+- Follow-up migration `ReconcileBranchInventoryReservations` + `IBranchInventoryReservationCutover` reconstruct branch reserved from active Reserved Sales / CustomerOrders (fail closed on unknown branch / over-reserve / org mismatch).
+- H2 Down sets `reserved_quantity = 0` without changing OnHand.
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md)
+
 ### MB2-02B write authority (delivered)
 
 - Central `BranchInventoryMutationService` + hardened `BranchBalanceMutation` (pre-mutation materialization ordering).

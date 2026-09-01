@@ -33,6 +33,8 @@ Previous 02B double-count: concatenating Main lots with `branchId: null` (unfilt
 
 Schema: `20260901120000_AddBranchInventoryReservations` adds `reserved_quantity` default 0 (no stock rewrite, no balance mass backfill, no fabricated historical reservations).
 
+**H2 follow-up:** existing-row Upsert now persists `ReservedQuantity`. Cutover reconstruction is `20260901133000_ReconcileBranchInventoryReservations` + `IBranchInventoryReservationCutover` — see [MB2-02B-H2 report](POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md).
+
 Authority: `Sale.BranchId` / `CustomerOrder.FulfillmentBranchId`. Current workspace is not the physical consume branch after a switch.
 
 Lifecycle:
