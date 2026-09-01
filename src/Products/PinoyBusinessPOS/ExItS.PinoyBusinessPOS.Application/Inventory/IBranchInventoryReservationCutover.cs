@@ -24,6 +24,7 @@ public sealed record BranchInventoryReservationCutoverResult(
     int ActiveDocumentCount,
     int BranchProductGroups,
     int BalancesUpdated,
+    int MismatchedBalanceCount,
     IReadOnlyList<BranchInventoryReservationAggregate> Aggregates);
 
 public sealed record BranchInventoryReservationAggregate(

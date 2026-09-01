@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 
 /// <summary>
-/// Application-level twin of <c>ReconcileBranchInventoryReservations</c> for tests and re-runs.
-/// Optional <paramref name="organizationId"/> scopes verification to one tenant (recommended for re-runs).
+/// Exact projection of branch <c>ReservedQuantity</c> from active Reserved Sales/CustomerOrders.
+/// Clears stale branch reservations when no active document applies (MB2-02B-H3).
 /// </summary>
 internal sealed class BranchInventoryReservationCutover : IBranchInventoryReservationCutover
 {
     private const string Reserved = "Reserved";
+    private static readonly Guid EmptyBranchId = Guid.Empty;
 
     private readonly PosDbContext _db;
 
@@ -38,14 +39,26 @@ internal sealed class BranchInventoryReservationCutover : IBranchInventoryReserv
             salesQuery = salesQuery.Where(s => s.OrganizationId == orgFilter);
         }
 
-        var unresolved = await salesQuery
-            .CountAsync(s => s.BranchId == null, cancellationToken)
-            .ConfigureAwait(false);
-        if (unresolved > 0)
+        if (await salesQuery.AnyAsync(s => s.BranchId == null, cancellationToken).ConfigureAwait(false))
         {
             throw new DomainException(
                 DomainErrorCodes.InventoryBranchReservationCutoverUnresolvedSaleBranch,
                 "Active Reserved sales require durable BranchId; Main is not assumed.");
+        }
+
+        var ordersQuery = _db.CustomerOrders.AsNoTracking()
+            .Where(o => o.StockReservationState == Reserved);
+        if (organizationId is Guid orderDocOrg)
+        {
+            ordersQuery = ordersQuery.Where(o => o.SellerOrganizationId == orderDocOrg);
+        }
+
+        if (await ordersQuery.AnyAsync(o => o.FulfillmentBranchId == EmptyBranchId, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryBranchReservationCutoverUnresolvedOrderBranch,
+                "Active Reserved customer orders require durable FulfillmentBranchId; Main is not assumed.");
         }
 
         var saleLinesQuery =
@@ -79,7 +92,9 @@ internal sealed class BranchInventoryReservationCutover : IBranchInventoryReserv
             join ia in _db.InventoryAccounts.AsNoTracking()
                 on new { OrganizationId = o.SellerOrganizationId, ol.ProductId }
                 equals new { ia.OrganizationId, ia.ProductId }
-            where o.StockReservationState == Reserved && ia.IsTracked
+            where o.StockReservationState == Reserved
+                && o.FulfillmentBranchId != EmptyBranchId
+                && ia.IsTracked
             select new
             {
                 OrganizationId = o.SellerOrganizationId,
@@ -107,17 +122,13 @@ internal sealed class BranchInventoryReservationCutover : IBranchInventoryReserv
             .ThenBy(a => a.ProductId)
             .ToList();
 
+        var aggregateByKey = aggregates.ToDictionary(
+            a => (a.OrganizationId, a.BranchId, a.ProductId),
+            a => a.ReservedQuantity);
+
         var saleDocCount = await salesQuery
             .CountAsync(s => s.BranchId != null, cancellationToken)
             .ConfigureAwait(false);
-
-        var ordersQuery = _db.CustomerOrders.AsNoTracking()
-            .Where(o => o.StockReservationState == Reserved);
-        if (organizationId is Guid orderDocOrg)
-        {
-            ordersQuery = ordersQuery.Where(o => o.SellerOrganizationId == orderDocOrg);
-        }
-
         var orderDocCount = await ordersQuery.CountAsync(cancellationToken).ConfigureAwait(false);
 
         var docByOrgProduct = aggregates
@@ -161,57 +172,71 @@ internal sealed class BranchInventoryReservationCutover : IBranchInventoryReserv
             }
         }
 
-        var updated = 0;
-        if (aggregates.Count > 0)
+        var balancesQuery = _db.InventoryBranchBalances.AsQueryable();
+        if (organizationId is Guid balanceOrg)
         {
-            var orgIds = aggregates.Select(a => a.OrganizationId).Distinct().ToList();
-            var balances = await _db.InventoryBranchBalances
-                .Where(b => orgIds.Contains(b.OrganizationId))
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-            var byKey = balances.ToDictionary(b => (b.OrganizationId, b.BranchId, b.ProductId));
+            balancesQuery = balancesQuery.Where(b => b.OrganizationId == balanceOrg);
+        }
 
-            foreach (var agg in aggregates)
+        var balances = await balancesQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
+        var balanceByKey = balances.ToDictionary(b => (b.OrganizationId, b.BranchId, b.ProductId));
+
+        foreach (var agg in aggregates)
+        {
+            if (!balanceByKey.TryGetValue((agg.OrganizationId, agg.BranchId, agg.ProductId), out var balance))
             {
-                if (!byKey.TryGetValue((agg.OrganizationId, agg.BranchId, agg.ProductId), out var balance))
-                {
-                    throw new DomainException(
-                        DomainErrorCodes.InventoryBranchReservationCutoverMissingBalance,
-                        "Active reservation targets a branch/product without InventoryBranchBalance; OnHand will not be invented.");
-                }
-
-                if (agg.ReservedQuantity > balance.OnHandQuantity)
-                {
-                    throw new DomainException(
-                        DomainErrorCodes.InventoryBranchReservationCutoverOverReserved,
-                        "Active reservations exceed branch OnHand; remediating data is required before cutover.");
-                }
+                throw new DomainException(
+                    DomainErrorCodes.InventoryBranchReservationCutoverMissingBalance,
+                    "Active reservation targets a branch/product without InventoryBranchBalance; OnHand will not be invented.");
             }
 
-            if (write)
+            if (agg.ReservedQuantity > balance.OnHandQuantity)
             {
-                var now = DateTimeOffset.UtcNow;
-                foreach (var agg in aggregates)
-                {
-                    var balance = byKey[(agg.OrganizationId, agg.BranchId, agg.ProductId)];
-                    if (balance.ReservedQuantity == agg.ReservedQuantity)
-                    {
-                        continue;
-                    }
+                throw new DomainException(
+                    DomainErrorCodes.InventoryBranchReservationCutoverOverReserved,
+                    "Active reservations exceed branch OnHand; remediating data is required before cutover.");
+            }
+        }
 
-                    balance.ReservedQuantity = agg.ReservedQuantity;
-                    balance.UpdatedAtUtc = now;
-                    updated++;
+        var mismatched = 0;
+        var updated = 0;
+        foreach (var balance in balances)
+        {
+            var desired = aggregateByKey.GetValueOrDefault(
+                (balance.OrganizationId, balance.BranchId, balance.ProductId),
+                0m);
+            if (balance.ReservedQuantity != desired)
+            {
+                mismatched++;
+            }
+        }
+
+        if (write && mismatched > 0)
+        {
+            var now = DateTimeOffset.UtcNow;
+            foreach (var balance in balances)
+            {
+                var desired = aggregateByKey.GetValueOrDefault(
+                    (balance.OrganizationId, balance.BranchId, balance.ProductId),
+                    0m);
+                if (balance.ReservedQuantity == desired)
+                {
+                    continue;
                 }
 
-                await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                balance.ReservedQuantity = desired;
+                balance.UpdatedAtUtc = now;
+                updated++;
             }
+
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return new BranchInventoryReservationCutoverResult(
             saleDocCount + orderDocCount,
             aggregates.Count,
             updated,
+            mismatched,
             aggregates);
     }
 }

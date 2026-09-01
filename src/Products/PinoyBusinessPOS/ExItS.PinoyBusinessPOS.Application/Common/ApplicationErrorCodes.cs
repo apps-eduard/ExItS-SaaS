@@ -209,6 +209,8 @@ public static class ApplicationErrorCodes
     public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
     public const string InventoryBranchReservationCutoverUnresolvedSaleBranch =
         "pos.inventory.branch_reservation_cutover.unresolved_sale_branch";
+    public const string InventoryBranchReservationCutoverUnresolvedOrderBranch =
+        "pos.inventory.branch_reservation_cutover.unresolved_order_branch";
     public const string InventoryBranchReservationCutoverMissingBalance =
         "pos.inventory.branch_reservation_cutover.missing_balance";
     public const string InventoryBranchReservationCutoverOverReserved =
