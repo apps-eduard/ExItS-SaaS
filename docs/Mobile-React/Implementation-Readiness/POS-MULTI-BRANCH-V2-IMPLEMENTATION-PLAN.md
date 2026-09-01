@@ -187,7 +187,8 @@ Then: `NEXT=MB2_02`
 **MB2-02A-H1 (primary legacy isolation):** COMPLETE — see [H1 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02A-H1-PRIMARY-BRANCH-LEGACY-STOCK-ISOLATION.md).
 **MB2-02B (write authority):** COMPLETE — see [MB2-02B report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-PHYSICAL-INVENTORY-WRITE-AUTHORITY.md).
 **MB2-02B-H1 (reservation / unknown-primary writes / mixed lots):** COMPLETE — see [MB2-02B-H1 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md).
-**MB2-02B-H2 (branch reservation persistence + cutover):** COMPLETE — see [MB2-02B-H2 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md).
+**MB2-02B-H2 (branch reservation persistence + cutover):** COMPLETE — see [MB2-02B-H2 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md). H3 exact-projection correction validated H2 closure.
+**MB2-02B-H3 (exact reservation projection + write authority closure):** COMPLETE — see [MB2-02B-H3 report](../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H3-EXACT-RESERVATION-PROJECTION-AND-WRITE-AUTHORITY-CLOSURE.md).
 **NEXT authorized package:** MB2-02C (lot/movement reconciliation polish). **HARD STOP — do not start MB2-02C without authorization.**
 
 ---

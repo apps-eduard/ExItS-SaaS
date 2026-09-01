@@ -3,8 +3,14 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2  
 **Package:** MB2-02B-H2  
 **Branch:** `feat/organization`  
-**Status:** COMPLETE_VALIDATED  
+**Status:** COMPLETE_VALIDATED (H3 exact-projection correction applied)
 **Start SHA:** `3331f735e70e8afce82c17a270c65e5b6e4a844c`
+
+---
+
+## H3 follow-up (stale projection correction)
+
+Independent review found H2 reconciler/migration updated only branch balances in the active aggregate. Stale non-zero `ReservedQuantity` could survive with zero active reservations. **H3** (`20260901143000_ExactProjectBranchInventoryReservations` + reconciler rewrite) sets every in-scope balance to `COALESCE(active aggregate, 0)`. See [MB2-02B-H3 report](POS-MULTI-BRANCH-V2-MB2-02B-H3-EXACT-RESERVATION-PROJECTION-AND-WRITE-AUTHORITY-CLOSURE.md).
 
 ---
 

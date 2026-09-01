@@ -3,7 +3,7 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-02 (02A read authority delivered; 02B write authority delivered; 02B-H1 reservation/primary/lot hardening delivered; 02C reconciliation deferred)
+**Implements in:** MB2-02 (02A read authority delivered; 02B write authority delivered and closed; 02B-H1 reservation/primary/lot hardening delivered; 02C reconciliation deferred)
 
 ### MB2-02B-H1 reservation, unknown-primary writes, and mixed lots (delivered)
 
@@ -14,15 +14,25 @@
 
 **Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H1-INVENTORY-RESERVATION-PRIMARY-AND-LOT-HARDENING.md)
 
-### MB2-02B-H2 branch reservation persistence and cutover (delivered)
+### MB2-02B-H2 branch reservation persistence and cutover (delivered; H3 validated)
 
 - Existing-row `UpsertAsync` now persists `ReservedQuantity` (H1 UPDATE omission fixed).
 - Follow-up migration `ReconcileBranchInventoryReservations` + `IBranchInventoryReservationCutover` reconstruct branch reserved from active Reserved Sales / CustomerOrders (fail closed on unknown branch / over-reserve / org mismatch).
 - H2 Down sets `reserved_quantity = 0` without changing OnHand.
+- **H3 correction:** H2 originally updated only aggregate keys; stale branch Reserved could survive. H3 exact projection clears all in-scope balances to `COALESCE(active aggregate, 0)`.
 
 **Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H2-BRANCH-RESERVATION-PERSISTENCE-AND-CUTOVER.md)
 
-### MB2-02B write authority (delivered)
+### MB2-02B-H3 exact reservation projection (delivered — MB2-02B closure)
+
+- `BranchInventoryReservationCutover.ReconcileAsync` projects **every** in-scope branch balance: `ReservedQuantity = active doc sum OR 0`.
+- Migration `20260901143000_ExactProjectBranchInventoryReservations` applies same semantics atomically in PostgreSQL.
+- Audit mode reports mismatches without writes. Validate-before-mutate; atomic failure leaves stale unchanged.
+- H3 Down is no-op (invalid stale state must not be restored).
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02B-H3-EXACT-RESERVATION-PROJECTION-AND-WRITE-AUTHORITY-CLOSURE.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-H3-EXACT-RESERVATION-PROJECTION-AND-WRITE-AUTHORITY-CLOSURE.md)
+
+### MB2-02B write authority (closed)
 
 - Central `BranchInventoryMutationService` + hardened `BranchBalanceMutation` (pre-mutation materialization ordering).
 - Physical writes update org aggregate + branch overlay atomically for opening, adjust, stock count, direct purchase, GRN, sale/return, stock use, waste, production, transfers (audit).
