@@ -55,7 +55,7 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             [new InventoryTransferReceiveLineRequest(product.ProductId, 30m)],
             idempotencyKey: "recv-full-1");
         Assert.Equal("Received", received.Status);
-        Assert.Equal(100m, await OnHandAsync(client, org, product.ProductId));
+        Assert.Equal(100m, await OrgOnHandAsync(client, org, product.ProductId));
         Assert.Equal(30m, received.Lines[0].ReceivedQty);
         Assert.Equal(30m, received.Lines[0].SentQty);
 
@@ -67,7 +67,7 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             [new InventoryTransferReceiveLineRequest(product.ProductId, 30m)],
             idempotencyKey: "recv-full-1");
         Assert.Equal("Received", replay.Status);
-        Assert.Equal(100m, await OnHandAsync(client, org, product.ProductId));
+        Assert.Equal(100m, await OrgOnHandAsync(client, org, product.ProductId));
 
         var second = await ReceiveRawAsync(
             client,
@@ -77,7 +77,7 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             [new InventoryTransferReceiveLineRequest(product.ProductId, 30m)],
             idempotencyKey: "recv-full-2");
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
-        Assert.Equal(100m, await OnHandAsync(client, org, product.ProductId));
+        Assert.Equal(100m, await OrgOnHandAsync(client, org, product.ProductId));
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(10m, received.Lines.Single(l => l.ProductId == sprite.ProductId).SentQty);
         Assert.Equal(8m, received.Lines.Single(l => l.ProductId == sprite.ProductId).ReceivedQty);
         Assert.Equal(2m, received.Lines.Single(l => l.ProductId == sprite.ProductId).DifferenceQty);
-        Assert.Equal(20m, await OnHandAsync(client, org, coke.ProductId));
-        Assert.Equal(8m, await OnHandAsync(client, org, sprite.ProductId));
+        Assert.Equal(20m, await OnHandAsync(client, org, coke.ProductId, BranchB));
+        Assert.Equal(8m, await OnHandAsync(client, org, sprite.ProductId, BranchB));
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(6m, received.Lines.Single(l => l.LineId == lineB.LineId).ReceivedQty);
         Assert.Equal(early, received.Lines.Single(l => l.LineId == lineA.LineId).ExpirationDate);
         Assert.Equal(later, received.Lines.Single(l => l.LineId == lineB.LineId).ExpirationDate);
-        Assert.Equal(29m, await OnHandAsync(client, org, product.ProductId));
+        Assert.Equal(29m, await OrgOnHandAsync(client, org, product.ProductId));
 
         var replay = await ReceiveAsync(
             client,
@@ -229,7 +229,7 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             ],
             idempotencyKey: "recv-lot-1");
         Assert.Equal("PartiallyReceived", replay.Status);
-        Assert.Equal(29m, await OnHandAsync(client, org, product.ProductId));
+        Assert.Equal(29m, await OrgOnHandAsync(client, org, product.ProductId));
 
         // Lot list is branch-scoped (exact BranchId); query destination and source separately.
         var destLots = await ListLotsAsync(client, org, product.ProductId, BranchB);
@@ -309,13 +309,22 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         return page!.Items;
     }
 
-    private static async Task<decimal> OnHandAsync(HttpClient client, Guid org, Guid productId)
+    private static async Task<decimal> OnHandAsync(HttpClient client, Guid org, Guid productId, Guid? branchId = null)
     {
-        using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}", org, BranchA);
+        using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}", org, branchId ?? BranchA);
         using var response = await client.SendAsync(get);
         response.EnsureSuccessStatusCode();
         var account = await response.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
         return account!.OnHandQuantity;
+    }
+
+    private static async Task<decimal> OrgOnHandAsync(HttpClient client, Guid org, Guid productId)
+    {
+        using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}/organization-summary", org, BranchA);
+        using var response = await client.SendAsync(get);
+        response.EnsureSuccessStatusCode();
+        var summary = await response.Content.ReadFromJsonAsync<PosOrganizationInventoryProductDto>(JsonOptions);
+        return summary!.OrganizationOnHandQuantity;
     }
 
     private static async Task<InventoryTransferDto> CreateTransferAsync(

@@ -69,7 +69,7 @@ public sealed class PosProductionApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(20m, Assert.Single(run.Materials).ActualBaseQuantity);
         Assert.Equal(200m, run.TotalMaterialCost);
         Assert.Equal(1m, run.OutputBaseUnitCost);
-        Assert.Null(run.BranchId);
+        Assert.Equal(BranchA, run.BranchId);
         Assert.Equal(org, run.OrganizationId);
         Assert.NotNull(run.OutputInventoryMovementId);
         Assert.NotNull(run.Materials[0].InventoryMovementId);

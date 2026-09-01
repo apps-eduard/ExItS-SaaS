@@ -31,6 +31,8 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
 
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
+    private static readonly Guid BranchA = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private const string Returns = "/api/v1/pos/sale-returns";
     private const string Sales = "/api/v1/pos/sales";
     private const string Products = "/api/v1/pos/catalog/products";
@@ -60,7 +62,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
             "Wrong item",
             [new CreateSaleReturnLineRequest(line.SaleLineId, 1m, "ReturnToStock")]);
 
-        using var create = PosIntegrationRequest.Scoped(HttpMethod.Post, Returns, org, Actor);
+        using var create = ScopedWithBranch(HttpMethod.Post, Returns, org, Actor);
         create.Content = JsonContent.Create(body, options: JsonOptions);
         using var createResponse = await client.SendAsync(create);
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
@@ -72,7 +74,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(PosSaleOptions.CashPaymentMethod, saleReturn.RefundMethod);
         Assert.NotNull(saleReturn.CashierShiftId);
 
-        using var voidAttempt = PosIntegrationRequest.Scoped(HttpMethod.Post, $"{Sales}/{sale.SaleId:D}/void", org, Actor);
+        using var voidAttempt = ScopedWithBranch(HttpMethod.Post, $"{Sales}/{sale.SaleId:D}/void", org, Actor);
         voidAttempt.Content = JsonContent.Create(new VoidSaleRequest("should fail"), options: JsonOptions);
         using var voidResponse = await client.SendAsync(voidAttempt);
         Assert.Equal(HttpStatusCode.Conflict, voidResponse.StatusCode);
@@ -105,7 +107,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
         var json = JsonSerializer.Serialize(body, JsonOptions);
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json))).ToLowerInvariant();
 
-        using var first = PosIntegrationRequest.Scoped(HttpMethod.Post, Returns, org, Actor);
+        using var first = ScopedWithBranch(HttpMethod.Post, Returns, org, Actor);
         first.Headers.TryAddWithoutValidation("Idempotency-Key", returnId.ToString("D"));
         first.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", hash);
         first.Headers.TryAddWithoutValidation("X-Pos-Operation-Id", returnId.ToString("D"));
@@ -115,7 +117,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
         var created = await firstResponse.Content.ReadFromJsonAsync<PosSaleReturnDto>(JsonOptions);
 
-        using var second = PosIntegrationRequest.Scoped(HttpMethod.Post, Returns, org, Actor);
+        using var second = ScopedWithBranch(HttpMethod.Post, Returns, org, Actor);
         second.Headers.TryAddWithoutValidation("Idempotency-Key", returnId.ToString("D"));
         second.Headers.TryAddWithoutValidation("X-Pos-Payload-Hash", hash);
         second.Headers.TryAddWithoutValidation("X-Pos-Operation-Id", returnId.ToString("D"));
@@ -155,10 +157,24 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(20m, dto.Lines[0].RefundableAmount);
     }
 
+    private static HttpRequestMessage ScopedWithBranch(
+        HttpMethod method,
+        string path,
+        Guid org,
+        Guid actor,
+        Guid? branchId = null)
+    {
+        var request = PosIntegrationRequest.Scoped(method, path, org, actor);
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.BranchHeaderName,
+            (branchId ?? BranchA).ToString("D"));
+        return request;
+    }
+
     private static async Task<PosSaleDto> CheckoutAsync(HttpClient client, Guid org, CheckoutSaleRequest body)
     {
         await PosShiftIntegrationSupport.EnsureOpenShiftAsync(client, org, Actor).ConfigureAwait(false);
-        using var request = PosIntegrationRequest.Scoped(HttpMethod.Post, Sales, org, Actor);
+        using var request = ScopedWithBranch(HttpMethod.Post, Sales, org, Actor);
         request.Content = JsonContent.Create(body, options: JsonOptions);
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -185,6 +201,7 @@ public sealed class PosSaleReturnApiTests(PosPostgreSqlFixture fixture)
     private static async Task EnableInventoryAsync(HttpClient client, Guid org, Guid productId)
     {
         using var request = PosIntegrationRequest.Scoped(HttpMethod.Post, $"/api/v1/pos/inventory/{productId:D}/enable", org, Actor);
+        request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.BranchHeaderName, BranchA.ToString("D"));
         request.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 100m, UnitCost: 1m), options: JsonOptions);
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();

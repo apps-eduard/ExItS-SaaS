@@ -218,6 +218,10 @@ public sealed class BranchInventory02CClosureIntegrationTests(PosPostgreSqlFixtu
             {
                 return false;
             }
+            catch (DbUpdateException)
+            {
+                return false;
+            }
         });
         var saleTask = Task.Run(async () =>
         {
@@ -235,6 +239,10 @@ public sealed class BranchInventory02CClosureIntegrationTests(PosPostgreSqlFixtu
                 return true;
             }
             catch (DomainException)
+            {
+                return false;
+            }
+            catch (DbUpdateException)
             {
                 return false;
             }

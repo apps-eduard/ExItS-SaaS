@@ -47,7 +47,7 @@ public sealed class PosWasteLossApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal("Expired", created.Reason);
         Assert.Equal("Complete", created.CostStatus);
         Assert.Equal(60m, created.TotalCostSnapshot);
-        Assert.Null(created.BranchId);
+        Assert.Equal(BranchA, created.BranchId);
         Assert.Equal(org, created.OrganizationId);
         var line = Assert.Single(created.Lines);
         Assert.Equal(lot.LotId, line.InventoryLotId);

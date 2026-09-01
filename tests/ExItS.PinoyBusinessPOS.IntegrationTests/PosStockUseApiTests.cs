@@ -42,7 +42,7 @@ public sealed class PosStockUseApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal("InternalOperations", created.Reason);
         Assert.Equal("Kitchen sample", created.Notes);
         Assert.Equal("SU-REF-1", created.ReferenceNumber);
-        Assert.Null(created.BranchId);
+        Assert.Equal(BranchA, created.BranchId);
         Assert.Equal(org, created.OrganizationId);
         var line = Assert.Single(created.Lines);
         Assert.Equal(4m, line.BaseQuantity);
