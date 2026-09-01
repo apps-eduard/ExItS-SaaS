@@ -2681,6 +2681,8 @@ export const en = {
   "inventory.notTracked": "Not tracked",
   "inventory.tracked": "Tracked",
   "inventory.onHand": "On hand",
+  "inventory.onHandAtBranch": "On hand at {branch}: {qty} {uom}",
+  "inventory.branchScope": "Branch: {name}",
   "inventory.untrackedHint": "Not tracked means inventory enforcement is off — not zero stock.",
   "inventory.openingQuantity": "Opening quantity (base units)",
   "inventory.openingQuantityOptional": "Opening quantity (optional)",

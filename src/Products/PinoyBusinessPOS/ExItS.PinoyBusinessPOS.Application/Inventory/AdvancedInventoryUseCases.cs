@@ -14,6 +14,7 @@ public sealed class SetInventoryReorderConfiguration
 {
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryReorderChangeRepository _history;
+    private readonly IInventoryBranchReorderRepository _branchReorder;
     private readonly ICatalogProductRepository _products;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -21,12 +22,14 @@ public sealed class SetInventoryReorderConfiguration
     public SetInventoryReorderConfiguration(
         IInventoryRepository inventory,
         IInventoryReorderChangeRepository history,
+        IInventoryBranchReorderRepository branchReorder,
         ICatalogProductRepository products,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _inventory = inventory;
         _history = history;
+        _branchReorder = branchReorder;
         _products = products;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -34,6 +37,7 @@ public sealed class SetInventoryReorderConfiguration
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
         Guid organizationId,
+        Guid branchId,
         Guid productId,
         decimal? reorderLevel,
         decimal? reorderQuantity,
@@ -48,8 +52,16 @@ public sealed class SetInventoryReorderConfiguration
                 "An actor identifier is required to set reorder configuration.");
         }
 
+        if (branchId == Guid.Empty)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "A selected branch is required to set branch reorder configuration.");
+        }
+
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
+        var branch = PosBranchId.From(branchId);
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
         if (product is null)
         {
@@ -71,21 +83,44 @@ public sealed class SetInventoryReorderConfiguration
         try
         {
             var utcNow = _clock.UtcNow;
+            var existing = await _branchReorder
+                .GetAsync(orgId, branch, catalogProductId, cancellationToken)
+                .ConfigureAwait(false);
             var change = InventoryReorderChange.Create(
                 orgId,
                 account.Id,
                 catalogProductId,
-                account.ReorderLevel,
+                existing?.ReorderLevel,
                 reorderLevel,
-                account.ReorderQuantity,
+                existing?.ReorderQuantity,
                 reorderQuantity,
                 reason,
                 actorId,
                 utcNow);
 
-            account.SetReorderConfiguration(reorderLevel, reorderQuantity, product.UnitOfMeasure, utcNow);
+            var setting = existing is null
+                ? InventoryBranchReorderSetting.Create(
+                    orgId,
+                    branch,
+                    catalogProductId,
+                    reorderLevel,
+                    reorderQuantity,
+                    product.UnitOfMeasure,
+                    actorId,
+                    utcNow)
+                : existing;
+            if (existing is not null)
+            {
+                existing.SetConfiguration(
+                    reorderLevel,
+                    reorderQuantity,
+                    product.UnitOfMeasure,
+                    actorId,
+                    utcNow);
+            }
+
             await _history.AddAsync(change, cancellationToken).ConfigureAwait(false);
-            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
+            await _branchReorder.UpsertAsync(setting, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryAccount>.Success(account);
         }
@@ -104,11 +139,16 @@ public sealed class InventoryReconciliationQuery
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _balances;
 
-    public InventoryReconciliationQuery(IInventoryRepository inventory, ICatalogProductRepository products)
+    public InventoryReconciliationQuery(
+        IInventoryRepository inventory,
+        ICatalogProductRepository products,
+        IInventoryBranchBalanceRepository balances)
     {
         _inventory = inventory;
         _products = products;
+        _balances = balances;
     }
 
     public async Task<ApplicationResult<PosInventoryReconciliationDto>> GetAsync(
@@ -136,6 +176,11 @@ public sealed class InventoryReconciliationQuery
                 "Inventory is not tracked for this product.");
         }
 
+        var balances = await _balances
+            .ListByProductIdsAsync(orgId, [catalogProductId], cancellationToken)
+            .ConfigureAwait(false);
+        var explicitSum = balances.Sum(b => b.OnHandQuantity);
+        var unallocated = Math.Max(0m, account.OnHandQuantity - explicitSum);
         var movementSum = await _inventory
             .SumMovementEffectsAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
@@ -144,6 +189,8 @@ public sealed class InventoryReconciliationQuery
             new PosInventoryReconciliationDto(
                 productId,
                 account.OnHandQuantity,
+                explicitSum,
+                unallocated,
                 movementSum,
                 difference,
                 difference == 0m));

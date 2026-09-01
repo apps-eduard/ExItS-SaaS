@@ -23,7 +23,8 @@ public sealed record PosInventoryAccountDto(
     decimal? SellableQuantity = null,
     decimal? ExpiredQuantity = null,
     decimal? NearExpiryQuantity = null,
-    bool HasOpeningStock = false);
+    bool HasOpeningStock = false,
+    decimal? OrganizationOnHandQuantity = null);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,
@@ -129,7 +130,9 @@ public sealed record SetInventoryReorderRequest(
 
 public sealed record PosInventoryReconciliationDto(
     Guid ProductId,
-    decimal OnHandQuantity,
+    decimal OrganizationOnHandQuantity,
+    decimal SumExplicitBranchOnHand,
+    decimal UnallocatedQuantity,
     decimal MovementSum,
     decimal Difference,
     bool IsBalanced);
@@ -180,7 +183,9 @@ public sealed record StockMovementFilter(
     string? MovementType = null,
     string? SourceType = null,
     DateOnly? FromDateUtc = null,
-    DateOnly? ToDateUtc = null);
+    DateOnly? ToDateUtc = null,
+    Guid? BranchId = null,
+    Guid? PrimaryBranchId = null);
 
 public sealed record PosInventoryAccountPagedResult(
     List<PosInventoryAccountDto> Items,

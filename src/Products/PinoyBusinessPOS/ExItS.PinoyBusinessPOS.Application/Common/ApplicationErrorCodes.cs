@@ -205,6 +205,7 @@ public static class ApplicationErrorCodes
     public const string ReportBranchNotFound = "pos.report.branch.not_found";
     public const string OperationalBranchSwitchBlocked = "pos.branch.switch.shift_open";
     public const string SaleBranchRequired = "pos.sale.branch_required";
+    public const string InventoryBranchRequired = "pos.inventory.branch_required";
     public const string CustomerOrderBranchCapability = "pos.customer_order.branch.capability";
     public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
     public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";

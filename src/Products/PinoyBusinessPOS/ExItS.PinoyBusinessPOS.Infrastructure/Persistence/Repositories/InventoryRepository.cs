@@ -390,6 +390,14 @@ internal sealed class InventoryRepository : IInventoryRepository
             query = query.Where(m => m.RecordedAtUtc < exclusiveTo);
         }
 
+        if (filter.BranchId is Guid branchId && branchId != Guid.Empty)
+        {
+            var isPrimary = filter.PrimaryBranchId is null || filter.PrimaryBranchId.Value == branchId;
+            query = isPrimary
+                ? query.Where(m => m.BranchId == null || m.BranchId == branchId)
+                : query.Where(m => m.BranchId == branchId);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
             .OrderByDescending(m => m.RecordedAtUtc)

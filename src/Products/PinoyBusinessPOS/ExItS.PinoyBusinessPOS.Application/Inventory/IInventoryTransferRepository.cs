@@ -40,6 +40,16 @@ public interface IInventoryBranchBalanceRepository
         IReadOnlyCollection<Domain.Catalog.CatalogProductId> productIds,
         CancellationToken cancellationToken = default);
 
+    async Task<IReadOnlyList<InventoryBranchBalance>> ListByBranchAndProductIdsAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<Domain.Catalog.CatalogProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        var all = await ListByProductIdsAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false);
+        return all.Where(b => b.BranchId == branchId).ToList();
+    }
+
     Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default);
 }
 

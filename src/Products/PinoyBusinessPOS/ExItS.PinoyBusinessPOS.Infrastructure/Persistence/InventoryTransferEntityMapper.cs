@@ -121,4 +121,26 @@ internal static class InventoryTransferEntityMapper
             OnHandQuantity = balance.OnHandQuantity,
             UpdatedAtUtc = balance.UpdatedAtUtc
         };
+
+    public static InventoryBranchReorderSetting ToDomain(InventoryBranchReorderSettingRecord record) =>
+        InventoryBranchReorderSetting.Rehydrate(
+            PosOrganizationId.From(record.OrganizationId),
+            PosBranchId.From(record.BranchId),
+            CatalogProductId.From(record.ProductId),
+            record.ReorderLevel,
+            record.ReorderQuantity,
+            record.UpdatedAtUtc,
+            record.UpdatedBy);
+
+    public static InventoryBranchReorderSettingRecord ToRecord(InventoryBranchReorderSetting setting) =>
+        new()
+        {
+            OrganizationId = setting.OrganizationId.Value,
+            BranchId = setting.BranchId.Value,
+            ProductId = setting.ProductId.Value,
+            ReorderLevel = setting.ReorderLevel,
+            ReorderQuantity = setting.ReorderQuantity,
+            UpdatedAtUtc = setting.UpdatedAtUtc,
+            UpdatedBy = setting.UpdatedBy
+        };
 }

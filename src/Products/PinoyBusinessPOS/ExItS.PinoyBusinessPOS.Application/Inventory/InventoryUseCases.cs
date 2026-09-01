@@ -15,29 +15,39 @@ public sealed class InventoryQueryService
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
+    private readonly IBranchInventoryQueryRepository _branchInventory;
+    private readonly BranchInventoryReadService _branchReads;
+    private readonly BranchInventoryContextResolver _branchContext;
     private readonly IClock _clock;
 
     public InventoryQueryService(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
+        IBranchInventoryQueryRepository branchInventory,
+        BranchInventoryReadService branchReads,
+        BranchInventoryContextResolver branchContext,
         IClock clock)
     {
         _inventory = inventory;
         _products = products;
         _lots = lots;
+        _branchInventory = branchInventory;
+        _branchReads = branchReads;
+        _branchContext = branchContext;
         _clock = clock;
     }
 
     public async Task<PosInventoryAccountDto?> GetByProductIdAsync(
         Guid organizationId,
         Guid productId,
+        BranchInventoryContext context,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
         var catalogProductId = CatalogProductId.From(productId);
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
-        if (product is null)
+        if (product is null || !_branchContext.CanViewProductInManagement(product, context))
         {
             return null;
         }
@@ -58,69 +68,130 @@ public sealed class InventoryQueryService
         if (product.TracksExpiration)
         {
             var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
+            var branch = PosBranchId.From(context.BranchId);
             var lots = await _lots
-                .ListOnHandAsync(orgId, catalogProductId, branchId: null, includeDepleted: false, cancellationToken)
+                .ListOnHandAsync(orgId, catalogProductId, branch, includeDepleted: false, cancellationToken)
                 .ConfigureAwait(false);
+            if (context.PrimaryBranchId is not null
+                && context.PrimaryBranchId.Value == context.BranchId)
+            {
+                var legacyLots = await _lots
+                    .ListOnHandAsync(orgId, catalogProductId, branchId: null, includeDepleted: false, cancellationToken)
+                    .ConfigureAwait(false);
+                lots = lots.Concat(legacyLots).ToList();
+            }
+
             var warning = product.EffectiveExpirationWarningDays;
             sellable = InventoryLotFefo.SellableQuantity(lots, today);
             expired = InventoryLotFefo.ExpiredQuantity(lots, today);
             near = InventoryLotFefo.NearExpiryQuantity(lots, today, warning);
         }
 
-        return Map(product, account, summary.LatestAt, summary.Count, sellable, expired, near, hasOpeningStock);
+        var shell = account ?? InventoryAccount.Rehydrate(
+            InventoryAccountId.From(product.Id.Value),
+            orgId,
+            catalogProductId,
+            isTracked: false,
+            reorderLevel: null,
+            reorderQuantity: null,
+            onHandQuantity: 0m,
+            product.CreatedAtUtc,
+            product.UpdatedAtUtc);
+
+        var branchRead = await _branchReads
+            .ResolveSingleAsync(context, shell, cancellationToken)
+            .ConfigureAwait(false);
+        if (branchRead is null)
+        {
+            return null;
+        }
+
+        return Map(
+            product,
+            shell,
+            summary.LatestAt,
+            summary.Count,
+            sellable,
+            expired,
+            near,
+            hasOpeningStock,
+            branchRead);
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListAsync(
-        Guid organizationId,
+        BranchInventoryContext context,
         InventoryAccountFilter filter,
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
-        var orgId = PosOrganizationId.From(organizationId);
-        var (accounts, total) = await _inventory
-            .ListAsync(orgId, filter, skip, take, cancellationToken)
+        var branchFilter = new BranchInventoryListFilter(
+            filter.Search,
+            filter.TrackedOnly,
+            filter.LowStockOnly,
+            filter.ReorderSuggestedOnly,
+            filter.ProductStatus);
+        var (rows, total) = await _branchInventory
+            .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        return await MapPageAsync(orgId, accounts, total, page, take, cancellationToken).ConfigureAwait(false);
+        var dtos = rows.Select(MapFromBranchRow).ToList();
+        return new PagedResult<PosInventoryAccountDto>(dtos, total, Math.Max(page ?? 1, 1), take);
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListLowStockAsync(
-        Guid organizationId,
+        BranchInventoryContext context,
         string? search,
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
-        var orgId = PosOrganizationId.From(organizationId);
-        var (accounts, total) = await _inventory
-            .ListLowStockAsync(orgId, search, skip, take, cancellationToken)
+        var (rows, total) = await _branchInventory
+            .ListAsync(
+                context,
+                new BranchInventoryListFilter(Search: search, TrackedOnly: true, LowStockOnly: true),
+                skip,
+                take,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return await MapPageAsync(orgId, accounts, total, page, take, cancellationToken).ConfigureAwait(false);
+        return new PagedResult<PosInventoryAccountDto>(
+            rows.Select(MapFromBranchRow).ToList(),
+            total,
+            Math.Max(page ?? 1, 1),
+            take);
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListReorderSuggestionsAsync(
-        Guid organizationId,
+        BranchInventoryContext context,
         string? search,
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
-        var orgId = PosOrganizationId.From(organizationId);
-        var (accounts, total) = await _inventory
-            .ListReorderSuggestionsAsync(orgId, search, skip, take, cancellationToken)
+        var (rows, total) = await _branchInventory
+            .ListAsync(
+                context,
+                new BranchInventoryListFilter(Search: search, TrackedOnly: true, ReorderSuggestedOnly: true),
+                skip,
+                take,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return await MapPageAsync(orgId, accounts, total, page, take, cancellationToken).ConfigureAwait(false);
+        return new PagedResult<PosInventoryAccountDto>(
+            rows.Select(MapFromBranchRow).ToList(),
+            total,
+            Math.Max(page ?? 1, 1),
+            take);
     }
 
     public async Task<PagedResult<PosStockMovementDto>> ListMovementsAsync(
         Guid organizationId,
         Guid productId,
+        BranchInventoryContext context,
         StockMovementFilter filter,
         int? page,
         int? pageSize,
@@ -131,13 +202,18 @@ public sealed class InventoryQueryService
         var catalogProductId = CatalogProductId.From(productId);
 
         var product = await _products.GetByIdAsync(orgId, catalogProductId, cancellationToken).ConfigureAwait(false);
-        if (product is null)
+        if (product is null || !_branchContext.CanViewProductInManagement(product, context))
         {
             return new PagedResult<PosStockMovementDto>([], 0, Math.Max(page ?? 1, 1), take);
         }
 
+        var branchFilter = filter with
+        {
+            BranchId = context.BranchId,
+            PrimaryBranchId = context.PrimaryBranchId
+        };
         var (items, total) = await _inventory
-            .ListMovementsAsync(orgId, catalogProductId, filter, skip, take, cancellationToken)
+            .ListMovementsAsync(orgId, catalogProductId, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
         var lotById = await LoadMovementLotsAsync(orgId, items, cancellationToken).ConfigureAwait(false);
@@ -152,6 +228,7 @@ public sealed class InventoryQueryService
     public async Task<PosStockMovementDto?> GetMovementByIdAsync(
         Guid organizationId,
         Guid movementId,
+        BranchInventoryContext context,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -163,6 +240,11 @@ public sealed class InventoryQueryService
             return null;
         }
 
+        if (!MovementBelongsToBranch(movement, context))
+        {
+            return null;
+        }
+
         InventoryLot? lot = null;
         if (movement.InventoryLotId is InventoryLotId lotId)
         {
@@ -170,6 +252,16 @@ public sealed class InventoryQueryService
         }
 
         return MapMovement(movement, lot);
+    }
+
+    private static bool MovementBelongsToBranch(StockMovement movement, BranchInventoryContext context)
+    {
+        if (movement.BranchId is null)
+        {
+            return context.PrimaryBranchId is null || context.PrimaryBranchId.Value == context.BranchId;
+        }
+
+        return movement.BranchId.Value == context.BranchId;
     }
 
     private async Task<IReadOnlyDictionary<Guid, InventoryLot>> LoadMovementLotsAsync(
@@ -214,39 +306,38 @@ public sealed class InventoryQueryService
         return lotById.TryGetValue(lotId.Value, out var lot) ? lot : null;
     }
 
-    private async Task<PagedResult<PosInventoryAccountDto>> MapPageAsync(
-        PosOrganizationId orgId,
-        IReadOnlyList<InventoryAccount> accounts,
-        int total,
-        int? page,
-        int take,
-        CancellationToken cancellationToken)
+    private static PosInventoryAccountDto MapFromBranchRow(BranchInventoryListRow row)
     {
-        if (accounts.Count == 0)
-        {
-            return new PagedResult<PosInventoryAccountDto>([], total, Math.Max(page ?? 1, 1), take);
-        }
+        var stockStatus = row.IsTracked
+            ? InventoryStockStatuses.ToCode(
+                InventoryStockStatuses.Derive(row.IsTracked, row.BranchOnHand, row.ReorderLevel))
+            : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
-        var productIds = accounts.Select(a => a.ProductId).ToList();
-        var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
-        var byId = products.ToDictionary(p => p.Id.Value);
-        var summaries = await _inventory
-            .GetMovementSummariesAsync(orgId, productIds, cancellationToken)
-            .ConfigureAwait(false);
-
-        var dtos = new List<PosInventoryAccountDto>(accounts.Count);
-        foreach (var account in accounts)
-        {
-            if (!byId.TryGetValue(account.ProductId.Value, out var product))
-            {
-                continue;
-            }
-
-            summaries.TryGetValue(account.ProductId.Value, out var summary);
-            dtos.Add(Map(product, account, summary.LatestAt, summary.Count));
-        }
-
-        return new PagedResult<PosInventoryAccountDto>(dtos, total, Math.Max(page ?? 1, 1), take);
+        return new PosInventoryAccountDto(
+            row.ProductId,
+            row.OrganizationId,
+            row.Name,
+            row.UnitOfMeasure,
+            row.ProductStatus,
+            row.IsTracked,
+            row.BranchOnHand,
+            row.ReorderLevel,
+            row.ReorderQuantity,
+            stockStatus,
+            row.IsLowStock,
+            row.IsReorderSuggested,
+            row.SuggestedOrderQuantity,
+            row.LatestMovementAtUtc,
+            row.MovementCount,
+            row.CreatedAtUtc,
+            row.UpdatedAtUtc,
+            row.TracksExpiration,
+            row.ExpirationWarningDays,
+            null,
+            null,
+            null,
+            row.HasOpeningStock,
+            row.OrganizationOnHand);
     }
 
     public static PosInventoryAccountDto Map(
@@ -257,18 +348,19 @@ public sealed class InventoryQueryService
         decimal? sellableQuantity = null,
         decimal? expiredQuantity = null,
         decimal? nearExpiryQuantity = null,
-        bool hasOpeningStock = false)
+        bool hasOpeningStock = false,
+        BranchInventoryProductRead? branchRead = null)
     {
         var isTracked = account?.IsTracked ?? false;
-        var onHand = account?.OnHandQuantity ?? 0m;
-        var reorder = account?.ReorderLevel;
-        var reorderQty = account?.ReorderQuantity;
-        var isLow = account?.IsLowStock ?? false;
-        var isReorderSuggested = account?.IsReorderSuggested ?? false;
-        var suggestedQty = account?.SuggestedOrderQuantity;
-        var stockStatus = account is null
-            ? InventoryStockStatuses.ToCode(InventoryStockStatus.InStock)
-            : InventoryStockStatuses.ToCode(account.StockStatus);
+        var onHand = branchRead?.BranchOnHand ?? account?.OnHandQuantity ?? 0m;
+        var reorder = branchRead?.ReorderLevel ?? account?.ReorderLevel;
+        var reorderQty = branchRead?.ReorderQuantity ?? account?.ReorderQuantity;
+        var isLow = branchRead?.IsLowStock ?? account?.IsLowStock ?? false;
+        var isReorderSuggested = branchRead?.IsReorderSuggested ?? account?.IsReorderSuggested ?? false;
+        var suggestedQty = branchRead?.SuggestedOrderQuantity ?? account?.SuggestedOrderQuantity;
+        var stockStatus = isTracked
+            ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, onHand, reorder))
+            : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
             product.Id.Value,
@@ -293,7 +385,8 @@ public sealed class InventoryQueryService
             sellableQuantity,
             expiredQuantity,
             nearExpiryQuantity,
-            hasOpeningStock);
+            hasOpeningStock,
+            branchRead?.OrganizationOnHand ?? account?.OnHandQuantity);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)

@@ -98,15 +98,17 @@ export function InventoryDetailPage() {
   );
 
   const accountQuery = useQuery({
-    queryKey: ["inventory", "product", workspace?.organizationId, productId],
+    queryKey: ["inventory", "product", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => getInventoryProduct(workspace!, productId!, signal),
   });
 
   const tracksExpiration = accountQuery.data?.tracksExpiration === true;
 
+  const branchLabel = boundWorkspace?.branchName ?? t("transfer.currentBranch");
+
   const movementsQuery = useQuery({
-    queryKey: ["inventory", "movements", workspace?.organizationId, productId],
+    queryKey: ["inventory", "movements", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => listInventoryMovements(workspace!, productId!, {}, signal),
   });
@@ -462,7 +464,10 @@ export function InventoryDetailPage() {
         {account.isTracked ? (
           <>
             <p className="m-0 font-semibold" data-testid="inventory-on-hand">
-              {t("inventory.onHand")}: {account.onHandQuantity} {account.unitOfMeasure}
+              {t("inventory.onHandAtBranch")
+                .replace("{branch}", branchLabel)
+                .replace("{qty}", String(account.onHandQuantity))
+                .replace("{uom}", account.unitOfMeasure)}
             </p>
             <p
               className="mt-2 mb-0 text-[length:var(--exits-text-sm)] font-semibold"

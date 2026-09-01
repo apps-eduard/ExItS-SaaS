@@ -194,6 +194,7 @@ internal static class InventoryEndpoints
         int? page,
         int? pageSize,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -202,8 +203,14 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         var filter = new InventoryAccountFilter(search, tracked, lowStock, ProductStatus: productStatus);
-        var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
+        var result = await queries.ListAsync(branchResolved.Context!, filter, page, pageSize, ct).ConfigureAwait(false);
         return Results.Ok(result);
     }
 
@@ -213,6 +220,7 @@ internal static class InventoryEndpoints
         int? page,
         int? pageSize,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -221,7 +229,13 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        var result = await queries.ListLowStockAsync(organizationId, search, page, pageSize, ct).ConfigureAwait(false);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var result = await queries.ListLowStockAsync(branchResolved.Context!, search, page, pageSize, ct).ConfigureAwait(false);
         return Results.Ok(result);
     }
 
@@ -231,6 +245,7 @@ internal static class InventoryEndpoints
         int? page,
         int? pageSize,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -239,7 +254,13 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        var result = await queries.ListReorderSuggestionsAsync(organizationId, search, page, pageSize, ct).ConfigureAwait(false);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var result = await queries.ListReorderSuggestionsAsync(branchResolved.Context!, search, page, pageSize, ct).ConfigureAwait(false);
         return Results.Ok(result);
     }
 
@@ -247,6 +268,7 @@ internal static class InventoryEndpoints
         HttpRequest request,
         Guid productId,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -255,7 +277,13 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var dto = await queries.GetByProductIdAsync(organizationId, productId, branchResolved.Context!, ct).ConfigureAwait(false);
         return dto is null
             ? PosApiResults.Problem(
                 ApplicationErrorCodes.InventoryProductNotFound,
@@ -269,11 +297,11 @@ internal static class InventoryEndpoints
         string? window,
         string? fromDate,
         string? toDate,
-        Guid? branchId,
         string? search,
         int? page,
         int? pageSize,
         InventoryLotQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -282,13 +310,19 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         if (!TryParseDate(fromDate, out var from, out problem) || !TryParseDate(toDate, out var to, out problem))
         {
             return problem!;
         }
 
         var result = await queries
-            .ListExpiringAsync(organizationId, branchId, window, from, to, search, page, pageSize, ct)
+            .ListExpiringAsync(organizationId, branchResolved.Context!.BranchId, window, from, to, search, page, pageSize, ct)
             .ConfigureAwait(false);
         return Results.Ok(result);
     }
@@ -300,6 +334,7 @@ internal static class InventoryEndpoints
         int? page,
         int? pageSize,
         InventoryLotQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -308,9 +343,14 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         var result = await queries
-            .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, branchId, ct)
+            .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, branchResolved.Context!.BranchId, ct)
             .ConfigureAwait(false);
         return Results.Ok(result);
     }
@@ -321,6 +361,7 @@ internal static class InventoryEndpoints
         SetInventoryReorderRequest body,
         SetInventoryReorderConfiguration useCase,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -330,9 +371,16 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         var result = await useCase
             .ExecuteAsync(
                 organizationId,
+                branchResolved.Context!.BranchId,
                 productId,
                 body.ReorderLevel,
                 body.ReorderQuantity,
@@ -340,7 +388,7 @@ internal static class InventoryEndpoints
                 actorId,
                 ct)
             .ConfigureAwait(false);
-        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, branchResolved.Context!, result, queries, ct).ConfigureAwait(false);
     }
 
     private static async Task<IResult> GetReconciliation(
@@ -365,6 +413,7 @@ internal static class InventoryEndpoints
         EnableInventoryTrackingRequest? body,
         EnableInventoryTracking useCase,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -372,6 +421,12 @@ internal static class InventoryEndpoints
             || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
         {
             return problem!;
+        }
+
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
         }
 
         body ??= new EnableInventoryTrackingRequest();
@@ -387,7 +442,7 @@ internal static class InventoryEndpoints
                 body.UnitCost,
                 ct)
             .ConfigureAwait(false);
-        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, branchResolved.Context!, result, queries, ct).ConfigureAwait(false);
     }
 
     private static async Task<IResult> AddOpeningStock(
@@ -396,6 +451,7 @@ internal static class InventoryEndpoints
         AddOpeningStockRequest body,
         AddOpeningStock useCase,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -403,6 +459,12 @@ internal static class InventoryEndpoints
             || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
         {
             return problem!;
+        }
+
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
         }
 
         var result = await useCase
@@ -416,7 +478,7 @@ internal static class InventoryEndpoints
                 body.LotNumber,
                 ct)
             .ConfigureAwait(false);
-        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, branchResolved.Context!, result, queries, ct).ConfigureAwait(false);
     }
 
     private static async Task<IResult> Disable(
@@ -424,6 +486,7 @@ internal static class InventoryEndpoints
         Guid productId,
         DisableInventoryTracking useCase,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -432,8 +495,14 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         var result = await useCase.ExecuteAsync(organizationId, productId, ct).ConfigureAwait(false);
-        return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
+        return await FromAccountResultAsync(organizationId, productId, branchResolved.Context!, result, queries, ct).ConfigureAwait(false);
     }
 
     private static async Task<IResult> Adjust(
@@ -442,6 +511,7 @@ internal static class InventoryEndpoints
         AdjustInventoryRequest body,
         AdjustInventoryStock useCase,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosIdempotencyService idempotency,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
@@ -452,7 +522,13 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var context = branchResolved.Context!;
         return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                 request,
                 organizationId,
@@ -467,7 +543,7 @@ internal static class InventoryEndpoints
                         body.Reason,
                         actorId,
                         body.ReorderLevel,
-                        branchId,
+                        context.BranchId,
                         body.ExpirationDate,
                         body.LotNumber,
                         body.LotId,
@@ -476,6 +552,7 @@ internal static class InventoryEndpoints
                         ct2),
                     organizationId,
                     productId,
+                    context,
                     queries,
                     ct2),
                 dto => dto,
@@ -518,6 +595,7 @@ internal static class InventoryEndpoints
         HttpRequest request,
         Guid movementId,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -526,7 +604,13 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
-        var movement = await queries.GetMovementByIdAsync(organizationId, movementId, ct).ConfigureAwait(false);
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var movement = await queries.GetMovementByIdAsync(organizationId, movementId, branchResolved.Context!, ct).ConfigureAwait(false);
         return movement is null
             ? PosApiResults.Problem(
                 ApplicationErrorCodes.InventoryMovementNotFound,
@@ -545,6 +629,7 @@ internal static class InventoryEndpoints
         int? page,
         int? pageSize,
         InventoryQueryService queries,
+        BranchInventoryContextResolver branchResolver,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -553,13 +638,19 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
         if (!TryParseDate(fromDateUtc, out var fromDate, out problem)
             || !TryParseDate(toDateUtc, out var toDate, out problem))
         {
             return problem!;
         }
 
-        var product = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        var product = await queries.GetByProductIdAsync(organizationId, productId, branchResolved.Context!, ct).ConfigureAwait(false);
         if (product is null)
         {
             return PosApiResults.Problem(
@@ -570,7 +661,7 @@ internal static class InventoryEndpoints
 
         var filter = new StockMovementFilter(movementType, sourceType, fromDate, toDate);
         var result = await queries
-            .ListMovementsAsync(organizationId, productId, filter, page, pageSize, ct)
+            .ListMovementsAsync(organizationId, productId, branchResolved.Context!, filter, page, pageSize, ct)
             .ConfigureAwait(false);
         return Results.Ok(result);
     }
@@ -578,6 +669,7 @@ internal static class InventoryEndpoints
     private static async Task<IResult> FromAccountResultAsync(
         Guid organizationId,
         Guid productId,
+        BranchInventoryContext context,
         ApplicationResult<InventoryAccount> result,
         InventoryQueryService queries,
         CancellationToken ct)
@@ -590,7 +682,7 @@ internal static class InventoryEndpoints
                 PosApiResults.MapStatusCode(result.ErrorCode!));
         }
 
-        var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        var dto = await queries.GetByProductIdAsync(organizationId, productId, context, ct).ConfigureAwait(false);
         return dto is null
             ? PosApiResults.Problem(
                 ApplicationErrorCodes.InventoryAccountNotFound,
@@ -603,6 +695,7 @@ internal static class InventoryEndpoints
         Task<ApplicationResult<InventoryAccount>> execute,
         Guid organizationId,
         Guid productId,
+        BranchInventoryContext context,
         InventoryQueryService queries,
         CancellationToken ct)
     {
@@ -612,12 +705,38 @@ internal static class InventoryEndpoints
             return ApplicationResult<PosInventoryAccountDto>.Failure(result.ErrorCode!, result.ErrorMessage!);
         }
 
-        var dto = await queries.GetByProductIdAsync(organizationId, productId, ct).ConfigureAwait(false);
+        var dto = await queries.GetByProductIdAsync(organizationId, productId, context, ct).ConfigureAwait(false);
         return dto is null
             ? ApplicationResult<PosInventoryAccountDto>.Failure(
                 ApplicationErrorCodes.InventoryAccountNotFound,
                 "Inventory account was not found.")
             : ApplicationResult<PosInventoryAccountDto>.Success(dto);
+    }
+
+    private static async Task<(bool Success, BranchInventoryContext? Context, IResult? Problem)> ResolveInventoryBranchAsync(
+        HttpRequest request,
+        Guid organizationId,
+        BranchInventoryContextResolver resolver,
+        CancellationToken ct)
+    {
+        if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId) || branchId is null)
+        {
+            return (false, null, PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "Header 'X-Pos-Branch-Id' is required for branch inventory.",
+                StatusCodes.Status400BadRequest));
+        }
+
+        var resolved = await resolver.ResolveAsync(organizationId, branchId.Value, ct).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
+        {
+            return (false, null, PosApiResults.Problem(
+                resolved.ErrorCode!,
+                resolved.ErrorMessage!,
+                PosApiResults.MapStatusCode(resolved.ErrorCode!)));
+        }
+
+        return (true, resolved.Value, null);
     }
 
     private static async Task<IResult> FromStockCountResultAsync(

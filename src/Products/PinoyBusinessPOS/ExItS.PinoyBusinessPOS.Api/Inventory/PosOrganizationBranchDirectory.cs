@@ -170,7 +170,7 @@ internal sealed class PosOrganizationBranchDirectory(
     {
         if (environment.IsEnvironment("Testing"))
         {
-            return null;
+            return Guid.Parse("11111111-1111-1111-1111-111111111111");
         }
 
         if (client.BaseAddress is null)

@@ -1238,6 +1238,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.notFound": "Wala makita ang inventory account.",
   "inventory.notTracked": "Wala i-track",
   "inventory.onHand": "Naay stock",
+  "inventory.onHandAtBranch": "Stock sa {branch}: {qty} {uom}",
+  "inventory.branchScope": "Branch: {name}",
   "inventory.open": "Inventory",
   "inventory.openExpiring": "Mo-expire nga stock",
   "inventory.openStockUse": "Stock Use",

@@ -29,6 +29,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
     };
 
     private static readonly Guid Actor = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid PrimaryBranch = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
     private const string Inventory = "/api/v1/pos/inventory";
     private const string Products = "/api/v1/pos/catalog/products";
@@ -392,6 +393,7 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         HttpMethod method,
         string path,
         Guid organizationId,
+        Guid? branchId = null,
         string? status = null,
         string? grants = null)
     {
@@ -402,6 +404,9 @@ public sealed class PosInventoryApiTests(PosPostgreSqlFixture fixture)
         request.Headers.TryAddWithoutValidation(
             PosOrganizationHeaders.ActorHeaderName,
             Actor.ToString("D"));
+        request.Headers.TryAddWithoutValidation(
+            PosOrganizationHeaders.BranchHeaderName,
+            (branchId ?? PrimaryBranch).ToString("D"));
 
         if (status is not null)
         {

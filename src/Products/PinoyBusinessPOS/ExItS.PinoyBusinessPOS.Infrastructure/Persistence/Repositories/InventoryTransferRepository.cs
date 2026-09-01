@@ -278,6 +278,27 @@ internal sealed class InventoryBranchBalanceRepository : IInventoryBranchBalance
         return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<InventoryBranchBalance>> ListByBranchAndProductIdsAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = productIds.Select(p => p.Value).ToList();
+        var records = await _db.InventoryBranchBalances
+            .Where(b => b.OrganizationId == organizationId.Value
+                && b.BranchId == branchId.Value
+                && ids.Contains(b.ProductId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
+    }
+
     public async Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
     {
         var record = _db.InventoryBranchBalances.Local.FirstOrDefault(b =>

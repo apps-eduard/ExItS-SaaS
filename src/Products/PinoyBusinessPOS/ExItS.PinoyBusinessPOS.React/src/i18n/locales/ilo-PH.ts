@@ -1238,6 +1238,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.notFound": "Awan makita ti inventory account.",
   "inventory.notTracked": "Awan i-track",
   "inventory.onHand": "Adda stock",
+  "inventory.onHandAtBranch": "Stock iti {branch}: {qty} {uom}",
+  "inventory.branchScope": "Branch: {name}",
   "inventory.open": "Inventory",
   "inventory.openExpiring": "Mo-expire a stock",
   "inventory.openStockUse": "Stock Use",

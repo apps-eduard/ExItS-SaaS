@@ -1238,6 +1238,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.notFound": "Hindi makita ang inventory account.",
   "inventory.notTracked": "Not tracked",
   "inventory.onHand": "On hand",
+  "inventory.onHandAtBranch": "On hand sa {branch}: {qty} {uom}",
+  "inventory.branchScope": "Branch: {name}",
   "inventory.open": "Inventory",
   "inventory.openExpiring": "Expiring stock",
   "inventory.openStockUse": "Stock Use",

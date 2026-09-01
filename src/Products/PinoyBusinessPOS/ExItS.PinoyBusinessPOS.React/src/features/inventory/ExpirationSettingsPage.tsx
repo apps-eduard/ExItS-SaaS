@@ -48,7 +48,7 @@ export function ExpirationSettingsPage() {
   );
 
   const accountQuery = useQuery({
-    queryKey: ["inventory", "product", workspace?.organizationId, productId],
+    queryKey: ["inventory", "product", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => getInventoryProduct(workspace!, productId!, signal),
   });

@@ -62,6 +62,8 @@ export function InventoryListPage() {
     return (org?.branches.length ?? 0) > 1;
   }, [boundWorkspace, workspaces]);
 
+  const branchLabel = boundWorkspace?.branchName ?? null;
+
   const inventoryToolbarItems = useMemo((): ExitsChipItem[] => {
     const items: ExitsChipItem[] = [
       {
@@ -140,7 +142,11 @@ export function InventoryListPage() {
     >
       <PageHeader
         title={t("inventory.title")}
-        description={t("inventory.lede")}
+        description={
+          branchLabel && multiBranch
+            ? `${t("inventory.lede")} ${t("inventory.branchScope").replace("{name}", branchLabel)}`
+            : t("inventory.lede")
+        }
         backTo={pageBackNav.managerHome.to}
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-inventory"

@@ -285,6 +285,8 @@ builder.Services.AddHttpClient<ISellerCustomerOrderingCapability, PosSellerCusto
 builder.Services.AddScoped<SaleReturnQueryService>();
 builder.Services.AddScoped<ProcessSaleReturn>();
 builder.Services.AddScoped<InventoryQueryService>();
+builder.Services.AddScoped<BranchInventoryReadService>();
+builder.Services.AddScoped<BranchInventoryContextResolver>();
 builder.Services.AddScoped<InventoryLotQueryService>();
 builder.Services.AddScoped<EnableInventoryTracking>();
 builder.Services.AddScoped<AddOpeningStock>();

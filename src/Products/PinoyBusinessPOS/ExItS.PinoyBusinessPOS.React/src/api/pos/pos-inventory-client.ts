@@ -15,6 +15,7 @@ export type PosInventoryAccountDto = {
   productStatus: string;
   isTracked: boolean;
   onHandQuantity: number;
+  organizationOnHandQuantity?: number | null;
   reorderLevel?: number | null;
   stockStatus: string;
   isLowStock: boolean;
