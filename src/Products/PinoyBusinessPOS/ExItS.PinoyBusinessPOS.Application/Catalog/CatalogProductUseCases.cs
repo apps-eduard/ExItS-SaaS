@@ -243,7 +243,7 @@ public sealed class CatalogProductQueryService
             product.CanBeUsedAsIngredient,
             product.IsProduced,
             product.UsagePreset,
-            units?.Select(CatalogProductUnitHelpers.MapUnit).ToList(),
+            units?.Select(u => CatalogProductUnitHelpers.MapUnit(u)).ToList(),
             product.CanExposeToConnectedBuyers,
             product.DefaultConnectedPoPrice,
             resolved.HasImage,

@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IProductBrandRepository, ProductBrandRepository>();
         services.AddScoped<ICatalogProductRepository, CatalogProductRepository>();
         services.AddScoped<IBranchProductAvailabilityRepository, BranchProductAvailabilityRepository>();
+        services.AddScoped<IBranchProductPriceOverrideRepository, BranchProductPriceOverrideRepository>();
         services.AddScoped<ICatalogProductUnitRepository, CatalogProductUnitRepository>();
         services.AddScoped<ICatalogProductImageRepository, CatalogProductImageRepository>();
         services.Configure<ProductImageStorageOptions>(config.GetSection(ProductImageStorageOptions.SectionName));

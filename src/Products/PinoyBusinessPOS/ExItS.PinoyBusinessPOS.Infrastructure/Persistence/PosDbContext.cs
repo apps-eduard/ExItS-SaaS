@@ -57,6 +57,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ProductBrandRecord> ProductBrands => Set<ProductBrandRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
     internal DbSet<BranchProductAvailabilityRecord> BranchProductAvailabilities => Set<BranchProductAvailabilityRecord>();
+    internal DbSet<BranchProductPriceOverrideRecord> BranchProductPriceOverrides => Set<BranchProductPriceOverrideRecord>();
     internal DbSet<CatalogProductUnitRecord> CatalogProductUnits => Set<CatalogProductUnitRecord>();
     internal DbSet<CatalogProductImageRecord> CatalogProductImages => Set<CatalogProductImageRecord>();
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
@@ -837,6 +838,44 @@ public sealed class PosDbContext : DbContext
                 .HasPrincipalKey(p => new { p.Id, p.OrganizationId })
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_branch_product_availabilities_products");
+        });
+
+        modelBuilder.Entity<BranchProductPriceOverrideRecord>(entity =>
+        {
+            entity.ToTable("branch_product_price_overrides");
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId, e.ProductUnitId })
+                .HasName("pk_branch_product_price_overrides");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.ProductUnitId).HasColumnName("product_unit_id");
+            entity.Property(e => e.SellingPrice)
+                .HasColumnName("selling_price")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorId).HasColumnName("updated_by_actor_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId, e.ProductId })
+                .HasDatabaseName("ix_branch_product_price_overrides_org_branch_product");
+
+            entity.ToTable(t => t.HasCheckConstraint(
+                "ck_branch_product_price_overrides_selling_price_non_negative",
+                "selling_price >= 0"));
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.ProductId, e.OrganizationId })
+                .HasPrincipalKey(p => new { p.Id, p.OrganizationId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_branch_product_price_overrides_products");
         });
 
         modelBuilder.Entity<CatalogProductUnitRecord>(entity =>

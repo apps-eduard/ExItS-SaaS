@@ -23,6 +23,8 @@ export type PosCatalogProductUnitDto = {
   shortLabel: string;
   multiplierToBase: number;
   sellingPrice?: number | null;
+  /** Branch-effective sell price when branch context is supplied; otherwise null. */
+  effectiveSellingPrice?: number | null;
   allowsCustomQuantity: boolean;
   isActive: boolean;
   sortOrder: number;
@@ -83,6 +85,9 @@ export type PosCatalogProductDto = {
    * When commerciallyOffered=true list: true for all returned items.
    */
   isOfferedAtBranch?: boolean | null;
+  /** Branch-effective base selling price when branch context is supplied; otherwise null. */
+  effectiveSellingPrice?: number | null;
+  hasBranchPriceOverride?: boolean | null;
 };
 
 export type PosProductCategoryDto = {
@@ -234,4 +239,25 @@ export type CatalogProductNameConflictDto = {
   isDuplicate: boolean;
   canRevealExisting: boolean;
   existingProduct?: PosCatalogProductDto | null;
+};
+
+export type BranchProductPricingItemDto = {
+  productUnitId?: string | null;
+  organizationDefaultPrice: number;
+  branchOverridePrice?: number | null;
+  effectivePrice: number;
+  hasBranchPriceOverride: boolean;
+};
+
+export type BranchProductPricingDto = {
+  productId: string;
+  branchId: string;
+  basePrice: BranchProductPricingItemDto;
+  unitPrices: BranchProductPricingItemDto[];
+};
+
+export type SetBranchProductPriceOverrideRequest = {
+  branchId: string;
+  sellingPrice: number;
+  productUnitId?: string | null;
 };

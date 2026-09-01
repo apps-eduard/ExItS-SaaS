@@ -291,6 +291,8 @@ internal static class CatalogEndpoints
             ICatalogGovernanceActorAccessor actorAccessor,
             ICatalogProductAvailabilityResolver availabilityResolver,
             ICatalogProductRepository products,
+            ICatalogProductUnitRepository units,
+            IEffectivePriceResolver effectivePrices,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -409,6 +411,19 @@ internal static class CatalogEndpoints
                 var marked = result.Items
                     .Select(i => i with { IsOfferedAtBranch = true })
                     .ToList();
+                if (actingBranchId is Guid commercialBranch && commercialBranch != Guid.Empty)
+                {
+                    marked = (await StampEffectivePricesAsync(
+                            organizationId,
+                            commercialBranch,
+                            marked,
+                            products,
+                            units,
+                            effectivePrices,
+                            ct)
+                        .ConfigureAwait(false)).ToList();
+                }
+
                 return Results.Ok(new PagedResult<PosCatalogProductDto>(
                     marked,
                     result.TotalCount,
@@ -442,8 +457,37 @@ internal static class CatalogEndpoints
                         return i;
                     })
                     .ToList();
+                stamped = (await StampEffectivePricesAsync(
+                        organizationId,
+                        managementBranch,
+                        stamped,
+                        products,
+                        units,
+                        effectivePrices,
+                        ct)
+                    .ConfigureAwait(false)).ToList();
                 return Results.Ok(new PagedResult<PosCatalogProductDto>(
                     stamped,
+                    result.TotalCount,
+                    result.Page,
+                    result.PageSize));
+            }
+
+            if (actingBranchId is Guid listBranch
+                && listBranch != Guid.Empty
+                && result.Items.Count > 0)
+            {
+                var enriched = await StampEffectivePricesAsync(
+                        organizationId,
+                        listBranch,
+                        result.Items,
+                        products,
+                        units,
+                        effectivePrices,
+                        ct)
+                    .ConfigureAwait(false);
+                return Results.Ok(new PagedResult<PosCatalogProductDto>(
+                    enriched,
                     result.TotalCount,
                     result.Page,
                     result.PageSize));
@@ -631,6 +675,8 @@ internal static class CatalogEndpoints
             ICatalogGovernanceActorAccessor actorAccessor,
             ICatalogProductAvailabilityResolver availabilityResolver,
             ICatalogProductRepository products,
+            ICatalogProductUnitRepository units,
+            IEffectivePriceResolver effectivePrices,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -676,12 +722,103 @@ internal static class CatalogEndpoints
                         .ConfigureAwait(false);
                     if (offering.TryGetValue(productId, out var offer))
                     {
-                        return Results.Ok(product with { IsOfferedAtBranch = offer.IsOffered });
+                        var enriched = await StampEffectivePricesAsync(
+                                organizationId,
+                                branch,
+                                [product with { IsOfferedAtBranch = offer.IsOffered }],
+                                products,
+                                units,
+                                effectivePrices,
+                                ct)
+                            .ConfigureAwait(false);
+                        return Results.Ok(enriched[0]);
                     }
                 }
+
+                var priced = await StampEffectivePricesAsync(
+                        organizationId,
+                        branch,
+                        [product],
+                        products,
+                        units,
+                        effectivePrices,
+                        ct)
+                    .ConfigureAwait(false);
+                return Results.Ok(priced[0]);
             }
 
             return Results.Ok(product);
+        });
+
+        group.MapGet("/{productId:guid}/branch-pricing", async (
+            HttpRequest request,
+            Guid productId,
+            Guid branchId,
+            GetBranchProductPricing useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (branchId == Guid.Empty)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.ProductBranchInvalid,
+                    "Branch id must be a non-empty GUID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, branchId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPut("/{productId:guid}/branch-pricing", async (
+            HttpRequest request,
+            Guid productId,
+            SetBranchProductPriceOverrideRequest body,
+            SetBranchProductPriceOverride useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, body, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapDelete("/{productId:guid}/branch-pricing", async (
+            HttpRequest request,
+            Guid productId,
+            Guid branchId,
+            Guid? unitId,
+            RemoveBranchProductPriceOverride useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (branchId == Guid.Empty)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.ProductBranchInvalid,
+                    "Branch id must be a non-empty GUID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, branchId, unitId, ct).ConfigureAwait(false),
+                () => Results.NoContent());
         });
 
         group.MapGet("/{productId:guid}/branch-availability", async (
@@ -1047,6 +1184,40 @@ internal static class CatalogEndpoints
             ? Domain.Inventory.PosBranchId.From(oid)
             : null;
         return governance.CanViewBranchLocalInManagement(actor, origin);
+    }
+
+    private static async Task<IReadOnlyList<PosCatalogProductDto>> StampEffectivePricesAsync(
+        Guid organizationId,
+        Guid branchId,
+        IReadOnlyList<PosCatalogProductDto> items,
+        ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
+        IEffectivePriceResolver effectivePrices,
+        CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+        {
+            return items;
+        }
+
+        var orgId = Domain.Customers.PosOrganizationId.From(organizationId);
+        var productIds = items.Select(i => CatalogProductId.From(i.ProductId)).ToList();
+        var loaded = await products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+        var unitsByProductRaw = await units
+            .ListByProductIdsAsync(orgId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        var unitsByProduct = unitsByProductRaw.ToDictionary(
+            kvp => CatalogProductId.From(kvp.Key),
+            kvp => kvp.Value);
+        var resolved = await effectivePrices
+            .ResolveAsync(
+                orgId,
+                Domain.Inventory.PosBranchId.From(branchId),
+                loaded,
+                unitsByProduct,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return CatalogEffectivePriceEnrichment.ApplyMany(items, resolved);
     }
 
     private static async Task<IResult> FinalizeProductLookupAsync(

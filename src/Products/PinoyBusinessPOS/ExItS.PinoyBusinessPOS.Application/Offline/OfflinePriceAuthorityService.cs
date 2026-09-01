@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
@@ -44,17 +45,20 @@ public sealed class OfflinePriceAuthorityService : IOfflinePriceAuthorityService
     private readonly ICatalogProductUnitRepository _units;
     private readonly IClock _clock;
     private readonly OfflinePriceAuthorityOptions _options;
+    private readonly IEffectivePriceResolver? _effectivePrices;
 
     public OfflinePriceAuthorityService(
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IClock clock,
-        IOptions<OfflinePriceAuthorityOptions> options)
+        IOptions<OfflinePriceAuthorityOptions> options,
+        IEffectivePriceResolver? effectivePrices = null)
     {
         _products = products;
         _units = units;
         _clock = clock;
         _options = options.Value;
+        _effectivePrices = effectivePrices;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<OfflinePriceAuthority>>> IssueAsync(
@@ -87,6 +91,42 @@ public sealed class OfflinePriceAuthorityService : IOfflinePriceAuthorityService
             .ConfigureAwait(false);
         var byId = products.ToDictionary(p => p.Id.Value);
 
+        IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>? effectivePrices = null;
+        if (branchId is Guid bid && bid != Guid.Empty && _effectivePrices is not null)
+        {
+            var unitIds = items
+                .Where(i => i.SellingUnitId is not null)
+                .Select(i => ProductUnitId.From(i.SellingUnitId!.Value))
+                .Distinct()
+                .ToList();
+            var unitsByProduct = new Dictionary<CatalogProductId, List<CatalogProductUnit>>();
+            foreach (var unitId in unitIds)
+            {
+                var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
+                if (unit is not null)
+                {
+                    if (!unitsByProduct.TryGetValue(unit.ProductId, out var list))
+                    {
+                        list = [];
+                        unitsByProduct[unit.ProductId] = list;
+                    }
+
+                    list.Add(unit);
+                }
+            }
+
+            effectivePrices = await _effectivePrices
+                .ResolveAsync(
+                    orgId,
+                    PosBranchId.From(bid),
+                    products,
+                    unitsByProduct.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => (IReadOnlyList<CatalogProductUnit>)kvp.Value),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var issuedAt = Truncate(_clock.UtcNow);
         var expiresAt = issuedAt.AddHours(ValidityHours);
         var issued = new List<OfflinePriceAuthority>(items.Count);
@@ -108,7 +148,11 @@ public sealed class OfflinePriceAuthorityService : IOfflinePriceAuthorityService
                     $"'{product.Name}' is inactive and cannot be leased for offline selling.");
             }
 
-            var unitPrice = product.SellingPrice;
+            var unitPrice = effectivePrices?.TryGetValue(
+                    EffectivePriceKeys.ForBaseProduct(item.ProductId),
+                    out var baseEffective) == true
+                ? baseEffective.EffectivePrice
+                : product.SellingPrice;
             if (item.SellingUnitId is not null)
             {
                 var unit = await _units
@@ -129,7 +173,11 @@ public sealed class OfflinePriceAuthorityService : IOfflinePriceAuthorityService
                         validation.ErrorMessage!);
                 }
 
-                unitPrice = unit.SellingPrice ?? product.SellingPrice;
+                unitPrice = effectivePrices?.TryGetValue(
+                        EffectivePriceKeys.ForSellUnit(item.ProductId, unit.Id.Value),
+                        out var unitEffective) == true
+                    ? unitEffective.EffectivePrice
+                    : unit.SellingPrice ?? unitPrice;
             }
 
             issued.Add(Create(

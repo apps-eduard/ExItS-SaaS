@@ -26,7 +26,8 @@ public sealed record PosCatalogProductUnitDto(
     decimal? SellingPrice,
     bool AllowsCustomQuantity,
     bool IsActive,
-    int SortOrder);
+    int SortOrder,
+    decimal? EffectiveSellingPrice = null);
 
 public sealed record PosCatalogProductUnitInput(
     string Kind,
@@ -92,7 +93,10 @@ public sealed record PosCatalogProductDto(
     string Scope = "OrganizationStandard",
     Guid? OriginBranchId = null,
     /// <summary>Populated when listing a commercially offered branch assortment; otherwise null.</summary>
-    bool? IsOfferedAtBranch = null);
+    bool? IsOfferedAtBranch = null,
+    /// <summary>Branch-effective selling price when branch context is supplied; otherwise null.</summary>
+    decimal? EffectiveSellingPrice = null,
+    bool? HasBranchPriceOverride = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -196,6 +200,32 @@ public sealed record PosCatalogProductPagedResult(
     int PageSize);
 
 public sealed record SetBranchProductAvailabilityRequest(bool IsOffered);
+
+public sealed record BranchProductPriceOverrideDto(
+    Guid OrganizationId,
+    Guid BranchId,
+    Guid ProductId,
+    Guid? ProductUnitId,
+    decimal SellingPrice,
+    bool HasExplicitOverride);
+
+public sealed record SetBranchProductPriceOverrideRequest(
+    Guid BranchId,
+    decimal SellingPrice,
+    Guid? ProductUnitId = null);
+
+public sealed record BranchProductPricingItemDto(
+    Guid? ProductUnitId,
+    decimal OrganizationDefaultPrice,
+    decimal? BranchOverridePrice,
+    decimal EffectivePrice,
+    bool HasBranchPriceOverride);
+
+public sealed record BranchProductPricingDto(
+    Guid ProductId,
+    Guid BranchId,
+    BranchProductPricingItemDto BasePrice,
+    IReadOnlyList<BranchProductPricingItemDto> UnitPrices);
 
 /// <summary>
 /// Bulk branch-offering read for one product. ExplicitRows are sparse overrides only;

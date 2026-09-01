@@ -287,6 +287,7 @@ public sealed class CheckoutSale
     private readonly InventoryCostResolver _costResolver;
     private readonly IClock _clock;
     private readonly ICatalogProductAvailabilityResolver? _availability;
+    private readonly IEffectivePriceResolver? _effectivePrices;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -302,7 +303,8 @@ public sealed class CheckoutSale
         IOfflinePriceAuthorityService priceAuthorities,
         InventoryCostResolver costResolver,
         IClock clock,
-        ICatalogProductAvailabilityResolver? availability = null)
+        ICatalogProductAvailabilityResolver? availability = null,
+        IEffectivePriceResolver? effectivePrices = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -318,6 +320,7 @@ public sealed class CheckoutSale
         _taxConfiguration = taxConfiguration;
         _clock = clock;
         _availability = availability;
+        _effectivePrices = effectivePrices;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -980,6 +983,38 @@ public sealed class CheckoutSale
             }
         }
 
+        IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>? effectivePrices = null;
+        if (branchId is Guid effectiveBranchId
+            && effectiveBranchId != Guid.Empty
+            && _effectivePrices is not null)
+        {
+            var unitsByProduct = unitsById.Values
+                .GroupBy(u => u.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<CatalogProductUnit>)g.ToList());
+            effectivePrices = await _effectivePrices
+                .ResolveAsync(
+                    orgId,
+                    PosBranchId.From(effectiveBranchId),
+                    products,
+                    unitsByProduct,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        decimal ResolveBasePrice(CatalogProduct product) =>
+            effectivePrices?.TryGetValue(EffectivePriceKeys.ForBaseProduct(product.Id.Value), out var baseResult) == true
+                ? baseResult.EffectivePrice
+                : product.SellingPrice;
+
+        decimal? ResolveUnitPrice(CatalogProduct product, CatalogProductUnit unit) =>
+            effectivePrices?.TryGetValue(
+                EffectivePriceKeys.ForSellUnit(product.Id.Value, unit.Id.Value),
+                out var unitResult) == true
+                ? unitResult.EffectivePrice
+                : null;
+
         if (usesPriceAuthorities)
         {
             foreach (var line in lines)
@@ -1146,7 +1181,12 @@ public sealed class CheckoutSale
                         unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
                     }
 
-                    var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
+                    var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(
+                        line,
+                        product,
+                        sellingUnit,
+                        ResolveBasePrice(product),
+                        sellingUnit is not null ? ResolveUnitPrice(product, sellingUnit) : null);
                     if (!onlineDraft.IsSuccess)
                     {
                         return ApplicationResult<ResolvedCheckoutDrafts>.Failure(
@@ -1206,7 +1246,7 @@ public sealed class CheckoutSale
                         product.Sku,
                         product.Barcode,
                         product.UnitOfMeasure,
-                        product.SellingPrice,
+                        ResolveBasePrice(product),
                         quantity,
                         product.SellingMode));
                 }

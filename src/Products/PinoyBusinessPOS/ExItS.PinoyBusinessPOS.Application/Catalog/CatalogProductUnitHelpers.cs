@@ -5,7 +5,9 @@ namespace ExItS.PinoyBusinessPOS.Application.Catalog;
 
 internal static class CatalogProductUnitHelpers
 {
-    public static PosCatalogProductUnitDto MapUnit(CatalogProductUnit unit) =>
+    public static PosCatalogProductUnitDto MapUnit(
+        CatalogProductUnit unit,
+        decimal? effectiveSellingPrice = null) =>
         new(
             unit.Id.Value,
             unit.ProductId.Value,
@@ -16,7 +18,8 @@ internal static class CatalogProductUnitHelpers
             unit.SellingPrice,
             unit.AllowsCustomQuantity,
             unit.IsActive,
-            unit.SortOrder);
+            unit.SortOrder,
+            effectiveSellingPrice);
 
     public static ProductUsageCapabilities ResolveUsage(
         bool? canBePurchased,

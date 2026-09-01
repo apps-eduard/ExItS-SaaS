@@ -29,6 +29,12 @@ export function resolveSellUnitPrice(
   product: PosCatalogProductDto,
   unit: PosCatalogProductUnitDto | null | undefined,
 ): number {
+  if (unit?.effectiveSellingPrice != null && Number.isFinite(unit.effectiveSellingPrice)) {
+    return unit.effectiveSellingPrice;
+  }
+  if (product.effectiveSellingPrice != null && Number.isFinite(product.effectiveSellingPrice)) {
+    return product.effectiveSellingPrice;
+  }
   if (unit?.sellingPrice != null && Number.isFinite(unit.sellingPrice)) {
     return unit.sellingPrice;
   }

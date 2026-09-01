@@ -82,6 +82,7 @@ import {
   CatalogProductScopeSummary,
   CatalogPromoteControls,
 } from "@/features/catalog/CatalogProductGovernancePanels";
+import { BranchProductPricingPanel } from "@/features/catalog/BranchProductPricingPanel";
 import {
   isBranchLocalProduct,
   isOrganizationStandardProduct,
@@ -1166,6 +1167,16 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             </p>
           </div>
         </section>
+
+        {mode === "edit" && productId && workspace && productQuery.data ? (
+          <BranchProductPricingPanel
+            workspace={workspace}
+            productId={productId}
+            product={productQuery.data}
+            canGovern={canGovern}
+            branchName={boundWorkspace?.branchName ?? null}
+          />
+        ) : null}
 
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionInventory")}</h2>

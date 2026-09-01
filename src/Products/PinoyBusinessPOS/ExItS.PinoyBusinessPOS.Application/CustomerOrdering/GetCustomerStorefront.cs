@@ -18,6 +18,7 @@ public sealed class GetCustomerStorefront
     private readonly IPlatformMerchantCatalogClient? _platform;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly ICatalogProductAvailabilityResolver? _availability;
+    private readonly IEffectivePriceResolver? _effectivePrices;
 
     public GetCustomerStorefront(
         ISellerCustomerOrderingCapability capability,
@@ -28,7 +29,8 @@ public sealed class GetCustomerStorefront
         ICatalogProductImageRepository images,
         IPlatformMerchantCatalogClient? platform = null,
         IInventoryBranchBalanceRepository? branchBalances = null,
-        ICatalogProductAvailabilityResolver? availability = null)
+        ICatalogProductAvailabilityResolver? availability = null,
+        IEffectivePriceResolver? effectivePrices = null)
     {
         _capability = capability;
         _products = products;
@@ -39,6 +41,7 @@ public sealed class GetCustomerStorefront
         _platform = platform;
         _branchBalances = branchBalances;
         _availability = availability;
+        _effectivePrices = effectivePrices;
     }
 
     public async Task<ApplicationResult<CustomerStorefrontDto>> ExecuteAsync(
@@ -144,6 +147,19 @@ public sealed class GetCustomerStorefront
         }
 
         var primaryBranchId = branches.FirstOrDefault(b => b.IsPrimary)?.BranchId;
+        IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>? effectivePrices = null;
+        if (_effectivePrices is not null && selectedBranchId is Guid priceBranchId && pageItems.Count > 0)
+        {
+            effectivePrices = await _effectivePrices
+                .ResolveAsync(
+                    orgId,
+                    PosBranchId.From(priceBranchId),
+                    pageItems,
+                    unitsByProduct: null,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var products = pageItems.Select(p =>
         {
             accountByProduct.TryGetValue(p.Id.Value, out var account);
@@ -151,6 +167,11 @@ public sealed class GetCustomerStorefront
             imageByProduct.TryGetValue(p.Id.Value, out var image);
             liveVersions.TryGetValue(p.Id.Value, out var liveVersion);
             var resolved = CatalogProductImageResolution.Resolve(p, image, liveVersion);
+            var unitPrice = effectivePrices?.TryGetValue(
+                    EffectivePriceKeys.ForBaseProduct(p.Id.Value),
+                    out var priceResult) == true
+                ? priceResult.EffectivePrice
+                : p.SellingPrice;
 
             return new CustomerStorefrontProductDto(
                 p.Id.Value,
@@ -158,7 +179,7 @@ public sealed class GetCustomerStorefront
                 p.Sku,
                 p.UnitOfMeasure.ToString(),
                 p.CategoryId?.Value,
-                p.SellingPrice,
+                unitPrice,
                 availability.IsAvailable,
                 availability.TracksInventory,
                 availability.AvailableQuantity,

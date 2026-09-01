@@ -160,7 +160,9 @@ public static class CheckoutSaleLineSnapshots
     public static ApplicationResult<SaleLineDraft> TryCreateOnlineDraft(
         CheckoutSaleLineRequest line,
         CatalogProduct product,
-        CatalogProductUnit? sellingUnit)
+        CatalogProductUnit? sellingUnit,
+        decimal? effectiveBasePrice = null,
+        decimal? effectiveUnitPrice = null)
     {
         ArgumentNullException.ThrowIfNull(line);
         ArgumentNullException.ThrowIfNull(product);
@@ -187,7 +189,7 @@ public static class CheckoutSaleLineSnapshots
                 var entered = line.EnteredQuantity ?? line.Quantity;
                 var multiplier = sellingUnit.MultiplierToBase;
                 var baseQty = ProductUnitConversion.ToBaseQuantity(entered, multiplier);
-                var unitPrice = sellingUnit.SellingPrice ?? product.SellingPrice;
+                var unitPrice = effectiveUnitPrice ?? sellingUnit.SellingPrice ?? effectiveBasePrice ?? product.SellingPrice;
 
                 return ApplicationResult<SaleLineDraft>.Success(
                     new SaleLineDraft(
@@ -212,7 +214,7 @@ public static class CheckoutSaleLineSnapshots
                     product.Sku,
                     product.Barcode,
                     product.UnitOfMeasure,
-                    product.SellingPrice,
+                    effectiveBasePrice ?? product.SellingPrice,
                     line.Quantity,
                     product.SellingMode));
         }

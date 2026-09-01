@@ -220,6 +220,39 @@ internal static class CatalogEntityMapper
         record.UpdatedByActorId = availability.UpdatedByActorId;
     }
 
+    public static BranchProductPriceOverride ToDomain(BranchProductPriceOverrideRecord record) =>
+        BranchProductPriceOverride.Rehydrate(
+            PosOrganizationId.From(record.OrganizationId),
+            PosBranchId.From(record.BranchId),
+            CatalogProductId.From(record.ProductId),
+            record.ProductUnitId,
+            record.SellingPrice,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.UpdatedByActorId);
+
+    public static BranchProductPriceOverrideRecord ToRecord(BranchProductPriceOverride priceOverride) =>
+        new()
+        {
+            OrganizationId = priceOverride.OrganizationId.Value,
+            BranchId = priceOverride.BranchId.Value,
+            ProductId = priceOverride.ProductId.Value,
+            ProductUnitId = priceOverride.ProductUnitId,
+            SellingPrice = priceOverride.SellingPrice,
+            CreatedAtUtc = priceOverride.CreatedAtUtc,
+            UpdatedAtUtc = priceOverride.UpdatedAtUtc,
+            UpdatedByActorId = priceOverride.UpdatedByActorId
+        };
+
+    public static void ApplyToRecord(
+        BranchProductPriceOverride priceOverride,
+        BranchProductPriceOverrideRecord record)
+    {
+        record.SellingPrice = priceOverride.SellingPrice;
+        record.UpdatedAtUtc = priceOverride.UpdatedAtUtc;
+        record.UpdatedByActorId = priceOverride.UpdatedByActorId;
+    }
+
     public static CatalogImportJob ToDomain(CatalogImportJobRecord record) =>
         CatalogImportJob.Rehydrate(
             CatalogImportJobId.From(record.Id),

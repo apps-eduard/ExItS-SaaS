@@ -100,6 +100,7 @@ public sealed class PlaceCustomerOrder
     private readonly IPOSCustomerRepository? _customers;
     private readonly IClock _clock;
     private readonly ICatalogProductAvailabilityResolver? _availability;
+    private readonly IEffectivePriceResolver? _effectivePrices;
 
     public PlaceCustomerOrder(
         ICustomerOrderRepository orders,
@@ -111,7 +112,8 @@ public sealed class PlaceCustomerOrder
         IOrganizationBusinessNotificationPublisher? notifications = null,
         ILinkedCustomerPlatformAuthorization? linkedCustomerAuth = null,
         IPOSCustomerRepository? customers = null,
-        ICatalogProductAvailabilityResolver? availability = null)
+        ICatalogProductAvailabilityResolver? availability = null,
+        IEffectivePriceResolver? effectivePrices = null)
     {
         _orders = orders;
         _products = products;
@@ -123,6 +125,7 @@ public sealed class PlaceCustomerOrder
         _linkedCustomerAuth = linkedCustomerAuth;
         _customers = customers;
         _availability = availability;
+        _effectivePrices = effectivePrices;
     }
 
     public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
@@ -266,6 +269,18 @@ public sealed class PlaceCustomerOrder
                         cancellationToken)
                     .ConfigureAwait(false);
 
+            IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>? effectivePrices = null;
+            if (_effectivePrices is not null)
+            {
+                effectivePrices = await _effectivePrices
+                    .ResolveAsync(
+                        orgId,
+                        PosBranchId.From(request.FulfillmentBranchId),
+                        products,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             var drafts = new List<CustomerOrderLineDraft>(request.Lines.Count);
             foreach (var line in request.Lines)
             {
@@ -292,14 +307,19 @@ public sealed class PlaceCustomerOrder
                         "One or more products are not available for sale.");
                 }
 
-                // Server-side catalog price — never trust client unit price.
+                // Server-side effective catalog price — never trust client unit price.
+                var unitPrice = effectivePrices?.TryGetValue(
+                        EffectivePriceKeys.ForBaseProduct(product.Id.Value),
+                        out var priceResult) == true
+                    ? priceResult.EffectivePrice
+                    : product.SellingPrice;
                 drafts.Add(new CustomerOrderLineDraft(
                     product.Id,
                     product.Name,
                     product.Sku,
                     product.UnitOfMeasure,
                     line.Quantity,
-                    product.SellingPrice,
+                    unitPrice,
                     line.Discount));
             }
 

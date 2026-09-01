@@ -1,4 +1,5 @@
 import type {
+  BranchProductPricingDto,
   CatalogProductImageVariant,
   CatalogProductNameConflictDto,
   CatalogProductScopeCode,
@@ -13,6 +14,7 @@ import type {
   PosProductCategoryPagedResult,
   ProductBranchAvailabilityReadDto,
   SetBranchProductAvailabilityRequest,
+  SetBranchProductPriceOverrideRequest,
   UpdatePosCatalogProductPricesRequest,
   UpdatePosCatalogProductPricesResponse,
   UpdatePosCatalogProductRequest,
@@ -494,5 +496,52 @@ export function getProductBranchAvailability(
     workspace,
     signal,
     path: `${PRODUCTS_PATH}/${productId}/branch-availability`,
+  });
+}
+
+export function getBranchProductPricing(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  branchId: string,
+  signal?: AbortSignal,
+): Promise<BranchProductPricingDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PRODUCTS_PATH}/${productId}/branch-pricing`, { branchId }),
+  });
+}
+
+export function setBranchProductPriceOverride(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  body: SetBranchProductPriceOverrideRequest,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PRODUCTS_PATH}/${productId}/branch-pricing`,
+    body,
+  });
+}
+
+export function removeBranchProductPriceOverride(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  branchId: string,
+  unitId?: string | null,
+  signal?: AbortSignal,
+): Promise<void> {
+  return posRequest({
+    method: "DELETE",
+    workspace,
+    signal,
+    path: appendQuery(`${PRODUCTS_PATH}/${productId}/branch-pricing`, {
+      branchId,
+      unitId: unitId ?? undefined,
+    }),
   });
 }

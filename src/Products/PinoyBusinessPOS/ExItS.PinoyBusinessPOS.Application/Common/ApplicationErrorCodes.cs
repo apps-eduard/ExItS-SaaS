@@ -46,6 +46,8 @@ public static class ApplicationErrorCodes
     public const string ProductAvailabilityForbidden = "pos.catalog.product_availability_forbidden";
     public const string ProductActingBranchRequired = "pos.catalog.product_acting_branch_required";
     public const string ProductBranchInvalid = "pos.catalog.product_branch_invalid";
+    public const string ProductBranchPriceForbidden = "pos.catalog.product_branch_price_forbidden";
+    public const string ProductBranchPriceInvalid = "pos.catalog.product_branch_price_invalid";
 
     public const string SaleNotFound = "pos.sale.not_found";
     public const string TaxDocumentIssuanceNotAvailable =
