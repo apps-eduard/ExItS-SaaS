@@ -1,7 +1,7 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX; MB2-01C-H1 COMPLETE_VALIDATED_PRODUCT_IDENTITY; **MB2-01D COMPLETE_VALIDATED_BASELINE** — **MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE**; NEXT=MB2-02
+**Status:** MB2-01A…MB2-01D COMPLETE; Multi-Branch V2 **COMPLETE_THROUGH_MB2_05** — see [production-roadmap-policy.md](production-roadmap-policy.md)
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
 **Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01C-H1 → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
@@ -218,7 +218,7 @@ See [MB2-01C-H1 report](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PROD
 | Today's Prices mutation | ONLINE_REQUIRED_FOR_CURRENT_BASELINE |
 | Offline product draft | DEFERRED (not a CatalogProduct until accepted online) |
 
-No offline-generated canonical ProductId may later sync as a new product. Full offline capability matrix remains MB2-06.
+No offline-generated canonical ProductId may later sync as a new product. Full offline capability matrix is **DEFERRED** to a future offline/native phase — see [production-roadmap-policy.md](production-roadmap-policy.md).
 
 ### Offline capability matrix (catalog identity — partial)
 

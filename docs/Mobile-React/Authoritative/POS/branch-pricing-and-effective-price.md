@@ -3,7 +3,7 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-03 (core), MB2-06 (cross-surface/offline)
+**Implements in:** MB2-03 (core) **COMPLETE**; offline cache hardening **DEFERRED** (future offline/native phase — [production-roadmap-policy.md](production-roadmap-policy.md))
 **CURRENT price contract:** [pricing-and-price-authority.md](pricing-and-price-authority.md)
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 

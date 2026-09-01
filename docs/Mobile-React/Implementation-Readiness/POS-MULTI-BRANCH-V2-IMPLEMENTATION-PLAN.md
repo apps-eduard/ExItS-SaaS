@@ -9,8 +9,24 @@
 **MB2-01C status:** COMPLETE_VALIDATED_UX
 **MB2-01C-H1 status:** COMPLETE_VALIDATED_PRODUCT_IDENTITY
 **MB2-01D status:** COMPLETE_VALIDATED_BASELINE
-**MB2_01_STATUS:** COMPLETE_VALIDATED_BASELINE
-**HARD STOP:** Do not start MB2-02 until explicitly authorized as a separate task.
+**MB2-02A status:** COMPLETE
+**MB2-02A-H1 status:** COMPLETE
+**MB2-02B status:** COMPLETE
+**MB2-02B-H1 status:** COMPLETE
+**MB2-02B-H2 status:** COMPLETE
+**MB2-02B-H3 status:** COMPLETE
+**MB2-02C status:** COMPLETE
+**MB2-02C-H1 status:** COMPLETE
+**MB2-02D status:** COMPLETE
+**MB2-03 status:** COMPLETE
+**MB2-03-H1 status:** COMPLETE
+**MB2-04 status:** COMPLETE
+**MB2-04-H1 status:** COMPLETE
+**MB2-05 status:** COMPLETE
+**MB2-06 status:** DEFERRED (future offline/native phase — see [production-roadmap-policy.md](../Authoritative/POS/production-roadmap-policy.md))
+**MB2-07 status:** DEFERRED_TO_FINAL_APPLICATION_GATE
+**MULTI_BRANCH_IMPLEMENTATION:** COMPLETE_THROUGH_MB2_05 (not application production-ready)
+**Production roadmap policy:** [production-roadmap-policy.md](../Authoritative/POS/production-roadmap-policy.md)
 **01D report:** [POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01D-PRODUCT-GOVERNANCE-FINAL-CLOSURE.md)
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
@@ -33,9 +49,13 @@ MB2-01C Product Governance React UX
   ↓
 MB2-01C-H1 Strong Product Duplicate Identity
   ↓
-MB2-01D Product Governance Validation Closure ★ COMPLETE_VALIDATED_BASELINE
+MB2-01D Product Governance Validation Closure ★ COMPLETE
   ↓
-MB2-02 → MB2-03 → MB2-04 → MB2-05 → MB2-06 → MB2-07
+MB2-02 → MB2-03 → MB2-04 → MB2-05 ★ COMPLETE
+  ↓
+MB2-06 (DEFERRED — future offline/native)
+  ↓
+MB2-07 (DEFERRED — FINAL-PRODUCTION-GATE-01)
 ```
 
 ---
@@ -90,7 +110,7 @@ Enforce at minimum for:
 - storefront query
 - customer-order quote/place
 
-Cross-surface polish may remain MB2-06.
+Cross-surface polish deferred to future offline/native phase or FINAL-PRODUCTION-GATE-01 (see [production-roadmap-policy.md](../Authoritative/POS/production-roadmap-policy.md)).
 
 **HARD STOP** before MB2-01C.
 
@@ -247,17 +267,25 @@ MB2-04 must still audit real schema/data before migration; fallback policy is lo
 
 ## MB2-06 — Cross-Surface + Offline Hardening
 
-**Scope:** Sell, checkout, storefront, orders, returns, purchasing, offline, cache invalidation, reports, auth, N+1/performance.
+**STATUS:** **DEFERRED** — **CURRENT_RELEASE=OUT_OF_SCOPE**
 
-**MB2_06_READY:** YES after MB2-05.
+Moved to a future dedicated offline/native product phase. See [production-roadmap-policy.md](../Authoritative/POS/production-roadmap-policy.md).
+
+**Former scope (for future reference):** Sell, checkout, storefront, orders, returns, purchasing, offline sync, cache invalidation, reports, auth, N+1/performance.
+
+**Do not start** under current online-PWA feature work.
 
 ---
 
 ## MB2-07 — Multi-Branch V2 E2E Closure
 
-**Scope:** Joe Store + Remote North; isolation; promotion; wizard; migration; responsive; offline/online; full regression.
+**STATUS:** **DEFERRED_TO_FINAL_APPLICATION_GATE**
 
-**MB2_07_READY:** YES as terminal package.
+Coverage absorbed into **FINAL-PRODUCTION-GATE-01** after all features and application-wide UI/UX polish are complete.
+
+**Former scope (for future reference):** Joe Store + Remote North; isolation; promotion; wizard; migration; responsive; full regression.
+
+**Do not start** as a separate package now.
 
 ---
 
@@ -280,4 +308,10 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_02B`** — branch inventory write-path hardening (explicit authorization required). MB2-02A read authority is complete on `feat/organization`.
+**MULTI-BRANCH V2 implementation is complete through MB2-05.**
+
+**NEXT (project policy):** Continue remaining product feature implementation and application-wide UI/UX polish.
+
+**Do not start:** MB2-06, MB2-07, or application-wide production hardening until [FINAL-PRODUCTION-GATE-01 entry criteria](../Authoritative/POS/production-roadmap-policy.md#8-final-production-gate--entry-criteria) are satisfied.
+
+See [production-roadmap-policy.md](../Authoritative/POS/production-roadmap-policy.md).

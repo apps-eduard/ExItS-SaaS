@@ -2,7 +2,7 @@
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Package:** MB2-00 (Documentation & Architecture Lock)
-**Status:** MB2-01A…MB2-01D COMPLETE — **MB2_01_STATUS=COMPLETE_VALIDATED_BASELINE**; next MB2-02 when authorized
+**Status:** MB2-01A…MB2-05 COMPLETE — **MULTI_BRANCH_IMPLEMENTATION=COMPLETE_THROUGH_MB2_05**; MB2-06 DEFERRED; MB2-07 DEFERRED_TO_FINAL_APPLICATION_GATE. See [production-roadmap-policy.md](production-roadmap-policy.md).
 **Classification key:** CURRENT_PROVEN | TARGET_LOCKED | GAP | SUPERSEDED | DEFERRED | CLOSED_DECISION
 **Start SHA (MB2-00):** `dcc2b268894feb84eb742c3f26a0f855e5d330d9`
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
@@ -15,6 +15,7 @@ Related:
 - [Branch pricing & effective price](branch-pricing-and-effective-price.md)
 - [Branch customer & supplier access](branch-customer-supplier-access.md)
 - [Branch guided setup](branch-guided-setup.md)
+- [Production roadmap policy — online PWA & final gate](production-roadmap-policy.md)
 - [Implementation plan MB2-01A…07](../../Implementation-Readiness/POS-MULTI-BRANCH-V2-IMPLEMENTATION-PLAN.md)
 
 ---
@@ -117,9 +118,9 @@ Evidence audit (code + prior reports):
 | Staff ACL | WP15C proven | Reuse; wizard assigns | Wizard only | MB2-05 |
 | Devices | One registration branch | No clone | Wizard empty default | MB2-05 |
 | Fulfillment | Per-branch Platform config | Link existing; defaults OFF | Wizard compose | MB2-05 |
-| Offline price | Org price + branch lease ctx | Effective branch price in lease/cache | Key/version | MB2-03/06 |
-| New branch create | Create API; inventory unallocated | + guided setup | No wizard | MB2-05 |
-| Reporting | Mixed | Branch-correct filters | Harden | MB2-06/07 |
+| Offline price | Org price + branch lease ctx | Effective branch price in lease/cache | Key/version | MB2-03; offline cache hardening **DEFERRED** (future native/offline phase) |
+| New branch create | Create API; inventory unallocated | + guided setup | No wizard | MB2-05 **COMPLETE** |
+| Reporting | Mixed | Branch-correct filters | Harden | FINAL-PRODUCTION-GATE-01 |
 
 ---
 
@@ -165,6 +166,7 @@ Evidence audit (code + prior reports):
 - Branch-specific customer/supplier duplicate identities
 - ERP cost-center redesign
 - Unrelated offline device redesign beyond price-authority hardening
+- **Current React PWA offline transactional support** — DEFERRED to future offline/native phase ([production-roadmap-policy.md](production-roadmap-policy.md))
 
 ---
 
@@ -179,12 +181,12 @@ Evidence audit (code + prior reports):
 | Branch A consumes Branch B stock | BranchStockResolver + mutations | STOCK-01 | Insufficient stock |
 | Branch A edits Standard master | Capability + scope gate | PRODUCT-04 | 403 |
 | Branch A edits B Local | OriginBranchId gate | PRODUCT-01 | 403 |
-| Client spoofs BranchId | Workspace / device binding + ACL | MB2-06 | Reject |
-| Offline cache cross-branch | Cache keys include org+branch | MB2-03/06 | Fail closed / refresh |
+| Client spoofs BranchId | Workspace / device binding + ACL | MB2-04/05 + final gate | Reject |
+| Offline cache cross-branch | Cache keys include org+branch | MB2-03; offline hardening **DEFERRED** | Fail closed / refresh |
 | Search/count leak | Scoped queries; no existence oracle | MB2-04 | No privileged counts |
 | Promotion without org authority | Org governance capability | PRODUCT-03 | 403 |
-| Hidden product in storefront | Availability in storefront query | MB2-01/06 | Not listed |
-| Branch switch stale caches | Invalidate/refetch on workspace change | MB2-06 | Stale sell/price/stock |
+| Hidden product in storefront | Availability in storefront query | MB2-01 | Not listed |
+| Branch switch stale caches | Invalidate/refetch on workspace change | MB2-05 React | Stale sell/price/stock |
 
 ---
 
@@ -231,14 +233,14 @@ MB2-03 Branch Pricing
   ↓
 MB2-04 Party Access
   ↓
-MB2-05 Branch Setup Wizard
+MB2-05 Branch Setup Wizard ★ COMPLETE
   ↓
-MB2-06 Cross-Surface Hardening
+MB2-06 Cross-Surface + Offline Hardening ★ DEFERRED (future offline/native)
   ↓
-MB2-07 E2E Closure
+MB2-07 E2E Closure ★ DEFERRED (FINAL-PRODUCTION-GATE-01)
 ```
 
-Correctness over parallelism. **NEXT=`MB2_01D`** only when explicitly authorized (after MB2-01C-H1).
+Correctness over parallelism. **Active roadmap:** continue remaining product features + UI/UX polish; see [production-roadmap-policy.md](production-roadmap-policy.md).
 
 ---
 

@@ -1,5 +1,13 @@
 # Offline, Local-First, and Device Behavior
 
+## Current product generation policy (authoritative)
+
+**React PWA (current generation) = ONLINE-REQUIRED for business transactions.**
+
+See [production-roadmap-policy.md](production-roadmap-policy.md). Offline transactional architecture is **DEFERRED** to a future offline/native phase. This document describes **MAUI LocalStore (legacy/proven)** and **future** offline targets — not the current React PWA release scope.
+
+---
+
 ## Policy source of truth
 
 `PosOfflineCapabilityPolicy` + `docs/reports/P19-offline-connectivity-capability-matrix.md`
@@ -41,4 +49,4 @@ PWA service worker exists for static shell caching. This is **not** MAUI LocalSt
 
 ## React migration rule
 
-Do not schedule full offline parity before online sales/checkout parity and device/session contracts are stable. Offline is a late hardening track relative to foundational domain WPs — see roadmap.
+Do not schedule full offline parity before online sales/checkout parity and device/session contracts are stable. **Current policy:** React PWA remains online-required; offline is a **deferred future product phase** — see [production-roadmap-policy.md](production-roadmap-policy.md).

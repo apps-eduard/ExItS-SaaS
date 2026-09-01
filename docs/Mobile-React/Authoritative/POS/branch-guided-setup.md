@@ -1,9 +1,9 @@
 # Branch Guided Setup
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-05 (consumes MB2-01…04)
+**Status:** MB2-05 **COMPLETE** — TARGET delivered; see [POS-MULTI-BRANCH-V2-MB2-05-GUIDED-BRANCH-SETUP.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-05-GUIDED-BRANCH-SETUP.md) and [production-roadmap-policy.md](production-roadmap-policy.md)
+**Implements in:** MB2-05 (consumes MB2-01…04) ★ COMPLETE
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 
 ---

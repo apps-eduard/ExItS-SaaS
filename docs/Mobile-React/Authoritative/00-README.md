@@ -91,7 +91,9 @@ Created under `docs/Mobile-React/Authoritative/` to match the existing `docs/Mob
 | [POS/customers-business-utang-and-linked-personal.md](POS/customers-business-utang-and-linked-personal.md) | Customers / Business Utang |
 | [POS/customer-ordering-pickup-and-delivery.md](POS/customer-ordering-pickup-and-delivery.md) | Storefront, pickup, delivery |
 | [POS/reports.md](POS/reports.md) | Operational reports |
-| [POS/offline-local-first-and-device-behavior.md](POS/offline-local-first-and-device-behavior.md) | Offline matrix |
+| [POS/offline-local-first-and-device-behavior.md](POS/offline-local-first-and-device-behavior.md) | Offline matrix (MAUI proven; React online-only current policy) |
+| [POS/production-roadmap-policy.md](POS/production-roadmap-policy.md) | **Online PWA policy, MB2-06/07 deferral, final production gate** |
+| [POS/multi-branch-commerce-v2.md](POS/multi-branch-commerce-v2.md) | Multi-Branch V2 master contract |
 
 ### Migration
 
