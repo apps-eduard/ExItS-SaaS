@@ -3,7 +3,19 @@
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Status:** OWNER_APPROVED (MB2-00A) — TARGET_LOCKED
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-02 (02A read authority delivered; 02B writes deferred)
+**Implements in:** MB2-02 (02A read authority delivered; 02B write authority delivered; 02C reconciliation deferred)
+
+### MB2-02B write authority (delivered)
+
+- Central `BranchInventoryMutationService` + hardened `BranchBalanceMutation` (pre-mutation materialization ordering).
+- Physical writes update org aggregate + branch overlay atomically for opening, adjust, stock count, direct purchase, GRN, sale/return, stock use, waste, production, transfers (audit).
+- Source-document provenance: `DirectPurchaseReceipt.ReceivingBranchId`, `GoodsReceipt.ReceivingBranchId`, `StockCount.BranchId` (migration `AddInventoryWriteBranchProvenance`).
+- Legacy null branch on receipts/sales: Primary-only reversal/deduct compatibility; unknown Primary fail-closed.
+- React: receiving branch banners on direct purchase / adjust / stock count; draft reset on branch switch for direct purchase.
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-02B-PHYSICAL-INVENTORY-WRITE-AUTHORITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02B-PHYSICAL-INVENTORY-WRITE-AUTHORITY.md)
+
+**HARD STOP** before MB2-02C reconciliation polish unless explicitly authorized.
 
 ### MB2-02A read authority (delivered)
 
@@ -14,8 +26,6 @@
 - Reconciliation endpoint returns explicit org aggregate fields (not branch `onHandQuantity`).
 
 **Report:** [POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-02A-BRANCH-INVENTORY-READ-AUTHORITY.md)
-
-**HARD STOP** before MB2-02B write-path hardening unless explicitly authorized.
 
 ### MB2-02A-H1 primary branch legacy stock isolation (delivered)
 
