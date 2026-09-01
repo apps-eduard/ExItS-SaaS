@@ -7,11 +7,13 @@
 **MB2-01B status:** COMPLETE_VALIDATED_AUTHORITY
 **MB2-01B-H1 status:** COMPLETE_VALIDATED
 **MB2-01C status:** COMPLETE_VALIDATED_UX
+**MB2-01C-H1 status:** COMPLETE_VALIDATED_PRODUCT_IDENTITY
 **HARD STOP:** Do not start MB2-01D until explicitly authorized as a separate task.
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
 **01C report:** [POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md)
+**01C-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md)
 
 ---
 
@@ -25,6 +27,8 @@ MB2-01A Product Governance Data Foundation
 MB2-01B Product Authority & Availability Enforcement
   ↓
 MB2-01C Product Governance React UX
+  ↓
+MB2-01C-H1 Strong Product Duplicate Identity
   ↓
 MB2-01D Product Governance Validation Closure
   ↓
@@ -134,9 +138,28 @@ Responsive 360 / 768 / 1024 / 1440; full i18n.
 
 **Out of scope:** Branch price override UI; Today's Prices remains CURRENT price authority until MB2-03.
 
-**HARD STOP** before MB2-01D.
+**HARD STOP** before MB2-01C-H1 (then MB2-01D).
 
 **MB2_01C_STATUS:** COMPLETE_VALIDATED_UX
+**NEXT:** MB2_01C_H1 then MB2_01D (when authorized)
+
+---
+
+## MB2-01C-H1 — Strong Product Duplicate Identity
+
+**Scope:**
+
+- Org-wide `NormalizedName` on `CatalogProduct`
+- Unique `(OrganizationId, NormalizedName)` — Active/Inactive, Standard/Local
+- Create / rename / import / Connected Supplier guards
+- Advisory name-conflict API + React UX (no Create anyway; foreign Local privacy)
+- Identity mutations ONLINE_REQUIRED; `OFFLINE_PRODUCT_DRAFT=DEFERRED`; `PRODUCT_MERGE=NO`
+
+**Report:** [POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md](../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md)
+
+**HARD STOP** before MB2-01D.
+
+**MB2_01C_H1_STATUS:** COMPLETE_VALIDATED_PRODUCT_IDENTITY
 **NEXT:** MB2_01D (when authorized)
 
 ---
@@ -151,7 +174,7 @@ Only MB2-01D may declare:
 
 Then: `NEXT=MB2_02`
 
-**MB2_01D_READY:** YES (after 01C)
+**MB2_01D_READY:** YES (after 01C-H1)
 
 ---
 
@@ -242,4 +265,4 @@ Avoid one-request-per-product designs.
 
 ## Next
 
-**NEXT=`MB2_01D`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-01D validation closure in this package.
+**NEXT=`MB2_01D`** — only when explicitly authorized as a separate implementation task. Hard stop: do not start MB2-01D until after MB2-01C-H1 and explicit authorization.

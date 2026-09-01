@@ -1,14 +1,15 @@
 # Product Governance and Branch Assortment
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX — TARGET remaining for 01D
+**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION; MB2-01B COMPLETE_VALIDATED_AUTHORITY; MB2-01B-H1 COMPLETE_VALIDATED; MB2-01C COMPLETE_VALIDATED_UX; MB2-01C-H1 COMPLETE_VALIDATED_PRODUCT_IDENTITY (pending validation) — TARGET remaining for 01D
 **Parent:** [multi-branch-commerce-v2.md](multi-branch-commerce-v2.md)
-**Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01D
+**Implements in:** MB2-01A → MB2-01B → MB2-01B-H1 → MB2-01C → MB2-01C-H1 → MB2-01D
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
 **01A report:** [POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01A-PRODUCT-GOVERNANCE-DATA-FOUNDATION.md)
 **01B report:** [POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-PRODUCT-AUTHORITY-AND-AVAILABILITY.md)
 **01B-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01B-HARDENING-01.md)
 **01C report:** [POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-PRODUCT-GOVERNANCE-REACT-UX.md)
+**01C-H1 report:** [POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md)
 
 ---
 
@@ -31,6 +32,11 @@
   - Standard master read-only for normal branch actors; Local editable at origin / Owner.
   - Promote UX; Owner branch-availability toggles; Today's Prices matches interim price authority.
   - Global import + Connected Buyer org mutations gated to org governance.
+- **MB2-01C-H1 product name identity:**
+  - Org + `NormalizedName` = one `ProductId` (Active/Inactive, Standard/Local).
+  - Unique index + create/rename/import/Connected Supplier guards; advisory name-conflict API.
+  - React: no Create anyway; foreign Local privacy; identity mutations ONLINE_REQUIRED.
+  - `OFFLINE_PRODUCT_DRAFT=DEFERRED`; `PRODUCT_MERGE=NO`.
 - **Not yet:** MB2-01D closure validation, branch inventory (MB2-02), branch pricing (MB2-03).
 
 ---
@@ -173,6 +179,55 @@ BranchLocal and OrganizationStandard share the **same org identity space**.
 On Local create: check existing org catalog (barcode/SKU/rules). Prefer UX: “This product already exists…” → authorized existing-product workflow. No fuzzy merge in V1.
 
 **CURRENT uniqueness:** org-scoped unique barcode/SKU — reuse.
+
+---
+
+## 6A. Canonical product name identity — TARGET_LOCKED (MB2-01C-H1)
+
+```
+ONE ORGANIZATION + ONE NORMALIZED PRODUCT NAME = ONE CatalogProductId
+```
+
+| Aspect | Lock |
+|--------|------|
+| Identity key | `NormalizedName` (NFC, trim, collapse whitespace, uppercase invariant) |
+| Display | Separate; casing preserved after whitespace cleanup |
+| Uniqueness | Org-wide unique index — Active+Inactive, OrganizationStandard+BranchLocal |
+| Scope | Does **not** allow duplicate names across Standard vs Local or across branches |
+| Soft delete | Inactive name remains reserved |
+| Merge | **PRODUCT_MERGE=NO** — no auto-merge of ProductIds |
+| Fuzzy | Exact normalized match only; fuzzy blocking = NO |
+| Privacy | Foreign BranchLocal may block create without revealing metadata |
+| UX | Advisory name-conflict check; **no Create anyway**; server create/update authoritative |
+
+See [MB2-01C-H1 report](../../Reports/POS-MULTI-BRANCH-V2-MB2-01C-H1-STRONG-PRODUCT-DUPLICATE-IDENTITY.md).
+
+### Identity mutations — ONLINE_REQUIRED
+
+| Operation | Policy |
+|-----------|--------|
+| Create canonical product | ONLINE_REQUIRED |
+| Rename product | ONLINE_REQUIRED |
+| Change SKU | ONLINE_REQUIRED |
+| Change barcode | ONLINE_REQUIRED |
+| Promote Local → Standard | ONLINE_REQUIRED |
+| Change branch availability | ONLINE_REQUIRED |
+| Organization master edit | ONLINE_REQUIRED |
+| Today's Prices mutation | ONLINE_REQUIRED_FOR_CURRENT_BASELINE |
+| Offline product draft | DEFERRED (not a CatalogProduct until accepted online) |
+
+No offline-generated canonical ProductId may later sync as a new product. Full offline capability matrix remains MB2-06.
+
+### Offline capability matrix (catalog identity — partial)
+
+| Operation | Policy |
+|-----------|--------|
+| View synced catalog | Existing behavior (audit later) |
+| Create canonical product | ONLINE_REQUIRED |
+| Rename / SKU / barcode | ONLINE_REQUIRED |
+| Promote Local → Standard | ONLINE_REQUIRED |
+| Branch availability governance | ONLINE_REQUIRED |
+| Organization master mutation | ONLINE_REQUIRED |
 
 ---
 

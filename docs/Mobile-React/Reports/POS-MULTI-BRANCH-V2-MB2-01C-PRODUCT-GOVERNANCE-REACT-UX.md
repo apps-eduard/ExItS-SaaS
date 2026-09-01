@@ -58,6 +58,8 @@ STATUS=COMPLETE_VALIDATED_UX
 
 ## NEXT
 
-MB2-01D  
+MB2-01C-H1 (strong product duplicate identity) → then MB2-01D
+
+Historical note: MB2-01C-H1 followed this UX package before validation closure.
 
 HARD_STOP=YES — do not start MB2-01D in this package.

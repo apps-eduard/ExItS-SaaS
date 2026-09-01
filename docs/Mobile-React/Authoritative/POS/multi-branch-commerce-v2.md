@@ -2,7 +2,7 @@
 
 **Program:** POS-MULTI-BRANCH-COMMERCE-V2
 **Package:** MB2-00 (Documentation & Architecture Lock)
-**Status:** MB2-01A COMPLETE_VALIDATED_FOUNDATION — next MB2-01B when authorized
+**Status:** MB2-01C COMPLETE_VALIDATED_UX; MB2-01C-H1 COMPLETE_VALIDATED_PRODUCT_IDENTITY (pending validation) — next MB2-01D when authorized
 **Classification key:** CURRENT_PROVEN | TARGET_LOCKED | GAP | SUPERSEDED | DEFERRED | CLOSED_DECISION
 **Start SHA (MB2-00):** `dcc2b268894feb84eb742c3f26a0f855e5d330d9`
 **Owner review:** [POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md](../../Reports/POS-MULTI-BRANCH-V2-OWNER-REVIEW-CLOSURE-01.md)
@@ -223,7 +223,7 @@ Validate: isolation of stock/price/privacy; Owner sees Bangus; promotion keeps P
 ```
 MB2-00 / MB2-00A (owner-approved)
   ↓
-MB2-01A → MB2-01B → MB2-01C → MB2-01D
+MB2-01A → MB2-01B → MB2-01C → MB2-01C-H1 → MB2-01D
   ↓
 MB2-02 Inventory Authority
   ↓
@@ -238,7 +238,7 @@ MB2-06 Cross-Surface Hardening
 MB2-07 E2E Closure
 ```
 
-Correctness over parallelism. **NEXT=`MB2_01B`** only when explicitly authorized.
+Correctness over parallelism. **NEXT=`MB2_01D`** only when explicitly authorized (after MB2-01C-H1).
 
 ---
 
