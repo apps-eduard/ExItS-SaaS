@@ -46,24 +46,27 @@ export function FilterChips({
   }
 
   return (
-    <div
-      className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1"
-      role="list"
-      aria-label={listLabel}
-    >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          role="listitem"
-          className="inline-flex min-h-[var(--exits-touch-target-min)] shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={() => onRemove(item.id)}
-          aria-label={`Remove filter ${item.label}`}
-        >
-          <span>{item.label}</span>
-          <span aria-hidden>×</span>
-        </button>
-      ))}
+    <div className="exits-active-filters min-w-0" aria-label={listLabel}>
+      <div
+        className="sell-categories-track catalog-page__filter-scroll-track flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5"
+        role="list"
+        aria-label={listLabel}
+        data-testid="active-filter-chips"
+      >
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="listitem"
+            className="inline-flex min-h-[var(--exits-touch-target-min)] shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => onRemove(item.id)}
+            aria-label={`Remove filter ${item.label}`}
+          >
+            <span className="whitespace-nowrap">{item.label}</span>
+            <span aria-hidden>×</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

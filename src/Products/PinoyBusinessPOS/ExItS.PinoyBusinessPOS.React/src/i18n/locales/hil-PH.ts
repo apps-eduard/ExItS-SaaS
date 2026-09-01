@@ -503,6 +503,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.statusActive": "Aktibo",
   "catalog.statusAll": "Tanan nga status",
   "catalog.statusFilter": "Status sang produkto",
+  "catalog.filters": "Filters",
+  "catalog.filtersTitle": "Filter products",
+  "catalog.filtersDone": "Done",
+  "catalog.clearFilters": "Clear filters",
+  "catalog.activeFilters": "Active filters",
+  "catalog.filtersTaxonomy": "Category & brand",
   "catalog.statusInactive": "Indi aktibo",
   "catalog.tracksExpiration": "I-track ang petsa sang expiration",
   "catalog.tracksExpirationHint":

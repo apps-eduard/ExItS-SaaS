@@ -503,6 +503,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.statusActive": "Active",
   "catalog.statusAll": "All",
   "catalog.statusFilter": "Product status",
+  "catalog.filters": "Filters",
+  "catalog.filtersTitle": "Filter products",
+  "catalog.filtersDone": "Done",
+  "catalog.clearFilters": "Clear filters",
+  "catalog.activeFilters": "Active filters",
+  "catalog.filtersTaxonomy": "Category & brand",
   "catalog.statusInactive": "Inactive",
   "catalog.tracksExpiration": "I-track ang expiration",
   "catalog.tracksExpirationHint":

@@ -1,7 +1,26 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+
+function useBodyScrollLock(locked: boolean) {
+  useEffect(() => {
+    if (!locked || typeof document === "undefined") {
+      return;
+    }
+
+    const { body, documentElement: root } = document;
+    const prevBodyOverflow = body.style.overflow;
+    const prevRootOverflow = root.style.overflow;
+    body.style.overflow = "hidden";
+    root.style.overflow = "hidden";
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      root.style.overflow = prevRootOverflow;
+    };
+  }, [locked]);
+}
 
 export function BottomSheet({
   open,
@@ -23,6 +42,8 @@ export function BottomSheet({
   /** Extra classes for the dialog panel (e.g. desktop max-width). */
   panelClassName?: string;
 }) {
+  useBodyScrollLock(open);
+
   // Unmount when closed so transform animations on ancestors cannot trap `position: fixed`.
   if (!open || typeof document === "undefined") {
     return null;
@@ -31,7 +52,7 @@ export function BottomSheet({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-30 bg-black/40"
+        className="fixed inset-0 z-[60] bg-black/40"
         role="presentation"
         onClick={onClose}
         data-testid={`${testId}-backdrop`}
@@ -40,7 +61,7 @@ export function BottomSheet({
         id={panelId}
         data-testid={testId}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-40 flex max-h-[75dvh] flex-col gap-3 rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+          "fixed inset-x-0 bottom-0 z-[70] flex max-h-[75dvh] min-h-0 flex-col gap-3 overflow-hidden rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
           panelClassName,
         )}
         role="dialog"
@@ -48,14 +69,14 @@ export function BottomSheet({
         aria-label={title}
       >
         {title ? (
-          <div className="flex items-center justify-between gap-3">
+          <div className="bottom-sheet__header flex shrink-0 items-center justify-between gap-3">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
             <Button type="button" variant="ghost" className="min-h-11 shrink-0" onClick={onClose}>
               {closeLabel}
             </Button>
           </div>
         ) : null}
-        {children}
+        <div className="bottom-sheet__body flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       </div>
     </>,
     document.body,

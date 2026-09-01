@@ -150,13 +150,14 @@ describe("CatalogProductsPage governance", () => {
   it("passes scope filter to listCatalogProducts and resets page", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByTestId("catalog-scope-filters");
+    await screen.findByTestId("catalog-open-filters");
 
     await waitFor(() => {
       expect(listCatalogProducts).toHaveBeenCalled();
     });
     expect(listCatalogProducts.mock.calls[0][1].scope).toBeUndefined();
 
+    await user.click(screen.getByTestId("catalog-open-filters"));
     await user.click(screen.getByTestId("catalog-scope-BranchLocal"));
 
     await waitFor(() => {
