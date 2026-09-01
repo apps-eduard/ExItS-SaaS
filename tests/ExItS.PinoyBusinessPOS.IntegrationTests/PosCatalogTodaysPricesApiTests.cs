@@ -231,11 +231,13 @@ public sealed class PosCatalogTodaysPricesApiTests(PosPostgreSqlFixture fixture)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:PosDatabase", connectionString);
+            builder.UseSetting("LocalValidation:Enabled", "false");
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:PosDatabase"] = connectionString
+                    ["ConnectionStrings:PosDatabase"] = connectionString,
+                    ["LocalValidation:Enabled"] = "false"
                 });
             });
         }

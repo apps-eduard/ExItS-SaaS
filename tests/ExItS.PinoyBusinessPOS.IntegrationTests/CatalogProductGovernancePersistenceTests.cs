@@ -198,10 +198,10 @@ public sealed class CatalogProductGovernancePersistenceTests(PosPostgreSqlFixtur
         await using var cmd = new NpgsqlCommand(
             """
             INSERT INTO pos.products (
-                id, organization_id, name, unit_of_measure, selling_mode, selling_price, status,
+                id, organization_id, name, normalized_name, unit_of_measure, selling_mode, selling_price, status,
                 catalog_source, scope, origin_branch_id, created_at_utc, updated_at_utc)
             VALUES (
-                @id, @org, 'Bad Local', 'Piece', 'PerItem', 1.00, 'Active',
+                @id, @org, 'Bad Local', 'BAD LOCAL', 'Piece', 'PerItem', 1.00, 'Active',
                 'Manual', 'BranchLocal', NULL, @now, @now);
             """,
             connection);
@@ -223,10 +223,10 @@ public sealed class CatalogProductGovernancePersistenceTests(PosPostgreSqlFixtur
         await using var cmd = new NpgsqlCommand(
             """
             INSERT INTO pos.products (
-                id, organization_id, name, unit_of_measure, selling_mode, selling_price, status,
+                id, organization_id, name, normalized_name, unit_of_measure, selling_mode, selling_price, status,
                 catalog_source, scope, created_at_utc, updated_at_utc)
             VALUES (
-                @id, @org, 'Bad Scope', 'Piece', 'PerItem', 1.00, 'Active',
+                @id, @org, 'Bad Scope', 'BAD SCOPE', 'Piece', 'PerItem', 1.00, 'Active',
                 'Manual', 'Global', @now, @now);
             """,
             connection);

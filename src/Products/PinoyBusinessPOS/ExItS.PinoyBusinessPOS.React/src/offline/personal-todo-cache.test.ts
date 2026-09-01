@@ -17,7 +17,8 @@ const todo: PersonalTodoDto = {
   ownerUserIdentityId,
   title: "Bayaran ang ospital",
   notes: "dalhin ang resibo",
-  dueAtUtc: "2026-09-01T00:00:00.000Z",
+  // Use a due date that cannot collide with cachedAtUtc's calendar day (metadata is plaintext by design).
+  dueAtUtc: "2026-11-18T00:00:00.000Z",
   reminderAtUtc: "2026-07-15T00:00:00.000Z",
   reminderNotifiedAtUtc: null,
   priority: "High",
@@ -59,7 +60,7 @@ describe("RMAP-21G Personal To-do cache", () => {
     const raw = JSON.stringify(await db.getAll("personalTodos"));
     expect(raw).not.toContain("Bayaran ang ospital");
     expect(raw).not.toContain("dalhin ang resibo");
-    expect(raw).not.toContain("2026-09-01");
+    expect(raw).not.toContain("2026-11-18");
     expect(raw).not.toContain("2026-07-15");
     expect(raw).not.toContain("High");
     expect(raw).not.toContain("PersonalContact");
