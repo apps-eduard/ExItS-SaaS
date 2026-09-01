@@ -93,6 +93,7 @@ Created under `docs/Mobile-React/Authoritative/` to match the existing `docs/Mob
 | [POS/reports.md](POS/reports.md) | Operational reports |
 | [POS/offline-local-first-and-device-behavior.md](POS/offline-local-first-and-device-behavior.md) | Offline matrix (MAUI proven; React online-only current policy) |
 | [POS/production-roadmap-policy.md](POS/production-roadmap-policy.md) | **Online PWA policy, MB2-06/07 deferral, final production gate** |
+| [POS/remaining-feature-roadmap.md](POS/remaining-feature-roadmap.md) | **Post MB2-05 remaining feature plan (POS-NEXT-*)** |
 | [POS/multi-branch-commerce-v2.md](POS/multi-branch-commerce-v2.md) | Multi-Branch V2 master contract |
 
 ### Migration

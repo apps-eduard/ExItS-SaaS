@@ -269,6 +269,8 @@ Backend tests, frontend tests, integration tests, E2E tests, typecheck, lint, re
 
 **NEXT = CONTINUE_REMAINING_PRODUCT_FEATURE_IMPLEMENTATION**
 
+Authoritative package sequence: [remaining-feature-roadmap.md](remaining-feature-roadmap.md) (POS-NEXT-01…).
+
 Do **not** start:
 
 - MB2-06

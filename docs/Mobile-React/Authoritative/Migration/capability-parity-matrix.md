@@ -1,5 +1,7 @@
 # Capability Parity Matrix
 
+> **Forward planning:** After MB2-05 on `feat/organization`, use [remaining-feature-roadmap.md](../POS/remaining-feature-roadmap.md) for current React gaps. This matrix reflects an earlier audit baseline; many `React MISSING` rows are now **COMPLETE** on branch — verify source before trusting React column alone.
+
 Statuses: `PROVEN_CURRENT` | `PROVEN_PARTIAL` | `PROVEN_MISSING` | `SHELL_ONLY` | `MISSING` | `SUPERSEDED` | `OWNER_CONFIRMED_CHANGE` | `UNRESOLVED` | `N/A`
 
 Current Contract Status: `CURRENT` | `OWNER_CONFIRMED_CHANGE` | `MIXED` | `UNRESOLVED`

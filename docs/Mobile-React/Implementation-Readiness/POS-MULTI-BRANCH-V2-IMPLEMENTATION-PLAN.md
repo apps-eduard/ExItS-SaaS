@@ -310,7 +310,7 @@ Avoid one-request-per-product designs.
 
 **MULTI-BRANCH V2 implementation is complete through MB2-05.**
 
-**NEXT (project policy):** Continue remaining product feature implementation and application-wide UI/UX polish.
+**NEXT (project policy):** Continue remaining product feature implementation per [remaining-feature-roadmap.md](../Authoritative/POS/remaining-feature-roadmap.md).
 
 **Do not start:** MB2-06, MB2-07, or application-wide production hardening until [FINAL-PRODUCTION-GATE-01 entry criteria](../Authoritative/POS/production-roadmap-policy.md#8-final-production-gate--entry-criteria) are satisfied.
 

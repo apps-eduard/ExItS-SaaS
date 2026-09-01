@@ -1,5 +1,7 @@
 # React Migration Roadmap
 
+> **Forward planning (post MB2-05):** RMAP packages through RMAP-24 document historical React migration on `feat/pos-react-client`. For **current** remaining work on `feat/organization`, see [remaining-feature-roadmap.md](../POS/remaining-feature-roadmap.md) and [production-roadmap-policy.md](../POS/production-roadmap-policy.md). Do not start RMAP-21 offline or RMAP-24 final gate under online-only policy until Stages A+B complete.
+
 **Status of packages:** PROPOSED / NOT STARTED (unless noted as already shipped on branch)
 **Rule:** Do not sequence by old MAUI screen order or current React nav alone.
 **Rule:** If backend contract missing → backend package before React UI that depends on the desired contract.
