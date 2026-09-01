@@ -67,6 +67,7 @@ import { PreferencesPage } from "@/features/preferences/PreferencesPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
+import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
 import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
 import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
@@ -549,6 +550,14 @@ export const appRoutes = [
                 ),
               },
               { path: "branches/:branchId/fulfillment", element: <BranchFulfillmentEditPage /> },
+              {
+                path: "branches/:branchId/setup",
+                element: (
+                  <RequireInviteStaff>
+                    <BranchGuidedSetupPage />
+                  </RequireInviteStaff>
+                ),
+              },
             ],
           },
           {

@@ -815,6 +815,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (previousBranchId && previousBranchId !== destination.branchId) {
         void queryClient.invalidateQueries({ queryKey: ["customers"] });
         void queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+        void queryClient.invalidateQueries({ queryKey: ["branch-readiness"] });
       }
 
       const hydratedDevice = await hydratePosDeviceContext({
