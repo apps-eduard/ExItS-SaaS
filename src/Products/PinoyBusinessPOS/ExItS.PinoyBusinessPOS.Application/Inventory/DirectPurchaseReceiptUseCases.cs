@@ -353,16 +353,56 @@ public sealed class CreateDirectPurchaseReceipt
                     cancellationToken)
                 .ConfigureAwait(false);
         }
+        catch (PersistenceConflictException ex)
+        {
+            var replay = await TryReplayIdempotentDirectPurchaseAsync(orgId, idempotencyKey, cancellationToken)
+                .ConfigureAwait(false);
+            if (replay is not null)
+            {
+                return replay;
+            }
+
+            return ApplicationResult<DirectPurchaseReceiptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
         catch (DomainException ex)
         {
             return ApplicationResult<DirectPurchaseReceiptDto>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (Exception ex) when (IsNumberConflict(ex))
         {
+            var replay = await TryReplayIdempotentDirectPurchaseAsync(orgId, idempotencyKey, cancellationToken)
+                .ConfigureAwait(false);
+            if (replay is not null)
+            {
+                return replay;
+            }
+
             return ApplicationResult<DirectPurchaseReceiptDto>.Failure(
                 ApplicationErrorCodes.DirectPurchaseReceiptNumberConflict,
                 "Direct purchase receipt number conflict. Retry the request.");
         }
+    }
+
+    private async Task<ApplicationResult<DirectPurchaseReceiptDto>?> TryReplayIdempotentDirectPurchaseAsync(
+        PosOrganizationId orgId,
+        string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return null;
+        }
+
+        var existing = await _receipts
+            .FindByIdempotencyKeyAsync(orgId, idempotencyKey, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        return ApplicationResult<DirectPurchaseReceiptDto>.Success(
+            DirectPurchaseReceiptMapper.Map(existing));
     }
 
     private static bool IsNumberConflict(Exception ex)
