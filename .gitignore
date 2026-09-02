@@ -58,6 +58,10 @@ Desktop.ini
 .DS_Store
 *.log
 
+# Local scratch / agent temp artifacts (never commit)
+.tmp-*
+.tmp-*/
+
 # Portfolio safety is enforced by architecture tests that reject nested foreign product trees.
 
 tools/node_modules/

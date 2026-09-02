@@ -1,2 +1,31 @@
+# Default: normalize text to LF in the repository.
+* text=auto eol=lf
+
+# Windows batch scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Existing Local Validation / Docker shell and nginx configs (LF).
 deploy/docker/platform-admin-web/*.sh text eol=lf
 deploy/docker/platform-admin-web/*.conf text eol=lf
+
+# Binary assets — never treat as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.dll binary
+*.exe binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.rdb binary
+*.rdx binary
+*.rda binary
+*.snupkg binary
+*.nupkg binary
