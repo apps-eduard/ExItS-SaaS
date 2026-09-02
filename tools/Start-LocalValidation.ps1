@@ -718,6 +718,13 @@ $platformLaunch = Start-AppWindow `
 $windowPids += $platformLaunch.WindowProcessId
 try {
     $seedBaseUrl = $loopbackPlatformApiUrl
+    # Capture the helper as a variable before GetNewClosure(). Closure modules do not
+    # reliably resolve script-scoped functions from Start-LocalValidation.ps1, which
+    # previously surfaced as: Test-LocalValidationSeedIdentitiesReady is not recognized.
+    $seedIdentitiesProbe = ${function:Test-LocalValidationSeedIdentitiesReady}
+    if ($null -eq $seedIdentitiesProbe) {
+        throw 'Local Validation stack is missing Test-LocalValidationSeedIdentitiesReady (expected in LocalValidation.stack.ps1).'
+    }
     $platformReady = Wait-LocalServiceReady `
         -ServiceName 'Platform API' `
         -HealthUri "$loopbackPlatformApiUrl/health" `
@@ -725,7 +732,7 @@ try {
         -WindowProcessId $platformLaunch.WindowProcessId `
         -ExitMarkerPath $platformLaunch.ExitMarkerPath `
         -OptionalDependencyName 'local-validation seed-identities' `
-        -OptionalDependencyProbe ({ Test-LocalValidationSeedIdentitiesReady -PlatformApiBaseUrl $seedBaseUrl }.GetNewClosure())
+        -OptionalDependencyProbe ({ & $seedIdentitiesProbe -PlatformApiBaseUrl $seedBaseUrl }.GetNewClosure())
     $timing.PlatformReadySeconds = $platformReady.ReadyInSeconds
     Write-Ok ("Platform API health READY ({0}s)" -f $platformReady.ReadyInSeconds)
     Write-Ok 'Platform local-validation seed-identities READY'

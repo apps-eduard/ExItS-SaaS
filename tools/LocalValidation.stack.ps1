@@ -979,24 +979,33 @@ function Test-LocalValidationHttpReady {
 function Test-LocalValidationSeedIdentitiesReady {
     <#
     .SYNOPSIS
-      Proves Platform GET /api/v1/platform/local-validation/seed-identities returns a non-empty JSON array.
-      Matches POS PosLocalValidationHostedService bootstrap dependency (anonymous GET).
+      Platform local-validation seed-identities readiness probe (anonymous GET).
+      Ready when HTTP 200 and the body is a non-empty JSON array (Olivia/Rafael after seed).
+      Used by Start-LocalValidation before POS is launched.
     #>
     param(
         [Parameter(Mandatory)][string]$PlatformApiBaseUrl,
         [int]$TimeoutSec = 5
     )
-    $base = $PlatformApiBaseUrl.TrimEnd('/')
+    $base = [string]$PlatformApiBaseUrl
+    $base = $base.TrimEnd('/')
+    if ([string]::IsNullOrWhiteSpace($base)) {
+        return $false
+    }
     $uri = "$base/api/v1/platform/local-validation/seed-identities"
     try {
         $resp = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec $TimeoutSec
-        if ([int]$resp.StatusCode -ne 200) { return $false }
+        if ([int]$resp.StatusCode -ne 200) {
+            return $false
+        }
+        # Endpoint returns a JSON array (not { items: [...] }). Avoid .items under StrictMode.
         $payload = $resp.Content | ConvertFrom-Json
-        if ($null -eq $payload) { return $false }
+        if ($null -eq $payload) {
+            return $false
+        }
         if ($payload -is [System.Array]) {
             return (@($payload).Count -gt 0)
         }
-        # Some serializers wrap lists; accept any non-empty object with Count/Length.
         if ($payload.PSObject.Properties.Name -contains 'Count') {
             return ([int]$payload.Count -gt 0)
         }
