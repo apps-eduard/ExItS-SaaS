@@ -1332,8 +1332,16 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.addOpeningStock": "Add opening stock",
   "inventory.addOpeningStockHint":
     "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
-  "inventory.unitPurchaseCost": "Unit purchase cost",
-  "inventory.stockValue": "Stock value",
+  "inventory.unitPurchaseCost": "Presyo sa pagpalit kada unit",
+  "inventory.stockValue": "Bilihon sa stock",
+  "inventory.currentSellingPrice": "Karon nga selling price",
+  "inventory.sellingPriceBranch": "Presyo sa branch",
+  "inventory.sellingPriceOrganization": "Presyo sa organisasyon",
+  "inventory.purchaseCostZeroMargin": "Walay gross margin sa karon nga selling price.",
+  "inventory.purchaseCostHigherThanSelling":
+    "Mas taas ang purchase cost kay sa karon nga selling price.",
+  "inventory.purchaseCostHigherBy": "Mas taas og {amount} ang purchase cost kay sa karon nga selling price.",
+  "inventory.reviewSellingPrice": "Tan-awa ang selling price",
   "inventory.reason": "Rason",
   "inventory.reasonRequired": "Kinahanglan og rason para sa stock adjustments.",
   "inventory.search": "Pangita sa inventory",

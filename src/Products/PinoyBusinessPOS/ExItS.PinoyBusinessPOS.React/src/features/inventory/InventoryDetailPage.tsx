@@ -15,6 +15,7 @@ import {
   listProductLots,
   type PosInventoryLotDto,
 } from "@/api/pos/pos-inventory-client";
+import { getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +30,10 @@ import {
   sortLotsByExpiry,
 } from "@/features/inventory/inventory-detail-helpers";
 import { computeOpeningStockValue } from "@/features/catalog/opening-stock-helpers";
+import {
+  comparePurchaseCostToSellingPrice,
+  resolveEffectiveSellingPriceView,
+} from "@/features/inventory/inventory-opening-price-feedback";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
@@ -42,6 +47,7 @@ import {
   resolveMovementStockValue,
 } from "@/features/purchasing/purchase-cost-display";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -102,6 +108,22 @@ export function InventoryDetailPage() {
     queryKey: ["inventory", "product", workspace?.organizationId, workspace?.branchId, productId],
     enabled: Boolean(workspace) && Boolean(productId),
     queryFn: ({ signal }) => getInventoryProduct(workspace!, productId!, signal),
+  });
+
+  const catalogPriceQuery = useQuery({
+    queryKey: [
+      "catalog",
+      "product",
+      "effective-price",
+      workspace?.organizationId,
+      workspace?.branchId,
+      productId,
+    ],
+    enabled:
+      Boolean(workspace) &&
+      Boolean(productId) &&
+      accountQuery.data?.isTracked === false,
+    queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
 
   const orgSummaryQuery = useQuery({
@@ -371,6 +393,13 @@ export function InventoryDetailPage() {
     Number(openingQty),
     Number(openingUnitCost),
   );
+  const effectiveSelling = catalogPriceQuery.data
+    ? resolveEffectiveSellingPriceView(catalogPriceQuery.data)
+    : null;
+  const purchaseCostFeedback = comparePurchaseCostToSellingPrice(
+    openingUnitCost,
+    effectiveSelling?.amount,
+  );
   const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
   const lotTotal = lots.reduce((sum, lot) => sum + (lot.quantityOnHand ?? 0), 0);
   const needsExpirationSetup =
@@ -628,7 +657,7 @@ export function InventoryDetailPage() {
 
       {!account.isTracked ? (
         allowManageInventory ? (
-        <Card className="flex flex-col gap-3 p-3">
+        <Card className="flex flex-col gap-3 p-3" data-testid="inventory-enable-tracking">
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.enableTracking")}
           </h2>
@@ -642,6 +671,35 @@ export function InventoryDetailPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.openingHint")}
           </p>
+          {effectiveSelling ? (
+            <div
+              className="flex flex-col gap-0.5"
+              data-testid="inventory-current-selling-price"
+            >
+              <span className="text-[length:var(--exits-text-sm)] font-semibold">
+                {t("inventory.currentSellingPrice")}
+              </span>
+              <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
+                {formatPeso(effectiveSelling.amount)} / {account.unitOfMeasure}
+              </p>
+              <span
+                className="text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="inventory-selling-price-source"
+              >
+                {effectiveSelling.source === "branch"
+                  ? t("inventory.sellingPriceBranch")
+                  : t("inventory.sellingPriceOrganization")}
+              </span>
+              <Button asChild type="button" variant="ghost" className="mt-1 min-h-11 w-fit px-0">
+                <Link
+                  to={`/catalog/products/${account.productId}/edit`}
+                  data-testid="inventory-review-selling-price"
+                >
+                  {t("inventory.reviewSellingPrice")}
+                </Link>
+              </Button>
+            </div>
+          ) : null}
           {Number(openingQty) > 0 ? (
             <>
               <Input
@@ -655,8 +713,32 @@ export function InventoryDetailPage() {
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("openingStock.unitCostHelper")}
               </p>
+              {purchaseCostFeedback.kind === "zeroMargin" ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="inventory-purchase-cost-zero-margin"
+                >
+                  {t("inventory.purchaseCostZeroMargin")}
+                </p>
+              ) : null}
+              {purchaseCostFeedback.kind === "higherCost" ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,#b45309)]"
+                  role="status"
+                  data-testid="inventory-purchase-cost-high-warning"
+                >
+                  {t("inventory.purchaseCostHigherThanSelling")}{" "}
+                  {t("inventory.purchaseCostHigherBy").replace(
+                    "{amount}",
+                    formatPeso(purchaseCostFeedback.difference),
+                  )}
+                </p>
+              ) : null}
               {openingStockValue !== null ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                  data-testid="inventory-enable-stock-value"
+                >
                   {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
                 </p>
               ) : null}

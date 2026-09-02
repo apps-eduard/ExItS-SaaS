@@ -1332,8 +1332,16 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.addOpeningStock": "Add opening stock",
   "inventory.addOpeningStockHint":
     "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
-  "inventory.unitPurchaseCost": "Unit purchase cost",
-  "inventory.stockValue": "Stock value",
+  "inventory.unitPurchaseCost": "Presyo sang pagbakal kada unit",
+  "inventory.stockValue": "Bilihon sang stock",
+  "inventory.currentSellingPrice": "Karon nga selling price",
+  "inventory.sellingPriceBranch": "Presyo sang branch",
+  "inventory.sellingPriceOrganization": "Presyo sang organisasyon",
+  "inventory.purchaseCostZeroMargin": "Wala sing gross margin sa karon nga selling price.",
+  "inventory.purchaseCostHigherThanSelling":
+    "Mas mataas ang purchase cost sangsa karon nga selling price.",
+  "inventory.purchaseCostHigherBy": "Mas mataas sang {amount} ang purchase cost sangsa karon nga selling price.",
+  "inventory.reviewSellingPrice": "Tan-awon ang selling price",
   "inventory.reason": "Rason",
   "inventory.reasonRequired": "Kinahanglan sang rason para sa stock adjustments.",
   "inventory.search": "Pangita sa inventory",

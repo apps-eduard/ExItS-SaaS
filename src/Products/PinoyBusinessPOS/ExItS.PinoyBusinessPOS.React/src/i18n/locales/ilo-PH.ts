@@ -1332,8 +1332,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.addOpeningStock": "Add opening stock",
   "inventory.addOpeningStockHint":
     "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
-  "inventory.unitPurchaseCost": "Unit purchase cost",
-  "inventory.stockValue": "Stock value",
+  "inventory.unitPurchaseCost": "Presyo ti gumatang kada unit",
+  "inventory.stockValue": "Pateg ti stock",
+  "inventory.currentSellingPrice": "Agdama a selling price",
+  "inventory.sellingPriceBranch": "Presyo ti branch",
+  "inventory.sellingPriceOrganization": "Presyo ti organisasion",
+  "inventory.purchaseCostZeroMargin": "Awan ti gross margin iti agdama a selling price.",
+  "inventory.purchaseCostHigherThanSelling":
+    "Nangatngato ti purchase cost ngem ti agdama a selling price.",
+  "inventory.purchaseCostHigherBy": "Nangatngato ti purchase cost iti {amount} ngem ti agdama a selling price.",
+  "inventory.reviewSellingPrice": "Kitaen ti selling price",
   "inventory.reason": "Rason",
   "inventory.reasonRequired": "Masapul ti rason para iti stock adjustments.",
   "inventory.search": "Pangita iti inventory",
