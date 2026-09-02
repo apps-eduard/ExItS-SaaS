@@ -16,6 +16,21 @@ const actorA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: workspace,
+    workspaces: [
+      {
+        organizationId: workspace.organizationId,
+        displayName: "mica store",
+        branches: [
+          {
+            branchId: workspace.branchId,
+            name: "Kalibo Branch",
+            secondaryLine: "",
+            isPrimary: true,
+            isActive: true,
+          },
+        ],
+      },
+    ],
     sessionGrant: {
       productAccessAllowed: true,
       mappedPosRoleCode: "Owner",

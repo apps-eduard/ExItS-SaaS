@@ -17,6 +17,21 @@ const workspace = {
 
 const workspaceState = {
   boundWorkspace: { ...workspace },
+  workspaces: [
+    {
+      organizationId: workspace.organizationId,
+      displayName: "mica store",
+      branches: [
+        {
+          branchId: workspace.branchId,
+          name: "Kalibo Branch",
+          secondaryLine: "",
+          isPrimary: true,
+          isActive: true,
+        },
+      ],
+    },
+  ],
   sessionGrant: {
     productAccessAllowed: true,
     mappedPosRoleCode: "Owner",

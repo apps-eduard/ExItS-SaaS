@@ -8,9 +8,15 @@ import * as inventoryClient from "@/api/pos/pos-inventory-client";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 
 const productId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const workspace = {
+const workspaceScope = {
   organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+};
+
+const workspace = {
+  ...workspaceScope,
+  branchName: "Kalibo Branch",
+  organizationDisplayName: "mica store",
 };
 
 function baseAccount(extra: Record<string, unknown> = {}) {
@@ -57,6 +63,28 @@ const lotB = {
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
     boundWorkspace: workspace,
+    workspaces: [
+      {
+        organizationId: workspace.organizationId,
+        displayName: "mica store",
+        branches: [
+          {
+            branchId: workspace.branchId,
+            name: "Kalibo Branch",
+            secondaryLine: "",
+            isPrimary: true,
+            isActive: true,
+          },
+          {
+            branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+            name: "Iloilo Branch",
+            secondaryLine: "",
+            isPrimary: false,
+            isActive: true,
+          },
+        ],
+      },
+    ],
     sessionGrant: {
       productAccessAllowed: true,
       mappedPosRoleCode: "Owner",
@@ -93,6 +121,14 @@ function renderPage() {
       </MemoryRouter>
     </AppProviders>,
   );
+}
+
+async function expandStatusDetails() {
+  const toggle = await screen.findByTestId("inventory-status-toggle");
+  if (toggle.getAttribute("aria-expanded") !== "true") {
+    await userEvent.click(toggle);
+  }
+  await screen.findByTestId("inventory-status-details");
 }
 
 describe("InventoryDetailPage expiration UX", () => {
@@ -168,11 +204,19 @@ describe("InventoryDetailPage expiration UX", () => {
 
   it("shows organization inventory aggregate and branch breakdown", async () => {
     renderPage();
+    await expandStatusDetails();
     await screen.findByTestId("inventory-organization-summary");
     expect(screen.getByTestId("inventory-org-on-hand")).toHaveTextContent("85");
     expect(screen.getByTestId("inventory-org-reserved")).toHaveTextContent("4");
     expect(screen.getByTestId("inventory-org-available")).toHaveTextContent("81");
     expect(screen.getByTestId("inventory-branch-breakdown")).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`inventory-branch-row-${workspace.branchId}`),
+    ).toHaveTextContent("Kalibo Branch");
+    expect(
+      screen.getByTestId("inventory-branch-row-cccccccc-cccc-cccc-cccc-cccccccccccc"),
+    ).toHaveTextContent("Iloilo Branch");
+    expect(screen.queryByText(/bbbbbbbb/i)).not.toBeInTheDocument();
   });
 
   it("shows expiry-required increase form and summary when tracking is on", async () => {
@@ -246,7 +290,7 @@ describe("InventoryDetailPage expiration UX", () => {
 
     await waitFor(() =>
       expect(inventoryClient.adjustInventoryStock).toHaveBeenCalledWith(
-        workspace,
+        workspaceScope,
         productId,
         expect.objectContaining({
           direction: "In",
@@ -280,7 +324,7 @@ describe("InventoryDetailPage expiration UX", () => {
 
     await waitFor(() =>
       expect(inventoryClient.adjustInventoryStock).toHaveBeenCalledWith(
-        workspace,
+        workspaceScope,
         productId,
         expect.objectContaining({
           direction: "Out",
@@ -325,6 +369,7 @@ describe("InventoryDetailPage expiration UX", () => {
     renderPage();
     const manage = await screen.findByTestId("inventory-manage-expiration");
     expect(manage).toHaveAttribute("href", `/inventory/${productId}/expiration?focus=warning`);
+    await expandStatusDetails();
     expect(screen.getByTestId("inventory-expiration-status")).toHaveTextContent(
       /Expiration tracking ON · 7-day warning/i,
     );
@@ -342,6 +387,7 @@ describe("InventoryDetailPage expiration UX", () => {
       pageSize: 50,
     });
     renderPage();
+    await expandStatusDetails();
     await screen.findByTestId("inventory-expiration-setup-required");
     expect(screen.getByTestId("inventory-expiration-setup-assign")).toHaveAttribute(
       "href",

@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -23,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { cn } from "@/lib/cn";
 import {
   canAddOpeningStock,
   canDisableExpirationTracking,
@@ -34,6 +36,10 @@ import {
   comparePurchaseCostToSellingPrice,
   resolveEffectiveSellingPriceView,
 } from "@/features/inventory/inventory-opening-price-feedback";
+import {
+  buildBranchNameById,
+  resolveInventoryBranchDisplayName,
+} from "@/features/inventory/inventory-branch-labels";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
@@ -78,7 +84,7 @@ export function InventoryDetailPage() {
   const { t } = useI18n();
   const { productId } = useParams();
   const queryClient = useQueryClient();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const allowManageInventory = canManageInventory(sessionGrant);
   const [openingQty, setOpeningQty] = useState("0");
   const [openingUnitCost, setOpeningUnitCost] = useState("");
@@ -94,7 +100,9 @@ export function InventoryDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
+  const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
   const movementIdRef = useRef<string | null>(null);
+  const statusDetailsId = useId();
 
   const workspace = useMemo(
     () =>
@@ -135,6 +143,11 @@ export function InventoryDetailPage() {
   const tracksExpiration = accountQuery.data?.tracksExpiration === true;
 
   const branchLabel = boundWorkspace?.branchName ?? t("transfer.currentBranch");
+
+  const branchNameById = useMemo(() => {
+    const org = workspaces.find((w) => w.organizationId === workspace?.organizationId);
+    return buildBranchNameById(org?.branches ?? []);
+  }, [workspaces, workspace?.organizationId]);
 
   const movementsQuery = useQuery({
     queryKey: ["inventory", "movements", workspace?.organizationId, workspace?.branchId, productId],
@@ -496,162 +509,205 @@ export function InventoryDetailPage() {
 
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
 
-      <Card className="p-3" data-testid="inventory-status">
+      <Card className="overflow-hidden p-0" data-testid="inventory-status">
         {account.isTracked ? (
           <>
-            <p className="m-0 font-semibold" data-testid="inventory-on-hand">
-              {t("inventory.onHandAtBranch")
-                .replace("{branch}", branchLabel)
-                .replace("{qty}", String(account.onHandQuantity))
-                .replace("{uom}", account.unitOfMeasure)}
-            </p>
-            {orgSummaryQuery.data ? (
-              <div
-                className="mt-3 flex flex-col gap-2 border-t border-border pt-3"
-                data-testid="inventory-organization-summary"
-              >
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("inventory.organizationInventory")}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-on-hand">
-                  {t("inventory.organizationOnHand")
-                    .replace("{qty}", String(orgSummaryQuery.data.organizationOnHandQuantity))
-                    .replace("{uom}", account.unitOfMeasure)}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-reserved">
-                  {t("inventory.organizationReserved").replace(
-                    "{qty}",
-                    String(orgSummaryQuery.data.organizationReservedQuantity),
-                  )}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-available">
-                  {t("inventory.organizationAvailable").replace(
-                    "{qty}",
-                    String(orgSummaryQuery.data.organizationAvailableQuantity),
-                  )}
-                </p>
-                {orgSummaryQuery.data.branches.length > 0 ? (
-                  <div className="flex flex-col gap-1" data-testid="inventory-branch-breakdown">
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                      {t("inventory.branchBreakdown")}
-                    </p>
-                    {orgSummaryQuery.data.branches.map((row) => (
-                      <p
-                        key={row.branchId}
-                        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                        data-testid={`inventory-branch-row-${row.branchId}`}
-                      >
-                        {t("inventory.branchBreakdownRow")
-                          .replace(
-                            "{branch}",
-                            row.branchId === workspace?.branchId ? branchLabel : row.branchId.slice(0, 8),
-                          )
-                          .replace("{onHand}", String(row.onHandQuantity))
-                          .replace("{reserved}", String(row.reservedQuantity))
-                          .replace("{available}", String(row.availableQuantity))}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-            <p
-              className="mt-2 mb-0 text-[length:var(--exits-text-sm)] font-semibold"
-              data-testid="inventory-expiration-status"
+            <button
+              type="button"
+              className="flex w-full min-h-12 items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              aria-expanded={statusDetailsOpen}
+              aria-controls={statusDetailsId}
+              onClick={() => setStatusDetailsOpen((open) => !open)}
+              data-testid="inventory-status-toggle"
             >
-              {tracksExpiration
-                ? t("inventory.expirationTrackingOnWithWarning").replace(
-                    "{days}",
-                    String(account.expirationWarningDays ?? 7),
-                  )
-                : t("inventory.expirationTrackingOff")}
-            </p>
-            {needsExpirationSetup ? (
+              <span className="min-w-0 font-semibold leading-snug" data-testid="inventory-on-hand">
+                {t("inventory.onHandAtBranch")
+                  .replace("{branch}", branchLabel)
+                  .replace("{qty}", String(account.onHandQuantity))
+                  .replace("{uom}", account.unitOfMeasure)}
+              </span>
+              <ChevronDown
+                aria-hidden
+                className={cn(
+                  "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                  statusDetailsOpen && "rotate-180",
+                )}
+              />
+            </button>
+
+            {statusDetailsOpen ? (
               <div
-                className="mt-3 flex flex-col gap-2"
-                data-testid="inventory-expiration-setup-required"
+                id={statusDetailsId}
+                className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-3"
+                data-testid="inventory-status-details"
               >
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("inventory.expirationSetupRequired")}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.expirationSetupRequiredDetail")}
-                </p>
-                {allowManageInventory ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild type="button" className="min-h-11">
-                      <Link
-                        to={expirationSettingsPath(productId!, "assign")}
-                        data-testid="inventory-expiration-setup-assign"
-                      >
-                        {t("inventory.assignExpirationDates")}
-                      </Link>
-                    </Button>
-                    <Button asChild type="button" variant="outline" className="min-h-11">
-                      <Link
-                        to={expirationSettingsPath(productId!, "warning")}
-                        data-testid="inventory-manage-expiration"
-                      >
-                        {t("inventory.manageExpirationSettings")}
-                      </Link>
-                    </Button>
+                {orgSummaryQuery.data ? (
+                  <div
+                    className="flex flex-col gap-2"
+                    data-testid="inventory-organization-summary"
+                  >
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("inventory.organizationInventory")}
+                    </p>
+                    <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-on-hand">
+                      {t("inventory.organizationOnHand")
+                        .replace("{qty}", String(orgSummaryQuery.data.organizationOnHandQuantity))
+                        .replace("{uom}", account.unitOfMeasure)}
+                    </p>
+                    <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-reserved">
+                      {t("inventory.organizationReserved").replace(
+                        "{qty}",
+                        String(orgSummaryQuery.data.organizationReservedQuantity),
+                      )}
+                    </p>
+                    <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-available">
+                      {t("inventory.organizationAvailable").replace(
+                        "{qty}",
+                        String(orgSummaryQuery.data.organizationAvailableQuantity),
+                      )}
+                    </p>
+                    {orgSummaryQuery.data.branches.length > 0 ? (
+                      <div className="flex flex-col gap-2" data-testid="inventory-branch-breakdown">
+                        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.branchBreakdown")}
+                        </p>
+                        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                          {orgSummaryQuery.data.branches.map((row) => {
+                            const name = resolveInventoryBranchDisplayName({
+                              branchId: row.branchId,
+                              branchNameById,
+                              currentBranchId: workspace?.branchId,
+                              currentBranchName: boundWorkspace?.branchName,
+                              unknownLabel: t("inventory.branchNameUnknown"),
+                            });
+                            const isCurrent =
+                              Boolean(workspace?.branchId) &&
+                              row.branchId.toLowerCase() === workspace!.branchId.toLowerCase();
+                            return (
+                              <li
+                                key={row.branchId}
+                                className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2.5"
+                                data-testid={`inventory-branch-row-${row.branchId}`}
+                              >
+                                <p className="m-0 font-medium leading-snug text-foreground">
+                                  {name}
+                                  {isCurrent ? (
+                                    <span className="ml-1.5 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                                      ({t("inventory.thisBranch")})
+                                    </span>
+                                  ) : null}
+                                </p>
+                                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                                  {t("inventory.branchBreakdownMetrics")
+                                    .replace("{onHand}", String(row.onHandQuantity))
+                                    .replace("{reserved}", String(row.reservedQuantity))
+                                    .replace("{available}", String(row.availableQuantity))}
+                                </p>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
-              </div>
-            ) : tracksExpiration ? (
-              allowManageInventory ? (
-                <div className="mt-3">
-                  <Button asChild type="button" variant="outline" className="min-h-11">
-                    <Link
-                      to={expirationSettingsPath(productId!, "warning")}
-                      data-testid="inventory-manage-expiration"
-                    >
-                      {t("inventory.manageExpirationSettings")}
-                    </Link>
-                  </Button>
-                </div>
-              ) : null
-            ) : allowManageInventory ? (
-              <div className="mt-3">
-                <Button asChild type="button" className="min-h-11">
-                  <Link
-                    to={expirationSettingsPath(productId!)}
-                    data-testid="inventory-enable-expiration"
+
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                  data-testid="inventory-expiration-status"
+                >
+                  {tracksExpiration
+                    ? t("inventory.expirationTrackingOnWithWarning").replace(
+                        "{days}",
+                        String(account.expirationWarningDays ?? 7),
+                      )
+                    : t("inventory.expirationTrackingOff")}
+                </p>
+
+                {needsExpirationSetup ? (
+                  <div
+                    className="flex flex-col gap-2"
+                    data-testid="inventory-expiration-setup-required"
                   >
-                    {t("inventory.enableExpirationTracking")}
-                  </Link>
-                </Button>
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("inventory.expirationSetupRequired")}
+                    </p>
+                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("inventory.expirationSetupRequiredDetail")}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </>
         ) : (
-          <>
+          <div className="flex flex-col gap-2 p-3">
             <p className="m-0 font-semibold">{t("inventory.notTracked")}</p>
-            <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("inventory.untrackedHint")}
             </p>
-          </>
+          </div>
         )}
       </Card>
 
       {account.isTracked && allowManageInventory ? (
-        <div className="flex flex-wrap gap-2">
-          <Button asChild type="button" variant="outline" className="min-h-11">
-            <Link
-              to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
-              data-testid="inventory-record-stock-use"
-            >
-              {t("inventory.recordStockUse")}
-            </Link>
-          </Button>
-          <Button asChild type="button" variant="outline" className="min-h-11">
-            <Link
-              to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
-              data-testid="inventory-record-waste-loss"
-            >
-              {t("inventory.recordWasteLoss")}
-            </Link>
-          </Button>
+        <div className="flex flex-col gap-2" data-testid="inventory-quick-actions">
+          {needsExpirationSetup ? (
+            <>
+              <Button asChild type="button" className="min-h-12 w-full">
+                <Link
+                  to={expirationSettingsPath(productId!, "assign")}
+                  data-testid="inventory-expiration-setup-assign"
+                >
+                  {t("inventory.assignExpirationDates")}
+                </Link>
+              </Button>
+              <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+                <Link
+                  to={expirationSettingsPath(productId!, "warning")}
+                  data-testid="inventory-manage-expiration"
+                >
+                  {t("inventory.manageExpirationSettings")}
+                </Link>
+              </Button>
+            </>
+          ) : tracksExpiration ? (
+            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+              <Link
+                to={expirationSettingsPath(productId!, "warning")}
+                data-testid="inventory-manage-expiration"
+              >
+                {t("inventory.manageExpirationSettings")}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild type="button" className="min-h-12 w-full">
+              <Link
+                to={expirationSettingsPath(productId!)}
+                data-testid="inventory-enable-expiration"
+              >
+                {t("inventory.enableExpirationTracking")}
+              </Link>
+            </Button>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+              <Link
+                to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
+                data-testid="inventory-record-stock-use"
+              >
+                {t("inventory.recordStockUse")}
+              </Link>
+            </Button>
+            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+              <Link
+                to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
+                data-testid="inventory-record-waste-loss"
+              >
+                {t("inventory.recordWasteLoss")}
+              </Link>
+            </Button>
+          </div>
         </div>
       ) : null}
 
