@@ -96,6 +96,21 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<PlatformUser>> ListStaffLinkedToPersonalUserAsync(
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.PlatformUsers.AsNoTracking()
+            .Where(u =>
+                u.LinkedPersonalUserId == linkedPersonalUserId.Value
+                && u.HomeOrganizationId != null)
+            .OrderBy(u => u.DisplayName)
+            .ThenBy(u => u.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
         string normalizedContactEmail,
         CancellationToken cancellationToken = default)

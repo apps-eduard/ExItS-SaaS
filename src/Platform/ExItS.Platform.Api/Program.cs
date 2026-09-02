@@ -413,6 +413,7 @@ builder.Services.AddScoped<CreateOrganizationInvitationForPersonal>();
 builder.Services.AddScoped<ResolveStaffInviteTarget>();
 builder.Services.AddScoped<DeclineOrganizationInvitationForPersonal>();
 builder.Services.AddScoped<ListPendingOrganizationInvitationsForPersonalUser>();
+builder.Services.AddScoped<ListPersonalWorkplaces>();
 builder.Services.AddScoped<ResendOrganizationInvitation>();
 builder.Services.AddScoped<RevokeOrganizationInvitation>();
 builder.Services.AddScoped<AcceptOrganizationInvitation>();

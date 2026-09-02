@@ -80,7 +80,10 @@ export function SignInPage() {
       rememberStoreAcquisitionIntent(publicId);
     }
   }, [searchParams]);
-  const [usernameOrEmail, setUsernameOrEmail] = useState(() => readRememberedUsername());
+  const [usernameOrEmail, setUsernameOrEmail] = useState(() => {
+    const hint = (location.state as { staffLoginHint?: string } | null)?.staffLoginHint?.trim();
+    return hint && hint.length > 0 ? hint : readRememberedUsername();
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => readRememberMePreference());

@@ -90,6 +90,20 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         return Task.FromResult(match);
     }
 
+    public Task<IReadOnlyList<PlatformUser>> ListStaffLinkedToPersonalUserAsync(
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<PlatformUser> matches = _byId.Values
+            .Where(u =>
+                u.HomeOrganizationId is not null
+                && u.LinkedPersonalUserId == linkedPersonalUserId)
+            .OrderBy(u => u.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(u => u.Id.Value)
+            .ToList();
+        return Task.FromResult(matches);
+    }
+
     public Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
         string normalizedContactEmail,
         CancellationToken cancellationToken = default)

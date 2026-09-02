@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   ArrowRight,
   Bell,
+  BriefcaseBusiness,
   Building2,
   CircleAlert,
   Compass,
@@ -500,6 +501,13 @@ export function PersonalMorePage() {
               icon: ArrowLeftRight,
               testId: "more-open-ownership-transfers",
               to: "/personal/ownership-transfers",
+            },
+            {
+              key: "workplaces",
+              label: t("personal.workplaces.moreTile"),
+              icon: BriefcaseBusiness,
+              testId: "more-open-workplaces",
+              to: "/personal/workplaces",
             },
           ]}
         />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
@@ -15,19 +16,25 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { PERSONAL_WORKPLACES_QUERY_KEY } from "@/features/personal/workplaces/PersonalWorkplacesPage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
+import { useSession } from "@/session/SessionProvider";
 
 export const PERSONAL_STAFF_INVITATIONS_QUERY_KEY = ["personal", "staff-invitations", "pending"] as const;
 
 export function PersonalStaffInvitationsPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { session, signOut } = useSession();
   const [password, setPassword] = useState("");
   const [acceptForId, setAcceptForId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<AcceptInvitationResultWire | null>(null);
+  const [success, setSuccess] = useState<(AcceptInvitationResultWire & { productRoleDisplay?: string | null }) | null>(
+    null,
+  );
 
   const pendingQuery = useQuery({
     queryKey: PERSONAL_STAFF_INVITATIONS_QUERY_KEY,
@@ -55,10 +62,16 @@ export function PersonalStaffInvitationsPage() {
       setActionError(result.body?.detail ?? t("staffInvite.personalAcceptFailed"));
       return;
     }
-    setSuccess(result.result);
+    setSuccess({
+      ...result.result,
+      productRoleDisplay: invitation.productRoleDisplay ?? invitation.productRole ?? null,
+    });
     setAcceptForId(null);
     setPassword("");
-    await queryClient.invalidateQueries({ queryKey: PERSONAL_STAFF_INVITATIONS_QUERY_KEY });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: PERSONAL_STAFF_INVITATIONS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: PERSONAL_WORKPLACES_QUERY_KEY }),
+    ]);
   }
 
   async function onDecline(invitationId: string) {
@@ -76,6 +89,14 @@ export function PersonalStaffInvitationsPage() {
     await queryClient.invalidateQueries({ queryKey: PERSONAL_STAFF_INVITATIONS_QUERY_KEY });
   }
 
+  async function openWorkplace(staffLogin: string) {
+    await signOut();
+    navigate("/sign-in", {
+      replace: true,
+      state: { staffLoginHint: staffLogin },
+    });
+  }
+
   if (success) {
     return (
       <div
@@ -87,14 +108,44 @@ export function PersonalStaffInvitationsPage() {
           backTo={personalPageBackNav.more.to}
           backLabel={t(personalPageBackNav.more.labelKey)}
         />
-        <p className="m-0">
-          {t("staffInvite.personalAcceptedDetail")
-            .replace("{org}", success.organizationDisplayName)
-            .replace("{login}", success.staffLogin)}
+        <p className="m-0 font-semibold">
+          {t("personal.workplaces.acceptedLede").replace("{org}", success.organizationDisplayName)}
         </p>
+        <div className="catalog-form-section flex flex-col gap-2">
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("personal.workplaces.workLogin")}
+          </p>
+          <p className="m-0 font-semibold" data-testid="personal-staff-accepted-login">
+            {success.staffLogin}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)]">
+            {t("personal.workplaces.role")}:{" "}
+            {success.productRoleDisplay?.trim() || t("personal.workplaces.roleUnknown")}
+          </p>
+          {session?.email ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("personal.workplaces.personalAccount")}: {session.email}
+            </p>
+          ) : null}
+        </div>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("staffInvite.personalPrivacyNote")}
         </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            className="min-h-11 w-full"
+            data-testid="personal-staff-accepted-open"
+            onClick={() => void openWorkplace(success.staffLogin)}
+          >
+            {t("personal.workplaces.openNamed").replace("{org}", success.organizationDisplayName)}
+          </Button>
+          <Button asChild type="button" variant="outline" className="min-h-11 w-full">
+            <Link to="/personal/workplaces" data-testid="personal-staff-accepted-workplaces">
+              {t("personal.workplaces.viewMine")}
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }

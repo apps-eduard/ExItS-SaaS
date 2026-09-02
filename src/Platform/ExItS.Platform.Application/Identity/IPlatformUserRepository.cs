@@ -36,6 +36,13 @@ public interface IPlatformUserRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Organization-scoped staff identities linked to the given Personal user (any account status).
+    /// </summary>
+    Task<IReadOnlyList<PlatformUser>> ListStaffLinkedToPersonalUserAsync(
+        PlatformUserId linkedPersonalUserId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Users whose NormalizedContactEmail matches (staff identities). Contact email is not unique.
     /// </summary>
     Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
