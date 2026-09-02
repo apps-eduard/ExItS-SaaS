@@ -35,6 +35,25 @@ export function resolveCatalogDisplayPrice(
   return product.sellingPrice;
 }
 
+export type CatalogPriceOrigin = "branchOverride" | "organizationDefault" | null;
+
+/** Secondary list label for OrganizationStandard products in a branch workspace. */
+export function resolveCatalogPriceOrigin(
+  product: Pick<PosCatalogProductDto, "scope" | "hasBranchPriceOverride">,
+  branchWorkspace: boolean,
+): CatalogPriceOrigin {
+  if (!branchWorkspace) {
+    return null;
+  }
+  if (!isOrganizationStandardProduct({ scope: product.scope ?? undefined })) {
+    return null;
+  }
+  if (product.hasBranchPriceOverride) {
+    return "branchOverride";
+  }
+  return "organizationDefault";
+}
+
 export function orgDefaultPriceChanged(
   initialPrice: number | null | undefined,
   nextPriceRaw: string,

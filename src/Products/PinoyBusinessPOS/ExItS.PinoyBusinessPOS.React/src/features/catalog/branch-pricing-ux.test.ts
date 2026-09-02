@@ -4,6 +4,7 @@ import {
   orgDefaultPriceChanged,
   resolveBranchPriceMode,
   resolveCatalogDisplayPrice,
+  resolveCatalogPriceOrigin,
   resolvePriceEditScope,
   shouldUseBranchOverrideApi,
 } from "@/features/catalog/branch-pricing-ux";
@@ -72,6 +73,30 @@ describe("branch-pricing-ux helpers", () => {
   it("BRPRICE-UX-02 routes branch workspace saves through override API", () => {
     expect(shouldUseBranchOverrideApi("branch")).toBe(true);
     expect(shouldUseBranchOverrideApi("organization")).toBe(false);
+  });
+
+  it("CATPRICE-04 resolves branch override origin label", () => {
+    expect(
+      resolveCatalogPriceOrigin(
+        { scope: "OrganizationStandard", hasBranchPriceOverride: true },
+        true,
+      ),
+    ).toBe("branchOverride");
+  });
+
+  it("CATPRICE-05 resolves organization default origin label", () => {
+    expect(
+      resolveCatalogPriceOrigin(
+        { scope: "OrganizationStandard", hasBranchPriceOverride: false },
+        true,
+      ),
+    ).toBe("organizationDefault");
+  });
+
+  it("CATPRICE-06 omits origin label for BranchLocal products", () => {
+    expect(
+      resolveCatalogPriceOrigin({ scope: "BranchLocal", hasBranchPriceOverride: false }, true),
+    ).toBe(null);
   });
 });
 

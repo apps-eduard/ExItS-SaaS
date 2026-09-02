@@ -463,6 +463,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "catalog.branchPricing.removed": "Branch price override removed.",
   "catalog.branchPricing.branchRequired": "Select a branch workspace to manage branch pricing.",
   "catalog.branchPricing.hasOverride": "Override active",
+  "catalog.productListPrice.branchPrice": "Branch price",
+  "catalog.productListPrice.orgDefault": "Org default",
   "catalog.organizationPricing.title": "Organization pricing",
   "catalog.organizationPricing.defaultPrice": "Organization default selling price",
   "catalog.organizationPricing.hint": "Changing this updates the inherited price for every branch that does not have a custom branch price.",

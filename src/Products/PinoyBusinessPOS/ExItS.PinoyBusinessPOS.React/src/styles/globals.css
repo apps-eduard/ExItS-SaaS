@@ -6922,12 +6922,25 @@ a.dashboard-metric-card:focus-visible {
   flex-shrink: 0;
 }
 
+.catalog-product-row__price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+}
+
 .catalog-product-row__price {
   font-size: var(--exits-text-md);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   color: var(--exits-text);
+  white-space: nowrap;
+}
+
+.catalog-product-row__price-origin {
+  font-size: 0.65rem;
+  line-height: 1.2;
   white-space: nowrap;
 }
 

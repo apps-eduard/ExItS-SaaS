@@ -41,6 +41,10 @@ import {
   type CatalogScopeFilter,
 } from "@/features/catalog/catalog-product-scope";
 import {
+  resolveCatalogDisplayPrice,
+  resolveCatalogPriceOrigin,
+} from "@/features/catalog/branch-pricing-ux";
+import {
   businessUsageLabelKey,
   resolveBusinessUsage,
 } from "@/features/catalog/product-business-usage";
@@ -553,6 +557,14 @@ export function CatalogProductsPage() {
             isStandard && product.isOfferedAtBranch === false
               ? t("catalog.governance.notOfferedAtBranch")
               : null;
+          const displayPrice = resolveCatalogDisplayPrice(product);
+          const priceOrigin = resolveCatalogPriceOrigin(product, Boolean(workspace.branchId));
+          const priceOriginLabel =
+            priceOrigin === "branchOverride"
+              ? t("catalog.productListPrice.branchPrice")
+              : priceOrigin === "organizationDefault"
+                ? t("catalog.productListPrice.orgDefault")
+                : null;
 
           return (
             <li key={product.productId}>
@@ -596,8 +608,23 @@ export function CatalogProductsPage() {
                   ) : null}
                 </span>
                 <span className="catalog-product-row__aside">
-                  {product.sellingPrice != null ? (
-                    <span className="catalog-product-row__price">{formatPeso(product.sellingPrice)}</span>
+                  {displayPrice != null && Number.isFinite(displayPrice) ? (
+                    <span className="catalog-product-row__price-block">
+                      <span
+                        className="catalog-product-row__price"
+                        data-testid={`catalog-product-price-${product.productId}`}
+                      >
+                        {formatPeso(displayPrice)}
+                      </span>
+                      {priceOriginLabel ? (
+                        <span
+                          className="catalog-product-row__price-origin text-muted"
+                          data-testid={`catalog-product-price-origin-${product.productId}`}
+                        >
+                          {priceOriginLabel}
+                        </span>
+                      ) : null}
+                    </span>
                   ) : null}
                   <span
                     className={
