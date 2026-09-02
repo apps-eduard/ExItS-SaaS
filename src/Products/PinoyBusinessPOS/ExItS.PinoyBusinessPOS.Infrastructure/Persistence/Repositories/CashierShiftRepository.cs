@@ -32,6 +32,17 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         return record is null ? null : await ToDomainAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<bool> HasOpenShiftForActorAsync(
+        PosOrganizationId organizationId,
+        Guid actorId,
+        CancellationToken cancellationToken = default) =>
+        _db.CashierShifts.AsNoTracking()
+            .AnyAsync(
+                s => s.OrganizationId == organizationId.Value
+                     && s.ActorId == actorId
+                     && s.Status == nameof(CashierShiftStatus.Open),
+                cancellationToken);
+
     public async Task<CashierShift?> FindOpenForActorAsync(
         PosOrganizationId organizationId,
         Guid actorId,

@@ -1795,6 +1795,8 @@ export const en = {
     "This staff account is locked to its home organization. Sign in with a different account to use another organization.",
   "accessDenied.branchNotAccessible":
     "That branch is not an accessible Active branch for this account.",
+  "accessDenied.openShiftBlocksBranchSwitch":
+    "Close or cancel your open cashier shift before switching to another branch.",
   "accessDenied.profileRequired":
     "Organization workspace requires an Organization account profile.",
   "accessDenied.antiforgeryTitle": "Security check failed",

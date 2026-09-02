@@ -4,6 +4,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "accessDenied.antiforgery": "Dili ma-verify kining aksyon. I-reload ang page ug sulayi pag-usab.",
   "accessDenied.antiforgeryTitle": "Napakyas ang security check",
   "accessDenied.branchNotAccessible": "Dili accessible nga Active branch kana para niining account.",
+  "accessDenied.openShiftBlocksBranchSwitch":
+    "Sirad-a o kanselahon una ang imong bukas nga cashier shift sa dili pa mobalhin sa lain nga branch.",
   "accessDenied.branchTitle": "Unavailable ang branch",
   "accessDenied.detail": "Wala kay access sa Pinoy Business POS para niining business.",
   "accessDenied.generic": "Dili maabli kini nga workspace. Sulayi pag-usab o pag-sign in pag-usab.",

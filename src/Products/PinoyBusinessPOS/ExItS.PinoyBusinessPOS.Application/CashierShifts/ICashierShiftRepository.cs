@@ -19,6 +19,11 @@ public interface ICashierShiftRepository
         CashierShiftId shiftId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasOpenShiftForActorAsync(
+        PosOrganizationId organizationId,
+        Guid actorId,
+        CancellationToken cancellationToken = default);
+
     Task<CashierShift?> FindOpenForActorAsync(
         PosOrganizationId organizationId,
         Guid actorId,

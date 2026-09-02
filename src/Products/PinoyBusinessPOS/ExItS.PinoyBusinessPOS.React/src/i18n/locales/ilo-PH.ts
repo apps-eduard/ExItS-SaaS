@@ -4,6 +4,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "accessDenied.antiforgery": "Saan a ma-verify daytoy nga aksion. I-reload ti page ken padasen manen.",
   "accessDenied.antiforgeryTitle": "Napaay ti security check",
   "accessDenied.branchNotAccessible": "Saan a accessible nga Active branch dayta para iti daytoy a account.",
+  "accessDenied.openShiftBlocksBranchSwitch":
+    "Iserran wenno kanselaen nga umuna ti bukas a cashier shift sakbay agbalbaliw iti sabali a branch.",
   "accessDenied.branchTitle": "Saan a available ti branch",
   "accessDenied.detail": "Awan ti access mo iti Pinoy Business POS para iti daytoy a business.",
   "accessDenied.generic": "Saan a malukatan daytoy a workspace. Padasen manen wenno sumrek manen.",

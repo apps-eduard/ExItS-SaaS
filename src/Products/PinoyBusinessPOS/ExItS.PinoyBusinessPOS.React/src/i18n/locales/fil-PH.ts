@@ -4,6 +4,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "accessDenied.antiforgery": "Hindi ma-verify ang aksyong ito. I-reload ang page at subukan muli.",
   "accessDenied.antiforgeryTitle": "Nabigo ang security check",
   "accessDenied.branchNotAccessible": "Hindi accessible Active branch ang branch na iyon para sa account na ito.",
+  "accessDenied.openShiftBlocksBranchSwitch":
+    "Isara o kanselahin muna ang bukas na cashier shift bago lumipat sa ibang branch.",
   "accessDenied.branchTitle": "Hindi available ang branch",
   "accessDenied.detail": "Wala kang access sa Pinoy Business POS para sa negosyong ito.",
   "accessDenied.generic": "Hindi mabuksan ang workspace na ito. Subukan ulit o mag-sign in muli.",

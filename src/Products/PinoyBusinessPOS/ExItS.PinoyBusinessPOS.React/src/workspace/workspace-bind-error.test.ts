@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyWorkspaceBindFailure,
+  shouldClearWorkspaceSessionOnOperationalBranchFailure,
   workspaceBindFailureTitleKey,
 } from "@/workspace/workspace-bind-error";
 
@@ -92,5 +93,45 @@ describe("workspace bind error classification", () => {
       detail: "You are not authorized to access this branch in the current organization.",
     });
     expect(failure.kind).toBe("branch_not_accessible");
+  });
+
+  it("open cashier shift blocks branch switch", () => {
+    const failure = classifyWorkspaceBindFailure({
+      status: 409,
+      errorCode: "pos.branch.switch.shift_open",
+      detail: "Close or cancel the open cashier shift before switching POS branch.",
+    });
+    expect(failure.kind).toBe("open_shift_blocks_branch_switch");
+    expect(failure.detailKey).toBe("accessDenied.openShiftBlocksBranchSwitch");
+  });
+
+  it("internal server error maps to service unavailable", () => {
+    const failure = classifyWorkspaceBindFailure({
+      status: 500,
+      errorCode: "pos.internal_error",
+      detail: "An unexpected error occurred.",
+    });
+    expect(failure.kind).toBe("service_unavailable");
+  });
+
+  it("does not clear session for shift-open or server errors", () => {
+    expect(
+      shouldClearWorkspaceSessionOnOperationalBranchFailure({
+        status: 409,
+        errorCode: "pos.branch.switch.shift_open",
+      }),
+    ).toBe(false);
+    expect(
+      shouldClearWorkspaceSessionOnOperationalBranchFailure({
+        status: 500,
+        errorCode: "pos.internal_error",
+      }),
+    ).toBe(false);
+    expect(
+      shouldClearWorkspaceSessionOnOperationalBranchFailure({
+        status: 401,
+        errorCode: "pos.actor.required",
+      }),
+    ).toBe(true);
   });
 });

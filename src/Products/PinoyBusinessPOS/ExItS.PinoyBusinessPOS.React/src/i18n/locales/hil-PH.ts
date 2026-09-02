@@ -4,6 +4,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "accessDenied.antiforgery": "Indi ma-verify ini nga aksyon. I-reload ang page kag tilawi liwat.",
   "accessDenied.antiforgeryTitle": "Napakyas ang security check",
   "accessDenied.branchNotAccessible": "Indi accessible nga Active branch ina para sa sini nga account.",
+  "accessDenied.openShiftBlocksBranchSwitch":
+    "Sirad-a ukon kanselahon an imo bukas nga cashier shift antes magbalhin sa iban nga branch.",
   "accessDenied.branchTitle": "Indi available ang branch",
   "accessDenied.detail": "Wala ka sing access sa Pinoy Business POS para sa sini nga business.",
   "accessDenied.generic": "Indi mabuksan ini nga workspace. Tilawi liwat ukon mag-sign in liwat.",

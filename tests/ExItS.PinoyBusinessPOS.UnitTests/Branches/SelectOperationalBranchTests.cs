@@ -141,6 +141,12 @@ public sealed class SelectOperationalBranchTests
 
     private sealed class FakeShifts(CashierShift? open = null) : ICashierShiftRepository
     {
+        public Task<bool> HasOpenShiftForActorAsync(
+            PosOrganizationId organizationId,
+            Guid actorId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(open is not null);
+
         public Task<CashierShift?> FindOpenForActorAsync(
             PosOrganizationId organizationId,
             Guid actorId,

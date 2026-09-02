@@ -98,6 +98,10 @@ internal sealed class PosOrganizationBranchDirectory(
         {
             return new Dictionary<Guid, string>();
         }
+        catch (JsonException)
+        {
+            return new Dictionary<Guid, string>();
+        }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return new Dictionary<Guid, string>();
@@ -160,6 +164,10 @@ internal sealed class PosOrganizationBranchDirectory(
             return branches.FirstOrDefault(b => b.Id == branchId);
         }
         catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (JsonException)
         {
             return null;
         }
@@ -228,6 +236,10 @@ internal sealed class PosOrganizationBranchDirectory(
             return primary?.BranchId;
         }
         catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (JsonException)
         {
             return null;
         }

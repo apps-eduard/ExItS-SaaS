@@ -52,10 +52,11 @@ public sealed class SelectOperationalBranch(
                 "The selected branch is not an Active branch in this organization.");
         }
 
-        var openShift = await shifts
-            .FindOpenForActorAsync(PosOrganizationId.From(organizationId), actorId, cancellationToken)
+        var orgId = PosOrganizationId.From(organizationId);
+        var hasOpenShift = await shifts
+            .HasOpenShiftForActorAsync(orgId, actorId, cancellationToken)
             .ConfigureAwait(false);
-        if (openShift is not null)
+        if (hasOpenShift)
         {
             var operational = currentSelectedBranchId ?? deviceBoundBranchId;
             if (operational is Guid current && current != requestedBranchId)
@@ -78,6 +79,6 @@ public sealed class SelectOperationalBranch(
                 string.IsNullOrWhiteSpace(name) ? "Branch" : name,
                 deviceBoundBranchId is Guid deviceBranch && deviceBranch == requestedBranchId,
                 deviceBoundBranchId,
-                openShift is not null));
+                hasOpenShift));
     }
 }

@@ -29,6 +29,7 @@ import {
 } from "@/api/platform/platform-auth-client";
 import { clearPlatformAntiforgeryToken } from "@/api/platform/platform-http";
 import { selectOperationalBranch } from "@/api/pos/operational-branch-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { getPosDeviceAuthorizationPolicy } from "@/api/pos/pos-runtime-policy-client";
 import { issueOfflineOperatingGrant } from "@/api/pos/pos-offline-operating-grant-client";
 import {
@@ -55,6 +56,7 @@ import {
 } from "@/workspace/workspace-resolver";
 import {
   classifyWorkspaceBindFailure,
+  shouldClearWorkspaceSessionOnOperationalBranchFailure,
   type WorkspaceBindFailure,
   type WorkspaceBindFailureKind,
 } from "@/workspace/workspace-bind-error";
@@ -773,9 +775,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           errorCode: operational.errorCode,
           detail: operational.detail,
         });
-        clearPosAccessToken();
-        clearPosSessionGrant();
-        setSessionGrantState(null);
+        if (shouldClearWorkspaceSessionOnOperationalBranchFailure(operational)) {
+          clearPosAccessToken();
+          clearPosSessionGrant();
+          setSessionGrantState(null);
+        }
         setBoundWorkspace(null);
         denyBind(
           classified.kind,
@@ -783,7 +787,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           classified.detailKey,
           normalizePosError({
             source: "workspace",
-            error: new Error(operational.detail ?? "Operational branch bind failed"),
+            error: new PosApiError(
+              operational.status,
+              {
+                status: operational.status,
+                detail: operational.detail,
+                errorCode: operational.errorCode,
+                traceId: operational.traceId,
+              },
+            ),
             operation: "operational branch bind",
             httpMethod: "PUT",
             path: "/api/v1/pos/operational-branch",
@@ -794,6 +806,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             branchName: destination.branchName ?? undefined,
             status: operational.status,
             errorCode: operational.errorCode,
+            traceId: operational.traceId,
           }),
         );
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");

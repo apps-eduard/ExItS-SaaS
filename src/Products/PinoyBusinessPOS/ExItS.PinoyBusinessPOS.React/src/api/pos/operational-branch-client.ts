@@ -25,7 +25,7 @@ export async function selectOperationalBranch(input: {
   fromBranchId?: string | null;
 }): Promise<
   | { ok: true; context: OperationalBranchContext }
-  | { ok: false; status: number; errorCode?: string; detail?: string }
+  | { ok: false; status: number; errorCode?: string; detail?: string; traceId?: string }
 > {
   const maxAttempts = 3;
 
@@ -59,6 +59,7 @@ export async function selectOperationalBranch(input: {
           status: error.status,
           errorCode: error.errorCode,
           detail: error.problem.detail,
+          traceId: error.problem.traceId,
         };
       }
       throw error;

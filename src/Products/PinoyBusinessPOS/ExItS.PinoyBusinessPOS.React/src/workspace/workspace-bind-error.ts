@@ -11,6 +11,7 @@ export type WorkspaceBindFailureKind =
   | "session_expired"
   | "staff_org_lock"
   | "branch_not_accessible"
+  | "open_shift_blocks_branch_switch"
   | "profile_required"
   | "antiforgery"
   | "service_unavailable"
@@ -24,6 +25,7 @@ export type WorkspaceBindFailure = {
     | "accessDenied.sessionExpired"
     | "accessDenied.staffOrgLock"
     | "accessDenied.branchNotAccessible"
+    | "accessDenied.openShiftBlocksBranchSwitch"
     | "accessDenied.profileRequired"
     | "accessDenied.antiforgery"
     | "accessDenied.serviceUnavailable"
@@ -109,6 +111,17 @@ export function classifyWorkspaceBindFailure(input: {
   }
 
   if (
+    errorCode === "pos.branch.switch.shift_open" ||
+    (detail !== null && /open cashier shift before switching POS branch/i.test(detail))
+  ) {
+    return {
+      kind: "open_shift_blocks_branch_switch",
+      detailKey: "accessDenied.openShiftBlocksBranchSwitch",
+      technicalDetail: detail,
+    };
+  }
+
+  if (
     status === 404 ||
     errorCode === "application.branch.not_found" ||
     errorCode === "application.branch.not_selectable" ||
@@ -137,9 +150,11 @@ export function classifyWorkspaceBindFailure(input: {
   }
 
   if (
+    status === 500 ||
     status === 502 ||
     status === 503 ||
     status === 429 ||
+    errorCode === "pos.internal_error" ||
     errorCode === "pos.rate_limit.exceeded" ||
     errorCode === "platform.rate_limit.exceeded"
   ) {
@@ -155,6 +170,15 @@ export function classifyWorkspaceBindFailure(input: {
     detailKey: "accessDenied.generic",
     technicalDetail: detail,
   };
+}
+
+export function shouldClearWorkspaceSessionOnOperationalBranchFailure(input: {
+  status?: number | null;
+  errorCode?: string | null;
+  detail?: string | null;
+}): boolean {
+  const failure = classifyWorkspaceBindFailure(input);
+  return failure.kind === "session_expired";
 }
 
 /** Title key for ErrorState — product denial vs session vs service. */
@@ -175,6 +199,8 @@ export function workspaceBindFailureTitleKey(
     case "service_unavailable":
       return "accessDenied.serviceTitle";
     case "branch_not_accessible":
+      return "accessDenied.branchTitle";
+    case "open_shift_blocks_branch_switch":
       return "accessDenied.branchTitle";
     case "antiforgery":
       return "accessDenied.antiforgeryTitle";
