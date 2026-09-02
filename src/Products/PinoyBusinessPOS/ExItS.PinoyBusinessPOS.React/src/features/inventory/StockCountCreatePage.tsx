@@ -17,6 +17,12 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { todayDateOnly } from "@/features/inventory/stock-count-labels";
+import {
+  nextTitleAfterSuggestionInputsChange,
+  STOCK_COUNT_PERIOD_TYPES,
+  suggestStockCountTitle,
+  type StockCountPeriodType,
+} from "@/features/inventory/stock-count-title-suggestion";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -27,6 +33,30 @@ type SelectedProduct = {
   onHand: number;
 };
 
+const DEFAULT_PERIOD: StockCountPeriodType = "Monthly";
+
+function periodLabelKey(
+  period: StockCountPeriodType,
+):
+  | "stockCount.period.weekly"
+  | "stockCount.period.monthly"
+  | "stockCount.period.quarterly"
+  | "stockCount.period.annual"
+  | "stockCount.period.custom" {
+  switch (period) {
+    case "Weekly":
+      return "stockCount.period.weekly";
+    case "Monthly":
+      return "stockCount.period.monthly";
+    case "Quarterly":
+      return "stockCount.period.quarterly";
+    case "Annual":
+      return "stockCount.period.annual";
+    case "Custom":
+      return "stockCount.period.custom";
+  }
+}
+
 export function StockCountCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -34,8 +64,11 @@ export function StockCountCreatePage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
 
-  const [title, setTitle] = useState("");
-  const [countDate, setCountDate] = useState(todayDateOnly);
+  const initialDate = todayDateOnly();
+  const [period, setPeriod] = useState<StockCountPeriodType>(DEFAULT_PERIOD);
+  const [title, setTitle] = useState(() => suggestStockCountTitle(DEFAULT_PERIOD, initialDate));
+  const [titleDirty, setTitleDirty] = useState(false);
+  const [countDate, setCountDate] = useState(initialDate);
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -44,6 +77,35 @@ export function StockCountCreatePage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingAll, setLoadingAll] = useState(false);
+
+  function applyPeriod(next: StockCountPeriodType) {
+    setPeriod(next);
+    setTitle((current) =>
+      nextTitleAfterSuggestionInputsChange({
+        period: next,
+        countDate,
+        currentTitle: current,
+        titleDirty,
+      }),
+    );
+  }
+
+  function applyCountDate(next: string) {
+    setCountDate(next);
+    setTitle((current) =>
+      nextTitleAfterSuggestionInputsChange({
+        period,
+        countDate: next,
+        currentTitle: current,
+        titleDirty,
+      }),
+    );
+  }
+
+  function onTitleChange(value: string) {
+    setTitle(value);
+    setTitleDirty(true);
+  }
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -220,9 +282,13 @@ export function StockCountCreatePage() {
     );
   }
 
+  const productRowClass =
+    "flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2";
+  const productActionClass = "min-h-11 w-full shrink-0 sm:w-auto";
+
   return (
     <div
-      className="stock-count-create-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      className="stock-count-create-page exits-page flex min-w-0 flex-col gap-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
       data-testid="stock-count-create-page"
     >
       <PageHeader
@@ -233,7 +299,10 @@ export function StockCountCreatePage() {
         backTestId="page-header-back-stock-counts"
       />
 
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+      <p
+        className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2.5 text-[length:var(--exits-text-sm)] leading-snug text-foreground"
+        data-testid="stock-count-create-scope"
+      >
         {boundWorkspace?.branchName
           ? t("stockCount.orgScopeNote").replace("{name}", boundWorkspace.branchName)
           : t("stockCount.branchRequired")}
@@ -254,51 +323,76 @@ export function StockCountCreatePage() {
         </p>
       ) : null}
 
-      <label className="flex flex-col gap-1">
-        <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.fieldTitle")}</span>
-        <input
-          className="exits-input min-h-11"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={80}
-          data-testid="stock-count-title"
-        />
-      </label>
+      <section className="flex flex-col gap-3" data-testid="stock-count-create-fields">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countPeriod")}</span>
+          <select
+            className="exits-input min-h-11"
+            value={period}
+            onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
+            data-testid="stock-count-period"
+          >
+            {STOCK_COUNT_PERIOD_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {t(periodLabelKey(value))}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.countDate")}</span>
-        <input
-          type="date"
-          className="exits-input min-h-11"
-          value={countDate}
-          onChange={(e) => setCountDate(e.target.value)}
-          data-testid="stock-count-date"
-        />
-      </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.fieldTitle")}</span>
+          <input
+            className="exits-input min-h-11"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            maxLength={80}
+            autoComplete="off"
+            data-testid="stock-count-title"
+          />
+          <span className="text-[length:var(--exits-text-xs)] text-muted">{t("stockCount.titleSuggestedHint")}</span>
+        </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-[length:var(--exits-text-sm)] font-medium">
-          {t("stockCount.notes")}{" "}
-          <span className="font-normal text-muted">({t("stockCount.notesOptional")})</span>
-        </span>
-        <textarea
-          className="exits-input min-h-20"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          maxLength={512}
-          data-testid="stock-count-notes"
-        />
-      </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countDate")}</span>
+          <input
+            type="date"
+            className="exits-input min-h-11"
+            value={countDate}
+            onChange={(e) => applyCountDate(e.target.value)}
+            data-testid="stock-count-date"
+          />
+        </label>
 
-      <section className="flex flex-col gap-2" data-testid="stock-count-selected">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-            {t("stockCount.productsToCount")}
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">
+            {t("stockCount.notes")}{" "}
+            <span className="font-normal text-muted">({t("stockCount.notesOptional")})</span>
+          </span>
+          <textarea
+            className="exits-input min-h-20"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            maxLength={512}
+            data-testid="stock-count-notes"
+          />
+        </label>
+      </section>
+
+      <section className="flex flex-col gap-3" data-testid="stock-count-selected">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="m-0 flex min-w-0 items-baseline gap-2 text-[length:var(--exits-text-lg)] font-semibold">
+            <span>{t("stockCount.productsToCount")}</span>
+            {selected.length > 0 ? (
+              <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                ({selected.length})
+              </span>
+            ) : null}
           </h2>
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
+            className={productActionClass}
             disabled={!online || loadingAll || saving}
             onClick={() => void countAllTracked()}
             data-testid="stock-count-count-all"
@@ -313,19 +407,19 @@ export function StockCountCreatePage() {
             {selected.map((product) => (
               <li
                 key={product.productId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                className={productRowClass}
                 data-testid={`stock-count-selected-${product.productId}`}
               >
                 <div className="min-w-0">
-                  <p className="m-0 font-medium">{product.name}</p>
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  <p className="m-0 font-medium leading-snug">{product.name}</p>
+                  <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
                     {product.unitOfMeasure} · {t("inventory.onHand")}: {product.onHand}
                   </p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
+                  className={productActionClass}
                   onClick={() => removeProduct(product.productId)}
                   data-testid={`stock-count-remove-${product.productId}`}
                 >
@@ -337,8 +431,8 @@ export function StockCountCreatePage() {
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">{t("stockCount.addProducts")}</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">{t("stockCount.addProducts")}</h2>
         <SearchField
           label={t("stockCount.searchProducts")}
           value={search}
@@ -351,24 +445,24 @@ export function StockCountCreatePage() {
         {!pickerQuery.isLoading && pickerRows.length === 0 ? (
           <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
         ) : null}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="stock-count-product-picker">
+        <ul
+          className="m-0 flex max-h-[min(50vh,22rem)] list-none flex-col gap-2 overflow-y-auto overscroll-contain p-0"
+          data-testid="stock-count-product-picker"
+        >
           {pickerRows.map((row) => {
             const already = selectedIds.has(row.productId);
             return (
-              <li
-                key={row.productId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
-              >
+              <li key={row.productId} className={productRowClass}>
                 <div className="min-w-0">
-                  <p className="m-0 font-medium">{row.name}</p>
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  <p className="m-0 font-medium leading-snug">{row.name}</p>
+                  <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
                     {row.unitOfMeasure} · {t("inventory.onHand")}: {row.onHandQuantity}
                   </p>
                 </div>
                 <Button
                   type="button"
                   variant={already ? "outline" : "default"}
-                  className="min-h-11"
+                  className={productActionClass}
                   disabled={already || !online}
                   onClick={() => addProduct(row)}
                   data-testid={`stock-count-add-${row.productId}`}
@@ -381,10 +475,10 @@ export function StockCountCreatePage() {
         </ul>
       </section>
 
-      <StickyActionBar>
+      <StickyActionBar className="px-3 py-3 sm:px-4">
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="min-h-12 w-full flex-1"
           disabled={!online || saving || selected.length === 0}
           onClick={() => void saveDraft()}
           data-testid="stock-count-save-draft"

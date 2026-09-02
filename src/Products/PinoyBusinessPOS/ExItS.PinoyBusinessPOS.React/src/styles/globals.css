@@ -6468,6 +6468,46 @@ a.dashboard-metric-card:focus-visible {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Shared text/date/textarea controls used across inventory & purchasing forms */
+.exits-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--exits-control-height);
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--exits-text);
+  appearance: none;
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    box-shadow var(--exits-motion-fast) ease;
+}
+
+textarea.exits-input {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.exits-input:focus-visible {
+  outline: 2px solid var(--exits-focus);
+  outline-offset: 2px;
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+}
+
+.exits-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.exits-input::placeholder {
+  color: var(--exits-text-muted);
+}
+
 .catalog-form-select {
   width: 100%;
   min-height: var(--exits-touch-target-min);
