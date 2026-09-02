@@ -4,6 +4,10 @@ import { WorkspaceTransitionOverlay } from "@/components/exits/loading/Workspace
 import { PersonalMerchantCartProvider } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
+import {
+  isSellTransactionPath,
+  useOrgBottomNavHidden,
+} from "@/features/sell/sell-org-bottom-nav-chrome";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AppShell } from "@/layouts/AppShell";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -18,11 +22,15 @@ export function RootLayout() {
   const isOnboarding = location.pathname.startsWith("/onboarding");
   const { status: sessionStatus } = useSession();
   const { status: workspaceStatus, boundWorkspace } = useWorkspace();
+  const cartOverlayHidesNav = useOrgBottomNavHidden();
+  const sellTransactionHidesNav = isSellTransactionPath(location.pathname);
   const showOrgBottomNav =
     !isPersonal &&
     !isOnboarding &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
+  const orgBottomNavVisible =
+    showOrgBottomNav && !cartOverlayHidesNav && !sellTransactionHidesNav;
 
   const showWorkspaceTransition = workspaceStatus === "binding";
   const isSellFloor =
@@ -34,12 +42,12 @@ export function RootLayout() {
       <PersonalMerchantCartProvider>
         <AppShell
           header={isPersonal ? undefined : <AppTopBar />}
-          withOrgBottomNav={showOrgBottomNav}
+          withOrgBottomNav={orgBottomNavVisible}
           sellFloor={isSellFloor}
         >
           <Outlet />
         </AppShell>
-        {showOrgBottomNav ? <OrgBottomNav /> : null}
+        {orgBottomNavVisible ? <OrgBottomNav /> : null}
         <WorkspaceTransitionOverlay
           active={showWorkspaceTransition}
           label={t("loading.switchingWorkspace")}

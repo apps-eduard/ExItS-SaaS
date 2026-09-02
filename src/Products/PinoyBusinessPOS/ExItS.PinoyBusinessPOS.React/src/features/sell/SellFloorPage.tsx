@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, ChevronRight, Info, PackageX, X } from "lucide-react";
+import { ShoppingCart, Banknote, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
@@ -40,6 +40,7 @@ import { SellReadinessStrip } from "@/features/sell/SellReadinessStrip";
 import { evaluateMidSessionSellBlock } from "@/features/sell/sell-readiness";
 import { SellUnitEntryDialog } from "@/features/sell/SellUnitEntryDialog";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
+import { setOrgBottomNavHidden } from "@/features/sell/sell-org-bottom-nav-chrome";
 import {
   canCreateSale,
   canManageCatalog,
@@ -48,6 +49,7 @@ import {
 } from "@/access/pos-capabilities";
 import type { CheckoutShiftReadiness } from "@/features/shifts/checkout-readiness";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatCartSummary } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
@@ -146,6 +148,8 @@ export function SellFloorPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const [sideCartLayout, setSideCartLayout] = useState(false);
+  /** Desktop/landscape: keep search autofocus. Mobile: do not summon the virtual keyboard. */
+  const desktopSearchAutofocus = useMediaMin(900);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [lookupProducts, setLookupProducts] = useState<PosCatalogProductDto[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -179,6 +183,14 @@ export function SellFloorPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const hideNav = cartSheetOpen && !sideCartLayout;
+    setOrgBottomNavHidden(hideNav);
+    return () => {
+      setOrgBottomNavHidden(false);
+    };
+  }, [cartSheetOpen, sideCartLayout]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -963,7 +975,7 @@ export function SellFloorPage() {
             data-testid="sell-search"
             containerClassName="shrink-0"
             label={t("sell.searchLabel")}
-            autoFocus
+            autoFocus={desktopSearchAutofocus}
             autoComplete="off"
             spellCheck={false}
             value={searchTerm}
@@ -1088,10 +1100,11 @@ export function SellFloorPage() {
           onClick={() => setCartSheetOpen(true)}
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
+          aria-label={t("sell.floatingCartView")}
         >
           <span className="sell-cart-bar__summary">
             <span className="sell-cart-bar__icon" aria-hidden>
-              <ShoppingCart className="size-4" />
+              <Banknote className="size-5" strokeWidth={2} />
             </span>
             <span className="sell-cart-bar__copy">
               <span className="sell-cart-bar__count">
@@ -1101,9 +1114,9 @@ export function SellFloorPage() {
               <span className="sell-cart-bar__total">₱{cart.subtotal.toFixed(2)}</span>
             </span>
           </span>
-          <span className="sell-cart-bar__action">
-            {t("sell.floatingCartView")}
-            <ChevronRight className="size-4 shrink-0" aria-hidden />
+          <span className="sell-cart-bar__action" data-testid="sell-cart-bar-view" aria-hidden>
+            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
+            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
           </span>
           <span className="sr-only">{cartSummary}</span>
         </button>
@@ -1117,19 +1130,19 @@ export function SellFloorPage() {
           onClick={() => setCartSheetOpen(true)}
           aria-expanded={cartSheetOpen}
           aria-controls="sell-cart-sheet-panel"
+          aria-label={t("sell.floatingCartView")}
         >
           <span className="sell-cart-bar__summary">
             <span className="sell-cart-bar__icon" aria-hidden>
-              <ShoppingCart className="size-4" />
+              <Banknote className="size-5" strokeWidth={2} />
             </span>
-            <span className="sell-cart-bar__copy">
-              <span className="sell-cart-bar__count">{t("sell.cartLabel")}</span>
+            <span className="sell-cart-bar__copy sell-cart-bar__copy--amount-only">
               <span className="sell-cart-bar__total">₱0.00</span>
             </span>
           </span>
-          <span className="sell-cart-bar__action">
-            {t("sell.floatingCartView")}
-            <ChevronRight className="size-4 shrink-0" aria-hidden />
+          <span className="sell-cart-bar__action" data-testid="sell-cart-bar-view" aria-hidden>
+            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
+            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
           </span>
         </button>
       ) : null}
@@ -1146,7 +1159,7 @@ export function SellFloorPage() {
           <div
             id="sell-cart-sheet-panel"
             data-testid="sell-cart-sheet"
-            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex max-h-[min(92dvh,100dvh)] flex-col gap-2 border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] flex-col gap-2 overflow-hidden border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
             aria-hidden={false}
           >
             <div className="sell-cart-sheet__handle" aria-hidden>

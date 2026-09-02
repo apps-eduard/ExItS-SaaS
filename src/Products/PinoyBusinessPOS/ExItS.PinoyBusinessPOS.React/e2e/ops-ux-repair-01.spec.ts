@@ -84,7 +84,7 @@ test.describe("POS OPERATIONS UX REPAIR 01", () => {
     await page.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`).click();
     const bar = page.getByTestId("sell-cart-bar");
     await expect(bar).toBeVisible();
-    await expect(bar).toContainText("View cart");
+    await expect(bar.getByTestId("sell-cart-bar-view")).toContainText("View");
 
     const before = await bar.boundingBox();
     expect(before).toBeTruthy();

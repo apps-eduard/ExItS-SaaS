@@ -4054,6 +4054,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "sell.payReadyHint": "Handa na ang cash checkout. Binubuksan ng Pay ang tender screen.",
   "sell.payReadyTitle": "Magpatuloy sa checkout.",
   "sell.payWithItems": "Magbayad",
+  "sell.continueToPayment": "Magpatuloy sa bayad",
   "sell.priceChanged": "Binago ang presyo",
   "sell.priceOverrideAboveLimit": "Lampas sa pinapayagang limit ang presyong iyon. Magtanong sa owner, o pumili ng presyo sa loob ng 100% ng kasalukuyang presyo.",
   "sell.priceOverrideApply": "I-apply",

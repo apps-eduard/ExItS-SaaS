@@ -126,23 +126,17 @@ export function SellCartPanel({
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="sell-cart-panel__header flex shrink-0 items-center justify-between gap-2">
+      <div className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2">
         <div className="sell-cart-panel__title min-w-0">
-          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("sell.cartLabel")}
-            {lines.length > 0 ? (
-              <>
-                <span className="font-normal text-muted">
-                  {" "}
-                  · {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
-                </span>
-                <span className="font-semibold text-foreground" data-testid="sell-cart-header-subtotal">
-                  {" "}
-                  · <MoneyDisplay amount={subtotal} />
-                </span>
-              </>
-            ) : null}
-          </h2>
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{t("sell.cartLabel")}</h2>
+          {lines.length > 0 ? (
+            <p
+              className="sell-cart-panel__meta m-0 text-[length:var(--exits-text-xs)] text-muted"
+              data-testid="sell-cart-header-count"
+            >
+              {lineCount} {lineCount === 1 ? t("sell.cartItemSingular") : t("sell.cartItemPlural")}
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           {lines.length > 0 ? (
@@ -162,6 +156,7 @@ export function SellCartPanel({
               variant="ghost"
               className="min-h-8 px-2 text-[length:var(--exits-text-xs)]"
               aria-label={t("sell.cartSheetClose")}
+              data-testid="sell-cart-sheet-close"
               onClick={onClose}
             >
               {t("sell.cartSheetClose")}
@@ -353,6 +348,20 @@ export function SellCartPanel({
           </p>
         ) : null}
 
+        <div
+          className="sell-cart-footer__total-row flex items-baseline justify-between gap-3"
+          data-testid="sell-cart-footer-total"
+        >
+          <span className="sell-cart-footer__total-label text-[length:var(--exits-text-sm)] font-semibold">
+            {t("sell.cartTotalLabel")}
+          </span>
+          <MoneyDisplay
+            amount={subtotal}
+            className="sell-cart-footer__total-amount text-[length:var(--exits-text-md)] font-bold"
+            testId="sell-cart-header-subtotal"
+          />
+        </div>
+
         <Button
           data-testid="sell-pay"
           type="button"
@@ -381,9 +390,9 @@ export function SellCartPanel({
           }}
         >
           {payEnabled
-            ? `${t("sell.payWithItems")} (${lineCount}) · ₱${subtotal.toFixed(2)}`
+            ? t("sell.continueToPayment")
             : lineCount > 0
-              ? `${t("sell.payWithItems")} (${lineCount})`
+              ? t("sell.payWithItems")
               : t("sell.pay")}
         </Button>
         {!payEnabled ? (

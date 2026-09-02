@@ -1858,6 +1858,7 @@ export const en = {
   "sell.cartSheetClose": "Close",
   "sell.pay": "Pay",
   "sell.payWithItems": "Pay",
+  "sell.continueToPayment": "Continue to payment",
   "sell.payDisabledTitle": "Checkout is not available for this account.",
   "sell.payDisabledNeedsShift": "Open a shift before checkout.",
   "sell.payDisabledNeedsDevice": "Register this device before checkout.",
