@@ -172,7 +172,7 @@ else
 
         var assignments = await Platform.GetMembershipBranchAssignmentsAsync(orgId, MembershipId);
         _branchAssignments = assignments.IsSuccess && assignments.Data is not null
-            ? assignments.Data
+            ? assignments.Data.Branches
             : [];
         _selectedBranchIds = _branchAssignments.Select(b => b.BranchId).ToHashSet();
         _branchesLoading = false;
@@ -215,13 +215,13 @@ else
             var result = await Platform.SetMembershipBranchAssignmentsAsync(
                 orgId,
                 MembershipId,
-                new SetMembershipBranchAssignmentsRequest(_selectedBranchIds.ToList()));
+                new SetMembershipBranchAssignmentsRequest("Explicit", _selectedBranchIds.ToList()));
             _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error, L["Staff_BranchesSaveFailed"]);
             _ok = result.IsSuccess ? L["Staff_BranchesSaved"] : null;
             if (result.IsSuccess && result.Data is not null)
             {
-                _branchAssignments = result.Data;
-                _selectedBranchIds = result.Data.Select(b => b.BranchId).ToHashSet();
+                _branchAssignments = result.Data.Branches;
+                _selectedBranchIds = result.Data.Branches.Select(b => b.BranchId).ToHashSet();
             }
         }
         finally

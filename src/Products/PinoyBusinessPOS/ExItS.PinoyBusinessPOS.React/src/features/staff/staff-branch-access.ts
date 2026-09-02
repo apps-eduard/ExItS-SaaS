@@ -1,4 +1,7 @@
-import type { MembershipBranchAssignmentDto } from "@/api/platform/membership-branch-assignments-client";
+import type {
+  BranchAccessScopeDto,
+  MembershipBranchAssignmentDto,
+} from "@/api/platform/membership-branch-assignments-client";
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
 import { resolvePlatformBranchId } from "@/api/platform/platform-auth-client";
 
@@ -46,21 +49,17 @@ export function assignmentBranchIds(assignments: MembershipBranchAssignmentDto[]
   return assignments.map((item) => item.branchId.trim()).filter(Boolean);
 }
 
-export function inferBranchScopeMode(
-  activeIds: readonly string[],
-  assignedIds: readonly string[],
-): BranchScopeMode {
-  if (activeIds.length === 0) {
-    return "specific";
-  }
-  if (branchIdsEqual(activeIds, assignedIds)) {
-    return "all";
-  }
-  return "specific";
+export function scopeToMode(scope: BranchAccessScopeDto): BranchScopeMode {
+  return scope === "AllActive" ? "all" : "specific";
+}
+
+export function modeToScope(mode: BranchScopeMode): BranchAccessScopeDto {
+  return mode === "all" ? "AllActive" : "Explicit";
 }
 
 export function formatStaffBranchAccessSummary(input: {
   membershipRole: string;
+  scope: BranchAccessScopeDto | null;
   activeBranches: PlatformBranch[];
   assignedIds: readonly string[];
   allActiveLabel: string;
@@ -77,13 +76,13 @@ export function formatStaffBranchAccessSummary(input: {
     return input.unknownLabel;
   }
 
+  if (input.scope === "AllActive") {
+    return input.allActiveLabel;
+  }
+
   if (activeIds.length === 1) {
     const only = resolvePrimaryOrOnlyBranch(active);
     return only?.name?.trim() || only?.code?.trim() || input.unknownLabel;
-  }
-
-  if (branchIdsEqual(activeIds, input.assignedIds)) {
-    return input.allActiveLabel;
   }
 
   if (input.assignedIds.length === 0) {
@@ -99,5 +98,9 @@ export function formatStaffBranchAccessSummary(input: {
     return input.unknownLabel;
   }
 
-  return names.join(", ");
+  if (names.length === 1) {
+    return names[0]!;
+  }
+
+  return `${names[0]} + ${names.length - 1}`;
 }

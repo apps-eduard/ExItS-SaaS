@@ -81,6 +81,27 @@ public sealed class OrganizationBranchAccessServiceTests
     }
 
     [Fact]
+    public async Task Staff_with_AllActive_scope_sees_all_active_without_assignment_rows()
+    {
+        var org = PlatformOrganizationId.New();
+        var staff = PlatformUserId.New();
+        var main = OrganizationBranch.CreateMainBranch(org, T0);
+        var north = OrganizationBranch.Create(org, "NORTH", "North", T0);
+        var membership = OrganizationMembership.Create(
+            org,
+            staff,
+            OrganizationRole.OrganizationMember,
+            T0,
+            branchAccessScope: BranchAccessScope.AllActive);
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(membership, CancellationToken.None);
+        var sut = CreateSut(memberships, [main, north], []);
+
+        Assert.Null(await sut.ResolveAccessibleActiveBranchIdsAsync(staff, org));
+        Assert.True(await sut.CanAccessBranchAsync(staff, org, north.Id));
+    }
+
+    [Fact]
     public async Task Foreign_organization_branch_is_denied()
     {
         var orgA = PlatformOrganizationId.New();

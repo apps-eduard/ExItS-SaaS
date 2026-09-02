@@ -3,16 +3,17 @@ import type { PlatformBranch } from "@/api/platform/platform-auth-client";
 import {
   branchIdsEqual,
   formatStaffBranchAccessSummary,
-  inferBranchScopeMode,
   isImplicitAllBranchesMembershipRole,
+  modeToScope,
   resolvePrimaryOrOnlyBranch,
+  scopeToMode,
 } from "@/features/staff/staff-branch-access";
 
 const main: PlatformBranch = {
   id: "main",
   organizationId: "org",
   code: "MAIN",
-  name: "Main Store",
+  name: "Main Branch",
   isPrimary: true,
   status: "Active",
 };
@@ -22,6 +23,15 @@ const north: PlatformBranch = {
   organizationId: "org",
   code: "NORTH",
   name: "North",
+  isPrimary: false,
+  status: "Active",
+};
+
+const south: PlatformBranch = {
+  id: "south",
+  organizationId: "org",
+  code: "SOUTH",
+  name: "South",
   isPrimary: false,
   status: "Active",
 };
@@ -43,52 +53,70 @@ describe("staff-branch-access helpers", () => {
     expect(branchIdsEqual(["a"], ["a", "b"])).toBe(false);
   });
 
-  it("infers all vs specific from current assignments", () => {
-    expect(inferBranchScopeMode(["main", "north"], ["north", "main"])).toBe("all");
-    expect(inferBranchScopeMode(["main", "north"], ["main"])).toBe("specific");
+  it("maps persisted scope without inferring from branch equality", () => {
+    expect(scopeToMode("AllActive")).toBe("all");
+    expect(scopeToMode("Explicit")).toBe("specific");
+    expect(modeToScope("all")).toBe("AllActive");
+    expect(modeToScope("specific")).toBe("Explicit");
   });
 
-  it("formats manage-staff branch summaries", () => {
+  it("formats manage-staff branch summaries from scope", () => {
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationOwner",
+        scope: null,
         activeBranches: [main, north],
         assignedIds: [],
-        allActiveLabel: "All active branches",
-        automaticAllLabel: "All active branches",
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
         unknownLabel: "Not assigned",
       }),
-    ).toBe("All active branches");
+    ).toBe("All branches");
 
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationMember",
+        scope: "AllActive",
+        activeBranches: [main, north],
+        assignedIds: [],
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
+        unknownLabel: "Not assigned",
+      }),
+    ).toBe("All branches");
+
+    expect(
+      formatStaffBranchAccessSummary({
+        membershipRole: "OrganizationMember",
+        scope: "Explicit",
         activeBranches: [main],
         assignedIds: ["main"],
-        allActiveLabel: "All active branches",
-        automaticAllLabel: "All active branches",
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
         unknownLabel: "Not assigned",
       }),
-    ).toBe("Main Store");
+    ).toBe("Main Branch");
 
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationMember",
-        activeBranches: [main, north],
-        assignedIds: ["main", "north"],
-        allActiveLabel: "All active branches",
-        automaticAllLabel: "All active branches",
+        scope: "Explicit",
+        activeBranches: [main, north, south],
+        assignedIds: ["main", "north", "south"],
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
         unknownLabel: "Not assigned",
       }),
-    ).toBe("All active branches");
+    ).toBe("Main Branch + 2");
 
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationMember",
+        scope: "Explicit",
         activeBranches: [main, north],
         assignedIds: ["north"],
-        allActiveLabel: "All active branches",
-        automaticAllLabel: "All active branches",
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
         unknownLabel: "Not assigned",
       }),
     ).toBe("North");

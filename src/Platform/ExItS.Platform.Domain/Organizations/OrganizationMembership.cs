@@ -14,6 +14,10 @@ public sealed class OrganizationMembership
     public PlatformUserId UserId { get; }
     public MembershipStatus Status { get; private set; }
     public OrganizationRole Role { get; private set; }
+    /// <summary>
+    /// Ordinary-member branch scope. Owner/Administrator access does not depend on this value.
+    /// </summary>
+    public BranchAccessScope BranchAccessScope { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
@@ -27,6 +31,7 @@ public sealed class OrganizationMembership
         PlatformUserId userId,
         MembershipStatus status,
         OrganizationRole role,
+        BranchAccessScope branchAccessScope,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? suspendedAtUtc,
@@ -39,6 +44,7 @@ public sealed class OrganizationMembership
         UserId = userId;
         Status = status;
         Role = role;
+        BranchAccessScope = branchAccessScope;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         SuspendedAtUtc = suspendedAtUtc;
@@ -53,12 +59,14 @@ public sealed class OrganizationMembership
         OrganizationRole role,
         DateTimeOffset utcNow,
         OrganizationMembershipId? id = null,
-        string? actorReference = null)
+        string? actorReference = null,
+        BranchAccessScope branchAccessScope = BranchAccessScope.Explicit)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(userId);
         EnsureUtc(utcNow);
         EnsureDefinedRole(role);
+        EnsureDefinedBranchAccessScope(branchAccessScope);
 
         return new OrganizationMembership(
             id ?? OrganizationMembershipId.New(),
@@ -66,6 +74,7 @@ public sealed class OrganizationMembership
             userId,
             MembershipStatus.Active,
             role,
+            branchAccessScope,
             utcNow,
             utcNow,
             null,
@@ -80,6 +89,7 @@ public sealed class OrganizationMembership
         PlatformUserId userId,
         MembershipStatus status,
         OrganizationRole role,
+        BranchAccessScope branchAccessScope,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? suspendedAtUtc,
@@ -92,6 +102,7 @@ public sealed class OrganizationMembership
             userId,
             status,
             role,
+            branchAccessScope,
             createdAtUtc,
             updatedAtUtc,
             suspendedAtUtc,
@@ -111,6 +122,25 @@ public sealed class OrganizationMembership
         }
 
         Role = role;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SetBranchAccessScope(
+        BranchAccessScope scope,
+        DateTimeOffset utcNow,
+        string? actorReference = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureDefinedBranchAccessScope(scope);
+        if (Status == MembershipStatus.Removed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.MembershipNotActive,
+                "A removed membership cannot change branch access scope.");
+        }
+
+        BranchAccessScope = scope;
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
         UpdatedAtUtc = utcNow;
     }
@@ -193,6 +223,16 @@ public sealed class OrganizationMembership
             throw new DomainException(
                 DomainErrorCodes.InvalidOrganizationRole,
                 "Organization role is not defined.");
+        }
+    }
+
+    private static void EnsureDefinedBranchAccessScope(BranchAccessScope scope)
+    {
+        if (!Enum.IsDefined(scope))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationRole,
+                "Branch access scope is not defined.");
         }
     }
 

@@ -7,6 +7,7 @@ internal sealed class OrganizationMembershipRecord
     public Guid UserId { get; set; }
     public string Role { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public string BranchAccessScope { get; set; } = nameof(Domain.Organizations.BranchAccessScope.Explicit);
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public DateTimeOffset? SuspendedAtUtc { get; set; }

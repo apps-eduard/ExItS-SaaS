@@ -88,6 +88,7 @@ internal static class IdentityAccessEntityMapper
             PlatformUserId.From(record.UserId),
             Enum.Parse<MembershipStatus>(record.Status),
             Enum.Parse<OrganizationRole>(record.Role),
+            Enum.Parse<BranchAccessScope>(record.BranchAccessScope),
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.SuspendedAtUtc,
@@ -103,6 +104,7 @@ internal static class IdentityAccessEntityMapper
             UserId = membership.UserId.Value,
             Role = membership.Role.ToString(),
             Status = membership.Status.ToString(),
+            BranchAccessScope = membership.BranchAccessScope.ToString(),
             CreatedAtUtc = membership.CreatedAtUtc,
             UpdatedAtUtc = membership.UpdatedAtUtc,
             SuspendedAtUtc = membership.SuspendedAtUtc,
@@ -115,6 +117,7 @@ internal static class IdentityAccessEntityMapper
     {
         record.Role = membership.Role.ToString();
         record.Status = membership.Status.ToString();
+        record.BranchAccessScope = membership.BranchAccessScope.ToString();
         record.UpdatedAtUtc = membership.UpdatedAtUtc;
         record.SuspendedAtUtc = membership.SuspendedAtUtc;
         record.RemovedAtUtc = membership.RemovedAtUtc;

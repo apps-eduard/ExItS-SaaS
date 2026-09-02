@@ -2931,18 +2931,19 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PlatformMembershipDto>> RevokeMembershipAsync(Guid membershipId, PlatformMembershipLifecycleRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
 
-        public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> GetMembershipBranchAssignmentsAsync(
+        public Task<ApiResult<MembershipBranchAccessDto>> GetMembershipBranchAssignmentsAsync(
             Guid organizationId,
             Guid membershipId,
             CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Success([]));
+            Task.FromResult(ApiResult<MembershipBranchAccessDto>.Success(
+                new MembershipBranchAccessDto("Explicit", [])));
 
-        public Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> SetMembershipBranchAssignmentsAsync(
+        public Task<ApiResult<MembershipBranchAccessDto>> SetMembershipBranchAssignmentsAsync(
             Guid organizationId,
             Guid membershipId,
             SetMembershipBranchAssignmentsRequest request,
             CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Unavailable());
+            Task.FromResult(ApiResult<MembershipBranchAccessDto>.Unavailable());
 
         public Task<ApiResult<PersonalRegistrationAckDto>> RegisterPersonalAccountAsync(RegisterPersonalAccountRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalRegistrationAckDto>.Unavailable());

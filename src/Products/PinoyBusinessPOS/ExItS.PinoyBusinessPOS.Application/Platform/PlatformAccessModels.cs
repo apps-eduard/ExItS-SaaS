@@ -284,7 +284,13 @@ public sealed record MembershipBranchAssignmentDto(
     string Code,
     bool IsPrimary);
 
-public sealed record SetMembershipBranchAssignmentsRequest(IReadOnlyList<Guid> BranchIds);
+public sealed record MembershipBranchAccessDto(
+    string Scope,
+    IReadOnlyList<MembershipBranchAssignmentDto> Branches);
+
+public sealed record SetMembershipBranchAssignmentsRequest(
+    string Scope,
+    IReadOnlyList<Guid>? BranchIds = null);
 
 public sealed record PlatformPagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
 
@@ -1271,11 +1277,11 @@ public interface IPlatformAccessClient
         Guid membershipId,
         PlatformMembershipLifecycleRequest request,
         CancellationToken ct = default);
-    Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> GetMembershipBranchAssignmentsAsync(
+    Task<ApiResult<MembershipBranchAccessDto>> GetMembershipBranchAssignmentsAsync(
         Guid organizationId,
         Guid membershipId,
         CancellationToken ct = default);
-    Task<ApiResult<IReadOnlyList<MembershipBranchAssignmentDto>>> SetMembershipBranchAssignmentsAsync(
+    Task<ApiResult<MembershipBranchAccessDto>> SetMembershipBranchAssignmentsAsync(
         Guid organizationId,
         Guid membershipId,
         SetMembershipBranchAssignmentsRequest request,

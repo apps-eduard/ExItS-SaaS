@@ -64,6 +64,7 @@ type StaffRow = {
   membershipStatus: string;
   posGrants: StaffGrant[];
   assignedBranchIds: string[];
+  branchAccessScope: "Explicit" | "AllActive" | null;
 };
 
 type PendingAction =
@@ -157,7 +158,7 @@ function staffPosRoleLabel(grant: StaffGrant): string {
 function buildRows(
   members: OrganizationMemberWire[],
   grants: ProductLocalRoleGrantWire[],
-  assignmentsByMembershipId: Map<string, string[]>,
+  accessByMembershipId: Map<string, { scope: "Explicit" | "AllActive"; assignedIds: string[] }>,
 ): StaffRow[] {
   const grantsByUser = new Map<string, StaffGrant[]>();
   for (const grant of grants) {
@@ -177,6 +178,7 @@ function buildRows(
       member.username?.trim() ||
       member.email?.trim() ||
       "Team member";
+    const access = accessByMembershipId.get(member.id);
     return {
       membershipId: member.id,
       userId: member.userId,
@@ -185,7 +187,8 @@ function buildRows(
       membershipRole: member.role,
       membershipStatus: member.status,
       posGrants: grantsByUser.get(member.userId) ?? [],
-      assignedBranchIds: assignmentsByMembershipId.get(member.id) ?? [],
+      assignedBranchIds: access?.assignedIds ?? [],
+      branchAccessScope: access?.scope ?? null,
     };
   });
 }
@@ -233,7 +236,10 @@ export function OrgStaffPage() {
       }
 
       const activeBranches = listActiveBranches(branchesResult.branches);
-      const assignmentsByMembershipId = new Map<string, string[]>();
+      const accessByMembershipId = new Map<
+        string,
+        { scope: "Explicit" | "AllActive"; assignedIds: string[] }
+      >();
       const assignmentTargets = membersResult.members.filter(
         (member) => !isImplicitAllBranchesMembershipRole(member.role),
       );
@@ -243,15 +249,21 @@ export function OrgStaffPage() {
           if (!result.ok) {
             throw new Error(result.body?.detail ?? t("staffManage.loadError"));
           }
-          return [member.id, assignmentBranchIds(result.value)] as const;
+          return [
+            member.id,
+            {
+              scope: result.value.scope,
+              assignedIds: assignmentBranchIds(result.value.branches),
+            },
+          ] as const;
         }),
       );
-      for (const [membershipId, ids] of assignmentResults) {
-        assignmentsByMembershipId.set(membershipId, ids);
+      for (const [membershipId, access] of assignmentResults) {
+        accessByMembershipId.set(membershipId, access);
       }
 
       return {
-        rows: buildRows(membersResult.members, grantsResult.grants, assignmentsByMembershipId),
+        rows: buildRows(membersResult.members, grantsResult.grants, accessByMembershipId),
         activeBranches,
       };
     },
@@ -599,6 +611,7 @@ function StaffMemberRow({
     canManagePosRole && (posGrant !== null || canMutateMembership);
   const branchAccessLabel = formatStaffBranchAccessSummary({
     membershipRole: row.membershipRole,
+    scope: row.branchAccessScope,
     activeBranches,
     assignedIds: row.assignedBranchIds,
     allActiveLabel: t("staffManage.branchAccessAll"),
@@ -691,7 +704,7 @@ function StaffMemberRow({
                     to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
                     data-testid={`org-staff-assign-${row.membershipId}`}
                   >
-                    {posGrant ? t("staffManage.changePosRole") : t("staffManage.assignRole")}
+                    {posGrant ? t("staffManage.manageAccess") : t("staffManage.assignRole")}
                   </Link>
                 </Button>
               ) : null}

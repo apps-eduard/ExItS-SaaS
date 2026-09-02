@@ -102,8 +102,12 @@ export function BranchStaffAccessPanel({
       if (!current.ok) {
         throw new Error(current.body?.detail ?? t("branches.staff.addFailed"));
       }
-      const nextIds = [...new Set([...current.value.map((a) => a.branchId), branchId])];
-      const result = await setMembershipBranchAssignments(organizationId, member.id, nextIds);
+      const existingIds = current.value.branches.map((a) => a.branchId);
+      const nextIds = [...new Set([...existingIds, branchId])];
+      const result = await setMembershipBranchAssignments(organizationId, member.id, {
+        scope: "Explicit",
+        branchIds: nextIds,
+      });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("branches.staff.addFailed"));
       }
@@ -128,14 +132,16 @@ export function BranchStaffAccessPanel({
       if (!current.ok) {
         throw new Error(current.body?.detail ?? t("branches.staff.removeFailed"));
       }
-      const nextIds = current.value.map((a) => a.branchId).filter((id) => id !== branchId);
+      const nextIds = current.value.branches
+        .map((a) => a.branchId)
+        .filter((id) => id !== branchId);
       if (nextIds.length === 0) {
         throw new Error(t("branches.staff.lastAssignment"));
       }
       const result = await setMembershipBranchAssignments(
         organizationId,
         item.membershipId,
-        nextIds,
+        { scope: "Explicit", branchIds: nextIds },
       );
       if (!result.ok) {
         const detail = (result.body?.detail ?? "").toLowerCase();

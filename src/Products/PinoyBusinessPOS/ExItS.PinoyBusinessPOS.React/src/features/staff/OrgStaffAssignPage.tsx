@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import {
   listMembershipBranchAssignments,
   setMembershipBranchAssignments,
+  type BranchAccessScopeDto,
 } from "@/api/platform/membership-branch-assignments-client";
 import { listOrganizationMembers } from "@/api/platform/organization-members-client";
 import {
@@ -28,10 +29,11 @@ import {
   activeBranchIds,
   assignmentBranchIds,
   branchIdsEqual,
-  inferBranchScopeMode,
   isImplicitAllBranchesMembershipRole,
   listActiveBranches,
+  modeToScope,
   resolvePrimaryOrOnlyBranch,
+  scopeToMode,
   type BranchScopeMode,
 } from "@/features/staff/staff-branch-access";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -47,7 +49,7 @@ export function OrgStaffAssignPage() {
   const userId = searchParams.get("userId")?.trim() || null;
 
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [branchScope, setBranchScope] = useState<BranchScopeMode>("all");
+  const [branchScope, setBranchScope] = useState<BranchScopeMode>("specific");
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [branchStateReady, setBranchStateReady] = useState(false);
   const [ownerConfirmOpen, setOwnerConfirmOpen] = useState(false);
@@ -88,6 +90,7 @@ export function OrgStaffAssignPage() {
 
       const implicitAll = isImplicitAllBranchesMembershipRole(member.role);
       let assignedIds: string[] = [];
+      let branchAccessScope: BranchAccessScopeDto = "Explicit";
       if (!implicitAll) {
         const assignmentsResult = await listMembershipBranchAssignments(
           organizationId,
@@ -96,7 +99,8 @@ export function OrgStaffAssignPage() {
         if (!assignmentsResult.ok) {
           throw new Error(assignmentsResult.body?.detail ?? t("staffManage.loadError"));
         }
-        assignedIds = assignmentBranchIds(assignmentsResult.value);
+        branchAccessScope = assignmentsResult.value.scope;
+        assignedIds = assignmentBranchIds(assignmentsResult.value.branches);
       }
 
       return {
@@ -114,6 +118,7 @@ export function OrgStaffAssignPage() {
             )
           : null,
         implicitAllBranches: implicitAll,
+        branchAccessScope,
         assignedBranchIds: assignedIds,
       };
     },
@@ -154,19 +159,28 @@ export function OrgStaffAssignPage() {
       return;
     }
     if (activeBranches.length <= 1) {
-      setBranchScope("all");
-      setSelectedBranchIds(singleBranchId ? [singleBranchId] : []);
+      setBranchScope(scopeToMode(userQuery.data.branchAccessScope));
+      setSelectedBranchIds(
+        userQuery.data.branchAccessScope === "AllActive"
+          ? singleBranchId
+            ? [singleBranchId]
+            : []
+          : userQuery.data.assignedBranchIds.length > 0
+            ? [...userQuery.data.assignedBranchIds]
+            : singleBranchId
+              ? [singleBranchId]
+              : [],
+      );
       setBranchStateReady(true);
       return;
     }
-    const assigned = userQuery.data.assignedBranchIds;
-    const mode = inferBranchScopeMode(allActiveIds, assigned);
+    const mode = scopeToMode(userQuery.data.branchAccessScope);
     setBranchScope(mode);
     setSelectedBranchIds(
       mode === "all"
         ? [...allActiveIds]
-        : assigned.length > 0
-          ? [...assigned]
+        : userQuery.data.assignedBranchIds.length > 0
+          ? [...userQuery.data.assignedBranchIds]
           : singleBranchId
             ? [singleBranchId]
             : allActiveIds.slice(0, 1),
@@ -182,32 +196,45 @@ export function OrgStaffAssignPage() {
     branchStateReady,
   ]);
 
-  const resolvedBranchIds = useMemo(() => {
+  const resolvedScope: BranchAccessScopeDto | null = useMemo(() => {
     if (!userQuery.data || userQuery.data.implicitAllBranches) {
+      return null;
+    }
+    if (activeBranches.length <= 1) {
+      return userQuery.data.branchAccessScope;
+    }
+    return modeToScope(branchScope);
+  }, [userQuery.data, activeBranches.length, branchScope]);
+
+  const resolvedBranchIds = useMemo(() => {
+    if (!userQuery.data || userQuery.data.implicitAllBranches || resolvedScope === "AllActive") {
       return [] as string[];
     }
     if (activeBranches.length <= 1) {
       return singleBranchId ? [singleBranchId] : [];
     }
-    if (branchScope === "all") {
-      return [...allActiveIds];
-    }
     return selectedBranchIds.filter((id) => allActiveIds.includes(id));
   }, [
     userQuery.data,
+    resolvedScope,
     activeBranches.length,
     singleBranchId,
-    branchScope,
     allActiveIds,
     selectedBranchIds,
   ]);
 
   const branchesDirty = useMemo(() => {
-    if (!userQuery.data || userQuery.data.implicitAllBranches) {
+    if (!userQuery.data || userQuery.data.implicitAllBranches || resolvedScope === null) {
+      return false;
+    }
+    if (resolvedScope !== userQuery.data.branchAccessScope) {
+      return true;
+    }
+    if (resolvedScope === "AllActive") {
       return false;
     }
     return !branchIdsEqual(resolvedBranchIds, userQuery.data.assignedBranchIds);
-  }, [userQuery.data, resolvedBranchIds]);
+  }, [userQuery.data, resolvedScope, resolvedBranchIds]);
 
   const assignMutation = useMutation({
     mutationFn: async (roleCode: string | null) => {
@@ -239,19 +266,20 @@ export function OrgStaffAssignPage() {
         }
       }
 
-      if (!userQuery.data.implicitAllBranches) {
-        if (resolvedBranchIds.length === 0) {
+      if (!userQuery.data.implicitAllBranches && branchesDirty && resolvedScope) {
+        if (resolvedScope === "Explicit" && resolvedBranchIds.length === 0) {
           throw new Error(t("staffAssign.branchRequired"));
         }
-        if (branchesDirty || needsRoleWrite) {
-          const branchResult = await setMembershipBranchAssignments(
-            organizationId,
-            userQuery.data.membershipId,
-            resolvedBranchIds,
-          );
-          if (!branchResult.ok) {
-            throw new Error(branchResult.body?.detail ?? t("staffAssign.branchSaveError"));
-          }
+        const branchResult = await setMembershipBranchAssignments(
+          organizationId,
+          userQuery.data.membershipId,
+          {
+            scope: resolvedScope,
+            branchIds: resolvedScope === "Explicit" ? resolvedBranchIds : [],
+          },
+        );
+        if (!branchResult.ok) {
+          throw new Error(branchResult.body?.detail ?? t("staffAssign.branchSaveError"));
         }
       }
     },
@@ -280,7 +308,9 @@ export function OrgStaffAssignPage() {
     ) &&
     !roleSelectionMissing &&
     (!sameRoleSelected || branchesDirty) &&
-    (userQuery.data?.implicitAllBranches || resolvedBranchIds.length > 0);
+    (userQuery.data?.implicitAllBranches ||
+      resolvedScope === "AllActive" ||
+      resolvedBranchIds.length > 0);
 
   const replaceHint = useMemo(() => {
     if (!userQuery.data?.existingRoleLabel) {
@@ -344,8 +374,8 @@ export function OrgStaffAssignPage() {
       data-testid="org-staff-assign-page"
     >
       <PageHeader
-        title={isChanging ? t("staffAssign.changeTitle") : t("staffAssign.title")}
-        description={isChanging ? t("staffAssign.changeLede") : t("staffAssign.lede")}
+        title={isChanging ? t("staffAssign.manageTitle") : t("staffAssign.title")}
+        description={isChanging ? t("staffAssign.manageLede") : t("staffAssign.lede")}
         backTo={pageBackNav.orgStaff.to}
         backLabel={t(pageBackNav.orgStaff.labelKey)}
         backTestId="page-header-back-staff"
@@ -626,7 +656,7 @@ export function OrgStaffAssignPage() {
           {assignMutation.isPending
             ? t("staffAssign.submitting")
             : isChanging
-              ? t("staffAssign.changeConfirmAction")
+              ? t("staffAssign.manageConfirmAction")
               : t("staffAssign.submit")}
         </Button>
       </div>

@@ -15,7 +15,8 @@ public interface IOrganizationBranchAccessService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Active branch ids the user may select. Empty when none. Null = all Active branches (governing role).
+    /// Active branch ids the user may select. Empty when none. Null = all Active branches
+    /// (Owner/Administrator role, or ordinary member with <see cref="BranchAccessScope.AllActive"/>).
     /// </summary>
     Task<IReadOnlySet<Guid>?> ResolveAccessibleActiveBranchIdsAsync(
         PlatformUserId userId,
@@ -30,6 +31,13 @@ public sealed class OrganizationBranchAccessService(
 {
     public static bool HasOrganizationWideBranchAccess(OrganizationRole role) =>
         role is OrganizationRole.OrganizationOwner or OrganizationRole.OrganizationAdministrator;
+
+    /// <summary>
+    /// Ordinary member with dynamic all-active scope (not Owner/Admin — those use role alone).
+    /// </summary>
+    public static bool HasDynamicAllActiveBranchAccess(OrganizationMembership membership) =>
+        !HasOrganizationWideBranchAccess(membership.Role)
+        && membership.BranchAccessScope == BranchAccessScope.AllActive;
 
     public async Task<bool> CanAccessBranchAsync(
         PlatformUserId userId,
@@ -53,7 +61,8 @@ public sealed class OrganizationBranchAccessService(
             return false;
         }
 
-        if (HasOrganizationWideBranchAccess(membership.Role))
+        if (HasOrganizationWideBranchAccess(membership.Role)
+            || HasDynamicAllActiveBranchAccess(membership))
         {
             return true;
         }
@@ -77,7 +86,8 @@ public sealed class OrganizationBranchAccessService(
             return new HashSet<Guid>();
         }
 
-        if (HasOrganizationWideBranchAccess(membership.Role))
+        if (HasOrganizationWideBranchAccess(membership.Role)
+            || HasDynamicAllActiveBranchAccess(membership))
         {
             return null;
         }

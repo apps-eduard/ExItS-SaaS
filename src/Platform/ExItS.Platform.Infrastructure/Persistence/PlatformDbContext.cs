@@ -1293,6 +1293,10 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(64).IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BranchAccessScope)
+                .HasColumnName("branch_access_scope")
+                .HasMaxLength(32)
+                .IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");

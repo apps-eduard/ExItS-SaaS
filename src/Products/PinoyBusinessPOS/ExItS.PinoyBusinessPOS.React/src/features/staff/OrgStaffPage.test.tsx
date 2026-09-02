@@ -211,15 +211,18 @@ describe("OrgStaffPage owner protection", () => {
         ok: true as const,
         value:
           membershipId === staffMembershipId || membershipId === noRoleMembershipId
-            ? [
-                {
-                  branchId: mainBranchId,
-                  name: "Main Store",
-                  code: "MAIN",
-                  isPrimary: true,
-                },
-              ]
-            : [],
+            ? {
+                scope: "Explicit" as const,
+                branches: [
+                  {
+                    branchId: mainBranchId,
+                    name: "Main Store",
+                    code: "MAIN",
+                    isPrimary: true,
+                  },
+                ],
+              }
+            : { scope: "Explicit" as const, branches: [] },
       }),
     );
   });
@@ -237,9 +240,10 @@ describe("OrgStaffPage owner protection", () => {
     expect(within(ownerRow).getByText("POS Owner")).toBeInTheDocument();
     expect(within(ownerRow).getByText("Protected owner account")).toBeInTheDocument();
     expect(within(ownerRow).getByTestId(`org-staff-branch-access-${ownerMembershipId}`)).toHaveTextContent(
-      "All active branches",
+      "All branches",
     );
     expect(within(ownerRow).queryByText("Assign POS role")).not.toBeInTheDocument();
+    expect(within(ownerRow).queryByText("Manage access")).not.toBeInTheDocument();
     expect(within(ownerRow).queryByText("Change POS role")).not.toBeInTheDocument();
     expect(within(ownerRow).queryByTestId(`org-staff-more-${ownerMembershipId}`)).not.toBeInTheDocument();
 
@@ -252,7 +256,7 @@ describe("OrgStaffPage owner protection", () => {
     );
     expect(within(staffRow).getAllByText("POS role").length).toBeGreaterThan(0);
     expect(within(ownerRow).getAllByText("POS role").length).toBeGreaterThan(0);
-    expect(within(staffRow).getByText("Change POS role")).toBeInTheDocument();
+    expect(within(staffRow).getByText("Manage access")).toBeInTheDocument();
     expect(within(staffRow).getByTestId(`org-staff-more-${staffMembershipId}`)).toBeInTheDocument();
 
     const noRoleRow = screen.getByTestId(`org-staff-row-${noRoleMembershipId}`);

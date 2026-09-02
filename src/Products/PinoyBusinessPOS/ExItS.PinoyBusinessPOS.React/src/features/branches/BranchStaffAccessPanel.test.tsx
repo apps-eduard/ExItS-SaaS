@@ -106,7 +106,17 @@ describe("BranchStaffAccessPanel", () => {
     });
     listMembershipBranchAssignments.mockResolvedValue({
       ok: true,
-      value: { branchIds: ["22222222-2222-2222-2222-222222222222"] },
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: "22222222-2222-2222-2222-222222222222",
+            name: "Main",
+            code: "MAIN",
+            isPrimary: true,
+          },
+        ],
+      },
     });
   });
 

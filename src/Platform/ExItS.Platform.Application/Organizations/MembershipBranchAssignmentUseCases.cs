@@ -14,13 +14,17 @@ public sealed record MembershipBranchAssignmentDto(
     string Code,
     bool IsPrimary);
 
+public sealed record MembershipBranchAccessDto(
+    string Scope,
+    IReadOnlyList<MembershipBranchAssignmentDto> Branches);
+
 public sealed class ListMembershipBranchAssignments(
     IOrganizationMembershipRepository memberships,
     IOrganizationBranchRepository branches,
     IOrganizationMembershipBranchAssignmentRepository assignments,
     IOrganizationBranchAccessService branchAccess)
 {
-    public async Task<ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>> ExecuteAsync(
+    public async Task<ApplicationResult<MembershipBranchAccessDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
         OrganizationMembershipId membershipId,
         PlatformUserId actorUserId,
@@ -29,7 +33,7 @@ public sealed class ListMembershipBranchAssignments(
         var membership = await memberships.GetByIdAsync(membershipId, cancellationToken).ConfigureAwait(false);
         if (membership is null || membership.OrganizationId != organizationId)
         {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
+            return ApplicationResult<MembershipBranchAccessDto>.Failure(
                 ApplicationErrorCodes.MembershipNotFound,
                 "Organization membership was not found.");
         }
@@ -42,8 +46,13 @@ public sealed class ListMembershipBranchAssignments(
             .Where(b => b.Status == OrganizationBranchStatus.Active)
             .ToDictionary(b => b.Id.Value);
 
+        var scope = OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role)
+            ? BranchAccessScope.AllActive
+            : membership.BranchAccessScope;
+
         IReadOnlyCollection<Guid> selected;
-        if (OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role))
+        if (OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role)
+            || membership.BranchAccessScope == BranchAccessScope.AllActive)
         {
             selected = active.Keys.ToList();
         }
@@ -73,11 +82,14 @@ public sealed class ListMembershipBranchAssignments(
             result = result.Where(x => accessible.Contains(x.BranchId)).ToList();
         }
 
-        return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Success(result);
+        return ApplicationResult<MembershipBranchAccessDto>.Success(
+            new MembershipBranchAccessDto(scope.ToString(), result));
     }
 }
 
-public sealed record SetMembershipBranchAssignmentsCommand(IReadOnlyList<Guid> BranchIds);
+public sealed record SetMembershipBranchAssignmentsCommand(
+    string Scope,
+    IReadOnlyList<Guid>? BranchIds);
 
 public sealed class SetMembershipBranchAssignments(
     IOrganizationMembershipRepository memberships,
@@ -86,7 +98,7 @@ public sealed class SetMembershipBranchAssignments(
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
-    public async Task<ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>> ExecuteAsync(
+    public async Task<ApplicationResult<MembershipBranchAccessDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
         OrganizationMembershipId membershipId,
         SetMembershipBranchAssignmentsCommand command,
@@ -96,69 +108,104 @@ public sealed class SetMembershipBranchAssignments(
         var membership = await memberships.GetByIdAsync(membershipId, cancellationToken).ConfigureAwait(false);
         if (membership is null || membership.OrganizationId != organizationId)
         {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
+            return ApplicationResult<MembershipBranchAccessDto>.Failure(
                 ApplicationErrorCodes.MembershipNotFound,
                 "Organization membership was not found.");
         }
 
         if (membership.Status != MembershipStatus.Active)
         {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
+            return ApplicationResult<MembershipBranchAccessDto>.Failure(
                 DomainErrorCodes.MembershipNotActive,
                 "Branch assignments can only be changed for an active membership.");
         }
 
         if (OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role))
         {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
+            return ApplicationResult<MembershipBranchAccessDto>.Failure(
                 DomainErrorCodes.InvalidOrganizationRole,
                 "Organization Owner and Administrator have access to all branches and do not use explicit assignments.");
         }
 
-        var orgBranches = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
-        var activeIds = orgBranches
-            .Where(b => b.Status == OrganizationBranchStatus.Active)
-            .Select(b => b.Id.Value)
-            .ToHashSet();
-        var requested = (command.BranchIds ?? [])
-            .Where(id => id != Guid.Empty)
-            .Distinct()
-            .ToList();
-        if (requested.Any(id => !activeIds.Contains(id)))
+        if (string.IsNullOrWhiteSpace(command.Scope)
+            || !Enum.TryParse<BranchAccessScope>(command.Scope, ignoreCase: true, out var scope))
         {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
-                ApplicationErrorCodes.BranchNotFound,
-                "One or more branches are not active in this organization.");
-        }
-
-        if (requested.Count == 0)
-        {
-            return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Failure(
+            return ApplicationResult<MembershipBranchAccessDto>.Failure(
                 ApplicationErrorCodes.DomainViolation,
-                "At least one branch assignment is required for organization staff.");
+                "Branch access scope must be Explicit or AllActive.");
         }
 
-        var branchIdEntities = requested.Select(OrganizationBranchId.From).ToList();
-        await assignments.ReplaceForMembershipAsync(
-            organizationId,
-            membershipId,
-            branchIdEntities,
-            clock.UtcNow,
-            actorReference,
-            cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        var orgBranches = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var activeLookup = orgBranches
+            .Where(b => b.Status == OrganizationBranchStatus.Active)
+            .ToDictionary(b => b.Id.Value);
+        var activeIds = activeLookup.Keys.ToHashSet();
 
-        var lookup = orgBranches.ToDictionary(b => b.Id.Value);
-        var dtos = requested
-            .Select(id =>
+        IReadOnlyList<MembershipBranchAssignmentDto> responseBranches;
+        if (scope == BranchAccessScope.AllActive)
+        {
+            membership.SetBranchAccessScope(BranchAccessScope.AllActive, clock.UtcNow, actorReference);
+            await memberships.UpdateAsync(membership, cancellationToken).ConfigureAwait(false);
+            await assignments.ReplaceForMembershipAsync(
+                organizationId,
+                membershipId,
+                [],
+                clock.UtcNow,
+                actorReference,
+                cancellationToken).ConfigureAwait(false);
+            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            responseBranches = activeLookup.Values
+                .Select(b => new MembershipBranchAssignmentDto(b.Id.Value, b.Name, b.Code, b.IsPrimary))
+                .OrderByDescending(x => x.IsPrimary)
+                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        else
+        {
+            var requested = (command.BranchIds ?? [])
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+            if (requested.Any(id => !activeIds.Contains(id)))
             {
-                var branch = lookup[id];
-                return new MembershipBranchAssignmentDto(id, branch.Name, branch.Code, branch.IsPrimary);
-            })
-            .OrderByDescending(x => x.IsPrimary)
-            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        return ApplicationResult<IReadOnlyList<MembershipBranchAssignmentDto>>.Success(dtos);
+                return ApplicationResult<MembershipBranchAccessDto>.Failure(
+                    ApplicationErrorCodes.BranchNotFound,
+                    "One or more branches are not active in this organization.");
+            }
+
+            if (requested.Count == 0)
+            {
+                return ApplicationResult<MembershipBranchAccessDto>.Failure(
+                    ApplicationErrorCodes.DomainViolation,
+                    "At least one branch assignment is required for organization staff.");
+            }
+
+            membership.SetBranchAccessScope(BranchAccessScope.Explicit, clock.UtcNow, actorReference);
+            await memberships.UpdateAsync(membership, cancellationToken).ConfigureAwait(false);
+            var branchIdEntities = requested.Select(OrganizationBranchId.From).ToList();
+            await assignments.ReplaceForMembershipAsync(
+                organizationId,
+                membershipId,
+                branchIdEntities,
+                clock.UtcNow,
+                actorReference,
+                cancellationToken).ConfigureAwait(false);
+            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            responseBranches = requested
+                .Select(id =>
+                {
+                    var branch = activeLookup[id];
+                    return new MembershipBranchAssignmentDto(id, branch.Name, branch.Code, branch.IsPrimary);
+                })
+                .OrderByDescending(x => x.IsPrimary)
+                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        return ApplicationResult<MembershipBranchAccessDto>.Success(
+            new MembershipBranchAccessDto(scope.ToString(), responseBranches));
     }
 }
 
@@ -203,8 +250,9 @@ public sealed class ListBranchStaffAccess(
                          StringComparer.OrdinalIgnoreCase))
         {
             var wide = OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role);
+            var allActive = OrganizationBranchAccessService.HasDynamicAllActiveBranchAccess(membership);
             var explicitAccess = assignedMembershipIds.Contains(membership.Id.Value);
-            if (!wide && !explicitAccess)
+            if (!wide && !allActive && !explicitAccess)
             {
                 continue;
             }
@@ -222,8 +270,8 @@ public sealed class ListBranchStaffAccess(
                 membership.Status.ToString(),
                 grant?.RoleCode,
                 grant is null ? null : ProductRoleDisplay.ToDisplayLabel(grant.RoleCode),
-                explicitAccess,
-                wide));
+                explicitAccess || allActive,
+                wide || allActive));
         }
 
         return ApplicationResult<IReadOnlyList<BranchStaffAccessItemDto>>.Success(items);

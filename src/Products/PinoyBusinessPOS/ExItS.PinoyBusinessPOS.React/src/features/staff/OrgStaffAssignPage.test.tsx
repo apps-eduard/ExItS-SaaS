@@ -161,14 +161,17 @@ describe("OrgStaffAssignPage branch access", () => {
     });
     vi.mocked(assignmentsClient.setMembershipBranchAssignments).mockResolvedValue({
       ok: true,
-      value: [
-        {
-          branchId: mainBranchId,
-          name: "Main",
-          code: "MAIN",
-          isPrimary: true,
-        },
-      ],
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main",
+            code: "MAIN",
+            isPrimary: true,
+          },
+        ],
+      },
     });
   });
 
@@ -192,21 +195,24 @@ describe("OrgStaffAssignPage branch access", () => {
     });
     vi.mocked(assignmentsClient.listMembershipBranchAssignments).mockResolvedValue({
       ok: true,
-      value: [
-        {
-          branchId: mainBranchId,
-          name: "Main Store",
-          code: "MAIN",
-          isPrimary: true,
-        },
-      ],
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main Store",
+            code: "MAIN",
+            isPrimary: true,
+          },
+        ],
+      },
     });
 
     const user = userEvent.setup();
     renderAssignPage();
 
     expect(await screen.findByTestId("org-staff-assign-branch-single")).toHaveTextContent(
-      "Main branch (automatic): Main Store",
+      "Main Branch / Automatic: Main Store",
     );
     expect(screen.queryByTestId("org-staff-branch-scope-all")).not.toBeInTheDocument();
 
@@ -215,12 +221,8 @@ describe("OrgStaffAssignPage branch access", () => {
 
     await waitFor(() => {
       expect(rolesClient.assignProductLocalRole).toHaveBeenCalled();
-      expect(assignmentsClient.setMembershipBranchAssignments).toHaveBeenCalledWith(
-        orgId,
-        staffMembershipId,
-        [mainBranchId],
-      );
     });
+    expect(assignmentsClient.setMembershipBranchAssignments).not.toHaveBeenCalled();
     expect(await screen.findByTestId("org-staff-redirect")).toBeInTheDocument();
   });
 
@@ -248,31 +250,37 @@ describe("OrgStaffAssignPage branch access", () => {
     });
     vi.mocked(assignmentsClient.listMembershipBranchAssignments).mockResolvedValue({
       ok: true,
-      value: [
-        {
-          branchId: mainBranchId,
-          name: "Main Store",
-          code: "MAIN",
-          isPrimary: true,
-        },
-      ],
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main Store",
+            code: "MAIN",
+            isPrimary: true,
+          },
+        ],
+      },
     });
     vi.mocked(assignmentsClient.setMembershipBranchAssignments).mockResolvedValue({
       ok: true,
-      value: [
-        {
-          branchId: mainBranchId,
-          name: "Main Store",
-          code: "MAIN",
-          isPrimary: true,
-        },
-        {
-          branchId: secondBranchId,
-          name: "North Branch",
-          code: "NORTH",
-          isPrimary: false,
-        },
-      ],
+      value: {
+        scope: "AllActive",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main Store",
+            code: "MAIN",
+            isPrimary: true,
+          },
+          {
+            branchId: secondBranchId,
+            name: "North Branch",
+            code: "NORTH",
+            isPrimary: false,
+          },
+        ],
+      },
     });
 
     const user = userEvent.setup();
@@ -287,7 +295,7 @@ describe("OrgStaffAssignPage branch access", () => {
       expect(assignmentsClient.setMembershipBranchAssignments).toHaveBeenCalledWith(
         orgId,
         staffMembershipId,
-        expect.arrayContaining([mainBranchId, secondBranchId]),
+        { scope: "AllActive", branchIds: [] },
       );
     });
   });
@@ -316,14 +324,37 @@ describe("OrgStaffAssignPage branch access", () => {
     });
     vi.mocked(assignmentsClient.listMembershipBranchAssignments).mockResolvedValue({
       ok: true,
-      value: [
-        {
-          branchId: mainBranchId,
-          name: "Main Store",
-          code: "MAIN",
-          isPrimary: true,
-        },
-      ],
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main Store",
+            code: "MAIN",
+            isPrimary: true,
+          },
+        ],
+      },
+    });
+    vi.mocked(assignmentsClient.setMembershipBranchAssignments).mockResolvedValue({
+      ok: true,
+      value: {
+        scope: "Explicit",
+        branches: [
+          {
+            branchId: mainBranchId,
+            name: "Main Store",
+            code: "MAIN",
+            isPrimary: true,
+          },
+          {
+            branchId: secondBranchId,
+            name: "North Branch",
+            code: "NORTH",
+            isPrimary: false,
+          },
+        ],
+      },
     });
 
     const user = userEvent.setup();
@@ -342,7 +373,10 @@ describe("OrgStaffAssignPage branch access", () => {
       expect(assignmentsClient.setMembershipBranchAssignments).toHaveBeenCalledWith(
         orgId,
         staffMembershipId,
-        expect.arrayContaining([mainBranchId, secondBranchId]),
+        {
+          scope: "Explicit",
+          branchIds: expect.arrayContaining([mainBranchId, secondBranchId]),
+        },
       );
     });
   });

@@ -326,7 +326,7 @@
                 {
                     var assignmentResult = await Platform.GetMembershipBranchAssignmentsAsync(orgId.Value, member.Id);
                     branchAssignments = assignmentResult.IsSuccess && assignmentResult.Data is not null
-                        ? assignmentResult.Data
+                        ? assignmentResult.Data.Branches
                         : [];
                 }
 
@@ -577,7 +577,7 @@
             var result = await Platform.SetMembershipBranchAssignmentsAsync(
                 orgId,
                 _branchSheetRow.MembershipId,
-                new SetMembershipBranchAssignmentsRequest(_branchSheetSelection.ToList()));
+                new SetMembershipBranchAssignmentsRequest("Explicit", _branchSheetSelection.ToList()));
             if (!result.IsSuccess)
             {
                 _branchSheetError = L["Org_StaffBranchesSaveFailed"];

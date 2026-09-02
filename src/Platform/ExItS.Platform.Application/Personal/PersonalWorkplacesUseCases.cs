@@ -158,7 +158,8 @@ public sealed class ListPersonalWorkplaces
             .ToDictionary(b => b.Id.Value);
 
         IReadOnlyCollection<Guid> selected;
-        if (OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role))
+        if (OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role)
+            || membership.BranchAccessScope == BranchAccessScope.AllActive)
         {
             selected = active.Keys.ToList();
         }
