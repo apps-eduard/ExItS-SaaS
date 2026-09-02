@@ -1,13 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Plus, UserRound } from "lucide-react";
+import { MoreHorizontal, Plus, ShieldCheck, UserRound } from "lucide-react";
+import {
+  listMembershipBranchAssignments,
+} from "@/api/platform/membership-branch-assignments-client";
 import {
   listOrganizationMembers,
   revokeOrganizationMembership,
   suspendOrganizationMembership,
   type OrganizationMemberWire,
 } from "@/api/platform/organization-members-client";
+import {
+  listOrganizationBranches,
+  type PlatformBranch,
+} from "@/api/platform/platform-auth-client";
 import {
   friendlyPosRoleLabel,
   listProductLocalRoles,
@@ -19,6 +26,12 @@ import {
   revokeStaffInvitation,
   type OrganizationInvitationWire,
 } from "@/api/platform/staff-invitation-client";
+import {
+  assignmentBranchIds,
+  formatStaffBranchAccessSummary,
+  isImplicitAllBranchesMembershipRole,
+  listActiveBranches,
+} from "@/features/staff/staff-branch-access";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -50,6 +63,7 @@ type StaffRow = {
   membershipRole: string;
   membershipStatus: string;
   posGrants: StaffGrant[];
+  assignedBranchIds: string[];
 };
 
 type PendingAction =
@@ -87,6 +101,20 @@ export function isOrganizationOwnerMembershipRole(role: string): boolean {
   return (
     role.trim().localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0
   );
+}
+
+function membershipStatusLabel(status: string, t: (key: MessageKey) => string): string {
+  switch (status.trim().toLowerCase()) {
+    case "active":
+      return t("staffManage.status.active");
+    case "suspended":
+      return t("staffManage.status.suspended");
+    case "revoked":
+    case "removed":
+      return t("staffManage.status.removed");
+    default:
+      return status;
+  }
 }
 
 function organizationAccessLabel(
@@ -129,6 +157,7 @@ function staffPosRoleLabel(grant: StaffGrant): string {
 function buildRows(
   members: OrganizationMemberWire[],
   grants: ProductLocalRoleGrantWire[],
+  assignmentsByMembershipId: Map<string, string[]>,
 ): StaffRow[] {
   const grantsByUser = new Map<string, StaffGrant[]>();
   for (const grant of grants) {
@@ -156,6 +185,7 @@ function buildRows(
       membershipRole: member.role,
       membershipStatus: member.status,
       posGrants: grantsByUser.get(member.userId) ?? [],
+      assignedBranchIds: assignmentsByMembershipId.get(member.id) ?? [],
     };
   });
 }
@@ -187,9 +217,10 @@ export function OrgStaffPage() {
       if (!organizationId) {
         throw new Error("missing organization");
       }
-      const [membersResult, grantsResult] = await Promise.all([
+      const [membersResult, grantsResult, branchesResult] = await Promise.all([
         listOrganizationMembers(organizationId, undefined),
         listProductLocalRoles(organizationId, "Active"),
+        listOrganizationBranches(organizationId),
       ]);
       if (!membersResult.ok) {
         throw new Error(membersResult.body?.detail ?? t("staffManage.loadError"));
@@ -197,7 +228,32 @@ export function OrgStaffPage() {
       if (!grantsResult.ok) {
         throw new Error(grantsResult.body?.detail ?? t("staffManage.loadError"));
       }
-      return buildRows(membersResult.members, grantsResult.grants);
+      if (!branchesResult.ok) {
+        throw new Error(branchesResult.body?.detail ?? t("staffManage.loadError"));
+      }
+
+      const activeBranches = listActiveBranches(branchesResult.branches);
+      const assignmentsByMembershipId = new Map<string, string[]>();
+      const assignmentTargets = membersResult.members.filter(
+        (member) => !isImplicitAllBranchesMembershipRole(member.role),
+      );
+      const assignmentResults = await Promise.all(
+        assignmentTargets.map(async (member) => {
+          const result = await listMembershipBranchAssignments(organizationId, member.id);
+          if (!result.ok) {
+            throw new Error(result.body?.detail ?? t("staffManage.loadError"));
+          }
+          return [member.id, assignmentBranchIds(result.value)] as const;
+        }),
+      );
+      for (const [membershipId, ids] of assignmentResults) {
+        assignmentsByMembershipId.set(membershipId, ids);
+      }
+
+      return {
+        rows: buildRows(membersResult.members, grantsResult.grants, assignmentsByMembershipId),
+        activeBranches,
+      };
     },
   });
 
@@ -277,7 +333,19 @@ export function OrgStaffPage() {
     },
   });
 
-  const rows = staffQuery.data ?? [];
+  const rows = useMemo(() => {
+    const list = [...(staffQuery.data?.rows ?? [])];
+    list.sort((a, b) => {
+      const ownerRank = (role: string) => (isOrganizationOwnerMembershipRole(role) ? 0 : 1);
+      const byOwner = ownerRank(a.membershipRole) - ownerRank(b.membershipRole);
+      if (byOwner !== 0) {
+        return byOwner;
+      }
+      return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: "base" });
+    });
+    return list;
+  }, [staffQuery.data]);
+  const activeBranches = staffQuery.data?.activeBranches ?? [];
   const pendingInvites = pendingInvitesQuery.data ?? [];
   const confirmCopy = useMemo(() => {
     if (!pending) {
@@ -396,7 +464,7 @@ export function OrgStaffPage() {
 
       {staffQuery.isSuccess && rows.length > 0 ? (
         <ul
-          className="exits-list m-0 grid list-none gap-2 p-0"
+          className="exits-list staff-list m-0 grid list-none gap-3 p-0"
           data-testid="org-staff-list"
           aria-label={t("staffManage.title")}
         >
@@ -404,6 +472,7 @@ export function OrgStaffPage() {
             <StaffMemberRow
               key={row.membershipId}
               row={row}
+              activeBranches={activeBranches}
               currentUserId={currentUserId}
               busy={busyMutation.isPending}
               t={t}
@@ -501,13 +570,21 @@ export function OrgStaffPage() {
 
 type StaffMemberRowProps = {
   row: StaffRow;
+  activeBranches: PlatformBranch[];
   currentUserId: string | null;
   busy: boolean;
   t: (key: MessageKey) => string;
   onPending: (action: PendingAction) => void;
 };
 
-function StaffMemberRow({ row, currentUserId, busy, t, onPending }: StaffMemberRowProps) {
+function StaffMemberRow({
+  row,
+  activeBranches,
+  currentUserId,
+  busy,
+  t,
+  onPending,
+}: StaffMemberRowProps) {
   const menu = useDismissibleOpen(false);
   const isOwner = isOrganizationOwnerMembershipRole(row.membershipRole);
   const isSelf = Boolean(currentUserId && row.userId === currentUserId);
@@ -520,9 +597,17 @@ function StaffMemberRow({ row, currentUserId, busy, t, onPending }: StaffMemberR
   const showPosRoleAction = canManagePosRole;
   const showMoreMenu =
     canManagePosRole && (posGrant !== null || canMutateMembership);
+  const branchAccessLabel = formatStaffBranchAccessSummary({
+    membershipRole: row.membershipRole,
+    activeBranches,
+    assignedIds: row.assignedBranchIds,
+    allActiveLabel: t("staffManage.branchAccessAll"),
+    automaticAllLabel: t("staffManage.branchAccessAutomatic"),
+    unknownLabel: t("staffManage.branchAccessUnknown"),
+  });
 
   return (
-    <li>
+    <li className={menu.open ? "staff-list__item--menu-open" : undefined}>
       <article
         className={
           isOwner
@@ -538,34 +623,52 @@ function StaffMemberRow({ row, currentUserId, busy, t, onPending }: StaffMemberR
         <div className="staff-row__main min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="exits-list__name m-0 truncate font-semibold">{row.displayName}</p>
-            <StatusChip tone={statusTone(row.membershipStatus)}>{row.membershipStatus}</StatusChip>
+            <StatusChip tone={statusTone(row.membershipStatus)}>
+              {membershipStatusLabel(row.membershipStatus, t)}
+            </StatusChip>
           </div>
           {row.email ? (
-            <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+            <p className="staff-row__login mb-0 mt-0.5 truncate text-[length:var(--exits-text-sm)] text-muted">
               {row.email}
             </p>
           ) : null}
 
-          <div className="staff-access-grid" data-testid={`org-staff-access-${row.membershipId}`}>
-            <div className="staff-access-block">
-              <p className="staff-access-block__label m-0">{t("staffManage.organizationAccess")}</p>
-              <p className="staff-access-block__value m-0">
+          <div
+            className="staff-access-meta"
+            data-testid={`org-staff-access-${row.membershipId}`}
+          >
+            <span className="staff-access-meta__item">
+              <span className="staff-access-meta__label">{t("staffManage.organizationAccess")}</span>
+              <span className="staff-access-meta__value">
                 {organizationAccessLabel(row.membershipRole, t)}
-              </p>
-            </div>
-            <div className="staff-access-block">
-              <p className="staff-access-block__label m-0">
-                {isOwner ? t("staffManage.posAccess") : t("staffManage.posRole")}
-              </p>
-              <p
-                className="staff-access-block__value m-0"
+              </span>
+            </span>
+            <span className="staff-access-meta__sep" aria-hidden>
+              ·
+            </span>
+            <span className="staff-access-meta__item">
+              <span className="staff-access-meta__label">{t("staffManage.posRole")}</span>
+              <span
+                className="staff-access-meta__value"
                 data-testid={`org-staff-pos-role-${row.membershipId}`}
               >
                 {isOwner
                   ? posRoleLabel ?? t("staffManage.posOwnerEquivalent")
                   : posRoleLabel ?? t("staffManage.noPosRoles")}
-              </p>
-            </div>
+              </span>
+            </span>
+            <span className="staff-access-meta__sep" aria-hidden>
+              ·
+            </span>
+            <span className="staff-access-meta__item">
+              <span className="staff-access-meta__label">{t("staffManage.branchAccess")}</span>
+              <span
+                className="staff-access-meta__value"
+                data-testid={`org-staff-branch-access-${row.membershipId}`}
+              >
+                {branchAccessLabel}
+              </span>
+            </span>
           </div>
 
           {!isActive && !isOwner ? (
@@ -574,10 +677,11 @@ function StaffMemberRow({ row, currentUserId, busy, t, onPending }: StaffMemberR
 
           {isOwner ? (
             <p
-              className="staff-row__owner-note m-0"
+              className="staff-row__owner-badge m-0"
               data-testid={`org-staff-owner-note-${row.membershipId}`}
             >
-              {t("staffManage.protectedAccount")}
+              <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+              <span>{t("staffManage.protectedAccount")}</span>
             </p>
           ) : (
             <div className="staff-row__actions">

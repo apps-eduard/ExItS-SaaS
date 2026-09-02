@@ -4,6 +4,8 @@ import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import * as membersClient from "@/api/platform/organization-members-client";
+import * as assignmentsClient from "@/api/platform/membership-branch-assignments-client";
+import * as authClient from "@/api/platform/platform-auth-client";
 import * as rolesClient from "@/api/platform/product-local-roles-client";
 import * as inviteClient from "@/api/platform/staff-invitation-client";
 import {
@@ -38,6 +40,22 @@ vi.mock("@/api/platform/staff-invitation-client", async (importOriginal) => {
     ...actual,
     listOrganizationInvitations: vi.fn(),
     revokeStaffInvitation: vi.fn(),
+  };
+});
+
+vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof authClient>();
+  return {
+    ...actual,
+    listOrganizationBranches: vi.fn(),
+  };
+});
+
+vi.mock("@/api/platform/membership-branch-assignments-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof assignmentsClient>();
+  return {
+    ...actual,
+    listMembershipBranchAssignments: vi.fn(),
   };
 });
 
@@ -79,6 +97,7 @@ const staffMembershipId = "33333333-3333-4333-8333-333333333333";
 const noRoleMembershipId = "44444444-4444-4444-8444-444444444444";
 const ownerGrantId = "55555555-5555-4555-8555-555555555555";
 const staffGrantId = "66666666-6666-4666-8666-666666666666";
+const mainBranchId = "77777777-7777-4777-8777-777777777777";
 
 function renderPage() {
   const client = new QueryClient({
@@ -174,6 +193,35 @@ describe("OrgStaffPage owner protection", () => {
       ],
     });
     vi.mocked(inviteClient.listOrganizationInvitations).mockResolvedValue([]);
+    vi.mocked(authClient.listOrganizationBranches).mockResolvedValue({
+      ok: true,
+      branches: [
+        {
+          id: mainBranchId,
+          organizationId: orgId,
+          code: "MAIN",
+          name: "Main Store",
+          isPrimary: true,
+          status: "Active",
+        },
+      ],
+    });
+    vi.mocked(assignmentsClient.listMembershipBranchAssignments).mockImplementation(
+      async (_organizationId, membershipId) => ({
+        ok: true as const,
+        value:
+          membershipId === staffMembershipId || membershipId === noRoleMembershipId
+            ? [
+                {
+                  branchId: mainBranchId,
+                  name: "Main Store",
+                  code: "MAIN",
+                  isPrimary: true,
+                },
+              ]
+            : [],
+      }),
+    );
   });
 
   afterEach(() => {
@@ -187,7 +235,10 @@ describe("OrgStaffPage owner protection", () => {
     expect(ownerRow).toHaveAttribute("data-owner-protected", "true");
     expect(within(ownerRow).getByText("Organization Owner")).toBeInTheDocument();
     expect(within(ownerRow).getByText("POS Owner")).toBeInTheDocument();
-    expect(within(ownerRow).getByText("Protected account")).toBeInTheDocument();
+    expect(within(ownerRow).getByText("Protected owner account")).toBeInTheDocument();
+    expect(within(ownerRow).getByTestId(`org-staff-branch-access-${ownerMembershipId}`)).toHaveTextContent(
+      "All active branches",
+    );
     expect(within(ownerRow).queryByText("Assign POS role")).not.toBeInTheDocument();
     expect(within(ownerRow).queryByText("Change POS role")).not.toBeInTheDocument();
     expect(within(ownerRow).queryByTestId(`org-staff-more-${ownerMembershipId}`)).not.toBeInTheDocument();
@@ -196,6 +247,11 @@ describe("OrgStaffPage owner protection", () => {
     expect(staffRow).not.toHaveAttribute("data-owner-protected");
     expect(within(staffRow).getByText("Staff member")).toBeInTheDocument();
     expect(within(staffRow).getByText("Cashier")).toBeInTheDocument();
+    expect(within(staffRow).getByTestId(`org-staff-branch-access-${staffMembershipId}`)).toHaveTextContent(
+      "Main Store",
+    );
+    expect(within(staffRow).getAllByText("POS role").length).toBeGreaterThan(0);
+    expect(within(ownerRow).getAllByText("POS role").length).toBeGreaterThan(0);
     expect(within(staffRow).getByText("Change POS role")).toBeInTheDocument();
     expect(within(staffRow).getByTestId(`org-staff-more-${staffMembershipId}`)).toBeInTheDocument();
 

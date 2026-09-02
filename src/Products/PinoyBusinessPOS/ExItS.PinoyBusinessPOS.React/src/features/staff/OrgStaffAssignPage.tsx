@@ -1,8 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/cn";
+import {
+  listMembershipBranchAssignments,
+  setMembershipBranchAssignments,
+} from "@/api/platform/membership-branch-assignments-client";
 import { listOrganizationMembers } from "@/api/platform/organization-members-client";
+import {
+  listOrganizationBranches,
+  resolvePlatformBranchId,
+} from "@/api/platform/platform-auth-client";
 import {
   assignProductLocalRole,
   changeProductLocalRole,
@@ -16,6 +24,16 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { useProductLocalRoleCatalog } from "@/features/staff/useProductLocalRoleCatalog";
+import {
+  activeBranchIds,
+  assignmentBranchIds,
+  branchIdsEqual,
+  inferBranchScopeMode,
+  isImplicitAllBranchesMembershipRole,
+  listActiveBranches,
+  resolvePrimaryOrOnlyBranch,
+  type BranchScopeMode,
+} from "@/features/staff/staff-branch-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -29,6 +47,9 @@ export function OrgStaffAssignPage() {
   const userId = searchParams.get("userId")?.trim() || null;
 
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [branchScope, setBranchScope] = useState<BranchScopeMode>("all");
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [branchStateReady, setBranchStateReady] = useState(false);
   const [ownerConfirmOpen, setOwnerConfirmOpen] = useState(false);
   const [changeConfirmOpen, setChangeConfirmOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -53,18 +74,37 @@ export function OrgStaffAssignPage() {
         throw new Error(grantsResult.body?.detail ?? t("staffManage.loadError"));
       }
       const member = membersResult.members.find((item) => item.userId === userId) ?? null;
+      if (!member) {
+        throw new Error(t("staffAssign.validation"));
+      }
       const existingGrant =
         grantsResult.grants.find((grant) => grant.userIdentityId === userId) ?? null;
       const displayName =
-        member?.displayName?.trim() ||
-        member?.username?.trim() ||
+        member.displayName?.trim() ||
+        member.username?.trim() ||
         existingGrant?.userDisplayName?.trim() ||
-        member?.email?.trim() ||
+        member.email?.trim() ||
         t("staffAssign.unknownName");
+
+      const implicitAll = isImplicitAllBranchesMembershipRole(member.role);
+      let assignedIds: string[] = [];
+      if (!implicitAll) {
+        const assignmentsResult = await listMembershipBranchAssignments(
+          organizationId,
+          member.id,
+        );
+        if (!assignmentsResult.ok) {
+          throw new Error(assignmentsResult.body?.detail ?? t("staffManage.loadError"));
+        }
+        assignedIds = assignmentBranchIds(assignmentsResult.value);
+      }
+
       return {
+        membershipId: member.id,
+        membershipRole: member.role,
         displayName,
-        email: member?.email?.trim() || null,
-        membershipStatus: member?.status ?? "Unknown",
+        email: member.email?.trim() || null,
+        membershipStatus: member.status,
         existingRoleCode: existingGrant?.roleCode ?? null,
         existingRoleLabel: existingGrant
           ? friendlyPosRoleLabel(
@@ -73,35 +113,147 @@ export function OrgStaffAssignPage() {
               existingGrant.roleDisplay,
             )
           : null,
+        implicitAllBranches: implicitAll,
+        assignedBranchIds: assignedIds,
       };
     },
   });
 
+  const branchesQuery = useQuery({
+    queryKey: ["org-staff-assign-branches", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async () => {
+      if (!organizationId) {
+        throw new Error(t("staffInvite.noWorkspace"));
+      }
+      const result = await listOrganizationBranches(organizationId);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? t("staffManage.loadError"));
+      }
+      return listActiveBranches(result.branches);
+    },
+  });
+
+  const activeBranches = branchesQuery.data ?? [];
+  const allActiveIds = useMemo(() => activeBranchIds(activeBranches), [activeBranches]);
+  const singleBranch = activeBranches.length === 1 ? resolvePrimaryOrOnlyBranch(activeBranches) : null;
+  const singleBranchId = singleBranch ? resolvePlatformBranchId(singleBranch) : null;
+
+  useEffect(() => {
+    setBranchStateReady(false);
+  }, [organizationId, userId]);
+
+  useEffect(() => {
+    if (!userQuery.isSuccess || !branchesQuery.isSuccess || branchStateReady) {
+      return;
+    }
+    if (userQuery.data.implicitAllBranches) {
+      setBranchScope("all");
+      setSelectedBranchIds([]);
+      setBranchStateReady(true);
+      return;
+    }
+    if (activeBranches.length <= 1) {
+      setBranchScope("all");
+      setSelectedBranchIds(singleBranchId ? [singleBranchId] : []);
+      setBranchStateReady(true);
+      return;
+    }
+    const assigned = userQuery.data.assignedBranchIds;
+    const mode = inferBranchScopeMode(allActiveIds, assigned);
+    setBranchScope(mode);
+    setSelectedBranchIds(
+      mode === "all"
+        ? [...allActiveIds]
+        : assigned.length > 0
+          ? [...assigned]
+          : singleBranchId
+            ? [singleBranchId]
+            : allActiveIds.slice(0, 1),
+    );
+    setBranchStateReady(true);
+  }, [
+    userQuery.isSuccess,
+    userQuery.data,
+    branchesQuery.isSuccess,
+    activeBranches.length,
+    allActiveIds,
+    singleBranchId,
+    branchStateReady,
+  ]);
+
+  const resolvedBranchIds = useMemo(() => {
+    if (!userQuery.data || userQuery.data.implicitAllBranches) {
+      return [] as string[];
+    }
+    if (activeBranches.length <= 1) {
+      return singleBranchId ? [singleBranchId] : [];
+    }
+    if (branchScope === "all") {
+      return [...allActiveIds];
+    }
+    return selectedBranchIds.filter((id) => allActiveIds.includes(id));
+  }, [
+    userQuery.data,
+    activeBranches.length,
+    singleBranchId,
+    branchScope,
+    allActiveIds,
+    selectedBranchIds,
+  ]);
+
+  const branchesDirty = useMemo(() => {
+    if (!userQuery.data || userQuery.data.implicitAllBranches) {
+      return false;
+    }
+    return !branchIdsEqual(resolvedBranchIds, userQuery.data.assignedBranchIds);
+  }, [userQuery.data, resolvedBranchIds]);
+
   const assignMutation = useMutation({
-    mutationFn: async (roleCode: string) => {
-      if (!organizationId || !userId) {
+    mutationFn: async (roleCode: string | null) => {
+      if (!organizationId || !userId || !userQuery.data) {
         throw new Error(t("staffAssign.validation"));
       }
-      const reason = userQuery.data?.existingRoleCode
-        ? "Changed from POS client"
-        : "Assigned from POS client";
-      const result = userQuery.data?.existingRoleCode
-        ? await changeProductLocalRole({
-            organizationId,
-            userIdentityId: userId,
-            roleCode,
-            reason,
-          })
-        : await assignProductLocalRole({
-            organizationId,
-            userIdentityId: userId,
-            roleCode,
-            reason,
-          });
-      if (!result.ok) {
-        throw new Error(result.body?.detail ?? t("staffAssign.error"));
+
+      const needsRoleWrite =
+        Boolean(roleCode) && roleCode !== userQuery.data.existingRoleCode;
+      if (needsRoleWrite && roleCode) {
+        const reason = userQuery.data.existingRoleCode
+          ? "Changed from POS client"
+          : "Assigned from POS client";
+        const result = userQuery.data.existingRoleCode
+          ? await changeProductLocalRole({
+              organizationId,
+              userIdentityId: userId,
+              roleCode,
+              reason,
+            })
+          : await assignProductLocalRole({
+              organizationId,
+              userIdentityId: userId,
+              roleCode,
+              reason,
+            });
+        if (!result.ok) {
+          throw new Error(result.body?.detail ?? t("staffAssign.error"));
+        }
       }
-      return result.grant;
+
+      if (!userQuery.data.implicitAllBranches) {
+        if (resolvedBranchIds.length === 0) {
+          throw new Error(t("staffAssign.branchRequired"));
+        }
+        if (branchesDirty || needsRoleWrite) {
+          const branchResult = await setMembershipBranchAssignments(
+            organizationId,
+            userQuery.data.membershipId,
+            resolvedBranchIds,
+          );
+          if (!branchResult.ok) {
+            throw new Error(branchResult.body?.detail ?? t("staffAssign.branchSaveError"));
+          }
+        }
+      }
     },
     onSuccess: () => {
       navigate("/org/staff", { replace: true });
@@ -117,9 +269,18 @@ export function OrgStaffAssignPage() {
   const sameRoleSelected =
     Boolean(selectedRole && userQuery.data?.existingRoleCode) &&
     selectedRole === userQuery.data?.existingRoleCode;
+  const roleSelectionMissing = !selectedRole && !userQuery.data?.existingRoleCode;
   const canSubmit =
-    Boolean(organizationId && userId && selectedRole && !assignMutation.isPending && !sameRoleSelected) &&
-    userQuery.data?.membershipStatus === "Active";
+    Boolean(
+      organizationId &&
+        userId &&
+        !assignMutation.isPending &&
+        userQuery.data?.membershipStatus === "Active" &&
+        branchStateReady,
+    ) &&
+    !roleSelectionMissing &&
+    (!sameRoleSelected || branchesDirty) &&
+    (userQuery.data?.implicitAllBranches || resolvedBranchIds.length > 0);
 
   const replaceHint = useMemo(() => {
     if (!userQuery.data?.existingRoleLabel) {
@@ -129,28 +290,53 @@ export function OrgStaffAssignPage() {
   }, [t, userQuery.data?.existingRoleLabel]);
 
   const selectedRoleLabel = useMemo(() => {
-    if (!selectedRole) {
+    const code = selectedRole ?? userQuery.data?.existingRoleCode;
+    if (!code) {
       return "";
     }
-    const fromCatalog = catalogQuery.data?.find((role) => role.code === selectedRole);
-    return fromCatalog?.displayName ?? friendlyPosRoleLabel(null, selectedRole);
-  }, [catalogQuery.data, selectedRole]);
+    const fromCatalog = catalogQuery.data?.find((role) => role.code === code);
+    return fromCatalog?.displayName ?? friendlyPosRoleLabel(null, code);
+  }, [catalogQuery.data, selectedRole, userQuery.data?.existingRoleCode]);
 
   function requestAssign() {
-    if (!selectedRole || sameRoleSelected) {
+    if (!canSubmit) {
       return;
     }
+    const roleToApply = selectedRole ?? userQuery.data?.existingRoleCode ?? null;
     setSubmitError(null);
-    if (selectedRole === POS_LOCAL_ROLE_OWNER) {
+    if (roleToApply === POS_LOCAL_ROLE_OWNER && roleToApply !== userQuery.data?.existingRoleCode) {
       setOwnerConfirmOpen(true);
       return;
     }
-    if (isChanging) {
+    if (
+      isChanging &&
+      roleToApply &&
+      roleToApply !== userQuery.data?.existingRoleCode
+    ) {
       setChangeConfirmOpen(true);
       return;
     }
-    assignMutation.mutate(selectedRole);
+    assignMutation.mutate(roleToApply);
   }
+
+  function toggleBranch(branchId: string) {
+    setSelectedBranchIds((current) => {
+      if (current.includes(branchId)) {
+        return current.filter((id) => id !== branchId);
+      }
+      return [...current, branchId];
+    });
+    setSubmitError(null);
+  }
+
+  const pageError = userQuery.isError || catalogQuery.isError || branchesQuery.isError;
+  const pageLoading =
+    Boolean(userId) &&
+    !pageError &&
+    (userQuery.isLoading ||
+      catalogQuery.isLoading ||
+      branchesQuery.isLoading ||
+      (userQuery.isSuccess && branchesQuery.isSuccess && !branchStateReady));
 
   return (
     <div
@@ -169,11 +355,9 @@ export function OrgStaffAssignPage() {
         <ErrorState title={t("error.title")} detail={t("staffAssign.validation")} />
       ) : null}
 
-      {userQuery.isLoading || catalogQuery.isLoading ? (
-        <LoadingSkeleton count={2} label={t("loading.label")} />
-      ) : null}
+      {pageLoading && userId ? <LoadingSkeleton count={3} label={t("loading.label")} /> : null}
 
-      {userQuery.isError || catalogQuery.isError ? (
+      {pageError ? (
         <ErrorState
           title={t("error.title")}
           detail={
@@ -181,12 +365,14 @@ export function OrgStaffAssignPage() {
               ? userQuery.error.message
               : catalogQuery.error instanceof Error
                 ? catalogQuery.error.message
-                : t("staffManage.loadError")
+                : branchesQuery.error instanceof Error
+                  ? branchesQuery.error.message
+                  : t("staffManage.loadError")
           }
         />
       ) : null}
 
-      {userQuery.isSuccess ? (
+      {userQuery.isSuccess && !pageLoading ? (
         <section
           className="catalog-form-section exits-animate-panel gap-3"
           data-testid="org-staff-assign-user"
@@ -216,7 +402,7 @@ export function OrgStaffAssignPage() {
         </section>
       ) : null}
 
-      {catalogQuery.isSuccess ? (
+      {catalogQuery.isSuccess && !pageLoading ? (
         <section
           className="catalog-form-section exits-animate-panel gap-3"
           aria-labelledby="assign-role-heading"
@@ -230,7 +416,7 @@ export function OrgStaffAssignPage() {
             aria-labelledby="assign-role-heading"
           >
             {catalogQuery.data.map((option) => {
-              const selected = selectedRole === option.code;
+              const selected = (selectedRole ?? userQuery.data?.existingRoleCode) === option.code;
               const isCurrent = userQuery.data?.existingRoleCode === option.code;
               return (
                 <button
@@ -238,7 +424,11 @@ export function OrgStaffAssignPage() {
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  disabled={!userId || assignMutation.isPending || userQuery.data?.membershipStatus !== "Active"}
+                  disabled={
+                    !userId ||
+                    assignMutation.isPending ||
+                    userQuery.data?.membershipStatus !== "Active"
+                  }
                   data-testid={`org-staff-role-${option.code.toLowerCase()}`}
                   className={cn(
                     "staff-assign-role",
@@ -266,6 +456,156 @@ export function OrgStaffAssignPage() {
               );
             })}
           </div>
+        </section>
+      ) : null}
+
+      {userQuery.isSuccess && branchesQuery.isSuccess && !pageLoading ? (
+        <section
+          className="catalog-form-section exits-animate-panel gap-3"
+          aria-labelledby="assign-branch-heading"
+          data-testid="org-staff-assign-branches"
+        >
+          <h2 id="assign-branch-heading" className="catalog-form-section__title">
+            {t("staffAssign.branchSection")}
+          </h2>
+
+          {userQuery.data.implicitAllBranches ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="org-staff-assign-branch-automatic"
+            >
+              {t("staffAssign.branchAutomaticAll")}
+            </p>
+          ) : activeBranches.length === 0 ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("staffAssign.branchNoneActive")}
+            </p>
+          ) : activeBranches.length === 1 ? (
+            <p
+              className="staff-assign-branch-note m-0"
+              data-testid="org-staff-assign-branch-single"
+            >
+              {t("staffAssign.singleBranchAutomatic").replace(
+                "{branch}",
+                singleBranch?.name?.trim() || singleBranch?.code || t("staffAssign.mainBranch"),
+              )}
+            </p>
+          ) : (
+            <>
+              <div
+                className="staff-assign-branch-scopes"
+                role="radiogroup"
+                aria-labelledby="assign-branch-heading"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={branchScope === "all"}
+                  disabled={assignMutation.isPending || userQuery.data.membershipStatus !== "Active"}
+                  className={cn(
+                    "staff-assign-role",
+                    branchScope === "all" && "staff-assign-role--selected",
+                  )}
+                  data-testid="org-staff-branch-scope-all"
+                  onClick={() => {
+                    setBranchScope("all");
+                    setSelectedBranchIds([...allActiveIds]);
+                    setSubmitError(null);
+                  }}
+                >
+                  <span className="staff-assign-role__check" aria-hidden>
+                    {branchScope === "all" ? "✓" : ""}
+                  </span>
+                  <span className="staff-assign-role__copy">
+                    <span className="staff-assign-role__label">{t("staffAssign.allBranches")}</span>
+                    <span className="staff-assign-role__desc">
+                      {t("staffAssign.allBranchesHint")}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={branchScope === "specific"}
+                  disabled={assignMutation.isPending || userQuery.data.membershipStatus !== "Active"}
+                  className={cn(
+                    "staff-assign-role",
+                    branchScope === "specific" && "staff-assign-role--selected",
+                  )}
+                  data-testid="org-staff-branch-scope-specific"
+                  onClick={() => {
+                    setBranchScope("specific");
+                    if (selectedBranchIds.length === 0) {
+                      setSelectedBranchIds(
+                        userQuery.data.assignedBranchIds.length > 0
+                          ? [...userQuery.data.assignedBranchIds]
+                          : allActiveIds.slice(0, 1),
+                      );
+                    }
+                    setSubmitError(null);
+                  }}
+                >
+                  <span className="staff-assign-role__check" aria-hidden>
+                    {branchScope === "specific" ? "✓" : ""}
+                  </span>
+                  <span className="staff-assign-role__copy">
+                    <span className="staff-assign-role__label">
+                      {t("staffAssign.specificBranches")}
+                    </span>
+                    <span className="staff-assign-role__desc">
+                      {t("staffAssign.specificBranchesHint")}
+                    </span>
+                  </span>
+                </button>
+              </div>
+
+              {branchScope === "specific" ? (
+                <ul
+                  className="staff-assign-branch-list m-0 grid list-none gap-2 p-0"
+                  data-testid="org-staff-branch-checklist"
+                >
+                  {activeBranches.map((branch) => {
+                    const id = resolvePlatformBranchId(branch);
+                    if (!id) {
+                      return null;
+                    }
+                    const checked = selectedBranchIds.includes(id);
+                    return (
+                      <li key={id}>
+                        <label
+                          className={cn(
+                            "staff-assign-branch-option",
+                            checked && "staff-assign-branch-option--selected",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="staff-assign-branch-option__input"
+                            checked={checked}
+                            disabled={
+                              assignMutation.isPending ||
+                              userQuery.data.membershipStatus !== "Active"
+                            }
+                            data-testid={`org-staff-branch-${id}`}
+                            onChange={() => toggleBranch(id)}
+                          />
+                          <span className="staff-assign-branch-option__copy">
+                            <span className="staff-assign-branch-option__name">
+                              {branch.name}
+                              {branch.isPrimary ? ` (${t("staffAssign.mainBranch")})` : ""}
+                            </span>
+                            {branch.code ? (
+                              <span className="staff-assign-branch-option__code">{branch.code}</span>
+                            ) : null}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </>
+          )}
         </section>
       ) : null}
 
@@ -299,9 +639,7 @@ export function OrgStaffAssignPage() {
         cancelLabel={t("staffManage.cancel")}
         onCancel={() => setOwnerConfirmOpen(false)}
         onConfirm={() => {
-          if (selectedRole === POS_LOCAL_ROLE_OWNER) {
-            assignMutation.mutate(POS_LOCAL_ROLE_OWNER);
-          }
+          assignMutation.mutate(POS_LOCAL_ROLE_OWNER);
         }}
         testId="org-staff-owner-confirm"
       />
@@ -317,8 +655,9 @@ export function OrgStaffAssignPage() {
         cancelLabel={t("staffManage.cancel")}
         onCancel={() => setChangeConfirmOpen(false)}
         onConfirm={() => {
-          if (selectedRole) {
-            assignMutation.mutate(selectedRole);
+          const roleToApply = selectedRole ?? userQuery.data?.existingRoleCode ?? null;
+          if (roleToApply) {
+            assignMutation.mutate(roleToApply);
           }
         }}
         testId="org-staff-change-confirm"
