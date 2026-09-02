@@ -35,7 +35,8 @@ describe("shared UI foundation", () => {
     );
     expect(screen.getByTestId("list-toolbar")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByLabelText("Remove filter Active")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove filter Active")).toHaveClass("exits-filter-pill");
+    expect(screen.getByRole("button", { name: /Filters/i })).toHaveClass("exits-filter-pill");
   });
 
   it("MoneyDisplay and QuantityStepper are touch-friendly", async () => {

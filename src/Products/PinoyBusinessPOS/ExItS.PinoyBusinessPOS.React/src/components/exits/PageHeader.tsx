@@ -76,40 +76,42 @@ export function PageHeader({
           className="page-header__main flex min-w-0 flex-1 flex-col gap-1"
           onMouseLeave={() => setInfoHovered(false)}
         >
-          <div className="flex min-h-11 min-w-0 items-center gap-1.5">
-            {TitleIcon ? (
-              <span className="page-header__title-icon shrink-0" aria-hidden>
-                <TitleIcon className="size-5" />
-              </span>
-            ) : null}
-            <h1 className="page-header__title m-0 min-w-0 flex-1 truncate text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
-              {title}
-            </h1>
-            {collapsible ? (
-              <button
-                type="button"
-                className={cn(
-                  "page-header__info",
-                  infoVisible && "page-header__info--visible",
-                  infoPinned && "page-header__info--pinned",
-                )}
-                data-testid="page-header-info-toggle"
-                aria-label={toggleLabel}
-                aria-expanded={infoVisible}
-                aria-controls={descriptionId}
-                onMouseEnter={() => setInfoHovered(true)}
-                onFocus={() => setInfoHovered(true)}
-                onBlur={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                    setInfoHovered(false);
-                  }
-                }}
-                onClick={() => setInfoPinned((pinned) => !pinned)}
-              >
-                <Info className="size-4 shrink-0" aria-hidden />
-              </button>
-            ) : null}
-            {trailing ? <div className="page-header__trailing shrink-0">{trailing}</div> : null}
+          <div className="page-header__head">
+            <div className="page-header__title-row flex min-h-11 min-w-0 items-center gap-1.5">
+              {TitleIcon ? (
+                <span className="page-header__title-icon shrink-0" aria-hidden>
+                  <TitleIcon className="size-5" />
+                </span>
+              ) : null}
+              <h1 className="page-header__title m-0 min-w-0 flex-1 truncate text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
+                {title}
+              </h1>
+              {collapsible ? (
+                <button
+                  type="button"
+                  className={cn(
+                    "page-header__info",
+                    infoVisible && "page-header__info--visible",
+                    infoPinned && "page-header__info--pinned",
+                  )}
+                  data-testid="page-header-info-toggle"
+                  aria-label={toggleLabel}
+                  aria-expanded={infoVisible}
+                  aria-controls={descriptionId}
+                  onMouseEnter={() => setInfoHovered(true)}
+                  onFocus={() => setInfoHovered(true)}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      setInfoHovered(false);
+                    }
+                  }}
+                  onClick={() => setInfoPinned((pinned) => !pinned)}
+                >
+                  <Info className="size-4 shrink-0" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+            {trailing ? <div className="page-header__trailing">{trailing}</div> : null}
           </div>
 
           {subtitle ? (

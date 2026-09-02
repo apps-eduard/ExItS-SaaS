@@ -3,6 +3,9 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
+/** Shared pill classes for list-toolbar filter controls (Filters button, Sort, active chips). */
+export const exitsFilterPillClassName = "exits-filter-pill";
+
 export function FilterButton({
   activeCount = 0,
   className,
@@ -13,13 +16,13 @@ export function FilterButton({
     <Button
       type="button"
       variant="ghost"
-      className={cn("rounded-full border border-border px-3", className)}
+      className={cn(exitsFilterPillClassName, "exits-filter-pill--button", className)}
       {...props}
     >
       <Filter className="size-4 shrink-0" aria-hidden />
       <span>{children}</span>
       {activeCount > 0 ? (
-        <span className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-[length:var(--exits-text-xs)] text-primary-foreground">
+        <span className="exits-filter-pill__badge" aria-hidden>
           {activeCount}
         </span>
       ) : null}
@@ -48,7 +51,7 @@ export function FilterChips({
   return (
     <div className="exits-active-filters min-w-0" aria-label={listLabel}>
       <div
-        className="sell-categories-track catalog-page__filter-scroll-track flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5"
+        className="exits-active-filters__track"
         role="list"
         aria-label={listLabel}
         data-testid="active-filter-chips"
@@ -58,7 +61,7 @@ export function FilterChips({
             key={item.id}
             type="button"
             role="listitem"
-            className="inline-flex min-h-[var(--exits-touch-target-min)] shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={exitsFilterPillClassName}
             onClick={() => onRemove(item.id)}
             aria-label={`Remove filter ${item.label}`}
           >
@@ -80,7 +83,7 @@ export function SortButton({
     <Button
       type="button"
       variant="ghost"
-      className={cn("rounded-full border border-border px-3", className)}
+      className={cn(exitsFilterPillClassName, "exits-filter-pill--button", className)}
       {...props}
     >
       <ArrowUpDown className="size-4 shrink-0" aria-hidden />

@@ -424,7 +424,7 @@ export function CatalogProductsPage() {
           <div className="catalog-page__filters-mobile-toolbar flex min-w-0 items-center gap-2.5">
             <FilterButton
               activeCount={sheetFilterCount}
-              className="catalog-page__filter-open h-[var(--exits-chip-min-height)] min-h-[var(--exits-chip-min-height)] shrink-0 px-3 py-0"
+              className="catalog-page__filter-open shrink-0"
               data-testid="catalog-open-filters"
               onClick={() => setFiltersSheetOpen(true)}
             >

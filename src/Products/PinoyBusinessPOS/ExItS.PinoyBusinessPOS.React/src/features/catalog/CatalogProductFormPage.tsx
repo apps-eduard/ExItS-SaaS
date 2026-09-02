@@ -835,12 +835,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         trailing={
           mode === "edit" && productStatus ? (
-            <span className="flex flex-wrap items-center gap-2">
+            <div
+              className="catalog-product-form__header-meta"
+              data-testid="catalog-product-form-header-meta"
+            >
               <StatusChip tone={isActive ? "success" : "warning"}>{productStatus}</StatusChip>
-              <span className="text-[length:var(--exits-text-sm)] text-muted">
-                {t("catalog.businessUsage.label")}: {t(businessUsageLabelKey(businessUsage))}
-              </span>
-            </span>
+              <StatusChip tone="info">{t(businessUsageLabelKey(businessUsage))}</StatusChip>
+            </div>
           ) : undefined
         }
       />
