@@ -44,6 +44,8 @@ import {
   resolveCatalogDisplayPrice,
   resolveCatalogPriceOrigin,
 } from "@/features/catalog/branch-pricing-ux";
+import { catalogStockCaption } from "@/features/catalog/catalog-stock-caption";
+import { resolveCatalogStockDisplay } from "@/features/catalog/catalog-stock-display";
 import {
   businessUsageLabelKey,
   resolveBusinessUsage,
@@ -565,6 +567,8 @@ export function CatalogProductsPage() {
               : priceOrigin === "organizationDefault"
                 ? t("catalog.productListPrice.orgDefault")
                 : null;
+          const stockDisplay = resolveCatalogStockDisplay(product);
+          const stockCaption = catalogStockCaption(t, stockDisplay);
 
           return (
             <li key={product.productId}>
@@ -624,6 +628,21 @@ export function CatalogProductsPage() {
                           {priceOriginLabel}
                         </span>
                       ) : null}
+                      <span
+                        className={`catalog-product-row__stock catalog-product-row__stock--${stockDisplay.tone}`}
+                        data-testid={`catalog-product-stock-${product.productId}`}
+                      >
+                        {stockCaption}
+                      </span>
+                    </span>
+                  ) : product.isTracked === false ? (
+                    <span className="catalog-product-row__price-block">
+                      <span
+                        className={`catalog-product-row__stock catalog-product-row__stock--${stockDisplay.tone}`}
+                        data-testid={`catalog-product-stock-${product.productId}`}
+                      >
+                        {stockCaption}
+                      </span>
                     </span>
                   ) : null}
                   <span

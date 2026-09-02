@@ -12,6 +12,8 @@ public sealed record BranchInventoryProductRead(
     Guid ProductId,
     decimal BranchOnHand,
     decimal OrganizationOnHand,
+    decimal BranchReserved,
+    decimal BranchAvailable,
     decimal? ReorderLevel,
     decimal? ReorderQuantity,
     bool IsLowStock,

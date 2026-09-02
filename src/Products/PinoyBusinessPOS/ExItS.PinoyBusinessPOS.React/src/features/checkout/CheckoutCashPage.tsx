@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   canApplyCommercialDiscount,
@@ -30,6 +31,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
@@ -111,6 +113,7 @@ export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
@@ -740,6 +743,7 @@ export function CheckoutCashPage() {
       completedRef.current = true;
       cart.clear();
       attemptSaleIdRef.current = allocateSecureId();
+      await invalidatePosStockQueries(queryClient);
       navigate(`/sell/sales/${sale.saleId}/summary`, { replace: true });
     } catch (error) {
       if (isLikelyNetworkFailure(error) && workspaceScope) {
@@ -751,6 +755,7 @@ export function CheckoutCashPage() {
           completedRef.current = true;
           cart.clear();
           attemptSaleIdRef.current = allocateSecureId();
+          await invalidatePosStockQueries(queryClient);
           navigate(`/sell/sales/${confirmed.saleId}/summary`, { replace: true });
           return;
         } catch (lookupError) {

@@ -140,6 +140,7 @@ builder.Services.AddScoped<CatalogProductQueryService>();
 builder.Services.AddScoped<CatalogProductGovernanceAuthority>();
 builder.Services.AddScoped<ICatalogProductAvailabilityResolver, CatalogProductAvailabilityResolver>();
 builder.Services.AddScoped<IEffectivePriceResolver, EffectivePriceResolver>();
+builder.Services.AddScoped<CatalogBranchStockResolver>();
 builder.Services.AddScoped<ICatalogGovernanceActorAccessor, CatalogGovernanceActorAccessor>();
 builder.Services.AddScoped<PartyBranchAccessGovernanceAuthority>();
 builder.Services.AddScoped<PartyBranchAccessService>();

@@ -4,10 +4,10 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import {
   remainingQuantityAfterCart,
   resolveAddFlow,
-  resolveSellCardStock,
   resolveSellUnitPrice,
 } from "@/cart/sell-cart-helpers";
-import { sellStockCaption } from "@/features/sell/sell-stock-caption";
+import { resolveCatalogStockDisplay } from "@/features/catalog/catalog-stock-display";
+import { sellAvailableCaption } from "@/features/catalog/catalog-stock-caption";
 import { useCatalogProductImageUrl } from "@/features/sell/use-catalog-product-image";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -45,12 +45,9 @@ export function SellProductCard({
     product.imageVersion,
   );
   const remainingOnHand = remainingQuantityAfterCart(product.onHandQuantity, cartReservedBaseQty);
-  const stock = resolveSellCardStock({
-    isTracked: product.isTracked,
+  const stock = resolveCatalogStockDisplay({
+    ...product,
     onHandQuantity: remainingOnHand,
-    unitOfMeasure: product.unitOfMeasure,
-    tracksExpiration: product.tracksExpiration,
-    stockStatus: product.stockStatus,
   });
   const flow = resolveAddFlow(product);
 
@@ -114,7 +111,7 @@ export function SellProductCard({
           data-testid={`sell-product-stock-${product.productId}`}
           className={`sell-product-card__stock sell-product-card__stock--${stock.tone}`}
         >
-          {sellStockCaption(t, stock)}
+          {sellAvailableCaption(t, stock)}
         </span>
       </div>
     </button>

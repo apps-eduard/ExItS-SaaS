@@ -96,7 +96,18 @@ public sealed record PosCatalogProductDto(
     bool? IsOfferedAtBranch = null,
     /// <summary>Branch-effective selling price when branch context is supplied; otherwise null.</summary>
     decimal? EffectiveSellingPrice = null,
-    bool? HasBranchPriceOverride = null);
+    /// <summary>Populated when branch context is supplied; otherwise null.</summary>
+    bool? HasBranchPriceOverride = null,
+    /// <summary>Organization aggregate on-hand when branch stock is stamped; otherwise null.</summary>
+    decimal? OrganizationOnHandQuantity = null,
+    /// <summary>Branch physical on-hand when branch stock is stamped; otherwise null.</summary>
+    decimal? BranchOnHandQuantity = null,
+    /// <summary>Branch sale-eligible quantity (on-hand minus reservations) when branch stock is stamped; otherwise null.</summary>
+    decimal? BranchAvailableQuantity = null,
+    /// <summary>FEFO sellable quantity at branch when expiration-tracked and branch context is supplied.</summary>
+    decimal? SellableQuantity = null,
+    /// <summary>Low-stock flag for branch context when stamped; otherwise null.</summary>
+    bool? IsLowStock = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 

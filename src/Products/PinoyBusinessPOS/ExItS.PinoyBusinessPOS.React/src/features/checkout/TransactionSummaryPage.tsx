@@ -16,6 +16,7 @@ import { BottomSheet } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
+import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
 import { productionCostStatusLabelKey } from "@/features/inventory/production-labels";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -118,6 +119,7 @@ export function TransactionSummaryPage() {
         ["pos-sale", workspaceScope.organizationId, workspaceScope.branchId, saleId],
         updated,
       );
+      await invalidatePosStockQueries(queryClient);
       setVoidReason("");
       setVoidSheetOpen(false);
     } catch (error) {

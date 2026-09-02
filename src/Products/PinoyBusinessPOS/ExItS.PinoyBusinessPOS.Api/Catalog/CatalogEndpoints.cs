@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
@@ -293,6 +294,8 @@ internal static class CatalogEndpoints
             ICatalogProductRepository products,
             ICatalogProductUnitRepository units,
             IEffectivePriceResolver effectivePrices,
+            CatalogBranchStockResolver branchStock,
+            BranchInventoryContextResolver branchContext,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -413,13 +416,15 @@ internal static class CatalogEndpoints
                     .ToList();
                 if (actingBranchId is Guid commercialBranch && commercialBranch != Guid.Empty)
                 {
-                    marked = (await StampEffectivePricesAsync(
+                    marked = (await StampBranchCatalogContextAsync(
                             organizationId,
                             commercialBranch,
                             marked,
                             products,
                             units,
                             effectivePrices,
+                            branchStock,
+                            branchContext,
                             ct)
                         .ConfigureAwait(false)).ToList();
                 }
@@ -457,13 +462,15 @@ internal static class CatalogEndpoints
                         return i;
                     })
                     .ToList();
-                stamped = (await StampEffectivePricesAsync(
+                stamped = (await StampBranchCatalogContextAsync(
                         organizationId,
                         managementBranch,
                         stamped,
                         products,
                         units,
                         effectivePrices,
+                        branchStock,
+                        branchContext,
                         ct)
                     .ConfigureAwait(false)).ToList();
                 return Results.Ok(new PagedResult<PosCatalogProductDto>(
@@ -477,13 +484,15 @@ internal static class CatalogEndpoints
                 && listBranch != Guid.Empty
                 && result.Items.Count > 0)
             {
-                var enriched = await StampEffectivePricesAsync(
+                var enriched = await StampBranchCatalogContextAsync(
                         organizationId,
                         listBranch,
                         result.Items,
                         products,
                         units,
                         effectivePrices,
+                        branchStock,
+                        branchContext,
                         ct)
                     .ConfigureAwait(false);
                 return Results.Ok(new PagedResult<PosCatalogProductDto>(
@@ -677,6 +686,8 @@ internal static class CatalogEndpoints
             ICatalogProductRepository products,
             ICatalogProductUnitRepository units,
             IEffectivePriceResolver effectivePrices,
+            CatalogBranchStockResolver branchStock,
+            BranchInventoryContextResolver branchContext,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -722,26 +733,30 @@ internal static class CatalogEndpoints
                         .ConfigureAwait(false);
                     if (offering.TryGetValue(productId, out var offer))
                     {
-                        var enriched = await StampEffectivePricesAsync(
+                        var enriched = await StampBranchCatalogContextAsync(
                                 organizationId,
                                 branch,
                                 [product with { IsOfferedAtBranch = offer.IsOffered }],
                                 products,
                                 units,
                                 effectivePrices,
+                                branchStock,
+                                branchContext,
                                 ct)
                             .ConfigureAwait(false);
                         return Results.Ok(enriched[0]);
                     }
                 }
 
-                var priced = await StampEffectivePricesAsync(
+                var priced = await StampBranchCatalogContextAsync(
                         organizationId,
                         branch,
                         [product],
                         products,
                         units,
                         effectivePrices,
+                        branchStock,
+                        branchContext,
                         ct)
                     .ConfigureAwait(false);
                 return Results.Ok(priced[0]);
@@ -1218,6 +1233,45 @@ internal static class CatalogEndpoints
                 cancellationToken)
             .ConfigureAwait(false);
         return CatalogEffectivePriceEnrichment.ApplyMany(items, resolved);
+    }
+
+    private static async Task<IReadOnlyList<PosCatalogProductDto>> StampBranchCatalogContextAsync(
+        Guid organizationId,
+        Guid branchId,
+        IReadOnlyList<PosCatalogProductDto> items,
+        ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
+        IEffectivePriceResolver effectivePrices,
+        CatalogBranchStockResolver branchStock,
+        BranchInventoryContextResolver branchContext,
+        CancellationToken cancellationToken)
+    {
+        var priced = await StampEffectivePricesAsync(
+                organizationId,
+                branchId,
+                items,
+                products,
+                units,
+                effectivePrices,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (priced.Count == 0)
+        {
+            return priced;
+        }
+
+        var contextResult = await branchContext
+            .ResolveAsync(organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!contextResult.IsSuccess || contextResult.Value is null)
+        {
+            return priced;
+        }
+
+        var snapshots = await branchStock
+            .ResolveAsync(contextResult.Value, priced, cancellationToken)
+            .ConfigureAwait(false);
+        return CatalogBranchStockEnrichment.ApplyMany(priced, snapshots);
     }
 
     private static async Task<IResult> FinalizeProductLookupAsync(

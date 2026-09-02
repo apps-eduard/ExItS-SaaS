@@ -61,6 +61,12 @@ public sealed class BranchInventoryReadService
                 productBalances,
                 account.ProductId);
 
+            var branchReserved = BranchStockResolver.ResolveReserved(
+                branchId,
+                productBalances,
+                account.ProductId);
+            var branchAvailable = BranchStockResolver.ResolveAvailable(branchOnHand, branchReserved);
+
             var (reorderLevel, reorderQuantity) = ResolveReorderConfiguration(
                 context,
                 branchReorder,
@@ -80,6 +86,8 @@ public sealed class BranchInventoryReadService
                 account.ProductId.Value,
                 branchOnHand,
                 account.OnHandQuantity,
+                branchReserved,
+                branchAvailable,
                 reorderLevel,
                 reorderQuantity,
                 isLow,

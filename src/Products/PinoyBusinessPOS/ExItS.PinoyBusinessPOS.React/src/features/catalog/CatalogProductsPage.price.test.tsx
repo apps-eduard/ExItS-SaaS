@@ -261,3 +261,62 @@ describe("CatalogProductsPage effective branch price", () => {
     );
   });
 });
+
+describe("CatalogProductsPage branch stock", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    listCatalogCategories.mockResolvedValue({ items: [], totalCount: 0 });
+    listCatalogBrands.mockResolvedValue({ items: [], totalCount: 0 });
+    listOrganizationBranches.mockResolvedValue({
+      ok: true,
+      branches: [
+        {
+          id: "22222222-2222-2222-2222-222222222222",
+          organizationId: "11111111-1111-1111-1111-111111111111",
+          code: "BR-A",
+          name: "Branch A",
+          isPrimary: false,
+          status: "Active",
+        },
+      ],
+    });
+  });
+
+  it("STOCKVIS-02 displays out of stock for zero branch availability", async () => {
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        {
+          ...STANDARD_PRODUCT,
+          isTracked: true,
+          onHandQuantity: 0,
+          branchAvailableQuantity: 0,
+          stockStatus: "OutOfStock",
+        },
+      ],
+      totalCount: 1,
+    });
+    renderPage();
+    expect(await screen.findByTestId(`catalog-product-stock-${PRODUCT_ID}`)).toHaveTextContent(
+      "catalog.stockOut",
+    );
+  });
+
+  it("STOCKVIS-01 displays in-stock quantity", async () => {
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        {
+          ...STANDARD_PRODUCT,
+          isTracked: true,
+          onHandQuantity: 30,
+          branchAvailableQuantity: 30,
+          stockStatus: "InStock",
+        },
+      ],
+      totalCount: 1,
+    });
+    renderPage();
+    expect(await screen.findByTestId(`catalog-product-stock-${PRODUCT_ID}`)).toHaveTextContent(
+      "catalog.stockInStock",
+    );
+  });
+});

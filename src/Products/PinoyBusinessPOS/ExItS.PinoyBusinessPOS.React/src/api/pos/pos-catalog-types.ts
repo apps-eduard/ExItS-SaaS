@@ -74,8 +74,19 @@ export type PosCatalogProductDto = {
   expirationWarningDays?: number | null;
   /** Mirrors inventory IsTracked when catalog list/detail includes stock snapshot. */
   isTracked?: boolean;
+  /** Branch sale-eligible quantity when branch context is stamped; otherwise org snapshot. */
   onHandQuantity?: number;
   stockStatus?: string;
+  /** Organization aggregate on-hand when branch stock is stamped. */
+  organizationOnHandQuantity?: number | null;
+  /** Branch physical on-hand when branch stock is stamped. */
+  branchOnHandQuantity?: number | null;
+  /** Branch on-hand minus reservations when branch stock is stamped. */
+  branchAvailableQuantity?: number | null;
+  /** FEFO sellable quantity when expiration-tracked and branch context is supplied. */
+  sellableQuantity?: number | null;
+  /** Low-stock flag for branch context when stamped. */
+  isLowStock?: boolean | null;
   /** OrganizationStandard | BranchLocal (MB2 product governance). Unknown values handled defensively. */
   scope?: CatalogProductScopeCode | string;
   /** Origin branch for BranchLocal; audit-only after promotion. Server-derived. */

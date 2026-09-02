@@ -6944,6 +6944,20 @@ a.dashboard-metric-card:focus-visible {
   white-space: nowrap;
 }
 
+.catalog-product-row__stock {
+  font-size: 0.65rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.catalog-product-row__stock--out {
+  color: var(--exits-danger, #b42318);
+}
+
+.catalog-product-row__stock--low {
+  color: var(--exits-warning, #b54708);
+}
+
 .catalog-product-row__meta {
   font-size: 0.65rem;
   line-height: 1.25;

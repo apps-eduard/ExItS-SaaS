@@ -224,7 +224,7 @@ export function SellFloorPage() {
   });
 
   const browseQuery = useQuery({
-    queryKey: ["pos-catalog-browse", workspaceScope?.organizationId, activeCategory],
+    queryKey: ["pos-catalog-browse", workspaceScope?.organizationId, workspaceScope?.branchId, activeCategory],
     enabled: workspaceScope !== null && debouncedSearch.trim().length === 0,
     staleTime: 30_000,
     meta: { suppressGlobalError: true, operation: "browse sell catalog products" },
