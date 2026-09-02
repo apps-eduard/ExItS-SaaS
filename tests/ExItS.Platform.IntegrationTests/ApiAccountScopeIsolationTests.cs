@@ -89,6 +89,33 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     }
 
     [Fact]
+    public async Task Personal_session_can_list_pending_staff_invitations()
+    {
+        var (_, email, password) = await SeedPersonalUserAsync("stfinv");
+        var login = await LoginAsync(email, password);
+        Assert.Equal("Personal", login.GetProperty("accountClass").GetString());
+        var token = login.GetProperty("sessionToken").GetString()!;
+
+        using var pending = Authed(HttpMethod.Get, "/api/v1/platform/invitations/my-pending", token);
+        var response = await _client.SendAsync(pending);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, body.ValueKind);
+    }
+
+    [Fact]
+    public async Task Organization_session_cannot_list_personal_staff_invitations()
+    {
+        var (_, staffLogin, password, _) = await SeedOrgMemberAsync("stforg");
+        var login = await LoginAsync(staffLogin, password);
+        Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
+        var token = login.GetProperty("sessionToken").GetString()!;
+
+        using var pending = Authed(HttpMethod.Get, "/api/v1/platform/invitations/my-pending", token);
+        await AssertScopeDeniedAsync(await _client.SendAsync(pending));
+    }
+
+    [Fact]
     public async Task Personal_and_organization_sessions_can_bootstrap_antiforgery_and_logout()
     {
         // React Admin Sign out POSTs /auth/logout (scope-exempt) but first GETs antiforgery/token.

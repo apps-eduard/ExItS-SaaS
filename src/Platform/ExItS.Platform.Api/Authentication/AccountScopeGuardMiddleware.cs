@@ -184,7 +184,7 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
                 return accountClass is AccountClass.Personal or AccountClass.Organization;
             }
 
-            if (IsPersonalStaffInvitationAcceptPath(path))
+            if (IsPersonalStaffInvitationRecipientPath(path))
             {
                 return accountClass is AccountClass.Personal;
             }
@@ -215,11 +215,43 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
         return false;
     }
 
-    private static bool IsPersonalStaffInvitationAcceptPath(string path) =>
-        path.Equals("/api/v1/platform/invitations/accept-as-personal", StringComparison.OrdinalIgnoreCase)
-        || path.Equals(
-            "/api/v1/platform/auth/organization-invitations/accept-as-personal",
-            StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Personal-recipient staff invite paths (list / decline / accept-by-id).
+    /// Token accept under /auth/... remains exempt via IsExempt.
+    /// </summary>
+    private static bool IsPersonalStaffInvitationRecipientPath(string path)
+    {
+        if (path.Equals("/api/v1/platform/invitations/my-pending", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/platform/invitations/accept-as-personal", StringComparison.OrdinalIgnoreCase)
+            || path.Equals(
+                "/api/v1/platform/auth/organization-invitations/accept-as-personal",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        const string prefix = "/api/v1/platform/invitations/";
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var remainder = path[prefix.Length..];
+        var slash = remainder.IndexOf('/');
+        if (slash <= 0 || slash >= remainder.Length - 1)
+        {
+            return false;
+        }
+
+        if (!Guid.TryParse(remainder[..slash], out _))
+        {
+            return false;
+        }
+
+        var action = remainder[(slash + 1)..];
+        return action.Equals("decline", StringComparison.OrdinalIgnoreCase)
+            || action.Equals("accept-as-personal", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static bool IsOwnershipTransferRecipientPath(string path)
     {

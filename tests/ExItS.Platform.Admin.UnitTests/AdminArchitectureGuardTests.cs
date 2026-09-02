@@ -448,6 +448,8 @@ public sealed class AdminArchitectureGuardTests
         var guard = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Authentication", "AccountScopeGuardMiddleware.cs"));
         Assert.Contains("/api/v1/platform/authorization/me", guard, StringComparison.Ordinal);
         Assert.Contains("/api/v1/platform/antiforgery/token", guard, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/platform/invitations/my-pending", guard, StringComparison.Ordinal);
+        Assert.Contains("IsPersonalStaffInvitationRecipientPath", guard, StringComparison.Ordinal);
 
         var antiforgery = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Api", "Common", "PlatformBrowserAntiforgeryExtensions.cs"));
         Assert.Contains("LocalValidation:Enabled", antiforgery, StringComparison.Ordinal);

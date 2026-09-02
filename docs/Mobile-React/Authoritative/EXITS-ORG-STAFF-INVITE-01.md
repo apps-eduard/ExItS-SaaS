@@ -29,6 +29,7 @@ Organization Owner invites an **existing ExItS Personal user** by Personal EX-ID
 
 - Owner-only create / resolve (server)  
 - Accept/Decline only by `TargetPersonalUserId`  
+- Personal session may call recipient routes under `/api/v1/platform/invitations/my-pending`, `.../{id}/decline`, and `.../{id}/accept-as-personal` (AccountScopeGuard allowlist)  
 - No email primary invite in React; legacy email create remains API-compatible  
 
 ## Branch assignment
