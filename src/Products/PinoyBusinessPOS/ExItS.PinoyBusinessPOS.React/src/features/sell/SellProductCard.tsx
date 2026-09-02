@@ -5,6 +5,7 @@ import {
   remainingQuantityAfterCart,
   resolveAddFlow,
   resolveSellCardStock,
+  resolveSellUnitPrice,
 } from "@/cart/sell-cart-helpers";
 import { sellStockCaption } from "@/features/sell/sell-stock-caption";
 import { useCatalogProductImageUrl } from "@/features/sell/use-catalog-product-image";
@@ -89,7 +90,7 @@ export function SellProductCard({
         <span className="sell-product-card__name">{product.name}</span>
         <div className="sell-product-card__price-row">
           <MoneyDisplay
-            amount={product.sellingPrice}
+            amount={resolveSellUnitPrice(product, null)}
             className="sell-product-card__price"
             testId={`sell-product-price-${product.productId}`}
           />

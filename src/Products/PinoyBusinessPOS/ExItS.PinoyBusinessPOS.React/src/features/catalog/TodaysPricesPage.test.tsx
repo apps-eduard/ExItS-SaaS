@@ -45,10 +45,15 @@ vi.mock("@/navigation/page-back-nav", () => ({
 
 const listCatalogProducts = vi.fn();
 const updateCatalogProductPrices = vi.fn();
+const setBranchProductPriceOverride = vi.fn();
+const removeBranchProductPriceOverride = vi.fn();
 
 vi.mock("@/api/pos/pos-catalog-client", () => ({
   listCatalogProducts: (...args: unknown[]) => listCatalogProducts(...args),
   updateCatalogProductPrices: (...args: unknown[]) => updateCatalogProductPrices(...args),
+  setBranchProductPriceOverride: (...args: unknown[]) => setBranchProductPriceOverride(...args),
+  removeBranchProductPriceOverride: (...args: unknown[]) =>
+    removeBranchProductPriceOverride(...args),
 }));
 
 const PRODUCT_A = {
@@ -293,7 +298,7 @@ describe("TodaysPricesPage governance", () => {
     expect(within(standardRow).getByTestId(`price-scope-${STANDARD_PRODUCT.productId}`)).toHaveTextContent(
       "catalog.governance.organizationProduct",
     );
-    const input = within(standardRow).getByRole("textbox", { name: "prices.organizationPrice" });
+    const input = within(standardRow).getByRole("textbox", { name: "prices.branchPrice" });
     expect(input).toBeDisabled();
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
     expect(updateCatalogProductPrices).not.toHaveBeenCalled();
@@ -302,5 +307,43 @@ describe("TodaysPricesPage governance", () => {
     await user.clear(within(localRow).getByRole("textbox", { name: "prices.newPrice" }));
     await user.type(within(localRow).getByRole("textbox", { name: "prices.newPrice" }), "31");
     expect(within(localRow).getByTestId(`price-save-${PRODUCT_A.productId}`)).toBeInTheDocument();
+  });
+});
+
+describe("TodaysPricesPage branch scope", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pricesSessionGrant.organizationManagementAuthority = true;
+    pricesSessionGrant.membershipRole = "OrganizationOwner";
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        {
+          ...STANDARD_PRODUCT,
+          sellingPrice: 100,
+          effectiveSellingPrice: 100,
+          hasBranchPriceOverride: false,
+        },
+      ],
+      totalCount: 1,
+    });
+    setBranchProductPriceOverride.mockResolvedValue(undefined);
+  });
+
+  it("BRPRICE-UX-14 saves OrganizationStandard branch price via override API", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const row = await screen.findByTestId(`price-row-${STANDARD_PRODUCT.productId}`);
+    expect(screen.getByTestId(`price-branch-scope-${STANDARD_PRODUCT.productId}`)).toBeInTheDocument();
+    await user.clear(within(row).getByRole("textbox", { name: "prices.branchPrice" }));
+    await user.type(within(row).getByRole("textbox", { name: "prices.branchPrice" }), "120");
+    await user.click(within(row).getByTestId(`price-save-${STANDARD_PRODUCT.productId}`));
+    await waitFor(() => {
+      expect(setBranchProductPriceOverride).toHaveBeenCalledWith(
+        expect.objectContaining({ branchId: "22222222-2222-2222-2222-222222222222" }),
+        STANDARD_PRODUCT.productId,
+        expect.objectContaining({ sellingPrice: 120 }),
+      );
+    });
+    expect(updateCatalogProductPrices).not.toHaveBeenCalled();
   });
 });

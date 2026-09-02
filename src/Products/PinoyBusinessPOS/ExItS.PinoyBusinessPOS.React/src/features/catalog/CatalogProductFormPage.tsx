@@ -83,6 +83,7 @@ import {
   CatalogPromoteControls,
 } from "@/features/catalog/CatalogProductGovernancePanels";
 import { BranchProductPricingPanel } from "@/features/catalog/BranchProductPricingPanel";
+import { orgDefaultPriceChanged } from "@/features/catalog/branch-pricing-ux";
 import {
   isBranchLocalProduct,
   isOrganizationStandardProduct,
@@ -98,6 +99,7 @@ import {
 import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
 
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -342,6 +344,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [sellingPrice, setSellingPrice] = useState(String(DEFAULT_CATALOG_SELLING_PRICE));
 
+  const [initialOrgSellingPrice, setInitialOrgSellingPrice] = useState<number | null>(null);
+
   const [configurePackages, setConfigurePackages] = useState(false);
 
   const [unitDrafts, setUnitDrafts] = useState<ProductUnitDraft[]>([]);
@@ -412,6 +416,23 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       product: productQuery.data,
     });
 
+  const editProduct = productQuery.data;
+  const isOrgStandardProduct = isOrganizationStandardProduct(editProduct);
+  const isBranchLocalProductEdit = isBranchLocalProduct(editProduct);
+  const inBranchWorkspace = Boolean(workspace?.branchId);
+  const showOrganizationPricingSection =
+    mode === "edit" && isOrgStandardProduct && canGovern && !readOnly;
+  const hideGenericBasePrice = mode === "edit" && isOrgStandardProduct;
+  const showBranchLocalPriceField =
+    mode === "create" || isBranchLocalProductEdit || (mode === "edit" && !isOrgStandardProduct);
+  const showReadOnlyOrgDefault =
+    hideGenericBasePrice && !showOrganizationPricingSection && mode === "edit";
+  const packagePricesReadOnly =
+    readOnly || (mode === "edit" && isOrgStandardProduct && inBranchWorkspace);
+  const orgDefaultChanged =
+    showOrganizationPricingSection &&
+    orgDefaultPriceChanged(initialOrgSellingPrice, sellingPrice);
+
   const debouncedName = useDebouncedValue(name.trim(), NAME_CONFLICT_DEBOUNCE_MS);
   const nameConflictExcludeId = mode === "edit" ? productId : undefined;
 
@@ -478,6 +499,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     );
 
     setSellingPrice(String(product.sellingPrice ?? DEFAULT_CATALOG_SELLING_PRICE));
+    setInitialOrgSellingPrice(product.sellingPrice ?? null);
 
     const drafts = unitsFromDto(product.units);
 
@@ -860,6 +882,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           if (readOnly || blockedOffline || isNameDuplicate) {
             return;
           }
+          if (
+            orgDefaultChanged &&
+            !window.confirm(t("catalog.organizationPricing.confirmBody"))
+          ) {
+            return;
+          }
           saveMutation.mutate();
         }}
         onKeyDown={(event) => {
@@ -1143,31 +1171,87 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               ))}
             </FormSelect>
 
-            <Input
-              label={t("catalog.baseSellingPrice")}
+            {showBranchLocalPriceField ? (
+              <>
+                <Input
+                  label={
+                    mode === "create" && canGovern && createScope === "OrganizationStandard"
+                      ? t("catalog.organizationPricing.defaultPrice")
+                      : isBranchLocalProductEdit
+                        ? t("catalog.governance.currentBranchProductPrice")
+                        : t("catalog.baseSellingPrice")
+                  }
+                  name="sellingPrice"
+                  inputMode="decimal"
+                  value={sellingPrice}
+                  disabled={readOnly}
+                  onChange={(e) => setSellingPrice(e.target.value)}
+                  data-testid="catalog-selling-price"
+                />
+                <p
+                  className={
+                    isOnSellFloor
+                      ? "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
+                      : "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted opacity-70"
+                  }
+                >
+                  {mode === "create" && canGovern && createScope === "OrganizationStandard"
+                    ? t("catalog.organizationPricing.hint")
+                    : t("catalog.baseSellingPriceHint")}
+                </p>
+              </>
+            ) : null}
 
-              name="sellingPrice"
-
-              inputMode="decimal"
-
-              value={sellingPrice}
-
-              disabled={readOnly}
-
-              onChange={(e) => setSellingPrice(e.target.value)}
-            />
-
-            <p
-              className={
-                isOnSellFloor
-                  ? "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  : "catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted opacity-70"
-              }
-            >
-              {t("catalog.baseSellingPriceHint")}
-            </p>
+            {showReadOnlyOrgDefault ? (
+              <div
+                className="catalog-form-field--full rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-3"
+                data-testid="catalog-org-default-readonly"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("catalog.branchPricing.organizationDefault")}
+                </p>
+                <p className="m-0 mt-0.5 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+                  {formatPeso(Number(sellingPrice))}
+                </p>
+                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("catalog.branchPricing.inheritedByBranches")}
+                </p>
+              </div>
+            ) : null}
           </div>
         </section>
+
+        {showOrganizationPricingSection ? (
+          <section
+            className="catalog-form-section exits-animate-panel"
+            data-testid="catalog-organization-pricing"
+          >
+            <h2 className="catalog-form-section__title">
+              {t("catalog.organizationPricing.title")}
+            </h2>
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("catalog.organizationPricing.hint")}
+            </p>
+            <div className="catalog-form-section__grid">
+              <Input
+                label={t("catalog.organizationPricing.defaultPrice")}
+                name="organizationDefaultSellingPrice"
+                inputMode="decimal"
+                value={sellingPrice}
+                onChange={(e) => setSellingPrice(e.target.value)}
+                data-testid="catalog-organization-default-price"
+              />
+              {orgDefaultChanged ? (
+                <p
+                  className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="catalog-organization-default-warning"
+                >
+                  {t("catalog.organizationPricing.changeWarning")}
+                </p>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         {mode === "edit" && productId && workspace && productQuery.data ? (
           <BranchProductPricingPanel
@@ -1175,7 +1259,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             productId={productId}
             product={productQuery.data}
             canGovern={canGovern}
-            branchName={boundWorkspace?.branchName ?? null}
+            branchName={boundWorkspace?.branchName ?? branchNameById.get(workspace.branchId ?? "") ?? null}
           />
         ) : null}
 
@@ -1446,13 +1530,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   {draft.kind === "Sell" ? (
                     <Input
                       label={t("catalog.unitSellingPrice")}
-
                       name={`${draft.key}-price`}
-
                       inputMode="decimal"
-
                       value={draft.sellingPrice}
-
+                      disabled={packagePricesReadOnly}
                       onChange={(e) => updateDraft(draft.key, { sellingPrice: e.target.value })}
                     />
                   ) : null}

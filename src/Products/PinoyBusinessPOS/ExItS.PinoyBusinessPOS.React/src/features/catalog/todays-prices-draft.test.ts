@@ -32,6 +32,9 @@ function draft(overrides: Partial<PriceDraft> = {}): PriceDraft {
     draftPrice: "28",
     expectedUpdatedAtUtc: "token-a",
     rowError: null,
+    priceEditScope: "organization",
+    organizationDefaultPrice: 28,
+    hasBranchPriceOverride: false,
     ...overrides,
   };
 }
@@ -62,7 +65,7 @@ describe("todays-prices-draft", () => {
     const merged = mergePriceDraftMap(previous, [
       product({ productId: "a", name: "Bath Soap Bar", sellingPrice: 29, updatedAtUtc: "token-a-new" }),
       product({ productId: "b", name: "Biscuit Pack", sellingPrice: 16, updatedAtUtc: "token-b-new" }),
-    ]);
+    ], { branchWorkspace: false });
 
     expect(merged.a.draftPrice).toBe("30");
     expect(merged.a.expectedUpdatedAtUtc).toBe("token-a");
@@ -78,7 +81,7 @@ describe("todays-prices-draft", () => {
     };
     const merged = mergePriceDraftMap(previous, [
       product({ productId: "b", name: "Biscuit", sellingPrice: 15 }),
-    ]);
+    ], { branchWorkspace: false });
     expect(merged.a.draftPrice).toBe("30");
     expect(merged.b.currentPrice).toBe(15);
   });

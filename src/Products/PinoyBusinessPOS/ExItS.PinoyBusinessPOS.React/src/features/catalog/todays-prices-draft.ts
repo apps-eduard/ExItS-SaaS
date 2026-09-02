@@ -1,4 +1,9 @@
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
+import {
+  resolveCatalogDisplayPrice,
+  resolvePriceEditScope,
+  type PriceEditScope,
+} from "@/features/catalog/branch-pricing-ux";
 
 /** Practical JS-safe upper bound (server max is larger; server remains authoritative). */
 export const SELLING_PRICE_MAX = 9_999_999_999.99;
@@ -12,22 +17,42 @@ export type PriceDraft = {
   draftPrice: string;
   expectedUpdatedAtUtc: string;
   rowError: string | null;
+  priceEditScope: PriceEditScope;
+  organizationDefaultPrice: number;
+  hasBranchPriceOverride: boolean;
 };
 
 export type ParseDraftPriceResult =
   | { ok: true; value: number }
   | { ok: false; reason: "empty" | "invalid" };
 
-export function toPriceDraft(product: PosCatalogProductDto): PriceDraft {
+export function toPriceDraft(
+  product: PosCatalogProductDto,
+  options?: { branchWorkspace?: boolean },
+): PriceDraft {
+  const branchWorkspace = options?.branchWorkspace === true;
+  const priceEditScope = resolvePriceEditScope({
+    scope: product.scope,
+    branchWorkspace,
+  });
+  const organizationDefaultPrice = product.sellingPrice;
+  const displayPrice =
+    priceEditScope === "branch"
+      ? resolveCatalogDisplayPrice(product)
+      : product.sellingPrice;
+
   return {
     productId: product.productId,
     name: product.name,
     brandName: product.brandName,
     scope: product.scope ?? null,
-    currentPrice: product.sellingPrice,
-    draftPrice: String(product.sellingPrice),
+    currentPrice: displayPrice,
+    draftPrice: String(displayPrice),
     expectedUpdatedAtUtc: product.updatedAtUtc,
     rowError: null,
+    priceEditScope,
+    organizationDefaultPrice,
+    hasBranchPriceOverride: product.hasBranchPriceOverride === true,
   };
 }
 
@@ -79,12 +104,14 @@ export function canSavePriceDraft(row: PriceDraft): boolean {
 export function mergePriceDraftMap(
   previous: Record<string, PriceDraft>,
   products: PosCatalogProductDto[],
+  options?: { branchWorkspace?: boolean },
 ): Record<string, PriceDraft> {
   const next: Record<string, PriceDraft> = { ...previous };
   for (const product of products) {
     const existing = previous[product.productId];
+    const fresh = toPriceDraft(product, options);
     if (!existing) {
-      next[product.productId] = toPriceDraft(product);
+      next[product.productId] = fresh;
       continue;
     }
     if (isPriceDraftDirty(existing)) {
@@ -92,10 +119,13 @@ export function mergePriceDraftMap(
         ...existing,
         name: product.name,
         brandName: product.brandName,
-        currentPrice: product.sellingPrice,
+        organizationDefaultPrice: fresh.organizationDefaultPrice,
+        hasBranchPriceOverride: fresh.hasBranchPriceOverride,
+        currentPrice: fresh.currentPrice,
+        priceEditScope: fresh.priceEditScope,
       };
     } else {
-      next[product.productId] = toPriceDraft(product);
+      next[product.productId] = fresh;
     }
   }
   return next;
@@ -111,6 +141,20 @@ export function applySuccessfulPriceSave(
     currentPrice: sellingPrice,
     draftPrice: String(sellingPrice),
     expectedUpdatedAtUtc: updatedAtUtc,
+    rowError: null,
+  };
+}
+
+export function applySuccessfulBranchPriceSave(
+  row: PriceDraft,
+  branchPrice: number,
+  hasBranchPriceOverride: boolean,
+): PriceDraft {
+  return {
+    ...row,
+    currentPrice: branchPrice,
+    draftPrice: String(branchPrice),
+    hasBranchPriceOverride,
     rowError: null,
   };
 }

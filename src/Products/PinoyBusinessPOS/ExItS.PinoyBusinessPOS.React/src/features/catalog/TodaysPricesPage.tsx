@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
-import { listCatalogProducts, updateCatalogProductPrices } from "@/api/pos/pos-catalog-client";
+import { listCatalogProducts, removeBranchProductPriceOverride, setBranchProductPriceOverride, updateCatalogProductPrices } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,13 @@ import {
   isStandardMasterReadOnlyForActor,
 } from "@/features/catalog/catalog-product-scope";
 import {
+  applySuccessfulBranchPriceSave,
   applySuccessfulPriceSave,
   canSavePriceDraft,
   isPriceDraftDirty,
   mergePriceDraftMap,
   parseDraftPrice,
+  pricesEqual,
   type PriceDraft,
 } from "@/features/catalog/todays-prices-draft";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -75,13 +77,17 @@ export function TodaysPricesPage() {
       ),
   });
 
+  const branchWorkspace = Boolean(workspace?.branchId);
+
   useEffect(() => {
     if (!query.data) {
       return;
     }
-    setDraftById((previous) => mergePriceDraftMap(previous, query.data.items));
+    setDraftById((previous) =>
+      mergePriceDraftMap(previous, query.data.items, { branchWorkspace }),
+    );
     setVisibleIds(query.data.items.map((item) => item.productId));
-  }, [query.data]);
+  }, [query.data, branchWorkspace]);
 
   const visibleDrafts = useMemo(
     () => visibleIds.map((id) => draftById[id]).filter((row): row is PriceDraft => Boolean(row)),
@@ -113,6 +119,50 @@ export function TodaysPricesPage() {
 
     setSavingIds((current) => ({ ...current, [productId]: true }));
     try {
+      if (row.priceEditScope === "branch") {
+        if (!workspace.branchId) {
+          updateDraft(productId, (current) => ({
+            ...current,
+            rowError: t("catalog.branchPricing.branchRequired"),
+          }));
+          return;
+        }
+
+        if (pricesEqual(parsed.value, row.organizationDefaultPrice)) {
+          if (row.hasBranchPriceOverride) {
+            await removeBranchProductPriceOverride(
+              workspace,
+              productId,
+              workspace.branchId,
+              null,
+            );
+          }
+          updateDraft(productId, (current) =>
+            applySuccessfulBranchPriceSave(
+              current,
+              row.organizationDefaultPrice,
+              false,
+            ),
+          );
+        } else {
+          await setBranchProductPriceOverride(workspace, productId, {
+            branchId: workspace.branchId,
+            sellingPrice: parsed.value,
+          });
+          updateDraft(productId, (current) =>
+            applySuccessfulBranchPriceSave(current, parsed.value, true),
+          );
+        }
+
+        showToast(
+          t("prices.updatedToast")
+            .replace("{product}", row.name)
+            .replace("{price}", formatPeso(parsed.value)),
+        );
+        await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+        return;
+      }
+
       const response = await updateCatalogProductPrices(workspace, {
         items: [
           {
@@ -200,11 +250,20 @@ export function TodaysPricesPage() {
           const invalidDirty = dirty && !parsed.ok;
           const isStandard = isOrganizationStandardProduct({ scope: row.scope ?? undefined });
           const isLocal = isBranchLocalProduct({ scope: row.scope ?? undefined });
-          const priceLabel = isStandard
-            ? t("prices.organizationPrice")
-            : isLocal
-              ? t("catalog.governance.currentBranchProductPrice")
-              : t("prices.current");
+          const priceLabel =
+            row.priceEditScope === "branch"
+              ? t("prices.branchEffectivePrice")
+              : isStandard
+                ? t("prices.organizationPrice")
+                : isLocal
+                  ? t("catalog.governance.currentBranchProductPrice")
+                  : t("prices.current");
+          const inputLabel =
+            row.priceEditScope === "branch"
+              ? t("prices.branchPrice")
+              : editable
+                ? t("prices.newPrice")
+                : t("prices.organizationPrice");
 
           return (
             <li key={row.productId}>
@@ -241,6 +300,29 @@ export function TodaysPricesPage() {
                   <p className="catalog-prices-row__current m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                     {priceLabel}: {formatPeso(row.currentPrice)}
                   </p>
+                  {row.priceEditScope === "branch" ? (
+                    <p
+                      className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                      data-testid={`price-org-default-${row.productId}`}
+                    >
+                      {t("prices.organizationPrice")}: {formatPeso(row.organizationDefaultPrice)}
+                    </p>
+                  ) : null}
+                  {row.priceEditScope === "branch" ? (
+                    <p
+                      className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                      data-testid={`price-branch-scope-${row.productId}`}
+                    >
+                      {t("prices.branchScopeHint")}
+                    </p>
+                  ) : row.priceEditScope === "organization" ? (
+                    <p
+                      className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
+                      data-testid={`price-org-scope-${row.productId}`}
+                    >
+                      {t("prices.organizationScopeHint")}
+                    </p>
+                  ) : null}
                   {!editable ? (
                     <p
                       className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
@@ -255,7 +337,7 @@ export function TodaysPricesPage() {
                   <div className="catalog-prices-row__edit-row">
                     <div className="catalog-prices-row__input-wrap min-w-0 flex-1">
                       <Input
-                        label={editable ? t("prices.newPrice") : t("prices.organizationPrice")}
+                        label={inputLabel}
                         name={`price-${row.productId}`}
                         inputMode="decimal"
                         autoComplete="off"
