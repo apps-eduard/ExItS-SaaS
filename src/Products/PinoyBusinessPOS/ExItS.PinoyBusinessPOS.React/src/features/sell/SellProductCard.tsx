@@ -6,7 +6,10 @@ import {
   resolveAddFlow,
   resolveSellUnitPrice,
 } from "@/cart/sell-cart-helpers";
-import { resolveCatalogStockDisplay } from "@/features/catalog/catalog-stock-display";
+import {
+  resolveBranchStockGuardQuantity,
+  resolveCatalogStockDisplay,
+} from "@/features/catalog/catalog-stock-display";
 import { sellAvailableCaption } from "@/features/catalog/catalog-stock-caption";
 import { useCatalogProductImageUrl } from "@/features/sell/use-catalog-product-image";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -44,10 +47,14 @@ export function SellProductCard({
     product.hasImage === true,
     product.imageVersion,
   );
-  const remainingOnHand = remainingQuantityAfterCart(product.onHandQuantity, cartReservedBaseQty);
+  const branchAvailable = resolveBranchStockGuardQuantity(product) ?? 0;
+  const remainingBranchAvailable = remainingQuantityAfterCart(
+    branchAvailable,
+    cartReservedBaseQty,
+  );
   const stock = resolveCatalogStockDisplay({
     ...product,
-    onHandQuantity: remainingOnHand,
+    branchAvailableQuantity: remainingBranchAvailable,
   });
   const flow = resolveAddFlow(product);
 

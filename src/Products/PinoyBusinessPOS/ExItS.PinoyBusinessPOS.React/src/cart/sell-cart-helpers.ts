@@ -238,7 +238,11 @@ export function remainingQuantityAfterCart(
 export function isCommittedOutOfStock(input: {
   isTracked?: boolean | null;
   onHandQuantity?: number | null;
+  branchAvailableQuantity?: number | null;
+  organizationOnHandQuantity?: number | null;
+  branchOnHandQuantity?: number | null;
   stockStatus?: string | null;
+  branchScoped?: boolean;
 }): boolean {
   if (!input.isTracked) {
     return false;
@@ -246,7 +250,25 @@ export function isCommittedOutOfStock(input: {
   if (normalizeStockStatus(input.stockStatus) === "out") {
     return true;
   }
-  return (input.onHandQuantity ?? 0) <= 0;
+
+  const branchScoped =
+    input.branchScoped ??
+    (input.branchAvailableQuantity != null ||
+      input.branchOnHandQuantity != null ||
+      input.organizationOnHandQuantity != null);
+
+  const available =
+    input.branchAvailableQuantity != null && Number.isFinite(input.branchAvailableQuantity)
+      ? input.branchAvailableQuantity
+      : branchScoped
+        ? null
+        : (input.onHandQuantity ?? 0);
+
+  if (available == null) {
+    return true;
+  }
+
+  return available <= 0;
 }
 
 /** Tile/dialog stock line: untracked, on-hand, plus low/out when the catalog says so. */

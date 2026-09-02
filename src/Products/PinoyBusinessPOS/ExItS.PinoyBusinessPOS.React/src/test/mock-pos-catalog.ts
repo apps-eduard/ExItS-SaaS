@@ -13,6 +13,26 @@ export const MOCK_RICE_KG_UNIT_ID = "ukukukuk-ukuk-ukuk-ukuk-ukukukukukuk";
 export const MOCK_RICE_SACK_UNIT_ID = "usususus-usus-usus-usus-usususususus";
 export const MOCK_OOS_PRODUCT_ID = "aaaaaaaa-0000-4000-8000-aaaaaaaaaaaa";
 
+function withBranchStockStamp<
+  T extends {
+    isTracked?: boolean;
+    onHandQuantity?: number;
+    stockStatus?: string;
+  },
+>(product: T): T {
+  if (!product.isTracked) {
+    return product;
+  }
+  const quantity = product.onHandQuantity ?? 0;
+  return {
+    ...product,
+    organizationOnHandQuantity: quantity,
+    branchOnHandQuantity: quantity,
+    branchAvailableQuantity: quantity,
+    onHandQuantity: quantity,
+  };
+}
+
 export const mockCatalogCategories = {
   items: [
     {
@@ -45,7 +65,7 @@ export const mockCatalogCategories = {
   pageSize: 50,
 };
 
-export const mockCokeProduct = {
+export const mockCokeProduct = withBranchStockStamp({
   productId: MOCK_COKE_PRODUCT_ID,
   organizationId: "11111111-1111-1111-1111-111111111111",
   name: "Coke 330ml",
@@ -61,7 +81,7 @@ export const mockCokeProduct = {
   onHandQuantity: 48,
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
-};
+});
 
 export const mockChipsProduct = {
   productId: MOCK_CHIPS_PRODUCT_ID,
@@ -79,7 +99,7 @@ export const mockChipsProduct = {
   updatedAtUtc: "2026-01-01T00:00:00Z",
 };
 
-export const mockRiceProduct = {
+export const mockRiceProduct = withBranchStockStamp({
   productId: MOCK_RICE_PRODUCT_ID,
   organizationId: "11111111-1111-1111-1111-111111111111",
   name: "Rice",
@@ -121,9 +141,9 @@ export const mockRiceProduct = {
       sortOrder: 1,
     },
   ],
-};
+});
 
-export const mockMeatProduct = {
+export const mockMeatProduct = withBranchStockStamp({
   productId: MOCK_MEAT_PRODUCT_ID,
   organizationId: "11111111-1111-1111-1111-111111111111",
   name: "Ground Pork",
@@ -140,7 +160,7 @@ export const mockMeatProduct = {
   tracksExpiration: true,
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
-};
+});
 
 export const mockBottleProduct = {
   productId: MOCK_BOTTLE_PRODUCT_ID,
@@ -202,7 +222,7 @@ export const mockOilProduct = {
   ],
 };
 
-export const mockOutOfStockProduct = {
+export const mockOutOfStockProduct = withBranchStockStamp({
   productId: MOCK_OOS_PRODUCT_ID,
   organizationId: "11111111-1111-1111-1111-111111111111",
   name: "Sold Out Juice",
@@ -219,7 +239,7 @@ export const mockOutOfStockProduct = {
   stockStatus: "OutOfStock",
   createdAtUtc: "2026-01-01T00:00:00Z",
   updatedAtUtc: "2026-01-01T00:00:00Z",
-};
+});
 
 export const mockCatalogProducts = [
   mockCokeProduct,

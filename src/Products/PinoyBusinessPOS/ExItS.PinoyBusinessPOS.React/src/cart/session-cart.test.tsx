@@ -358,12 +358,14 @@ describe("sell-cart-helpers", () => {
       isCommittedOutOfStock({
         isTracked: true,
         onHandQuantity: 0,
+        branchAvailableQuantity: 0,
       }),
     ).toBe(true);
     expect(
       isCommittedOutOfStock({
         isTracked: true,
         onHandQuantity: 4,
+        branchAvailableQuantity: 4,
         stockStatus: "OutOfStock",
       }),
     ).toBe(true);
@@ -377,7 +379,16 @@ describe("sell-cart-helpers", () => {
       isCommittedOutOfStock({
         isTracked: true,
         onHandQuantity: 12,
+        branchAvailableQuantity: 12,
       }),
     ).toBe(false);
+    expect(
+      isCommittedOutOfStock({
+        isTracked: true,
+        onHandQuantity: 10,
+        organizationOnHandQuantity: 10,
+        branchAvailableQuantity: null,
+      }),
+    ).toBe(true);
   });
 });

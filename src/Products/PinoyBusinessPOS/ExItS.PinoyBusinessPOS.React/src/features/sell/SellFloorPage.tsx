@@ -57,6 +57,7 @@ import {
   listCachedCatalogCategories,
   listCachedCatalogProducts,
 } from "@/offline/catalog-cache";
+import { resolveBranchStockGuardQuantity } from "@/features/catalog/catalog-stock-display";
 import { syncCatalogCacheIfNeeded } from "@/offline/catalog-cache-sync";
 import { refreshPriceAuthoritiesIfNeeded } from "@/offline/price-authority-sync";
 import { useSellOfflineReadiness } from "@/features/sell/use-sell-offline-readiness";
@@ -69,9 +70,10 @@ function stockInputFromProduct(
   product: PosCatalogProductDto,
   sellableQuantity?: number | null,
 ): StockGuardInput {
+  const branchAvailable = resolveBranchStockGuardQuantity(product);
   return {
     isTracked: product.isTracked,
-    onHandQuantity: product.onHandQuantity,
+    onHandQuantity: branchAvailable ?? 0,
     unitOfMeasure: product.unitOfMeasure,
     tracksExpiration: product.tracksExpiration,
     sellableQuantity: sellableQuantity ?? undefined,
@@ -751,7 +753,7 @@ export function SellFloorPage() {
           inventoryHintQuery.data?.productId === product.productId &&
           inventoryHintQuery.data.onHandQuantity != null
             ? inventoryHintQuery.data.onHandQuantity
-            : (product.onHandQuantity ?? existing?.onHandQuantity),
+            : (resolveBranchStockGuardQuantity(product) ?? existing?.onHandQuantity ?? 0),
         isTracked:
           inventoryHintQuery.data?.productId === product.productId
             ? (inventoryHintQuery.data.isTracked ?? product.isTracked)

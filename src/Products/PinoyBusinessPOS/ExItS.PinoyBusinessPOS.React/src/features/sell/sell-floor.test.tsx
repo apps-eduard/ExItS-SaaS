@@ -234,7 +234,7 @@ describe("SellFloorPage", () => {
     });
     expect(screen.queryByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`)).not.toBeInTheDocument();
     expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
-      "On hand: 48 Bottle",
+      "48 Bottle available",
     );
 
     const oosToggle = screen.getByTestId("sell-out-of-stock-toggle");
@@ -246,9 +246,6 @@ describe("SellFloorPage", () => {
 
     const oosCard = screen.getByTestId(`sell-product-${MOCK_OOS_PRODUCT_ID}`);
     expect(oosCard).toBeDisabled();
-    expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
-      "On hand: 0 Bottle",
-    );
     expect(screen.getByTestId(`sell-product-stock-${MOCK_OOS_PRODUCT_ID}`)).toHaveTextContent(
       "Out of stock",
     );
@@ -277,7 +274,7 @@ describe("SellFloorPage", () => {
       expect(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`)).toBeInTheDocument();
     });
     expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
-      "On hand: 48 Bottle",
+      "48 Bottle available",
     );
 
     await user.click(screen.getByTestId(`sell-product-${MOCK_COKE_PRODUCT_ID}`));
@@ -288,7 +285,7 @@ describe("SellFloorPage", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
-      "On hand: 47 Bottle",
+      "47 Bottle available",
     );
 
     await user.click(
@@ -300,7 +297,7 @@ describe("SellFloorPage", () => {
       ).not.toBeInTheDocument();
     });
     expect(screen.getByTestId(`sell-product-stock-${MOCK_COKE_PRODUCT_ID}`)).toHaveTextContent(
-      "On hand: 48 Bottle",
+      "48 Bottle available",
     );
   });
 

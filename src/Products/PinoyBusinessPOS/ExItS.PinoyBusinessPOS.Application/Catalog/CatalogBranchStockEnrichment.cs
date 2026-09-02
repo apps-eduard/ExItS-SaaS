@@ -33,8 +33,31 @@ public static class CatalogBranchStockEnrichment
             .Select(p =>
                 snapshots.TryGetValue(p.ProductId, out var snapshot)
                     ? Apply(p, snapshot)
-                    : p)
+                    : ApplyBranchStampFailClosed(p))
             .ToList();
+
+    /// <summary>
+    /// Branch catalog context is active but no snapshot was resolved — fail closed for tracked
+    /// products instead of leaving organization on-hand visible as branch quantity.
+    /// </summary>
+    public static PosCatalogProductDto ApplyBranchStampFailClosed(PosCatalogProductDto product)
+    {
+        if (!product.IsTracked)
+        {
+            return product;
+        }
+
+        return product with
+        {
+            OrganizationOnHandQuantity = product.OnHandQuantity,
+            BranchOnHandQuantity = 0m,
+            BranchAvailableQuantity = 0m,
+            OnHandQuantity = 0m,
+            SellableQuantity = null,
+            IsLowStock = false,
+            StockStatus = InventoryStockStatuses.ToCode(InventoryStockStatus.OutOfStock),
+        };
+    }
 
     public static CatalogBranchStockSnapshot BuildSnapshot(
         bool isTracked,

@@ -86,4 +86,55 @@ public sealed class CatalogBranchStockEnrichmentTests
         Assert.Equal(6m, snapshot.SaleEligibleQuantity);
         Assert.Equal(6m, snapshot.SellableQuantity);
     }
+
+    [Fact]
+    public void BRANCHLEAK_05_fail_closed_when_branch_snapshot_missing()
+    {
+        var product = new PosCatalogProductDto(
+            Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Biscuit Pack",
+            null,
+            null,
+            null,
+            null,
+            "Piece",
+            "PerItem",
+            100m,
+            "Active",
+            DateTimeOffset.Parse("2026-01-01T00:00:00Z"),
+            DateTimeOffset.Parse("2026-01-01T00:00:00Z"),
+            IsTracked: true,
+            OnHandQuantity: 10m,
+            StockStatus: "InStock");
+
+        var enriched = CatalogBranchStockEnrichment.ApplyBranchStampFailClosed(product);
+
+        Assert.Equal(10m, enriched.OrganizationOnHandQuantity);
+        Assert.Equal(0m, enriched.BranchOnHandQuantity);
+        Assert.Equal(0m, enriched.BranchAvailableQuantity);
+        Assert.Equal(0m, enriched.OnHandQuantity);
+        Assert.Equal("OutOfStock", enriched.StockStatus);
+    }
+
+    [Fact]
+    public void BRANCHLEAK_09_missing_sellable_lookup_does_not_zero_sale_eligible()
+    {
+        var branchRead = new BranchInventoryProductRead(
+            ProductId: Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            BranchOnHand: 10m,
+            OrganizationOnHand: 10m,
+            BranchReserved: 0m,
+            BranchAvailable: 10m,
+            ReorderLevel: null,
+            ReorderQuantity: null,
+            IsLowStock: false,
+            IsReorderSuggested: false,
+            SuggestedOrderQuantity: null);
+
+        var snapshot = CatalogBranchStockEnrichment.BuildSnapshot(isTracked: true, branchRead, sellableQuantity: null);
+
+        Assert.Equal(10m, snapshot.SaleEligibleQuantity);
+        Assert.Equal(10m, snapshot.BranchAvailable);
+    }
 }

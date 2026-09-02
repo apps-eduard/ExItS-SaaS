@@ -70,7 +70,12 @@ public sealed class CatalogBranchStockResolver
                 continue;
             }
 
-            sellableByProduct.TryGetValue(product.ProductId, out var sellable);
+            decimal? sellable = null;
+            if (sellableByProduct.TryGetValue(product.ProductId, out var sellableValue))
+            {
+                sellable = sellableValue;
+            }
+
             var snapshot = CatalogBranchStockEnrichment.BuildSnapshot(
                 account.IsTracked,
                 branchRead,
