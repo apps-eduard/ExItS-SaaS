@@ -88,5 +88,11 @@ describe("BranchManagementListPage", () => {
     );
     expect(screen.queryByText(/Delete/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-mgmt-add")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("branch-mgmt-view-qr-22222222-2222-2222-2222-222222222222"),
+    ).toHaveAttribute(
+      "href",
+      "/org/branches/22222222-2222-2222-2222-222222222222?focus=qr#branch-storefront-qr",
+    );
   });
 });

@@ -11,9 +11,13 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { normalizePublicOrganizationId } from "@/features/store/business-qr-url";
+import {
+  normalizePublicBranchId,
+  normalizePublicOrganizationId,
+} from "@/features/store/business-qr-url";
 import { InstallExitsOffer } from "@/features/store/InstallExitsOffer";
 import {
+  buildMerchantShopPath,
   buildSignInHrefForStore,
   buildSignUpHrefForStore,
   rememberStoreAcquisitionIntent,
@@ -27,8 +31,9 @@ export function PublicStoreLandingPage() {
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { status, session } = useSession();
-  const { publicOrganizationId: rawParam = "" } = useParams();
+  const { publicOrganizationId: rawParam = "", branchId: rawBranchId } = useParams();
   const publicOrganizationId = normalizePublicOrganizationId(rawParam);
+  const branchId = normalizePublicBranchId(rawBranchId);
   const accountClass = sessionAccountClass(session);
   const isAuthenticated = status === "authenticated";
   const isPersonal = isAuthenticated && accountClass === "Personal";
@@ -37,9 +42,9 @@ export function PublicStoreLandingPage() {
 
   useEffect(() => {
     if (publicOrganizationId) {
-      rememberStoreAcquisitionIntent(publicOrganizationId);
+      rememberStoreAcquisitionIntent(publicOrganizationId, branchId);
     }
-  }, [publicOrganizationId]);
+  }, [publicOrganizationId, branchId]);
 
   const landingQuery = useQuery({
     queryKey: ["public", "store", publicOrganizationId],
@@ -50,7 +55,7 @@ export function PublicStoreLandingPage() {
   });
 
   const continueQuery = useQuery({
-    queryKey: ["public", "store", "continue", publicOrganizationId, session?.userId],
+    queryKey: ["public", "store", "continue", publicOrganizationId, branchId, session?.userId],
     enabled: Boolean(publicOrganizationId) && isPersonal && online && landingQuery.isSuccess,
     queryFn: async ({ signal }) => {
       const resolved = await resolvePublicOrganizationId(
@@ -76,6 +81,9 @@ export function PublicStoreLandingPage() {
     if (!publicOrganizationId) {
       return t("store.landing.invalidId");
     }
+    if (rawBranchId && !branchId) {
+      return t("store.landing.invalidBranch");
+    }
     if (!online) {
       return t("store.landing.offlineDetail");
     }
@@ -87,7 +95,15 @@ export function PublicStoreLandingPage() {
       return t("store.landing.loadErrorDetail");
     }
     return null;
-  }, [publicOrganizationId, online, landingQuery.isError, landingQuery.error, t]);
+  }, [
+    publicOrganizationId,
+    rawBranchId,
+    branchId,
+    online,
+    landingQuery.isError,
+    landingQuery.error,
+    t,
+  ]);
 
   async function handleContinueToStore() {
     if (!continueQuery.data || continuing) {
@@ -96,7 +112,7 @@ export function PublicStoreLandingPage() {
     setContinuing(true);
     try {
       if (continueQuery.data.linked) {
-        await navigate(`/personal/linked-merchants/${continueQuery.data.organizationId}/shop`, {
+        await navigate(buildMerchantShopPath(continueQuery.data.organizationId, branchId), {
           replace: true,
         });
       } else {
@@ -107,12 +123,12 @@ export function PublicStoreLandingPage() {
     }
   }
 
-  if (!publicOrganizationId) {
+  if (!publicOrganizationId || (rawBranchId && !branchId)) {
     return (
       <PublicShell>
         <ErrorState
           title={t("store.landing.unavailableTitle")}
-          detail={t("store.landing.invalidId")}
+          detail={unavailableDetail ?? t("store.landing.invalidId")}
         />
       </PublicShell>
     );
@@ -163,6 +179,7 @@ export function PublicStoreLandingPage() {
       <div
         className="mx-auto flex w-full max-w-md min-w-0 flex-col gap-4"
         data-testid="public-store-landing-page"
+        data-branch-id={branchId ?? undefined}
       >
         <Card className="flex flex-col items-center gap-3 p-5 text-center">
           <Building2 className="size-10 text-primary" aria-hidden />
@@ -179,7 +196,7 @@ export function PublicStoreLandingPage() {
             {store.publicOrganizationId}
           </p>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("store.landing.lede")}
+            {branchId ? t("store.landing.branchLede") : t("store.landing.lede")}
           </p>
           {!store.orderingAvailable ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="status">
@@ -197,7 +214,7 @@ export function PublicStoreLandingPage() {
               {t("store.landing.staffDetail")}
             </p>
             <Button asChild className="min-h-11" data-testid="public-store-sign-in-personal">
-              <Link to={buildSignInHrefForStore(store.publicOrganizationId)}>
+              <Link to={buildSignInHrefForStore(store.publicOrganizationId, branchId)}>
                 {t("store.landing.signInPersonal")}
               </Link>
             </Button>
@@ -251,7 +268,7 @@ export function PublicStoreLandingPage() {
               {t("store.landing.newVisitorInvite").replace("{storeName}", store.displayName)}
             </p>
             <Button asChild className="min-h-11 w-full" data-testid="public-store-create-account">
-              <Link to={buildSignUpHrefForStore(store.publicOrganizationId)}>
+              <Link to={buildSignUpHrefForStore(store.publicOrganizationId, branchId)}>
                 {t("store.landing.createAccount")}
               </Link>
             </Button>
@@ -261,7 +278,7 @@ export function PublicStoreLandingPage() {
               className="min-h-11 w-full"
               data-testid="public-store-sign-in"
             >
-              <Link to={buildSignInHrefForStore(store.publicOrganizationId)}>
+              <Link to={buildSignInHrefForStore(store.publicOrganizationId, branchId)}>
                 {t("store.landing.signInExisting")}
               </Link>
             </Button>

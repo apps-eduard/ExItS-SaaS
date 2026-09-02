@@ -287,6 +287,16 @@ export function BranchManagementListPage() {
                       <Link to={`/org/branches/${branch.id}`}>{t("branches.mgmt.open")}</Link>
                     </Button>
                     <Button
+                      asChild
+                      variant="outline"
+                      className="min-h-11"
+                      data-testid={`branch-mgmt-view-qr-${branch.id}`}
+                    >
+                      <Link to={`/org/branches/${branch.id}?focus=qr#branch-storefront-qr`}>
+                        {t("branches.mgmt.viewQr")}
+                      </Link>
+                    </Button>
+                    <Button
                       type="button"
                       variant="ghost"
                       className="min-h-11 min-w-11 px-3"
@@ -317,6 +327,14 @@ export function BranchManagementListPage() {
             <Button asChild variant="outline" className="min-h-11 justify-start">
               <Link to={`/org/branches/${menuBranch.id}`} onClick={() => setMenuBranch(null)}>
                 {t("branches.mgmt.open")}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="min-h-11 justify-start">
+              <Link
+                to={`/org/branches/${menuBranch.id}?focus=qr#branch-storefront-qr`}
+                onClick={() => setMenuBranch(null)}
+              >
+                {t("branches.mgmt.viewQr")}
               </Link>
             </Button>
             <Button asChild variant="outline" className="min-h-11 justify-start">

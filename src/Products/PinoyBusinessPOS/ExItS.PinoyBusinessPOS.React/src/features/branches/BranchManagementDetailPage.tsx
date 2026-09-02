@@ -33,6 +33,7 @@ import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog"
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchStaffAccessPanel } from "@/features/branches/BranchStaffAccessPanel";
+import { BranchStorefrontQrPanel } from "@/features/branches/BranchStorefrontQrPanel";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
@@ -132,6 +133,26 @@ export function BranchManagementDetailPage() {
   useEffect(() => {
     setActiveTab(parseDetailTab(searchParams.get("tab")));
   }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("focus") !== "qr" && window.location.hash !== "#branch-storefront-qr") {
+      return;
+    }
+    if (activeTab !== "overview") {
+      setActiveTab("overview");
+      const next = new URLSearchParams(searchParams);
+      next.delete("tab");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      document.getElementById("branch-storefront-qr")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+    return () => window.clearTimeout(handle);
+  }, [searchParams, branchId, activeTab, setSearchParams]);
 
   const branchQuery = useQuery({
     queryKey: ["branch-management-detail", organizationId, branchId],
@@ -472,6 +493,16 @@ export function BranchManagementDetailPage() {
               </Button>
             </div>
           </section>
+
+          {organizationId ? (
+            <BranchStorefrontQrPanel
+              organizationId={organizationId}
+              organizationDisplayName={boundWorkspace?.organizationDisplayName ?? "store"}
+              branchId={branch.id}
+              branchName={branch.name}
+              branchStatus={branch.status}
+            />
+          ) : null}
 
           {canGovern ? (
             <section className="catalog-form-section exits-animate-panel gap-2" data-testid="branch-lifecycle">

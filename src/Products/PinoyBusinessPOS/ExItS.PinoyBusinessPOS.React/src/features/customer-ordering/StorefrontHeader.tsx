@@ -11,6 +11,8 @@ type StorefrontHeaderProps = {
   storefront: CustomerStorefrontDto;
   branchId: string | null;
   onBranchChange: (branchId: string | null) => void;
+  /** When true (branch QR entry), keep the exact branch — no silent switcher. */
+  branchLocked?: boolean;
   search: string;
   onSearchChange: (value: string) => void;
   onSearchClear: () => void;
@@ -23,6 +25,7 @@ export function StorefrontHeader({
   storefront,
   branchId,
   onBranchChange,
+  branchLocked = false,
   search,
   onSearchChange,
   onSearchClear,
@@ -74,7 +77,7 @@ export function StorefrontHeader({
       ) : null}
 
       <div className="pc-storefront-toolbar">
-        {storefront.branches.length > 1 ? (
+        {storefront.branches.length > 1 && !branchLocked ? (
           <label className="pc-field">
             <span className="pc-field__label">{t("orders.branch")}</span>
             <select

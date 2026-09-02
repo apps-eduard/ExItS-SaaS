@@ -221,6 +221,10 @@ export const appRoutes = [
         element: <PublicStoreLandingPage />,
       },
       {
+        path: "/store/:publicOrganizationId/b/:branchId",
+        element: <PublicStoreLandingPage />,
+      },
+      {
         path: "/sign-in",
         element: (
           <GuestOnly>

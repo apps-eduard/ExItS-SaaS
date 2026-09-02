@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { RefreshCw, WifiOff } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
@@ -28,6 +28,8 @@ import {
 } from "@/features/customer-ordering/format-personal-store-label";
 import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import { useLinkedMerchantsOrderingProbes } from "@/features/customer-ordering/useLinkedMerchantsOrderingProbes";
+import { normalizePublicBranchId } from "@/features/store/business-qr-url";
+import { peekStoreAcquisitionIntent } from "@/features/store/store-acquisition";
 import { useI18n } from "@/i18n/I18nProvider";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -44,14 +46,28 @@ export function MerchantShopPage() {
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { organizationId = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const { cart, itemCount, merchandiseSubtotal, ensureMerchant, increment, decrement, quantityOf } =
     usePersonalMerchantCart();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [branchId, setBranchId] = useState<string | null>(null);
+  const lockedBranchId = useMemo(() => {
+    const fromQuery = normalizePublicBranchId(searchParams.get("branchId"));
+    if (fromQuery) {
+      return fromQuery;
+    }
+    return peekStoreAcquisitionIntent()?.branchId ?? null;
+  }, [searchParams]);
+  const [branchId, setBranchId] = useState<string | null>(() => lockedBranchId);
   const [categoryId, setCategoryId] = useState("all");
   const [tokenReady, setTokenReady] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (lockedBranchId) {
+      setBranchId(lockedBranchId);
+    }
+  }, [lockedBranchId]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -121,11 +137,20 @@ export function MerchantShopPage() {
   useEffect(() => {
     if (storefront) {
       ensureMerchant(storefront.organizationId, storefront.organizationDisplayName);
+      if (lockedBranchId) {
+        // Branch QR / ?branchId= must keep exact branch — never silently fall back.
+        return;
+      }
       if (!branchId && storefront.branches.length > 0) {
         setBranchId(storefront.branches[0].branchId);
       }
     }
-  }, [storefront, ensureMerchant, branchId]);
+  }, [storefront, ensureMerchant, branchId, lockedBranchId]);
+
+  const lockedBranchMissing =
+    Boolean(lockedBranchId) &&
+    Boolean(storefront) &&
+    !storefront!.branches.some((b) => b.branchId.toLowerCase() === lockedBranchId);
 
   const pageShell =
     "personal-page personal-commerce-page merchant-shop-page exits-page flex min-w-0 flex-col gap-3";
@@ -264,6 +289,20 @@ export function MerchantShopPage() {
     );
   }
 
+  if (lockedBranchMissing) {
+    return (
+      <div className={pageShell} data-testid="merchant-shop-branch-missing">
+        {shopPageHeader()}
+        <PersonalCommerceNav active="stores" />
+        {shopIdentity(storefront.canCustomerOrder)}
+        <ErrorState
+          title={t("orders.branchUnavailableTitle")}
+          detail={t("orders.branchUnavailableDetail")}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={pageShell} data-testid="merchant-shop-page">
       {shopPageHeader()}
@@ -271,7 +310,8 @@ export function MerchantShopPage() {
       <StorefrontHeader
         storefront={storefront}
         branchId={branchId}
-        onBranchChange={setBranchId}
+        onBranchChange={lockedBranchId ? () => undefined : setBranchId}
+        branchLocked={Boolean(lockedBranchId)}
         search={search}
         onSearchChange={setSearch}
         onSearchClear={() => setSearch("")}

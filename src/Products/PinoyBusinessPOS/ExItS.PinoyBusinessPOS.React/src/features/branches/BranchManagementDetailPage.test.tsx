@@ -54,6 +54,10 @@ vi.mock("@/features/branches/BranchDetailsForm", () => ({
   BranchDetailsForm: () => <div data-testid="branch-details-form" />,
 }));
 
+vi.mock("@/features/branches/BranchStorefrontQrPanel", () => ({
+  BranchStorefrontQrPanel: () => <div data-testid="branch-storefront-qr-panel" />,
+}));
+
 const branchId = "22222222-2222-2222-2222-222222222222";
 
 function renderDetail(tab = "overview") {
@@ -130,6 +134,7 @@ describe("BranchManagementDetailPage", () => {
       "href",
       `/org/branches/${branchId}/fulfillment`,
     );
+    expect(screen.getByTestId("branch-storefront-qr-panel")).toBeInTheDocument();
   });
 
   it("hides suspend/archive on primary branch", async () => {

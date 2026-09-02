@@ -4,7 +4,9 @@
  */
 
 import {
+  buildPublicBranchStorePath,
   buildPublicStorePath,
+  normalizePublicBranchId,
   normalizePublicOrganizationId,
 } from "@/features/store/business-qr-url";
 
@@ -12,6 +14,8 @@ export const STORE_ACQUISITION_STORAGE_KEY = "exits.acquisition.storeIntent";
 
 export type StoreAcquisitionIntent = {
   publicOrganizationId: string;
+  /** When set, shop must open this exact branch (branch QR). */
+  branchId?: string | null;
   intendedAction: "open-store";
 };
 
@@ -35,7 +39,7 @@ export function isSafeAuthContinuePath(path: string | null | undefined): path is
   if (!path || !isInternalRelativePath(path)) {
     return false;
   }
-  const [pathname] = path.split(/[?#]/);
+  const [pathname, search = ""] = path.split(/[?#]/);
   if (!pathname) {
     return false;
   }
@@ -43,26 +47,61 @@ export function isSafeAuthContinuePath(path: string | null | undefined): path is
   if (storeMatch) {
     return normalizePublicOrganizationId(storeMatch[1]) !== null;
   }
+  const branchStoreMatch = pathname.match(
+    /^\/store\/(ORG\d{6})\/b\/([0-9a-fA-F-]{36})$/i,
+  );
+  if (branchStoreMatch) {
+    return (
+      normalizePublicOrganizationId(branchStoreMatch[1]) !== null &&
+      normalizePublicBranchId(branchStoreMatch[2]) !== null
+    );
+  }
   if (pathname === "/personal/linked-merchants") {
     return true;
   }
   if (/^\/personal\/linked-merchants\/[0-9a-fA-F-]{36}\/shop(?:\/checkout)?$/.test(pathname)) {
-    return true;
+    if (!search) {
+      return true;
+    }
+    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+    const branch = params.get("branchId");
+    return branch == null || normalizePublicBranchId(branch) !== null;
   }
   return false;
 }
 
-export function buildStoreContinuePath(publicOrganizationId: string): string {
+export function buildStoreContinuePath(
+  publicOrganizationId: string,
+  branchId?: string | null,
+): string {
+  const branch = normalizePublicBranchId(branchId);
+  if (branch) {
+    return buildPublicBranchStorePath(publicOrganizationId, branch);
+  }
   return buildPublicStorePath(publicOrganizationId);
 }
 
-export function rememberStoreAcquisitionIntent(publicOrganizationId: string): void {
+export function buildMerchantShopPath(
+  organizationId: string,
+  branchId?: string | null,
+): string {
+  const base = `/personal/linked-merchants/${organizationId}/shop`;
+  const branch = normalizePublicBranchId(branchId);
+  return branch ? `${base}?branchId=${encodeURIComponent(branch)}` : base;
+}
+
+export function rememberStoreAcquisitionIntent(
+  publicOrganizationId: string,
+  branchId?: string | null,
+): void {
   const normalized = normalizePublicOrganizationId(publicOrganizationId);
   if (!normalized || typeof sessionStorage === "undefined") {
     return;
   }
+  const branch = normalizePublicBranchId(branchId);
   const intent: StoreAcquisitionIntent = {
     publicOrganizationId: normalized,
+    branchId: branch,
     intendedAction: "open-store",
   };
   try {
@@ -86,7 +125,11 @@ export function peekStoreAcquisitionIntent(): StoreAcquisitionIntent | null {
     if (!id || parsed.intendedAction !== "open-store") {
       return null;
     }
-    return { publicOrganizationId: id, intendedAction: "open-store" };
+    return {
+      publicOrganizationId: id,
+      branchId: normalizePublicBranchId(parsed.branchId),
+      intendedAction: "open-store",
+    };
   } catch {
     return null;
   }
@@ -115,17 +158,23 @@ export function resolveAuthContinuePath(
   }
   const intent = peekStoreAcquisitionIntent();
   if (intent) {
-    return buildStoreContinuePath(intent.publicOrganizationId);
+    return buildStoreContinuePath(intent.publicOrganizationId, intent.branchId);
   }
   return null;
 }
 
-export function buildSignInHrefForStore(publicOrganizationId: string): string {
-  const continuePath = buildStoreContinuePath(publicOrganizationId);
+export function buildSignInHrefForStore(
+  publicOrganizationId: string,
+  branchId?: string | null,
+): string {
+  const continuePath = buildStoreContinuePath(publicOrganizationId, branchId);
   return `/sign-in?continue=${encodeURIComponent(continuePath)}`;
 }
 
-export function buildSignUpHrefForStore(publicOrganizationId: string): string {
-  const continuePath = buildStoreContinuePath(publicOrganizationId);
+export function buildSignUpHrefForStore(
+  publicOrganizationId: string,
+  branchId?: string | null,
+): string {
+  const continuePath = buildStoreContinuePath(publicOrganizationId, branchId);
   return `/sign-in?tab=sign-up&continue=${encodeURIComponent(continuePath)}`;
 }
