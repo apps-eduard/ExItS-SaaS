@@ -8,10 +8,10 @@ namespace ExItS.PinoyBusinessPOS.Domain.Catalog;
 /// </summary>
 public enum ProductBusinessUsage
 {
-    /// <summary>Sell as-is — eligible for normal POS sell floor when Active and other rules pass.</summary>
+    /// <summary>For resale (UI) — buy and sell the same product; domain value remains Resale. Eligible for POS sell floor when Active and other rules pass.</summary>
     Resale = 0,
 
-    /// <summary>Ingredient / raw material — purchased and used to produce another product; not sold as-is.</summary>
+    /// <summary>Ingredient / raw material — purchased and used to produce another product; not sold to customers as a finished resale item.</summary>
     Ingredient = 1,
 
     /// <summary>Internal use — business consumption; not sold to customers.</summary>

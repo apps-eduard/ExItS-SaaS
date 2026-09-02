@@ -11,7 +11,7 @@ const labels = {
   statusActive: "Active",
   statusInactive: "Inactive",
   statusAll: "All",
-  usageResale: "Sell as-is",
+  usageResale: "For resale",
   usageIngredient: "Ingredients",
   usageInternal: "Internal use",
   usageProduced: "Produced",

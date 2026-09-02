@@ -6,10 +6,15 @@ Buyer-owned product business usage classification for PinoyBusinessPOS:
 
 | UI | Code | Sell floor | Connected share |
 |----|------|------------|-----------------|
-| Sell as-is | `Resale` | Yes (when Active + other rules) | Eligible |
+| For resale | `Resale` | Yes (when Active + other rules) | Eligible |
 | Material / ingredient | `Ingredient` | No | Excluded |
 | Internal use | `InternalUse` | No | Excluded |
 | Produced item | `ProducedItem` → `MadeProduct` | Yes (when Active) | Eligible when CanBeSold |
+
+Mapping note:
+
+- **UI label:** For resale
+- **Internal/domain value:** `Resale` (unchanged; do not rename for presentation)
 
 ## Design decisions
 
