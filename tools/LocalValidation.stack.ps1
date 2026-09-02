@@ -941,3 +941,184 @@ function Write-LocalValidationMailpitBanner {
     Write-Host ("  {0}" -f $EmailLinkBaseUrl.TrimEnd('/'))
 }
 
+function Get-LocalValidationLogDirectory {
+    $dir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\logs'
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    return $dir
+}
+
+function Get-LocalValidationExitMarkerPath {
+    param([Parameter(Mandatory)][string]$ServiceKey)
+    $safe = ($ServiceKey -replace '[^a-zA-Z0-9_-]', '_').ToLowerInvariant()
+    return (Join-Path (Get-LocalValidationLogDirectory) ("{0}.exit" -f $safe))
+}
+
+function Clear-LocalValidationExitMarker {
+    param([Parameter(Mandatory)][string]$ServiceKey)
+    $path = Get-LocalValidationExitMarkerPath -ServiceKey $ServiceKey
+    if (Test-Path -LiteralPath $path) {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+    return $path
+}
+
+function Test-LocalValidationHttpReady {
+    param(
+        [Parameter(Mandatory)][string]$Uri,
+        [int]$TimeoutSec = 3,
+        [int]$ExpectStatus = 200
+    )
+    try {
+        $resp = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec $TimeoutSec
+        return ([int]$resp.StatusCode -eq $ExpectStatus)
+    } catch {
+        return $false
+    }
+}
+
+function Test-LocalValidationSeedIdentitiesReady {
+    <#
+    .SYNOPSIS
+      Proves Platform GET /api/v1/platform/local-validation/seed-identities returns a non-empty JSON array.
+      Matches POS PosLocalValidationHostedService bootstrap dependency (anonymous GET).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$PlatformApiBaseUrl,
+        [int]$TimeoutSec = 5
+    )
+    $base = $PlatformApiBaseUrl.TrimEnd('/')
+    $uri = "$base/api/v1/platform/local-validation/seed-identities"
+    try {
+        $resp = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec $TimeoutSec
+        if ([int]$resp.StatusCode -ne 200) { return $false }
+        $payload = $resp.Content | ConvertFrom-Json
+        if ($null -eq $payload) { return $false }
+        if ($payload -is [System.Array]) {
+            return (@($payload).Count -gt 0)
+        }
+        # Some serializers wrap lists; accept any non-empty object with Count/Length.
+        if ($payload.PSObject.Properties.Name -contains 'Count') {
+            return ([int]$payload.Count -gt 0)
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Get-LocalValidationExitMarkerCode {
+    param([Parameter(Mandatory)][string]$MarkerPath)
+    if (-not (Test-Path -LiteralPath $MarkerPath)) { return $null }
+    try {
+        $raw = (Get-Content -LiteralPath $MarkerPath -TotalCount 1 -ErrorAction Stop).Trim()
+        $code = 0
+        if ([int]::TryParse($raw, [ref]$code)) { return $code }
+        return 1
+    } catch {
+        return 1
+    }
+}
+
+function Wait-LocalServiceReady {
+    <#
+    .SYNOPSIS
+      Bounded poll for HTTP readiness with fail-fast on child exit markers / dead window processes.
+      TimeoutSeconds is an application-startup safety limit (not build time).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ServiceName,
+        [Parameter(Mandatory)][string]$HealthUri,
+        [int]$TimeoutSeconds = 120,
+        [int]$WindowProcessId = 0,
+        [string]$ExitMarkerPath = '',
+        [scriptblock]$OptionalDependencyProbe = $null,
+        [string]$OptionalDependencyName = '',
+        [int]$PollMilliseconds = 750
+    )
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $sawWindow = $false
+
+    while ((Get-Date) -lt $deadline) {
+        if ($WindowProcessId -gt 0) {
+            $window = Get-Process -Id $WindowProcessId -ErrorAction SilentlyContinue
+            if ($window) {
+                $sawWindow = $true
+            } elseif ($sawWindow) {
+                throw ("PROCESS FAILURE: {0} launcher window exited before readiness. Expected={1}" -f $ServiceName, $HealthUri)
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($ExitMarkerPath)) {
+            $exitCode = Get-LocalValidationExitMarkerCode -MarkerPath $ExitMarkerPath
+            if ($null -ne $exitCode) {
+                throw ("PROCESS FAILURE: {0} exited before readiness. ExitCode={1} Expected={2} Marker={3}" -f `
+                    $ServiceName, $exitCode, $HealthUri, $ExitMarkerPath)
+            }
+        }
+
+        if (Test-LocalValidationHttpReady -Uri $HealthUri) {
+            $depOk = $true
+            if ($null -ne $OptionalDependencyProbe) {
+                $depOk = [bool](& $OptionalDependencyProbe)
+                if (-not $depOk) {
+                    Start-Sleep -Milliseconds $PollMilliseconds
+                    continue
+                }
+            }
+            $sw.Stop()
+            return [pscustomobject]@{
+                ServiceName = $ServiceName
+                HealthUri = $HealthUri
+                ReadyInSeconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+                DependencyName = $OptionalDependencyName
+                DependencyReady = $depOk
+            }
+        }
+
+        Start-Sleep -Milliseconds $PollMilliseconds
+    }
+
+    $exitHint = ''
+    if (-not [string]::IsNullOrWhiteSpace($ExitMarkerPath)) {
+        $exitCode = Get-LocalValidationExitMarkerCode -MarkerPath $ExitMarkerPath
+        if ($null -ne $exitCode) {
+            $exitHint = " ExitCode=$exitCode"
+        }
+    }
+    $healthOk = Test-LocalValidationHttpReady -Uri $HealthUri
+    if ($healthOk -and $null -ne $OptionalDependencyProbe -and -not [bool](& $OptionalDependencyProbe)) {
+        $depLabel = if ([string]::IsNullOrWhiteSpace($OptionalDependencyName)) { 'optional dependency' } else { $OptionalDependencyName }
+        throw ("DEPENDENCY FAILURE: {0} health succeeded but {1} failed within {2}s. Health={3}{4}" -f `
+            $ServiceName, $depLabel, $TimeoutSeconds, $HealthUri, $exitHint)
+    }
+    throw ("TIMEOUT: {0} process is alive but {1} did not become ready within {2}s.{3}" -f `
+        $ServiceName, $HealthUri, $TimeoutSeconds, $exitHint)
+}
+
+function Invoke-LocalValidationDotnetBuild {
+    param(
+        [Parameter(Mandatory)][string]$Label,
+        [Parameter(Mandatory)][string]$ProjectPath,
+        [string]$Configuration = 'Debug'
+    )
+
+    if (-not (Test-Path -LiteralPath $ProjectPath)) {
+        throw ("BUILD FAILURE: {0} project missing: {1}" -f $Label, $ProjectPath)
+    }
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host ("[local-validation] Building {0}..." -f $Label) -ForegroundColor Cyan
+    # Out-Host keeps compile logs visible without polluting the function return pipeline.
+    & dotnet build $ProjectPath -c $Configuration --nologo | Out-Host
+    $code = $LASTEXITCODE
+    $sw.Stop()
+    $seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+    if ($code -ne 0) {
+        throw ("BUILD FAILURE: {0} build failed (exit {1}) after {2}s. Project={3}" -f $Label, $code, $seconds, $ProjectPath)
+    }
+    Write-Host ("[local-validation] OK  {0} build PASS ({1}s)" -f $Label, $seconds) -ForegroundColor Green
+    return [double]$seconds
+}
+

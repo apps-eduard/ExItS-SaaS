@@ -8,7 +8,10 @@
   - Starts only exits-local-validation platform-db + pos-db (never compose down with -v).
   - Stops stale ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
     ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web processes that belong to this repository only.
-  - Starts apps with dotnet watch in separate PowerShell windows, in order.
+  - Default BackendMode=Run: prebuilds backends, then starts with
+    `dotnet run --no-build --no-launch-profile` (deterministic; readiness timeout covers app startup only).
+  - Optional BackendMode=Watch: `dotnet watch` for backend hot reload (slower first readiness).
+  - Starts apps in separate PowerShell windows, in order: Platform → seed-identities → POS → web/React.
   - Starts canonical React POS Vite on :5177 (ExItS.PinoyBusinessPOS.React) via npm run dev.
   - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
   - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
@@ -32,8 +35,18 @@
   If omitted, resolves in order: LOCAL_VALIDATION_PUBLIC_HOST from .env.local-validation,
   last PublicHost from launcher-state.json, then an active Tailscale 100.x address when present.
 
+.PARAMETER BackendMode
+  Run (default): build once, then `dotnet run --no-build`. Watch: `dotnet watch` (optional HMR).
+
+.PARAMETER PortWaitSeconds
+  Application-startup readiness safety timeout per service (HTTP /health or equivalent).
+  Does NOT cover compile time in Run mode (builds happen before process start).
+
 .EXAMPLE
   .\tools\Start-LocalValidation.ps1
+
+.EXAMPLE
+  .\tools\Start-LocalValidation.ps1 -BackendMode Watch
 
 .EXAMPLE
   .\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
@@ -48,7 +61,9 @@ param(
     [ValidateSet('Full', 'PlatformAdministratorsOnly')]
     [string]$SeedScope = 'PlatformAdministratorsOnly',
     [switch]$PurgeTransactional,
-    [string]$PublicHost = ''
+    [string]$PublicHost = '',
+    [ValidateSet('Run', 'Watch')]
+    [string]$BackendMode = 'Run'
 )
 
 Set-StrictMode -Version Latest
@@ -329,9 +344,25 @@ function Start-AppWindow {
         [string]$Title,
         [string]$RepoRoot,
         [string]$Project,
-        [hashtable]$EnvMap
+        [hashtable]$EnvMap,
+        [ValidateSet('Run', 'Watch')]
+        [string]$Mode = 'Run',
+        [string]$ServiceKey = '',
+        [string]$Configuration = 'Debug'
     )
     $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
+    $key = if ([string]::IsNullOrWhiteSpace($ServiceKey)) {
+        [IO.Path]::GetFileNameWithoutExtension($Project)
+    } else {
+        $ServiceKey
+    }
+    $exitMarker = Clear-LocalValidationExitMarker -ServiceKey $key
+    $escapedMarker = $exitMarker -replace "'", "''"
+    if ($Mode -eq 'Run') {
+        $dotnetCmd = "dotnet run --project '$Project' --no-build --no-launch-profile --configuration $Configuration"
+    } else {
+        $dotnetCmd = "dotnet watch --project '$Project' run --no-launch-profile --non-interactive"
+    }
     $run = @"
 `$Host.UI.RawUI.WindowTitle = '$Title';
 # Parent shells often leave DOTNET_ENVIRONMENT=Testing (integration tests) or Staging.
@@ -344,8 +375,17 @@ $prefix
 # Keep DOTNET_ENVIRONMENT aligned with ASPNETCORE_ENVIRONMENT when the latter is set.
 if (-not [string]::IsNullOrWhiteSpace(`$env:ASPNETCORE_ENVIRONMENT)) { `$env:DOTNET_ENVIRONMENT = `$env:ASPNETCORE_ENVIRONMENT }
 Set-Location '$RepoRoot';
-Write-Host ('=== {0} (ASPNETCORE_ENVIRONMENT={1}) ===' -f '$Title', `$env:ASPNETCORE_ENVIRONMENT) -ForegroundColor Cyan;
-dotnet watch --project '$Project' run --no-launch-profile --non-interactive
+Write-Host ('=== {0} (ASPNETCORE_ENVIRONMENT={1}; BackendMode={2}) ===' -f '$Title', `$env:ASPNETCORE_ENVIRONMENT, '$Mode') -ForegroundColor Cyan;
+`$exitCode = 1
+try {
+  $dotnetCmd
+  if (`$null -ne `$LASTEXITCODE) { `$exitCode = [int]`$LASTEXITCODE } else { `$exitCode = 0 }
+} catch {
+  Write-Host `$_ -ForegroundColor Red
+  `$exitCode = 1
+}
+Set-Content -LiteralPath '$escapedMarker' -Value ([string]`$exitCode) -Encoding ascii
+Write-Host ('Process exited with code {0}. Window stays open for inspection. Marker={1}' -f `$exitCode, '$escapedMarker') -ForegroundColor Yellow
 "@
     $proc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList @(
         '-NoExit',
@@ -353,7 +393,12 @@ dotnet watch --project '$Project' run --no-launch-profile --non-interactive
         '-ExecutionPolicy', 'Bypass',
         '-Command', $run
     )
-    return $proc.Id
+    return [pscustomobject]@{
+        WindowProcessId = $proc.Id
+        ServiceKey = $key
+        ExitMarkerPath = $exitMarker
+        Mode = $Mode
+    }
 }
 
 function Start-NpmDevWindow {
@@ -585,8 +630,31 @@ foreach ($proj in @($platformProject, $posProject, $adminProject, $orgWebProject
 }
 
 $windowPids = @()
+$timing = @{
+    PlatformBuildSeconds = $null
+    PosBuildSeconds = $null
+    PlatformReadySeconds = $null
+    PosReadySeconds = $null
+}
 
-Write-Step 'Starting Platform API (dotnet watch)...'
+Write-Host ''
+Write-Host ("BACKEND MODE: {0}" -f $BackendMode.ToUpperInvariant()) -ForegroundColor Cyan
+if ($BackendMode -eq 'Watch') {
+    Write-Note 'Watch mode uses dotnet watch — first readiness may include compile time. Prefer default Run for deterministic validation.'
+}
+Write-Note ("PortWaitSeconds={0} is an application readiness safety timeout (not build time)." -f $PortWaitSeconds)
+
+if ($BackendMode -eq 'Run') {
+    Write-Host ''
+    Write-Host '[build] Prebuilding backends (once) before process start...' -ForegroundColor Cyan
+    $timing.PlatformBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'Platform API' -ProjectPath $platformProject
+    $timing.PosBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'POS API' -ProjectPath $posProject
+    $null = Invoke-LocalValidationDotnetBuild -Label 'Platform Admin' -ProjectPath $adminProject
+    $null = Invoke-LocalValidationDotnetBuild -Label 'Organization Web' -ProjectPath $orgWebProject
+    $null = Invoke-LocalValidationDotnetBuild -Label 'Personal Web' -ProjectPath $personalWebProject
+}
+
+Write-Step 'Starting Platform API...'
 # -SeedScope parameter is authoritative. Do not let a polluted parent shell (e.g. leftover Full)
 # override the default PlatformAdministratorsOnly baseline after Reset.
 $seedScopeValue = $SeedScope
@@ -640,10 +708,36 @@ $platformEnv = @{
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
 }
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Platform API' -RepoRoot $repoRoot -Project $platformProject -EnvMap $platformEnv
-Wait-TcpPort -Label 'Platform API' -HostName '127.0.0.1' -Port $platformApiPort -TimeoutSeconds $PortWaitSeconds
+$platformLaunch = Start-AppWindow `
+    -Title 'ExItS LocalValidation - Platform API' `
+    -RepoRoot $repoRoot `
+    -Project $platformProject `
+    -EnvMap $platformEnv `
+    -Mode $BackendMode `
+    -ServiceKey 'platform-api'
+$windowPids += $platformLaunch.WindowProcessId
+try {
+    $seedBaseUrl = $loopbackPlatformApiUrl
+    $platformReady = Wait-LocalServiceReady `
+        -ServiceName 'Platform API' `
+        -HealthUri "$loopbackPlatformApiUrl/health" `
+        -TimeoutSeconds $PortWaitSeconds `
+        -WindowProcessId $platformLaunch.WindowProcessId `
+        -ExitMarkerPath $platformLaunch.ExitMarkerPath `
+        -OptionalDependencyName 'local-validation seed-identities' `
+        -OptionalDependencyProbe ({ Test-LocalValidationSeedIdentitiesReady -PlatformApiBaseUrl $seedBaseUrl }.GetNewClosure())
+    $timing.PlatformReadySeconds = $platformReady.ReadyInSeconds
+    Write-Ok ("Platform API health READY ({0}s)" -f $platformReady.ReadyInSeconds)
+    Write-Ok 'Platform local-validation seed-identities READY'
+}
+catch {
+    Write-Fail 'Platform API did not become ready. Check the "ExItS LocalValidation - Platform API" window.'
+    Write-Fail "Project: $platformProject"
+    Write-Fail "Exit marker: $($platformLaunch.ExitMarkerPath)"
+    throw
+}
 
-Write-Step 'Starting POS API (dotnet watch)...'
+Write-Step 'Starting POS API (after Platform seed-identities)...'
 $posEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Staging'
     ASPNETCORE_URLS = $bindPosApiUrl
@@ -660,17 +754,32 @@ $posEnv = @{
 for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
     $posEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
 }
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - POS API' -RepoRoot $repoRoot -Project $posProject -EnvMap $posEnv
+$posLaunch = Start-AppWindow `
+    -Title 'ExItS LocalValidation - POS API' `
+    -RepoRoot $repoRoot `
+    -Project $posProject `
+    -EnvMap $posEnv `
+    -Mode $BackendMode `
+    -ServiceKey 'pos-api'
+$windowPids += $posLaunch.WindowProcessId
 try {
-    Wait-TcpPort -Label 'POS API' -HostName '127.0.0.1' -Port $posApiPort -TimeoutSeconds $PortWaitSeconds
+    $posReady = Wait-LocalServiceReady `
+        -ServiceName 'POS API' `
+        -HealthUri "$loopbackPosApiUrl/health" `
+        -TimeoutSeconds $PortWaitSeconds `
+        -WindowProcessId $posLaunch.WindowProcessId `
+        -ExitMarkerPath $posLaunch.ExitMarkerPath
+    $timing.PosReadySeconds = $posReady.ReadyInSeconds
+    Write-Ok ("POS API health READY ({0}s)" -f $posReady.ReadyInSeconds)
 }
 catch {
-    Write-Fail 'POS API did not listen. Check the "ExItS LocalValidation - POS API" window for migrate/startup errors (DB localhost:15534).'
+    Write-Fail 'POS API did not become ready. Check the "ExItS LocalValidation - POS API" window for migrate/startup errors (DB localhost:15534).'
     Write-Fail "Project: $posProject"
+    Write-Fail "Exit marker: $($posLaunch.ExitMarkerPath)"
     throw
 }
 
-Write-Step 'Starting Platform Admin (dotnet watch)...'
+Write-Step 'Starting Platform Admin...'
 # Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
 # Local Validation identity dropdown uses normal Platform /auth/login server-side
 # (SharedPassword stays in Admin process env - never sent to the browser).
@@ -687,10 +796,23 @@ $adminEnv = @{
     ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
     ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
 }
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap $adminEnv
-Wait-TcpPort -Label 'Platform Admin' -HostName '127.0.0.1' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
+$adminLaunch = Start-AppWindow `
+    -Title 'ExItS LocalValidation - Admin' `
+    -RepoRoot $repoRoot `
+    -Project $adminProject `
+    -EnvMap $adminEnv `
+    -Mode $BackendMode `
+    -ServiceKey 'platform-admin'
+$windowPids += $adminLaunch.WindowProcessId
+Wait-LocalServiceReady `
+    -ServiceName 'Platform Admin' `
+    -HealthUri "$loopbackAdminUrl/admin/login" `
+    -TimeoutSeconds $PortWaitSeconds `
+    -WindowProcessId $adminLaunch.WindowProcessId `
+    -ExitMarkerPath $adminLaunch.ExitMarkerPath | Out-Null
+Write-Ok 'Platform Admin READY'
 
-Write-Step 'Starting Organization Web Admin (dotnet watch)...'
+Write-Step 'Starting Organization Web Admin...'
 $orgWebEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Development'
     ASPNETCORE_URLS = $bindOrgWebUrl
@@ -703,10 +825,23 @@ $orgWebEnv = @{
     ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
     ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
 }
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Org Web' -RepoRoot $repoRoot -Project $orgWebProject -EnvMap $orgWebEnv
-Wait-TcpPort -Label 'Organization Web' -HostName '127.0.0.1' -Port $orgWebPort -TimeoutSeconds $PortWaitSeconds
+$orgLaunch = Start-AppWindow `
+    -Title 'ExItS LocalValidation - Org Web' `
+    -RepoRoot $repoRoot `
+    -Project $orgWebProject `
+    -EnvMap $orgWebEnv `
+    -Mode $BackendMode `
+    -ServiceKey 'org-web'
+$windowPids += $orgLaunch.WindowProcessId
+Wait-LocalServiceReady `
+    -ServiceName 'Organization Web' `
+    -HealthUri "$loopbackOrgWebUrl/health" `
+    -TimeoutSeconds $PortWaitSeconds `
+    -WindowProcessId $orgLaunch.WindowProcessId `
+    -ExitMarkerPath $orgLaunch.ExitMarkerPath | Out-Null
+Write-Ok 'Organization Web READY'
 
-Write-Step 'Starting Personal Web (dotnet watch)...'
+Write-Step 'Starting Personal Web...'
 $personalWebEnv = @{
     ASPNETCORE_ENVIRONMENT = 'Development'
     ASPNETCORE_URLS = $bindPersonalWebUrl
@@ -717,8 +852,21 @@ $personalWebEnv = @{
     ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
     ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
 }
-$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Personal Web' -RepoRoot $repoRoot -Project $personalWebProject -EnvMap $personalWebEnv
-Wait-TcpPort -Label 'Personal Web' -HostName '127.0.0.1' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
+$personalLaunch = Start-AppWindow `
+    -Title 'ExItS LocalValidation - Personal Web' `
+    -RepoRoot $repoRoot `
+    -Project $personalWebProject `
+    -EnvMap $personalWebEnv `
+    -Mode $BackendMode `
+    -ServiceKey 'personal-web'
+$windowPids += $personalLaunch.WindowProcessId
+Wait-LocalServiceReady `
+    -ServiceName 'Personal Web' `
+    -HealthUri "$loopbackPersonalWebUrl/health" `
+    -TimeoutSeconds $PortWaitSeconds `
+    -WindowProcessId $personalLaunch.WindowProcessId `
+    -ExitMarkerPath $personalLaunch.ExitMarkerPath | Out-Null
+Write-Ok 'Personal Web READY'
 
 Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
 $gitSha = Get-LocalValidationGitSha -RepoRoot $repoRoot
@@ -741,7 +889,7 @@ $reactPosClientDir = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.Pi
 if (-not (Test-Path -LiteralPath (Join-Path $reactPosClientDir 'package.json'))) {
     throw "Missing canonical React POS client: $reactPosClientDir"
 }
-Write-Step "Starting React POS Vite on :$reactPosPort (canonical ExItS.PinoyBusinessPOS.React)..."
+Write-Step "Starting React POS Vite on :$reactPosPort (after POS API healthy; canonical ExItS.PinoyBusinessPOS.React)..."
 $reactPosEnv = @{
     VITE_POS_BUILD_SHA = $gitSha
     EXITS_PLATFORM_API_PROXY_TARGET = $loopbackPlatformApiUrl
@@ -759,9 +907,11 @@ $windowPids += Start-NpmDevWindow `
     -EnvMap $reactPosEnv `
     -NpmScript 'dev'
 Wait-TcpPort -Label 'React POS' -HostName '127.0.0.1' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
+Write-Ok 'React POS Vite READY (HMR preserved)'
 
 $state = @{
     Mode = 'HostApps'
+    BackendMode = $BackendMode
     RepoRoot = $repoRoot
     WindowPids = $windowPids
     StartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')
@@ -774,6 +924,7 @@ $state = @{
     PosDbContainer = $LocalValidationStack.PosDbContainer
     PlatformDbVolume = $LocalValidationStack.PlatformDbVolume
     PosDbVolume = $LocalValidationStack.PosDbVolume
+    Timing = $timing
     Ports = @{
         Admin = $adminPort
         PlatformApi = $platformApiPort
@@ -817,6 +968,13 @@ $healthOk = (Invoke-HttpCheck -Label 'React POS /sign-in' -Url "http://127.0.0.1
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
+Write-Host ("  BackendMode:  {0}" -f $BackendMode)
+if ($null -ne $timing.PlatformBuildSeconds) {
+    Write-Host ("  Platform build: {0}s | POS build: {1}s" -f $timing.PlatformBuildSeconds, $timing.PosBuildSeconds)
+}
+if ($null -ne $timing.PlatformReadySeconds) {
+    Write-Host ("  Platform ready after launch: {0}s | POS ready after launch: {1}s" -f $timing.PlatformReadySeconds, $timing.PosReadySeconds)
+}
 Write-Host "  Blazor Admin: $publicAdminUrl"
 Write-Host "  React Admin:  $authPublicBaseUrl  (register / activate / reset)"
 Write-Host "  React POS:    http://127.0.0.1:$reactPosPort"
@@ -841,6 +999,7 @@ Write-Note 'If the browser still has an old localhost antiforgery cookie, open a
 Write-Host 'Stop apps:  .\tools\Stop-LocalValidation.ps1'
 Write-Host 'Stop DBs:   .\tools\Stop-LocalValidation.ps1 -StopDatabases   (volumes preserved)'
 Write-Host 'API-only + Mailpit auth: .\tools\Start-PlatformApiOnly.ps1'
+Write-Host 'Optional backend HMR: .\tools\Start-LocalValidation.ps1 -BackendMode Watch'
 
 if (-not $healthOk) {
     Write-Fail 'One or more health checks failed - see messages above.'
