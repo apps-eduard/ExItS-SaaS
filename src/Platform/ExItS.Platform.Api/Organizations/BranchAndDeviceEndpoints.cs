@@ -91,6 +91,28 @@ internal static class BranchAndDeviceEndpoints
                     ct).ConfigureAwait(false),
                 Results.Ok);
         });
+        root.MapGet("/branches/my-access", async (
+            Guid organizationId,
+            GetCallerBranchAccessScope useCase,
+            PlatformOrganizationAuthz authz,
+            PlatformAuthz platformAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            var actor = platformAuthz.CurrentActor.PlatformUserId;
+            if (actor is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authenticated Platform user is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), actor, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
         root.MapGet("/branches/capacity", async (Guid organizationId, GetBranchCapacity useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);

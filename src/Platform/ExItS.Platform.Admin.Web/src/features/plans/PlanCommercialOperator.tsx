@@ -49,6 +49,8 @@ import {
 } from "@/features/plans/plan-commercial-mapping";
 import { planMutationFailureCopy } from "@/features/plans/plan-mutation-feedback";
 import {
+  MAX_MAX_AREAS,
+  MIN_MAX_AREAS,
   planCommercialSchema,
   planRenameSchema,
   type PlanCommercialValues,
@@ -484,22 +486,29 @@ export function PlanCommercialOperator({ plan }: { plan: CatalogPlan }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {(
             [
-              ["maxBranches", "plans.detail.field.maxBranches"],
-              ["maxActiveStaff", "plans.detail.field.maxActiveStaff"],
-              ["maxActivePosDevices", "plans.detail.field.maxActivePosDevices"],
-              ["maxActiveBusinessTypes", "plans.detail.field.maxActiveBusinessTypes"],
+              ["maxBranches", "plans.detail.field.maxBranches", 0, undefined],
+              ["maxActiveStaff", "plans.detail.field.maxActiveStaff", 0, undefined],
+              ["maxActivePosDevices", "plans.detail.field.maxActivePosDevices", 0, undefined],
+              ["maxActiveBusinessTypes", "plans.detail.field.maxActiveBusinessTypes", 0, undefined],
+              ["maxAreas", "plans.detail.field.maxAreas", MIN_MAX_AREAS, MAX_MAX_AREAS],
             ] as const
-          ).map(([field, labelKey]) => (
+          ).map(([field, labelKey, min, max]) => (
             <div key={field} className="grid gap-1">
               <Label htmlFor={field}>{t(labelKey)}</Label>
               <Input
                 id={field}
                 type="number"
-                min={0}
+                min={min}
+                max={max}
                 step={1}
                 disabled={!canManage || mutationBusy}
                 {...commercialForm.register(field, { valueAsNumber: true })}
               />
+              {commercialForm.formState.errors[field] ? (
+                <p className="text-[length:var(--exits-text-xs)] text-danger">
+                  {commercialForm.formState.errors[field]?.message}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>

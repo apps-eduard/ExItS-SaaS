@@ -10,6 +10,9 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
 
     public int AddCount { get; private set; }
     public int UpdateCount { get; private set; }
+    public int ListActiveCallCount { get; private set; }
+    public int AnyActiveCallCount { get; private set; }
+    public int ListByOrganizationCallCount { get; private set; }
 
     public Task<OrganizationMembership?> GetByIdAsync(OrganizationMembershipId id, CancellationToken cancellationToken = default)
     {
@@ -63,6 +66,7 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         int take,
         CancellationToken cancellationToken = default)
     {
+        ListByOrganizationCallCount++;
         var query = _byId.Values.Where(m => m.OrganizationId == organizationId);
         if (status is not null)
         {
@@ -72,6 +76,31 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         var ordered = query.OrderByDescending(m => m.CreatedAtUtc).ToList();
         return Task.FromResult<(IReadOnlyList<OrganizationMembership>, int)>(
             (ordered.Skip(skip).Take(take).ToList(), ordered.Count));
+    }
+
+    public Task<IReadOnlyList<OrganizationMembership>> ListActiveByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        ListActiveCallCount++;
+        var items = _byId.Values
+            .Where(m => m.OrganizationId == organizationId && m.Status == MembershipStatus.Active)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<OrganizationMembership>>(items);
+    }
+
+    public Task<bool> AnyActiveAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<OrganizationMembershipId> membershipIds,
+        CancellationToken cancellationToken = default)
+    {
+        AnyActiveCallCount++;
+        var wanted = membershipIds.Select(id => id.Value).ToHashSet();
+        var any = _byId.Values.Any(m =>
+            m.OrganizationId == organizationId
+            && m.Status == MembershipStatus.Active
+            && wanted.Contains(m.Id.Value));
+        return Task.FromResult(any);
     }
 
     public Task<IReadOnlyList<OrganizationMembership>> ListByOrganizationAndUserIdsAsync(

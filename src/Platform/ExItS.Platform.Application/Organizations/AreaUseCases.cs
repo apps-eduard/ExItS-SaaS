@@ -218,14 +218,15 @@ public sealed class ArchiveOrganizationArea(
                 "Move or unassign every branch in this area before archiving it.");
         }
 
+        // Any surviving active grant blocks the archive, however large the roster is.
         var grants = await areaAssignments.ListByAreaAsync(organizationId, areaId, cancellationToken).ConfigureAwait(false);
         if (grants.Count > 0)
         {
-            var membershipPage = await memberships
-                .ListByOrganizationAsync(organizationId, MembershipStatus.Active, skip: 0, take: 500, cancellationToken)
+            var grantedMembershipIds = grants.Select(g => g.MembershipId).Distinct().ToList();
+            var stillGranted = await memberships
+                .AnyActiveAsync(organizationId, grantedMembershipIds, cancellationToken)
                 .ConfigureAwait(false);
-            var activeMembershipIds = membershipPage.Items.Select(m => m.Id.Value).ToHashSet();
-            if (grants.Any(g => activeMembershipIds.Contains(g.MembershipId.Value)))
+            if (stillGranted)
             {
                 return ApplicationResult<OrganizationAreaDto>.Failure(
                     ApplicationErrorCodes.AreaArchiveBlocked,

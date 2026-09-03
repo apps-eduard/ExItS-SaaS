@@ -96,6 +96,39 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
         return (records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<OrganizationMembership>> ListActiveByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(MembershipStatus.Active);
+        var records = await _db.OrganizationMemberships.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value && m.Status == active)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList();
+    }
+
+    public async Task<bool> AnyActiveAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<OrganizationMembershipId> membershipIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (membershipIds.Count == 0)
+        {
+            return false;
+        }
+
+        var active = nameof(MembershipStatus.Active);
+        var values = membershipIds.Select(id => id.Value).Distinct().ToList();
+        return await _db.OrganizationMemberships.AsNoTracking()
+            .AnyAsync(
+                m => m.OrganizationId == organizationId.Value
+                     && m.Status == active
+                     && values.Contains(m.Id),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<OrganizationMembership>> ListByOrganizationAndUserIdsAsync(
         PlatformOrganizationId organizationId,
         IReadOnlyCollection<PlatformUserId> userIds,

@@ -130,20 +130,78 @@ internal sealed class PosOrganizationBranchDirectory(
 
     /// <summary>
     /// Branch grouping for hierarchical reads. Platform List Branches already filters by caller
-    /// branch access, so an inaccessible branch never reaches an area subtotal.
+    /// branch access, so an inaccessible branch never reaches an area subtotal. Platform also owns the
+    /// organization-wide decision — POS never infers it from how many branches came back.
     /// </summary>
-    public async Task<IReadOnlyList<AuthorizedBranchGrouping>> ListAuthorizedAsync(
+    public async Task<AuthorizedBranchScope> ListAuthorizedAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)
     {
         var branches = await FetchBranchesAsync(organizationId, cancellationToken).ConfigureAwait(false);
-        return branches
-            .Select(b => new AuthorizedBranchGrouping(
-                b.Id,
-                string.IsNullOrWhiteSpace(b.Name) ? b.Code : b.Name,
-                b.AreaId,
-                b.AreaName))
-            .ToList();
+        var organizationWide = await FetchOrganizationWideAccessAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return new AuthorizedBranchScope(
+            organizationWide,
+            branches
+                .Select(b => new AuthorizedBranchGrouping(
+                    b.Id,
+                    string.IsNullOrWhiteSpace(b.Name) ? b.Code : b.Name,
+                    b.AreaId,
+                    b.AreaName))
+                .ToList());
+    }
+
+    /// <summary>Fails closed: an unreadable scope is treated as partial branch access.</summary>
+    private async Task<bool> FetchOrganizationWideAccessAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        if (environment.IsEnvironment("Testing"))
+        {
+            return true;
+        }
+
+        if (client.BaseAddress is null)
+        {
+            var baseUrl = options.Value.BaseUrl;
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                return false;
+            }
+
+            client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+        }
+
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/v1/platform/organizations/{organizationId:D}/branches/my-access");
+        PlatformCallerCredentialForwarder.CopyTo(httpContextAccessor.HttpContext?.Request, platformRequest);
+
+        try
+        {
+            using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            var scope = await response.Content
+                .ReadFromJsonAsync<CallerBranchAccessScopeResponse>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+            return scope?.OrganizationWide ?? false;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
     }
 
     private async Task<OrganizationBranchDto?> GetBranchAsync(
@@ -275,4 +333,6 @@ internal sealed class PosOrganizationBranchDirectory(
     }
 
     private sealed record OrganizationPrimaryBranchResponse(Guid BranchId);
+
+    private sealed record CallerBranchAccessScopeResponse(string? Scope, bool OrganizationWide);
 }

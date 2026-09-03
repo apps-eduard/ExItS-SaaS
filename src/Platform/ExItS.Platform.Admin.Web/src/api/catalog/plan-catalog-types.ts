@@ -28,6 +28,7 @@ export type CatalogPlan = {
   maxActiveStaff?: number;
   maxActivePosDevices?: number;
   maxActiveBusinessTypes?: number;
+  maxAreas?: number;
   customerCreditEnabled?: boolean;
   advancedReportsEnabled?: boolean;
   exportEnabled?: boolean;

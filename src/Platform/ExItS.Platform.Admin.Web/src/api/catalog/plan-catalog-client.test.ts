@@ -44,6 +44,7 @@ describe("mapCatalogPlan", () => {
       maxActiveStaff: undefined,
       maxActivePosDevices: undefined,
       maxActiveBusinessTypes: undefined,
+      maxAreas: undefined,
       customerCreditEnabled: undefined,
       advancedReportsEnabled: undefined,
       exportEnabled: undefined,

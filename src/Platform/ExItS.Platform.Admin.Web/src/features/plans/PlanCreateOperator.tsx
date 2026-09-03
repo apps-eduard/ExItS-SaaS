@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { Input } from "@/components/ui/input";
 import { useCreatePlanMutation } from "@/features/commercial/use-commercial-mutations";
+import { MAX_MAX_AREAS, MIN_MAX_AREAS } from "@/features/plans/plan-commercial-schema";
 import { useAuthorizedCatalogProductsQuery } from "@/features/navigation/use-catalog-products-query";
 import { planMutationFailureCopy } from "@/features/plans/plan-mutation-feedback";
 import { usePreferences } from "@/hooks/use-preferences";
@@ -29,7 +30,15 @@ export function PlanCreateOperator() {
   const [monthlyPrice, setMonthlyPrice] = useState("");
   const [annualPrice, setAnnualPrice] = useState("");
   const [currencyCode, setCurrencyCode] = useState("PHP");
+  const [maxAreas, setMaxAreas] = useState(String(MIN_MAX_AREAS));
   const [errorCopy, setErrorCopy] = useState<{ title: string; detail: string } | null>(null);
+
+  const maxAreasNumber = Number(maxAreas);
+  const maxAreasValid =
+    maxAreas.trim().length > 0 &&
+    Number.isInteger(maxAreasNumber) &&
+    maxAreasNumber >= MIN_MAX_AREAS &&
+    maxAreasNumber <= MAX_MAX_AREAS;
 
   const products = productsQuery.isSuccess ? (productsQuery.data?.items ?? []) : [];
   const defaultProductCode = products[0]?.code ?? "";
@@ -53,6 +62,7 @@ export function PlanCreateOperator() {
     setMonthlyPrice("");
     setAnnualPrice("");
     setCurrencyCode("PHP");
+    setMaxAreas(String(MIN_MAX_AREAS));
     setErrorCopy(null);
     createPlan.reset();
   }
@@ -84,6 +94,10 @@ export function PlanCreateOperator() {
     if (currencyCode.trim()) {
       body.currencyCode = currencyCode.trim();
     }
+    if (!maxAreasValid) {
+      return null;
+    }
+    body.maxAreas = Number(maxAreas);
     return body;
   }
 
@@ -106,7 +120,9 @@ export function PlanCreateOperator() {
     }
   }
 
-  const ready = Boolean(productCode && code.trim() && displayName.trim() && !catalogBlocked);
+  const ready = Boolean(
+    productCode && code.trim() && displayName.trim() && !catalogBlocked && maxAreasValid,
+  );
 
   return (
     <>
@@ -218,7 +234,24 @@ export function PlanCreateOperator() {
                 onChange={(event) => setCurrencyCode(event.target.value)}
               />
             </label>
+            <label className="grid gap-1 text-[length:var(--exits-text-xs)] font-medium" htmlFor="plan-create-max-areas">
+              {t("plans.detail.field.maxAreas")}
+              <Input
+                id="plan-create-max-areas"
+                type="number"
+                min={MIN_MAX_AREAS}
+                max={MAX_MAX_AREAS}
+                step={1}
+                value={maxAreas}
+                onChange={(event) => setMaxAreas(event.target.value)}
+              />
+            </label>
           </div>
+          {!maxAreasValid ? (
+            <p className="text-[length:var(--exits-text-xs)] text-danger" role="alert">
+              {t("plans.create.maxAreasRange")}
+            </p>
+          ) : null}
         </ConfirmActionDialog>
       ) : null}
     </>

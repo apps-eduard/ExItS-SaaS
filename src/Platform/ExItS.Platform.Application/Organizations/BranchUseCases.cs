@@ -692,7 +692,9 @@ public sealed class ListBranchManagementSummaries(
     ListBranches listBranches,
     IOrganizationMembershipBranchAssignmentRepository assignments,
     IPosDeviceRepository devices,
-    IOrganizationMembershipRepository memberships)
+    IOrganizationMembershipRepository memberships,
+    IOrganizationAreaRepository organizationAreas,
+    IOrganizationMembershipAreaAssignmentRepository areaAssignments)
 {
     public async Task<ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>> ExecuteAsync(
         PlatformOrganizationId organizationId,
@@ -701,19 +703,10 @@ public sealed class ListBranchManagementSummaries(
     {
         var branches = await listBranches.ExecuteAsync(organizationId, actorUserId, cancellationToken).ConfigureAwait(false);
 
-        var membershipPage = await memberships
-            .ListByOrganizationAsync(organizationId, MembershipStatus.Active, skip: 0, take: 500, cancellationToken)
-            .ConfigureAwait(false);
-        var normalStaffMembershipIds = membershipPage.Items
-            .Where(m => m.Role == OrganizationRole.OrganizationMember)
-            .Select(m => m.Id.Value)
-            .ToHashSet();
-
-        var assignmentRows = await assignments.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
-        var staffCounts = assignmentRows
-            .Where(a => normalStaffMembershipIds.Contains(a.MembershipId.Value))
-            .GroupBy(a => a.BranchId.Value)
-            .ToDictionary(g => g.Key, g => g.Count());
+        var staffCounts = await CountEffectiveStaffPerBranchAsync(
+            organizationId,
+            branches,
+            cancellationToken).ConfigureAwait(false);
 
         var deviceList = await devices.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var deviceCounts = deviceList
@@ -748,6 +741,105 @@ public sealed class ListBranchManagementSummaries(
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
+    }
+
+    /// <summary>
+    /// Active ordinary staff who actually reach each branch, whichever scope grants it:
+    /// an explicit assignment, an Active granted Area holding the branch, or all-active scope.
+    /// Owner and Administrator seats stay out of the count, as they always have every branch.
+    /// Every input is read in bulk — never per member and never per branch.
+    /// </summary>
+    private async Task<Dictionary<Guid, int>> CountEffectiveStaffPerBranchAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyList<OrganizationBranchDto> branches,
+        CancellationToken cancellationToken)
+    {
+        var counts = branches.ToDictionary(b => b.Id, _ => 0);
+        var activeMemberships = await memberships
+            .ListActiveByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var ordinaryStaff = activeMemberships
+            .Where(m => m.Role == OrganizationRole.OrganizationMember)
+            .ToList();
+        if (ordinaryStaff.Count == 0)
+        {
+            return counts;
+        }
+
+        var ordinaryStaffIds = ordinaryStaff.Select(m => m.Id.Value).ToHashSet();
+        var assignmentRows = await assignments
+            .ListByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var branchIdsByMembership = assignmentRows
+            .Where(a => ordinaryStaffIds.Contains(a.MembershipId.Value))
+            .GroupBy(a => a.MembershipId.Value)
+            .ToDictionary(g => g.Key, g => g.Select(a => a.BranchId.Value).ToHashSet());
+
+        var orgAreas = await organizationAreas
+            .ListByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var activeAreaIds = orgAreas
+            .Where(a => a.Status == OrganizationAreaStatus.Active)
+            .Select(a => a.Id.Value)
+            .ToHashSet();
+        var areaRows = await areaAssignments
+            .ListByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var areaIdsByMembership = areaRows
+            .Where(a => ordinaryStaffIds.Contains(a.MembershipId.Value) && activeAreaIds.Contains(a.AreaId.Value))
+            .GroupBy(a => a.MembershipId.Value)
+            .ToDictionary(g => g.Key, g => g.Select(a => a.AreaId.Value).ToHashSet());
+
+        var activeBranchIds = branches
+            .Where(b => b.Status == OrganizationBranchStatus.Active)
+            .Select(b => b.Id)
+            .ToList();
+
+        foreach (var membership in ordinaryStaff)
+        {
+            switch (membership.BranchAccessScope)
+            {
+                case BranchAccessScope.AllActive:
+                    foreach (var branchId in activeBranchIds)
+                    {
+                        counts[branchId]++;
+                    }
+
+                    break;
+                case BranchAccessScope.Areas:
+                    if (!areaIdsByMembership.TryGetValue(membership.Id.Value, out var grantedAreaIds))
+                    {
+                        break;
+                    }
+
+                    foreach (var branch in branches)
+                    {
+                        if (branch.AreaId is not null && grantedAreaIds.Contains(branch.AreaId.Value))
+                        {
+                            counts[branch.Id]++;
+                        }
+                    }
+
+                    break;
+                default:
+                    if (!branchIdsByMembership.TryGetValue(membership.Id.Value, out var grantedBranchIds))
+                    {
+                        break;
+                    }
+
+                    foreach (var branchId in grantedBranchIds)
+                    {
+                        if (counts.ContainsKey(branchId))
+                        {
+                            counts[branchId]++;
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        return counts;
     }
 }
 

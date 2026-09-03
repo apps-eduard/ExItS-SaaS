@@ -199,6 +199,123 @@ public sealed class InventoryStockRollupQueryTests
         Assert.Equal(2, only.Branches.Count);
     }
 
+    [Fact]
+    public async Task AREAH_09_authorized_branch_without_a_balance_row_reports_zero_inside_its_area()
+    {
+        // Iloilo is authorized under PANAY but has never held stock for this product.
+        var harness = Harness.WithAreas(branchesWithBalances: [MainBranch, CebuBranch, ManilaBranch]);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        var panay = rollup.Areas.Single(a => a.AreaId == Panay);
+        var iloilo = panay.Branches.Single(b => b.BranchId == IloiloBranch);
+        Assert.Equal(0m, iloilo.OnHandQuantity);
+        Assert.Equal(0m, iloilo.ReservedQuantity);
+        Assert.Equal(0m, iloilo.AvailableQuantity);
+        Assert.Equal(40m, panay.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_10_unassigned_branch_without_a_balance_row_still_appears()
+    {
+        var harness = Harness.WithAreas(branchesWithBalances: [MainBranch]);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        var unassigned = rollup.Areas.Single(a => a.IsUnassigned);
+        var manila = Assert.Single(unassigned.Branches);
+        Assert.Equal(ManilaBranch, manila.BranchId);
+        Assert.Equal(0m, manila.OnHandQuantity);
+        Assert.Equal(0m, unassigned.AvailableQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_11_area_group_structure_survives_when_no_branch_holds_stock()
+    {
+        var harness = Harness.WithAreas(branchesWithBalances: []);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        Assert.True(rollup.HasAreas);
+        Assert.Equal(["PANAY", "VISAYAS"], rollup.Areas.Where(a => !a.IsUnassigned).Select(a => a.AreaName));
+        Assert.Equal(4, rollup.Areas.Sum(a => a.Branches.Count));
+        Assert.All(rollup.Areas, area => Assert.Equal(0m, area.OnHandQuantity));
+        // Reads never materialize the missing balance rows.
+        Assert.Empty(harness.Balances.Upserts);
+    }
+
+    [Fact]
+    public async Task AREAH_12_organization_wide_viewer_sees_authoritative_account_totals()
+    {
+        var harness = Harness.WithAreas(organizationWide: true);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        Assert.True(rollup.OrganizationTotalsVisible);
+        Assert.Equal(120m, rollup.OrganizationOnHandQuantity);
+        Assert.Equal(10m, rollup.OrganizationReservedQuantity);
+        Assert.Equal(110m, rollup.OrganizationAvailableQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_13_partial_access_staff_never_receive_organization_totals()
+    {
+        // Area-scoped staff: authorized for every branch, yet still not organization-wide.
+        var harness = Harness.WithAreas(organizationWide: false);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        Assert.False(rollup.OrganizationTotalsVisible);
+        Assert.Null(rollup.OrganizationOnHandQuantity);
+        Assert.Null(rollup.OrganizationReservedQuantity);
+        Assert.Null(rollup.OrganizationAvailableQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_14_partial_access_accessible_totals_are_derived_from_authorized_branches_only()
+    {
+        var harness = Harness.WithAreas(
+            authorized:
+            [
+                new AuthorizedBranchGrouping(MainBranch, "Main", Panay, "PANAY"),
+                new AuthorizedBranchGrouping(IloiloBranch, "Iloilo", Panay, "PANAY")
+            ],
+            organizationWide: false);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        Assert.Equal(70m, rollup.AccessibleOnHandQuantity);
+        Assert.Equal(6m, rollup.AccessibleReservedQuantity);
+        Assert.Equal(64m, rollup.AccessibleAvailableQuantity);
+        Assert.Equal(rollup.Areas.Sum(a => a.OnHandQuantity), rollup.AccessibleOnHandQuantity);
+        Assert.Null(rollup.OrganizationOnHandQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_15_untracked_product_hides_organization_totals_from_partial_access_staff()
+    {
+        var harness = Harness.WithAreas(tracked: false, organizationWide: false);
+
+        var rollup = (await harness.Query.GetProductAsync(Org, Product)).Value!;
+
+        Assert.False(rollup.IsTracked);
+        Assert.False(rollup.OrganizationTotalsVisible);
+        Assert.Null(rollup.OrganizationOnHandQuantity);
+        Assert.Equal(0m, rollup.AccessibleOnHandQuantity);
+    }
+
+    [Fact]
+    public async Task AREAH_16_zero_stock_shape_still_costs_one_balance_read_and_one_grouping_read()
+    {
+        var harness = Harness.WithAreas(branchesWithBalances: []);
+
+        await harness.Query.GetProductAsync(Org, Product);
+
+        Assert.Equal(1, harness.Balances.ListByProductIdsCallCount);
+        Assert.Equal(0, harness.Balances.GetCallCount);
+        Assert.Equal(1, harness.Grouping.CallCount);
+    }
+
     private sealed class Harness
     {
         public required InventoryStockRollupQuery Query { get; init; }
@@ -207,7 +324,9 @@ public sealed class InventoryStockRollupQueryTests
 
         public static Harness WithAreas(
             IReadOnlyList<AuthorizedBranchGrouping>? authorized = null,
-            bool tracked = true)
+            bool tracked = true,
+            bool organizationWide = true,
+            IReadOnlyList<Guid>? branchesWithBalances = null)
         {
             var productId = CatalogProductId.From(Product);
             var orgId = PosOrganizationId.From(Org);
@@ -229,16 +348,17 @@ public sealed class InventoryStockRollupQueryTests
                 createdAtUtc: Utc,
                 updatedAtUtc: Utc,
                 reservedQuantity: tracked ? 10m : 0m));
-            var balances = new RollupBalances
+            var allBalances = new[]
             {
-                Items =
-                {
-                    Balance(MainBranch, 40m, 6m),
-                    Balance(IloiloBranch, 30m, 0m),
-                    Balance(CebuBranch, 20m, 0m),
-                    Balance(ManilaBranch, 15m, 5m)
-                }
+                Balance(MainBranch, 40m, 6m),
+                Balance(IloiloBranch, 30m, 0m),
+                Balance(CebuBranch, 20m, 0m),
+                Balance(ManilaBranch, 15m, 5m)
             };
+            var balances = new RollupBalances();
+            balances.Items.AddRange(branchesWithBalances is null
+                ? allBalances
+                : allBalances.Where(b => branchesWithBalances.Contains(b.BranchId.Value)));
             var grouping = new RollupGrouping
             {
                 Rows = authorized ??
@@ -247,7 +367,8 @@ public sealed class InventoryStockRollupQueryTests
                     new AuthorizedBranchGrouping(IloiloBranch, "Iloilo", Panay, "PANAY"),
                     new AuthorizedBranchGrouping(CebuBranch, "Cebu", Visayas, "VISAYAS"),
                     new AuthorizedBranchGrouping(ManilaBranch, "Manila", null, null)
-                ]
+                ],
+                IsOrganizationWide = organizationWide
             };
 
             return new Harness
@@ -335,14 +456,15 @@ public sealed class InventoryStockRollupQueryTests
     private sealed class RollupGrouping : IAuthorizedBranchGroupingDirectory
     {
         public required IReadOnlyList<AuthorizedBranchGrouping> Rows { get; set; }
+        public bool IsOrganizationWide { get; set; } = true;
         public int CallCount { get; private set; }
 
-        public Task<IReadOnlyList<AuthorizedBranchGrouping>> ListAuthorizedAsync(
+        public Task<AuthorizedBranchScope> ListAuthorizedAsync(
             Guid organizationId,
             CancellationToken cancellationToken = default)
         {
             CallCount++;
-            return Task.FromResult(Rows);
+            return Task.FromResult(new AuthorizedBranchScope(IsOrganizationWide, Rows));
         }
     }
 }

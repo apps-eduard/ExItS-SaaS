@@ -129,14 +129,23 @@ export type PosInventoryAreaRollupDto = {
   branches: PosInventoryBranchRollupDto[];
 };
 
+/**
+ * Organization totals arrive only for organization-wide viewers; the server omits them for
+ * Area- or branch-scoped staff. Accessible totals cover the caller's authorized branches only
+ * and must never be labelled as organization inventory.
+ */
 export type PosInventoryStockRollupDto = {
   productId: string;
   productName: string;
   unitOfMeasure: string;
   isTracked: boolean;
-  organizationOnHandQuantity: number;
-  organizationReservedQuantity: number;
-  organizationAvailableQuantity: number;
+  organizationTotalsVisible: boolean;
+  organizationOnHandQuantity: number | null;
+  organizationReservedQuantity: number | null;
+  organizationAvailableQuantity: number | null;
+  accessibleOnHandQuantity: number;
+  accessibleReservedQuantity: number;
+  accessibleAvailableQuantity: number;
   hasAreas: boolean;
   areas: PosInventoryAreaRollupDto[];
 };

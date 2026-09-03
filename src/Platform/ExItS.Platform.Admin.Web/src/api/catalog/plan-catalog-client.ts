@@ -66,6 +66,7 @@ export function mapCatalogPlan(payload: unknown): CatalogPlan | null {
     maxActiveStaff: readNumber(record, "maxActiveStaff", "MaxActiveStaff"),
     maxActivePosDevices: readNumber(record, "maxActivePosDevices", "MaxActivePosDevices"),
     maxActiveBusinessTypes: readNumber(record, "maxActiveBusinessTypes", "MaxActiveBusinessTypes"),
+    maxAreas: readNumber(record, "maxAreas", "MaxAreas"),
     customerCreditEnabled: readBoolean(record, "customerCreditEnabled", "CustomerCreditEnabled"),
     advancedReportsEnabled: readBoolean(record, "advancedReportsEnabled", "AdvancedReportsEnabled"),
     exportEnabled: readBoolean(record, "exportEnabled", "ExportEnabled"),

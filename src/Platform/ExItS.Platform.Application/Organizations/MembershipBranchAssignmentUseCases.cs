@@ -117,6 +117,39 @@ public sealed class ListMembershipBranchAssignments(
     }
 }
 
+/// <summary>
+/// How broadly the calling member sees the organization. <paramref name="OrganizationWide"/> separates
+/// viewers entitled to organization-level figures from Area- or branch-scoped staff who are not,
+/// even when their granted branches happen to cover every branch today.
+/// </summary>
+public sealed record CallerBranchAccessScopeDto(string Scope, bool OrganizationWide);
+
+public sealed class GetCallerBranchAccessScope(IOrganizationMembershipRepository memberships)
+{
+    public async Task<ApplicationResult<CallerBranchAccessScopeDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var membership = await memberships
+            .FindActiveByUserAndOrganizationAsync(actorUserId, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is null)
+        {
+            return ApplicationResult<CallerBranchAccessScopeDto>.Failure(
+                ApplicationErrorCodes.MembershipNotFound,
+                "Organization membership was not found.");
+        }
+
+        var roleWide = OrganizationBranchAccessService.HasOrganizationWideBranchAccess(membership.Role);
+        var scope = roleWide ? BranchAccessScope.AllActive : membership.BranchAccessScope;
+        var organizationWide = roleWide
+            || OrganizationBranchAccessService.HasDynamicAllActiveBranchAccess(membership);
+        return ApplicationResult<CallerBranchAccessScopeDto>.Success(
+            new CallerBranchAccessScopeDto(scope.ToString(), organizationWide));
+    }
+}
+
 public sealed record SetMembershipBranchAssignmentsCommand(
     string Scope,
     IReadOnlyList<Guid>? BranchIds,

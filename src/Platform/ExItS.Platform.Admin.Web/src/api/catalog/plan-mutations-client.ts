@@ -29,6 +29,7 @@ export type UpdatePlanCommercialBody = {
   maxActiveStaff: number;
   maxActivePosDevices: number;
   maxActiveBusinessTypes: number;
+  maxAreas: number;
   customerCreditEnabled: boolean;
   advancedReportsEnabled: boolean;
   exportEnabled: boolean;
@@ -49,6 +50,7 @@ export type CreatePlanBody = {
   maxActiveStaff?: number;
   maxActivePosDevices?: number;
   maxActiveBusinessTypes?: number;
+  maxAreas?: number;
   customerCreditEnabled?: boolean;
   advancedReportsEnabled?: boolean;
   exportEnabled?: boolean;

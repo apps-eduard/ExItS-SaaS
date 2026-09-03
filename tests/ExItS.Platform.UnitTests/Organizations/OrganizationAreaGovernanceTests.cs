@@ -344,6 +344,51 @@ public sealed class OrganizationAreaGovernanceTests
         Assert.Equal(OrganizationBranchStatus.Active, branch.Status);
     }
 
+    /// <summary>
+    /// AREAH-17: a grant held by staff outside the first roster page still blocks the archive.
+    /// The check asks whether any granted membership is active rather than paging the roster.
+    /// </summary>
+    [Fact]
+    public async Task AREAH_17_archive_sees_grants_held_beyond_the_first_roster_page()
+    {
+        var fixture = new AreaFixture(maxAreas: 5);
+        var north = fixture.SeedArea("Metro North");
+        for (var i = 0; i < 640; i++)
+        {
+            await fixture.SeedStaffAsync();
+        }
+
+        var (_, lateJoiner) = await fixture.SeedStaffAsync();
+        await fixture.GrantAreasAsync(lateJoiner, north.Id);
+        var archive = fixture.ArchiveArea();
+
+        var blocked = await archive.ExecuteAsync(fixture.Org, north.Id);
+
+        Assert.False(blocked.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.AreaArchiveBlocked, blocked.ErrorCode);
+        Assert.Equal(0, fixture.Memberships.ListByOrganizationCallCount);
+        Assert.Equal(1, fixture.Memberships.AnyActiveCallCount);
+    }
+
+    /// <summary>
+    /// AREAH-18: a grant left behind by staff who have since been removed must not block the archive.
+    /// </summary>
+    [Fact]
+    public async Task AREAH_18_grants_from_inactive_staff_do_not_block_the_archive()
+    {
+        var fixture = new AreaFixture(maxAreas: 5);
+        var north = fixture.SeedArea("Metro North");
+        var (_, membership) = await fixture.SeedStaffAsync();
+        await fixture.GrantAreasAsync(membership, north.Id);
+        membership.Remove(T0, "actor");
+        await fixture.Memberships.UpdateAsync(membership);
+
+        var archived = await fixture.ArchiveArea().ExecuteAsync(fixture.Org, north.Id);
+
+        Assert.True(archived.IsSuccess);
+        Assert.Equal(OrganizationAreaStatus.Archived, archived.Value!.Status);
+    }
+
     [Fact]
     public void AREA01_17_no_area_inventory_or_operational_types_are_introduced()
     {

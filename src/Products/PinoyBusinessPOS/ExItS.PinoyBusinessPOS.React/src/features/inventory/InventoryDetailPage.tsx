@@ -145,6 +145,19 @@ export function InventoryDetailPage() {
   const rollup = rollupQuery.data;
   const tracksExpiration = accountQuery.data?.tracksExpiration === true;
 
+  /** Partial-access staff never see authoritative organization figures — only their own branches. */
+  const organizationTotals = {
+    onHand: rollup?.organizationTotalsVisible
+      ? (rollup.organizationOnHandQuantity ?? 0)
+      : (rollup?.accessibleOnHandQuantity ?? 0),
+    reserved: rollup?.organizationTotalsVisible
+      ? (rollup.organizationReservedQuantity ?? 0)
+      : (rollup?.accessibleReservedQuantity ?? 0),
+    available: rollup?.organizationTotalsVisible
+      ? (rollup.organizationAvailableQuantity ?? 0)
+      : (rollup?.accessibleAvailableQuantity ?? 0),
+  };
+
   /** Areas start compact; the area holding the working branch opens first. */
   function isAreaExpanded(area: PosInventoryAreaRollupDto): boolean {
     const key = area.areaId ?? "unassigned";
@@ -568,25 +581,41 @@ export function InventoryDetailPage() {
                     data-testid="inventory-organization-summary"
                   >
                     <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                      {t("inventory.organizationInventory")}
+                      {rollup.organizationTotalsVisible
+                        ? t("inventory.organizationInventory")
+                        : t("inventory.accessibleInventory")}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-on-hand">
-                      {t("inventory.organizationOnHand")
-                        .replace("{qty}", String(rollup.organizationOnHandQuantity))
+                      {t(
+                        rollup.organizationTotalsVisible
+                          ? "inventory.organizationOnHand"
+                          : "inventory.accessibleOnHand",
+                      )
+                        .replace("{qty}", String(organizationTotals.onHand))
                         .replace("{uom}", account.unitOfMeasure)}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-reserved">
-                      {t("inventory.organizationReserved").replace(
-                        "{qty}",
-                        String(rollup.organizationReservedQuantity),
-                      )}
+                      {t(
+                        rollup.organizationTotalsVisible
+                          ? "inventory.organizationReserved"
+                          : "inventory.accessibleReserved",
+                      ).replace("{qty}", String(organizationTotals.reserved))}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-available">
-                      {t("inventory.organizationAvailable").replace(
-                        "{qty}",
-                        String(rollup.organizationAvailableQuantity),
-                      )}
+                      {t(
+                        rollup.organizationTotalsVisible
+                          ? "inventory.organizationAvailable"
+                          : "inventory.accessibleAvailable",
+                      ).replace("{qty}", String(organizationTotals.available))}
                     </p>
+                    {!rollup.organizationTotalsVisible ? (
+                      <p
+                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid="inventory-accessible-scope-note"
+                      >
+                        {t("inventory.accessibleScopeNote")}
+                      </p>
+                    ) : null}
                     {rollup.areas.length > 0 ? (
                       <div className="flex flex-col gap-2" data-testid="inventory-branch-breakdown">
                         <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">

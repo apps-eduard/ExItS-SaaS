@@ -30,6 +30,23 @@ public interface IOrganizationMembershipRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Every Active membership in the organization, unpaged. Access rollups must not silently
+    /// truncate the roster, so this has no page ceiling.
+    /// </summary>
+    Task<IReadOnlyList<OrganizationMembership>> ListActiveByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True when at least one of the given memberships is still Active in the organization.
+    /// Used to block destructive changes without materializing the whole roster.
+    /// </summary>
+    Task<bool> AnyActiveAsync(
+        PlatformOrganizationId organizationId,
+        IReadOnlyCollection<OrganizationMembershipId> membershipIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Memberships for the given users in one organization (any status, including Removed).
     /// Used for operational actor display-name resolution — not a staff-management roster.
     /// </summary>

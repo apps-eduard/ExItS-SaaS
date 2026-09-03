@@ -139,9 +139,13 @@ describe("InventoryDetailPage expiration UX", () => {
       productName: "Milk 1L",
       unitOfMeasure: "Piece",
       isTracked: true,
+      organizationTotalsVisible: true,
       organizationOnHandQuantity: 85,
       organizationReservedQuantity: 4,
       organizationAvailableQuantity: 81,
+      accessibleOnHandQuantity: 85,
+      accessibleReservedQuantity: 4,
+      accessibleAvailableQuantity: 81,
       hasAreas: false,
       areas: [
         {
@@ -240,9 +244,13 @@ describe("InventoryDetailPage expiration UX", () => {
       productName: "Milk 1L",
       unitOfMeasure: "Piece",
       isTracked: true,
+      organizationTotalsVisible: true,
       organizationOnHandQuantity: 120,
       organizationReservedQuantity: 4,
       organizationAvailableQuantity: 116,
+      accessibleOnHandQuantity: 85,
+      accessibleReservedQuantity: 4,
+      accessibleAvailableQuantity: 81,
       hasAreas: true,
       areas: [
         {
@@ -303,6 +311,117 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(
       screen.getByTestId("inventory-branch-row-cccccccc-cccc-cccc-cccc-cccccccccccc"),
     ).toHaveTextContent("Iloilo Branch");
+  });
+
+  it("AREAH-05 partial-access staff see accessible totals, never organization inventory", async () => {
+    const panayId = "aaaa1111-1111-1111-1111-111111111111";
+    vi.mocked(inventoryClient.getInventoryStockRollup).mockResolvedValue({
+      productId,
+      productName: "Milk 1L",
+      unitOfMeasure: "Piece",
+      isTracked: true,
+      organizationTotalsVisible: false,
+      organizationOnHandQuantity: null,
+      organizationReservedQuantity: null,
+      organizationAvailableQuantity: null,
+      accessibleOnHandQuantity: 40,
+      accessibleReservedQuantity: 4,
+      accessibleAvailableQuantity: 36,
+      hasAreas: true,
+      areas: [
+        {
+          areaId: panayId,
+          areaName: "PANAY",
+          isUnassigned: false,
+          onHandQuantity: 40,
+          reservedQuantity: 4,
+          availableQuantity: 36,
+          branches: [
+            {
+              branchId: workspace.branchId,
+              branchName: "Kalibo Branch",
+              onHandQuantity: 40,
+              reservedQuantity: 4,
+              availableQuantity: 36,
+            },
+          ],
+        },
+      ],
+    });
+
+    renderPage();
+    await expandStatusDetails();
+    const summary = await screen.findByTestId("inventory-organization-summary");
+
+    expect(summary).toHaveTextContent(/accessible/i);
+    expect(summary).not.toHaveTextContent(/organization inventory/i);
+    expect(screen.getByTestId("inventory-org-on-hand")).toHaveTextContent("40");
+    expect(screen.getByTestId("inventory-org-reserved")).toHaveTextContent("4");
+    expect(screen.getByTestId("inventory-org-available")).toHaveTextContent("36");
+    expect(screen.getByTestId("inventory-accessible-scope-note")).toBeInTheDocument();
+  });
+
+  it("AREAH-06 organization-wide viewers keep the organization label and no accessible-scope note", async () => {
+    renderPage();
+    await expandStatusDetails();
+    const summary = await screen.findByTestId("inventory-organization-summary");
+
+    expect(summary).toHaveTextContent(/organization/i);
+    expect(screen.queryByTestId("inventory-accessible-scope-note")).not.toBeInTheDocument();
+  });
+
+  it("AREAH-07 a branch with no stock still renders inside its area at zero", async () => {
+    const panayId = "aaaa1111-1111-1111-1111-111111111111";
+    vi.mocked(inventoryClient.getInventoryStockRollup).mockResolvedValue({
+      productId,
+      productName: "Milk 1L",
+      unitOfMeasure: "Piece",
+      isTracked: true,
+      organizationTotalsVisible: true,
+      organizationOnHandQuantity: 40,
+      organizationReservedQuantity: 4,
+      organizationAvailableQuantity: 36,
+      accessibleOnHandQuantity: 40,
+      accessibleReservedQuantity: 4,
+      accessibleAvailableQuantity: 36,
+      hasAreas: true,
+      areas: [
+        {
+          areaId: panayId,
+          areaName: "PANAY",
+          isUnassigned: false,
+          onHandQuantity: 40,
+          reservedQuantity: 4,
+          availableQuantity: 36,
+          branches: [
+            {
+              branchId: workspace.branchId,
+              branchName: "Kalibo Branch",
+              onHandQuantity: 40,
+              reservedQuantity: 4,
+              availableQuantity: 36,
+            },
+            {
+              branchId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+              branchName: "Roxas Branch",
+              onHandQuantity: 0,
+              reservedQuantity: 0,
+              availableQuantity: 0,
+            },
+          ],
+        },
+      ],
+    });
+
+    renderPage();
+    await expandStatusDetails();
+    await screen.findByTestId("inventory-organization-summary");
+
+    const emptyBranch = screen.getByTestId(
+      "inventory-branch-row-dddddddd-dddd-dddd-dddd-dddddddddddd",
+    );
+    expect(emptyBranch).toHaveTextContent("Roxas Branch");
+    expect(emptyBranch).toHaveTextContent("0");
   });
 
   it("AREA02 detail reports not tracked without a rollup read", async () => {

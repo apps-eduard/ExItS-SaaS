@@ -1,6 +1,6 @@
 import type { UpdatePlanCommercialBody } from "@/api/catalog/plan-mutations-client";
 import type { CatalogPlan } from "@/api/catalog/plan-catalog-types";
-import type { PlanCommercialValues } from "@/features/plans/plan-commercial-schema";
+import { MIN_MAX_AREAS, type PlanCommercialValues } from "@/features/plans/plan-commercial-schema";
 
 export function planToCommercialValues(plan: CatalogPlan): PlanCommercialValues {
   return {
@@ -13,6 +13,7 @@ export function planToCommercialValues(plan: CatalogPlan): PlanCommercialValues 
     maxActiveStaff: plan.maxActiveStaff ?? 0,
     maxActivePosDevices: plan.maxActivePosDevices ?? 0,
     maxActiveBusinessTypes: plan.maxActiveBusinessTypes ?? 0,
+    maxAreas: plan.maxAreas ?? MIN_MAX_AREAS,
     customerCreditEnabled: plan.customerCreditEnabled ?? false,
     advancedReportsEnabled: plan.advancedReportsEnabled ?? false,
     exportEnabled: plan.exportEnabled ?? false,
@@ -36,6 +37,7 @@ export function commercialValuesToBody(
     maxActiveStaff: values.maxActiveStaff,
     maxActivePosDevices: values.maxActivePosDevices,
     maxActiveBusinessTypes: values.maxActiveBusinessTypes,
+    maxAreas: values.maxAreas,
     customerCreditEnabled: values.customerCreditEnabled,
     advancedReportsEnabled: values.advancedReportsEnabled,
     exportEnabled: values.exportEnabled,

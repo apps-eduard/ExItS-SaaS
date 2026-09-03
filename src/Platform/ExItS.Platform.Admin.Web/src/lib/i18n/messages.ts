@@ -1237,6 +1237,7 @@ export const enMessages = {
   "plans.create.monthlyPrice": "Monthly price (optional)",
   "plans.create.annualPrice": "Annual price (optional)",
   "plans.create.currency": "Currency",
+  "plans.create.maxAreasRange": "Max areas must be a whole number between 1 and 10000.",
   "plans.create.catalogUnavailable":
     "Product catalog could not be loaded. Close and try again later.",
   "plans.create.catalogEmpty": "No products are available in the catalog.",
@@ -1260,6 +1261,7 @@ export const enMessages = {
   "plans.detail.field.maxActiveStaff": "Max active staff",
   "plans.detail.field.maxActivePosDevices": "Max active POS devices",
   "plans.detail.field.maxActiveBusinessTypes": "Max active business types",
+  "plans.detail.field.maxAreas": "Max areas",
   "plans.detail.field.sortOrder": "Sort order",
   "plans.detail.features": "Boolean commercial features",
   "plans.detail.field.customerCreditEnabled": "Customer credit",
@@ -3621,6 +3623,7 @@ export const filPhMessages: Record<MessageKey, string> = {
   "plans.create.monthlyPrice": "Buwanang presyo (opsyonal)",
   "plans.create.annualPrice": "Taunang presyo (opsyonal)",
   "plans.create.currency": "Currency",
+  "plans.create.maxAreasRange": "Ang max areas ay dapat buong numero mula 1 hanggang 10000.",
   "plans.create.catalogUnavailable":
     "Hindi ma-load ang product catalog. Isara at subukang muli mamaya.",
   "plans.create.catalogEmpty": "Walang produktong available sa catalog.",
@@ -3645,6 +3648,7 @@ export const filPhMessages: Record<MessageKey, string> = {
   "plans.detail.field.maxActiveStaff": "Max active staff",
   "plans.detail.field.maxActivePosDevices": "Max active POS devices",
   "plans.detail.field.maxActiveBusinessTypes": "Max active business types",
+  "plans.detail.field.maxAreas": "Max areas",
   "plans.detail.field.sortOrder": "Sort order",
   "plans.detail.features": "Mga boolean commercial feature",
   "plans.detail.field.customerCreditEnabled": "Customer credit",

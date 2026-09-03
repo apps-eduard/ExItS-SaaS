@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+/** Mirrors the Platform domain Plan.MaxAreas bounds so the editor fails before the API does. */
+export const MIN_MAX_AREAS = 1;
+export const MAX_MAX_AREAS = 10_000;
+
 export type PlanRenameValues = {
   displayName: string;
 };
@@ -14,6 +18,7 @@ export type PlanCommercialValues = {
   maxActiveStaff: number;
   maxActivePosDevices: number;
   maxActiveBusinessTypes: number;
+  maxAreas: number;
   customerCreditEnabled: boolean;
   advancedReportsEnabled: boolean;
   exportEnabled: boolean;
@@ -41,6 +46,11 @@ export const planCommercialSchema = z
     maxActiveStaff: z.number().int().min(0, "Cannot be negative."),
     maxActivePosDevices: z.number().int().min(0, "Cannot be negative."),
     maxActiveBusinessTypes: z.number().int().min(0, "Cannot be negative."),
+    maxAreas: z
+      .number()
+      .int()
+      .min(MIN_MAX_AREAS, "Must be at least 1.")
+      .max(MAX_MAX_AREAS, "Cannot exceed 10000."),
     customerCreditEnabled: z.boolean(),
     advancedReportsEnabled: z.boolean(),
     exportEnabled: z.boolean(),
