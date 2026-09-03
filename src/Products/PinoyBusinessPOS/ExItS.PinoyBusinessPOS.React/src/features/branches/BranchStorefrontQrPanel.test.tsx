@@ -87,13 +87,49 @@ describe("BranchStorefrontQrPanel", () => {
     expect(screen.getByTestId("branch-storefront-qr-download")).toBeInTheDocument();
   });
 
-  it("does not generate QR when storefront is not ready", async () => {
+  it("still shows QR for Active branch when storefront setup is incomplete", async () => {
     getBranchFulfillmentReadiness.mockResolvedValue({
       customerOrderingReady: false,
       customerOrderingEnabled: false,
       onlineOrdersPaused: false,
     });
     renderPanel();
+    await waitFor(() => {
+      expect(screen.getByTestId("branch-storefront-qr-image")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("branch-storefront-qr-setup-hint")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-storefront-qr-setup")).toBeInTheDocument();
+  });
+
+  it("does not generate QR when branch is not Active", async () => {
+    getBranchFulfillmentReadiness.mockResolvedValue({
+      customerOrderingReady: false,
+      customerOrderingEnabled: false,
+      onlineOrdersPaused: false,
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <BranchStorefrontQrPanel
+                  organizationId={ORG}
+                  organizationDisplayName="Mica Store"
+                  branchId={KALIBO}
+                  branchName="Kalibo Branch"
+                  branchStatus="Suspended"
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
     await waitFor(() => {
       expect(screen.getByTestId("branch-storefront-qr-not-ready")).toBeInTheDocument();
     });

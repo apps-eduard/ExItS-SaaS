@@ -4710,6 +4710,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "branches.storefrontQr.loading": "Nagaload ang storefront QR…",
   "branches.storefrontQr.loadFailed": "Indi ma-load ang storefront QR.",
   "branches.storefrontQr.notReady": "Wala pa ready ang customer storefront. Kompletoha anay ang branch fulfillment/public-store setup.",
+  "branches.storefrontQr.setupHint":
+    "Wala pa kompleto ang storefront setup. Mahimo pa gihapon ma-open ang link, pero ang ordering posible indi available hasta makompleto ang setup.",
   "branches.storefrontQr.completeSetup": "Kompletoha ang storefront setup",
   "branches.storefrontQr.scanHint": "I-scan para mabakalyo sa {branch}",
   "branches.storefrontQr.imageAlt": "Customer storefront QR para sa {branch}",

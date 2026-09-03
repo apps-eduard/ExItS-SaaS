@@ -4710,6 +4710,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.storefrontQr.loading": "Nagaload ang storefront QR…",
   "branches.storefrontQr.loadFailed": "Dili ma-load ang storefront QR.",
   "branches.storefrontQr.notReady": "Wala pa andam ang customer storefront. Kompletoha una ang branch fulfillment/public-store setup.",
+  "branches.storefrontQr.setupHint":
+    "Wala pa kompleto ang storefront setup. Mahimo gihapon maabli ang link, pero ang ordering mahimong dili available hangtod mahuman ang setup.",
   "branches.storefrontQr.completeSetup": "Kompletoha ang storefront setup",
   "branches.storefrontQr.scanHint": "I-scan aron mamalit sa {branch}",
   "branches.storefrontQr.imageAlt": "Customer storefront QR para sa {branch}",

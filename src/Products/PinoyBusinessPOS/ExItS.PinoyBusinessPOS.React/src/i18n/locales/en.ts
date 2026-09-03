@@ -4265,6 +4265,8 @@ export const en = {
   "branches.storefrontQr.loadFailed": "Could not load the storefront QR.",
   "branches.storefrontQr.notReady":
     "Customer storefront is not ready yet. Complete branch fulfillment/public-store setup first.",
+  "branches.storefrontQr.setupHint":
+    "Storefront setup is incomplete. Customers can still open this link, but ordering may be unavailable until setup is finished.",
   "branches.storefrontQr.completeSetup": "Complete storefront setup",
   "branches.storefrontQr.scanHint": "Scan to shop at {branch}",
   "branches.storefrontQr.imageAlt": "Customer storefront QR for {branch}",

@@ -4709,6 +4709,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.storefrontQr.loading": "Nilo-load ang storefront QR…",
   "branches.storefrontQr.loadFailed": "Hindi ma-load ang storefront QR.",
   "branches.storefrontQr.notReady": "Hindi pa handa ang customer storefront. Kumpletuhin muna ang branch fulfillment/public-store setup.",
+  "branches.storefrontQr.setupHint":
+    "Hindi pa kumpleto ang storefront setup. Maaaring mabuksan ang link, pero maaaring hindi available ang ordering hanggang matapos ang setup.",
   "branches.storefrontQr.completeSetup": "Kumpletuhin ang storefront setup",
   "branches.storefrontQr.scanHint": "I-scan para mamili sa {branch}",
   "branches.storefrontQr.imageAlt": "Customer storefront QR para sa {branch}",

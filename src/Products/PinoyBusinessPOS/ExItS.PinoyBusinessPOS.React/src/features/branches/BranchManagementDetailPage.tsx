@@ -134,26 +134,6 @@ export function BranchManagementDetailPage() {
     setActiveTab(parseDetailTab(searchParams.get("tab")));
   }, [searchParams]);
 
-  useEffect(() => {
-    if (searchParams.get("focus") !== "qr" && window.location.hash !== "#branch-storefront-qr") {
-      return;
-    }
-    if (activeTab !== "overview") {
-      setActiveTab("overview");
-      const next = new URLSearchParams(searchParams);
-      next.delete("tab");
-      setSearchParams(next, { replace: true });
-      return;
-    }
-    const handle = window.setTimeout(() => {
-      document.getElementById("branch-storefront-qr")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 120);
-    return () => window.clearTimeout(handle);
-  }, [searchParams, branchId, activeTab, setSearchParams]);
-
   const branchQuery = useQuery({
     queryKey: ["branch-management-detail", organizationId, branchId],
     enabled: Boolean(organizationId && branchId && canManage),
@@ -165,6 +145,30 @@ export function BranchManagementDetailPage() {
       return result.value;
     },
   });
+
+  useEffect(() => {
+    if (searchParams.get("focus") !== "qr" && window.location.hash !== "#branch-storefront-qr") {
+      return;
+    }
+    if (activeTab !== "overview") {
+      setActiveTab("overview");
+      const next = new URLSearchParams(searchParams);
+      next.delete("tab");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    // Wait until branch detail (and thus the QR panel) is mounted.
+    if (!branchQuery.data) {
+      return;
+    }
+    const handle = window.requestAnimationFrame(() => {
+      document.getElementById("branch-storefront-qr")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(handle);
+  }, [searchParams, branchId, activeTab, setSearchParams, branchQuery.data]);
 
   const summaryQuery = useQuery({
     queryKey: ["branch-management-summary", organizationId],

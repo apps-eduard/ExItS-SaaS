@@ -47,20 +47,21 @@ export function BranchStorefrontQrPanel({
   });
 
   const publicOrgId = identityQuery.data?.publicOrganizationId ?? null;
-  const storeReady =
-    branchStatus.toLowerCase() === "active" &&
+  const branchIsActive = branchStatus.toLowerCase() === "active";
+  const storefrontOperational =
     readinessQuery.data?.customerOrderingReady === true &&
     readinessQuery.data?.customerOrderingEnabled === true &&
     !readinessQuery.data?.onlineOrdersPaused;
 
-  const storeUrl =
-    publicOrgId && storeReady
-      ? buildPublicBranchStoreAbsoluteUrl(publicOrgId, branchId)
-      : null;
-  const qrPayload =
-    publicOrgId && storeReady
-      ? buildBranchStoreQrAcquisitionPayload(publicOrgId, branchId)
-      : null;
+  // Stable public URL exists once we have ORG###### + branch GUID. Do not hide the QR
+  // solely because fulfillment setup is incomplete — warn instead.
+  const canShowQr = Boolean(publicOrgId && branchIsActive);
+  const storeUrl = canShowQr
+    ? buildPublicBranchStoreAbsoluteUrl(publicOrgId!, branchId)
+    : null;
+  const qrPayload = canShowQr
+    ? buildBranchStoreQrAcquisitionPayload(publicOrgId!, branchId)
+    : null;
 
   useEffect(() => {
     if (!copied) return;
@@ -91,6 +92,17 @@ export function BranchStorefrontQrPanel({
     }
   }
 
+  const loading = identityQuery.isPending;
+  const loadFailed = identityQuery.isError;
+  const showNotReadyNotice =
+    !loading &&
+    !loadFailed &&
+    canShowQr &&
+    readinessQuery.isSuccess &&
+    !storefrontOperational;
+  const showBlocked =
+    !loading && !loadFailed && !canShowQr;
+
   return (
     <Card
       className="flex flex-col gap-3 p-3"
@@ -101,23 +113,19 @@ export function BranchStorefrontQrPanel({
         {t("branches.storefrontQr.title")}
       </h2>
 
-      {identityQuery.isPending || readinessQuery.isPending ? (
+      {loading ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("branches.storefrontQr.loading")}
         </p>
       ) : null}
 
-      {identityQuery.isError || readinessQuery.isError ? (
+      {loadFailed ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
           {t("branches.storefrontQr.loadFailed")}
         </p>
       ) : null}
 
-      {!identityQuery.isPending &&
-      !readinessQuery.isPending &&
-      !identityQuery.isError &&
-      !readinessQuery.isError &&
-      !storeReady ? (
+      {showBlocked ? (
         <div className="flex flex-col gap-2" data-testid="branch-storefront-qr-not-ready">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("branches.storefrontQr.notReady")}
@@ -135,6 +143,24 @@ export function BranchStorefrontQrPanel({
 
       {qrPayload && storeUrl ? (
         <div className="flex flex-col items-center gap-2 text-center">
+          {showNotReadyNotice ? (
+            <div
+              className="flex w-full flex-col gap-2 text-left"
+              data-testid="branch-storefront-qr-setup-hint"
+            >
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("branches.storefrontQr.setupHint")}
+              </p>
+              <Button asChild type="button" variant="outline" className="min-h-11 w-full sm:w-auto">
+                <Link
+                  to={branchFulfillmentEditPath(branchId)}
+                  data-testid="branch-storefront-qr-setup"
+                >
+                  {t("branches.storefrontQr.completeSetup")}
+                </Link>
+              </Button>
+            </div>
+          ) : null}
           <QrCodeImage
             payload={qrPayload}
             label={t("branches.storefrontQr.imageAlt").replace("{branch}", branchName)}

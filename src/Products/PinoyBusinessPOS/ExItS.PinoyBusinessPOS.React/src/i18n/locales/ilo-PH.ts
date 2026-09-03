@@ -4710,6 +4710,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.storefrontQr.loading": "Agload ti storefront QR…",
   "branches.storefrontQr.loadFailed": "Saan a ma-load ti storefront QR.",
   "branches.storefrontQr.notReady": "Saan pay a nakasagana ti customer storefront. Completoen nga umuna ti branch fulfillment/public-store setup.",
+  "branches.storefrontQr.setupHint":
+    "Saan pay a kompleto ti storefront setup. Mabalin pay latta a malukatan ti link, ngem ti ordering mabalin a saan a available agingga a makompleto ti setup.",
   "branches.storefrontQr.completeSetup": "Completoen ti storefront setup",
   "branches.storefrontQr.scanHint": "I-scan tapno aggatang idiay {branch}",
   "branches.storefrontQr.imageAlt": "Customer storefront QR para iti {branch}",
