@@ -173,6 +173,8 @@ public static class DomainErrorCodes
     public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
     public const string ConnectedSupplierRequiresBusinessQr = "pos.connected_supplier.requires_business_qr";
     public const string ConnectedSupplierQrPurposeMismatch = "pos.connected_supplier.qr_purpose_mismatch";
+    public const string ConnectedSupplierBranchRequired = "pos.connected_supplier.branch_required";
+    public const string ConnectedSupplierBranchInvalid = "pos.connected_supplier.branch_invalid";
 
     public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
     public const string InvalidInventoryLotId = "pos.inventory.lot.id.invalid";

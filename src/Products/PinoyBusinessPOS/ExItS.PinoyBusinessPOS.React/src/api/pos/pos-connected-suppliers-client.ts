@@ -43,6 +43,8 @@ export const connectedSupplierRelationshipSchema = z.object({
   counterpartyPublicOrganizationId: z.string().nullable().optional(),
   catalogSharingMode: z.string().optional().default("SelectedOnly"),
   customerDiscountPercent: z.number().nullable().optional().default(null),
+  supplierBranchId: guidSchema.nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
 });
 
 export const connectionCatalogSettingsSchema = z.object({
@@ -365,6 +367,7 @@ export async function requestConnection(
   input: {
     supplierPublicOrganizationIdOrQrPayload: string;
     supplierOrganizationId?: string | null;
+    supplierBranchId?: string | null;
   },
   signal?: AbortSignal,
 ): Promise<ConnectedSupplierRelationship> {
@@ -376,7 +379,24 @@ export async function requestConnection(
     body: {
       supplierPublicOrganizationIdOrQrPayload: input.supplierPublicOrganizationIdOrQrPayload.trim(),
       supplierOrganizationId: input.supplierOrganizationId ?? null,
+      supplierBranchId: input.supplierBranchId ?? null,
     },
+  });
+  return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+export async function updateSupplierLocation(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  supplierBranchId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${relPath(relationshipId, "/supplier-location")}`,
+    body: { supplierBranchId },
   });
   return connectedSupplierRelationshipSchema.parse(raw);
 }

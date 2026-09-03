@@ -19,6 +19,8 @@ type Props = {
   onResolvedPayload: (payload: string) => void;
   disabled?: boolean;
   onManualCleared?: () => void;
+  /** Optional override for connect flows that also accept storefront acquisition URLs. */
+  parseRawPayload?: (raw: string) => string;
 };
 
 export function QrScanOrEnter({
@@ -26,6 +28,7 @@ export function QrScanOrEnter({
   onResolvedPayload,
   disabled,
   onManualCleared,
+  parseRawPayload,
 }: Props) {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -58,6 +61,11 @@ export function QrScanOrEnter({
 
   function applyRaw(raw: string) {
     try {
+      if (parseRawPayload) {
+        setError(null);
+        onResolvedPayload(parseRawPayload(raw));
+        return;
+      }
       const parsed = assertExItsQrPurpose(raw, expectedPurpose);
       setError(null);
       onResolvedPayload(mapSubject(parsed.subject, raw));

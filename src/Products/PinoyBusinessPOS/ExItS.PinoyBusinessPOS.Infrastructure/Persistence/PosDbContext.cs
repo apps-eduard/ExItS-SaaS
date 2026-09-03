@@ -4526,11 +4526,14 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.SupplierPublicOrganizationIdSnapshot).HasColumnName("supplier_public_organization_id_snapshot").HasMaxLength(32);
             entity.Property(x=>x.CatalogSharingMode).HasColumnName("catalog_sharing_mode").HasDefaultValue(0);
             entity.Property(x=>x.CustomerDiscountPercent).HasColumnName("customer_discount_percent").HasPrecision(5, 2);
+            entity.Property(x=>x.SupplierBranchId).HasColumnName("supplier_branch_id");
+            entity.Property(x=>x.SupplierBranchNameSnapshot).HasColumnName("supplier_branch_name_snapshot").HasMaxLength(128);
             entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>new{x.BuyerOrganizationId,x.SupplierOrganizationId}).IsUnique().HasFilter("status IN (0, 1)").HasDatabaseName("ux_connected_supplier_relationships_open");
             entity.HasIndex(x=>x.SupplierOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_supplier");
             entity.HasIndex(x=>x.BuyerOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_buyer");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SupplierBranchId}).HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
         });
         modelBuilder.Entity<SupplierProductExposureRecord>(entity =>
         {

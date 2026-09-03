@@ -195,6 +195,16 @@ builder.Services.AddHttpClient<IPlatformOrganizationPublicResolve, PlatformOrgan
 
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient<IPlatformSupplierLocationDirectory, PlatformSupplierLocationDirectoryClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddHttpClient<IOrganizationBusinessNotificationPublisher, PlatformOrganizationBusinessNotificationClient>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
@@ -378,6 +388,7 @@ builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
 builder.Services.AddScoped<ListBusinessCustomers>();
 builder.Services.AddScoped<GetBusinessCustomer>();
 builder.Services.AddScoped<DisconnectConnectedSupplier>();
+builder.Services.AddScoped<UpdateSupplierLocation>();
 builder.Services.AddScoped<ListRelationships>();
 builder.Services.AddScoped<ExposeProduct>();
 builder.Services.AddScoped<UpdateExposure>();

@@ -158,6 +158,12 @@ public sealed class ConnectedSupplierRelationship
     public CatalogSharingMode CatalogSharingMode { get; private set; }
     /// <summary>Optional buyer-level discount percent applied to selling/default PO baseline (0–100).</summary>
     public decimal? CustomerDiscountPercent { get; private set; }
+    /// <summary>
+    /// Operational supplier source branch (Platform branch id). Organization remains the relationship anchor.
+    /// </summary>
+    public Guid? SupplierBranchId { get; private set; }
+    /// <summary>Display name of <see cref="SupplierBranchId"/> at set time (safe for buyer UX; no UUID).</summary>
+    public string? SupplierBranchNameSnapshot { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -168,7 +174,9 @@ public sealed class ConnectedSupplierRelationship
         string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
         string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null,
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
-        decimal? customerDiscountPercent = null)
+        decimal? customerDiscountPercent = null,
+        Guid? supplierBranchId = null,
+        string? supplierBranchNameSnapshot = null)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
@@ -179,13 +187,16 @@ public sealed class ConnectedSupplierRelationship
         SupplierPublicOrganizationIdSnapshot = CleanSnapshot(supplierPublicOrganizationIdSnapshot, 32);
         CatalogSharingMode = catalogSharingMode;
         CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
+        SupplierBranchId = NormalizeBranchId(supplierBranchId);
+        SupplierBranchNameSnapshot = CleanSnapshot(supplierBranchNameSnapshot, 128);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
     public static ConnectedSupplierRelationship Request(PosOrganizationId buyer, PosOrganizationId supplier,
         DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
         string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
-        string? supplierDisplayName = null, string? supplierPublicOrganizationId = null)
+        string? supplierDisplayName = null, string? supplierPublicOrganizationId = null,
+        Guid? supplierBranchId = null, string? supplierBranchName = null)
     {
         EnsureUtc(utcNow);
         if (buyer == supplier)
@@ -197,7 +208,31 @@ public sealed class ConnectedSupplierRelationship
 
         return new(id ?? ConnectedSupplierRelationshipId.New(), buyer, supplier,
             ConnectedSupplierRelationshipStatus.Pending, utcNow, requestedByUserId, null, null, null, utcNow, utcNow,
-            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId);
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
+            CatalogSharingMode.SelectedOnly, customerDiscountPercent: null,
+            supplierBranchId, supplierBranchName);
+    }
+
+    /// <summary>Sets or changes the operational supplier source branch (Pending or Active only).</summary>
+    public void SetSupplierLocation(Guid supplierBranchId, string supplierBranchName, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        var branchId = NormalizeBranchId(supplierBranchId)
+            ?? throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Supplier branch is required.");
+        var name = CleanSnapshot(supplierBranchName, 128)
+            ?? throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Supplier branch name is required.");
+        SupplierBranchId = branchId;
+        SupplierBranchNameSnapshot = name;
+        UpdatedAtUtc = utcNow;
     }
 
     public void Approve(DateTimeOffset utcNow, Guid? actorId = null) => Respond(ConnectedSupplierRelationshipStatus.Active, utcNow, actorId);
@@ -242,11 +277,16 @@ public sealed class ConnectedSupplierRelationship
         string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
         string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null,
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
-        decimal? customerDiscountPercent = null) =>
+        decimal? customerDiscountPercent = null,
+        Guid? supplierBranchId = null,
+        string? supplierBranchNameSnapshot = null) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
-            catalogSharingMode, customerDiscountPercent);
+            catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot);
+
+    private static Guid? NormalizeBranchId(Guid? branchId) =>
+        branchId is null || branchId == Guid.Empty ? null : branchId;
 
     private static string? CleanSnapshot(string? value, int maxLength)
     {

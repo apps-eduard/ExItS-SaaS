@@ -44,11 +44,15 @@ public sealed record ConnectedSupplierRelationshipDto(
     string? CounterpartyDisplayName = null,
     string? CounterpartyPublicOrganizationId = null,
     string CatalogSharingMode = "SelectedOnly",
-    decimal? CustomerDiscountPercent = null);
+    decimal? CustomerDiscountPercent = null,
+    Guid? SupplierBranchId = null,
+    string? SupplierBranchName = null);
 public sealed record RequestConnectionRequest(
     Guid? SupplierOrganizationId = null,
     string? SupplierPublicOrganizationIdOrQrPayload = null,
-    Guid? RequestedByUserId = null);
+    Guid? RequestedByUserId = null,
+    Guid? SupplierBranchId = null);
+public sealed record UpdateSupplierLocationRequest(Guid SupplierBranchId);
 public sealed record RespondConnectionRequest(
     Guid? RespondedByUserId = null,
     string? CatalogSharingMode = null,
@@ -171,7 +175,9 @@ public static class ConnectedSupplierMapper
             ? x.BuyerPublicOrganizationIdSnapshot
             : x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode: x.CatalogSharingMode.ToString(),
-        CustomerDiscountPercent: x.CustomerDiscountPercent);
+        CustomerDiscountPercent: x.CustomerDiscountPercent,
+        SupplierBranchId: x.SupplierBranchId,
+        SupplierBranchName: x.SupplierBranchNameSnapshot);
     public static SupplierProductExposureDto Map(SupplierProductExposure x) => new(x.Id.Value,x.SupplierOrganizationId.Value,
         x.ProductId.Value,x.SkuSnapshot,x.NameSnapshot,x.CategoryNameSnapshot,x.UnitOfMeasureCode,x.SupplierOrderPrice,
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
@@ -377,6 +383,7 @@ public sealed class RequestConnection
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IPlatformOrganizationPublicResolve _organizationResolve;
+    private readonly IPlatformSupplierLocationDirectory _supplierLocations;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly TimeProvider _clock;
 
@@ -386,6 +393,7 @@ public sealed class RequestConnection
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IPlatformOrganizationPublicResolve organizationResolve,
+        IPlatformSupplierLocationDirectory supplierLocations,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         TimeProvider? clock = null)
     {
@@ -394,6 +402,7 @@ public sealed class RequestConnection
         _uow = uow;
         _access = access;
         _organizationResolve = organizationResolve;
+        _supplierLocations = supplierLocations;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _clock = clock ?? TimeProvider.System;
     }
@@ -440,6 +449,18 @@ public sealed class RequestConnection
                     message);
             }
 
+            var location = await ResolveSupplierLocationAsync(
+                    resolvedSupplier.Value.PublicOrganizationId,
+                    request.SupplierBranchId,
+                    ct)
+                .ConfigureAwait(false);
+            if (!location.IsSuccess)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    location.ErrorCode!,
+                    location.ErrorMessage!);
+            }
+
             var utcNow = _clock.GetUtcNow();
             string? buyerDisplayName = null;
             string? buyerPublicId = null;
@@ -460,7 +481,9 @@ public sealed class RequestConnection
                 buyerDisplayName: buyerDisplayName,
                 buyerPublicOrganizationId: buyerPublicId,
                 supplierDisplayName: resolvedSupplier.Value.DisplayName,
-                supplierPublicOrganizationId: resolvedSupplier.Value.PublicOrganizationId);
+                supplierPublicOrganizationId: resolvedSupplier.Value.PublicOrganizationId,
+                supplierBranchId: location.Value!.BranchId,
+                supplierBranchName: location.Value.Name);
             await _relationships.AddAsync(relationship, ct).ConfigureAwait(false);
 
             // Buyer-side Supplier master so Pending/Active relationships appear on Suppliers list.
@@ -511,6 +534,52 @@ public sealed class RequestConnection
         {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task<ApplicationResult<PlatformSupplierLocationDto>> ResolveSupplierLocationAsync(
+        string publicOrganizationId,
+        Guid? requestedBranchId,
+        CancellationToken ct)
+    {
+        var listed = await _supplierLocations
+            .ListActiveLocationsAsync(publicOrganizationId, ct)
+            .ConfigureAwait(false);
+        if (!listed.IsSuccess)
+        {
+            return ApplicationResult<PlatformSupplierLocationDto>.Failure(
+                listed.ErrorCode!,
+                listed.ErrorMessage!);
+        }
+
+        var active = listed.Value ?? [];
+        if (active.Count == 0)
+        {
+            return ApplicationResult<PlatformSupplierLocationDto>.Failure(
+                DomainErrorCodes.ConnectedSupplierBranchInvalid,
+                "This supplier has no active locations to connect.");
+        }
+
+        if (requestedBranchId is Guid branchId && branchId != Guid.Empty)
+        {
+            var match = active.FirstOrDefault(x => x.BranchId == branchId);
+            if (match is null)
+            {
+                return ApplicationResult<PlatformSupplierLocationDto>.Failure(
+                    DomainErrorCodes.ConnectedSupplierBranchInvalid,
+                    "That supplier location is not an active branch of this business.");
+            }
+
+            return ApplicationResult<PlatformSupplierLocationDto>.Success(match);
+        }
+
+        if (active.Count == 1)
+        {
+            return ApplicationResult<PlatformSupplierLocationDto>.Success(active[0]);
+        }
+
+        return ApplicationResult<PlatformSupplierLocationDto>.Failure(
+            DomainErrorCodes.ConnectedSupplierBranchRequired,
+            "Choose which supplier location supplies you.");
     }
 
     private async Task<ApplicationResult<PlatformOrganizationPublicResolveResult>> ResolveSupplierOrganizationAsync(
@@ -815,6 +884,92 @@ public sealed class DisconnectConnectedSupplier
         try {r.Disconnect(_clock.GetUtcNow());await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r,supplierView:r.SupplierOrganizationId==org));}
         catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,ex.Message);}
+    }
+}
+
+public sealed class UpdateSupplierLocation
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IPlatformSupplierLocationDirectory _supplierLocations;
+    private readonly TimeProvider _clock;
+
+    public UpdateSupplierLocation(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        IPlatformSupplierLocationDirectory supplierLocations,
+        TimeProvider? clock = null)
+    {
+        _relationships = relationships;
+        _uow = uow;
+        _access = access;
+        _supplierLocations = supplierLocations;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid relationshipId,
+        UpdateSupplierLocationRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var org = PosOrganizationId.From(organizationId);
+        var relationship = await _relationships
+            .GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false);
+        if (relationship is null || relationship.BuyerOrganizationId != org)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Relationship was not found.");
+        }
+
+        var publicId = relationship.SupplierPublicOrganizationIdSnapshot;
+        if (string.IsNullOrWhiteSpace(publicId))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                DomainErrorCodes.ConnectedSupplierBranchInvalid,
+                "Supplier public business id is missing for this connection.");
+        }
+
+        var listed = await _supplierLocations.ListActiveLocationsAsync(publicId, ct).ConfigureAwait(false);
+        if (!listed.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                listed.ErrorCode!,
+                listed.ErrorMessage!);
+        }
+
+        var match = (listed.Value ?? []).FirstOrDefault(x => x.BranchId == request.SupplierBranchId);
+        if (match is null)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                DomainErrorCodes.ConnectedSupplierBranchInvalid,
+                "That supplier location is not an active branch of this business.");
+        }
+
+        try
+        {
+            relationship.SetSupplierLocation(match.BranchId, match.Name, _clock.GetUtcNow());
+            await _relationships.UpdateAsync(relationship, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
+                ConnectedSupplierMapper.Map(relationship, supplierView: false));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, ex.Message);
+        }
     }
 }
 

@@ -1,9 +1,11 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -30,7 +32,10 @@ public sealed record PosSupplierDto(
     string ConnectionType,
     Guid? ConnectedRelationshipId,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? ConnectedBusinessPublicId = null,
+    string? SupplierBranchName = null,
+    Guid? SupplierBranchId = null);
 
 public sealed record CreateSupplierRequest(
     string Name,
@@ -63,7 +68,11 @@ public sealed record UpdateSupplierRequest(
 
 public static class SupplierMapper
 {
-    public static PosSupplierDto Map(Supplier supplier) =>
+    public static PosSupplierDto Map(
+        Supplier supplier,
+        string? connectedBusinessPublicId = null,
+        string? supplierBranchName = null,
+        Guid? supplierBranchId = null) =>
         new(
             supplier.Id.Value,
             supplier.OrganizationId.Value,
@@ -84,21 +93,27 @@ public static class SupplierMapper
             supplier.ConnectionType.ToString(),
             supplier.ConnectedRelationshipId?.Value,
             supplier.CreatedAtUtc,
-            supplier.UpdatedAtUtc);
+            supplier.UpdatedAtUtc,
+            connectedBusinessPublicId,
+            supplierBranchName,
+            supplierBranchId);
 }
 
 public sealed class SupplierQueryService
 {
     private readonly ISupplierRepository _suppliers;
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
 
     public SupplierQueryService(
         ISupplierRepository suppliers,
+        IConnectedSupplierRelationshipRepository relationships,
         PartyBranchAccessService branchAccess,
         IPartyBranchAccessActorAccessor actorAccessor)
     {
         _suppliers = suppliers;
+        _relationships = relationships;
         _branchAccess = branchAccess;
         _actorAccessor = actorAccessor;
     }
@@ -128,7 +143,7 @@ public sealed class SupplierQueryService
             return null;
         }
 
-        return SupplierMapper.Map(supplier);
+        return await MapWithLocationAsync(supplier, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<PosSupplierDto>> ListAsync(
@@ -145,11 +160,34 @@ public sealed class SupplierQueryService
         var (items, total) = await _suppliers
             .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, restrict, cancellationToken)
             .ConfigureAwait(false);
+        var mapped = new List<PosSupplierDto>(items.Count);
+        foreach (var item in items)
+        {
+            mapped.Add(await MapWithLocationAsync(item, cancellationToken).ConfigureAwait(false));
+        }
+
         return new PagedResult<PosSupplierDto>(
-            items.Select(SupplierMapper.Map).ToList(),
+            mapped,
             total,
             Math.Max(page ?? 1, 1),
             take);
+    }
+
+    private async Task<PosSupplierDto> MapWithLocationAsync(Supplier supplier, CancellationToken cancellationToken)
+    {
+        if (supplier.ConnectedRelationshipId is null)
+        {
+            return SupplierMapper.Map(supplier);
+        }
+
+        var relationship = await _relationships
+            .GetAsync(supplier.ConnectedRelationshipId, cancellationToken)
+            .ConfigureAwait(false);
+        return SupplierMapper.Map(
+            supplier,
+            relationship?.SupplierPublicOrganizationIdSnapshot ?? supplier.Notes,
+            relationship?.SupplierBranchNameSnapshot,
+            relationship?.SupplierBranchId);
     }
 }
 

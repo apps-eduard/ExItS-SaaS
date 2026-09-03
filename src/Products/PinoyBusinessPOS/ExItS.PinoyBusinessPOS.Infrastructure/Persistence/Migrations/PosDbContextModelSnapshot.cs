@@ -2050,6 +2050,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("supplier_display_name_snapshot");
 
+                    b.Property<Guid?>("SupplierBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_branch_id");
+
+                    b.Property<string>("SupplierBranchNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("supplier_branch_name_snapshot");
+
                     b.Property<Guid>("SupplierOrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_organization_id");
@@ -2076,6 +2085,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SupplierOrganizationId")
                         .HasDatabaseName("ix_connected_supplier_relationships_supplier");
+
+                    b.HasIndex("SupplierOrganizationId", "SupplierBranchId")
+                        .HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
 
                     b.HasIndex("BuyerOrganizationId", "SupplierOrganizationId")
                         .IsUnique()

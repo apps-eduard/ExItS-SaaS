@@ -30,6 +30,9 @@ export const posSupplierSchema = z.object({
   connectedRelationshipId: guidSchema.nullable().optional(),
   createdAtUtc: z.string(),
   updatedAtUtc: z.string(),
+  connectedBusinessPublicId: z.string().nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
+  supplierBranchId: guidSchema.nullable().optional(),
 });
 
 export const posSupplierPagedResultSchema = z.object({

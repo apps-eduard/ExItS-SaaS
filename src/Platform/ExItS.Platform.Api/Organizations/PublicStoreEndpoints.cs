@@ -24,6 +24,18 @@ internal static class PublicStoreEndpoints
         .RequireRateLimiting(PlatformSecurityPipeline.PublicIdResolveRateLimitPolicy)
         .AddEndpointFilter<PublicIdResolveRateLimitFilter>();
 
+        app.MapGet("/api/v1/public/stores/{publicOrganizationId}/branches", async (
+            string publicOrganizationId,
+            LookupPublicStoreBranches lookup,
+            CancellationToken ct) =>
+        {
+            var result = await lookup.ExecuteAsync(publicOrganizationId, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting(PlatformSecurityPipeline.PublicIdResolveRateLimitPolicy)
+        .AddEndpointFilter<PublicIdResolveRateLimitFilter>();
+
         return app;
     }
 }

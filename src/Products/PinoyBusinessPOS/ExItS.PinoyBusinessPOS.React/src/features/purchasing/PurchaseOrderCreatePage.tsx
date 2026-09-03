@@ -226,13 +226,14 @@ export function PurchaseOrderCreatePage() {
       ) : null}
 
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.branch")}
+        {t("purchasing.receivingBranch")}
         <input
           className="min-h-11 rounded-md border border-border bg-muted px-3"
           value={boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? ""}
           readOnly
           data-testid="po-branch"
         />
+        <span className="text-muted">{t("purchasing.receivingBranchHelp")}</span>
       </label>
 
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -247,7 +248,9 @@ export function PurchaseOrderCreatePage() {
           <option value="">{t("purchasing.selectSupplier")}</option>
           {(suppliersQuery.data?.items ?? []).map((s) => (
             <option key={s.supplierId} value={s.supplierId}>
-              {s.name}
+              {s.supplierBranchName
+                ? `${s.name} — ${s.supplierBranchName}`
+                : s.name}
             </option>
           ))}
         </select>

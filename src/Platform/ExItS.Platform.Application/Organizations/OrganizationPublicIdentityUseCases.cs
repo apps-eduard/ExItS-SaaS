@@ -282,3 +282,84 @@ public sealed class LookupPublicStoreLanding(
         return new BranchEntitlementCapabilities(canOrder, canDelivery);
     }
 }
+
+/// <summary>
+/// Public-safe Active branch locations for a business (B2B supplier connect / storefront routing).
+/// Does not grant membership, staff access, or permissions.
+/// </summary>
+public sealed record PublicStoreBranchLocationDto(
+    Guid BranchId,
+    string Name,
+    string Code,
+    bool IsPrimary);
+
+public sealed record PublicStoreBranchesDto(
+    string PublicOrganizationId,
+    string DisplayName,
+    IReadOnlyList<PublicStoreBranchLocationDto> Branches);
+
+public sealed class LookupPublicStoreBranches(
+    IPlatformOrganizationRepository organizations,
+    IOrganizationBranchRepository branches,
+    IAuditWriter audit)
+{
+    public async Task<ApplicationResult<PublicStoreBranchesDto>> ExecuteAsync(
+        string publicOrganizationIdOrPayload,
+        CancellationToken cancellationToken = default)
+    {
+        string normalized;
+        try
+        {
+            normalized = PublicOrganizationIdRules.TryExtractFromQrPayload(publicOrganizationIdOrPayload);
+        }
+        catch (DomainException)
+        {
+            return ApplicationResult<PublicStoreBranchesDto>.Failure(
+                DomainErrorCodes.InvalidPublicOrganizationId,
+                "Store was not found.");
+        }
+
+        var target = await organizations
+            .GetByPublicOrganizationIdAsync(normalized, cancellationToken)
+            .ConfigureAwait(false);
+
+        var foundActive = target is not null && target.Status is OrganizationStatus.Active;
+
+        await audit.WriteAsync(
+            "anonymous:public-store-branches",
+            AuditActorType.System,
+            PlatformAuditActions.PublicStoreLandingLookedUp,
+            "public_organization_id",
+            normalized,
+            foundActive ? AuditOutcome.Succeeded : AuditOutcome.Denied,
+            summary: "purpose=public-store-branches",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (!foundActive)
+        {
+            return ApplicationResult<PublicStoreBranchesDto>.Failure(
+                ApplicationErrorCodes.OrganizationNotFound,
+                "This store is unavailable.");
+        }
+
+        var orgBranches = await branches
+            .ListByOrganizationAsync(target!.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        var active = orgBranches
+            .Where(b => b.Status == OrganizationBranchStatus.Active)
+            .OrderByDescending(b => b.IsPrimary)
+            .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(b => new PublicStoreBranchLocationDto(
+                b.Id.Value,
+                b.Name,
+                b.Code,
+                b.IsPrimary))
+            .ToList();
+
+        return ApplicationResult<PublicStoreBranchesDto>.Success(new PublicStoreBranchesDto(
+            target.PublicOrganizationId!,
+            target.DisplayName,
+            active));
+    }
+}

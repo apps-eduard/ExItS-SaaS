@@ -18,6 +18,8 @@ internal sealed class ConnectedSupplierRelationshipRecord
     /// <summary>0 = SelectedOnly (legacy default), 1 = AllEligible.</summary>
     public int CatalogSharingMode { get; set; }
     public decimal? CustomerDiscountPercent { get; set; }
+    public Guid? SupplierBranchId { get; set; }
+    public string? SupplierBranchNameSnapshot { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
 }
@@ -95,7 +97,9 @@ internal static class ConnectedSupplierEntityMapper
         r.BuyerDisplayNameSnapshot,r.BuyerPublicOrganizationIdSnapshot,
         r.SupplierDisplayNameSnapshot,r.SupplierPublicOrganizationIdSnapshot,
         (CatalogSharingMode)r.CatalogSharingMode,
-        r.CustomerDiscountPercent);
+        r.CustomerDiscountPercent,
+        r.SupplierBranchId,
+        r.SupplierBranchNameSnapshot);
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
@@ -103,10 +107,12 @@ internal static class ConnectedSupplierEntityMapper
         BuyerDisplayNameSnapshot=x.BuyerDisplayNameSnapshot,BuyerPublicOrganizationIdSnapshot=x.BuyerPublicOrganizationIdSnapshot,
         SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode=(int)x.CatalogSharingMode,CustomerDiscountPercent=x.CustomerDiscountPercent,
+        SupplierBranchId=x.SupplierBranchId,SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;
-     r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;r.UpdatedAtUtc=x.UpdatedAtUtc;}
+     r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;
+     r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
     public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r)=>SupplierProductExposure.Rehydrate(
         SupplierProductExposureId.From(r.Id),PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.ProductId),

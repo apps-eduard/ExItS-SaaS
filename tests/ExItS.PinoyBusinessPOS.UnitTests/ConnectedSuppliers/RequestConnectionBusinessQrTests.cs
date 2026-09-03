@@ -144,16 +144,31 @@ public sealed class RequestConnectionBusinessQrTests
                     new PlatformOrganizationPublicResolveResult(organizationId, "ORG000001", "Buyer Biz")));
     }
 
+    private sealed class FakeLocations : IPlatformSupplierLocationDirectory
+    {
+        public IReadOnlyList<PlatformSupplierLocationDto> Locations { get; set; } =
+        [
+            new(Guid.Parse("22222222-2222-2222-2222-222222222222"), "Main Branch", "BR-MAIN", true)
+        ];
+
+        public Task<ApplicationResult<IReadOnlyList<PlatformSupplierLocationDto>>> ListActiveLocationsAsync(
+            string publicOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationResult<IReadOnlyList<PlatformSupplierLocationDto>>.Success(Locations));
+    }
+
     private static RequestConnection CreateUseCase(
         FakeRelationships relationships,
         FakeResolve resolve,
-        FakeSuppliers? suppliers = null) =>
+        FakeSuppliers? suppliers = null,
+        FakeLocations? locations = null) =>
         new(
             relationships,
             suppliers ?? new FakeSuppliers(),
             new FakeUow(),
             new FakeAccess(),
-            resolve);
+            resolve,
+            locations ?? new FakeLocations());
 
     [Fact]
     public async Task Requires_business_qr_payload()
@@ -229,6 +244,8 @@ public sealed class RequestConnectionBusinessQrTests
         Assert.Equal("ABC Trading", relationships.LastAdded.SupplierDisplayNameSnapshot);
         Assert.Equal("ORG001234", relationships.LastAdded.SupplierPublicOrganizationIdSnapshot);
         Assert.Equal("Buyer Biz", relationships.LastAdded.BuyerDisplayNameSnapshot);
+        Assert.Equal(Guid.Parse("22222222-2222-2222-2222-222222222222"), relationships.LastAdded.SupplierBranchId);
+        Assert.Equal("Main Branch", relationships.LastAdded.SupplierBranchNameSnapshot);
         Assert.NotNull(suppliers.LastAdded);
         Assert.Equal(SupplierConnectionType.ConnectedOrganization, suppliers.LastAdded!.ConnectionType);
         Assert.Equal(relationships.LastAdded.Id, suppliers.LastAdded.ConnectedRelationshipId);
