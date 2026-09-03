@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 
+import { ExItsBreadcrumbs } from "@/components/exits/ExItsBreadcrumbs";
+import { ExItsFooter } from "@/components/exits/ExItsFooter";
+import { ExItsHeader } from "@/components/exits/ExItsHeader";
+
 export const metadata: Metadata = {
   title: {
     default: "ExItS",
@@ -37,8 +41,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-PH" className="h-full">
-      <body className="min-h-full flex flex-col bg-base text-primary antialiased">
-        {children}
+      <body className="flex min-h-[100dvh] flex-col bg-base text-primary antialiased">
+        <ExItsHeader />
+        <ExItsBreadcrumbs />
+        <div className="flex-1">{children}</div>
+        <ExItsFooter />
       </body>
     </html>
   );
