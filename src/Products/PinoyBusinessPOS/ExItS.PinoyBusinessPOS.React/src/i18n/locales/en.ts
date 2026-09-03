@@ -3676,6 +3676,8 @@ export const en = {
   "suppliers.notFound": "Supplier was not found.",
   "suppliers.connectionConnected": "Connected",
   "suppliers.connectionManual": "Manual",
+  "suppliers.listOrgId": "Org ID: {id}",
+  "suppliers.listBranch": "Branch: {name}",
   "suppliers.errorNameConflict": "A supplier with this name already exists.",
   "suppliers.errorEmailConflict": "A supplier with this email already exists.",
   "suppliers.errorMobileConflict": "A supplier with this mobile number already exists.",

@@ -208,6 +208,29 @@ export function SuppliersListPage() {
                   {supplier.status}
                 </StatusChip>
               </span>
+              {supplier.connectedBusinessPublicId || supplier.supplierBranchName ? (
+                <span
+                  className="mt-1 flex min-w-0 flex-col gap-0.5 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid={`supplier-connected-meta-${supplier.supplierId}`}
+                >
+                  {supplier.connectedBusinessPublicId ? (
+                    <span className="min-w-0 truncate">
+                      {t("suppliers.listOrgId").replace(
+                        "{id}",
+                        supplier.connectedBusinessPublicId,
+                      )}
+                    </span>
+                  ) : null}
+                  {supplier.supplierBranchName ? (
+                    <span className="min-w-0 truncate">
+                      {t("suppliers.listBranch").replace(
+                        "{name}",
+                        supplier.supplierBranchName,
+                      )}
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
             </Link>
           </li>
         ))}

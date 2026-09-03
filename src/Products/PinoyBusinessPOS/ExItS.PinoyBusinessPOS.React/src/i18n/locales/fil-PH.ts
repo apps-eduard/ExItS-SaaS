@@ -4547,6 +4547,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "suppliers.code": "Supplier code",
   "suppliers.connectionConnected": "Naka-connect",
   "suppliers.connectionManual": "Manual",
+  "suppliers.listOrgId": "Org ID: {id}",
+  "suppliers.listBranch": "Branch: {name}",
   "suppliers.contactPerson": "Contact person",
   "suppliers.deactivate": "I-deactivate",
   "suppliers.detailLede": "Contact details at status ng supplier.",
