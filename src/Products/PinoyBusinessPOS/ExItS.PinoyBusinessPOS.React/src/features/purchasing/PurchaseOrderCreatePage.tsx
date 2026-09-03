@@ -1,29 +1,52 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
+  listLinks,
+  searchExposedCatalog,
+  type SupplierProductExposure,
+} from "@/api/pos/pos-connected-suppliers-client";
+import {
   createPurchaseOrder,
   getPurchaseOrder,
 } from "@/api/pos/pos-purchase-orders-client";
-import { listSuppliers } from "@/api/pos/pos-suppliers-client";
+import {
+  isConnectedSupplier,
+  listSuppliers,
+  type PosSupplier,
+} from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  applyConnectedQuantityDelta,
+  buildConnectedReadyProducts,
+  filterConnectedReadyProducts,
+  formatLineMath,
+  formatUnitPriceLabel,
+  orderSubtotal,
+  orderUnitCount,
+  retainCompatibleDraftLines,
+  type ConnectedPoDraftLine,
+  type ConnectedPoReadyProduct,
+} from "@/features/purchasing/purchase-order-create-connected";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-type DraftLine = {
+type ExternalDraftLine = {
   productId: string;
   name: string;
   uom: string;
@@ -39,6 +62,33 @@ function todayIsoDate(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+async function loadAllExposedCatalog(
+  workspace: { organizationId: string; branchId: string },
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<SupplierProductExposure[]> {
+  const pageSize = 50;
+  let page = 1;
+  const items: SupplierProductExposure[] = [];
+  while (true) {
+    const result = await searchExposedCatalog(
+      workspace,
+      relationshipId,
+      { page, pageSize },
+      signal,
+    );
+    items.push(...result.items);
+    if (items.length >= result.totalCount || result.items.length === 0) {
+      break;
+    }
+    page += 1;
+    if (page > 40) {
+      break;
+    }
+  }
+  return items;
+}
+
 export function PurchaseOrderCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -51,7 +101,8 @@ export function PurchaseOrderCreatePage() {
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [lines, setLines] = useState<DraftLine[]>([]);
+  const [connectedLines, setConnectedLines] = useState<ConnectedPoDraftLine[]>([]);
+  const [externalLines, setExternalLines] = useState<ExternalDraftLine[]>([]);
   const [qtyText, setQtyText] = useState("1");
   const [costText, setCostText] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<PosCatalogProductDto | null>(null);
@@ -79,9 +130,40 @@ export function PurchaseOrderCreatePage() {
     queryFn: ({ signal }) => listSuppliers(workspace!, { status: "Active", pageSize: 100 }, signal),
   });
 
+  const selectedSupplier: PosSupplier | null = useMemo(() => {
+    if (!supplierId) {
+      return null;
+    }
+    return (suppliersQuery.data?.items ?? []).find((s) => s.supplierId === supplierId) ?? null;
+  }, [supplierId, suppliersQuery.data]);
+
+  const connected =
+    selectedSupplier != null &&
+    isConnectedSupplier(selectedSupplier) &&
+    Boolean(selectedSupplier.connectedRelationshipId);
+  const relationshipId = selectedSupplier?.connectedRelationshipId ?? null;
+
+  const linkedProductsQuery = useQuery({
+    queryKey: ["connected-suppliers", "po-links", relationshipId],
+    enabled: Boolean(workspace) && online && allowManage && connected && Boolean(relationshipId),
+    queryFn: async ({ signal }) => {
+      const [links, exposures] = await Promise.all([
+        listLinks(workspace!, relationshipId!, signal),
+        loadAllExposedCatalog(workspace!, relationshipId!, signal).catch(() => [] as SupplierProductExposure[]),
+      ]);
+      return buildConnectedReadyProducts(links, exposures.length > 0 ? exposures : null);
+    },
+  });
+
   const productsQuery = useQuery({
     queryKey: ["catalog-products", "po-create", workspace?.organizationId, debounced],
-    enabled: Boolean(workspace) && online && allowManage && debounced.length > 0,
+    enabled:
+      Boolean(workspace) &&
+      online &&
+      allowManage &&
+      !connected &&
+      Boolean(supplierId) &&
+      debounced.length > 0,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
@@ -90,11 +172,53 @@ export function PurchaseOrderCreatePage() {
       ),
   });
 
-  if (!workspace) {
-    return <LoadingState label={t("session.loading")} />;
+  const readyProducts = useMemo(
+    () => linkedProductsQuery.data ?? [],
+    [linkedProductsQuery.data],
+  );
+  const filteredConnected = useMemo(
+    () => filterConnectedReadyProducts(readyProducts, debounced),
+    [readyProducts, debounced],
+  );
+
+  const qtyByProductId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const line of connectedLines) {
+      map.set(line.productId, line.orderedQty);
+    }
+    return map;
+  }, [connectedLines]);
+
+  useEffect(() => {
+    if (!connected || !linkedProductsQuery.isSuccess) {
+      return;
+    }
+    setConnectedLines((prev) => retainCompatibleDraftLines(prev, readyProducts));
+  }, [connected, linkedProductsQuery.isSuccess, readyProducts]);
+
+  function onSupplierChange(nextSupplierId: string) {
+    setSupplierId(nextSupplierId);
+    setSearch("");
+    setDebounced("");
+    setSelectedProduct(null);
+    setQtyText("1");
+    setCostText("");
+    setError(null);
+    setConnectedLines([]);
+    setExternalLines([]);
   }
 
-  function addLine() {
+  function setConnectedQty(product: ConnectedPoReadyProduct, nextQty: number) {
+    const current = qtyByProductId.get(product.buyerProductId) ?? 0;
+    const delta = nextQty - current;
+    if (delta === 0) {
+      return;
+    }
+    setConnectedLines((prev) => applyConnectedQuantityDelta(prev, product, delta));
+    setError(null);
+  }
+
+  function addExternalLine() {
     if (!selectedProduct) {
       setError(t("purchasing.selectProduct"));
       return;
@@ -105,7 +229,7 @@ export function PurchaseOrderCreatePage() {
       setError(t("purchasing.invalidLine"));
       return;
     }
-    setLines((prev) => {
+    setExternalLines((prev) => {
       const existing = prev.find((l) => l.productId === selectedProduct.productId);
       if (existing) {
         return prev.map((l) =>
@@ -132,6 +256,10 @@ export function PurchaseOrderCreatePage() {
     setError(null);
   }
 
+  const activeLines = connected ? connectedLines : externalLines;
+  const subtotal = orderSubtotal(activeLines);
+  const unitCount = orderUnitCount(activeLines);
+
   async function submit() {
     if (!workspace || !allowManage || !online || saving || statusLocked) {
       return;
@@ -140,7 +268,7 @@ export function PurchaseOrderCreatePage() {
       setError(t("purchasing.supplierRequired"));
       return;
     }
-    if (lines.length === 0) {
+    if (activeLines.length === 0) {
       setError(t("purchasing.linesRequired"));
       return;
     }
@@ -161,10 +289,12 @@ export function PurchaseOrderCreatePage() {
         supplierId,
         orderDate,
         notes: notes.trim() || null,
-        lines: lines.map((l) => ({
+        lines: activeLines.map((l) => ({
           productId: l.productId,
           orderedQty: l.orderedQty,
           unitPurchaseCost: l.unitPurchaseCost,
+          purchaseUnitId:
+            "purchaseUnitId" in l ? ((l as ConnectedPoDraftLine).purchaseUnitId ?? null) : null,
         })),
       });
       purchaseOrderIdRef.current = null;
@@ -200,6 +330,10 @@ export function PurchaseOrderCreatePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (!workspace) {
+    return <LoadingState label={t("session.loading")} />;
   }
 
   return (
@@ -241,16 +375,14 @@ export function PurchaseOrderCreatePage() {
         <select
           className="min-h-11 rounded-md border border-border bg-background px-3"
           value={supplierId}
-          onChange={(e) => setSupplierId(e.target.value)}
+          onChange={(e) => onSupplierChange(e.target.value)}
           disabled={!allowManage || !online}
           data-testid="po-supplier"
         >
           <option value="">{t("purchasing.selectSupplier")}</option>
           {(suppliersQuery.data?.items ?? []).map((s) => (
             <option key={s.supplierId} value={s.supplierId}>
-              {s.supplierBranchName
-                ? `${s.name} — ${s.supplierBranchName}`
-                : s.name}
+              {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
             </option>
           ))}
         </select>
@@ -278,114 +410,221 @@ export function PurchaseOrderCreatePage() {
         />
       </label>
 
-      <section className="flex flex-col gap-2" aria-labelledby="po-products-heading">
-        <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("purchasing.addProducts")}
-        </h2>
-        <SearchField
-          label={t("purchasing.productSearch")}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("purchasing.productSearch")}
-          data-testid="po-product-search"
-        />
-        {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
-          <EmptyState
-            title={t("purchasing.noProducts")}
-            detail={t("purchasing.noProductsDetail")}
-          />
-        ) : null}
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {(productsQuery.data?.items ?? []).map((p) => (
-            <li key={p.productId}>
-              <button
-                type="button"
-                className={`min-h-11 w-full rounded-md border px-3 text-left ${
-                  selectedProduct?.productId === p.productId
-                    ? "border-primary bg-muted"
-                    : "border-border bg-background"
-                }`}
-                onClick={() => setSelectedProduct(p)}
-                data-testid={`po-product-${p.productId}`}
-              >
-                {p.name}
-                {p.sku ? ` · ${p.sku}` : ""}
-                {p.barcode ? ` · ${p.barcode}` : ""}
-              </button>
-            </li>
-          ))}
-        </ul>
-        {selectedProduct ? (
-          <div className="grid gap-2 sm:grid-cols-3">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("purchasing.qty")}
-              <input
-                className="min-h-11 rounded-md border border-border bg-background px-3"
-                value={qtyText}
-                onChange={(e) => setQtyText(e.target.value)}
-                data-testid="po-line-qty"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("purchasing.unitCost")}
-              <input
-                className="min-h-11 rounded-md border border-border bg-background px-3"
-                value={costText}
-                onChange={(e) => setCostText(e.target.value)}
-                data-testid="po-line-cost"
-              />
-            </label>
-            <div className="flex items-end">
-              <Button
-                type="button"
-                className="min-h-11 w-full"
-                onClick={addLine}
-                data-testid="po-add-line"
-              >
-                {t("purchasing.addLine")}
-              </Button>
-            </div>
+      {supplierId && connected ? (
+        <section className="flex flex-col gap-3" aria-labelledby="po-products-heading">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
+              {t("purchasing.orderProducts")}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.connectedOrderingHelp")}
+            </p>
           </div>
-        ) : null}
-      </section>
-
-      <section aria-labelledby="po-lines-heading">
-        <h2
-          id="po-lines-heading"
-          className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
-        >
-          {t("purchasing.lines")}
-        </h2>
-        {lines.length === 0 ? (
-          <p className="m-0 text-muted">{t("purchasing.linesEmpty")}</p>
-        ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {lines.map((line) => (
-              <li
-                key={line.productId}
-                className="rounded-md border border-border p-3"
-                data-testid={`po-draft-line-${line.productId}`}
-              >
-                <div className="font-medium">{line.name}</div>
-                <div className="text-[length:var(--exits-text-sm)] text-muted">
-                  {line.orderedQty} {line.uom} · {line.unitPurchaseCost}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-2 min-h-11"
-                  onClick={() =>
-                    setLines((prev) => prev.filter((l) => l.productId !== line.productId))
-                  }
-                >
-                  {t("purchasing.removeLine")}
+          <SearchField
+            label={t("purchasing.productSearch")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("purchasing.productSearch")}
+            data-testid="po-product-search"
+          />
+          {linkedProductsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+          {linkedProductsQuery.isSuccess && readyProducts.length === 0 ? (
+            <EmptyState
+              title={t("purchasing.noReadyProducts")}
+              detail={t("purchasing.noReadyProductsHelp")}
+              action={
+                <Button asChild className="min-h-11" data-testid="po-open-shared-catalog">
+                  <Link to={`/suppliers/${supplierId}/connected-catalog`}>
+                    {t("purchasing.openSharedCatalog")}
+                  </Link>
                 </Button>
+              }
+            />
+          ) : null}
+          {linkedProductsQuery.isSuccess &&
+          readyProducts.length > 0 &&
+          filteredConnected.length === 0 &&
+          debounced ? (
+            <EmptyState
+              title={t("purchasing.noProducts")}
+              detail={t("purchasing.noProductsDetail")}
+            />
+          ) : null}
+          <ul className="m-0 grid list-none gap-2 p-0" data-testid="po-connected-product-list">
+            {filteredConnected.map((product) => {
+              const qty = qtyByProductId.get(product.buyerProductId) ?? 0;
+              return (
+                <li key={product.buyerProductId}>
+                  <Card
+                    as="article"
+                    className="grid gap-2 p-3"
+                    data-testid={`po-connected-product-${product.buyerProductId}`}
+                  >
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="m-0 font-semibold leading-snug">{product.productName}</p>
+                        <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                          {t("purchasing.supplierSku")}:{" "}
+                          {product.supplierSku ?? t("connected.noSku")}
+                          {product.packageLabel ? ` · ${product.packageLabel}` : ""}
+                        </p>
+                      </div>
+                      <p className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-semibold tabular-nums">
+                        {formatUnitPriceLabel(product.unitPurchaseCost, product.unitOfMeasure)}
+                      </p>
+                    </div>
+                    {qty <= 0 ? (
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          className="min-h-11"
+                          data-testid={`po-add-${product.buyerProductId}`}
+                          disabled={!allowManage || !online || saving}
+                          onClick={() => setConnectedQty(product, 1)}
+                        >
+                          {t("purchasing.addProduct")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] font-medium tabular-nums"
+                          data-testid={`po-line-math-${product.buyerProductId}`}
+                        >
+                          {formatLineMath(qty, product.unitPurchaseCost)}
+                        </p>
+                        <QuantityStepper
+                          compact
+                          value={qty}
+                          valueTestId={`po-qty-${product.buyerProductId}`}
+                          increaseLabel={t("purchasing.increaseQty")}
+                          decreaseLabel={t("purchasing.decreaseQty")}
+                          onIncrement={() => setConnectedQty(product, qty + 1)}
+                          onDecrement={() => setConnectedQty(product, qty - 1)}
+                        />
+                      </div>
+                    )}
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {supplierId && !connected ? (
+        <section className="flex flex-col gap-2" aria-labelledby="po-products-heading">
+          <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
+            {t("purchasing.addProducts")}
+          </h2>
+          <SearchField
+            label={t("purchasing.productSearch")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("purchasing.productSearch")}
+            data-testid="po-product-search"
+          />
+          {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
+            <EmptyState
+              title={t("purchasing.noProducts")}
+              detail={t("purchasing.noProductsDetail")}
+            />
+          ) : null}
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {(productsQuery.data?.items ?? []).map((p) => (
+              <li key={p.productId}>
+                <button
+                  type="button"
+                  className={`min-h-11 w-full rounded-md border px-3 text-left ${
+                    selectedProduct?.productId === p.productId
+                      ? "border-primary bg-muted"
+                      : "border-border bg-background"
+                  }`}
+                  onClick={() => setSelectedProduct(p)}
+                  data-testid={`po-product-${p.productId}`}
+                >
+                  {p.name}
+                  {p.sku ? ` · ${p.sku}` : ""}
+                  {p.barcode ? ` · ${p.barcode}` : ""}
+                </button>
               </li>
             ))}
           </ul>
-        )}
-      </section>
+          {selectedProduct ? (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                {t("purchasing.qty")}
+                <input
+                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  value={qtyText}
+                  onChange={(e) => setQtyText(e.target.value)}
+                  data-testid="po-line-qty"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                {t("purchasing.unitCost")}
+                <input
+                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  value={costText}
+                  onChange={(e) => setCostText(e.target.value)}
+                  data-testid="po-line-cost"
+                />
+              </label>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  className="min-h-11 w-full"
+                  onClick={addExternalLine}
+                  data-testid="po-add-line"
+                >
+                  {t("purchasing.addLine")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          <section aria-labelledby="po-lines-heading">
+            <h2
+              id="po-lines-heading"
+              className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
+            >
+              {t("purchasing.lines")}
+            </h2>
+            {externalLines.length === 0 ? (
+              <p className="m-0 text-muted">{t("purchasing.linesEmpty")}</p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {externalLines.map((line) => (
+                  <li
+                    key={line.productId}
+                    className="rounded-md border border-border p-3"
+                    data-testid={`po-draft-line-${line.productId}`}
+                  >
+                    <div className="font-medium">{line.name}</div>
+                    <div className="text-[length:var(--exits-text-sm)] text-muted">
+                      {line.orderedQty} {line.uom} · {formatPeso(line.unitPurchaseCost)}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-2 min-h-11"
+                      onClick={() =>
+                        setExternalLines((prev) =>
+                          prev.filter((l) => l.productId !== line.productId),
+                        )
+                      }
+                    >
+                      {t("purchasing.removeLine")}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </section>
+      ) : null}
 
       {error ? (
         <Card data-testid="po-create-error">
@@ -393,15 +632,38 @@ export function PurchaseOrderCreatePage() {
         </Card>
       ) : null}
 
-      <Button
-        type="button"
-        className="min-h-11"
-        disabled={!allowManage || !online || saving || statusLocked}
-        onClick={() => void submit()}
-        data-testid="po-create-submit"
-      >
-        {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
-      </Button>
+      {supplierId ? (
+        <Card className="grid gap-3 p-3" data-testid="po-order-summary">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.draftSummary")
+                .replace("{products}", String(activeLines.length))
+                .replace("{units}", String(unitCount))}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("purchasing.subtotal")} <MoneyDisplay amount={subtotal} testId="po-subtotal" />
+            </p>
+          </div>
+          <Button
+            type="button"
+            className="min-h-11 w-full"
+            disabled={!allowManage || !online || saving || statusLocked || activeLines.length === 0}
+            onClick={() => void submit()}
+            data-testid="po-create-submit"
+          >
+            {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
+          </Button>
+        </Card>
+      ) : (
+        <Button
+          type="button"
+          className="min-h-11"
+          disabled
+          data-testid="po-create-submit"
+        >
+          {t("purchasing.createOrder")}
+        </Button>
+      )}
     </div>
   );
 }
