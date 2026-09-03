@@ -233,7 +233,7 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(screen.queryByText(/bbbbbbbb/i)).not.toBeInTheDocument();
   });
 
-  it("AREA02-06 shows Organization → Area → Branch hierarchy with server-derived subtotals", async () => {
+  it("AREA02 detail shows organization, area, and branch levels", async () => {
     const panayId = "aaaa1111-1111-1111-1111-111111111111";
     vi.mocked(inventoryClient.getInventoryStockRollup).mockResolvedValue({
       productId,
@@ -305,7 +305,7 @@ describe("InventoryDetailPage expiration UX", () => {
     ).toHaveTextContent("Iloilo Branch");
   });
 
-  it("AREA02-07 reports not tracked without any rollup read", async () => {
+  it("AREA02 detail reports not tracked without a rollup read", async () => {
     vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
       baseAccount({ isTracked: false, onHandQuantity: 0, hasOpeningStock: false }) as never,
     );

@@ -43,7 +43,8 @@ vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
 });
 
 vi.mock("@/api/platform/organization-branches-client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/api/platform/organization-branches-client")>();
+  const actual =
+    await importOriginal<typeof import("@/api/platform/organization-branches-client")>();
   return {
     ...actual,
     listBranchManagementSummaries: vi.fn(),
@@ -158,7 +159,7 @@ describe("workspace chooser area grouping", () => {
     );
   });
 
-  it("AREA02-01 groups authorized branches under area headings", async () => {
+  it("AREA02 chooser groups authorized branches by area", async () => {
     renderWorkspaceChooser();
 
     await waitFor(() => {
@@ -175,7 +176,7 @@ describe("workspace chooser area grouping", () => {
     expect(within(visayas).getByTestId(`workspace-branch-${CEBU_ID}`)).toBeInTheDocument();
   });
 
-  it("AREA02-02 renders the unassigned group last and keeps areas unselectable", async () => {
+  it("AREA02 chooser puts unassigned last and keeps areas unselectable", async () => {
     renderWorkspaceChooser();
 
     await waitFor(() => {
@@ -195,7 +196,7 @@ describe("workspace chooser area grouping", () => {
     expect(within(groups).getAllByTestId("workspace-destination-start_selling")).toHaveLength(4);
   });
 
-  it("AREA02-03 hides the unassigned group when no area-less branch is authorized", async () => {
+  it("AREA02 chooser hides unassigned when no area-less branch is authorized", async () => {
     listOrganizationBranches.mockResolvedValue({
       ok: true,
       branches: areaBranches().filter((b) => b.id !== MANILA_ID),
@@ -209,7 +210,7 @@ describe("workspace chooser area grouping", () => {
     expect(screen.queryByText("Manila")).not.toBeInTheDocument();
   });
 
-  it("AREA02-04 keeps a flat list when the organization has no areas", async () => {
+  it("AREA02 chooser keeps a flat list when the organization has no areas", async () => {
     listOrganizationBranches.mockResolvedValue({
       ok: true,
       branches: [
@@ -226,7 +227,7 @@ describe("workspace chooser area grouping", () => {
     expect(screen.getByTestId(`workspace-branch-${ILOILO_ID}`)).toBeInTheDocument();
   });
 
-  it("AREA02-05 reads the branch list once for grouping", async () => {
+  it("AREA02 chooser reads the branch list once for grouping", async () => {
     renderWorkspaceChooser();
 
     await waitFor(() => {
