@@ -105,6 +105,12 @@ export function SupplierDetailPage() {
   const relationship = relationshipQuery.data;
   const relationshipActive = relationship ? isRelationshipActive(relationship) : false;
   const relationshipPending = relationship ? isRelationshipPending(relationship) : false;
+  const connectionChipLabel = relationshipPending
+    ? t("connected.requestPending")
+    : connected
+      ? t("suppliers.connectionConnected")
+      : t("suppliers.connectionManual");
+  const connectionChipTone = relationshipPending ? "warning" : connected ? "info" : "warning";
   const connectedBusinessLabel =
     relationship?.counterpartyPublicOrganizationId ??
     supplier.connectedBusinessPublicId ??
@@ -252,9 +258,7 @@ export function SupplierDetailPage() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
-        <StatusChip tone={connected ? "info" : "warning"}>
-          {connected ? t("suppliers.connectionConnected") : t("suppliers.connectionManual")}
-        </StatusChip>
+        <StatusChip tone={connectionChipTone}>{connectionChipLabel}</StatusChip>
       </div>
 
       {actionError ? (
