@@ -29,6 +29,7 @@ internal static class InventoryEndpoints
         group.MapPut("/{productId:guid}/reorder", SetReorder);
         group.MapGet("/{productId:guid}/reconciliation", GetReconciliation);
         group.MapGet("/{productId:guid}/organization-summary", GetOrganizationSummary);
+        group.MapGet("/{productId:guid}/stock-rollup", GetStockRollup);
         group.MapGet("/physical-audit", GetPhysicalAudit);
         group.MapPost("/{productId:guid}/enable", Enable);
         group.MapPost("/{productId:guid}/opening-stock", AddOpeningStock);
@@ -422,6 +423,23 @@ internal static class InventoryEndpoints
         HttpRequest request,
         Guid productId,
         OrganizationInventoryQuery query,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await query.GetProductAsync(organizationId, productId, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    /// <summary>Organization → Area → Branch stock read. Area subtotals are derived, never stored.</summary>
+    private static async Task<IResult> GetStockRollup(
+        HttpRequest request,
+        Guid productId,
+        InventoryStockRollupQuery query,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {

@@ -90,7 +90,10 @@ public sealed record OrganizationBranchDto(
     int PickupSectionsTotal = 2,
     int DeliverySectionsComplete = 0,
     int DeliverySectionsTotal = 5,
-    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null);
+    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
+    /// <summary>Grouping area the branch belongs to. Areas carry no operational authority.</summary>
+    Guid? AreaId = null,
+    string? AreaName = null);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,

@@ -2813,6 +2813,7 @@ export const en = {
   "inventory.organizationOnHand": "Organization on hand: {qty} {uom}",
   "inventory.organizationReserved": "Reserved: {qty}",
   "inventory.organizationAvailable": "Available: {qty}",
+  "inventory.areaBreakdown": "By area",
   "inventory.branchBreakdown": "By branch",
   "inventory.branchBreakdownMetrics": "{onHand} on hand · {reserved} reserved · {available} available",
   "inventory.branchNameUnknown": "Unknown branch",

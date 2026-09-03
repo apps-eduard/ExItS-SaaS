@@ -16,7 +16,7 @@ internal sealed class PosOrganizationBranchDirectory(
     HttpClient client,
     IHttpContextAccessor httpContextAccessor,
     IOptions<PlatformAuthOptions> options,
-    IHostEnvironment environment) : IOrganizationBranchDirectory
+    IHostEnvironment environment) : IOrganizationBranchDirectory, IAuthorizedBranchGroupingDirectory
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -128,9 +128,35 @@ internal sealed class PosOrganizationBranchDirectory(
             && string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Branch grouping for hierarchical reads. Platform List Branches already filters by caller
+    /// branch access, so an inaccessible branch never reaches an area subtotal.
+    /// </summary>
+    public async Task<IReadOnlyList<AuthorizedBranchGrouping>> ListAuthorizedAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var branches = await FetchBranchesAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        return branches
+            .Select(b => new AuthorizedBranchGrouping(
+                b.Id,
+                string.IsNullOrWhiteSpace(b.Name) ? b.Code : b.Name,
+                b.AreaId,
+                b.AreaName))
+            .ToList();
+    }
+
     private async Task<OrganizationBranchDto?> GetBranchAsync(
         Guid organizationId,
         Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        var branches = await FetchBranchesAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        return branches.FirstOrDefault(b => b.Id == branchId);
+    }
+
+    private async Task<IReadOnlyList<OrganizationBranchDto>> FetchBranchesAsync(
+        Guid organizationId,
         CancellationToken cancellationToken)
     {
         if (client.BaseAddress is null)
@@ -138,7 +164,7 @@ internal sealed class PosOrganizationBranchDirectory(
             var baseUrl = options.Value.BaseUrl;
             if (string.IsNullOrWhiteSpace(baseUrl))
             {
-                return null;
+                return [];
             }
 
             client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
@@ -154,26 +180,25 @@ internal sealed class PosOrganizationBranchDirectory(
             using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return [];
             }
 
-            var branches = await response.Content
+            return await response.Content
                 .ReadFromJsonAsync<IReadOnlyList<OrganizationBranchDto>>(JsonOptions, cancellationToken)
                 .ConfigureAwait(false)
                 ?? [];
-            return branches.FirstOrDefault(b => b.Id == branchId);
         }
         catch (HttpRequestException)
         {
-            return null;
+            return [];
         }
         catch (JsonException)
         {
-            return null;
+            return [];
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return null;
+            return [];
         }
     }
 

@@ -7,6 +7,9 @@ export type AccessibleWorkspaceBranch = {
   secondaryLine: string;
   isPrimary: boolean;
   isActive: boolean;
+  /** Grouping area. Areas are never selectable as a workspace — only a branch is. */
+  areaId?: string | null;
+  areaName?: string | null;
 };
 
 export type AccessibleOrganizationWorkspace = {

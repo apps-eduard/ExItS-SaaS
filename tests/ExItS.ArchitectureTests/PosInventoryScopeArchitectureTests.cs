@@ -96,6 +96,56 @@ public sealed class PosInventoryScopeArchitectureTests
         }
     }
 
+    /// <summary>
+    /// AREA02-17: areas group, navigate and report only. Stock authority stays on branch balances and
+    /// the organization inventory account, so no persisted area-stock type or table may appear.
+    /// </summary>
+    [Fact]
+    public void Areas_hold_no_inventory_write_authority()
+    {
+        foreach (var concept in new[]
+                 {
+                     "AreaInventoryBalance", "InventoryAreaBalance", "AreaStockBalance",
+                     "AreaInventoryAccount", "AreaStockLevel"
+                 })
+        {
+            foreach (var file in InventorySourceFiles())
+            {
+                Assert.DoesNotContain(concept, File.ReadAllText(file), StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        var domain = Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Domain"), "Inventory");
+        foreach (var file in Directory.EnumerateFiles(domain, "*.cs", SearchOption.AllDirectories))
+        {
+            Assert.DoesNotContain("Area", File.ReadAllText(file), StringComparison.Ordinal);
+        }
+
+        var context = File.ReadAllText(Path.Combine(
+            PosProject("ExItS.PinoyBusinessPOS.Infrastructure"), "Persistence", "PosDbContext.cs"));
+        foreach (var table in new[] { "area_inventory", "inventory_area", "area_stock", "area_balances" })
+        {
+            Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// AREA02-17: the hierarchical rollup is a read projection. Area subtotals are summed per request
+    /// and never written back through a repository.
+    /// </summary>
+    [Fact]
+    public void Area_stock_rollup_stays_a_read_projection()
+    {
+        var rollup = File.ReadAllText(Path.Combine(
+            PosProject("ExItS.PinoyBusinessPOS.Application"), "Inventory", "InventoryStockRollupQuery.cs"));
+
+        Assert.Contains("ListByProductIdsAsync", rollup, StringComparison.Ordinal);
+        Assert.DoesNotContain("UpsertAsync", rollup, StringComparison.Ordinal);
+        Assert.DoesNotContain("SaveChanges", rollup, StringComparison.Ordinal);
+        Assert.DoesNotContain("AddAsync", rollup, StringComparison.Ordinal);
+        Assert.DoesNotContain("UpdateAsync", rollup, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Sale_checkout_may_collaborate_with_sale_stock_service()
     {

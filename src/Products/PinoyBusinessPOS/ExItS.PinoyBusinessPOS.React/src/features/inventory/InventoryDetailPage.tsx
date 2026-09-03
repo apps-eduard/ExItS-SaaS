@@ -10,10 +10,11 @@ import {
   disableInventoryTracking,
   enableInventoryTracking,
   getInventoryProduct,
-  getOrganizationInventorySummary,
+  getInventoryStockRollup,
   getStockMovement,
   listInventoryMovements,
   listProductLots,
+  type PosInventoryAreaRollupDto,
   type PosInventoryLotDto,
 } from "@/api/pos/pos-inventory-client";
 import { getCatalogProduct } from "@/api/pos/pos-catalog-client";
@@ -101,6 +102,7 @@ export function InventoryDetailPage() {
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
   const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
+  const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
 
@@ -134,13 +136,32 @@ export function InventoryDetailPage() {
     queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
 
-  const orgSummaryQuery = useQuery({
-    queryKey: ["inventory", "organization-summary", workspace?.organizationId, productId],
+  const rollupQuery = useQuery({
+    queryKey: ["inventory", "stock-rollup", workspace?.organizationId, productId],
     enabled: Boolean(workspace) && Boolean(productId) && accountQuery.data?.isTracked === true,
-    queryFn: ({ signal }) => getOrganizationInventorySummary(workspace!, productId!, signal),
+    queryFn: ({ signal }) => getInventoryStockRollup(workspace!, productId!, signal),
   });
 
+  const rollup = rollupQuery.data;
   const tracksExpiration = accountQuery.data?.tracksExpiration === true;
+
+  /** Areas start compact; the area holding the working branch opens first. */
+  function isAreaExpanded(area: PosInventoryAreaRollupDto): boolean {
+    const key = area.areaId ?? "unassigned";
+    const override = areaOverrides[key];
+    if (override !== undefined) {
+      return override;
+    }
+    const currentBranchId = boundWorkspace?.branchId?.toLowerCase() ?? null;
+    return (
+      currentBranchId !== null &&
+      area.branches.some((row) => row.branchId.toLowerCase() === currentBranchId)
+    );
+  }
+
+  function toggleArea(key: string, expanded: boolean) {
+    setAreaOverrides((prev) => ({ ...prev, [key]: !expanded }));
+  }
 
   const branchLabel = boundWorkspace?.branchName ?? t("transfer.currentBranch");
 
@@ -541,7 +562,7 @@ export function InventoryDetailPage() {
                 className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-3"
                 data-testid="inventory-status-details"
               >
-                {orgSummaryQuery.data ? (
+                {rollup?.isTracked ? (
                   <div
                     className="flex flex-col gap-2"
                     data-testid="inventory-organization-summary"
@@ -551,58 +572,123 @@ export function InventoryDetailPage() {
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-on-hand">
                       {t("inventory.organizationOnHand")
-                        .replace("{qty}", String(orgSummaryQuery.data.organizationOnHandQuantity))
+                        .replace("{qty}", String(rollup.organizationOnHandQuantity))
                         .replace("{uom}", account.unitOfMeasure)}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-reserved">
                       {t("inventory.organizationReserved").replace(
                         "{qty}",
-                        String(orgSummaryQuery.data.organizationReservedQuantity),
+                        String(rollup.organizationReservedQuantity),
                       )}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="inventory-org-available">
                       {t("inventory.organizationAvailable").replace(
                         "{qty}",
-                        String(orgSummaryQuery.data.organizationAvailableQuantity),
+                        String(rollup.organizationAvailableQuantity),
                       )}
                     </p>
-                    {orgSummaryQuery.data.branches.length > 0 ? (
+                    {rollup.areas.length > 0 ? (
                       <div className="flex flex-col gap-2" data-testid="inventory-branch-breakdown">
                         <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                          {t("inventory.branchBreakdown")}
+                          {rollup.hasAreas
+                            ? t("inventory.areaBreakdown")
+                            : t("inventory.branchBreakdown")}
                         </p>
                         <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                          {orgSummaryQuery.data.branches.map((row) => {
-                            const name = resolveInventoryBranchDisplayName({
-                              branchId: row.branchId,
-                              branchNameById,
-                              currentBranchId: workspace?.branchId,
-                              currentBranchName: boundWorkspace?.branchName,
-                              unknownLabel: t("inventory.branchNameUnknown"),
-                            });
-                            const isCurrent =
-                              Boolean(workspace?.branchId) &&
-                              row.branchId.toLowerCase() === workspace!.branchId.toLowerCase();
+                          {rollup.areas.map((area) => {
+                            const key = area.areaId ?? "unassigned";
+                            const expanded = isAreaExpanded(area);
+                            const branchRows = (
+                              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                                {area.branches.map((row) => {
+                                  const name = resolveInventoryBranchDisplayName({
+                                    branchId: row.branchId,
+                                    branchNameById,
+                                    currentBranchId: workspace?.branchId,
+                                    currentBranchName: boundWorkspace?.branchName,
+                                    unknownLabel:
+                                      row.branchName || t("inventory.branchNameUnknown"),
+                                  });
+                                  const isCurrent =
+                                    Boolean(workspace?.branchId) &&
+                                    row.branchId.toLowerCase() ===
+                                      workspace!.branchId.toLowerCase();
+                                  return (
+                                    <li
+                                      key={row.branchId}
+                                      className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2.5"
+                                      data-testid={`inventory-branch-row-${row.branchId}`}
+                                    >
+                                      <p className="m-0 font-medium leading-snug text-foreground">
+                                        {name}
+                                        {isCurrent ? (
+                                          <span className="ml-1.5 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                                            ({t("inventory.thisBranch")})
+                                          </span>
+                                        ) : null}
+                                      </p>
+                                      <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                                        {t("inventory.branchBreakdownMetrics")
+                                          .replace("{onHand}", String(row.onHandQuantity))
+                                          .replace("{reserved}", String(row.reservedQuantity))
+                                          .replace("{available}", String(row.availableQuantity))}
+                                      </p>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            );
+
+                            if (!rollup.hasAreas) {
+                              return (
+                                <li key={key} className="m-0">
+                                  {branchRows}
+                                </li>
+                              );
+                            }
+
                             return (
                               <li
-                                key={row.branchId}
-                                className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2.5"
-                                data-testid={`inventory-branch-row-${row.branchId}`}
+                                key={key}
+                                className="overflow-hidden rounded-[var(--exits-radius-md)] border border-border"
+                                data-testid={`inventory-area-row-${key}`}
                               >
-                                <p className="m-0 font-medium leading-snug text-foreground">
-                                  {name}
-                                  {isCurrent ? (
-                                    <span className="ml-1.5 text-[length:var(--exits-text-xs)] font-normal text-muted">
-                                      ({t("inventory.thisBranch")})
+                                <button
+                                  type="button"
+                                  className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                                  aria-expanded={expanded}
+                                  onClick={() => toggleArea(key, expanded)}
+                                  data-testid={`inventory-area-toggle-${key}`}
+                                >
+                                  <span className="min-w-0">
+                                    <span className="block truncate font-medium text-foreground">
+                                      {area.isUnassigned
+                                        ? t("areas.unassigned")
+                                        : (area.areaName ?? t("areas.singular"))}
                                     </span>
-                                  ) : null}
-                                </p>
-                                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                                  {t("inventory.branchBreakdownMetrics")
-                                    .replace("{onHand}", String(row.onHandQuantity))
-                                    .replace("{reserved}", String(row.reservedQuantity))
-                                    .replace("{available}", String(row.availableQuantity))}
-                                </p>
+                                    <span
+                                      className="block text-[length:var(--exits-text-sm)] text-muted"
+                                      data-testid={`inventory-area-metrics-${key}`}
+                                    >
+                                      {t("inventory.branchBreakdownMetrics")
+                                        .replace("{onHand}", String(area.onHandQuantity))
+                                        .replace("{reserved}", String(area.reservedQuantity))
+                                        .replace("{available}", String(area.availableQuantity))}
+                                    </span>
+                                  </span>
+                                  <ChevronDown
+                                    aria-hidden
+                                    className={cn(
+                                      "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                                      expanded && "rotate-180",
+                                    )}
+                                  />
+                                </button>
+                                {expanded ? (
+                                  <div className="border-t border-border px-3 py-2.5">
+                                    {branchRows}
+                                  </div>
+                                ) : null}
                               </li>
                             );
                           })}

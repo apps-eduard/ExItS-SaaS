@@ -39,7 +39,7 @@ internal class CostResolverInventoryStub : IInventoryRepository
         return result;
     }
 
-    public Task<InventoryAccount?> GetByProductIdAsync(
+    public virtual Task<InventoryAccount?> GetByProductIdAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
         CancellationToken cancellationToken = default) =>

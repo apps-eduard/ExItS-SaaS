@@ -134,25 +134,39 @@ async function expandStatusDetails() {
 describe("InventoryDetailPage expiration UX", () => {
   beforeEach(() => {
     vi.spyOn(inventoryClient, "getInventoryProduct").mockResolvedValue(baseAccount() as never);
-    vi.spyOn(inventoryClient, "getOrganizationInventorySummary").mockResolvedValue({
+    vi.spyOn(inventoryClient, "getInventoryStockRollup").mockResolvedValue({
       productId,
       productName: "Milk 1L",
       unitOfMeasure: "Piece",
+      isTracked: true,
       organizationOnHandQuantity: 85,
       organizationReservedQuantity: 4,
       organizationAvailableQuantity: 81,
-      branches: [
+      hasAreas: false,
+      areas: [
         {
-          branchId: workspace.branchId,
-          onHandQuantity: 40,
+          areaId: null,
+          areaName: null,
+          isUnassigned: true,
+          onHandQuantity: 85,
           reservedQuantity: 4,
-          availableQuantity: 36,
-        },
-        {
-          branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-          onHandQuantity: 45,
-          reservedQuantity: 0,
-          availableQuantity: 45,
+          availableQuantity: 81,
+          branches: [
+            {
+              branchId: workspace.branchId,
+              branchName: "Kalibo Branch",
+              onHandQuantity: 40,
+              reservedQuantity: 4,
+              availableQuantity: 36,
+            },
+            {
+              branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              branchName: "Iloilo Branch",
+              onHandQuantity: 45,
+              reservedQuantity: 0,
+              availableQuantity: 45,
+            },
+          ],
         },
       ],
     });
@@ -217,6 +231,92 @@ describe("InventoryDetailPage expiration UX", () => {
       screen.getByTestId("inventory-branch-row-cccccccc-cccc-cccc-cccc-cccccccccccc"),
     ).toHaveTextContent("Iloilo Branch");
     expect(screen.queryByText(/bbbbbbbb/i)).not.toBeInTheDocument();
+  });
+
+  it("AREA02-06 shows Organization → Area → Branch hierarchy with server-derived subtotals", async () => {
+    const panayId = "aaaa1111-1111-1111-1111-111111111111";
+    vi.mocked(inventoryClient.getInventoryStockRollup).mockResolvedValue({
+      productId,
+      productName: "Milk 1L",
+      unitOfMeasure: "Piece",
+      isTracked: true,
+      organizationOnHandQuantity: 120,
+      organizationReservedQuantity: 4,
+      organizationAvailableQuantity: 116,
+      hasAreas: true,
+      areas: [
+        {
+          areaId: panayId,
+          areaName: "PANAY",
+          isUnassigned: false,
+          onHandQuantity: 40,
+          reservedQuantity: 4,
+          availableQuantity: 36,
+          branches: [
+            {
+              branchId: workspace.branchId,
+              branchName: "Kalibo Branch",
+              onHandQuantity: 40,
+              reservedQuantity: 4,
+              availableQuantity: 36,
+            },
+          ],
+        },
+        {
+          areaId: null,
+          areaName: null,
+          isUnassigned: true,
+          onHandQuantity: 45,
+          reservedQuantity: 0,
+          availableQuantity: 45,
+          branches: [
+            {
+              branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              branchName: "Iloilo Branch",
+              onHandQuantity: 45,
+              reservedQuantity: 0,
+              availableQuantity: 45,
+            },
+          ],
+        },
+      ],
+    });
+
+    renderPage();
+    await expandStatusDetails();
+    await screen.findByTestId("inventory-organization-summary");
+
+    // Organization stays the account authority: it is not the sum of the two areas.
+    expect(screen.getByTestId("inventory-org-on-hand")).toHaveTextContent("120");
+    expect(screen.getByTestId(`inventory-area-metrics-${panayId}`)).toHaveTextContent("40");
+    expect(screen.getByTestId("inventory-area-metrics-unassigned")).toHaveTextContent("45");
+
+    // The working branch's area opens first; other areas stay compact until expanded.
+    expect(screen.getByTestId(`inventory-branch-row-${workspace.branchId}`)).toHaveTextContent(
+      "Kalibo Branch",
+    );
+    expect(
+      screen.queryByTestId("inventory-branch-row-cccccccc-cccc-cccc-cccc-cccccccccccc"),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("inventory-area-toggle-unassigned"));
+    expect(
+      screen.getByTestId("inventory-branch-row-cccccccc-cccc-cccc-cccc-cccccccccccc"),
+    ).toHaveTextContent("Iloilo Branch");
+  });
+
+  it("AREA02-07 reports not tracked without any rollup read", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({ isTracked: false, onHandQuantity: 0, hasOpeningStock: false }) as never,
+    );
+
+    renderPage();
+    await screen.findByTestId("inventory-detail-page");
+
+    await waitFor(() => {
+      expect(inventoryClient.getInventoryStockRollup).not.toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId("inventory-organization-summary")).not.toBeInTheDocument();
   });
 
   it("shows expiry-required increase form and summary when tracking is on", async () => {

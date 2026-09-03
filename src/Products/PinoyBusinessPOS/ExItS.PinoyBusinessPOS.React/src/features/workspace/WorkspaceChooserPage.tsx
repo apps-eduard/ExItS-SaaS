@@ -30,13 +30,20 @@ import { cn } from "@/lib/cn";
 import { normalizePosError } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import {
+  groupWorkspaceBranchesByArea,
+  resolveWorkspaceBranchGroupingMode,
+} from "@/features/workspace/workspace-area-grouping";
 import { useWorkspace, type WorkspaceGrantProbeFailure } from "@/workspace/WorkspaceProvider";
 import { workspaceBindFailureTitleKey } from "@/workspace/workspace-bind-error";
 import {
   buildOrganizationDestinations,
   type WorkspaceDestination,
 } from "@/workspace/workspace-destinations";
-import type { AccessibleOrganizationWorkspace } from "@/workspace/types";
+import type {
+  AccessibleOrganizationWorkspace,
+  AccessibleWorkspaceBranch,
+} from "@/workspace/types";
 import type { WorkingExperience } from "@/workspace/working-experience";
 
 function destinationIcon(experience: WorkingExperience): LucideIcon {
@@ -489,6 +496,57 @@ function OrganizationWorkspaceCard({
     branchCount === 0
       ? t("workspace.branches")
       : t("workspace.branchesWithCount").replace("{count}", String(branchCount));
+  const groupingMode = useMemo(
+    () => resolveWorkspaceBranchGroupingMode(organization.branches),
+    [organization.branches],
+  );
+  const areaGroups = useMemo(
+    () =>
+      groupingMode === "grouped" ? groupWorkspaceBranchesByArea(organization.branches) : [],
+    [groupingMode, organization.branches],
+  );
+
+  function renderBranchTile(branch: AccessibleWorkspaceBranch) {
+    const branchDestinations = destinations.filter((d) => d.branchId === branch.branchId);
+    const meta = branchCardMetaLine({
+      grant,
+      staffCount: staffCountByBranch?.get(branch.branchId),
+      t,
+    });
+    return (
+      <li
+        key={branch.branchId}
+        className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
+        data-testid={`workspace-branch-${branch.branchId}`}
+      >
+        <p className="m-0 truncate font-semibold">{branch.name}</p>
+        <p
+          className="m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted"
+          data-testid={`workspace-branch-meta-${branch.branchId}`}
+        >
+          {meta}
+        </p>
+        {branchDestinations.length > 0 ? (
+          <div
+            className={cn(
+              "mt-3 grid gap-2",
+              branchDestinations.length === 1 ? "grid-cols-1" : "grid-cols-2",
+            )}
+          >
+            {branchDestinations.map((destination) => (
+              <DestinationTile
+                key={`${destination.experience}:${destination.branchId}`}
+                destination={destination}
+                bindingKey={bindingKey}
+                onSelect={onSelectDestination}
+                t={t}
+              />
+            ))}
+          </div>
+        ) : null}
+      </li>
+    );
+  }
 
   const headerContent = (
     <span className="min-w-0">
@@ -548,51 +606,41 @@ function OrganizationWorkspaceCard({
                 >
                   {branchesHeading}
                 </h3>
-                <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
-                  {organization.branches.map((branch) => {
-                    const branchDestinations = destinations.filter(
-                      (d) => d.branchId === branch.branchId,
-                    );
-                    const meta = branchCardMetaLine({
-                      grant,
-                      staffCount: staffCountByBranch?.get(branch.branchId),
-                      t,
-                    });
-                    return (
-                      <li
-                        key={branch.branchId}
-                        className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
-                        data-testid={`workspace-branch-${branch.branchId}`}
+                {groupingMode === "grouped" ? (
+                  <div className="flex flex-col gap-4" data-testid="workspace-area-groups">
+                    {areaGroups.map((group) => (
+                      <section
+                        key={group.key}
+                        aria-labelledby={`area-${organization.organizationId}-${group.key}`}
+                        data-testid={`workspace-area-group-${group.key}`}
                       >
-                        <p className="m-0 truncate font-semibold">{branch.name}</p>
-                        <p
-                          className="m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted"
-                          data-testid={`workspace-branch-meta-${branch.branchId}`}
-                        >
-                          {meta}
-                        </p>
-                        {branchDestinations.length > 0 ? (
-                          <div
-                            className={cn(
-                              "mt-3 grid gap-2",
-                              branchDestinations.length === 1 ? "grid-cols-1" : "grid-cols-2",
-                            )}
+                        <div className="mb-2 flex min-w-0 flex-wrap items-baseline gap-x-2">
+                          <h4
+                            id={`area-${organization.organizationId}-${group.key}`}
+                            className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
                           >
-                            {branchDestinations.map((destination) => (
-                              <DestinationTile
-                                key={`${destination.experience}:${destination.branchId}`}
-                                destination={destination}
-                                bindingKey={bindingKey}
-                                onSelect={onSelectDestination}
-                                t={t}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+                            {group.isUnassigned
+                              ? t("areas.unassigned")
+                              : (group.areaName ?? t("areas.singular"))}
+                          </h4>
+                          <span className="text-[length:var(--exits-text-xs)] text-muted">
+                            {t("areas.branchCount").replace(
+                              "{count}",
+                              String(group.branches.length),
+                            )}
+                          </span>
+                        </div>
+                        <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
+                          {group.branches.map(renderBranchTile)}
+                        </ul>
+                      </section>
+                    ))}
+                  </div>
+                ) : (
+                  <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
+                    {organization.branches.map(renderBranchTile)}
+                  </ul>
+                )}
               </section>
             ) : manageBusiness ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">

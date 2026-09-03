@@ -38,6 +38,8 @@ export function mapActiveBranches(branches: PlatformBranch[]): AccessibleWorkspa
       secondaryLine: resolveBranchSecondaryLine(branch),
       isPrimary: branch.isPrimary,
       isActive: true,
+      areaId: branch.areaId ?? null,
+      areaName: branch.areaName ?? null,
     }));
 }
 

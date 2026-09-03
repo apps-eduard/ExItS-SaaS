@@ -76,7 +76,8 @@ public sealed record OrganizationBranchDto(
     int DeliverySectionsComplete = 0,
     int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
     IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
-    Guid? AreaId = null);
+    Guid? AreaId = null,
+    string? AreaName = null);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -210,6 +211,7 @@ public sealed class ListBranches(
     EntitlementQueryService entitlements,
     IBranchFulfillmentReadinessEvaluator readinessEvaluator,
     IOrganizationBranchAccessService branchAccess,
+    IOrganizationAreaRepository organizationAreas,
     IClock clock)
 {
     public async Task<IReadOnlyList<OrganizationBranchDto>> ExecuteAsync(
@@ -281,6 +283,11 @@ public sealed class ListBranches(
                     .ToList());
         var org = await organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
         var caps = await ResolveCapabilitiesAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        // Area names come from one organization-wide read so grouped clients never fetch per branch.
+        var areaNames = (await organizationAreas
+                .ListByOrganizationAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false))
+            .ToDictionary(a => a.Id.Value, a => a.Name);
         var utcNow = clock.UtcNow;
         var result = new List<OrganizationBranchDto>(list.Count);
         foreach (var branch in list)
@@ -308,7 +315,10 @@ public sealed class ListBranches(
                 utcNow,
                 hasActiveVerifiedArea));
             activeAreasByBranch.TryGetValue(branch.Id.Value, out var branchAreas);
-            result.Add(BranchMapper.ToDto(branch, policy, readiness, caps, branchAreas));
+            var areaName = branch.AreaId is { } assignedAreaId
+                ? areaNames.GetValueOrDefault(assignedAreaId.Value)
+                : null;
+            result.Add(BranchMapper.ToDto(branch, policy, readiness, caps, branchAreas, areaName));
         }
 
         return result;
@@ -682,8 +692,7 @@ public sealed class ListBranchManagementSummaries(
     ListBranches listBranches,
     IOrganizationMembershipBranchAssignmentRepository assignments,
     IPosDeviceRepository devices,
-    IOrganizationMembershipRepository memberships,
-    IOrganizationAreaRepository areas)
+    IOrganizationMembershipRepository memberships)
 {
     public async Task<ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>> ExecuteAsync(
         PlatformOrganizationId organizationId,
@@ -712,9 +721,6 @@ public sealed class ListBranchManagementSummaries(
             .GroupBy(d => d.BranchId.Value)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var areaNames = (await areas.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false))
-            .ToDictionary(a => a.Id.Value, a => a.Name);
-
         var items = branches
             .OrderByDescending(b => b.IsPrimary)
             .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
@@ -738,7 +744,7 @@ public sealed class ListBranchManagementSummaries(
                 b.DeliverySectionsComplete,
                 b.DeliverySectionsTotal,
                 b.AreaId,
-                b.AreaId is Guid areaId ? areaNames.GetValueOrDefault(areaId) : null))
+                b.AreaName))
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
@@ -945,7 +951,8 @@ internal static class BranchMapper
         BranchDeliveryPolicy? policy = null,
         BranchFulfillmentReadinessResult? readiness = null,
         BranchEntitlementCapabilities? entitlements = null,
-        IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? activeDeliveryServiceAreas = null) =>
+        IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? activeDeliveryServiceAreas = null,
+        string? areaName = null) =>
         new(
             x.Id.Value,
             x.OrganizationId.Value,
@@ -996,7 +1003,8 @@ internal static class BranchMapper
             readiness?.SetupSummary.DeliverySectionsComplete ?? 0,
             readiness?.SetupSummary.DeliverySectionsTotal ?? BranchFulfillmentSetupSummary.DeliverySectionCount,
             activeDeliveryServiceAreas,
-            x.AreaId?.Value);
+            x.AreaId?.Value,
+            areaName);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

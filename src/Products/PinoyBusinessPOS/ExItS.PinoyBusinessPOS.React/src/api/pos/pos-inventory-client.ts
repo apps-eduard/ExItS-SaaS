@@ -110,6 +110,37 @@ export type PosOrganizationInventoryProductDto = {
   branches: PosInventoryBranchBreakdownDto[];
 };
 
+export type PosInventoryBranchRollupDto = {
+  branchId: string;
+  branchName: string;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+};
+
+/** Derived area subtotal. The server owns the math; no area holds stock authority. */
+export type PosInventoryAreaRollupDto = {
+  areaId: string | null;
+  areaName: string | null;
+  isUnassigned: boolean;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  branches: PosInventoryBranchRollupDto[];
+};
+
+export type PosInventoryStockRollupDto = {
+  productId: string;
+  productName: string;
+  unitOfMeasure: string;
+  isTracked: boolean;
+  organizationOnHandQuantity: number;
+  organizationReservedQuantity: number;
+  organizationAvailableQuantity: number;
+  hasAreas: boolean;
+  areas: PosInventoryAreaRollupDto[];
+};
+
 export type PosExpiringLotPagedResult = {
   items: PosExpiringLotDto[];
   totalCount: number;
@@ -204,6 +235,20 @@ export function getOrganizationInventorySummary(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}/organization-summary`,
+  });
+}
+
+/** One hierarchical read: Organization → Area → Branch, filtered to authorized branches. */
+export function getInventoryStockRollup(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosInventoryStockRollupDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/stock-rollup`,
   });
 }
 

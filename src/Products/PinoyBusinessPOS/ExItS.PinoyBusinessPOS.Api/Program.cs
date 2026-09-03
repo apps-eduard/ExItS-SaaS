@@ -340,6 +340,7 @@ builder.Services.AddScoped<CreateProductionRun>();
 builder.Services.AddScoped<VoidProductionRun>();
 builder.Services.AddScoped<InventoryReconciliationQuery>();
 builder.Services.AddScoped<OrganizationInventoryQuery>();
+builder.Services.AddScoped<InventoryStockRollupQuery>();
 builder.Services.AddScoped<StockCountQueryService>();
 builder.Services.AddScoped<CreateStockCount>();
 builder.Services.AddScoped<UpdateStockCountDraft>();
@@ -353,6 +354,16 @@ builder.Services.AddScoped<DispatchInventoryTransfer>();
 builder.Services.AddScoped<ReceiveInventoryTransfer>();
 builder.Services.AddScoped<CancelInventoryTransfer>();
 builder.Services.AddHttpClient<IOrganizationBranchDirectory, PosOrganizationBranchDirectory>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
+builder.Services.AddHttpClient<IAuthorizedBranchGroupingDirectory, PosOrganizationBranchDirectory>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(options.BaseUrl))

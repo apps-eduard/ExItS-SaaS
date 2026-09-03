@@ -70,6 +70,8 @@ export type PlatformBranch = {
   isPrimary: boolean;
   status: string;
   customerOrderingReady?: boolean;
+  areaId?: string | null;
+  areaName?: string | null;
 };
 
 /** ListBranches returns `id`; some harnesses still read legacy `branchId`. */

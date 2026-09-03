@@ -11,14 +11,19 @@ internal sealed class InMemoryOrganizationAreaRepository : IOrganizationAreaRepo
 
     public IReadOnlyList<OrganizationArea> Items => _items;
 
+    public int ListByOrganizationCallCount { get; private set; }
+
     public Task<OrganizationArea?> GetByIdAsync(OrganizationAreaId id, CancellationToken cancellationToken = default) =>
         Task.FromResult(_items.FirstOrDefault(x => x.Id == id));
 
     public Task<IReadOnlyList<OrganizationArea>> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<OrganizationArea>>(
+        CancellationToken cancellationToken = default)
+    {
+        ListByOrganizationCallCount++;
+        return Task.FromResult<IReadOnlyList<OrganizationArea>>(
             _items.Where(x => x.OrganizationId == organizationId).ToList());
+    }
 
     public Task<int> CountActiveAsync(PlatformOrganizationId organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_items.Count(x => x.OrganizationId == organizationId && x.Status == OrganizationAreaStatus.Active));

@@ -37,6 +37,7 @@ public sealed class BranchListBulkPolicyTests
             new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
             new AllowAllBranchAccess(),
+            new InMemoryOrganizationAreaRepository(),
             new FixedClock(T0));
 
         var result = await useCase.ExecuteAsync(Org, PlatformUserId.New());
@@ -48,6 +49,97 @@ public sealed class BranchListBulkPolicyTests
         Assert.Equal(0, hours.GetByBranchIdCallCount);
         Assert.Equal(1, areas.CountActiveByBranchIdsCallCount);
         Assert.All(result, dto => Assert.NotNull(dto.DeliveryPolicy));
+    }
+
+    /// <summary>
+    /// AREA02-15: the workspace chooser groups by area, so the branch list carries AreaId/AreaName from
+    /// one area read instead of a per-branch lookup.
+    /// </summary>
+    [Fact]
+    public async Task ListBranches_exposes_area_identity_from_a_single_area_read()
+    {
+        var panay = OrganizationArea.Create(Org, "PANAY", T0);
+        var visayas = OrganizationArea.Create(Org, "VISAYAS", T0);
+        var main = OrganizationBranch.Create(Org, "BR-MAIN", "Main", T0);
+        var cebu = OrganizationBranch.Create(Org, "BR-CEB", "Cebu", T0.AddMinutes(1));
+        var manila = OrganizationBranch.Create(Org, "BR-MNL", "Manila", T0.AddMinutes(2));
+        main.AssignArea(panay.Id, T0);
+        cebu.AssignArea(visayas.Id, T0);
+
+        var areaRepository = new InMemoryOrganizationAreaRepository(panay, visayas);
+        var result = await BuildUseCase([main, cebu, manila], areaRepository)
+            .ExecuteAsync(Org, PlatformUserId.New());
+
+        Assert.Equal(1, areaRepository.ListByOrganizationCallCount);
+        var mainDto = result.Single(dto => dto.Id == main.Id.Value);
+        Assert.Equal(panay.Id.Value, mainDto.AreaId);
+        Assert.Equal("PANAY", mainDto.AreaName);
+        Assert.Equal("VISAYAS", result.Single(dto => dto.Id == cebu.Id.Value).AreaName);
+        var manilaDto = result.Single(dto => dto.Id == manila.Id.Value);
+        Assert.Null(manilaDto.AreaId);
+        Assert.Null(manilaDto.AreaName);
+    }
+
+    /// <summary>
+    /// AREA02-16: branch access resolution stays the single filter. An area never widens what the
+    /// chooser can see, so an inaccessible branch is absent along with its area label.
+    /// </summary>
+    [Fact]
+    public async Task ListBranches_omits_branches_outside_resolved_branch_access()
+    {
+        var panay = OrganizationArea.Create(Org, "PANAY", T0);
+        var main = OrganizationBranch.Create(Org, "BR-MAIN", "Main", T0);
+        var iloilo = OrganizationBranch.Create(Org, "BR-ILO", "Iloilo", T0.AddMinutes(1));
+        main.AssignArea(panay.Id, T0);
+        iloilo.AssignArea(panay.Id, T0);
+
+        var result = await BuildUseCase(
+                [main, iloilo],
+                new InMemoryOrganizationAreaRepository(panay),
+                new ExplicitBranchAccess(main.Id.Value))
+            .ExecuteAsync(Org, PlatformUserId.New());
+
+        var only = Assert.Single(result);
+        Assert.Equal(main.Id.Value, only.Id);
+        Assert.Equal("PANAY", only.AreaName);
+        Assert.DoesNotContain(result, dto => dto.Id == iloilo.Id.Value);
+    }
+
+    private static ListBranches BuildUseCase(
+        IReadOnlyList<OrganizationBranch> branches,
+        InMemoryOrganizationAreaRepository areaRepository,
+        IOrganizationBranchAccessService? access = null)
+    {
+        var orgRepo = new InMemoryPlatformOrganizationRepository();
+        orgRepo.AddAsync(PlatformOrganization.Create("Test Org", "test-org", T0)).GetAwaiter().GetResult();
+        return new ListBranches(
+            new FakeBranchRepository(branches),
+            new FakePolicyRepository([]),
+            new FakeHoursRepository(),
+            new FakeAreasRepository(),
+            new EmptyPhilippineLocalityDirectory(),
+            orgRepo,
+            new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
+            new BranchFulfillmentReadinessEvaluator(new BranchOperatingHoursEvaluator()),
+            access ?? new AllowAllBranchAccess(),
+            areaRepository,
+            new FixedClock(T0));
+    }
+
+    private sealed class ExplicitBranchAccess(params Guid[] accessibleBranchIds) : IOrganizationBranchAccessService
+    {
+        public Task<bool> CanAccessBranchAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            OrganizationBranchId branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(accessibleBranchIds.Contains(branchId.Value));
+
+        public Task<IReadOnlySet<Guid>?> ResolveAccessibleActiveBranchIdsAsync(
+            PlatformUserId userId,
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>?>(accessibleBranchIds.ToHashSet());
     }
 
     private sealed class FakeBranchRepository(IReadOnlyList<OrganizationBranch> items) : IOrganizationBranchRepository
