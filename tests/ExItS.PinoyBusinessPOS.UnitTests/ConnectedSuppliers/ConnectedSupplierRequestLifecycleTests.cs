@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -13,6 +14,14 @@ public sealed class ConnectedSupplierRequestLifecycleTests
     private sealed class FakeAccess : IPosCommercialAccessAccessor
     {
         public PosCommercialAccess Current { get; set; } = PosCommercialAccess.DevelopmentDefault;
+    }
+
+    /// <summary>Org-wide branch accessor for tests that do not restrict by branch.</summary>
+    private sealed class OrgWideBranchAccess : IAuthorizedBranchGroupingDirectory
+    {
+        public static readonly OrgWideBranchAccess Instance = new();
+        public Task<AuthorizedBranchScope> ListAuthorizedAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new AuthorizedBranchScope(IsOrganizationWide: true, []));
     }
 
     private sealed class FakeUow : IPosUnitOfWork
@@ -104,7 +113,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         var result = await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, approve: true, new RespondConnectionRequest());
 
         Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
@@ -121,7 +130,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         var result = await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, approve: false, new RespondConnectionRequest());
 
         Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
@@ -138,7 +147,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         var result = await respond.ExecuteAsync(buyer.Value, relationship.Id.Value, approve: true, new RespondConnectionRequest());
 
         Assert.False(result.IsSuccess);
@@ -156,7 +165,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
                 [PosFeatureCodes.StoreSuppliersView],
                 IsKnown: true)
         };
-        var respond = new RespondConnection(new InMemoryRelationships(), new FakeUow(), access);
+        var respond = new RespondConnection(new InMemoryRelationships(), new FakeUow(), access, OrgWideBranchAccess.Instance);
         var result = await respond.ExecuteAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
@@ -219,7 +228,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
             buyer, supplier, DateTimeOffset.UtcNow, buyerDisplayName: "Mica Store");
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         Assert.True((await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, true, new RespondConnectionRequest())).IsSuccess);
 
         var list = new ListRelationships(repo, new FakeAccess());
@@ -293,7 +302,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         Assert.True((await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, true, new RespondConnectionRequest())).IsSuccess);
 
         // Relationship is org↔org Active — there is no Customer id on the DTO / aggregate.
@@ -321,7 +330,7 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
         await repo.AddAsync(relationship);
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance);
         Assert.True((await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, false, new RespondConnectionRequest())).IsSuccess);
 
         var active = (await new ListRelationships(repo, new FakeAccess())

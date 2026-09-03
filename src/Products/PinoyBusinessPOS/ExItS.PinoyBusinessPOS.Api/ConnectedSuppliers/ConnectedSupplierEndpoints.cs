@@ -35,24 +35,50 @@ internal static class ConnectedSupplierEndpoints
         {
             if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;
             var supplierView = string.Equals(view,"supplier",StringComparison.OrdinalIgnoreCase);
-            Guid? workspaceBranchId = null;
-            bool? organizationWideInbox = null;
-            if (supplierView)
+            if (!supplierView)
             {
-                PosOrganizationScope.TryGetOptionalBranchId(req, out workspaceBranchId);
-                if (workspaceBranchId is Guid)
+                // buyer-side: no branch filtering applied
+                return PosApiResults.FromResult(
+                    await use.ExecuteAsync(org, supplierView: false, ct),
+                    Results.Ok);
+            }
+
+            // Always resolve caller scope — never trust the branch header alone.
+            var scope = await branchAccess.ListAuthorizedAsync(org, ct).ConfigureAwait(false);
+            PosOrganizationScope.TryGetOptionalBranchId(req, out var requestedBranchId);
+
+            Guid? workspaceBranchId;
+            bool organizationWideInbox;
+
+            if (scope.IsOrganizationWide)
+            {
+                // Owner/Admin: any (or no) branch is valid; no header → global inbox.
+                workspaceBranchId = requestedBranchId;
+                organizationWideInbox = requestedBranchId is null;
+            }
+            else if (requestedBranchId is Guid requested)
+            {
+                // Partial-access staff: requested branch MUST be in their authorized set.
+                var authorized = scope.Branches.Select(b => b.BranchId).ToHashSet();
+                if (!authorized.Contains(requested))
                 {
-                    organizationWideInbox = false;
+                    return PosApiResults.Problem(
+                        ConnectedSupplierErrorCodes.BranchReadForbidden,
+                        "You are not authorized to view supplier connection requests for this branch.",
+                        StatusCodes.Status403Forbidden);
                 }
-                else
-                {
-                    var scope = await branchAccess.ListAuthorizedAsync(org, ct).ConfigureAwait(false);
-                    organizationWideInbox = scope.IsOrganizationWide;
-                }
+                workspaceBranchId = requested;
+                organizationWideInbox = false;
+            }
+            else
+            {
+                // Partial-access staff with no branch header: fail closed / empty.
+                workspaceBranchId = null;
+                organizationWideInbox = false;
             }
 
             return PosApiResults.FromResult(
-                await use.ExecuteAsync(org, supplierView, ct, workspaceBranchId, organizationWideInbox),
+                await use.ExecuteAsync(org, supplierView: true, ct, workspaceBranchId, organizationWideInbox),
                 Results.Ok);
         });
         group.MapGet("/business-customers",async(HttpRequest req,string? search,bool? includeDisconnected,ListBusinessCustomers use,IPosCommercialAccessAccessor access,CancellationToken ct)=>

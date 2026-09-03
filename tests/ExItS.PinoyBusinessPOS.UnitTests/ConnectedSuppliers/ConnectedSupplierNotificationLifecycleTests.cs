@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -15,6 +16,13 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
     private sealed class FakeAccess : IPosCommercialAccessAccessor
     {
         public PosCommercialAccess Current { get; set; } = PosCommercialAccess.DevelopmentDefault;
+    }
+
+    private sealed class OrgWideBranchAccess : IAuthorizedBranchGroupingDirectory
+    {
+        public static readonly OrgWideBranchAccess Instance = new();
+        public Task<AuthorizedBranchScope> ListAuthorizedAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new AuthorizedBranchScope(IsOrganizationWide: true, []));
     }
 
     private sealed class FakeUow : IPosUnitOfWork
@@ -109,7 +117,7 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
         await repo.AddAsync(relationship);
         var publisher = new RecordingPublisher();
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), publisher);
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance, publisher);
         var result = await respond.ExecuteAsync(
             supplier.Value,
             relationship.Id.Value,
@@ -146,7 +154,7 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
         await repo.AddAsync(relationship);
         var publisher = new RecordingPublisher();
 
-        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), publisher);
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess(), OrgWideBranchAccess.Instance, publisher);
         var result = await respond.ExecuteAsync(
             supplier.Value,
             relationship.Id.Value,

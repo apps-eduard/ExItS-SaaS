@@ -29,6 +29,8 @@ public static class ConnectedSupplierErrorCodes
     public const string ProductBlocked = "pos.connected_supplier.buyer_share.product_blocked";
     public const string MissingDefaultPo = "pos.connected_supplier.buyer_share.missing_default_po";
     public const string BranchResponseForbidden = "pos.connected_supplier.branch_response_forbidden";
+    /// <summary>Caller attempted to read supplier requests for a branch they cannot access.</summary>
+    public const string BranchReadForbidden = "pos.connected_supplier.branch_read_forbidden";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -727,7 +729,7 @@ public sealed class RespondConnection
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
-    private readonly IAuthorizedBranchGroupingDirectory? _branchAccess;
+    private readonly IAuthorizedBranchGroupingDirectory _branchAccess;
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly TimeProvider _clock;
@@ -736,20 +738,20 @@ public sealed class RespondConnection
         IConnectedSupplierRelationshipRepository relationships,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
+        IAuthorizedBranchGroupingDirectory branchAccess,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         TimeProvider? clock = null,
         ICatalogProductRepository? products = null,
-        ISupplierProductExposureRepository? exposures = null,
-        IAuthorizedBranchGroupingDirectory? branchAccess = null)
+        ISupplierProductExposureRepository? exposures = null)
     {
         _relationships = relationships;
         _uow = uow;
         _access = access;
+        _branchAccess = branchAccess ?? throw new ArgumentNullException(nameof(branchAccess));
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _clock = clock ?? TimeProvider.System;
         _products = products;
         _exposures = exposures;
-        _branchAccess = branchAccess;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -776,18 +778,15 @@ public sealed class RespondConnection
                 "This connection request is no longer available.");
         }
 
-        if (_branchAccess is not null)
+        var respondScope = await _branchAccess.ListAuthorizedAsync(orgId, ct).ConfigureAwait(false);
+        if (!SupplierConnectionBranchRouting.CanRespondForSupplierBranch(
+                r.SupplierBranchId,
+                respondScope.IsOrganizationWide,
+                respondScope.Branches.Select(b => b.BranchId)))
         {
-            var scope = await _branchAccess.ListAuthorizedAsync(orgId, ct).ConfigureAwait(false);
-            if (!SupplierConnectionBranchRouting.CanRespondForSupplierBranch(
-                    r.SupplierBranchId,
-                    scope.IsOrganizationWide,
-                    scope.Branches.Select(b => b.BranchId)))
-            {
-                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
-                    ConnectedSupplierErrorCodes.BranchResponseForbidden,
-                    "You cannot respond to a connection request for this supplier location.");
-            }
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.BranchResponseForbidden,
+                "You cannot respond to a connection request for this supplier location.");
         }
 
         try
