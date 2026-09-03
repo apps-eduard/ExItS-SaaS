@@ -41,6 +41,13 @@ function crumbsForPath(pathname: string): Crumb[] | null {
     ];
   }
 
+  if (first === "service-pro") {
+    return [
+      { label: "Products", href: "/products" },
+      { label: "Pinoy Service Pro" },
+    ];
+  }
+
   return [{ label: labelBySegment[first] ?? first }];
 }
 
