@@ -50,3 +50,44 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Print-friendly legal document layout (WEB-08) */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  header,
+  footer,
+  [aria-label="Breadcrumb"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .legal-document,
+  .legal-article {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .legal-prose,
+  .legal-prose * {
+    color: #111111 !important;
+  }
+
+  a {
+    color: #111111 !important;
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  a[href^="/"]::after {
+    content: " (https://exits.ph" attr(href) ")";
+  }
+}

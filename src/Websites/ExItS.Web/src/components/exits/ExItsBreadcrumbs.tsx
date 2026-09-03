@@ -13,6 +13,8 @@ const allowedSegments = new Set([
   "pricing",
   "about",
   "contact",
+  "privacy",
+  "terms",
 ]);
 
 const labelBySegment: Record<string, string> = {
@@ -22,6 +24,8 @@ const labelBySegment: Record<string, string> = {
   pricing: "Pricing",
   about: "About",
   contact: "Contact",
+  privacy: "Privacy Policy",
+  terms: "Terms of Service",
 };
 
 type Crumb = {
@@ -58,7 +62,7 @@ export function ExItsBreadcrumbs() {
   if (!crumbs) return null;
 
   return (
-    <div>
+    <div className="print:hidden">
       <ExItsContainer className="py-6">
         <nav aria-label="Breadcrumb">
           <ol className="flex flex-wrap items-center gap-2 text-sm text-muted">

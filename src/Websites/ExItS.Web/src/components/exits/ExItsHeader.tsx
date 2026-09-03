@@ -34,7 +34,7 @@ export function ExItsHeader({ transparent = false }: ExItsHeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b transition-colors",
+        "sticky top-0 z-50 border-b transition-colors print:hidden",
         backgroundClassName,
         borderClassName,
       )}
