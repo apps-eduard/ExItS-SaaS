@@ -3,6 +3,7 @@ import {
   buildWorkspaceRoster,
   friendlyMembershipRoleLabel,
   friendlyProductRoleLabel,
+  personAppearsOnBranch,
   type OrganizationMemberWire,
 } from "@/api/platform/organization-members-client";
 
@@ -60,5 +61,36 @@ describe("organization members roster helpers", () => {
     expect(friendlyMembershipRoleLabel("OrganizationAdministrator")).toBe("Admin");
     expect(friendlyProductRoleLabel(["StoreManager"])).toBe("Manager");
     expect(friendlyProductRoleLabel(["Cashier"])).toBe("Cashier");
+  });
+
+  it("filters staff by explicit branch ids and AllActive scope", () => {
+    const main = { branchId: "main", name: "Main Branch" };
+    const iloilo = { branchId: "iloilo", name: "Iloilo Branch" };
+    const kalibo = { branchId: "kalibo", name: "Kalibo Branch" };
+
+    expect(
+      personAppearsOnBranch(
+        { branchIds: ["main", "iloilo"], allActiveBranches: false, branchName: null },
+        main,
+      ),
+    ).toBe(true);
+    expect(
+      personAppearsOnBranch(
+        { branchIds: ["main", "iloilo"], allActiveBranches: false, branchName: null },
+        kalibo,
+      ),
+    ).toBe(false);
+    expect(
+      personAppearsOnBranch(
+        { branchIds: [], allActiveBranches: true, branchName: null },
+        kalibo,
+      ),
+    ).toBe(true);
+    expect(
+      personAppearsOnBranch(
+        { branchIds: [], allActiveBranches: false, branchName: null },
+        iloilo,
+      ),
+    ).toBe(false);
   });
 });

@@ -135,7 +135,12 @@ export type WorkspaceRosterPerson = {
   membershipId: string;
   displayName: string;
   roleLabel: string;
+  /** @deprecated Prefer branchIds / allActiveBranches for filtering. */
   branchName: string | null;
+  /** Explicit assigned branch ids (empty when allActiveBranches). */
+  branchIds: string[];
+  /** Ordinary member with AllActive scope — appears on every active branch. */
+  allActiveBranches: boolean;
 };
 
 /** Management team = Owner / Admin memberships. Branch staff = members with product roles. */
@@ -165,6 +170,8 @@ export function buildWorkspaceRoster(members: OrganizationMemberWire[]): {
         displayName: name,
         roleLabel: membershipLabel,
         branchName: null,
+        branchIds: [],
+        allActiveBranches: false,
       });
       continue;
     }
@@ -175,9 +182,30 @@ export function buildWorkspaceRoster(members: OrganizationMemberWire[]): {
         displayName: name,
         roleLabel: productLabel,
         branchName: member.branch?.trim() || null,
+        branchIds: [],
+        allActiveBranches: false,
       });
     }
   }
 
   return { managementTeam, branchStaff };
+}
+
+export function personAppearsOnBranch(
+  person: Pick<WorkspaceRosterPerson, "branchIds" | "allActiveBranches" | "branchName">,
+  branch: { branchId: string; name: string },
+): boolean {
+  if (person.allActiveBranches) {
+    return true;
+  }
+  if (person.branchIds.length > 0) {
+    return person.branchIds.includes(branch.branchId);
+  }
+  // Legacy single-name hint only when no assignment payload was loaded.
+  if (person.branchName) {
+    return (
+      person.branchName.localeCompare(branch.name, undefined, { sensitivity: "base" }) === 0
+    );
+  }
+  return false;
 }

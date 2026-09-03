@@ -9,8 +9,12 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  listMembershipBranchAssignments,
+} from "@/api/platform/membership-branch-assignments-client";
+import {
   buildWorkspaceRoster,
   listOrganizationMembers,
+  personAppearsOnBranch,
   type WorkspaceRosterPerson,
 } from "@/api/platform/organization-members-client";
 import { canUseAdminExperience } from "@/access/pos-capabilities";
@@ -34,22 +38,6 @@ import {
 } from "@/workspace/workspace-destinations";
 import type { AccessibleOrganizationWorkspace } from "@/workspace/types";
 import type { WorkingExperience } from "@/workspace/working-experience";
-
-function membershipRoleLabel(
-  role: string | null | undefined,
-  t: (key: MessageKey) => string,
-): string | null {
-  if (!role) {
-    return null;
-  }
-  if (role.localeCompare("OrganizationOwner", undefined, { sensitivity: "accent" }) === 0) {
-    return t("account.role.owner");
-  }
-  if (role.localeCompare("OrganizationAdministrator", undefined, { sensitivity: "accent" }) === 0) {
-    return t("account.role.admin");
-  }
-  return null;
-}
 
 function destinationIcon(experience: WorkingExperience): LucideIcon {
   if (experience === "manage_business") {
@@ -79,6 +67,33 @@ function resolveOrganizationGrantState(
   const grantLoading =
     grantLoadingOrgId === organizationId || (workspaceReady && !grant && !grantFailure);
   return { grant, grantFailure, grantLoading };
+}
+
+async function loadWorkspaceRosterWithBranchAccess(
+  organizationId: string,
+): Promise<{ managementTeam: WorkspaceRosterPerson[]; branchStaff: WorkspaceRosterPerson[] } | null> {
+  const result = await listOrganizationMembers(organizationId);
+  if (!result.ok) {
+    return null;
+  }
+  const roster = buildWorkspaceRoster(result.members);
+  const enrichedStaff = await Promise.all(
+    roster.branchStaff.map(async (person) => {
+      const access = await listMembershipBranchAssignments(organizationId, person.membershipId);
+      if (!access.ok) {
+        return person;
+      }
+      return {
+        ...person,
+        allActiveBranches: access.value.scope === "AllActive",
+        branchIds:
+          access.value.scope === "AllActive"
+            ? []
+            : access.value.branches.map((branch) => branch.branchId).filter(Boolean),
+      };
+    }),
+  );
+  return { managementTeam: roster.managementTeam, branchStaff: enrichedStaff };
 }
 
 export function WorkspaceChooserPage() {
@@ -133,11 +148,10 @@ export function WorkspaceChooserPage() {
         return;
       }
       rosterFetchAttempted.current.add(expandedOrgId);
-      const result = await listOrganizationMembers(expandedOrgId);
-      if (cancelled || !result.ok) {
+      const roster = await loadWorkspaceRosterWithBranchAccess(expandedOrgId);
+      if (cancelled || !roster) {
         return;
       }
-      const roster = buildWorkspaceRoster(result.members);
       setRosterByOrg((prev) => {
         const next = new Map(prev);
         next.set(expandedOrgId, roster);
@@ -277,7 +291,6 @@ export function WorkspaceChooserPage() {
           roster={rosterByOrg.get(organization.organizationId) ?? null}
           bindingKey={bindingKey}
           onSelectDestination={(destination) => void selectDestination(destination)}
-          membershipLabel={membershipRoleLabel(organization.membershipRole, t)}
           t={t}
         />
       </div>
@@ -378,7 +391,6 @@ export function WorkspaceChooserPage() {
               roster={rosterByOrg.get(organization.organizationId) ?? null}
               bindingKey={bindingKey}
               onSelectDestination={(destination) => void selectDestination(destination)}
-              membershipLabel={membershipRoleLabel(organization.membershipRole, t)}
               t={t}
             />
           );
@@ -425,7 +437,6 @@ function OrganizationWorkspaceCard({
   roster,
   bindingKey,
   onSelectDestination,
-  membershipLabel,
   t,
 }: {
   organization: AccessibleOrganizationWorkspace;
@@ -440,7 +451,6 @@ function OrganizationWorkspaceCard({
   } | null;
   bindingKey: string | null;
   onSelectDestination: (destination: WorkspaceDestination) => void;
-  membershipLabel: string | null;
   t: (key: MessageKey) => string;
 }) {
   const destinations = useMemo(
@@ -448,26 +458,17 @@ function OrganizationWorkspaceCard({
     [grant, organization],
   );
   const manageBusiness = destinations.find((d) => d.experience === "manage_business");
-  const branchCountLabel =
-    organization.branches.length === 1
-      ? t("workspace.branchCountOne")
-      : t("workspace.branchCountMany").replace("{count}", String(organization.branches.length));
+  const branchCount = organization.branches.length;
+  const branchesHeading =
+    branchCount === 0
+      ? t("workspace.branches")
+      : t("workspace.branchesWithCount").replace("{count}", String(branchCount));
 
   const headerContent = (
     <span className="min-w-0">
       <span className="block truncate text-[length:var(--exits-text-lg)] font-semibold text-foreground">
         {organization.displayName}
       </span>
-      {membershipLabel ? (
-        <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
-          {membershipLabel}
-        </span>
-      ) : null}
-      {grantResolved ? (
-        <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
-          {branchCountLabel}
-        </span>
-      ) : null}
     </span>
   );
 
@@ -532,8 +533,9 @@ function OrganizationWorkspaceCard({
                 <h3
                   id={`branches-${organization.organizationId}`}
                   className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
+                  data-testid="workspace-branches-heading"
                 >
-                  {t("workspace.branches")}
+                  {branchesHeading}
                 </h3>
                 <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
                   {organization.branches.map((branch) => {
@@ -541,12 +543,8 @@ function OrganizationWorkspaceCard({
                       (d) => d.branchId === branch.branchId,
                     );
                     const staffForBranch =
-                      roster?.branchStaff.filter(
-                        (person) =>
-                          !person.branchName ||
-                          person.branchName.localeCompare(branch.name, undefined, {
-                            sensitivity: "base",
-                          }) === 0,
+                      roster?.branchStaff.filter((person) =>
+                        personAppearsOnBranch(person, branch),
                       ) ?? [];
                     return (
                       <li

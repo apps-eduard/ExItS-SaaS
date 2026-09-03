@@ -725,6 +725,7 @@ export const en = {
   "workspace.branchCountOne": "1 branch",
   "workspace.branchCountMany": "{count} branches",
   "workspace.branches": "Branches",
+  "workspace.branchesWithCount": "Branches ({count})",
   "workspace.management": "Management",
   "workspace.managementTeam": "Management team",
   "workspace.noActiveBranches": "No active branches yet. Manage business is still available.",

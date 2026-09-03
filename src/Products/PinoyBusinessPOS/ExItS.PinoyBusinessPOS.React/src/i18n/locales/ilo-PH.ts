@@ -4581,6 +4581,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "workspace.branchCountMany": "{count} a branches",
   "workspace.branchCountOne": "1 branch",
   "workspace.branches": "Branches",
+  "workspace.branchesWithCount": "Branches ({count})",
   "workspace.branchesLabel": "active a branches",
   "workspace.experienceLede": "Agpili no kasano ti kayatmo a panagtrabaho.",
   "workspace.grantProbeFailedDetail": "Saan a ma-resolve ti server session grant para iti organization. Padasem manen no online kan.",

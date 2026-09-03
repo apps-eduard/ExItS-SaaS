@@ -206,7 +206,8 @@ describe("workspace grant hint regression", () => {
       expect(screen.getByTestId("workspace-destination-manage_business")).toBeInTheDocument();
     });
     expect(screen.getByText("Kizy Store", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("Owner")).toBeInTheDocument();
+    expect(screen.queryByText("Owner")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workspace-branches-heading")).toHaveTextContent("Branches (2)");
     expect(screen.getAllByTestId("workspace-destination-operations")).toHaveLength(2);
   });
 
