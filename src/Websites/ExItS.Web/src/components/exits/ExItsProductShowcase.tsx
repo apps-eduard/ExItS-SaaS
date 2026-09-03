@@ -14,29 +14,39 @@ export function ExItsProductShowcase({
   cta,
   visual,
   reversed = false,
+  id,
 }: {
-  label: string;
+  label?: string;
   headline: string;
   body: string;
   benefits: string[];
-  cta: { href: string; label: string };
-  visual: ReactNode;
+  cta?: { href: string; label: string };
+  visual?: ReactNode;
   reversed?: boolean;
+  id?: string;
 }) {
   return (
-    <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+    <ExItsSection id={id} className="border-b border-borderDefault py-20 lg:py-28">
       <ExItsContainer>
         <div
           className={cn(
-            "grid items-center gap-12 lg:grid-cols-2",
-            reversed && "lg:[&>*:first-child]:order-2",
+            "grid items-center gap-12",
+            visual ? "lg:grid-cols-2" : "lg:grid-cols-1",
+            reversed && visual && "lg:[&>*:first-child]:order-2",
           )}
         >
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brandBright">
-              {label}
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
+            {label ? (
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brandBright">
+                {label}
+              </p>
+            ) : null}
+            <h2
+              className={cn(
+                "text-3xl font-semibold tracking-tight text-primary lg:text-4xl",
+                label && "mt-3",
+              )}
+            >
               {headline}
             </h2>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">{body}</p>
@@ -48,11 +58,13 @@ export function ExItsProductShowcase({
                 </li>
               ))}
             </ul>
-            <Link href={cta.href} className={cn(ctaClassName("primary"), "mt-8")}>
-              {cta.label}
-            </Link>
+            {cta ? (
+              <Link href={cta.href} className={cn(ctaClassName("primary"), "mt-8")}>
+                {cta.label}
+              </Link>
+            ) : null}
           </div>
-          <div>{visual}</div>
+          {visual ? <div>{visual}</div> : null}
         </div>
       </ExItsContainer>
     </ExItsSection>

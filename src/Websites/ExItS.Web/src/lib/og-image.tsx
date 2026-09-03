@@ -2,7 +2,13 @@ import { ImageResponse } from "next/og";
 
 export const ogImageSize = { width: 1200, height: 630 };
 
-export function createExItsOgImage() {
+export function createExItsOgImage({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
   return new ImageResponse(
     (
       <div
@@ -18,11 +24,19 @@ export function createExItsOgImage() {
         }}
       >
         <div style={{ fontSize: 28, color: "#34d399", letterSpacing: 4 }}>ExItS</div>
-        <div style={{ fontSize: 58, fontWeight: 700, marginTop: 28, lineHeight: 1.1, maxWidth: 900 }}>
-          Business management for Filipino businesses
+        <div
+          style={{
+            fontSize: 58,
+            fontWeight: 700,
+            marginTop: 28,
+            lineHeight: 1.1,
+            maxWidth: 900,
+          }}
+        >
+          {title}
         </div>
-        <div style={{ fontSize: 24, color: "#8aa690", marginTop: 28 }}>
-          Pinoy Business POS — available now. Other products coming soon.
+        <div style={{ fontSize: 24, color: "#8aa690", marginTop: 28, maxWidth: 900 }}>
+          {subtitle}
         </div>
       </div>
     ),

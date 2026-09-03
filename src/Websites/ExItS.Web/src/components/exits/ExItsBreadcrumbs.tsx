@@ -24,39 +24,62 @@ const labelBySegment: Record<string, string> = {
   contact: "Contact",
 };
 
-export function ExItsBreadcrumbs() {
-  const pathname = usePathname();
+type Crumb = {
+  label: string;
+  href?: string;
+};
 
-  const segments = React.useMemo(
-    () => pathname.split("/").filter(Boolean),
-    [pathname],
-  );
-
+function crumbsForPath(pathname: string): Crumb[] | null {
+  const segments = pathname.split("/").filter(Boolean);
   const first = segments[0] ?? "";
-
-  // Per IA: breadcrumbs are for secondary pages only.
   if (!allowedSegments.has(first)) return null;
 
-  const currentLabel = labelBySegment[first] ?? first;
+  if (first === "pos") {
+    return [
+      { label: "Products", href: "/products" },
+      { label: "Pinoy Business POS" },
+    ];
+  }
+
+  return [{ label: labelBySegment[first] ?? first }];
+}
+
+export function ExItsBreadcrumbs() {
+  const pathname = usePathname();
+  const crumbs = React.useMemo(() => crumbsForPath(pathname), [pathname]);
+
+  if (!crumbs) return null;
 
   return (
     <div>
       <ExItsContainer className="py-6">
         <nav aria-label="Breadcrumb">
-          <ol className="flex items-center gap-2 text-sm text-muted">
+          <ol className="flex flex-wrap items-center gap-2 text-sm text-muted">
             <li>
               <Link href="/" className="hover:text-primary">
                 Home
               </Link>
             </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="text-primary">
-              {currentLabel}
-            </li>
+            {crumbs.map((crumb) => (
+              <React.Fragment key={crumb.label}>
+                <li aria-hidden="true">/</li>
+                <li
+                  aria-current={crumb.href ? undefined : "page"}
+                  className={crumb.href ? undefined : "text-primary"}
+                >
+                  {crumb.href ? (
+                    <Link href={crumb.href} className="hover:text-primary">
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    crumb.label
+                  )}
+                </li>
+              </React.Fragment>
+            ))}
           </ol>
         </nav>
       </ExItsContainer>
     </div>
   );
 }
-

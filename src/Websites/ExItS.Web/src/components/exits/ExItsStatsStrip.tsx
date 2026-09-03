@@ -7,11 +7,26 @@ export type StatItem = {
   icon: LucideIcon;
 };
 
-export function ExItsStatsStrip({ items }: { items: StatItem[] }) {
+export function ExItsStatsStrip({
+  items,
+  columns,
+}: {
+  items: StatItem[];
+  columns?: 4 | 5 | 6;
+}) {
+  const columnClass =
+    columns === 4
+      ? "lg:grid-cols-4"
+      : columns === 5
+        ? "lg:grid-cols-5"
+        : "lg:grid-cols-6";
+
   return (
     <section className="border-b border-borderDefault bg-surface" aria-label="Platform capabilities">
       <ExItsContainer className="py-8">
-        <ul className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-6">
+        <ul
+          className={`flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible ${columnClass}`}
+        >
           {items.map((item) => {
             const Icon = item.icon;
             return (

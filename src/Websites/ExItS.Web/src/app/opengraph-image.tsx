@@ -5,5 +5,8 @@ export const size = ogImageSize;
 export const contentType = "image/png";
 
 export default function OpenGraphImage() {
-  return createExItsOgImage();
+  return createExItsOgImage({
+    title: "Business management for Filipino businesses",
+    subtitle: "Pinoy Business POS — available now. Other products coming soon.",
+  });
 }
