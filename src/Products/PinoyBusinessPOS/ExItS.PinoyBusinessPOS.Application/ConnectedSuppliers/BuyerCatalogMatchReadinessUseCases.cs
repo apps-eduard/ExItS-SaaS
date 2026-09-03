@@ -8,6 +8,12 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
+public sealed record CatalogReadinessCandidateDto(
+    Guid ProductId,
+    string Name,
+    string? Sku,
+    string UnitOfMeasureCode);
+
 public sealed record CatalogProductReadinessItemDto(
     Guid ExposureId,
     Guid SupplierProductId,
@@ -25,7 +31,8 @@ public sealed record CatalogProductReadinessItemDto(
     bool BarcodeMatched,
     bool UnitCompatible,
     string MatchDetails,
-    Guid? LinkedBuyerProductId);
+    Guid? LinkedBuyerProductId,
+    IReadOnlyList<CatalogReadinessCandidateDto> ConflictCandidates);
 
 public sealed record CatalogReadinessResultDto(
     Guid RelationshipId,
@@ -345,7 +352,8 @@ internal sealed class BuyerCatalogMatchContext
                 category: null,
                 skip,
                 PageSize,
-                ct).ConfigureAwait(false);
+                ct,
+                relationship.CatalogSharingMode).ConfigureAwait(false);
             exposures.AddRange(pageExposures);
             shareList.AddRange(pageShares);
             skip += pageExposures.Count;
@@ -436,6 +444,25 @@ internal sealed class BuyerCatalogMatchContext
             ? nameof(BuyerSupplierProductMatchStatus.AlreadyLinked)
             : classification.Status.ToString();
 
+        var conflictCandidates = (classification.ConflictCandidateIds ?? [])
+            .Distinct()
+            .Select(id =>
+            {
+                if (!BuyerProductsById.TryGetValue(id, out var product))
+                {
+                    return null;
+                }
+
+                return new CatalogReadinessCandidateDto(
+                    product.Id.Value,
+                    product.Name,
+                    product.Sku,
+                    UnitOfMeasures.ToCode(product.UnitOfMeasure));
+            })
+            .Where(x => x is not null)
+            .Select(x => x!)
+            .ToList();
+
         return new CatalogProductReadinessItemDto(
             row.Exposure.Id.Value,
             row.Exposure.ProductId.Value,
@@ -453,7 +480,8 @@ internal sealed class BuyerCatalogMatchContext
             classification.Evidence.BarcodeMatched,
             classification.Evidence.UnitCompatible,
             classification.MatchDetails,
-            linkedId == Guid.Empty ? null : linkedId);
+            linkedId == Guid.Empty ? null : linkedId,
+            conflictCandidates);
     }
 
     private static async Task<IReadOnlyList<CatalogProduct>> LoadAllActiveBuyerProductsAsync(

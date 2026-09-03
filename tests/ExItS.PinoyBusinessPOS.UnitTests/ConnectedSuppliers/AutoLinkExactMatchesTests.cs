@@ -175,6 +175,46 @@ public sealed class AutoLinkExactMatchesTests
     }
 
     [Fact]
+    public async Task Classify_AllEligible_without_share_rows_matches_exposed_catalog()
+    {
+        var harness = CreateHarness(seedShare: false);
+        harness.Relationship.ConfigureCatalogSharing(CatalogSharingMode.AllEligible, null, Now.AddMinutes(3));
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateClassify().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.New);
+        Assert.Equal(0, result.Value.Ready);
+        Assert.Equal(0, result.Value.Review);
+        Assert.Equal(0, result.Value.Conflict);
+        var item = Assert.Single(result.Value.Items);
+        Assert.Equal(harness.Exposure.Id.Value, item.ExposureId);
+        Assert.Equal("New", item.Status);
+    }
+
+    [Fact]
+    public async Task Conflict_includes_candidate_products()
+    {
+        var harness = CreateHarness();
+        var productA = Product(Buyer, "Product A", "SKU-A", UnitOfMeasure.Kilogram, ValidBarcode);
+        var productB = Product(Buyer, "Product B", "SUP-RICE", UnitOfMeasure.Kilogram, "036000291452");
+        harness.Products.Seed(productA);
+        harness.Products.Seed(productB);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateClassify().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.Conflict);
+        var item = Assert.Single(result.Value.Items);
+        Assert.Equal("Conflict", item.Status);
+        Assert.Equal(2, item.ConflictCandidates.Count);
+        Assert.Contains(item.ConflictCandidates, c => c.ProductId == productA.Id.Value);
+        Assert.Contains(item.ConflictCandidates, c => c.ProductId == productB.Id.Value);
+    }
+
+    [Fact]
     public void Auto_link_source_does_not_reference_inventory_or_receiving_types()
     {
         var path = Path.Combine(
@@ -207,7 +247,7 @@ public sealed class AutoLinkExactMatchesTests
         harness.Products.Seed(supplierProduct);
     }
 
-    private static Harness CreateHarness()
+    private static Harness CreateHarness(bool seedShare = true)
     {
         var relationships = new InMemoryRelationships();
         var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
@@ -225,15 +265,18 @@ public sealed class AutoLinkExactMatchesTests
         var exposures = new InMemoryExposures();
         exposures.Seed(exposure);
 
-        var share = ConnectedBuyerProductShare.Share(
-            relationship.Id,
-            Buyer,
-            Supplier,
-            exposure.ProductId,
-            Now.AddMinutes(4),
-            buyerSpecificPoPrice: null);
         var shares = new InMemoryShares(exposures);
-        shares.Seed(share);
+        if (seedShare)
+        {
+            var share = ConnectedBuyerProductShare.Share(
+                relationship.Id,
+                Buyer,
+                Supplier,
+                exposure.ProductId,
+                Now.AddMinutes(4),
+                buyerSpecificPoPrice: null);
+            shares.Seed(share);
+        }
 
         return new Harness(
             relationship,
@@ -429,13 +472,40 @@ public sealed class AutoLinkExactMatchesTests
             int take,
             CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly)
         {
-            var shares = _items.Where(x => x.RelationshipId == relationshipId && x.IsShared).ToList();
-            var sharedProductIds = shares.Select(x => x.SupplierProductId.Value).ToHashSet();
-            var exposureItems = exposures.ListAsync(supplier, ct).GetAwaiter().GetResult()
-                .Where(x => sharedProductIds.Contains(x.ProductId.Value) && x.IsExposed && x.IsOrderable)
+            var relationshipShares = _items.Where(x => x.RelationshipId == relationshipId).ToList();
+            var allExposures = exposures.ListAsync(supplier, ct).GetAwaiter().GetResult()
+                .Where(x => x.IsExposed && x.IsOrderable)
                 .ToList();
+
+            List<SupplierProductExposure> exposureItems;
+            List<ConnectedBuyerProductShare> matchingShares;
+            if (catalogSharingMode == CatalogSharingMode.AllEligible)
+            {
+                var excluded = relationshipShares
+                    .Where(x => !x.IsShared)
+                    .Select(x => x.SupplierProductId.Value)
+                    .ToHashSet();
+                exposureItems = allExposures
+                    .Where(x => !excluded.Contains(x.ProductId.Value))
+                    .ToList();
+                matchingShares = relationshipShares
+                    .Where(s => exposureItems.Any(e => e.ProductId == s.SupplierProductId))
+                    .ToList();
+            }
+            else
+            {
+                matchingShares = relationshipShares.Where(x => x.IsShared).ToList();
+                var sharedProductIds = matchingShares.Select(x => x.SupplierProductId.Value).ToHashSet();
+                exposureItems = allExposures
+                    .Where(x => sharedProductIds.Contains(x.ProductId.Value))
+                    .ToList();
+                matchingShares = matchingShares
+                    .Where(s => exposureItems.Any(e => e.ProductId == s.SupplierProductId))
+                    .ToList();
+            }
+
             var page = exposureItems.Skip(skip).Take(take).ToList();
-            var pageShares = shares
+            var pageShares = matchingShares
                 .Where(s => page.Any(e => e.ProductId == s.SupplierProductId))
                 .ToList();
             return Task.FromResult<(IReadOnlyList<SupplierProductExposure>,

@@ -161,6 +161,13 @@ export const buyerSupplierProductLinkSchema = z.object({
   packageLabel: z.string().nullable().optional(),
 });
 
+export const catalogReadinessCandidateSchema = z.object({
+  productId: guidSchema,
+  name: z.string(),
+  sku: z.string().nullable().optional(),
+  unitOfMeasureCode: z.string(),
+});
+
 export const catalogProductReadinessItemSchema = z.object({
   exposureId: guidSchema,
   supplierProductId: guidSchema,
@@ -179,6 +186,7 @@ export const catalogProductReadinessItemSchema = z.object({
   unitCompatible: z.boolean(),
   matchDetails: z.string(),
   linkedBuyerProductId: guidSchema.nullable().optional(),
+  conflictCandidates: z.array(catalogReadinessCandidateSchema).default([]),
 });
 
 export const catalogReadinessResultSchema = z.object({
@@ -188,6 +196,16 @@ export const catalogReadinessResultSchema = z.object({
   review: z.number(),
   conflict: z.number(),
   items: z.array(catalogProductReadinessItemSchema),
+});
+
+export const autoLinkExactMatchesResultSchema = z.object({
+  relationshipId: guidSchema,
+  linkedNow: z.number(),
+  alreadyReady: z.number(),
+  review: z.number(),
+  new: z.number(),
+  conflict: z.number(),
+  linkedExposureIds: z.array(guidSchema),
 });
 
 export const buyerProductMatchCandidateSchema = z.object({
@@ -236,6 +254,8 @@ export type BulkBuyerPricingPreview = z.infer<typeof bulkBuyerPricingPreviewSche
 export type BuyerSupplierProductLink = z.infer<typeof buyerSupplierProductLinkSchema>;
 export type CatalogReadinessResult = z.infer<typeof catalogReadinessResultSchema>;
 export type CatalogProductReadinessItem = z.infer<typeof catalogProductReadinessItemSchema>;
+export type CatalogReadinessCandidate = z.infer<typeof catalogReadinessCandidateSchema>;
+export type AutoLinkExactMatchesResult = z.infer<typeof autoLinkExactMatchesResultSchema>;
 export type SuggestBuyerProductMatchesResult = z.infer<
   typeof suggestBuyerProductMatchesResultSchema
 >;
@@ -767,6 +787,22 @@ export async function classifyCatalogReadiness(
     path: relPath(relationshipId, "/catalog/readiness"),
   });
   return catalogReadinessResultSchema.parse(raw);
+}
+
+export async function autoLinkExactMatches(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<AutoLinkExactMatchesResult> {
+  const path = relPath(relationshipId, "/catalog/auto-link-exact");
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return autoLinkExactMatchesResultSchema.parse(raw);
 }
 
 export async function suggestBuyerProductMatches(

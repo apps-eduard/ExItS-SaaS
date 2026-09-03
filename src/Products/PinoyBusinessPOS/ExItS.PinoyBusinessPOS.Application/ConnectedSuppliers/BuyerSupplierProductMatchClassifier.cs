@@ -36,7 +36,8 @@ public sealed record BuyerSupplierProductMatchClassification(
     bool CanAutoLink,
     Guid? CandidateBuyerProductId,
     BuyerSupplierProductMatchEvidence Evidence,
-    string MatchDetails);
+    string MatchDetails,
+    IReadOnlyList<Guid>? ConflictCandidateIds = null);
 
 /// <summary>
 /// Pure match engine for buyer ↔ shared supplier product readiness.
@@ -88,9 +89,11 @@ public static class BuyerSupplierProductMatchClassifier
 
         if (skuHits.Count > 1 || barcodeHits.Count > 1)
         {
+            var multiIds = skuHits.Count > 1 ? skuHits : barcodeHits;
             return Conflict(
                 PickEvidence(evaluated, null),
-                "Multiple buyer products match the same SKU or barcode.");
+                "Multiple buyer products match the same SKU or barcode.",
+                multiIds);
         }
 
         var claimed = new HashSet<Guid>();
@@ -114,7 +117,8 @@ public static class BuyerSupplierProductMatchClassifier
         {
             return Conflict(
                 PickEvidence(evaluated, null),
-                "Identifiers point to different buyer products.");
+                "Identifiers point to different buyer products.",
+                claimed.ToList());
         }
 
         var allIdentifiersPresent = !string.IsNullOrEmpty(nameNorm)
@@ -134,7 +138,8 @@ public static class BuyerSupplierProductMatchClassifier
         {
             return Conflict(
                 exact[0].Evidence,
-                "Multiple buyer products satisfy exact Name+SKU+Barcode+UOM.");
+                "Multiple buyer products satisfy exact Name+SKU+Barcode+UOM.",
+                exact.Select(x => x.Product.Id.Value).Distinct().ToList());
         }
 
         if (exact.Count == 1)
@@ -172,7 +177,8 @@ public static class BuyerSupplierProductMatchClassifier
         {
             return Conflict(
                 exactIdsIncompatibleUom[0].Evidence,
-                "Multiple buyer products match identifiers with incompatible UOM.");
+                "Multiple buyer products match identifiers with incompatible UOM.",
+                exactIdsIncompatibleUom.Select(x => x.Product.Id.Value).Distinct().ToList());
         }
 
         // Name + SKU (barcode missing or different on the same product) → REVIEW
@@ -194,7 +200,8 @@ public static class BuyerSupplierProductMatchClassifier
         {
             return Conflict(
                 nameSku[0].Evidence,
-                "Multiple buyer products match Name+SKU.");
+                "Multiple buyer products match Name+SKU.",
+                nameSku.Select(x => x.Product.Id.Value).Distinct().ToList());
         }
 
         // Name + Barcode (SKU missing or different) → REVIEW
@@ -216,7 +223,8 @@ public static class BuyerSupplierProductMatchClassifier
         {
             return Conflict(
                 nameBarcode[0].Evidence,
-                "Multiple buyer products match Name+Barcode.");
+                "Multiple buyer products match Name+Barcode.",
+                nameBarcode.Select(x => x.Product.Id.Value).Distinct().ToList());
         }
 
         // SKU only → REVIEW if unique + UOM compatible
@@ -319,13 +327,15 @@ public static class BuyerSupplierProductMatchClassifier
 
     private static BuyerSupplierProductMatchClassification Conflict(
         BuyerSupplierProductMatchEvidence evidence,
-        string details) =>
+        string details,
+        IReadOnlyList<Guid>? conflictCandidateIds = null) =>
         new(
             BuyerSupplierProductMatchStatus.Conflict,
             CanAutoLink: false,
             null,
             evidence,
-            details);
+            details,
+            conflictCandidateIds);
 
     private static BuyerSupplierProductMatchEvidence PickEvidence(
         IReadOnlyList<(CatalogProduct Product, BuyerSupplierProductMatchEvidence Evidence)> evaluated,

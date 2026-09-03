@@ -101,7 +101,7 @@ const getSupplierMock = vi.fn(async () => ({
 }));
 
 vi.mock("@/api/pos/pos-suppliers-client", () => ({
-  getSupplier: (...args: unknown[]) => getSupplierMock(...args),
+  getSupplier: getSupplierMock,
   activateSupplier: vi.fn(),
   deactivateSupplier: vi.fn(),
   isConnectedSupplier: (supplier: { connectionType: string }) =>
