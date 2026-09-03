@@ -209,6 +209,7 @@ describe("workspace grant hint regression", () => {
     expect(screen.queryByText("Owner")).not.toBeInTheDocument();
     expect(screen.getByTestId("workspace-branches-heading")).toHaveTextContent("Branches (2)");
     expect(screen.getAllByTestId("workspace-destination-operations")).toHaveLength(2);
+    expect(screen.queryByText(/John Jones/i)).not.toBeInTheDocument();
   });
 
   it("shows explicit zero-destination state when grant succeeds with no actions", async () => {

@@ -4582,6 +4582,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "workspace.branchCountOne": "1 branch",
   "workspace.branches": "Branches",
   "workspace.branchesWithCount": "Branches ({count})",
+  "workspace.branchActive": "Active",
+  "workspace.yourRole": "Imong role: {role}",
   "workspace.branchesLabel": "active nga branches",
   "workspace.experienceLede": "Pagpili unsaon nimo pagtrabaho.",
   "workspace.grantProbeFailedDetail": "Dili ma-resolve ang server session grant alang sa organization. Sulayi pag-usab kung online na ka.",

@@ -4581,6 +4581,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "workspace.branchCountOne": "1 branch",
   "workspace.branches": "Mga branch",
   "workspace.branchesWithCount": "Branches ({count})",
+  "workspace.branchActive": "Active",
+  "workspace.yourRole": "Ang role mo: {role}",
   "workspace.branchesLabel": "active na branch",
   "workspace.experienceLede": "Piliin kung paano mo gustong magtrabaho.",
   "workspace.grantProbeFailedDetail": "Hindi ma-resolve ang server session grant para sa organization na ito. Subukan muli kapag online ka na.",

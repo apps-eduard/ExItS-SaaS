@@ -4582,6 +4582,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "workspace.branchCountOne": "1 branch",
   "workspace.branches": "Branches",
   "workspace.branchesWithCount": "Branches ({count})",
+  "workspace.branchActive": "Active",
+  "workspace.yourRole": "Imo role: {role}",
   "workspace.branchesLabel": "active nga branches",
   "workspace.experienceLede": "Magpili paano mo gusto magtrabaho.",
   "workspace.grantProbeFailedDetail": "Indi ma-resolve ang server session grant para sa organization. Sulayi liwat kon online ka na.",

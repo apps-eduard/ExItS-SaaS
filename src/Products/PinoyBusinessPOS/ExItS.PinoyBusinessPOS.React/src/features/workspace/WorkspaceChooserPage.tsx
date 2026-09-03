@@ -9,15 +9,14 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  listMembershipBranchAssignments,
-} from "@/api/platform/membership-branch-assignments-client";
-import {
-  buildWorkspaceRoster,
-  listOrganizationMembers,
-  personAppearsOnBranch,
-  type WorkspaceRosterPerson,
-} from "@/api/platform/organization-members-client";
-import { canUseAdminExperience } from "@/access/pos-capabilities";
+  canUseAdminExperience,
+  isOrganizationAdministratorMembership,
+  isOrganizationOwnerMembership,
+  resolveEffectivePosRoleCode,
+  type PosSessionGrantFacts,
+} from "@/access/pos-capabilities";
+import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
+import type { SessionGrantResponse } from "@/api/platform/platform-auth-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -26,6 +25,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { resolveFriendlyPosRole } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 import { normalizePosError } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
@@ -55,6 +55,8 @@ type OrganizationGrantState = {
   grantLoading: boolean;
 };
 
+type GrantFacts = PosSessionGrantFacts | SessionGrantResponse | null | undefined;
+
 function resolveOrganizationGrantState(
   organizationId: string,
   grantByOrganizationId: ReadonlyMap<string, ReturnType<typeof useWorkspace>["sessionGrant"] | null>,
@@ -69,31 +71,52 @@ function resolveOrganizationGrantState(
   return { grant, grantFailure, grantLoading };
 }
 
-async function loadWorkspaceRosterWithBranchAccess(
-  organizationId: string,
-): Promise<{ managementTeam: WorkspaceRosterPerson[]; branchStaff: WorkspaceRosterPerson[] } | null> {
-  const result = await listOrganizationMembers(organizationId);
-  if (!result.ok) {
-    return null;
+function staffCountLabel(count: number, t: (key: MessageKey) => string): string {
+  if (count === 1) {
+    return t("orgRoles.staffCountOne");
   }
-  const roster = buildWorkspaceRoster(result.members);
-  const enrichedStaff = await Promise.all(
-    roster.branchStaff.map(async (person) => {
-      const access = await listMembershipBranchAssignments(organizationId, person.membershipId);
-      if (!access.ok) {
-        return person;
-      }
-      return {
-        ...person,
-        allActiveBranches: access.value.scope === "AllActive",
-        branchIds:
-          access.value.scope === "AllActive"
-            ? []
-            : access.value.branches.map((branch) => branch.branchId).filter(Boolean),
-      };
-    }),
-  );
-  return { managementTeam: roster.managementTeam, branchStaff: enrichedStaff };
+  return t("orgRoles.staffCountMany").replace("{count}", String(count));
+}
+
+function resolveOwnWorkspaceRoleLabel(
+  grant: GrantFacts,
+  t: (key: MessageKey) => string,
+): string | null {
+  if (isOrganizationOwnerMembership(grant)) {
+    return t("account.role.owner");
+  }
+  if (isOrganizationAdministratorMembership(grant)) {
+    return t("account.role.admin");
+  }
+  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(grant));
+  if (friendlyRole === "owner") {
+    return t("account.role.owner");
+  }
+  if (friendlyRole === "manager") {
+    return t("account.role.manager");
+  }
+  if (friendlyRole === "cashier") {
+    return t("account.role.cashier");
+  }
+  return null;
+}
+
+function branchCardMetaLine(input: {
+  grant: GrantFacts;
+  staffCount: number | undefined;
+  t: (key: MessageKey) => string;
+}): string {
+  if (canUseAdminExperience(input.grant)) {
+    if (typeof input.staffCount === "number" && Number.isFinite(input.staffCount)) {
+      return staffCountLabel(input.staffCount, input.t);
+    }
+    return input.t("workspace.branchActive");
+  }
+  const role = resolveOwnWorkspaceRoleLabel(input.grant, input.t);
+  if (role) {
+    return input.t("workspace.yourRole").replace("{role}", role);
+  }
+  return input.t("workspace.branchActive");
 }
 
 export function WorkspaceChooserPage() {
@@ -117,11 +140,11 @@ export function WorkspaceChooserPage() {
   );
   const [bindingKey, setBindingKey] = useState<string | null>(null);
   const [localErrorKey, setLocalErrorKey] = useState<MessageKey | null>(null);
-  const [rosterByOrg, setRosterByOrg] = useState<
-    Map<string, { managementTeam: WorkspaceRosterPerson[]; branchStaff: WorkspaceRosterPerson[] }>
-  >(() => new Map());
+  const [staffCountByOrg, setStaffCountByOrg] = useState<Map<string, Map<string, number>>>(
+    () => new Map(),
+  );
   const [grantLoadingOrgId, setGrantLoadingOrgId] = useState<string | null>(null);
-  const rosterFetchAttempted = useRef<Set<string>>(new Set());
+  const staffCountFetchAttempted = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (workspaces.length === 1 && !expandedOrgId) {
@@ -144,17 +167,23 @@ export function WorkspaceChooserPage() {
       if (!canUseAdminExperience(grant)) {
         return;
       }
-      if (rosterFetchAttempted.current.has(expandedOrgId)) {
+      if (staffCountFetchAttempted.current.has(expandedOrgId)) {
         return;
       }
-      rosterFetchAttempted.current.add(expandedOrgId);
-      const roster = await loadWorkspaceRosterWithBranchAccess(expandedOrgId);
-      if (cancelled || !roster) {
+      staffCountFetchAttempted.current.add(expandedOrgId);
+      const summary = await listBranchManagementSummaries(expandedOrgId);
+      if (cancelled || !summary.ok) {
         return;
       }
-      setRosterByOrg((prev) => {
+      const byBranch = new Map<string, number>();
+      for (const item of summary.value) {
+        if (item.id) {
+          byBranch.set(item.id, item.assignedStaffCount);
+        }
+      }
+      setStaffCountByOrg((prev) => {
         const next = new Map(prev);
-        next.set(expandedOrgId, roster);
+        next.set(expandedOrgId, byBranch);
         return next;
       });
     })();
@@ -288,7 +317,7 @@ export function WorkspaceChooserPage() {
           onToggle={() => undefined}
           grant={grantState.grant}
           grantResolved
-          roster={rosterByOrg.get(organization.organizationId) ?? null}
+          staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
           bindingKey={bindingKey}
           onSelectDestination={(destination) => void selectDestination(destination)}
           t={t}
@@ -388,7 +417,7 @@ export function WorkspaceChooserPage() {
               }
               grant={grantState.grant}
               grantResolved={Boolean(grantState.grant)}
-              roster={rosterByOrg.get(organization.organizationId) ?? null}
+              staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
               bindingKey={bindingKey}
               onSelectDestination={(destination) => void selectDestination(destination)}
               t={t}
@@ -434,7 +463,7 @@ function OrganizationWorkspaceCard({
   onToggle,
   grant,
   grantResolved,
-  roster,
+  staffCountByBranch,
   bindingKey,
   onSelectDestination,
   t,
@@ -445,10 +474,7 @@ function OrganizationWorkspaceCard({
   onToggle: () => void;
   grant: ReturnType<typeof useWorkspace>["sessionGrant"];
   grantResolved: boolean;
-  roster: {
-    managementTeam: WorkspaceRosterPerson[];
-    branchStaff: WorkspaceRosterPerson[];
-  } | null;
+  staffCountByBranch: Map<string, number> | null;
   bindingKey: string | null;
   onSelectDestination: (destination: WorkspaceDestination) => void;
   t: (key: MessageKey) => string;
@@ -503,21 +529,6 @@ function OrganizationWorkspaceCard({
                 >
                   {t("workspace.management")}
                 </h3>
-                {roster && roster.managementTeam.length > 0 ? (
-                  <ul
-                    className="mb-2 list-none space-y-1 p-0"
-                    aria-label={t("workspace.managementTeam")}
-                  >
-                    {roster.managementTeam.map((person) => (
-                      <li
-                        key={person.membershipId}
-                        className="truncate text-[length:var(--exits-text-sm)] text-muted"
-                      >
-                        {person.displayName} — {person.roleLabel}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
                 <DestinationTile
                   destination={manageBusiness}
                   bindingKey={bindingKey}
@@ -542,10 +553,11 @@ function OrganizationWorkspaceCard({
                     const branchDestinations = destinations.filter(
                       (d) => d.branchId === branch.branchId,
                     );
-                    const staffForBranch =
-                      roster?.branchStaff.filter((person) =>
-                        personAppearsOnBranch(person, branch),
-                      ) ?? [];
+                    const meta = branchCardMetaLine({
+                      grant,
+                      staffCount: staffCountByBranch?.get(branch.branchId),
+                      t,
+                    });
                     return (
                       <li
                         key={branch.branchId}
@@ -553,18 +565,12 @@ function OrganizationWorkspaceCard({
                         data-testid={`workspace-branch-${branch.branchId}`}
                       >
                         <p className="m-0 truncate font-semibold">{branch.name}</p>
-                        {staffForBranch.length > 0 ? (
-                          <ul className="mb-2 mt-1 list-none space-y-0.5 p-0">
-                            {staffForBranch.map((person) => (
-                              <li
-                                key={person.membershipId}
-                                className="truncate text-[length:var(--exits-text-sm)] text-muted"
-                              >
-                                {person.displayName} — {person.roleLabel}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
+                        <p
+                          className="m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`workspace-branch-meta-${branch.branchId}`}
+                        >
+                          {meta}
+                        </p>
                         {branchDestinations.length > 0 ? (
                           <div
                             className={cn(
