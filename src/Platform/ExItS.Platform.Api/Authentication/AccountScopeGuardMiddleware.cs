@@ -149,7 +149,24 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
+        // Public store discovery (AllowAnonymous + rate-limited). Authenticated Organization /
+        // Personal / Platform sessions must reach the same public landing as anonymous callers.
+        // Narrow prefix only — do not exempt unrelated /api/v1/public/* families.
+        if (IsPublicStoreDiscoveryPath(path))
+        {
+            return true;
+        }
+
         return false;
+    }
+
+    /// <summary>
+    /// GET /api/v1/public/stores/{publicOrganizationId}[+ /branches] — Business QR / supplier connect discovery.
+    /// </summary>
+    internal static bool IsPublicStoreDiscoveryPath(string path)
+    {
+        const string prefix = "/api/v1/public/stores/";
+        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsPathAllowed(string path, AccountClass accountClass)

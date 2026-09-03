@@ -305,4 +305,95 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
         var membersOk = await _client.SendAsync(members);
         Assert.Equal(HttpStatusCode.OK, membersOk.StatusCode);
     }
+
+    [Fact]
+    public async Task PUBSTORE_authenticated_sessions_and_anonymous_can_call_public_store_discovery()
+    {
+        // Public store landing/branches are AllowAnonymous discovery surfaces. Authenticated
+        // Organization/Personal/Platform cookies must not be account-scope denied.
+        // Use a stable non-existent public id — success vs not-found is LookupPublicStore*;
+        // this test only asserts account-scope does not block.
+        const string publicOrgId = "ORG000000";
+        var landingPath = $"/api/v1/public/stores/{publicOrgId}";
+        var branchesPath = $"/api/v1/public/stores/{publicOrgId}/branches";
+
+        // Avoid cookie bleed across account classes on the shared HandleCookies client.
+        using var authedClient = _factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+
+        static async Task AssertNotScopeDeniedAsync(HttpResponseMessage res)
+        {
+            Assert.NotEqual(HttpStatusCode.Forbidden, res.StatusCode);
+            if (res.Content.Headers.ContentType?.MediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                var body = await res.Content.ReadFromJsonAsync<JsonElement>();
+                if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("errorCode", out var code))
+                {
+                    Assert.NotEqual(ApplicationErrorCodes.AccountScopeDenied, code.GetString());
+                }
+            }
+        }
+
+        // PUBSTORE-01 / PUBSTORE-02 anonymous
+        using (var anonLanding = new HttpRequestMessage(HttpMethod.Get, landingPath))
+        {
+            await AssertNotScopeDeniedAsync(await _client.SendAsync(anonLanding));
+        }
+
+        using (var anonBranches = new HttpRequestMessage(HttpMethod.Get, branchesPath))
+        {
+            await AssertNotScopeDeniedAsync(await _client.SendAsync(anonBranches));
+        }
+
+        var (_, personalEmail, personalPassword) = await SeedPersonalUserAsync("pubpers");
+        var personalToken = (await LoginAsync(personalEmail, personalPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        var (_, orgStaffLogin, orgPassword, _) = await SeedOrgMemberAsync("puborg");
+        var orgToken = (await LoginAsync(orgStaffLogin, orgPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        var (platformUserId, platformUsername, platformPassword) = await SeedUserAsync("pubplat");
+        var assign = await _admin.PostAsJsonAsync(
+            "/api/v1/platform/authorization/assignments",
+            new
+            {
+                platformUserId,
+                role = nameof(PlatformSystemRole.PlatformAdministrator)
+            });
+        Assert.Equal(HttpStatusCode.Created, assign.StatusCode);
+        var platformToken = (await LoginAsync(platformUsername, platformPassword))
+            .GetProperty("sessionToken").GetString()!;
+
+        // PUBSTORE-03..06 Organization / Personal / Platform
+        foreach (var token in new[] { orgToken, personalToken, platformToken })
+        {
+            using var landing = Authed(HttpMethod.Get, landingPath, token);
+            await AssertNotScopeDeniedAsync(await authedClient.SendAsync(landing));
+
+            using var branches = Authed(HttpMethod.Get, branchesPath, token);
+            await AssertNotScopeDeniedAsync(await authedClient.SendAsync(branches));
+        }
+
+        // PUBSTORE-07 protected cross-scope routes remain denied
+        using (var orgToPersonal = Authed(HttpMethod.Get, "/api/v1/personal/me", orgToken))
+        {
+            await AssertScopeDeniedAsync(await authedClient.SendAsync(orgToPersonal));
+        }
+
+        using (var personalToPlatform = Authed(HttpMethod.Get, "/api/v1/platform/users?page=1&pageSize=10", personalToken))
+        {
+            await AssertScopeDeniedAsync(await authedClient.SendAsync(personalToPlatform));
+        }
+
+        using (var platformToPersonal = Authed(HttpMethod.Get, "/api/v1/personal/me", platformToken))
+        {
+            await AssertScopeDeniedAsync(await authedClient.SendAsync(platformToPersonal));
+        }
+
+        // PUBSTORE-08 invalid ORG keeps safe non-scope response (not account_scope_denied)
+        using (var missing = Authed(HttpMethod.Get, "/api/v1/public/stores/ORG999999", orgToken))
+        {
+            await AssertNotScopeDeniedAsync(await authedClient.SendAsync(missing));
+        }
+    }
 }
