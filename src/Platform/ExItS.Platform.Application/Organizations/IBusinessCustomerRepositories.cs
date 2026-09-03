@@ -102,11 +102,17 @@ public interface IOrganizationInAppNotificationRepository
         OrganizationInAppNotificationId id,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Lists inbox items for a recipient. When <paramref name="branchId"/> is supplied the read is a
+    /// branch workspace inbox: branch-targeted rows for that branch plus organization-wide (null) rows.
+    /// Null lists everything (global organization inbox).
+    /// </summary>
     Task<IReadOnlyList<OrganizationInAppNotification>> ListForRecipientInOrganizationAsync(
         PlatformOrganizationId organizationId,
         PlatformUserId recipientUserIdentityId,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null);
 
     Task<OrganizationInAppNotification?> FindByRecipientRelatedAsync(
         PlatformUserId recipientUserIdentityId,

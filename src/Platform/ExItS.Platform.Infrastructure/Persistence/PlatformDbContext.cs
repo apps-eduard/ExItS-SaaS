@@ -2293,11 +2293,14 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Preview).HasColumnName("preview").HasMaxLength(200).IsRequired();
             entity.Property(e => e.RelatedType).HasColumnName("related_type").HasMaxLength(64).IsRequired();
             entity.Property(e => e.RelatedId).HasColumnName("related_id").HasMaxLength(64);
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.IsRead).HasColumnName("is_read");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.ReadAtUtc).HasColumnName("read_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.RecipientUserIdentityId })
                 .HasDatabaseName("ix_organization_in_app_notifications_org_recipient");
+            entity.HasIndex(e => new { e.OrganizationId, e.RecipientUserIdentityId, e.BranchId })
+                .HasDatabaseName("ix_organization_in_app_notifications_org_recipient_branch");
             entity.HasIndex(e => new { e.RecipientUserIdentityId, e.RelatedType, e.RelatedId })
                 .HasDatabaseName("ix_organization_in_app_notifications_recipient_related");
 

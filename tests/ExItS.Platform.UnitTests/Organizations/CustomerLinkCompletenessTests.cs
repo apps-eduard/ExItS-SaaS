@@ -825,12 +825,14 @@ public sealed class CustomerLinkCompletenessTests
             PlatformOrganizationId organizationId,
             PlatformUserId recipientUserIdentityId,
             int take,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default,
+            Guid? branchId = null) =>
             Task.FromResult<IReadOnlyList<OrganizationInAppNotification>>(
                 _items
                     .Where(n =>
                         n.OrganizationId == organizationId
-                        && n.RecipientUserIdentityId == recipientUserIdentityId)
+                        && n.RecipientUserIdentityId == recipientUserIdentityId
+                        && OrganizationNotificationBranchScope.IsVisible(n.BranchId, branchId))
                     .OrderByDescending(n => n.CreatedAtUtc)
                     .Take(take)
                     .ToList());

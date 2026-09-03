@@ -32,6 +32,7 @@ export function AppTopBar() {
 
   const canSwitchWorkspace = workspaces.length > 0 && !isOrganizationContextLocked(session);
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const branchId = boundWorkspace?.branchId ?? null;
   const canOpenOrgNotifications =
     sessionAccountClass(session) === "Organization" && Boolean(organizationId);
   const onOrgNotificationsPage = location.pathname.startsWith("/org/notifications");
@@ -44,10 +45,11 @@ export function AppTopBar() {
 
   const notificationsQuery = useQuery({
     queryKey: organizationId
-      ? organizationNotificationsQueryKey(organizationId)
+      ? organizationNotificationsQueryKey(organizationId, branchId)
       : ["organization", "notifications", "none"],
     enabled: canOpenOrgNotifications && organizationId !== null,
-    queryFn: ({ signal }) => listOrganizationNotifications(organizationId!, signal),
+    queryFn: ({ signal }) =>
+      listOrganizationNotifications(organizationId!, signal, branchId),
   });
   const unreadCount = countUnreadOrganizationNotifications(notificationsQuery.data);
   const badge = formatUnreadNotificationBadge(unreadCount);

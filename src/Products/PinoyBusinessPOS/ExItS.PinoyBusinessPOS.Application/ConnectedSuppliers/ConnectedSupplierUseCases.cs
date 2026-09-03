@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Identity;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -27,6 +28,7 @@ public static class ConnectedSupplierErrorCodes
     public const string BulkValidation = "pos.connected_supplier.buyer_share.bulk_validation";
     public const string ProductBlocked = "pos.connected_supplier.buyer_share.product_blocked";
     public const string MissingDefaultPo = "pos.connected_supplier.buyer_share.missing_default_po";
+    public const string BranchResponseForbidden = "pos.connected_supplier.branch_response_forbidden";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -523,14 +525,21 @@ public sealed class RequestConnection
             var buyerName = string.IsNullOrWhiteSpace(buyerDisplayName)
                 ? (buyerPublicId ?? "A business")
                 : buyerDisplayName;
+            var locationLabel = string.IsNullOrWhiteSpace(location.Value!.Name)
+                ? null
+                : location.Value.Name.Trim();
+            var preview = locationLabel is null
+                ? $"{buyerName} wants to connect with your business as a supplier."
+                : $"{buyerName} wants to connect\nLocation: {locationLabel}";
             await _notifications.PublishAsync(
                 organizationId,
                 supplier.Value,
                 SupplierConnectionNotificationTypes.Requested,
                 relationship.Id.Value.ToString("D"),
                 "Supplier connection request",
-                $"{buyerName} wants to connect with your business as a supplier.",
-                ct).ConfigureAwait(false);
+                preview,
+                ct,
+                targetBranchId: location.Value.BranchId).ConfigureAwait(false);
 
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
                 ConnectedSupplierMapper.Map(relationship, supplierView: false));
@@ -718,6 +727,7 @@ public sealed class RespondConnection
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IAuthorizedBranchGroupingDirectory? _branchAccess;
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly TimeProvider _clock;
@@ -729,7 +739,8 @@ public sealed class RespondConnection
         IOrganizationBusinessNotificationPublisher? notifications = null,
         TimeProvider? clock = null,
         ICatalogProductRepository? products = null,
-        ISupplierProductExposureRepository? exposures = null)
+        ISupplierProductExposureRepository? exposures = null,
+        IAuthorizedBranchGroupingDirectory? branchAccess = null)
     {
         _relationships = relationships;
         _uow = uow;
@@ -738,6 +749,7 @@ public sealed class RespondConnection
         _clock = clock ?? TimeProvider.System;
         _products = products;
         _exposures = exposures;
+        _branchAccess = branchAccess;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -762,6 +774,20 @@ public sealed class RespondConnection
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
                 ConnectedSupplierErrorCodes.NotFound,
                 "This connection request is no longer available.");
+        }
+
+        if (_branchAccess is not null)
+        {
+            var scope = await _branchAccess.ListAuthorizedAsync(orgId, ct).ConfigureAwait(false);
+            if (!SupplierConnectionBranchRouting.CanRespondForSupplierBranch(
+                    r.SupplierBranchId,
+                    scope.IsOrganizationWide,
+                    scope.Branches.Select(b => b.BranchId)))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    ConnectedSupplierErrorCodes.BranchResponseForbidden,
+                    "You cannot respond to a connection request for this supplier location.");
+            }
         }
 
         try
@@ -986,12 +1012,54 @@ public sealed class ListRelationships
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly IPosCommercialAccessAccessor _access;
     public ListRelationships(IConnectedSupplierRelationshipRepository r,IPosCommercialAccessAccessor a){_relationships=r;_access=a;}
-    public async Task<ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>> ExecuteAsync(Guid orgId,bool supplierView,CancellationToken ct=default)
-    {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
-     if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedSupplierRelationshipDto>>(gate.ErrorCode!,gate.ErrorMessage!);
-     var items=await _relationships.ListAsync(PosOrganizationId.From(orgId),supplierView,ct);
-     return ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>.Success(
-         items.Select(x=>ConnectedSupplierMapper.Map(x,supplierView)).ToList());}
+
+    /// <param name="workspaceBranchId">
+    /// Supplier branch workspace. When set, supplier-view pending/active lists are exact-branch scoped.
+    /// </param>
+    /// <param name="organizationWideInbox">
+    /// Explicit Owner/Admin global inbox. Null preserves legacy unscoped unit-test callers.
+    /// False with no branch fails closed (empty supplier list).
+    /// </param>
+    public async Task<ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>> ExecuteAsync(
+        Guid orgId,
+        bool supplierView,
+        CancellationToken ct = default,
+        Guid? workspaceBranchId = null,
+        bool? organizationWideInbox = null)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ViewSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedSupplierRelationshipDto>>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var items = await _relationships.ListAsync(PosOrganizationId.From(orgId), supplierView, ct);
+        if (supplierView)
+        {
+            if (workspaceBranchId is Guid branch)
+            {
+                items = items
+                    .Where(x => SupplierConnectionBranchRouting.IsVisibleInSupplierInbox(
+                        x.SupplierBranchId,
+                        branch,
+                        organizationWideInbox: false))
+                    .ToList();
+            }
+            else if (organizationWideInbox == true)
+            {
+                // Global management inbox: keep all, including legacy null-branch rows.
+            }
+            else if (organizationWideInbox == false)
+            {
+                items = Array.Empty<ConnectedSupplierRelationship>();
+            }
+        }
+
+        return ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>.Success(
+            items.Select(x => ConnectedSupplierMapper.Map(x, supplierView)).ToList());
+    }
 }
 
 public sealed class ExposeProduct

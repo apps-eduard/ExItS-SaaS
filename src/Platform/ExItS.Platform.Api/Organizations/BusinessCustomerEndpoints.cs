@@ -333,6 +333,7 @@ internal static class BusinessCustomerEndpoints
 
         app.MapGet("/api/v1/organizations/{organizationId:guid}/notifications", async (
             Guid organizationId,
+            Guid? branchId,
             ListOrganizationInAppNotifications useCase,
             PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
@@ -359,7 +360,11 @@ internal static class BusinessCustomerEndpoints
             }
 
             var list = await useCase
-                .ExecuteAsync(PlatformOrganizationId.From(organizationId), actor.PlatformUserId, ct)
+                .ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    actor.PlatformUserId,
+                    ct,
+                    branchId == Guid.Empty ? null : branchId)
                 .ConfigureAwait(false);
             return Results.Ok(list);
         });

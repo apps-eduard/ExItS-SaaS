@@ -20,6 +20,7 @@ export const organizationInAppNotificationSchema = z.object({
   isRead: z.boolean(),
   createdAtUtc: z.string(),
   readAtUtc: z.string().nullable().optional().default(null),
+  branchId: guidSchema.nullable().optional().default(null),
 });
 
 export type OrganizationInAppNotificationDto = z.infer<
@@ -40,15 +41,21 @@ function normalizeNotification(raw: unknown): unknown {
     isRead: pick(r, "isRead", "IsRead"),
     createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
     readAtUtc: pick(r, "readAtUtc", "ReadAtUtc") ?? null,
+    branchId: pick(r, "branchId", "BranchId") ?? null,
   };
 }
 
 export async function listOrganizationNotifications(
   organizationId: string,
   signal?: AbortSignal,
+  branchId?: string | null,
 ): Promise<OrganizationInAppNotificationDto[]> {
+  const query =
+    branchId && branchId.length > 0
+      ? `?branchId=${encodeURIComponent(branchId)}`
+      : "";
   const raw = await platformRequest<unknown>({
-    path: `/api/v1/organizations/${organizationId}/notifications`,
+    path: `/api/v1/organizations/${organizationId}/notifications${query}`,
     signal,
   });
   return (Array.isArray(raw) ? raw : []).map((item) =>

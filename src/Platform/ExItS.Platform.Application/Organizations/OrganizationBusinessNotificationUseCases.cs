@@ -12,14 +12,17 @@ public sealed record PublishOrganizationBusinessNotificationRequest(
     string RelatedType,
     string RelatedId,
     string Title,
-    string Preview);
+    string Preview,
+    /// <summary>Operational branch the notification is addressed to. Null publishes organization-wide.</summary>
+    Guid? TargetBranchId = null);
 
 public sealed record PublishOrganizationBusinessNotificationResult(
     Guid RecipientOrganizationId,
     string RelatedType,
     string RelatedId,
     int CreatedCount,
-    int SkippedExistingCount);
+    int SkippedExistingCount,
+    Guid? TargetBranchId = null);
 
 public sealed record MarkRelatedOrganizationNotificationsReadRequest(
     string RelatedType,
@@ -94,6 +97,15 @@ public sealed class PublishOrganizationBusinessNotification
 
         var relatedType = request.RelatedType.Trim();
         var relatedId = request.RelatedId.Trim();
+
+        // Only types declared branch-targetable may be narrowed; everything else stays organization-wide
+        // even when a caller supplies a branch, so unrelated inbox items never disappear from a workspace.
+        var targetBranchId = OrganizationBusinessNotificationTypes.IsBranchTargetable(relatedType)
+            && request.TargetBranchId is { } branch
+            && branch != Guid.Empty
+                ? request.TargetBranchId
+                : null;
+
         var recipients = await _memberships
             .ListActiveBusinessInboxRecipientsAsync(recipientOrganizationId, cancellationToken)
             .ConfigureAwait(false);
@@ -119,7 +131,9 @@ public sealed class PublishOrganizationBusinessNotification
                 request.Preview,
                 relatedType,
                 utcNow,
-                relatedId);
+                relatedId,
+                id: null,
+                targetBranchId);
             await _notifications.AddAsync(notification, cancellationToken).ConfigureAwait(false);
             created++;
         }
@@ -135,7 +149,8 @@ public sealed class PublishOrganizationBusinessNotification
                 relatedType,
                 relatedId,
                 created,
-                skipped));
+                skipped,
+                targetBranchId));
     }
 }
 

@@ -8,6 +8,10 @@ namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 /// </summary>
 public interface IOrganizationBusinessNotificationPublisher
 {
+    /// <param name="targetBranchId">
+    /// Operational branch the recipient organization should see this in. Null publishes organization-wide.
+    /// Platform ignores it for notification types that are not branch-targetable.
+    /// </param>
     Task PublishAsync(
         Guid sourceOrganizationId,
         Guid recipientOrganizationId,
@@ -15,7 +19,8 @@ public interface IOrganizationBusinessNotificationPublisher
         string relatedId,
         string title,
         string preview,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? targetBranchId = null);
 
     Task MarkRelatedReadAsync(
         Guid organizationId,
@@ -54,7 +59,8 @@ public sealed class NoOpOrganizationBusinessNotificationPublisher : IOrganizatio
         string relatedId,
         string title,
         string preview,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        Guid? targetBranchId = null) =>
         Task.CompletedTask;
 
     public Task MarkRelatedReadAsync(

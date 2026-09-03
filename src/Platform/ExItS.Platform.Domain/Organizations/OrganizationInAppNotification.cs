@@ -16,6 +16,11 @@ public sealed class OrganizationInAppNotification
     public string Preview { get; }
     public string RelatedType { get; }
     public string? RelatedId { get; }
+    /// <summary>
+    /// Operational branch this notification is addressed to. Null means organization-wide:
+    /// legacy rows stay null and are never backfilled with a guessed branch.
+    /// </summary>
+    public Guid? BranchId { get; }
     public bool IsRead { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset? ReadAtUtc { get; private set; }
@@ -30,7 +35,8 @@ public sealed class OrganizationInAppNotification
         string? relatedId,
         bool isRead,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset? readAtUtc)
+        DateTimeOffset? readAtUtc,
+        Guid? branchId)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -42,6 +48,7 @@ public sealed class OrganizationInAppNotification
         IsRead = isRead;
         CreatedAtUtc = createdAtUtc;
         ReadAtUtc = readAtUtc;
+        BranchId = branchId == Guid.Empty ? null : branchId;
     }
 
     public static OrganizationInAppNotification Create(
@@ -52,7 +59,8 @@ public sealed class OrganizationInAppNotification
         string relatedType,
         DateTimeOffset utcNow,
         string? relatedId = null,
-        OrganizationInAppNotificationId? id = null)
+        OrganizationInAppNotificationId? id = null,
+        Guid? branchId = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(recipientUserIdentityId);
@@ -71,7 +79,8 @@ public sealed class OrganizationInAppNotification
             relatedId,
             isRead: false,
             utcNow,
-            readAtUtc: null);
+            readAtUtc: null,
+            branchId);
     }
 
     public static OrganizationInAppNotification Rehydrate(
@@ -84,8 +93,9 @@ public sealed class OrganizationInAppNotification
         string? relatedId,
         bool isRead,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset? readAtUtc) =>
-        new(id, organizationId, recipientUserIdentityId, title, preview, relatedType, relatedId, isRead, createdAtUtc, readAtUtc);
+        DateTimeOffset? readAtUtc,
+        Guid? branchId = null) =>
+        new(id, organizationId, recipientUserIdentityId, title, preview, relatedType, relatedId, isRead, createdAtUtc, readAtUtc, branchId);
 
     public void MarkRead(DateTimeOffset utcNow)
     {
@@ -204,6 +214,26 @@ public static class OrganizationBusinessNotificationTypes
     public static bool AllowsSameOrganization(string? relatedType) =>
         SupplierConnectionNotificationTypes.IsLocalActivity(relatedType)
         || CustomerOrderNotificationTypes.IsKnown(relatedType);
+
+    /// <summary>
+    /// Types that may be addressed to a single operational branch. Everything else stays
+    /// organization-wide even when a caller supplies a target branch.
+    /// </summary>
+    public static bool IsBranchTargetable(string? relatedType) =>
+        string.Equals(relatedType, SupplierConnectionNotificationTypes.Requested, StringComparison.Ordinal);
+}
+
+/// <summary>Branch-workspace visibility rule for organization inbox reads and counts.</summary>
+public static class OrganizationNotificationBranchScope
+{
+    /// <summary>
+    /// A branch workspace sees its own branch plus organization-wide (null) notifications.
+    /// A null <paramref name="workspaceBranchId"/> is the global organization inbox and sees everything.
+    /// </summary>
+    public static bool IsVisible(Guid? notificationBranchId, Guid? workspaceBranchId) =>
+        workspaceBranchId is null
+        || notificationBranchId is null
+        || notificationBranchId == workspaceBranchId;
 }
 
 /// <summary>Personal inbox RelatedType for Organization ownership-transfer requests.</summary>

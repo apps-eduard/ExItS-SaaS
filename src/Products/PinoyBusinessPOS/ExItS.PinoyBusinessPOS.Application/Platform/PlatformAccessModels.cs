@@ -1048,7 +1048,8 @@ public sealed record OrganizationInAppNotificationDto(
     string? RelatedId,
     bool IsRead,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset? ReadAtUtc);
+    DateTimeOffset? ReadAtUtc,
+    Guid? BranchId = null);
 
 public sealed record MarkRelatedOrganizationNotificationsReadResultDto(
     string RelatedType,

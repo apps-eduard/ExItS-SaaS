@@ -796,6 +796,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.incomingCompact": "Nagaabot nga pangayo ({count})",
   "connected.incomingHelp": "Tan-awa ang mga negosyo nga gusto mabakalsad sa imo.",
   "connected.incomingMessage": "Gusto ni {name} magkonekta bilang inyo supplier.",
+  "connected.incomingLocation": "Lokasyon: {name}",
   "connected.incomingNoMatch": "Wala sang nagahisugtong nga pangayo",
   "connected.incomingNoMatchHelp": "Suwayi ang iban nga pagpangita.",
   "connected.incomingRequests": "Nagaabot nga pangayo",

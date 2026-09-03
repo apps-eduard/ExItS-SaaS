@@ -796,6 +796,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.incomingCompact": "Papasok na kahilingan ({count})",
   "connected.incomingHelp": "Suriin ang mga negosyong gustong bumili mula sa inyo.",
   "connected.incomingMessage": "Gusto ni {name} na kumonekta bilang supplier ninyo.",
+  "connected.incomingLocation": "Lokasyon: {name}",
   "connected.incomingNoMatch": "No matching requests",
   "connected.incomingNoMatchHelp": "Try another search.",
   "connected.incomingRequests": "Papasok na kahilingan",

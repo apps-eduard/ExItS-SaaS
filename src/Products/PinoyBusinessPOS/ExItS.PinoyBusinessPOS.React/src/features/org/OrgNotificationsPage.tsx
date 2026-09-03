@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
   listOrganizationNotifications,
   markOrganizationNotificationRead,
@@ -44,8 +45,13 @@ export function OrgNotificationsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { boundWorkspace } = useWorkspace();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const branchId = boundWorkspace?.branchId ?? null;
+  // Owner/Admin explicit global inbox; branch workspace staff stay branch-scoped.
+  const notificationBranchId = hasOrganizationManagementAuthority(sessionGrant)
+    ? null
+    : branchId;
   const [tab, setTab] = useState<"unread" | "all">("unread");
 
   const returnToFromState =
@@ -61,10 +67,11 @@ export function OrgNotificationsPage() {
 
   const query = useQuery({
     queryKey: organizationId
-      ? organizationNotificationsQueryKey(organizationId)
+      ? organizationNotificationsQueryKey(organizationId, notificationBranchId)
       : ["organization", "notifications", "none"],
     enabled: organizationId !== null,
-    queryFn: ({ signal }) => listOrganizationNotifications(organizationId!, signal),
+    queryFn: ({ signal }) =>
+      listOrganizationNotifications(organizationId!, signal, notificationBranchId),
   });
 
   const markRead = useMutation({
@@ -72,7 +79,7 @@ export function OrgNotificationsPage() {
     onSuccess: async () => {
       if (!organizationId) return;
       await queryClient.invalidateQueries({
-        queryKey: organizationNotificationsQueryKey(organizationId),
+        queryKey: organizationNotificationsQueryKey(organizationId, notificationBranchId),
       });
     },
   });

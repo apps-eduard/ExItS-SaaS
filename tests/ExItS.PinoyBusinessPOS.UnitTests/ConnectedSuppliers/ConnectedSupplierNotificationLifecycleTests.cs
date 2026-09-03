@@ -39,7 +39,8 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
             string relatedId,
             string title,
             string preview,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Guid? targetBranchId = null)
         {
             Published.Add((sourceOrganizationId, recipientOrganizationId, relatedType, relatedId, title, preview));
             return Task.CompletedTask;

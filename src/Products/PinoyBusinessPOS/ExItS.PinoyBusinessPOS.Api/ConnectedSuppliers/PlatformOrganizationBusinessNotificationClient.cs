@@ -31,7 +31,8 @@ public sealed class PlatformOrganizationBusinessNotificationClient(
         string relatedId,
         string title,
         string preview,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? targetBranchId = null)
     {
         try
         {
@@ -46,7 +47,8 @@ public sealed class PlatformOrganizationBusinessNotificationClient(
                     relatedType,
                     relatedId,
                     title,
-                    preview
+                    preview,
+                    targetBranchId
                 },
                 options: JsonOptions);
             using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);

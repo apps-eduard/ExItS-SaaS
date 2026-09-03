@@ -796,6 +796,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.incomingCompact": "Umaabot nga hangyo ({count})",
   "connected.incomingHelp": "Tan-awa ang mga negosyo nga gusto mopalit gikan nimo.",
   "connected.incomingMessage": "Gusto ni {name} nga makonektar isip inyong supplier.",
+  "connected.incomingLocation": "Lokasyon: {name}",
   "connected.incomingNoMatch": "No matching requests",
   "connected.incomingNoMatchHelp": "Try another search.",
   "connected.incomingRequests": "Umaabot nga hangyo",

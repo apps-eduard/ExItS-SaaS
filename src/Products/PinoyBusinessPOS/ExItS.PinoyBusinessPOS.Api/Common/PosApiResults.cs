@@ -1,6 +1,7 @@
 using System.Globalization;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Api.Common;
@@ -187,7 +188,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ProductOriginBranchForbidden
             or ApplicationErrorCodes.ProductPromotionForbidden
             or ApplicationErrorCodes.ProductAvailabilityForbidden
-            or ApplicationErrorCodes.CustomerBranchAccessForbidden => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.CustomerBranchAccessForbidden
+            or ApplicationErrorCodes.SupplierBranchAccessForbidden
+            or ConnectedSupplierErrorCodes.BranchResponseForbidden => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.PlatformAuthUnavailable
             or ApplicationErrorCodes.CatalogImportPlatformUnavailable => StatusCodes.Status503ServiceUnavailable,

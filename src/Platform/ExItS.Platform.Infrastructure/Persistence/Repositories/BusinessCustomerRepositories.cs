@@ -451,12 +451,20 @@ internal sealed class OrganizationInAppNotificationRepository(PlatformDbContext 
         PlatformOrganizationId organizationId,
         PlatformUserId recipientUserIdentityId,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
-        var records = await db.OrganizationInAppNotifications.AsNoTracking()
+        var query = db.OrganizationInAppNotifications.AsNoTracking()
             .Where(x =>
                 x.OrganizationId == organizationId.Value
-                && x.RecipientUserIdentityId == recipientUserIdentityId.Value)
+                && x.RecipientUserIdentityId == recipientUserIdentityId.Value);
+        if (branchId is Guid workspaceBranchId)
+        {
+            // Mirrors OrganizationNotificationBranchScope.IsVisible for the branch-workspace inbox.
+            query = query.Where(x => x.BranchId == null || x.BranchId == workspaceBranchId);
+        }
+
+        var records = await query
             .OrderByDescending(x => x.CreatedAtUtc)
             .Take(take)
             .ToListAsync(cancellationToken)
@@ -527,7 +535,8 @@ internal sealed class OrganizationInAppNotificationRepository(PlatformDbContext 
             record.RelatedId,
             record.IsRead,
             record.CreatedAtUtc,
-            record.ReadAtUtc);
+            record.ReadAtUtc,
+            record.BranchId);
 
     private static OrganizationInAppNotificationRecord ToRecord(OrganizationInAppNotification notification) =>
         new()
@@ -539,6 +548,7 @@ internal sealed class OrganizationInAppNotificationRepository(PlatformDbContext 
             Preview = notification.Preview,
             RelatedType = notification.RelatedType,
             RelatedId = notification.RelatedId,
+            BranchId = notification.BranchId,
             IsRead = notification.IsRead,
             CreatedAtUtc = notification.CreatedAtUtc,
             ReadAtUtc = notification.ReadAtUtc

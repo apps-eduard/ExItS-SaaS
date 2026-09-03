@@ -61,6 +61,8 @@ internal sealed class OrganizationInAppNotificationRecord
     public string Preview { get; set; } = string.Empty;
     public string RelatedType { get; set; } = string.Empty;
     public string? RelatedId { get; set; }
+    /// <summary>Null = organization-wide. No FK: branch removal must not delete inbox history.</summary>
+    public Guid? BranchId { get; set; }
     public bool IsRead { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? ReadAtUtc { get; set; }

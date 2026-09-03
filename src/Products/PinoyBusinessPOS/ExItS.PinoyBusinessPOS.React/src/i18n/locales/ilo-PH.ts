@@ -796,6 +796,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.incomingCompact": "Agdama a kiddaw ({count})",
   "connected.incomingHelp": "Kitaen dagiti negosio a kayatda a gumatang manipud kenka.",
   "connected.incomingMessage": "Kayat ni {name} a makonekta kas supplieryo.",
+  "connected.incomingLocation": "Lokasyon: {name}",
   "connected.incomingNoMatch": "No matching requests",
   "connected.incomingNoMatchHelp": "Try another search.",
   "connected.incomingRequests": "Agdama a kiddaw",

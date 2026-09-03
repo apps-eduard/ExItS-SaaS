@@ -76,7 +76,7 @@ export function ConnectedIncomingRequestsPage() {
   const allowManage = canManageSuppliers(sessionGrant);
 
   const query = useQuery({
-    queryKey: ["connected-suppliers", "incoming", workspace?.organizationId],
+    queryKey: ["connected-suppliers", "incoming", workspace?.organizationId, workspace?.branchId],
     enabled: Boolean(workspace),
     queryFn: async ({ signal }) => {
       const rows = await listRelationships(workspace!, "supplier", signal);
@@ -374,6 +374,11 @@ export function ConnectedIncomingRequestsPage() {
                     <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
                       {t("connected.incomingMessage").replace("{name}", name)}
                     </span>
+                    {item.supplierBranchName ? (
+                      <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
+                        {t("connected.incomingLocation").replace("{name}", item.supplierBranchName)}
+                      </span>
+                    ) : null}
                     {requestedWhen ? (
                       <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
                         {t("connected.requestedAt").replace("{when}", requestedWhen)}

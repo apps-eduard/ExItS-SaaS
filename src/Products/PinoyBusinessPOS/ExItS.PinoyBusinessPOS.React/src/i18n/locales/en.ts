@@ -3723,6 +3723,7 @@ export const en = {
   "connected.noIncoming": "No incoming requests",
   "connected.noIncomingHelp": "When another business asks to connect, it will show here.",
   "connected.incomingMessage": "{name} wants to connect with your business as a supplier.",
+  "connected.incomingLocation": "Location: {name}",
   "connected.requestingBusiness": "A business",
   "connected.accept": "Accept",
   "connected.decline": "Decline",

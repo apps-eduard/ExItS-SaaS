@@ -3,8 +3,11 @@ import { formatUnreadNotificationBadge } from "@/features/personal/personal-noti
 
 export const ORGANIZATION_NOTIFICATIONS_QUERY_KEY = ["organization", "notifications"] as const;
 
-export function organizationNotificationsQueryKey(organizationId: string) {
-  return [...ORGANIZATION_NOTIFICATIONS_QUERY_KEY, organizationId] as const;
+export function organizationNotificationsQueryKey(
+  organizationId: string,
+  branchId?: string | null,
+) {
+  return [...ORGANIZATION_NOTIFICATIONS_QUERY_KEY, organizationId, branchId ?? "org"] as const;
 }
 
 export function countUnreadOrganizationNotifications(

@@ -94,7 +94,8 @@ public sealed record OrganizationInAppNotificationDto(
     string? RelatedId,
     bool IsRead,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset? ReadAtUtc);
+    DateTimeOffset? ReadAtUtc,
+    Guid? BranchId = null);
 
 public sealed class CustomerLinkRequestQueryService
 {
@@ -1641,15 +1642,27 @@ public sealed class ListOrganizationInAppNotifications
     public ListOrganizationInAppNotifications(IOrganizationInAppNotificationRepository notifications) =>
         _notifications = notifications;
 
+    /// <param name="branchId">
+    /// Branch workspace performing the read. Null is the global organization inbox and returns every item.
+    /// </param>
     public async Task<IReadOnlyList<OrganizationInAppNotificationDto>> ExecuteAsync(
         PlatformOrganizationId organizationId,
         PlatformUserId recipientUserIdentityId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? branchId = null)
     {
         var items = await _notifications
-            .ListForRecipientInOrganizationAsync(organizationId, recipientUserIdentityId, take: 50, cancellationToken)
+            .ListForRecipientInOrganizationAsync(
+                organizationId,
+                recipientUserIdentityId,
+                take: 50,
+                cancellationToken,
+                branchId)
             .ConfigureAwait(false);
-        return items.Select(ToDto).ToList();
+        return items
+            .Where(n => OrganizationNotificationBranchScope.IsVisible(n.BranchId, branchId))
+            .Select(ToDto)
+            .ToList();
     }
 
     internal static OrganizationInAppNotificationDto ToDto(OrganizationInAppNotification notification) =>
@@ -1663,7 +1676,8 @@ public sealed class ListOrganizationInAppNotifications
             notification.RelatedId,
             notification.IsRead,
             notification.CreatedAtUtc,
-            notification.ReadAtUtc);
+            notification.ReadAtUtc,
+            notification.BranchId);
 }
 
 public sealed class MarkOrganizationInAppNotificationRead
