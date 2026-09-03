@@ -4272,6 +4272,13 @@ export const filPH: Record<keyof typeof en, string> = {
   "shift.openLede": "Pumili ng register at ilagay ang opening cash kung required.",
   "shift.openReadyHint": "Handa nang i-open ang shift.",
   "shift.openSelectRegisterHint": "Pumili ng register para magpatuloy.",
+  "shift.registerInUseTitle": "Ginagamit ang register",
+  "shift.registerInUseDetail":
+    "May open shift ang {register} na binuksan ni {name}.",
+  "shift.registerInUseHelp":
+    "Hindi ka makakabenta sa register na ito hanggang maisara ang kasalukuyang shift.",
+  "shift.registerInUseUnknownOpener": "ibang cashier",
+  "shift.chooseAnotherRegister": "Pumili ng ibang register",
   "shift.openTitle": "Open shift",
   "shift.opening": "Binubuksan?",
   "shift.openingCash": "Opening cash",

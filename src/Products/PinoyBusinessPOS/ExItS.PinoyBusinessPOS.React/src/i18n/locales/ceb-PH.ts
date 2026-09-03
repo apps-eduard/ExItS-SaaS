@@ -4273,6 +4273,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "shift.openLede": "Pagpili og register ug butangi ang opening cash kung gikinahanglan.",
   "shift.openReadyHint": "Andam na ablihon ang shift.",
   "shift.openSelectRegisterHint": "Pagpili og register aron magpadayon.",
+  "shift.registerInUseTitle": "Gigamit ang register",
+  "shift.registerInUseDetail":
+    "Adunay open shift ang {register} nga gibuksan ni {name}.",
+  "shift.registerInUseHelp":
+    "Dili ka makabaligya niining register hangtod masira ang kasamtangang shift.",
+  "shift.registerInUseUnknownOpener": "lain nga cashier",
+  "shift.chooseAnotherRegister": "Pagpili og laing register",
   "shift.openTitle": "Ablihi ang shift",
   "shift.opening": "Ginaabli?",
   "shift.openingCash": "Opening cash",

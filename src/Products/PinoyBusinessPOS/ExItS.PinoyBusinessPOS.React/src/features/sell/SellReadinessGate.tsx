@@ -123,7 +123,7 @@ export function SellReadinessGate() {
             </p>
           </div>
           <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
-            <Link to="/shifts">{t("sell.readiness.openShift")}</Link>
+            <Link to="/shifts/open">{t("sell.readiness.openShift")}</Link>
           </Button>
         </Card>
       </div>

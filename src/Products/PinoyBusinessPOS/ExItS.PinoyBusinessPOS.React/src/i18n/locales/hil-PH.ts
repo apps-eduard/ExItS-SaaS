@@ -4273,6 +4273,13 @@ export const hilPH: Record<keyof typeof en, string> = {
   "shift.openLede": "Magpili sang register kag butangi ang opening cash kung kinahanglan.",
   "shift.openReadyHint": "Handa na abrihon ang shift.",
   "shift.openSelectRegisterHint": "Pili sang register para magpadayon.",
+  "shift.registerInUseTitle": "Gina-usar ang register",
+  "shift.registerInUseDetail":
+    "May open shift ang {register} nga ginbuksan ni {name}.",
+  "shift.registerInUseHelp":
+    "Indi ka makabaligya sa register nga ini hasta masira ang karon nga shift.",
+  "shift.registerInUseUnknownOpener": "iban nga cashier",
+  "shift.chooseAnotherRegister": "Pili sang iban nga register",
   "shift.openTitle": "Buksan ang shift",
   "shift.opening": "Ginabuksan?",
   "shift.openingCash": "Opening cash",

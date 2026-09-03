@@ -13,7 +13,7 @@ import {
   resolveOpeningCashCountMode,
   resolveOpeningCashVisible,
 } from "@/api/pos/pos-operational-setup-client";
-import { listRegistersAvailableForShift } from "@/api/pos/pos-registers-client";
+import { listRegisters } from "@/api/pos/pos-registers-client";
 import {
   getCurrentCashierShift,
   openCashierShift,
@@ -26,6 +26,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
@@ -33,16 +34,20 @@ import {
   ensurePwaDefaultCashRegister,
   PWA_DEFAULT_REGISTER_NAME,
 } from "@/features/shifts/ensure-pwa-default-register";
+import { RegisterInUsePanel } from "@/features/shifts/RegisterInUsePanel";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
+import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ShiftOpenPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const { session } = useSession();
   const { refresh } = useShiftContext();
+  const currentActorId = session?.userId ?? null;
 
   const canView = canViewShifts(sessionGrant);
   const canManage = canManageShifts(sessionGrant);
@@ -71,9 +76,16 @@ export function ShiftOpenPage() {
   const pwaEnsureAttemptedRef = useRef(false);
 
   const registersQuery = useQuery({
-    queryKey: ["pos-registers-available", workspaceScope?.organizationId, workspaceScope?.branchId],
+    queryKey: ["pos-registers-active", workspaceScope?.organizationId, workspaceScope?.branchId],
     enabled: workspaceScope !== null && canManage,
-    queryFn: ({ signal }) => listRegistersAvailableForShift(workspaceScope!, signal),
+    queryFn: async ({ signal }) => {
+      const page = await listRegisters(
+        workspaceScope!,
+        { status: "Active", page: 1, pageSize: 100 },
+        signal,
+      );
+      return page.items;
+    },
   });
 
   const setupQuery = useQuery({
@@ -91,6 +103,26 @@ export function ShiftOpenPage() {
   });
 
   const registers = useMemo(() => registersQuery.data ?? [], [registersQuery.data]);
+  const freeRegisters = useMemo(
+    () => registers.filter((register) => !register.hasOpenShift),
+    [registers],
+  );
+  const selectedRegister = useMemo(
+    () => registers.find((register) => register.registerId === selectedRegisterId) ?? null,
+    [registers, selectedRegisterId],
+  );
+  const selectedRegisterBusy =
+    Boolean(selectedRegister?.hasOpenShift) &&
+    Boolean(selectedRegister?.openShiftActorId) &&
+    (currentActorId == null ||
+      selectedRegister!.openShiftActorId!.localeCompare(currentActorId, undefined, {
+        sensitivity: "accent",
+      }) !== 0);
+  const busyActorIds = useMemo(
+    () => registers.map((register) => register.openShiftActorId ?? null),
+    [registers],
+  );
+  const actors = useActorDirectory(workspaceScope?.organizationId, busyActorIds);
   const openingMode = resolveOpeningCashCountMode(setupQuery.data);
   const currencyCode = setupQuery.data?.currencyCode ?? "PHP";
   const showOpeningCash = resolveOpeningCashVisible(openingMode);
@@ -113,11 +145,15 @@ export function ShiftOpenPage() {
     }
     setSelectedRegisterId((current) => {
       if (current && registers.some((register) => register.registerId === current)) {
-        return current;
+        const still = registers.find((register) => register.registerId === current);
+        if (still && !still.hasOpenShift) {
+          return current;
+        }
       }
-      return registers[0]!.registerId;
+      const preferredFree = freeRegisters[0] ?? registers.find((register) => !register.hasOpenShift);
+      return preferredFree?.registerId ?? registers[0]!.registerId;
     });
-  }, [registers]);
+  }, [freeRegisters, registers]);
 
   // PWA: auto-provision cash register PWA-0001 when none are available for shift.
   useEffect(() => {
@@ -239,7 +275,7 @@ export function ShiftOpenPage() {
   }
 
   async function onOpen(skipOpeningCash: boolean) {
-    if (saving || !selectedRegisterId) {
+    if (saving || !selectedRegisterId || selectedRegisterBusy) {
       return;
     }
 
@@ -321,19 +357,24 @@ export function ShiftOpenPage() {
   const startBlocked =
     saving ||
     ensuringPwaRegister ||
+    selectedRegisterBusy ||
     !selectedRegisterId ||
-    registers.length === 0 ||
+    freeRegisters.length === 0 ||
     registersQuery.isLoading ||
     Boolean(registersQuery.error) ||
     !openingCashValid;
 
   const startBlockedReason = ensuringPwaRegister
     ? t("shift.pwaRegisterPreparing")
-    : !selectedRegisterId
-      ? t("shift.openSelectRegisterHint")
-      : !openingCashValid
-        ? t("shift.openingCashRequired")
-        : t("shift.openReadyHint");
+    : selectedRegisterBusy
+      ? t("shift.registerInUseHelp")
+      : !selectedRegisterId
+        ? t("shift.openSelectRegisterHint")
+        : freeRegisters.length === 0
+          ? t("shift.registerInUseHelp")
+          : !openingCashValid
+            ? t("shift.openingCashRequired")
+            : t("shift.openReadyHint");
 
   return (
     <div
@@ -457,7 +498,9 @@ export function ShiftOpenPage() {
               testId="shift-register-chips"
               items={registers.map((register) => ({
                 key: register.registerId,
-                label: `${register.registerCode} — ${register.name}`,
+                label: register.hasOpenShift
+                  ? `${register.registerCode} — ${register.name} (${t("register.hasOpenShift")})`
+                  : `${register.registerCode} — ${register.name}`,
                 state: selectedRegisterId === register.registerId ? "active" : "idle",
                 testId: `shift-register-chip-${register.registerId}`,
                 onSelect: () => setSelectedRegisterId(register.registerId),
@@ -483,11 +526,28 @@ export function ShiftOpenPage() {
                 </option>
               ))}
             </select>
+            {selectedRegisterBusy && selectedRegister ? (
+              <div className="mt-3">
+                <RegisterInUsePanel
+                  registerCode={selectedRegister.registerCode}
+                  registerName={selectedRegister.name}
+                  openedByDisplayName={
+                    actors.resolve(selectedRegister.openShiftActorId)?.displayName ?? null
+                  }
+                  chooseRegisterHref="/registers"
+                  onChooseRegister={
+                    freeRegisters.length > 0
+                      ? () => setSelectedRegisterId(freeRegisters[0]!.registerId)
+                      : undefined
+                  }
+                />
+              </div>
+            ) : null}
           </>
         ) : null}
       </section>
 
-      {showOpeningCash ? (
+      {showOpeningCash && !selectedRegisterBusy ? (
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("shift.openingCashSection")}</h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
@@ -537,6 +597,7 @@ export function ShiftOpenPage() {
         </section>
       ) : null}
 
+      {!selectedRegisterBusy ? (
       <div className="catalog-form-actions shift-open-actions">
         <div className="catalog-form-actions__primary">
           {showOpeningCash && !openingRequired ? (
@@ -546,8 +607,9 @@ export function ShiftOpenPage() {
               className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
               disabled={
                 saving ||
+                selectedRegisterBusy ||
                 !selectedRegisterId ||
-                registers.length === 0 ||
+                freeRegisters.length === 0 ||
                 registersQuery.isLoading ||
                 Boolean(registersQuery.error)
               }
@@ -581,6 +643,7 @@ export function ShiftOpenPage() {
           </ActionButtonLoading>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

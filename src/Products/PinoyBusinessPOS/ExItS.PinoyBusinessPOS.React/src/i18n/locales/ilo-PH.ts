@@ -4273,6 +4273,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shift.openLede": "Agpili iti register ken isurat ti opening cash kung masapul.",
   "shift.openReadyHint": "Nakasagana a lukatan ti shift.",
   "shift.openSelectRegisterHint": "Agpili iti register tapno agtultuloy.",
+  "shift.registerInUseTitle": "Maus-usar ti register",
+  "shift.registerInUseDetail":
+    "Adda open shift ti {register} a nalukatan ni {name}.",
+  "shift.registerInUseHelp":
+    "Saanmo a mabaligya iti daytoy a register agingga a maiserra ti agdama a shift.",
+  "shift.registerInUseUnknownOpener": "sabali a cashier",
+  "shift.chooseAnotherRegister": "Agpili iti sabali a register",
   "shift.openTitle": "Lukatan ti shift",
   "shift.opening": "Malukatan?",
   "shift.openingCash": "Opening cash",

@@ -253,7 +253,15 @@ public sealed class OpenCashierShift
             {
                 return ApplicationResult<CashierShift>.Failure(
                     DomainErrorCodes.CashierShiftRegisterConflict,
-                    "This register already has an open shift.");
+                    "This register already has an open shift.",
+                    new Dictionary<string, string>
+                    {
+                        ["openShiftActorId"] = existingRegister.ActorId.ToString("D"),
+                        ["openShiftId"] = existingRegister.Id.Value.ToString("D"),
+                        ["registerId"] = register.Id.Value.ToString("D"),
+                        ["registerCode"] = register.RegisterCode,
+                        ["registerName"] = register.Name,
+                    });
             }
 
             var utcNow = _clock.UtcNow;

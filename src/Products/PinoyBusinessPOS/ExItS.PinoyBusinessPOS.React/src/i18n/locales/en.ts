@@ -2195,6 +2195,13 @@ export const en = {
   "shift.openError": "Could not open the shift.",
   "shift.openReadyHint": "Ready to open this shift.",
   "shift.openSelectRegisterHint": "Select a register to continue.",
+  "shift.registerInUseTitle": "Register in use",
+  "shift.registerInUseDetail":
+    "{register} currently has an open shift by {name}.",
+  "shift.registerInUseHelp":
+    "You cannot sell on this register until the current shift is closed.",
+  "shift.registerInUseUnknownOpener": "another cashier",
+  "shift.chooseAnotherRegister": "Choose another register",
   "shift.openingCashPreview": "Opening cash: {amount}",
   "shift.noRegisterTitle": "No register available",
   "shift.goToRegisters": "Go to registers",
