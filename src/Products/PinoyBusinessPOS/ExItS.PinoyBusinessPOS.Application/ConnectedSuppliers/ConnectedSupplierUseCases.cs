@@ -32,6 +32,8 @@ public static class ConnectedSupplierErrorCodes
     public const string BranchResponseForbidden = "pos.connected_supplier.branch_response_forbidden";
     /// <summary>Caller attempted to read supplier requests for a branch they cannot access.</summary>
     public const string BranchReadForbidden = "pos.connected_supplier.branch_read_forbidden";
+    public const string OutOfStockSupplierProduct = "pos.connected_supplier.out_of_stock";
+    public const string InsufficientSupplierStock = "pos.connected_supplier.insufficient_stock";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(

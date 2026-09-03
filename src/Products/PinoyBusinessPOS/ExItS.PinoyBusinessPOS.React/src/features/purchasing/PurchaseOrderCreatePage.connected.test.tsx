@@ -14,6 +14,10 @@ const buyerProductId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const supplierProductId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const linkId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const exposureId = "99999999-9999-4999-8999-999999999999";
+const buyerProductId2 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const supplierProductId2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const linkId2 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const exposureId2 = "12121212-1212-4212-8212-121212121212";
 
 const workspaceMock = {
   boundWorkspace: {
@@ -48,6 +52,8 @@ vi.mock("@/i18n/I18nProvider", () => ({
 const listSuppliers = vi.fn();
 const listLinks = vi.fn();
 const searchExposedCatalog = vi.fn();
+const classifyCatalogReadiness = vi.fn();
+const getConnectedOrderStock = vi.fn();
 const createPurchaseOrder = vi.fn();
 const listCatalogProducts = vi.fn();
 
@@ -65,6 +71,8 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", async (importOriginal) => {
     ...actual,
     listLinks: (...args: unknown[]) => listLinks(...args),
     searchExposedCatalog: (...args: unknown[]) => searchExposedCatalog(...args),
+    classifyCatalogReadiness: (...args: unknown[]) => classifyCatalogReadiness(...args),
+    getConnectedOrderStock: (...args: unknown[]) => getConnectedOrderStock(...args),
   };
 });
 
@@ -139,6 +147,25 @@ function readyLinkPayload() {
       multiplierToBase: 1,
       packageLabel: null,
     },
+    {
+      linkId: linkId2,
+      relationshipId,
+      buyerOrganizationId: orgId,
+      supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerProductId: buyerProductId2,
+      supplierProductId: supplierProductId2,
+      supplierSkuSnapshot: "PH-RICE-1KG",
+      supplierNameSnapshot: "Rice 1kg",
+      unitOfMeasureCode: "Piece",
+      lastKnownOrderPrice: 50,
+      isActive: true,
+      syncVersion: 1,
+      createdAtUtc: "2026-09-01T00:00:00Z",
+      updatedAtUtc: "2026-09-01T00:00:00Z",
+      buyerPurchaseUnitId: null,
+      multiplierToBase: 1,
+      packageLabel: null,
+    },
   ];
 }
 
@@ -151,6 +178,7 @@ function readyCatalogPayload() {
         productId: supplierProductId,
         skuSnapshot: "PH-BEV-WATER-500",
         nameSnapshot: "Bottled Water 500ml",
+        categoryNameSnapshot: "Beverages",
         unitOfMeasureCode: "Piece",
         supplierOrderPrice: 12,
         effectiveSupplierOrderPrice: 12,
@@ -160,10 +188,76 @@ function readyCatalogPayload() {
         createdAtUtc: "2026-09-01T00:00:00Z",
         updatedAtUtc: "2026-09-01T00:00:00Z",
       },
+      {
+        exposureId: exposureId2,
+        supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+        productId: supplierProductId2,
+        skuSnapshot: "PH-RICE-1KG",
+        nameSnapshot: "Rice 1kg",
+        categoryNameSnapshot: null,
+        unitOfMeasureCode: "Piece",
+        supplierOrderPrice: 50,
+        effectiveSupplierOrderPrice: 50,
+        isOrderable: true,
+        isExposed: true,
+        syncVersion: 1,
+        createdAtUtc: "2026-09-01T00:00:00Z",
+        updatedAtUtc: "2026-09-01T00:00:00Z",
+      },
     ],
-    totalCount: 1,
+    totalCount: 2,
     page: 1,
     pageSize: 50,
+  };
+}
+
+function readinessPayload() {
+  return {
+    relationshipId,
+    ready: 1,
+    new: 1,
+    review: 0,
+    conflict: 0,
+    items: [
+      {
+        exposureId,
+        supplierProductId,
+        supplierName: "Bottled Water 500ml",
+        supplierSku: "PH-BEV-WATER-500",
+        supplierBarcode: null,
+        unitOfMeasureCode: "Piece",
+        poPrice: 12,
+        status: "Ready",
+        canAutoLink: false,
+        candidateBuyerProductId: buyerProductId,
+        candidateBuyerProductName: "Bottled Water 500ml",
+        nameMatched: true,
+        skuMatched: true,
+        barcodeMatched: false,
+        unitCompatible: true,
+        matchDetails: null,
+        conflictCandidates: [],
+      },
+      {
+        exposureId: exposureId2,
+        supplierProductId: supplierProductId2,
+        supplierName: "Snack Mix",
+        supplierSku: "PH-SNACK-1",
+        supplierBarcode: null,
+        unitOfMeasureCode: "Piece",
+        poPrice: 20,
+        status: "New",
+        canAutoLink: false,
+        candidateBuyerProductId: null,
+        candidateBuyerProductName: null,
+        nameMatched: false,
+        skuMatched: false,
+        barcodeMatched: false,
+        unitCompatible: true,
+        matchDetails: null,
+        conflictCandidates: [],
+      },
+    ],
   };
 }
 
@@ -191,11 +285,26 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     listSuppliers.mockReset();
     listLinks.mockReset();
     searchExposedCatalog.mockReset();
+    classifyCatalogReadiness.mockReset();
+    getConnectedOrderStock.mockReset();
     createPurchaseOrder.mockReset();
     listCatalogProducts.mockReset();
     listSuppliers.mockResolvedValue(linkedSupplier());
     listLinks.mockResolvedValue(readyLinkPayload());
     searchExposedCatalog.mockResolvedValue(readyCatalogPayload());
+    classifyCatalogReadiness.mockResolvedValue(readinessPayload());
+    getConnectedOrderStock.mockResolvedValue({
+      relationshipId,
+      supplierBranchId: "77777777-7777-4777-8777-777777777777",
+      supplierBranchName: "Main Branch",
+      items: [
+        {
+          supplierProductId,
+          isTracked: true,
+          availableBaseQuantity: 10,
+        },
+      ],
+    });
     createPurchaseOrder.mockResolvedValue({ purchaseOrderId: "po-1" });
     listCatalogProducts.mockResolvedValue({ items: [], totalCount: 0 });
   });
@@ -210,8 +319,27 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
     expect(listLinks).toHaveBeenCalled();
     expect(searchExposedCatalog).toHaveBeenCalled();
+    expect(classifyCatalogReadiness).toHaveBeenCalled();
     expect(screen.getByText("Bottled Water 500ml")).toBeInTheDocument();
-    expect(screen.queryByText("New products")).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-readiness-filters")).toBeInTheDocument();
+    expect(screen.getByTestId("po-ready-linked")).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByTestId("po-ready-all")).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-ready-newProduct")).toHaveTextContent("New products (1)");
+  });
+
+  it("lets setup tabs open shared catalog for connecting", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await waitFor(() => screen.getByTestId("po-ready-newProduct"));
+    await user.click(screen.getByTestId("po-ready-newProduct"));
+    await waitFor(() => screen.getByTestId(`po-setup-product-${exposureId2}`));
+    expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`po-connect-${exposureId2}`)).toHaveAttribute(
+      "href",
+      `/suppliers/${supplierId}/connected-catalog?setup=newProduct`,
+    );
   });
 
   it("filters products, supports add/stepper totals, and updates subtotal", async () => {
@@ -245,10 +373,62 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱0.00");
   });
 
+  it("shows supplier stock and disables add / + at max", async () => {
+    const user = userEvent.setup();
+    getConnectedOrderStock.mockResolvedValue({
+      relationshipId,
+      supplierBranchId: "77777777-7777-4777-8777-777777777777",
+      supplierBranchName: "Main Branch",
+      items: [
+        { supplierProductId, isTracked: true, availableBaseQuantity: 2 },
+        {
+          supplierProductId: "00000000-0000-4000-8000-000000000099",
+          isTracked: true,
+          availableBaseQuantity: 0,
+        },
+      ],
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent("2 available"),
+    );
+    expect(getConnectedOrderStock).toHaveBeenCalled();
+
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    const card = screen.getByTestId(`po-connected-product-${buyerProductId}`);
+    await user.click(within(card).getByRole("button", { name: "Increase quantity" }));
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
+    expect(within(card).getByRole("button", { name: "Increase quantity" })).toBeDisabled();
+  });
+
+  it("disables Add when supplier stock is zero", async () => {
+    const user = userEvent.setup();
+    getConnectedOrderStock.mockResolvedValue({
+      relationshipId,
+      supplierBranchId: "77777777-7777-4777-8777-777777777777",
+      supplierBranchName: "Main Branch",
+      items: [{ supplierProductId, isTracked: true, availableBaseQuantity: 0 }],
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent("Out of stock"),
+    );
+    expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeDisabled();
+  });
+
   it("shows empty shared-catalog CTA when no ready products", async () => {
     const user = userEvent.setup();
     listLinks.mockResolvedValue([]);
     searchExposedCatalog.mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 50 });
+    classifyCatalogReadiness.mockResolvedValue({
+      ...readinessPayload(),
+      ready: 0,
+      items: readinessPayload().items.filter((item) => item.status !== "Ready"),
+    });
     renderPage();
     await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
     await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);

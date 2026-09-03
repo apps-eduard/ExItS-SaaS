@@ -688,6 +688,50 @@ public static class ConnectedPurchaseOrderLineEligibility
             pricesByBuyer,
             resolvedBySupplier));
     }
+
+    internal static IReadOnlyList<ConnectedPurchaseOrderSupplierStock.DemandLine> BuildStockDemands(
+        IEnumerable<PurchaseOrderLineDraft> drafts,
+        Outcome outcome)
+    {
+        var demands = new List<ConnectedPurchaseOrderSupplierStock.DemandLine>();
+        foreach (var draft in drafts)
+        {
+            Guid? supplierProductId = draft.SupplierProductId?.Value;
+            if (supplierProductId is null
+                && draft.ProductId is CatalogProductId buyerPid
+                && outcome.LinksByBuyerProductId.TryGetValue(buyerPid.Value, out var link))
+            {
+                supplierProductId = link.SupplierProductId.Value;
+            }
+
+            if (supplierProductId is null)
+            {
+                continue;
+            }
+
+            string name;
+            if (!string.IsNullOrWhiteSpace(draft.NameSnapshot))
+            {
+                name = draft.NameSnapshot!;
+            }
+            else if (outcome.ResolvedBySupplierProductId.TryGetValue(supplierProductId.Value, out var resolved))
+            {
+                name = resolved.NameSnapshot;
+            }
+            else
+            {
+                name = "Product";
+            }
+
+            demands.Add(new ConnectedPurchaseOrderSupplierStock.DemandLine(
+                supplierProductId.Value,
+                draft.OrderedQty,
+                draft.MultiplierToBaseSnapshot > 0m ? draft.MultiplierToBaseSnapshot : 1m,
+                name));
+        }
+
+        return demands;
+    }
 }
 
 public sealed class CreatePurchaseOrder
@@ -700,6 +744,9 @@ public sealed class CreatePurchaseOrder
     private readonly IBuyerSupplierProductLinkRepository _connectedLinks;
     private readonly ISupplierProductExposureRepository? _connectedExposures;
     private readonly IConnectedBuyerProductShareRepository? _connectedShares;
+    private readonly IInventoryRepository? _inventory;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -715,7 +762,10 @@ public sealed class CreatePurchaseOrder
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         ISupplierProductExposureRepository? connectedExposures = null,
-        IConnectedBuyerProductShareRepository? connectedShares = null)
+        IConnectedBuyerProductShareRepository? connectedShares = null,
+        IInventoryRepository? inventory = null,
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _orders = orders;
         _suppliers = suppliers;
@@ -725,6 +775,9 @@ public sealed class CreatePurchaseOrder
         _connectedLinks = connectedLinks;
         _connectedExposures = connectedExposures;
         _connectedShares = connectedShares;
+        _inventory = inventory;
+        _branchBalances = branchBalances;
+        _branches = branches;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -927,6 +980,25 @@ public sealed class CreatePurchaseOrder
                     skuSnapshot));
             }
 
+            if (connectedEligibility?.Value is { } createConnected
+                && _inventory is not null
+                && _branchBalances is not null)
+            {
+                var stockError = await ConnectedPurchaseOrderSupplierStock
+                    .ValidateDemandsAsync(
+                        createConnected.Relationship,
+                        ConnectedPurchaseOrderLineEligibility.BuildStockDemands(lineDrafts, createConnected),
+                        _inventory,
+                        _branchBalances,
+                        _branches,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (stockError is not null)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(stockError);
+                }
+            }
+
             var po = PurchaseOrder.CreateDraft(
                 org,
                 supplierId,
@@ -970,6 +1042,9 @@ public sealed class UpdatePurchaseOrder
     private readonly IBuyerSupplierProductLinkRepository _connectedLinks;
     private readonly ISupplierProductExposureRepository? _connectedExposures;
     private readonly IConnectedBuyerProductShareRepository? _connectedShares;
+    private readonly IInventoryRepository? _inventory;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -985,7 +1060,10 @@ public sealed class UpdatePurchaseOrder
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         ISupplierProductExposureRepository? connectedExposures = null,
-        IConnectedBuyerProductShareRepository? connectedShares = null)
+        IConnectedBuyerProductShareRepository? connectedShares = null,
+        IInventoryRepository? inventory = null,
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _orders = orders;
         _suppliers = suppliers;
@@ -995,6 +1073,9 @@ public sealed class UpdatePurchaseOrder
         _connectedLinks = connectedLinks;
         _connectedExposures = connectedExposures;
         _connectedShares = connectedShares;
+        _inventory = inventory;
+        _branchBalances = branchBalances;
+        _branches = branches;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -1117,6 +1198,25 @@ public sealed class UpdatePurchaseOrder
                     multiplier));
             }
 
+            if (connectedEligibility?.Value is { } updateConnected
+                && _inventory is not null
+                && _branchBalances is not null)
+            {
+                var stockError = await ConnectedPurchaseOrderSupplierStock
+                    .ValidateDemandsAsync(
+                        updateConnected.Relationship,
+                        ConnectedPurchaseOrderLineEligibility.BuildStockDemands(lineDrafts, updateConnected),
+                        _inventory,
+                        _branchBalances,
+                        _branches,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (stockError is not null)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(stockError);
+                }
+            }
+
             existing.UpdateDraft(
                 supplierId,
                 request.OrderDate,
@@ -1156,6 +1256,9 @@ public sealed class SubmitPurchaseOrder
     private readonly IConnectedPurchaseOrderRepository _connectedOrders;
     private readonly ISupplierProductExposureRepository? _connectedExposures;
     private readonly IConnectedBuyerProductShareRepository? _connectedShares;
+    private readonly IInventoryRepository? _inventory;
+    private readonly IInventoryBranchBalanceRepository? _branchBalances;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
@@ -1173,7 +1276,10 @@ public sealed class SubmitPurchaseOrder
         TimeProvider? clock = null,
         ISupplierProductExposureRepository? connectedExposures = null,
         IConnectedBuyerProductShareRepository? connectedShares = null,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IInventoryRepository? inventory = null,
+        IInventoryBranchBalanceRepository? branchBalances = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _orders = orders;
         _products = products;
@@ -1183,6 +1289,9 @@ public sealed class SubmitPurchaseOrder
         _connectedOrders = connectedOrders;
         _connectedExposures = connectedExposures;
         _connectedShares = connectedShares;
+        _inventory = inventory;
+        _branchBalances = branchBalances;
+        _branches = branches;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _unitOfWork = unitOfWork;
         _access = access;
@@ -1307,6 +1416,38 @@ public sealed class SubmitPurchaseOrder
                 connectedRelationship = connectedOutcome.Relationship;
                 resolvedBySupplier = connectedOutcome.ResolvedBySupplierProductId
                     .ToDictionary(x => x.Key, x => x.Value);
+
+                if (_inventory is not null && _branchBalances is not null)
+                {
+                    var submitDrafts = existing.Lines
+                        .OrderBy(l => l.LineNumber)
+                        .Select(l => new PurchaseOrderLineDraft(
+                            l.ProductId,
+                            l.OrderedQty,
+                            l.UnitPurchaseCost,
+                            l.LineNotes,
+                            l.PurchaseUnitId,
+                            l.PurchaseUnitNameSnapshot,
+                            l.MultiplierToBaseSnapshot,
+                            l.SupplierProductId,
+                            l.NameSnapshot,
+                            l.UomSnapshot,
+                            l.SkuSnapshot))
+                        .ToList();
+                    var stockError = await ConnectedPurchaseOrderSupplierStock
+                        .ValidateDemandsAsync(
+                            connectedOutcome.Relationship,
+                            ConnectedPurchaseOrderLineEligibility.BuildStockDemands(submitDrafts, connectedOutcome),
+                            _inventory,
+                            _branchBalances,
+                            _branches,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    if (stockError is not null)
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(stockError);
+                    }
+                }
             }
 
             var snapshots = existing.Lines

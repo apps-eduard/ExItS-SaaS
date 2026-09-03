@@ -52,6 +52,8 @@ export function QuantityStepper({
   valueTestId,
   className,
   compact = false,
+  incrementDisabled = false,
+  decrementDisabled = false,
 }: {
   value: number | string;
   onIncrement: () => void;
@@ -61,6 +63,8 @@ export function QuantityStepper({
   valueTestId?: string;
   className?: string;
   compact?: boolean;
+  incrementDisabled?: boolean;
+  decrementDisabled?: boolean;
 }) {
   const buttonClass = compact
     ? "size-8 min-h-8 shrink-0 p-0 text-[length:var(--exits-text-sm)]"
@@ -79,6 +83,7 @@ export function QuantityStepper({
         variant="ghost"
         className={cn(buttonClass, compact && "border border-border")}
         aria-label={decreaseLabel}
+        disabled={decrementDisabled}
         onClick={onDecrement}
       >
         −
@@ -89,6 +94,7 @@ export function QuantityStepper({
         variant="ghost"
         className={cn(buttonClass, compact && "border border-border")}
         aria-label={increaseLabel}
+        disabled={incrementDisabled}
         onClick={onIncrement}
       >
         +

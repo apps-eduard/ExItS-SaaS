@@ -4077,6 +4077,11 @@ export const en = {
   "purchasing.ordersLede": "Draft, submit, and track purchase orders.",
   "purchasing.ordersNoStock":
     "Creating or submitting a purchase order does not increase inventory.",
+  "purchasing.supplierOutOfStock": "Out of stock",
+  "purchasing.supplierStockAvailable": "{n} available",
+  "purchasing.stockNotTracked": "Stock not tracked",
+  "purchasing.stockBlocksCreate": "Remove or reduce lines that exceed supplier stock.",
+  "purchasing.stockChanged": "Supplier stock changed. Refresh quantities and try again.",
   "purchasing.receipts": "Ready to receive",
   "purchasing.receiptsLede": "Purchase orders waiting for goods receipt.",
   "purchasing.receiptsStockNote": "Inventory increases only when you confirm a goods receipt.",

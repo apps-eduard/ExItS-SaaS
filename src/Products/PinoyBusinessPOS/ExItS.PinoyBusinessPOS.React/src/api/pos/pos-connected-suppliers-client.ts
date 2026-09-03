@@ -836,6 +836,39 @@ export async function listLinks(
   return z.array(buyerSupplierProductLinkSchema).parse(raw);
 }
 
+export const connectedOrderStockItemSchema = z.object({
+  supplierProductId: guidSchema,
+  isTracked: z.boolean(),
+  availableBaseQuantity: z.number(),
+});
+
+export const connectedOrderStockSchema = z.object({
+  relationshipId: guidSchema,
+  supplierBranchId: guidSchema.nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
+  items: z.array(connectedOrderStockItemSchema),
+});
+
+export type ConnectedOrderStock = z.infer<typeof connectedOrderStockSchema>;
+export type ConnectedOrderStockItem = z.infer<typeof connectedOrderStockItemSchema>;
+
+/** Buyer-safe supplier-branch availability for connected PO picking (read-only). */
+export async function getConnectedOrderStock(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  supplierProductIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<ConnectedOrderStock> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: relPath(relationshipId, "/order-stock"),
+    body: { supplierProductIds: [...supplierProductIds] },
+  });
+  return connectedOrderStockSchema.parse(raw);
+}
+
 export async function linkProduct(
   workspace: PosWorkspaceScope,
   relationshipId: string,

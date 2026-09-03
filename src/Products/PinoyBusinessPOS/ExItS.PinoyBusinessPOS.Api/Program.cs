@@ -423,6 +423,7 @@ builder.Services.AddScoped<ClassifyConnectedPurchaseReceivingReadiness>();
 builder.Services.AddScoped<AutoLinkExactMatches>();
 builder.Services.AddScoped<UnlinkProduct>();
 builder.Services.AddScoped<ListLinks>();
+builder.Services.AddScoped<GetConnectedSupplierOrderStock>();
 builder.Services.AddScoped<SyncLinkedProductsDelta>();
 builder.Services.AddScoped<SupplierIncomingOrderQuery>();
 builder.Services.AddScoped<GetIncomingOrder>();

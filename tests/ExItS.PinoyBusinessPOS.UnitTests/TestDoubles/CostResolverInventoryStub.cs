@@ -45,7 +45,7 @@ internal class CostResolverInventoryStub : IInventoryRepository
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task<IReadOnlyList<InventoryAccount>> ListByProductIdsAsync(
+    public virtual Task<IReadOnlyList<InventoryAccount>> ListByProductIdsAsync(
         PosOrganizationId organizationId,
         IReadOnlyCollection<CatalogProductId> productIds,
         CancellationToken cancellationToken = default) =>
@@ -75,7 +75,7 @@ internal class CostResolverInventoryStub : IInventoryRepository
     public Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
+    public virtual Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
     public Task ExecuteWithProductReservationLocksAsync(

@@ -108,6 +108,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.SaleVoidBlockedByReturns
             or ApplicationErrorCodes.SaleReturnNumberConflict
             or ApplicationErrorCodes.InsufficientStock
+            or ConnectedSupplierErrorCodes.OutOfStockSupplierProduct
+            or ConnectedSupplierErrorCodes.InsufficientSupplierStock
             or ApplicationErrorCodes.InventoryConcurrencyConflict
             or ApplicationErrorCodes.InventoryTransferAlreadyReceived
             or ApplicationErrorCodes.InventoryTransferNumberConflict
