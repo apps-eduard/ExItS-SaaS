@@ -50,11 +50,10 @@ export function ExItsHeader({ transparent = false }: ExItsHeaderProps) {
             <Link
               href="/contact"
               className={cn(
-                "hidden h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md border px-5",
+                "inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-md border px-4 sm:px-5",
                 "bg-gradient-to-r from-brand to-brandBright text-primary border-borderDefault hover:brightness-110",
                 "text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brandBright",
                 "ring-offset-base",
-                "sm:inline-flex",
               )}
             >
               Get Started
