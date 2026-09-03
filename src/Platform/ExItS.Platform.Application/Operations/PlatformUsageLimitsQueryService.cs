@@ -153,5 +153,6 @@ public sealed class PlatformUsageLimitsQueryService
         featureCode is FeatureCode.PlanMaxBranches
             or FeatureCode.PlanMaxActiveStaff
             or FeatureCode.PlanMaxActivePosDevices
-            or FeatureCode.PlanMaxActiveBusinessTypes;
+            or FeatureCode.PlanMaxActiveBusinessTypes
+            or FeatureCode.PlanMaxAreas;
 }

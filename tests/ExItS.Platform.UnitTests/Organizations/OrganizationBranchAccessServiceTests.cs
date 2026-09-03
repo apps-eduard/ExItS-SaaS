@@ -123,7 +123,9 @@ public sealed class OrganizationBranchAccessServiceTests
         new(
             memberships,
             new FakeBranchRepo(branches),
-            new FakeAssignmentRepo(assignments));
+            new FakeAssignmentRepo(assignments),
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository());
 
     private sealed class FakeBranchRepo(IReadOnlyList<OrganizationBranch> items) : IOrganizationBranchRepository
     {

@@ -35,7 +35,8 @@ internal static class OrganizationBranchDeviceEntityMapper
                 : Enum.Parse<OnlineOrdersPauseReason>(record.OnlineOrdersPauseReason),
             record.SuspendedAtUtc,
             record.SuspendedByUserId is Guid suspendedBy ? PlatformUserId.From(suspendedBy) : null,
-            record.SuspensionReason);
+            record.SuspensionReason,
+            record.AreaId is Guid areaId ? OrganizationAreaId.From(areaId) : null);
 
     public static OrganizationBranchRecord ToRecord(OrganizationBranch branch) => new()
     {
@@ -59,6 +60,7 @@ internal static class OrganizationBranchDeviceEntityMapper
         OnlineOrdersPaused = branch.OnlineOrdersPaused,
         OnlineOrdersPauseReason = branch.PauseReason?.ToString(),
         IsPrimary = branch.IsPrimary,
+        AreaId = branch.AreaId?.Value,
         Status = branch.Status.ToString(),
         SuspendedAtUtc = branch.SuspendedAtUtc,
         SuspendedByUserId = branch.SuspendedByUserId?.Value,
@@ -85,6 +87,7 @@ internal static class OrganizationBranchDeviceEntityMapper
         record.TimeZoneId = branch.TimeZoneId;
         record.OnlineOrdersPaused = branch.OnlineOrdersPaused;
         record.OnlineOrdersPauseReason = branch.PauseReason?.ToString();
+        record.AreaId = branch.AreaId?.Value;
         record.Status = branch.Status.ToString();
         record.SuspendedAtUtc = branch.SuspendedAtUtc;
         record.SuspendedByUserId = branch.SuspendedByUserId?.Value;

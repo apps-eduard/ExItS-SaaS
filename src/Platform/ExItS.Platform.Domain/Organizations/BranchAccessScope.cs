@@ -10,5 +10,10 @@ public enum BranchAccessScope
     Explicit = 0,
 
     /// <summary>Every current and future Active branch in the organization.</summary>
-    AllActive = 1
+    AllActive = 1,
+
+    /// <summary>
+    /// Active branches inside the member's granted Active Areas. Branches with no Area are excluded.
+    /// </summary>
+    Areas = 2
 }

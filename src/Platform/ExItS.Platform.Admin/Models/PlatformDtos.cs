@@ -45,7 +45,8 @@ public sealed record CreatePlanRequest(
     int SortOrder = 100,
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
-    string CurrencyCode = "PHP");
+    string CurrencyCode = "PHP",
+    int MaxAreas = 1);
 
 public sealed record UpdatePlanCommercialRequest(
     string DisplayName,
@@ -63,7 +64,8 @@ public sealed record UpdatePlanCommercialRequest(
     decimal MonthlyPrice,
     decimal AnnualPrice,
     string CurrencyCode,
-    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+    DateTimeOffset? ExpectedUpdatedAtUtc = null,
+    int? MaxAreas = null);
 public sealed record RenameCatalogRequest(string DisplayName, DateTimeOffset? ExpectedUpdatedAtUtc);
 
 public sealed record FeatureDefinitionDto(
@@ -101,7 +103,8 @@ public sealed record PlanDto(
     int SortOrder = 100,
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
-    string CurrencyCode = "PHP");
+    string CurrencyCode = "PHP",
+    int MaxAreas = 1);
 
 public sealed record PlanVersionDto(
     Guid Id,

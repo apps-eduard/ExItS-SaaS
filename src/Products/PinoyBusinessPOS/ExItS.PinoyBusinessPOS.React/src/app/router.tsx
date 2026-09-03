@@ -71,6 +71,8 @@ import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillment
 import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
 import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
 import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
+import { OrgAreaDetailPage } from "@/features/areas/OrgAreaDetailPage";
+import { OrgAreasPage } from "@/features/areas/OrgAreasPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
@@ -559,6 +561,22 @@ export const appRoutes = [
                 ),
               },
               { path: "branches/:branchId/fulfillment", element: <BranchFulfillmentEditPage /> },
+              {
+                path: "areas",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgAreasPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "areas/:areaId",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgAreaDetailPage />
+                  </RequireInviteStaff>
+                ),
+              },
               {
                 path: "branches/:branchId/setup",
                 element: (

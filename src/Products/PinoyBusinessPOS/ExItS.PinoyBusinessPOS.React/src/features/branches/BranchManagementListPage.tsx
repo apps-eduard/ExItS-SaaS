@@ -11,6 +11,7 @@ import {
   listBranchManagementSummaries,
   type BranchManagementSummaryItemDto,
 } from "@/api/platform/organization-branches-client";
+import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -109,6 +110,25 @@ export function BranchManagementListPage() {
   const capacity = capacityQuery.data;
   const atLimit = capacity != null && capacity.allowed > 0 && capacity.used >= capacity.allowed;
 
+  const areasQuery = useQuery({
+    queryKey: ["organization-areas", organizationId],
+    enabled: Boolean(organizationId && canCreate),
+    queryFn: async ({ signal }) => {
+      const result = await listOrganizationAreas(organizationId!, signal);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? t("areas.loadError"));
+      }
+      return result.value;
+    },
+  });
+
+  // Single-branch shops with no areas keep the simple UX: no area setup is ever required.
+  const liveBranchCount = (summaryQuery.data ?? []).filter(
+    (branch) => normalizeBranchStatusFilter(branch.status) !== "Archived",
+  ).length;
+  const showAreasLink =
+    canCreate && (liveBranchCount > 1 || (areasQuery.data?.areas.length ?? 0) > 0);
+
   if (!canManage) {
     return (
       <div className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3" data-testid="branch-mgmt-denied">
@@ -185,6 +205,11 @@ export function BranchManagementListPage() {
             },
           ]}
         />
+        {showAreasLink ? (
+          <Button asChild variant="outline" className="min-h-11" data-testid="branch-mgmt-areas">
+            <Link to="/org/areas">{t("areas.title")}</Link>
+          </Button>
+        ) : null}
         {canCreate ? (
           atLimit ? (
             <Button type="button" className="branch-mgmt-add min-h-11" disabled data-testid="branch-mgmt-add">
@@ -270,6 +295,14 @@ export function BranchManagementListPage() {
                         )}
                       </dd>
                     </div>
+                    {showAreasLink ? (
+                      <div>
+                        <dt>{t("areas.singular")}</dt>
+                        <dd data-testid={`branch-mgmt-area-${branch.id}`}>
+                          {branch.areaName ?? t("areas.unassigned")}
+                        </dd>
+                      </div>
+                    ) : null}
                     <div>
                       <dt>{t("branches.mgmt.pickup")}</dt>
                       <dd>{branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}</dd>

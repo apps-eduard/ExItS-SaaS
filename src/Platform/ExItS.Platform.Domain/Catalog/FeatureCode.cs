@@ -90,6 +90,9 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS plan commercial limit: maximum concurrent effective Business Types (QuantityLimit).</summary>
     public const string PlanMaxActiveBusinessTypes = "plan-max-active-business-types";
 
+    /// <summary>POS plan commercial limit: maximum Active organization Areas (QuantityLimit).</summary>
+    public const string PlanMaxAreas = "plan-max-areas";
+
     /// <summary>POS advanced reporting beyond basic operational reports.</summary>
     public const string StoreAdvancedReports = "store-advanced-reports";
 

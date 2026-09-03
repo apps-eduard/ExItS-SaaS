@@ -44,6 +44,11 @@ public static class PlatformAuditActions
     public const string OrganizationBranchDeliveryServiceAreaAdded = "platform.organization.branch.delivery_service_area_added";
     public const string OrganizationBranchDeliveryServiceAreaDeactivated = "platform.organization.branch.delivery_service_area_deactivated";
     public const string OrganizationBranchOrdersPaused = "platform.organization.branch.orders_paused";
+    public const string OrganizationBranchAreaChanged = "platform.organization.branch.area_changed";
+
+    public const string OrganizationAreaCreated = "platform.organization.area.created";
+    public const string OrganizationAreaUpdated = "platform.organization.area.updated";
+    public const string OrganizationAreaArchived = "platform.organization.area.archived";
     public const string PosDeviceRegistered = "platform.pos_device.registered";
     public const string PosDeviceReactivated = "platform.pos_device.reactivated";
     public const string PosDeviceRevoked = "platform.pos_device.revoked";

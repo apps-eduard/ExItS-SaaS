@@ -21,6 +21,9 @@ public sealed class Plan
     public int MaxActiveStaff { get; private set; }
     public int MaxActivePosDevices { get; private set; }
     public int MaxActiveBusinessTypes { get; private set; }
+
+    /// <summary>Maximum Active organization Areas (grouping/access only, never operational capacity).</summary>
+    public int MaxAreas { get; private set; }
     public bool CustomerCreditEnabled { get; private set; }
     public bool AdvancedReportsEnabled { get; private set; }
     public bool ExportEnabled { get; private set; }
@@ -57,7 +60,8 @@ public sealed class Plan
         decimal annualPrice,
         string currencyCode,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        int maxAreas)
     {
         Id = id;
         ProductCode = productCode;
@@ -69,6 +73,7 @@ public sealed class Plan
         MaxActiveStaff = maxActiveStaff;
         MaxActivePosDevices = maxActivePosDevices;
         MaxActiveBusinessTypes = maxActiveBusinessTypes;
+        MaxAreas = maxAreas;
         CustomerCreditEnabled = customerCreditEnabled;
         AdvancedReportsEnabled = advancedReportsEnabled;
         ExportEnabled = exportEnabled;
@@ -101,12 +106,13 @@ public sealed class Plan
         int sortOrder = 100,
         decimal monthlyPrice = 0m,
         decimal annualPrice = 0m,
-        string currencyCode = Payments.CurrencyCode.PHP)
+        string currencyCode = Payments.CurrencyCode.PHP,
+        int maxAreas = 1)
     {
         ArgumentNullException.ThrowIfNull(productCode);
         ArgumentNullException.ThrowIfNull(code);
         DomainTime.EnsureUtc(utcNow);
-        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder);
+        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder, maxAreas);
         ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         return new Plan(
             id ?? PlanId.New(),
@@ -129,7 +135,8 @@ public sealed class Plan
             annualPrice,
             Payments.CurrencyCode.Create(currencyCode).Value,
             utcNow,
-            utcNow);
+            utcNow,
+            maxAreas);
     }
 
     internal static Plan Rehydrate(
@@ -153,7 +160,8 @@ public sealed class Plan
         int sortOrder = 100,
         decimal monthlyPrice = 0m,
         decimal annualPrice = 0m,
-        string currencyCode = Payments.CurrencyCode.PHP) =>
+        string currencyCode = Payments.CurrencyCode.PHP,
+        int maxAreas = 1) =>
         new(
             id,
             productCode,
@@ -175,7 +183,8 @@ public sealed class Plan
             annualPrice,
             currencyCode,
             createdAtUtc,
-            updatedAtUtc);
+            updatedAtUtc,
+            maxAreas);
 
     public void Rename(string displayName, DateTimeOffset utcNow)
     {
@@ -206,7 +215,8 @@ public sealed class Plan
         decimal monthlyPrice,
         decimal annualPrice,
         string currencyCode,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        int maxAreas = 1)
     {
         DomainTime.EnsureUtc(utcNow);
         if (Status == PlanStatus.Retired)
@@ -216,13 +226,14 @@ public sealed class Plan
                 "A retired Plan cannot be edited.");
         }
 
-        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder);
+        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder, maxAreas);
         ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         Description = NormalizeDescription(description);
         MaxBranches = maxBranches;
         MaxActiveStaff = maxActiveStaff;
         MaxActivePosDevices = maxActivePosDevices;
         MaxActiveBusinessTypes = maxActiveBusinessTypes;
+        MaxAreas = maxAreas;
         CustomerCreditEnabled = customerCreditEnabled;
         AdvancedReportsEnabled = advancedReportsEnabled;
         ExportEnabled = exportEnabled;
@@ -280,8 +291,15 @@ public sealed class Plan
         UpdatedAtUtc = utcNow;
     }
 
-    private static void ValidateCommercialLimits(int maxBranches, int maxActiveStaff, int maxActivePosDevices, int maxActiveBusinessTypes, int defaultTrialDays, int sortOrder)
+    private static void ValidateCommercialLimits(int maxBranches, int maxActiveStaff, int maxActivePosDevices, int maxActiveBusinessTypes, int defaultTrialDays, int sortOrder, int maxAreas)
     {
+        if (maxAreas < 1 || maxAreas > 10_000)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanStatusTransition,
+                "MaxAreas must be between 1 and 10000.");
+        }
+
         if (maxBranches < 1 || maxBranches > 10_000)
         {
             throw new DomainException(

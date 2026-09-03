@@ -57,6 +57,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationBusinessTypeActivationRecord> OrganizationBusinessTypeActivations =>
         Set<OrganizationBusinessTypeActivationRecord>();
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
+    internal DbSet<OrganizationAreaRecord> OrganizationAreas => Set<OrganizationAreaRecord>();
     internal DbSet<BranchOperatingHoursRecord> BranchOperatingHours => Set<BranchOperatingHoursRecord>();
     internal DbSet<BranchDeliveryPolicyRecord> BranchDeliveryPolicies => Set<BranchDeliveryPolicyRecord>();
     internal DbSet<BranchDeliveryServiceAreaRecord> BranchDeliveryServiceAreas => Set<BranchDeliveryServiceAreaRecord>();
@@ -83,6 +84,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationMembershipRecord> OrganizationMemberships => Set<OrganizationMembershipRecord>();
     internal DbSet<OrganizationMembershipBranchAssignmentRecord> OrganizationMembershipBranchAssignments =>
         Set<OrganizationMembershipBranchAssignmentRecord>();
+    internal DbSet<OrganizationMembershipAreaAssignmentRecord> OrganizationMembershipAreaAssignments =>
+        Set<OrganizationMembershipAreaAssignmentRecord>();
     internal DbSet<OrganizationInvitationRecord> OrganizationInvitations => Set<OrganizationInvitationRecord>();
     internal DbSet<OrganizationOwnershipTransferRecord> OrganizationOwnershipTransfers =>
         Set<OrganizationOwnershipTransferRecord>();
@@ -185,6 +188,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.MaxActiveStaff).HasColumnName("max_active_staff").HasDefaultValue(3);
             entity.Property(e => e.MaxActivePosDevices).HasColumnName("max_active_pos_devices").HasDefaultValue(1);
             entity.Property(e => e.MaxActiveBusinessTypes).HasColumnName("max_active_business_types").HasDefaultValue(1);
+            entity.Property(e => e.MaxAreas).HasColumnName("max_areas").HasDefaultValue(1);
             entity.Property(e => e.CustomerCreditEnabled).HasColumnName("customer_credit_enabled").HasDefaultValue(false);
             entity.Property(e => e.AdvancedReportsEnabled).HasColumnName("advanced_reports_enabled").HasDefaultValue(false);
             entity.Property(e => e.ExportEnabled).HasColumnName("export_enabled").HasDefaultValue(false);
@@ -550,6 +554,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.OnlineOrdersPaused).HasColumnName("online_orders_paused").HasDefaultValue(false);
             entity.Property(e => e.OnlineOrdersPauseReason).HasColumnName("online_orders_pause_reason").HasMaxLength(32);
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
+            entity.Property(e => e.AreaId).HasColumnName("area_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");
             entity.Property(e => e.SuspendedByUserId).HasColumnName("suspended_by_user_id");
@@ -566,7 +571,37 @@ public sealed class PlatformDbContext : DbContext
             entity.HasAlternateKey(e => new { e.Id, e.OrganizationId })
                 .HasName("AK_organization_branches_id_organization_id");
             entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.AreaId).HasDatabaseName("ix_organization_branches_area_id");
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+            // Restrict: an Area must be emptied of branches before it can be archived or removed.
+            entity.HasOne<OrganizationAreaRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.AreaId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationAreaRecord>(entity =>
+        {
+            entity.ToTable("organization_areas");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(32);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.OrganizationId).HasDatabaseName("ix_organization_areas_organization_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.Code })
+                .IsUnique()
+                .HasFilter("code IS NOT NULL")
+                .HasDatabaseName("ux_organization_areas_organization_code");
+            entity.HasAlternateKey(e => new { e.Id, e.OrganizationId })
+                .HasName("AK_organization_areas_id_organization_id");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<BranchOperatingHoursRecord>(entity =>
@@ -1352,6 +1387,44 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BranchId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrganizationMembershipAreaAssignmentRecord>(entity =>
+        {
+            entity.ToTable("organization_membership_area_assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.MembershipId).HasColumnName("membership_id");
+            entity.Property(e => e.AreaId).HasColumnName("area_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ActorReference).HasColumnName("actor_reference").HasMaxLength(128);
+
+            entity.HasIndex(e => new { e.MembershipId, e.AreaId })
+                .IsUnique()
+                .HasDatabaseName("ux_org_membership_area_assignments_membership_area");
+
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("ix_org_membership_area_assignments_organization_id");
+
+            entity.HasIndex(e => e.AreaId)
+                .HasDatabaseName("ix_org_membership_area_assignments_area_id");
+
+            entity.HasOne<OrganizationMembershipRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.MembershipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Restrict: area grants must be cleared before an Area can be removed.
+            entity.HasOne<OrganizationAreaRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.AreaId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()

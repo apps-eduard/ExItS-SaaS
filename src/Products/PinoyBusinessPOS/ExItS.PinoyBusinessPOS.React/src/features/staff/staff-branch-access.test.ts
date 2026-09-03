@@ -7,6 +7,7 @@ import {
   modeToScope,
   resolvePrimaryOrOnlyBranch,
   scopeToMode,
+  shouldOfferAreaScope,
 } from "@/features/staff/staff-branch-access";
 
 const main: PlatformBranch = {
@@ -56,8 +57,48 @@ describe("staff-branch-access helpers", () => {
   it("maps persisted scope without inferring from branch equality", () => {
     expect(scopeToMode("AllActive")).toBe("all");
     expect(scopeToMode("Explicit")).toBe("specific");
+    expect(scopeToMode("Areas")).toBe("areas");
     expect(modeToScope("all")).toBe("AllActive");
     expect(modeToScope("specific")).toBe("Explicit");
+    expect(modeToScope("areas")).toBe("Areas");
+  });
+
+  // AREA01-18: a single-branch shop with no areas keeps the simple two-way choice.
+  it("keeps the single-branch experience free of area setup", () => {
+    expect(shouldOfferAreaScope({ activeBranchCount: 1, activeAreaCount: 0 })).toBe(false);
+    expect(shouldOfferAreaScope({ activeBranchCount: 1, activeAreaCount: 3 })).toBe(false);
+    expect(shouldOfferAreaScope({ activeBranchCount: 4, activeAreaCount: 0 })).toBe(false);
+    expect(shouldOfferAreaScope({ activeBranchCount: 4, activeAreaCount: 2 })).toBe(true);
+  });
+
+  it("summarises area scope by area name", () => {
+    expect(
+      formatStaffBranchAccessSummary({
+        membershipRole: "OrganizationMember",
+        scope: "Areas",
+        activeBranches: [main, north, south],
+        assignedIds: [],
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
+        unknownLabel: "Not assigned",
+        areaNames: ["Metro North"],
+        areasLabel: "Areas",
+      }),
+    ).toBe("Metro North");
+
+    expect(
+      formatStaffBranchAccessSummary({
+        membershipRole: "OrganizationMember",
+        scope: "Areas",
+        activeBranches: [main, north, south],
+        assignedIds: [],
+        allActiveLabel: "All branches",
+        automaticAllLabel: "All branches",
+        unknownLabel: "Not assigned",
+        areaNames: ["Metro North", "Metro South"],
+        areasLabel: "Areas",
+      }),
+    ).toBe("Metro North + 1");
   });
 
   it("formats manage-staff branch summaries from scope", () => {

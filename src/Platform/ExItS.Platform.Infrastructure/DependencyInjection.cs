@@ -106,6 +106,8 @@ public static class DependencyInjection
         services.AddSingleton<IPlatformSessionTokenService, PlatformSessionTokenService>();
         services.AddScoped<IOrganizationMembershipRepository, OrganizationMembershipRepository>();
         services.AddScoped<IOrganizationMembershipBranchAssignmentRepository, OrganizationMembershipBranchAssignmentRepository>();
+        services.AddScoped<IOrganizationAreaRepository, OrganizationAreaRepository>();
+        services.AddScoped<IOrganizationMembershipAreaAssignmentRepository, OrganizationMembershipAreaAssignmentRepository>();
         services.AddScoped<IOrganizationBranchAccessService, OrganizationBranchAccessService>();
         services.AddScoped<IOrganizationInvitationRepository, OrganizationInvitationRepository>();
         services.AddScoped<IOrganizationOwnershipTransferRepository, OrganizationOwnershipTransferRepository>();

@@ -37,7 +37,7 @@ public sealed class MembershipBranchAccessScopeTests
             OrganizationMembershipBranchAssignment.Create(org, membership.Id, main.Id, T0)
         ]);
         var branches = new MutableBranchRepo([main]);
-        var sut = new OrganizationBranchAccessService(memberships, branches, assignments);
+        var sut = CreateAccessService(memberships, branches, assignments);
 
         var north = OrganizationBranch.Create(org, "NORTH", "North", T0);
         await branches.AddAsync(north);
@@ -62,7 +62,7 @@ public sealed class MembershipBranchAccessScopeTests
         await memberships.AddAsync(membership);
         var assignments = new MutableAssignmentRepo([]);
         var branches = new MutableBranchRepo([main]);
-        var sut = new OrganizationBranchAccessService(memberships, branches, assignments);
+        var sut = CreateAccessService(memberships, branches, assignments);
 
         Assert.Null(await sut.ResolveAccessibleActiveBranchIdsAsync(staff, org));
 
@@ -89,7 +89,14 @@ public sealed class MembershipBranchAccessScopeTests
         var branches = new MutableBranchRepo([main, north]);
         var uow = new RecordingUnitOfWork();
         var clock = new FixedClock(T0);
-        var set = new SetMembershipBranchAssignments(memberships, branches, assignments, uow, clock);
+        var set = new SetMembershipBranchAssignments(
+            memberships,
+            branches,
+            assignments,
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository(),
+            uow,
+            clock);
 
         var result = await set.ExecuteAsync(
             org,
@@ -125,6 +132,8 @@ public sealed class MembershipBranchAccessScopeTests
             memberships,
             branches,
             assignments,
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository(),
             new RecordingUnitOfWork(),
             new FixedClock(T0));
 
@@ -162,7 +171,7 @@ public sealed class MembershipBranchAccessScopeTests
         await memberships.AddAsync(membership);
         var assignments = new MutableAssignmentRepo([]);
         var branches = new MutableBranchRepo([main, north]);
-        var sut = new OrganizationBranchAccessService(memberships, branches, assignments);
+        var sut = CreateAccessService(memberships, branches, assignments);
 
         Assert.Null(await sut.ResolveAccessibleActiveBranchIdsAsync(owner, org));
         Assert.True(await sut.CanAccessBranchAsync(owner, org, north.Id));
@@ -171,6 +180,8 @@ public sealed class MembershipBranchAccessScopeTests
             memberships,
             branches,
             assignments,
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository(),
             new RecordingUnitOfWork(),
             new FixedClock(T0));
         var denied = await set.ExecuteAsync(
@@ -204,7 +215,9 @@ public sealed class MembershipBranchAccessScopeTests
             memberships,
             branches,
             assignments,
-            new OrganizationBranchAccessService(memberships, branches, assignments));
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository(),
+            CreateAccessService(memberships, branches, assignments));
 
         var result = await list.ExecuteAsync(org, staffMembership.Id, actor);
 
@@ -227,6 +240,17 @@ public sealed class MembershipBranchAccessScopeTests
         Assert.Equal(BranchAccessScope.AllActive, membership.BranchAccessScope);
         await Task.CompletedTask;
     }
+
+    private static OrganizationBranchAccessService CreateAccessService(
+        InMemoryOrganizationMembershipRepository memberships,
+        MutableBranchRepo branches,
+        MutableAssignmentRepo assignments) =>
+        new(
+            memberships,
+            branches,
+            assignments,
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository());
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {

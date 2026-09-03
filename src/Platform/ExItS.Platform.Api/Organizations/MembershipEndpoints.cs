@@ -586,7 +586,7 @@ internal static class MembershipEndpoints
             var result = await useCase.ExecuteAsync(
                     PlatformOrganizationId.From(organizationId),
                     OrganizationMembershipId.From(membershipId),
-                    new SetMembershipBranchAssignmentsCommand(body.Scope ?? string.Empty, body.BranchIds),
+                    new SetMembershipBranchAssignmentsCommand(body.Scope ?? string.Empty, body.BranchIds, body.AreaIds),
                     actor.PlatformUserId?.Value.ToString("D"),
                     ct).ConfigureAwait(false);
             if (result.IsSuccess)
@@ -651,4 +651,7 @@ internal static class MembershipEndpoints
 internal sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
 internal sealed record ChangeRoleRequest(string Role, string? ActorReference, string? StepUpToken);
 internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference, string? StepUpToken);
-internal sealed record SetMembershipBranchAssignmentsRequest(string? Scope, IReadOnlyList<Guid>? BranchIds);
+internal sealed record SetMembershipBranchAssignmentsRequest(
+    string? Scope,
+    IReadOnlyList<Guid>? BranchIds,
+    IReadOnlyList<Guid>? AreaIds = null);

@@ -41,7 +41,9 @@ public sealed class GetOrganizationPrimaryBranchTests
         var branchAccess = new OrganizationBranchAccessService(
             memberships,
             new FakeBranchRepo([main, remote]),
-            new FakeAssignmentRepo(assignments));
+            new FakeAssignmentRepo(assignments),
+            new InMemoryOrganizationAreaRepository(),
+            new InMemoryOrganizationMembershipAreaAssignmentRepository());
         var structural = new GetOrganizationPrimaryBranch(new FakeBranchRepo([main, remote]));
 
         var accessible = await branchAccess.ResolveAccessibleActiveBranchIdsAsync(staff, org);

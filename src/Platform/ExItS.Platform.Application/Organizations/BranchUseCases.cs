@@ -75,7 +75,8 @@ public sealed record OrganizationBranchDto(
     int PickupSectionsTotal = BranchFulfillmentSetupSummary.PickupSectionCount,
     int DeliverySectionsComplete = 0,
     int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
-    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null);
+    IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
+    Guid? AreaId = null);
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -104,7 +105,9 @@ public sealed record BranchManagementSummaryItemDto(
     int PickupSectionsComplete,
     int PickupSectionsTotal,
     int DeliverySectionsComplete,
-    int DeliverySectionsTotal);
+    int DeliverySectionsTotal,
+    Guid? AreaId = null,
+    string? AreaName = null);
 
 public sealed record BranchStaffAccessItemDto(
     Guid MembershipId,
@@ -679,7 +682,8 @@ public sealed class ListBranchManagementSummaries(
     ListBranches listBranches,
     IOrganizationMembershipBranchAssignmentRepository assignments,
     IPosDeviceRepository devices,
-    IOrganizationMembershipRepository memberships)
+    IOrganizationMembershipRepository memberships,
+    IOrganizationAreaRepository areas)
 {
     public async Task<ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>> ExecuteAsync(
         PlatformOrganizationId organizationId,
@@ -708,6 +712,9 @@ public sealed class ListBranchManagementSummaries(
             .GroupBy(d => d.BranchId.Value)
             .ToDictionary(g => g.Key, g => g.Count());
 
+        var areaNames = (await areas.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false))
+            .ToDictionary(a => a.Id.Value, a => a.Name);
+
         var items = branches
             .OrderByDescending(b => b.IsPrimary)
             .ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase)
@@ -729,7 +736,9 @@ public sealed class ListBranchManagementSummaries(
                 b.PickupSectionsComplete,
                 b.PickupSectionsTotal,
                 b.DeliverySectionsComplete,
-                b.DeliverySectionsTotal))
+                b.DeliverySectionsTotal,
+                b.AreaId,
+                b.AreaId is Guid areaId ? areaNames.GetValueOrDefault(areaId) : null))
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
@@ -902,7 +911,7 @@ public sealed class EnsureMainBranchExists(
     }
 }
 
-internal sealed record PosPlanLimits(int MaxBranches, int MaxActivePosDevices);
+internal sealed record PosPlanLimits(int MaxBranches, int MaxActivePosDevices, int MaxAreas);
 
 internal static class PosOrganizationPlanLimits
 {
@@ -925,7 +934,7 @@ internal static class PosOrganizationPlanLimits
         var plan = await plans.GetByIdAsync(subscription.PlanId, cancellationToken).ConfigureAwait(false);
         return plan is null
             ? ApplicationResult<PosPlanLimits>.Failure(ApplicationErrorCodes.PlanNotFound, "The active POS subscription plan was not found.")
-            : ApplicationResult<PosPlanLimits>.Success(new(plan.MaxBranches, plan.MaxActivePosDevices));
+            : ApplicationResult<PosPlanLimits>.Success(new(plan.MaxBranches, plan.MaxActivePosDevices, plan.MaxAreas));
     }
 }
 
@@ -986,7 +995,8 @@ internal static class BranchMapper
             readiness?.SetupSummary.PickupSectionsTotal ?? BranchFulfillmentSetupSummary.PickupSectionCount,
             readiness?.SetupSummary.DeliverySectionsComplete ?? 0,
             readiness?.SetupSummary.DeliverySectionsTotal ?? BranchFulfillmentSetupSummary.DeliverySectionCount,
-            activeDeliveryServiceAreas);
+            activeDeliveryServiceAreas,
+            x.AreaId?.Value);
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

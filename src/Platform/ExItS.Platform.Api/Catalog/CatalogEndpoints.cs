@@ -546,7 +546,8 @@ internal static class CatalogEndpoints
                 body.MonthlyPrice,
                 body.AnnualPrice,
                 body.CurrencyCode,
-                ct).ConfigureAwait(false);
+                ct,
+                body.MaxAreas).ConfigureAwait(false);
             if (result.IsSuccess)
             {
                 await authz.AuditSucceededAsync(
@@ -634,7 +635,8 @@ internal static class CatalogEndpoints
                 body.AnnualPrice,
                 body.CurrencyCode,
                 body.ExpectedUpdatedAtUtc,
-                ct).ConfigureAwait(false);
+                ct,
+                body.MaxAreas).ConfigureAwait(false);
             if (result.IsSuccess)
             {
                 await authz.AuditSucceededAsync(
@@ -1127,6 +1129,7 @@ internal static class CatalogEndpoints
         maxActiveStaff = plan.MaxActiveStaff,
         maxActivePosDevices = plan.MaxActivePosDevices,
         maxActiveBusinessTypes = plan.MaxActiveBusinessTypes,
+        maxAreas = plan.MaxAreas,
         customerCreditEnabled = plan.CustomerCreditEnabled,
         advancedReportsEnabled = plan.AdvancedReportsEnabled,
         exportEnabled = plan.ExportEnabled,
@@ -1204,7 +1207,8 @@ internal sealed record CreatePlanRequest(
     int SortOrder = 100,
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
-    string CurrencyCode = "PHP");
+    string CurrencyCode = "PHP",
+    int MaxAreas = 1);
 internal sealed record UpdatePlanCommercialRequest(
     string DisplayName,
     string? Description,
@@ -1221,7 +1225,8 @@ internal sealed record UpdatePlanCommercialRequest(
     decimal MonthlyPrice,
     decimal AnnualPrice,
     string CurrencyCode,
-    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+    DateTimeOffset? ExpectedUpdatedAtUtc = null,
+    int? MaxAreas = null);
 internal sealed record FeatureGrantRequest(string FeatureCode, bool Enabled, int? NumericLimit = null);
 
 internal sealed record CreateDraftPlanVersionRequest(

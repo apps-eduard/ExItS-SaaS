@@ -60,7 +60,8 @@ public sealed record PlanDto(
     int SortOrder = 100,
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
-    string CurrencyCode = "PHP");
+    string CurrencyCode = "PHP",
+    int MaxAreas = 1);
 
 public sealed record FeatureGrantDto(
     string FeatureCode,
@@ -322,7 +323,8 @@ public sealed class CatalogQueryService
             SortOrder: plan.SortOrder,
             MonthlyPrice: plan.MonthlyPrice,
             AnnualPrice: plan.AnnualPrice,
-            CurrencyCode: plan.CurrencyCode);
+            CurrencyCode: plan.CurrencyCode,
+            MaxAreas: plan.MaxAreas);
 
     private static PlanVersionDto MapPlanVersion(PlanVersion version) =>
         new(

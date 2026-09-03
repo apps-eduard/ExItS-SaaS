@@ -12,6 +12,7 @@ internal sealed class PlanRecord
     public int MaxActiveStaff { get; set; } = 3;
     public int MaxActivePosDevices { get; set; } = 1;
     public int MaxActiveBusinessTypes { get; set; } = 1;
+    public int MaxAreas { get; set; } = 1;
     public bool CustomerCreditEnabled { get; set; }
     public bool AdvancedReportsEnabled { get; set; }
     public bool ExportEnabled { get; set; }

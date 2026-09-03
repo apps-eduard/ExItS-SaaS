@@ -68,6 +68,8 @@ export type BranchManagementSummaryItemDto = {
   customerOrderingEnabled: boolean;
   assignedStaffCount: number;
   activeDeviceCount: number;
+  areaId: string | null;
+  areaName: string | null;
   pickupSectionsComplete: number;
   pickupSectionsTotal: number;
   deliverySectionsComplete: number;
@@ -151,6 +153,8 @@ function normalizeSummaryItem(raw: unknown): BranchManagementSummaryItemDto {
     customerOrderingEnabled: readBool(r, "customerOrderingEnabled", "CustomerOrderingEnabled"),
     assignedStaffCount: readInt(r, "assignedStaffCount", "AssignedStaffCount"),
     activeDeviceCount: readInt(r, "activeDeviceCount", "ActiveDeviceCount"),
+    areaId: readString(r, "areaId", "AreaId"),
+    areaName: readString(r, "areaName", "AreaName"),
     pickupSectionsComplete: readInt(r, "pickupSectionsComplete", "PickupSectionsComplete"),
     pickupSectionsTotal: readInt(r, "pickupSectionsTotal", "PickupSectionsTotal", 2),
     deliverySectionsComplete: readInt(r, "deliverySectionsComplete", "DeliverySectionsComplete"),

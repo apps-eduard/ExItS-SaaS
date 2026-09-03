@@ -508,7 +508,8 @@ public sealed record CommercialPlanDto(
     int SortOrder = 100,
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
-    string CurrencyCode = "PHP");
+    string CurrencyCode = "PHP",
+    int MaxAreas = 1);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,

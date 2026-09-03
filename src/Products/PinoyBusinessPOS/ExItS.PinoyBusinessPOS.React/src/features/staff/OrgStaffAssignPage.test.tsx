@@ -163,6 +163,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "Explicit",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,
@@ -197,6 +198,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "Explicit",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,
@@ -252,6 +254,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "Explicit",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,
@@ -266,6 +269,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "AllActive",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,
@@ -326,6 +330,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "Explicit",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,
@@ -340,6 +345,7 @@ describe("OrgStaffAssignPage branch access", () => {
       ok: true,
       value: {
         scope: "Explicit",
+        areas: [],
         branches: [
           {
             branchId: mainBranchId,

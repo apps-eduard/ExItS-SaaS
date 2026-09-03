@@ -39,6 +39,9 @@ public sealed class OrganizationBranch
     public bool OnlineOrdersPaused { get; private set; }
     public OnlineOrdersPauseReason? PauseReason { get; private set; }
     public bool IsPrimary { get; private set; }
+
+    /// <summary>Optional grouping Area. Grouping only — never operational authority.</summary>
+    public OrganizationAreaId? AreaId { get; private set; }
     public OrganizationBranchStatus Status { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
     public PlatformUserId? SuspendedByUserId { get; private set; }
@@ -87,6 +90,7 @@ public sealed class OrganizationBranch
         bool onlineOrdersPaused,
         OnlineOrdersPauseReason? onlineOrdersPauseReason,
         bool isPrimary,
+        OrganizationAreaId? areaId,
         OrganizationBranchStatus status,
         DateTimeOffset? suspendedAtUtc,
         PlatformUserId? suspendedByUserId,
@@ -114,6 +118,7 @@ public sealed class OrganizationBranch
         OnlineOrdersPaused = onlineOrdersPaused;
         PauseReason = onlineOrdersPauseReason;
         IsPrimary = isPrimary;
+        AreaId = areaId;
         Status = status;
         SuspendedAtUtc = suspendedAtUtc;
         SuspendedByUserId = suspendedByUserId;
@@ -187,7 +192,8 @@ public sealed class OrganizationBranch
         OnlineOrdersPauseReason? onlineOrdersPauseReason = null,
         DateTimeOffset? suspendedAtUtc = null,
         PlatformUserId? suspendedByUserId = null,
-        string? suspensionReason = null) =>
+        string? suspensionReason = null,
+        OrganizationAreaId? areaId = null) =>
         new(
             id,
             organizationId,
@@ -209,6 +215,7 @@ public sealed class OrganizationBranch
             onlineOrdersPaused,
             onlineOrdersPauseReason,
             isPrimary,
+            areaId,
             status,
             suspendedAtUtc,
             suspendedByUserId,
@@ -304,6 +311,36 @@ public sealed class OrganizationBranch
             DeliveryEnabled = false;
         }
 
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Places this branch in exactly one Area. Re-assigning moves the branch; it never duplicates
+    /// membership across Areas and never transfers stock, registers, shifts, or documents.
+    /// </summary>
+    public void AssignArea(OrganizationAreaId areaId, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(areaId);
+        EnsureMutable(utcNow);
+        if (AreaId == areaId)
+        {
+            return;
+        }
+
+        AreaId = areaId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Removes the branch from its Area. The branch keeps every operational capability.</summary>
+    public void UnassignArea(DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (AreaId is null)
+        {
+            return;
+        }
+
+        AreaId = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -534,6 +571,7 @@ public sealed class OrganizationBranch
             onlineOrdersPaused,
             onlineOrdersPauseReason,
             isPrimary,
+            areaId: null,
             status,
             suspendedAtUtc,
             suspendedByUserId,

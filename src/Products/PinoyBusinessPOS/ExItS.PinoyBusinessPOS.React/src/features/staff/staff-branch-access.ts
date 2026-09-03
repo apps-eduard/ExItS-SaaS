@@ -1,11 +1,12 @@
 import type {
   BranchAccessScopeDto,
+  MembershipAreaAssignmentDto,
   MembershipBranchAssignmentDto,
 } from "@/api/platform/membership-branch-assignments-client";
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
 import { resolvePlatformBranchId } from "@/api/platform/platform-auth-client";
 
-export type BranchScopeMode = "all" | "specific";
+export type BranchScopeMode = "all" | "areas" | "specific";
 
 export function isImplicitAllBranchesMembershipRole(role: string): boolean {
   const normalized = role.trim();
@@ -49,12 +50,36 @@ export function assignmentBranchIds(assignments: MembershipBranchAssignmentDto[]
   return assignments.map((item) => item.branchId.trim()).filter(Boolean);
 }
 
+export function assignmentAreaIds(assignments: MembershipAreaAssignmentDto[]): string[] {
+  return assignments.map((item) => item.areaId.trim()).filter(Boolean);
+}
+
 export function scopeToMode(scope: BranchAccessScopeDto): BranchScopeMode {
-  return scope === "AllActive" ? "all" : "specific";
+  if (scope === "AllActive") {
+    return "all";
+  }
+  return scope === "Areas" ? "areas" : "specific";
 }
 
 export function modeToScope(mode: BranchScopeMode): BranchAccessScopeDto {
-  return mode === "all" ? "AllActive" : "Explicit";
+  if (mode === "all") {
+    return "AllActive";
+  }
+  return mode === "areas" ? "Areas" : "Explicit";
+}
+
+/**
+ * Areas stay hidden until the business actually needs them: a single-branch shop with no
+ * areas keeps the simple two-way choice, and no area setup is ever required to run POS.
+ */
+export function shouldOfferAreaScope(input: {
+  activeBranchCount: number;
+  activeAreaCount: number;
+}): boolean {
+  if (input.activeAreaCount <= 0) {
+    return false;
+  }
+  return input.activeBranchCount > 1;
 }
 
 export function formatStaffBranchAccessSummary(input: {
@@ -65,6 +90,8 @@ export function formatStaffBranchAccessSummary(input: {
   allActiveLabel: string;
   automaticAllLabel: string;
   unknownLabel: string;
+  areaNames?: readonly string[];
+  areasLabel?: string;
 }): string {
   if (isImplicitAllBranchesMembershipRole(input.membershipRole)) {
     return input.automaticAllLabel;
@@ -78,6 +105,14 @@ export function formatStaffBranchAccessSummary(input: {
 
   if (input.scope === "AllActive") {
     return input.allActiveLabel;
+  }
+
+  if (input.scope === "Areas") {
+    const names = (input.areaNames ?? []).map((name) => name.trim()).filter(Boolean);
+    if (names.length === 0) {
+      return input.areasLabel ?? input.unknownLabel;
+    }
+    return names.length === 1 ? names[0]! : `${names[0]} + ${names.length - 1}`;
   }
 
   if (activeIds.length === 1) {

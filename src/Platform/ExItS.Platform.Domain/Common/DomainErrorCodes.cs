@@ -84,6 +84,11 @@ public static class DomainErrorCodes
     public const string OrganizationBranchPrimaryChangeInvalid = "platform.organization_branch.primary.change_invalid";
     public const string OrganizationBranchSuspendBlockedActiveDevices = "platform.organization_branch.suspend_blocked_active_devices";
     public const string OrganizationBranchSuspensionReasonRequired = "platform.organization_branch.suspension_reason.required";
+    public const string InvalidOrganizationAreaId = "platform.organization_area.id.invalid";
+    public const string InvalidOrganizationAreaCode = "platform.organization_area.code.invalid";
+    public const string OrganizationAreaNotActive = "platform.organization_area.not_active";
+    public const string InvalidOrganizationAreaStatusTransition = "platform.organization_area.status.invalid_transition";
+    public const string InvalidOrganizationMembershipAreaAssignmentId = "platform.organization_membership_area_assignment.id.invalid";
     public const string InvalidPosDeviceId = "platform.pos_device.id.invalid";
     public const string InvalidPosDeviceInstallationId = "platform.pos_device.installation_id.invalid";
     public const string PosDeviceNotActive = "platform.pos_device.not_active";

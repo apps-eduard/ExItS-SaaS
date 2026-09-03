@@ -213,6 +213,7 @@ describe("OrgStaffPage owner protection", () => {
           membershipId === staffMembershipId || membershipId === noRoleMembershipId
             ? {
                 scope: "Explicit" as const,
+                areas: [],
                 branches: [
                   {
                     branchId: mainBranchId,
@@ -222,7 +223,7 @@ describe("OrgStaffPage owner protection", () => {
                   },
                 ],
               }
-            : { scope: "Explicit" as const, branches: [] },
+            : { scope: "Explicit" as const, areas: [], branches: [] },
       }),
     );
   });

@@ -383,7 +383,8 @@ public sealed class CreatePlan
         decimal monthlyPrice,
         decimal annualPrice,
         string currencyCode,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? maxAreas = null)
     {
         try
         {
@@ -421,7 +422,8 @@ public sealed class CreatePlan
                 sortOrder: sortOrder,
                 monthlyPrice: monthlyPrice,
                 annualPrice: annualPrice,
-                currencyCode: currencyCode);
+                currencyCode: currencyCode,
+                maxAreas: maxAreas ?? 1);
             await _plans.AddAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<Plan>.Success(plan);
@@ -669,7 +671,8 @@ public sealed class UpdatePlanCommercialPackage
         decimal annualPrice,
         string currencyCode,
         DateTimeOffset? expectedUpdatedAtUtc = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? maxAreas = null)
     {
         var plan = await _plans.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (plan is null)
@@ -702,7 +705,8 @@ public sealed class UpdatePlanCommercialPackage
                 monthlyPrice,
                 annualPrice,
                 currencyCode,
-                _clock.UtcNow);
+                _clock.UtcNow,
+                maxAreas ?? plan.MaxAreas);
             await _plans.UpdateAsync(plan, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<Plan>.Success(plan);

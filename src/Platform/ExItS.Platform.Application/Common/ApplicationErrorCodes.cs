@@ -235,6 +235,10 @@ public static class ApplicationErrorCodes
     public const string BranchAccessDenied = "application.branch.access_denied";
     public const string BranchCapacityExceeded = "application.branch.capacity_exceeded";
     public const string BranchCodeConflict = "application.branch.code_conflict";
+    public const string AreaNotFound = "application.area.not_found";
+    public const string AreaCapacityExceeded = "application.area.capacity_exceeded";
+    public const string AreaNameConflict = "application.area.name_conflict";
+    public const string AreaArchiveBlocked = "application.area.archive_blocked";
     public const string PosDeviceNotFound = "application.pos_device.not_found";
     public const string PosDeviceCapacityExceeded = "application.pos_device.capacity_exceeded";
     public const string BusinessTypeActivationCapacityExceeded =

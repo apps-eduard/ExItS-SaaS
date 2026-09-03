@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Plus, ShieldCheck, UserRound } from "lucide-react";
 import {
   listMembershipBranchAssignments,
+  type BranchAccessScopeDto,
 } from "@/api/platform/membership-branch-assignments-client";
 import {
   listOrganizationMembers,
@@ -64,7 +65,14 @@ type StaffRow = {
   membershipStatus: string;
   posGrants: StaffGrant[];
   assignedBranchIds: string[];
-  branchAccessScope: "Explicit" | "AllActive" | null;
+  assignedAreaNames: string[];
+  branchAccessScope: BranchAccessScopeDto | null;
+};
+
+type MembershipBranchAccess = {
+  scope: BranchAccessScopeDto;
+  assignedIds: string[];
+  areaNames: string[];
 };
 
 type PendingAction =
@@ -158,7 +166,7 @@ function staffPosRoleLabel(grant: StaffGrant): string {
 function buildRows(
   members: OrganizationMemberWire[],
   grants: ProductLocalRoleGrantWire[],
-  accessByMembershipId: Map<string, { scope: "Explicit" | "AllActive"; assignedIds: string[] }>,
+  accessByMembershipId: Map<string, MembershipBranchAccess>,
 ): StaffRow[] {
   const grantsByUser = new Map<string, StaffGrant[]>();
   for (const grant of grants) {
@@ -188,6 +196,7 @@ function buildRows(
       membershipStatus: member.status,
       posGrants: grantsByUser.get(member.userId) ?? [],
       assignedBranchIds: access?.assignedIds ?? [],
+      assignedAreaNames: access?.areaNames ?? [],
       branchAccessScope: access?.scope ?? null,
     };
   });
@@ -236,10 +245,7 @@ export function OrgStaffPage() {
       }
 
       const activeBranches = listActiveBranches(branchesResult.branches);
-      const accessByMembershipId = new Map<
-        string,
-        { scope: "Explicit" | "AllActive"; assignedIds: string[] }
-      >();
+      const accessByMembershipId = new Map<string, MembershipBranchAccess>();
       const assignmentTargets = membersResult.members.filter(
         (member) => !isImplicitAllBranchesMembershipRole(member.role),
       );
@@ -254,6 +260,7 @@ export function OrgStaffPage() {
             {
               scope: result.value.scope,
               assignedIds: assignmentBranchIds(result.value.branches),
+              areaNames: result.value.areas.map((area) => area.name),
             },
           ] as const;
         }),
@@ -617,6 +624,8 @@ function StaffMemberRow({
     allActiveLabel: t("staffManage.branchAccessAll"),
     automaticAllLabel: t("staffManage.branchAccessAutomatic"),
     unknownLabel: t("staffManage.branchAccessUnknown"),
+    areaNames: row.assignedAreaNames,
+    areasLabel: t("staffAssign.areasSummary"),
   });
 
   return (

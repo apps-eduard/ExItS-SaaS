@@ -25,8 +25,10 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { useProductLocalRoleCatalog } from "@/features/staff/useProductLocalRoleCatalog";
+import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import {
   activeBranchIds,
+  assignmentAreaIds,
   assignmentBranchIds,
   branchIdsEqual,
   isImplicitAllBranchesMembershipRole,
@@ -34,6 +36,7 @@ import {
   modeToScope,
   resolvePrimaryOrOnlyBranch,
   scopeToMode,
+  shouldOfferAreaScope,
   type BranchScopeMode,
 } from "@/features/staff/staff-branch-access";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -51,6 +54,7 @@ export function OrgStaffAssignPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [branchScope, setBranchScope] = useState<BranchScopeMode>("specific");
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
   const [branchStateReady, setBranchStateReady] = useState(false);
   const [ownerConfirmOpen, setOwnerConfirmOpen] = useState(false);
   const [changeConfirmOpen, setChangeConfirmOpen] = useState(false);
@@ -90,6 +94,7 @@ export function OrgStaffAssignPage() {
 
       const implicitAll = isImplicitAllBranchesMembershipRole(member.role);
       let assignedIds: string[] = [];
+      let assignedAreaIds: string[] = [];
       let branchAccessScope: BranchAccessScopeDto = "Explicit";
       if (!implicitAll) {
         const assignmentsResult = await listMembershipBranchAssignments(
@@ -101,6 +106,7 @@ export function OrgStaffAssignPage() {
         }
         branchAccessScope = assignmentsResult.value.scope;
         assignedIds = assignmentBranchIds(assignmentsResult.value.branches);
+        assignedAreaIds = assignmentAreaIds(assignmentsResult.value.areas);
       }
 
       return {
@@ -120,7 +126,23 @@ export function OrgStaffAssignPage() {
         implicitAllBranches: implicitAll,
         branchAccessScope,
         assignedBranchIds: assignedIds,
+        assignedAreaIds,
       };
+    },
+  });
+
+  const areasQuery = useQuery({
+    queryKey: ["organization-areas", organizationId],
+    enabled: Boolean(organizationId),
+    queryFn: async ({ signal }) => {
+      if (!organizationId) {
+        throw new Error(t("staffInvite.noWorkspace"));
+      }
+      const result = await listOrganizationAreas(organizationId, signal);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? t("areas.loadError"));
+      }
+      return result.value.areas.filter((area) => area.status === "Active");
     },
   });
 
@@ -143,6 +165,11 @@ export function OrgStaffAssignPage() {
   const allActiveIds = useMemo(() => activeBranchIds(activeBranches), [activeBranches]);
   const singleBranch = activeBranches.length === 1 ? resolvePrimaryOrOnlyBranch(activeBranches) : null;
   const singleBranchId = singleBranch ? resolvePlatformBranchId(singleBranch) : null;
+  const activeAreas = areasQuery.data ?? [];
+  const areasAvailable = shouldOfferAreaScope({
+    activeBranchCount: activeBranches.length,
+    activeAreaCount: activeAreas.length,
+  });
 
   useEffect(() => {
     setBranchStateReady(false);
@@ -174,8 +201,10 @@ export function OrgStaffAssignPage() {
       setBranchStateReady(true);
       return;
     }
-    const mode = scopeToMode(userQuery.data.branchAccessScope);
+    const stored = scopeToMode(userQuery.data.branchAccessScope);
+    const mode = stored === "areas" && !areasAvailable ? "specific" : stored;
     setBranchScope(mode);
+    setSelectedAreaIds([...userQuery.data.assignedAreaIds]);
     setSelectedBranchIds(
       mode === "all"
         ? [...allActiveIds]
@@ -193,6 +222,7 @@ export function OrgStaffAssignPage() {
     activeBranches.length,
     allActiveIds,
     singleBranchId,
+    areasAvailable,
     branchStateReady,
   ]);
 
@@ -207,7 +237,12 @@ export function OrgStaffAssignPage() {
   }, [userQuery.data, activeBranches.length, branchScope]);
 
   const resolvedBranchIds = useMemo(() => {
-    if (!userQuery.data || userQuery.data.implicitAllBranches || resolvedScope === "AllActive") {
+    if (
+      !userQuery.data ||
+      userQuery.data.implicitAllBranches ||
+      resolvedScope === "AllActive" ||
+      resolvedScope === "Areas"
+    ) {
       return [] as string[];
     }
     if (activeBranches.length <= 1) {
@@ -223,6 +258,14 @@ export function OrgStaffAssignPage() {
     selectedBranchIds,
   ]);
 
+  const resolvedAreaIds = useMemo(() => {
+    if (resolvedScope !== "Areas") {
+      return [] as string[];
+    }
+    const allowed = activeAreas.map((area) => area.id);
+    return selectedAreaIds.filter((id) => allowed.includes(id));
+  }, [resolvedScope, activeAreas, selectedAreaIds]);
+
   const branchesDirty = useMemo(() => {
     if (!userQuery.data || userQuery.data.implicitAllBranches || resolvedScope === null) {
       return false;
@@ -233,8 +276,11 @@ export function OrgStaffAssignPage() {
     if (resolvedScope === "AllActive") {
       return false;
     }
+    if (resolvedScope === "Areas") {
+      return !branchIdsEqual(resolvedAreaIds, userQuery.data.assignedAreaIds);
+    }
     return !branchIdsEqual(resolvedBranchIds, userQuery.data.assignedBranchIds);
-  }, [userQuery.data, resolvedScope, resolvedBranchIds]);
+  }, [userQuery.data, resolvedScope, resolvedBranchIds, resolvedAreaIds]);
 
   const assignMutation = useMutation({
     mutationFn: async (roleCode: string | null) => {
@@ -270,13 +316,18 @@ export function OrgStaffAssignPage() {
         if (resolvedScope === "Explicit" && resolvedBranchIds.length === 0) {
           throw new Error(t("staffAssign.branchRequired"));
         }
+        if (resolvedScope === "Areas" && resolvedAreaIds.length === 0) {
+          throw new Error(t("staffAssign.areaRequired"));
+        }
         const branchResult = await setMembershipBranchAssignments(
           organizationId,
           userQuery.data.membershipId,
-          {
-            scope: resolvedScope,
-            branchIds: resolvedScope === "Explicit" ? resolvedBranchIds : [],
-          },
+          resolvedScope === "Areas"
+            ? { scope: resolvedScope, branchIds: [], areaIds: resolvedAreaIds }
+            : {
+                scope: resolvedScope,
+                branchIds: resolvedScope === "Explicit" ? resolvedBranchIds : [],
+              },
         );
         if (!branchResult.ok) {
           throw new Error(branchResult.body?.detail ?? t("staffAssign.branchSaveError"));
@@ -310,7 +361,7 @@ export function OrgStaffAssignPage() {
     (!sameRoleSelected || branchesDirty) &&
     (userQuery.data?.implicitAllBranches ||
       resolvedScope === "AllActive" ||
-      resolvedBranchIds.length > 0);
+      (resolvedScope === "Areas" ? resolvedAreaIds.length > 0 : resolvedBranchIds.length > 0));
 
   const replaceHint = useMemo(() => {
     if (!userQuery.data?.existingRoleLabel) {
@@ -355,6 +406,16 @@ export function OrgStaffAssignPage() {
         return current.filter((id) => id !== branchId);
       }
       return [...current, branchId];
+    });
+    setSubmitError(null);
+  }
+
+  function toggleArea(areaId: string) {
+    setSelectedAreaIds((current) => {
+      if (current.includes(areaId)) {
+        return current.filter((id) => id !== areaId);
+      }
+      return [...current, areaId];
     });
     setSubmitError(null);
   }
@@ -553,6 +614,38 @@ export function OrgStaffAssignPage() {
                     </span>
                   </span>
                 </button>
+                {areasAvailable ? (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={branchScope === "areas"}
+                    disabled={
+                      assignMutation.isPending || userQuery.data.membershipStatus !== "Active"
+                    }
+                    className={cn(
+                      "staff-assign-role",
+                      branchScope === "areas" && "staff-assign-role--selected",
+                    )}
+                    data-testid="org-staff-branch-scope-areas"
+                    onClick={() => {
+                      setBranchScope("areas");
+                      if (selectedAreaIds.length === 0 && userQuery.data.assignedAreaIds.length > 0) {
+                        setSelectedAreaIds([...userQuery.data.assignedAreaIds]);
+                      }
+                      setSubmitError(null);
+                    }}
+                  >
+                    <span className="staff-assign-role__check" aria-hidden>
+                      {branchScope === "areas" ? "✓" : ""}
+                    </span>
+                    <span className="staff-assign-role__copy">
+                      <span className="staff-assign-role__label">{t("staffAssign.areaScope")}</span>
+                      <span className="staff-assign-role__desc">
+                        {t("staffAssign.areaScopeHint")}
+                      </span>
+                    </span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   role="radio"
@@ -588,6 +681,45 @@ export function OrgStaffAssignPage() {
                   </span>
                 </button>
               </div>
+
+              {branchScope === "areas" ? (
+                <ul
+                  className="staff-assign-branch-list m-0 grid list-none gap-2 p-0"
+                  data-testid="org-staff-area-checklist"
+                >
+                  {activeAreas.map((area) => {
+                    const checked = selectedAreaIds.includes(area.id);
+                    return (
+                      <li key={area.id}>
+                        <label
+                          className={cn(
+                            "staff-assign-branch-option",
+                            checked && "staff-assign-branch-option--selected",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="staff-assign-branch-option__input"
+                            checked={checked}
+                            disabled={
+                              assignMutation.isPending ||
+                              userQuery.data.membershipStatus !== "Active"
+                            }
+                            data-testid={`org-staff-area-${area.id}`}
+                            onChange={() => toggleArea(area.id)}
+                          />
+                          <span className="staff-assign-branch-option__copy">
+                            <span className="staff-assign-branch-option__name">{area.name}</span>
+                            <span className="staff-assign-branch-option__code">
+                              {t("areas.branchCount").replace("{count}", String(area.branchCount))}
+                            </span>
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
 
               {branchScope === "specific" ? (
                 <ul

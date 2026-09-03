@@ -85,7 +85,8 @@ internal static class CatalogEntityMapper
             record.SortOrder,
             record.MonthlyPrice,
             record.AnnualPrice,
-            string.IsNullOrWhiteSpace(record.CurrencyCode) ? "PHP" : record.CurrencyCode);
+            string.IsNullOrWhiteSpace(record.CurrencyCode) ? "PHP" : record.CurrencyCode,
+            record.MaxAreas <= 0 ? 1 : record.MaxAreas);
 
     public static PlanRecord ToRecord(Plan plan) =>
         new()
@@ -100,6 +101,7 @@ internal static class CatalogEntityMapper
             MaxActiveStaff = plan.MaxActiveStaff,
             MaxActivePosDevices = plan.MaxActivePosDevices,
             MaxActiveBusinessTypes = plan.MaxActiveBusinessTypes,
+            MaxAreas = plan.MaxAreas,
             CustomerCreditEnabled = plan.CustomerCreditEnabled,
             AdvancedReportsEnabled = plan.AdvancedReportsEnabled,
             ExportEnabled = plan.ExportEnabled,
@@ -122,6 +124,7 @@ internal static class CatalogEntityMapper
         record.MaxActiveStaff = plan.MaxActiveStaff;
         record.MaxActivePosDevices = plan.MaxActivePosDevices;
         record.MaxActiveBusinessTypes = plan.MaxActiveBusinessTypes;
+        record.MaxAreas = plan.MaxAreas;
         record.CustomerCreditEnabled = plan.CustomerCreditEnabled;
         record.AdvancedReportsEnabled = plan.AdvancedReportsEnabled;
         record.ExportEnabled = plan.ExportEnabled;
