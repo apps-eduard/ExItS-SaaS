@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  /* ExItS brand tokens (directional values from docs/05-design-system.md) */
+  --color-base: #080e0a;
+  --color-surface: #0f1a12;
+  --color-elevated: #102019;
+  --color-primary: #f0f4f1;
+  --color-muted: #8aa690;
+  --color-brand: #10b981;
+  --color-brand-bright: #34d399;
+  --color-secondary: #06b6d4;
+  --color-border-default: rgba(255, 255, 255, 0.08);
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Visible focus ring across the app (accessibility baseline) */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(16, 185, 129, 0.45),
+    0 0 0 4px rgba(52, 211, 153, 0.25);
+  border-radius: 0.5rem;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
