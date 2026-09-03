@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // WEB-10 tooling (CommonJS Node runners / LHCI configs)
+    "scripts/**",
+    "lighthouserc.cjs",
+    "lighthouserc.desktop.cjs",
+    ".lighthouseci/**",
+    ".lighthouseci-desktop/**",
   ]),
 ]);
 

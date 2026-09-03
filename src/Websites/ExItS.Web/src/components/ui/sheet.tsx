@@ -42,9 +42,13 @@ export const SheetContent = React.forwardRef<
       )}
       {...props}
     >
+      <DialogPrimitive.Title className="sr-only">Main menu</DialogPrimitive.Title>
+      <DialogPrimitive.Description className="sr-only">
+        Site navigation for products, solutions, pricing, and company pages.
+      </DialogPrimitive.Description>
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-2 text-muted hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brandBright">
-        <X className="h-4 w-4" />
+      <DialogPrimitive.Close className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-md text-muted hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brandBright">
+        <X className="h-4 w-4" aria-hidden="true" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>

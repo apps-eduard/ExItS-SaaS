@@ -36,7 +36,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/pos"
-                        className="flex items-center justify-between rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center justify-between rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         <span>Pinoy Business POS</span>
                         <ExItsBadge variant="available" className="shrink-0">
@@ -49,7 +49,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/service-pro"
-                        className="flex items-center justify-between rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center justify-between rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         <span>Pinoy Service Pro</span>
                         <ExItsBadge variant="coming-soon" className="shrink-0">
@@ -68,7 +68,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/pos#personal-sellers"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         Personal Sellers
                       </Link>
@@ -78,7 +78,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/pos#small-businesses"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         Small Businesses
                       </Link>
@@ -88,7 +88,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/pos#multi-branch-businesses"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         Multi-Branch Businesses
                       </Link>
@@ -104,7 +104,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/pricing"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         Pricing
                       </Link>
@@ -120,7 +120,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/about"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         About
                       </Link>
@@ -130,7 +130,7 @@ export function ExItsDrawerMenu({ trigger }: ExItsDrawerMenuProps) {
                     <SheetClose asChild>
                       <Link
                         href="/contact"
-                        className="block rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
+                        className="flex min-h-11 items-center rounded-md px-2 py-2 text-sm text-muted hover:text-primary focus-visible:outline-none"
                       >
                         Contact
                       </Link>

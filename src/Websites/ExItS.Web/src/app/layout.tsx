@@ -48,9 +48,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-PH" className="h-full">
       <body className="flex min-h-[100dvh] flex-col bg-base text-primary antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-lg focus:border focus:border-borderDefault focus:bg-elevated focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-primary"
+        >
+          Skip to main content
+        </a>
         <ExItsHeader />
         <ExItsBreadcrumbs />
-        <div className="flex-1">{children}</div>
+        <div id="main-content" className="flex-1" tabIndex={-1}>
+          {children}
+        </div>
         <ExItsFooter />
       </body>
     </html>
