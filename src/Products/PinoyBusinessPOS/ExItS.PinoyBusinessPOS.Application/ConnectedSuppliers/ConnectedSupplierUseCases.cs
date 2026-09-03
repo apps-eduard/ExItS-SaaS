@@ -21,6 +21,7 @@ public static class ConnectedSupplierErrorCodes
     public const string NotFound = "pos.connected_supplier.not_found";
     public const string DuplicateRelationship = "pos.connected_supplier.relationship.duplicate";
     public const string RelationshipInactive = "pos.connected_supplier.relationship.inactive";
+    public const string CancelNotPending = "pos.connected_supplier.cancellation.not_pending";
     public const string ExposureNotFound = "pos.connected_supplier.exposure.not_found";
     public const string LinkNotFound = "pos.connected_supplier.link.not_found";
     public const string IncomingOrderNotFound = "pos.connected_supplier.incoming_order.not_found";
@@ -62,6 +63,7 @@ public sealed record RespondConnectionRequest(
     string? CatalogSharingMode = null,
     decimal? CustomerDiscountPercent = null,
     bool ConfirmCatalogSharing = false);
+public sealed record CancelConnectionRequest(Guid? CancelledByUserId = null);
 public sealed record ConnectionCatalogSettingsDto(
     Guid RelationshipId,
     string CatalogSharingMode,
@@ -918,6 +920,92 @@ public sealed class DisconnectConnectedSupplier
         try {r.Disconnect(_clock.GetUtcNow());await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r,supplierView:r.SupplierOrganizationId==org));}
         catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,ex.Message);}
+    }
+}
+
+/// <summary>
+/// Buyer cancels its own pending supplier-connection request (Pending -> Declined).
+/// This must not mutate supplier master Active/Inactive status.
+/// </summary>
+public sealed class CancelPendingConnection
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly TimeProvider _clock;
+
+    public CancelPendingConnection(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        TimeProvider? clock = null)
+    {
+        _relationships = relationships;
+        _uow = uow;
+        _access = access;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
+        Guid orgId,
+        Guid relationshipId,
+        CancelConnectionRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var org = PosOrganizationId.From(orgId);
+        var r = await _relationships
+            .GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false);
+
+        if (r is null || r.BuyerOrganizationId != org)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.NotFound,
+                "This connection request is no longer available.");
+        }
+
+        if (r.Status != ConnectedSupplierRelationshipStatus.Pending)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.CancelNotPending,
+                "Only pending connection requests can be cancelled.");
+        }
+
+        try
+        {
+            r.Decline(_clock.GetUtcNow(), request.CancelledByUserId);
+            await _relationships.UpdateAsync(r, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            // Ensure supplier-side incoming request UI/notifications no longer show this as actionable.
+            var relatedId = r.Id.Value.ToString("D");
+            await _notifications.MarkRelatedReadAsync(
+                r.SupplierOrganizationId.Value,
+                SupplierConnectionNotificationTypes.Requested,
+                relatedId,
+                ct).ConfigureAwait(false);
+
+            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
+                ConnectedSupplierMapper.Map(r, supplierView: false));
+        }
+        catch (DomainException ex)
+        {
+            var message = ex.ErrorCode == ConnectedSupplierDomainErrorCodes.InvalidTransition
+                ? "This connection request is no longer available."
+                : ex.Message;
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, message);
+        }
     }
 }
 

@@ -61,6 +61,7 @@ vi.mock("@/offline/organization-offline-context", () => ({
 
 vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
   listRelationships: vi.fn(async () => []),
+  cancelConnectionRequest: vi.fn(),
   isRelationshipActive: () => false,
   isRelationshipPending: () => false,
 }));

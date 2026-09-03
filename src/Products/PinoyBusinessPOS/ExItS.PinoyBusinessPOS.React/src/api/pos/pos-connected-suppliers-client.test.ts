@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyBuyerProductPricing,
+  cancelConnectionRequest,
   approveConnection,
   assertNotInventoryMutationUrl,
   bulkMutateBuyerProductShares,
@@ -67,6 +68,7 @@ describe("pos-connected-suppliers-client", () => {
   it("requests, approves, declines, and lists relationships", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse(relationshipBody, 201))
+      .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Declined" }))
       .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Active" }))
       .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Declined" }))
       .mockResolvedValueOnce(jsonResponse([relationshipBody]));
@@ -76,6 +78,10 @@ describe("pos-connected-suppliers-client", () => {
         supplierPublicOrganizationIdOrQrPayload: "ORG000099",
       }),
     ).resolves.toMatchObject({ relationshipId });
+
+    await expect(cancelConnectionRequest(workspace, relationshipId)).resolves.toMatchObject({
+      status: "Declined",
+    });
 
     await expect(approveConnection(workspace, relationshipId)).resolves.toMatchObject({
       status: "Active",
@@ -87,9 +93,10 @@ describe("pos-connected-suppliers-client", () => {
 
     const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
     expect(urls[0]).toContain("/connected-suppliers/relationships/request");
-    expect(urls[1]).toContain(`/relationships/${relationshipId}/approve`);
-    expect(urls[2]).toContain(`/relationships/${relationshipId}/decline`);
-    expect(urls[3]).toContain("view=supplier");
+    expect(urls[1]).toContain(`/relationships/${relationshipId}/cancel`);
+    expect(urls[2]).toContain(`/relationships/${relationshipId}/approve`);
+    expect(urls[3]).toContain(`/relationships/${relationshipId}/decline`);
+    expect(urls[4]).toContain("view=supplier");
     for (const url of urls) {
       assertNotInventoryMutationUrl(url);
     }

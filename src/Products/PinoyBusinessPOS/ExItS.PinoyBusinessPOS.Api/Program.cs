@@ -399,6 +399,7 @@ builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
 builder.Services.AddScoped<ListBusinessCustomers>();
 builder.Services.AddScoped<GetBusinessCustomer>();
 builder.Services.AddScoped<DisconnectConnectedSupplier>();
+builder.Services.AddScoped<CancelPendingConnection>();
 builder.Services.AddScoped<UpdateSupplierLocation>();
 builder.Services.AddScoped<ListRelationships>();
 builder.Services.AddScoped<ExposeProduct>();

@@ -17,6 +17,8 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,true,body,ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/decline",async(HttpRequest req,Guid id,RespondConnectionRequest body,RespondConnection use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,false,body,ct),Results.Ok);});
+        group.MapPost("/relationships/{id:guid}/cancel",async(HttpRequest req,Guid id,CancelConnectionRequest body,CancelPendingConnection use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+    {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/catalog-settings",async(HttpRequest req,Guid id,GetConnectionCatalogSettings use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapPut("/relationships/{id:guid}/catalog-settings",async(HttpRequest req,Guid id,UpdateConnectionCatalogSettingsRequest body,UpdateConnectionCatalogSettings use,GetConnectionCatalogSettings read,IPosCommercialAccessAccessor access,CancellationToken ct)=>

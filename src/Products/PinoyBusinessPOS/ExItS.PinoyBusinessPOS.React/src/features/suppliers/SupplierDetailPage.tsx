@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageSuppliers, canViewPurchasing } from "@/access/pos-capabilities";
 import {
   isRelationshipActive,
+  cancelConnectionRequest,
   isRelationshipPending,
   listRelationships,
   updateSupplierLocation,
@@ -136,6 +137,33 @@ export function SupplierDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
     } catch (err) {
       setActionError(describeSupplierError(err, t));
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function cancelPendingRequest() {
+    if (!allowManage || acting || !workspace || !relationshipId) {
+      return;
+    }
+
+    if (!window.confirm(t("connected.cancelRequestConfirm"))) {
+      return;
+    }
+
+    setActing(true);
+    setActionError(null);
+    try {
+      await cancelConnectionRequest(workspace, relationshipId);
+      await queryClient.invalidateQueries({ queryKey: ["suppliers", "detail", workspace.organizationId, supplierId] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "relationship", relationshipId] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+    } catch (err) {
+      setActionError(
+        err instanceof PosApiError
+          ? err.problem.detail ?? err.message ?? t("connected.cancelRequestFailed")
+          : t("connected.cancelRequestFailed"),
+      );
     } finally {
       setActing(false);
     }
@@ -382,9 +410,19 @@ export function SupplierDetailPage() {
 
       {connected && relationshipPending ? (
         <Card data-testid="supplier-connected-pending">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            {t("connected.waitingForApproval")}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("connected.requestPending")}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11"
+              data-testid="supplier-cancel-request"
+              disabled={acting}
+              onClick={() => void cancelPendingRequest()}
+            >
+              {t("connected.cancelRequest")}
+            </Button>
+          </div>
         </Card>
       ) : null}
 

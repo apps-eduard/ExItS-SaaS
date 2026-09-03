@@ -478,6 +478,21 @@ export async function declineConnection(
   return connectedSupplierRelationshipSchema.parse(raw);
 }
 
+export async function cancelConnectionRequest(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${relPath(relationshipId, "/cancel")}`,
+    body: {},
+  });
+  return connectedSupplierRelationshipSchema.parse(raw);
+}
+
 export async function disconnectConnection(
   workspace: PosWorkspaceScope,
   relationshipId: string,
