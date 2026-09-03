@@ -3781,6 +3781,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.SupplierBranchId).HasColumnName("supplier_branch_id");
+            entity.Property(e => e.SupplierBranchNameSnapshot)
+                .HasColumnName("supplier_branch_name_snapshot")
+                .HasMaxLength(128);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

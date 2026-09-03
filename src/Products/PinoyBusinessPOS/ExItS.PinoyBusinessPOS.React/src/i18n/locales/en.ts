@@ -4092,6 +4092,7 @@ export const en = {
   "purchasing.fieldStatus": "Status",
   "purchasing.fieldOrderDate": "Order date",
   "purchasing.fieldSupplier": "Supplier",
+  "purchasing.receivingAt": "Receiving at",
   "purchasing.ordered": "Ordered",
   "purchasing.received": "Received",
   "purchasing.outstanding": "Outstanding",

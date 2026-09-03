@@ -3596,6 +3596,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.fieldOrderDate": "Petsa ng order",
   "purchasing.fieldStatus": "Status",
   "purchasing.fieldSupplier": "Supplier",
+  "purchasing.receivingAt": "Receiving at",
   "purchasing.goodReceived": "Mabuting natanggap",
   "purchasing.hubLede": "Tumanggap ng stock ngayon, o gumawa ng purchase order para sa susunod.",
   "purchasing.invalidLine": "Maglagay ng wastong dami at unit cost.",

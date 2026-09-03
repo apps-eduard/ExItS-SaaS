@@ -514,7 +514,19 @@ export function PurchaseOrderDetailPage() {
           <dt className="text-[length:var(--exits-text-sm)] text-muted">
             {t("purchasing.fieldSupplier")}
           </dt>
-          <dd className="m-0">{po.supplierName ?? t("purchasing.unknownSupplier")}</dd>
+          <dd className="m-0" data-testid="po-supplier-display">
+            {po.supplierBranchName
+              ? `${po.supplierName ?? t("purchasing.unknownSupplier")} — ${po.supplierBranchName}`
+              : (po.supplierName ?? t("purchasing.unknownSupplier"))}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[length:var(--exits-text-sm)] text-muted">
+            {t("purchasing.receivingAt")}
+          </dt>
+          <dd className="m-0" data-testid="po-receiving-branch">
+            {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
+          </dd>
         </div>
         {orderTotal ? (
           <div>

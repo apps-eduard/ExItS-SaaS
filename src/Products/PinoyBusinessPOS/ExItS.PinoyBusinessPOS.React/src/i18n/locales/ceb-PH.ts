@@ -3597,6 +3597,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.fieldOrderDate": "Order date",
   "purchasing.fieldStatus": "Status",
   "purchasing.fieldSupplier": "Supplier",
+  "purchasing.receivingAt": "Receiving at",
   "purchasing.goodReceived": "Good received",
   "purchasing.hubLede": "Receive stock now, or create purchase orders for later delivery.",
   "purchasing.invalidLine": "Enter a valid quantity and unit cost.",

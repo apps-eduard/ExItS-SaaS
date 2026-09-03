@@ -6053,6 +6053,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
 
+                    b.Property<Guid?>("SupplierBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_branch_id");
+
+                    b.Property<string>("SupplierBranchNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("supplier_branch_name_snapshot");
+
                     b.Property<string>("SupplierReference")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")

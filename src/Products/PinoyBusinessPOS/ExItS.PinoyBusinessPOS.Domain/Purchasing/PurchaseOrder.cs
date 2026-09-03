@@ -34,6 +34,13 @@ public sealed class PurchaseOrder
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     /// <summary>Connected-PO settlement term. Cash default. Not proof of payment.</summary>
     public ConnectedPoPaymentTerm PaymentTerm { get; private set; }
+    /// <summary>
+    /// Historical supplier source branch (Platform branch id) snapshotted at PO create/update-draft.
+    /// Null for manual suppliers and legacy rows. Immutable after Ordered.
+    /// </summary>
+    public Guid? SupplierBranchId { get; private set; }
+    /// <summary>Display name for <see cref="SupplierBranchId"/> at snapshot time.</summary>
+    public string? SupplierBranchNameSnapshot { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -52,7 +59,9 @@ public sealed class PurchaseOrder
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         List<PurchaseOrderLine> lines,
-        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        Guid? supplierBranchId = null,
+        string? supplierBranchNameSnapshot = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -68,6 +77,8 @@ public sealed class PurchaseOrder
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         PaymentTerm = paymentTerm;
+        SupplierBranchId = NormalizeBranchId(supplierBranchId);
+        SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchNameSnapshot);
         _lines = lines;
     }
 
@@ -82,7 +93,9 @@ public sealed class PurchaseOrder
         string? notes = null,
         PurchaseOrderId? id = null,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
-        Guid? createdBy = null)
+        Guid? createdBy = null,
+        Guid? supplierBranchId = null,
+        string? supplierBranchName = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
@@ -114,7 +127,9 @@ public sealed class PurchaseOrder
             utcNow,
             utcNow,
             poLines,
-            paymentTerm);
+            paymentTerm,
+            supplierBranchId,
+            supplierBranchName);
     }
 
     public void UpdateDraft(
@@ -125,7 +140,10 @@ public sealed class PurchaseOrder
         DateOnly? expectedDeliveryDate = null,
         string? supplierReference = null,
         string? notes = null,
-        ConnectedPoPaymentTerm? paymentTerm = null)
+        ConnectedPoPaymentTerm? paymentTerm = null,
+        Guid? supplierBranchId = null,
+        string? supplierBranchName = null,
+        bool updateSupplierSourceBranch = false)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureDraft();
@@ -140,6 +158,12 @@ public sealed class PurchaseOrder
         if (paymentTerm is { } term)
         {
             PaymentTerm = term;
+        }
+
+        if (updateSupplierSourceBranch)
+        {
+            SupplierBranchId = NormalizeBranchId(supplierBranchId);
+            SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchName);
         }
 
         ReplaceDraftLines(lines);
@@ -415,7 +439,9 @@ public sealed class PurchaseOrder
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         IReadOnlyList<PurchaseOrderLine> lines,
-        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash) =>
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        Guid? supplierBranchId = null,
+        string? supplierBranchNameSnapshot = null) =>
         new(
             id,
             organizationId,
@@ -431,7 +457,23 @@ public sealed class PurchaseOrder
             createdAtUtc,
             updatedAtUtc,
             lines.ToList(),
-            paymentTerm);
+            paymentTerm,
+            supplierBranchId,
+            supplierBranchNameSnapshot);
+
+    private static Guid? NormalizeBranchId(Guid? branchId) =>
+        branchId is null || branchId == Guid.Empty ? null : branchId;
+
+    private static string? NormalizeBranchName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var trimmed = name.Trim();
+        return trimmed.Length <= 128 ? trimmed : trimmed[..128];
+    }
 
     private void EnsureDraft()
     {

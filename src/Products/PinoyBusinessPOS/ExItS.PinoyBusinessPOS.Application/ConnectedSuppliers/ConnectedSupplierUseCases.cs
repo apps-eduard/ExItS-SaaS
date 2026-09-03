@@ -145,7 +145,9 @@ public sealed record ConnectedPurchaseOrderDto(
     decimal ProposedTotalAmount = 0m,
     decimal ConfirmedTotalAmount = 0m,
     DateTimeOffset? ChangesProposedAtUtc = null,
-    DateTimeOffset? BuyerRespondedAtUtc = null);
+    DateTimeOffset? BuyerRespondedAtUtc = null,
+    Guid? SupplierBranchId = null,
+    string? SupplierBranchName = null);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
 public sealed record ProposeIncomingOrderLineRequest(Guid ProductId, decimal ProposedQty, bool Unavailable = false);
 public sealed record ProposeIncomingOrderChangesRequest(IReadOnlyList<ProposeIncomingOrderLineRequest> Lines);
@@ -321,7 +323,12 @@ public static class ConnectedSupplierMapper
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
         x.SupplierSkuSnapshot,x.SupplierNameSnapshot,x.UnitOfMeasureCode,x.LastKnownOrderPrice,x.IsActive,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
         x.BuyerPurchaseUnitId,x.MultiplierToBase,x.PackageLabel);
-    public static ConnectedPurchaseOrderDto Map(ConnectedPurchaseOrder x, string? buyerDisplayName = null, string? buyerReceivingStatus = null) => new(
+    public static ConnectedPurchaseOrderDto Map(
+        ConnectedPurchaseOrder x,
+        string? buyerDisplayName = null,
+        string? buyerReceivingStatus = null,
+        Guid? supplierBranchId = null,
+        string? supplierBranchName = null) => new(
         x.Id.Value,
         x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,
@@ -350,7 +357,9 @@ public static class ConnectedSupplierMapper
         x.ProposedTotalAmount,
         x.ConfirmedTotalAmount,
         x.ChangesProposedAtUtc,
-        x.BuyerRespondedAtUtc);
+        x.BuyerRespondedAtUtc,
+        supplierBranchId,
+        supplierBranchName);
 
     public static ConnectedPurchaseOrderLineDto MapLine(ConnectedPurchaseOrderLine l) => new(
         l.ProductId.Value,
@@ -1407,16 +1416,19 @@ public sealed class SupplierIncomingOrderQuery
 {
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPurchaseOrderRepository? _buyerOrders;
     private readonly IPosCommercialAccessAccessor _access;
 
     public SupplierIncomingOrderQuery(
         IConnectedPurchaseOrderRepository o,
         IPosCommercialAccessAccessor a,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        IPurchaseOrderRepository? buyerOrders = null)
     {
         _orders = o;
         _access = a;
         _relationships = relationships!;
+        _buyerOrders = buyerOrders;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<ConnectedPurchaseOrderDto>>> ExecuteAsync(
@@ -1455,7 +1467,22 @@ public sealed class SupplierIncomingOrderQuery
                 buyerName = rel?.BuyerDisplayNameSnapshot;
             }
 
-            mapped.Add(ConnectedSupplierMapper.Map(order, buyerName));
+            Guid? supplierBranchId = null;
+            string? supplierBranchName = null;
+            if (_buyerOrders is not null)
+            {
+                var buyerPo = await _buyerOrders
+                    .GetByIdAsync(order.BuyerOrganizationId, order.BuyerPurchaseOrderId, ct)
+                    .ConfigureAwait(false);
+                supplierBranchId = buyerPo?.SupplierBranchId;
+                supplierBranchName = buyerPo?.SupplierBranchNameSnapshot;
+            }
+
+            mapped.Add(ConnectedSupplierMapper.Map(
+                order,
+                buyerName,
+                supplierBranchId: supplierBranchId,
+                supplierBranchName: supplierBranchName));
         }
 
         return ApplicationResult<IReadOnlyList<ConnectedPurchaseOrderDto>>.Success(mapped);
@@ -1498,6 +1525,8 @@ public sealed class GetIncomingOrder
 
         var rel = await _relationships.GetAsync(order.RelationshipId, ct).ConfigureAwait(false);
         string? receiving = null;
+        Guid? supplierBranchId = null;
+        string? supplierBranchName = null;
         if (_buyerOrders is not null)
         {
             var buyerPo = await _buyerOrders
@@ -1506,11 +1535,18 @@ public sealed class GetIncomingOrder
             if (buyerPo is not null)
             {
                 receiving = ConnectedPoDisplayStatus.ForSupplier(order, buyerPo);
+                supplierBranchId = buyerPo.SupplierBranchId;
+                supplierBranchName = buyerPo.SupplierBranchNameSnapshot;
             }
         }
 
         return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
-            ConnectedSupplierMapper.Map(order, rel?.BuyerDisplayNameSnapshot, receiving));
+            ConnectedSupplierMapper.Map(
+                order,
+                rel?.BuyerDisplayNameSnapshot,
+                receiving,
+                supplierBranchId,
+                supplierBranchName));
     }
 }
 

@@ -32,6 +32,8 @@ internal sealed class PurchaseOrderRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int PaymentTerm { get; set; }
+    public Guid? SupplierBranchId { get; set; }
+    public string? SupplierBranchNameSnapshot { get; set; }
     public uint Xmin { get; set; }
 }
 

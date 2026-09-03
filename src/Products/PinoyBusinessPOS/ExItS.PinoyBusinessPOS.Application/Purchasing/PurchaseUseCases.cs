@@ -73,7 +73,9 @@ public sealed record PosPurchaseOrderDto(
     DateTimeOffset? ChangesProposedAtUtc = null,
     string? SupplierName = null,
     bool NeedsProductSetup = false,
-    int ProductSetupRequiredCount = 0);
+    int ProductSetupRequiredCount = 0,
+    Guid? SupplierBranchId = null,
+    string? SupplierBranchName = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -214,7 +216,9 @@ public static class PurchaseMapper
             ChangesProposedAtUtc: connected?.ChangesProposedAtUtc,
             SupplierName: supplierName,
             NeedsProductSetup: po.Lines.Any(l => l.NeedsBuyerProductSetup),
-            ProductSetupRequiredCount: po.Lines.Count(l => l.NeedsBuyerProductSetup));
+            ProductSetupRequiredCount: po.Lines.Count(l => l.NeedsBuyerProductSetup),
+            SupplierBranchId: po.SupplierBranchId,
+            SupplierBranchName: po.SupplierBranchNameSnapshot);
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -936,7 +940,9 @@ public sealed class CreatePurchaseOrder
                     ? PurchaseOrderId.From(poId)
                     : null,
                 paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
-                createdBy: actorId == Guid.Empty ? null : actorId);
+                createdBy: actorId == Guid.Empty ? null : actorId,
+                supplierBranchId: connectedEligibility?.Value?.Relationship.SupplierBranchId,
+                supplierBranchName: connectedEligibility?.Value?.Relationship.SupplierBranchNameSnapshot);
 
             await _orders.AddAsync(po, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -1119,7 +1125,10 @@ public sealed class UpdatePurchaseOrder
                 request.ExpectedDeliveryDate,
                 request.SupplierReference,
                 request.Notes,
-                request.PaymentTerm is null ? null : ConnectedPoPaymentTerms.Parse(request.PaymentTerm));
+                request.PaymentTerm is null ? null : ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
+                supplierBranchId: connectedEligibility?.Value?.Relationship.SupplierBranchId,
+                supplierBranchName: connectedEligibility?.Value?.Relationship.SupplierBranchNameSnapshot,
+                updateSupplierSourceBranch: true);
 
             await _orders.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

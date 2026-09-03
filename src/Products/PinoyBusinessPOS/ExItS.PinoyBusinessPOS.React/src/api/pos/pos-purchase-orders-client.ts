@@ -91,6 +91,8 @@ export const posPurchaseOrderDtoSchema = z.object({
   supplierName: z.string().nullable().optional(),
   needsProductSetup: z.boolean().optional().default(false),
   productSetupRequiredCount: z.number().optional().default(0),
+  supplierBranchId: guidSchema.nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
