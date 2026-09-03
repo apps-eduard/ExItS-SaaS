@@ -4,28 +4,9 @@ import { ExItsContainer } from "@/components/exits/ExItsContainer";
 import { ExItsContactFormsPanel } from "@/components/exits/ExItsContactFormsPanel";
 import { ExItsSection } from "@/components/exits/ExItsSection";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "Contact ExItS | Sales, Partnerships, and Support",
-  },
-  description:
-    "Get in touch with ExItS — for sales inquiries, partnerships, and general questions about the ExItS platform.",
-  alternates: {
-    canonical: "https://exits.ph/contact",
-  },
-  openGraph: {
-    title: "Contact ExItS | Sales, Partnerships, and Support",
-    description:
-      "Get in touch with ExItS — for sales inquiries, partnerships, and general questions about the ExItS platform.",
-    url: "https://exits.ph/contact",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Contact ExItS | Sales, Partnerships, and Support",
-    description:
-      "Get in touch with ExItS — for sales inquiries, partnerships, and general questions about the ExItS platform.",
-  },
-};
+import { buildPageMetadata } from "@/lib/site-seo";
+
+export const metadata: Metadata = buildPageMetadata("/contact");
 
 export default function ContactPage() {
   return (

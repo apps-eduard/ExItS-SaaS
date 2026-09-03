@@ -7,28 +7,13 @@ import { ExItsSection } from "@/components/exits/ExItsSection";
 import { ExItsWaitlistForm } from "@/components/exits/ExItsWaitlistForm";
 import { ctaClassName } from "@/lib/cta";
 
+import { buildPageMetadata } from "@/lib/site-seo";
+
 export const metadata: Metadata = {
-  title: "Pinoy Service Pro — Coming Soon",
-  description:
-    "Pinoy Service Pro by ExItS — service business management for Filipino service organizations. Coming soon.",
-  alternates: {
-    canonical: "https://exits.ph/service-pro",
-  },
+  ...buildPageMetadata("/service-pro"),
   robots: {
     index: true,
     follow: true,
-  },
-  openGraph: {
-    title: "Pinoy Service Pro — Coming Soon | ExItS",
-    description:
-      "Pinoy Service Pro by ExItS — service business management for Filipino service organizations. Coming soon.",
-    url: "https://exits.ph/service-pro",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Pinoy Service Pro — Coming Soon | ExItS",
-    description:
-      "Pinoy Service Pro by ExItS — service business management for Filipino service organizations. Coming soon.",
   },
 };
 

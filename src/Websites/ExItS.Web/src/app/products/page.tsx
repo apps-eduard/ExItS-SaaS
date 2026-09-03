@@ -12,26 +12,9 @@ import { ExItsProductCard } from "@/components/exits/ExItsProductCard";
 import { ExItsSection } from "@/components/exits/ExItsSection";
 import { productsCatalog, roadmapNotes } from "@/lib/products-content";
 
-export const metadata: Metadata = {
-  title: "ExItS Products",
-  description:
-    "Discover the ExItS product suite — business management tools built for Filipino businesses.",
-  alternates: {
-    canonical: "https://exits.ph/products",
-  },
-  openGraph: {
-    title: "ExItS Products | ExItS",
-    description:
-      "Discover the ExItS product suite — business management tools built for Filipino businesses.",
-    url: "https://exits.ph/products",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ExItS Products | ExItS",
-    description:
-      "Discover the ExItS product suite — business management tools built for Filipino businesses.",
-  },
-};
+import { buildPageMetadata } from "@/lib/site-seo";
+
+export const metadata: Metadata = buildPageMetadata("/products");
 
 export default function ProductsPage() {
   return (

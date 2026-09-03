@@ -26,37 +26,9 @@ import { ExItsBadge } from "@/components/exits/ExItsBadge";
 import { ExItsVisualPlaceholder } from "@/components/exits/ExItsVisualPlaceholder";
 import { ctaClassName } from "@/lib/cta";
 import { homepageFaq, organizationJsonLd } from "@/lib/homepage-content";
+import { buildPageMetadata, faqPageJsonLd } from "@/lib/site-seo";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "ExItS — Business Management Platform for Filipino Businesses",
-  },
-  description:
-    "ExItS is a multi-product SaaS platform built for Filipino businesses. Manage sales, inventory, staff, and customers — all in one place.",
-  alternates: {
-    canonical: "https://exits.ph/",
-  },
-  openGraph: {
-    title: "ExItS — Business Management Platform for Filipino Businesses",
-    description:
-      "ExItS is a multi-product SaaS platform built for Filipino businesses. Manage sales, inventory, staff, and customers — all in one place.",
-    url: "https://exits.ph/",
-    images: [
-      {
-        url: "/og/exits-og-home.png",
-        width: 1200,
-        height: 630,
-        alt: "ExItS",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ExItS — Business Management Platform for Filipino Businesses",
-    description:
-      "ExItS is a multi-product SaaS platform built for Filipino businesses. Manage sales, inventory, staff, and customers — all in one place.",
-  },
-};
+export const metadata: Metadata = buildPageMetadata("/");
 
 const audiences = [
   {
@@ -132,6 +104,12 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqPageJsonLd(homepageFaq)),
+        }}
       />
 
       <ExItsHero

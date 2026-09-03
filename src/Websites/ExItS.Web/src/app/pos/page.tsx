@@ -22,35 +22,9 @@ import { ExItsStatsStrip } from "@/components/exits/ExItsStatsStrip";
 import { ExItsVisualPlaceholder } from "@/components/exits/ExItsVisualPlaceholder";
 import { ctaClassName } from "@/lib/cta";
 import { posFaq, posSoftwareApplicationJsonLd } from "@/lib/pos-content";
+import { buildPageMetadata, faqPageJsonLd } from "@/lib/site-seo";
 
-export const metadata: Metadata = {
-  title: "Pinoy Business POS — Point of Sale for Filipino Businesses",
-  description:
-    "Pinoy Business POS by ExItS — point-of-sale, inventory, customer credit (Utang), supplier ordering, and multi-branch management for Filipino retailers.",
-  alternates: {
-    canonical: "https://exits.ph/pos",
-  },
-  openGraph: {
-    title: "Pinoy Business POS — Point of Sale for Filipino Businesses | ExItS",
-    description:
-      "Pinoy Business POS by ExItS — point-of-sale, inventory, customer credit (Utang), supplier ordering, and multi-branch management for Filipino retailers.",
-    url: "https://exits.ph/pos",
-    images: [
-      {
-        url: "/og/exits-og-pos.png",
-        width: 1200,
-        height: 630,
-        alt: "Pinoy Business POS by ExItS",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Pinoy Business POS — Point of Sale for Filipino Businesses | ExItS",
-    description:
-      "Pinoy Business POS by ExItS — point-of-sale, inventory, customer credit (Utang), supplier ordering, and multi-branch management for Filipino retailers.",
-  },
-};
+export const metadata: Metadata = buildPageMetadata("/pos");
 
 const growthSteps = [
   {
@@ -81,6 +55,12 @@ export default function PosPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(posSoftwareApplicationJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqPageJsonLd(posFaq)),
         }}
       />
 

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import "./globals.css";
 
 import { ExItsBreadcrumbs } from "@/components/exits/ExItsBreadcrumbs";
 import { ExItsFooter } from "@/components/exits/ExItsFooter";
 import { ExItsHeader } from "@/components/exits/ExItsHeader";
+import { absoluteUrl } from "@/lib/site-seo";
+import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
@@ -13,9 +14,6 @@ export const metadata: Metadata = {
   },
   description: "ExItS — Business Management Platform for Filipino Businesses",
   metadataBase: new URL("https://exits.ph"),
-  alternates: {
-    canonical: "https://exits.ph/",
-  },
   openGraph: {
     type: "website",
     siteName: "ExItS",
@@ -24,13 +22,21 @@ export const metadata: Metadata = {
     description:
       "ExItS is a multi-product platform for Filipino businesses. Built to help you sell, manage, and grow.",
     url: "https://exits.ph/",
-    images: [{ url: "https://exits.ph/og/default-og.png", width: 1200, height: 630, alt: "ExItS" }],
+    images: [
+      {
+        url: absoluteUrl("/og/default-og.png"),
+        width: 1200,
+        height: 630,
+        alt: "ExItS",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "ExItS",
     description:
       "ExItS is a multi-product platform for Filipino businesses. Built to help you sell, manage, and grow.",
+    images: [absoluteUrl("/og/default-og.png")],
   },
   icons: {
     icon: "/icon.svg",

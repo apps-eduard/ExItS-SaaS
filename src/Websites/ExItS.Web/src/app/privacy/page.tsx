@@ -3,26 +3,9 @@ import type { Metadata } from "next";
 import { ExItsLegalDocument } from "@/components/exits/ExItsLegalDocument";
 import PrivacyContent from "@/content/privacy.mdx";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description:
-    "ExItS privacy policy — being finalized pending legal review. Contact us with questions about your data.",
-  alternates: {
-    canonical: "https://exits.ph/privacy",
-  },
-  openGraph: {
-    title: "Privacy Policy | ExItS",
-    description:
-      "ExItS privacy policy — being finalized pending legal review. Contact us with questions about your data.",
-    url: "https://exits.ph/privacy",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Privacy Policy | ExItS",
-    description:
-      "ExItS privacy policy — being finalized pending legal review. Contact us with questions about your data.",
-  },
-};
+import { buildPageMetadata } from "@/lib/site-seo";
+
+export const metadata: Metadata = buildPageMetadata("/privacy");
 
 export default function PrivacyPage() {
   return (

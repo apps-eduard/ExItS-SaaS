@@ -13,31 +13,20 @@ import {
   pricingCardSlots,
   pricingFaq,
 } from "@/lib/pricing-content";
+import { buildPageMetadata, faqPageJsonLd } from "@/lib/site-seo";
 
-export const metadata: Metadata = {
-  title: "Pricing — Pinoy Business POS",
-  description:
-    "Flexible pricing plans for Pinoy Business POS. Find the right plan for your Filipino business.",
-  alternates: {
-    canonical: "https://exits.ph/pricing",
-  },
-  openGraph: {
-    title: "Pricing — Pinoy Business POS | ExItS",
-    description:
-      "Flexible pricing plans for Pinoy Business POS. Find the right plan for your Filipino business.",
-    url: "https://exits.ph/pricing",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Pricing — Pinoy Business POS | ExItS",
-    description:
-      "Flexible pricing plans for Pinoy Business POS. Find the right plan for your Filipino business.",
-  },
-};
+export const metadata: Metadata = buildPageMetadata("/pricing");
 
 export default function PricingPage() {
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqPageJsonLd(pricingFaq)),
+        }}
+      />
+
       <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
         <ExItsContainer className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">

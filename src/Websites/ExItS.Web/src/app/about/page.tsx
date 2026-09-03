@@ -7,29 +7,9 @@ import { ExItsCtaSection } from "@/components/exits/ExItsCtaSection";
 import { ExItsSection } from "@/components/exits/ExItsSection";
 import { ctaClassName } from "@/lib/cta";
 import { organizationJsonLd } from "@/lib/homepage-content";
+import { buildPageMetadata } from "@/lib/site-seo";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "About ExItS | Multi-Product SaaS for Filipino Businesses",
-  },
-  description:
-    "Learn about ExItS — the platform behind Pinoy Business POS and a growing suite of business management tools for Filipino businesses.",
-  alternates: {
-    canonical: "https://exits.ph/about",
-  },
-  openGraph: {
-    title: "About ExItS | Multi-Product SaaS for Filipino Businesses",
-    description:
-      "Learn about ExItS — the platform behind Pinoy Business POS and a growing suite of business management tools for Filipino businesses.",
-    url: "https://exits.ph/about",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "About ExItS | Multi-Product SaaS for Filipino Businesses",
-    description:
-      "Learn about ExItS — the platform behind Pinoy Business POS and a growing suite of business management tools for Filipino businesses.",
-  },
-};
+export const metadata: Metadata = buildPageMetadata("/about");
 
 export default function AboutPage() {
   return (

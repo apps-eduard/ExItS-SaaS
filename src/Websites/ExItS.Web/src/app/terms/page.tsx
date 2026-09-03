@@ -3,26 +3,9 @@ import type { Metadata } from "next";
 import { ExItsLegalDocument } from "@/components/exits/ExItsLegalDocument";
 import TermsContent from "@/content/terms.mdx";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description:
-    "ExItS terms of service — being finalized pending legal review. Contact us if you have questions.",
-  alternates: {
-    canonical: "https://exits.ph/terms",
-  },
-  openGraph: {
-    title: "Terms of Service | ExItS",
-    description:
-      "ExItS terms of service — being finalized pending legal review. Contact us if you have questions.",
-    url: "https://exits.ph/terms",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Terms of Service | ExItS",
-    description:
-      "ExItS terms of service — being finalized pending legal review. Contact us if you have questions.",
-  },
-};
+import { buildPageMetadata } from "@/lib/site-seo";
+
+export const metadata: Metadata = buildPageMetadata("/terms");
 
 export default function TermsPage() {
   return (
