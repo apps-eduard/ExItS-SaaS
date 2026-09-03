@@ -15,6 +15,7 @@ import {
 import { ExItsContainer } from "@/components/exits/ExItsContainer";
 import { ExItsCtaSection } from "@/components/exits/ExItsCtaSection";
 import { ExItsFaq } from "@/components/exits/ExItsFaq";
+import { ExItsGlowCard } from "@/components/exits/ExItsGlowCard";
 import { ExItsHero } from "@/components/exits/ExItsHero";
 import { ExItsNewsletter } from "@/components/exits/ExItsNewsletter";
 import { ExItsProductShowcase } from "@/components/exits/ExItsProductShowcase";
@@ -115,14 +116,12 @@ export default function Home() {
       <ExItsHero
         outline="One platform."
         solid="Every tool your business needs."
+        accentPhrase="business needs."
         subHeadline="ExItS gives Filipino businesses the tools to sell, manage inventory, track customers, and grow — from a single branch to many."
         primaryCta={{ href: "/contact", label: "Get Started" }}
         secondaryCta={{ href: "/products", label: "See All Products" }}
         visual={
-          <ExItsVisualPlaceholder
-            title="Pinoy Business POS"
-            caption="Interface preview reserved for a real product screenshot. No application capture is shown here."
-          />
+          <ExItsVisualPlaceholder title="Pinoy Business POS" variant="dashboard" />
         }
       />
 
@@ -149,15 +148,11 @@ export default function Home() {
           "Give each staff member the right access — no more, no less",
         ]}
         cta={{ href: "/pos", label: "Explore Pinoy Business POS" }}
-        visual={
-          <ExItsVisualPlaceholder
-            title="Featured product"
-            caption="Screenshot slot for Pinoy Business POS. Real images will replace this treatment when design assets are ready."
-          />
-        }
+        visual={<ExItsVisualPlaceholder title="Pinoy Business POS" variant="selling" />}
+        tone="elevated"
       />
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="violet" className="py-20 lg:py-28">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             What Pinoy Business POS can do
@@ -198,17 +193,14 @@ export default function Home() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="navy" className="py-20 lg:py-28">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             Who it is for
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {audiences.map((audience) => (
-              <article
-                key={audience.title}
-                className="flex flex-col rounded-xl border border-borderDefault bg-surface p-6"
-              >
+              <ExItsGlowCard key={audience.title} className="flex h-full flex-col" featured>
                 <h3 className="text-lg font-semibold text-primary">{audience.title}</h3>
                 <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{audience.body}</p>
                 <Link
@@ -216,14 +208,17 @@ export default function Home() {
                   className={ctaClassName("ghost", "mt-6 justify-start text-sm")}
                 >
                   Learn more
+                  <span aria-hidden="true" className="transition-transform group-hover/cta:translate-x-1">
+                    →
+                  </span>
                 </Link>
-              </article>
+              </ExItsGlowCard>
             ))}
           </div>
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="accent" className="py-20 lg:py-28">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             Other ExItS products
@@ -233,10 +228,7 @@ export default function Home() {
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {otherProducts.map((product) => (
-              <article
-                key={product.name}
-                className="rounded-xl border border-borderDefault bg-surface p-6"
-              >
+              <ExItsGlowCard key={product.name}>
                 <div className="flex flex-wrap items-center gap-3">
                   <h3 className="text-lg font-semibold text-primary">{product.name}</h3>
                   <ExItsBadge variant={product.badge}>{product.badgeLabel}</ExItsBadge>
@@ -247,37 +239,39 @@ export default function Home() {
                   className={ctaClassName("ghost", "mt-5 justify-start text-sm")}
                 >
                   Learn More
+                  <span aria-hidden="true" className="transition-transform group-hover/cta:translate-x-1">
+                    →
+                  </span>
                 </Link>
-              </article>
+              </ExItsGlowCard>
             ))}
           </div>
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="surface" className="py-20 lg:py-28">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             Grow with ExItS
           </h2>
           <ol className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {growthSteps.map((step, index) => (
-              <li
-                key={step.title}
-                className="rounded-xl border border-borderDefault bg-surface p-6"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brandBright">
-                  Step {index + 1}
-                </p>
-                <h3 className="mt-3 text-lg font-semibold text-primary">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{step.body}</p>
+              <li key={step.title} className="exits-gradient-border">
+                <div className="exits-gradient-border__inner p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brandBright">
+                    Step {index + 1}
+                  </p>
+                  <h3 className="mt-3 text-lg font-semibold text-primary">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted">{step.body}</p>
+                </div>
               </li>
             ))}
           </ol>
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
-        <ExItsContainer className="flex flex-col items-start justify-between gap-6 rounded-xl border border-borderDefault bg-surface px-6 py-10 sm:flex-row sm:items-center sm:px-10">
+      <ExItsSection tone="elevated" className="py-16 lg:py-20">
+        <ExItsContainer className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-borderDefault bg-gradient-to-br from-raised/80 to-night/90 px-6 py-10 sm:flex-row sm:items-center sm:px-10">
           <div className="max-w-xl">
             <h2 className="text-2xl font-semibold tracking-tight text-primary">
               Simple, transparent pricing for every stage.
@@ -288,6 +282,7 @@ export default function Home() {
           </div>
           <Link href="/pricing" className={ctaClassName("secondary")}>
             See Pricing
+            <span aria-hidden="true">→</span>
           </Link>
         </ExItsContainer>
       </ExItsSection>
@@ -301,7 +296,7 @@ export default function Home() {
         ]}
       />
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="navy" className="py-20 lg:py-28">
         <ExItsContainer className="max-w-3xl">
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             Frequently asked questions
@@ -312,10 +307,10 @@ export default function Home() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-20 lg:py-28">
+      <ExItsSection tone="violet" className="py-20 lg:py-28">
         <ExItsContainer>
           <div className="flex items-start gap-3">
-            <ShoppingBag className="mt-1 h-5 w-5 text-brandBright" aria-hidden="true" />
+            <ShoppingBag className="mt-1 h-5 w-5 text-secondary" aria-hidden="true" />
             <div>
               <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
                 Stay updated on ExItS

@@ -30,28 +30,31 @@ export function ExItsProductCard({
     <article
       id={id}
       className={cn(
-        "flex h-full scroll-mt-28 flex-col rounded-xl border bg-surface p-6",
-        featured ? "border-brand/40" : "border-borderDefault",
+        "exits-gradient-border flex h-full scroll-mt-28 flex-col transition-transform duration-300 hover:-translate-y-1",
       )}
+      data-featured={featured ? "true" : "false"}
+      data-animated={featured ? "true" : "false"}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-semibold tracking-tight text-primary">{name}</h2>
-        <ExItsBadge variant={badge}>{badgeLabel}</ExItsBadge>
+      <div className="exits-gradient-border__inner flex h-full flex-col p-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-semibold tracking-tight text-primary">{name}</h2>
+          <ExItsBadge variant={badge}>{badgeLabel}</ExItsBadge>
+        </div>
+        <p className="mt-4 flex-1 text-sm leading-relaxed text-muted">{description}</p>
+        {cta.href ? (
+          <Link
+            href={cta.href}
+            className={cn(
+              ctaClassName(featured ? "primary" : "secondary"),
+              "mt-6 w-full sm:w-auto",
+            )}
+          >
+            {cta.label}
+          </Link>
+        ) : (
+          <p className="mt-6 text-sm text-muted">{cta.label}</p>
+        )}
       </div>
-      <p className="mt-4 flex-1 text-sm leading-relaxed text-muted">{description}</p>
-      {cta.href ? (
-        <Link
-          href={cta.href}
-          className={cn(
-            ctaClassName(featured ? "primary" : "secondary"),
-            "mt-6 w-full sm:w-auto",
-          )}
-        >
-          {cta.label}
-        </Link>
-      ) : (
-        <p className="mt-6 text-sm text-muted">{cta.label}</p>
-      )}
     </article>
   );
 }

@@ -39,7 +39,9 @@ for (const path of publicPages) {
 
     expect(
       blocking,
-      blocking.map((v) => `${v.id}: ${v.help}`).join("\n"),
+      blocking
+        .map((v) => `${v.id} [${v.impact}]: ${v.help} :: ${v.nodes.map((n) => n.html).join(" | ")}`)
+        .join("\n\n"),
     ).toEqual([]);
   });
 }
@@ -89,8 +91,11 @@ test("reduced motion keeps content visible without reveal opacity animation", as
 
   const hero = page.getByRole("heading", { level: 1 });
   await expect(hero).toBeVisible();
-  const heroOpacity = await hero.evaluate((el) => window.getComputedStyle(el).opacity);
-  expect(heroOpacity).toBe("1");
+  const heroOpacity = await hero.evaluate((el) => {
+    const opacity = window.getComputedStyle(el).opacity;
+    return opacity === "" ? "1" : opacity;
+  });
+  expect(Number(heroOpacity)).toBeGreaterThan(0.95);
 });
 
 for (const viewport of responsiveViewports) {

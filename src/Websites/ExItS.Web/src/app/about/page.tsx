@@ -19,7 +19,7 @@ export default function AboutPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
       />
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
+      <ExItsSection tone="accent" className="border-b border-borderDefault py-16 lg:py-20">
         <ExItsContainer className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
             About ExItS
@@ -31,7 +31,7 @@ export default function AboutPage() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-24">
+      <ExItsSection tone="surface" className="border-b border-borderDefault py-16 lg:py-24">
         <ExItsContainer className="max-w-3xl">
           <h2 className="text-3xl font-semibold tracking-tight text-primary">
             Mission
@@ -49,7 +49,7 @@ export default function AboutPage() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-24">
+      <ExItsSection tone="elevated" className="border-b border-borderDefault py-16 lg:py-24">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary">
             The ExItS product ecosystem

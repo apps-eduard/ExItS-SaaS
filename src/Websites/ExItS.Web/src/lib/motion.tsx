@@ -1,24 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "framer-motion";
 
-/**
- * Minimal motion helper that respects `prefers-reduced-motion`.
- * When reduced motion is preferred, renders a plain div with no animation.
- */
 export function MotionDiv({
   children,
   className,
   animate,
   initial,
   transition,
-}: {
+  whileInView,
+  viewport,
+  ...rest
+}: HTMLMotionProps<"div"> & {
   children?: ReactNode;
-  className?: string;
-  animate?: { opacity?: number; y?: number };
-  initial?: { opacity?: number; y?: number };
-  transition?: { duration?: number; ease?: "easeOut" | "easeIn" | "easeInOut" | "linear" };
 }) {
   const reducedMotion = useReducedMotion();
 
@@ -31,10 +30,14 @@ export function MotionDiv({
       className={className}
       initial={initial}
       animate={animate}
+      whileInView={whileInView}
+      viewport={viewport}
       transition={transition}
-      style={{ willChange: "transform" }}
+      {...rest}
     >
       {children}
     </motion.div>
   );
 }
+
+export { motion, useReducedMotion };

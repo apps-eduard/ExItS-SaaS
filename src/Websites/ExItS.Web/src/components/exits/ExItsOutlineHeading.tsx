@@ -6,13 +6,21 @@ export function ExItsOutlineHeading({
   as: Tag = "h1",
   outline,
   solid,
+  accentPhrase,
   className,
 }: {
   as?: ElementType;
   outline: string;
   solid: string;
+  /** When set, this trailing phrase (must appear at the end of `solid`) uses gradient text. */
+  accentPhrase?: string;
   className?: string;
 }) {
+  const solidLead =
+    accentPhrase && solid.endsWith(accentPhrase)
+      ? solid.slice(0, solid.length - accentPhrase.length).trimEnd()
+      : solid;
+
   return (
     <Tag
       className={cn(
@@ -20,11 +28,18 @@ export function ExItsOutlineHeading({
         className,
       )}
     >
-      <span className="block text-[2.5rem] leading-[1.05] text-transparent [-webkit-text-stroke:1.5px_#f0f4f1] sm:text-5xl lg:text-7xl">
+      <span className="block text-[2.5rem] leading-[1.05] text-transparent [-webkit-text-stroke:1.5px_#f5f3ff] sm:text-5xl lg:text-7xl">
         {outline}
       </span>
       <span className="mt-2 block text-[2.5rem] leading-[1.1] text-primary sm:text-5xl lg:text-6xl">
-        {solid}
+        {accentPhrase && solid.endsWith(accentPhrase) ? (
+          <>
+            {solidLead}{" "}
+            <span className="exits-text-gradient">{accentPhrase}</span>
+          </>
+        ) : (
+          solid
+        )}
       </span>
     </Tag>
   );

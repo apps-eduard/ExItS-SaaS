@@ -22,7 +22,7 @@ test("privacy page shows draft placeholder, not template legal policy text", asy
   );
 });
 
-test("terms page shows draft placeholder, not template terms text", async ({ page }) => {
+test("terms page shows draft placeholder, not template legal text", async ({ page }) => {
   await page.goto("/terms");
 
   await expect(page.getByRole("heading", { name: "Terms of Service" })).toBeVisible();

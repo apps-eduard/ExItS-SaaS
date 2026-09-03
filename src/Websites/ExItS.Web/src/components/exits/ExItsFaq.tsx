@@ -14,7 +14,7 @@ export type FaqItem = {
 
 export function ExItsFaq({ items }: { items: FaqItem[] }) {
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion type="single" collapsible className="flex w-full flex-col gap-3">
       {items.map((item, index) => {
         const id = `faq-${index}`;
         return (

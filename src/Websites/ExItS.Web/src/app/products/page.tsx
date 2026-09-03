@@ -19,7 +19,7 @@ export const metadata: Metadata = buildPageMetadata("/products");
 export default function ProductsPage() {
   return (
     <main>
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
+      <ExItsSection tone="energy" className="py-16 lg:py-20">
         <ExItsContainer className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
             Our Products
@@ -31,7 +31,7 @@ export default function ProductsPage() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-24">
+      <ExItsSection tone="violet" className="py-16 lg:py-24">
         <ExItsContainer>
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {productsCatalog.map((product) => (

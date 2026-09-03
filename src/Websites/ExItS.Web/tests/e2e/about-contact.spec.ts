@@ -20,9 +20,9 @@ test("contact page validates and keeps submission honestly unconnected", async (
   await page.getByRole("button", { name: /send message/i }).click();
   await expect(page.getByText(/name is required/i)).toBeVisible();
 
-  await page.getByLabel("Name").fill("Ada Owner");
-  await page.getByLabel("Email").fill("ada@business.ph");
-  await page.getByLabel("Message").fill("Looking for Pinoy Business POS.");
+  await page.getByLabel("Name", { exact: true }).fill("Ada Owner");
+  await page.getByLabel("Email", { exact: true }).fill("ada@business.ph");
+  await page.getByLabel("Message", { exact: true }).fill("Looking for Pinoy Business POS.");
   await page.getByRole("button", { name: /send message/i }).click();
   await expect(page.getByRole("status")).toContainText(/not connected yet/i);
   await expect(page.locator("body")).not.toContainText("Thank you");

@@ -64,11 +64,20 @@ export default function PosPage() {
         }}
       />
 
-      <section className="relative overflow-hidden border-b border-borderDefault">
+      <section className="relative overflow-hidden exits-section-fade">
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.12),transparent_48%)]"
+          className="pointer-events-none absolute inset-0 bg-exits-hero"
           aria-hidden="true"
         />
+        <div
+          className="pointer-events-none absolute inset-0 exits-ambient"
+          aria-hidden="true"
+        >
+          <div className="exits-ambient__orb -right-10 top-10 h-72 w-72 bg-magenta/40" />
+          <div className="exits-ambient__orb exits-ambient__orb--alt bottom-0 left-0 h-60 w-60 bg-secondary/25" />
+          <div className="exits-ambient__orb left-1/3 top-1/3 h-48 w-48 bg-brand/30" />
+          <div className="exits-ambient__grid hidden md:block" />
+        </div>
         <ExItsContainer className="relative grid items-center gap-12 py-16 lg:min-h-[70vh] lg:grid-cols-2 lg:py-24">
           <ExItsReveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brandBright">
@@ -85,16 +94,15 @@ export default function PosPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/contact" className={ctaClassName("primary")}>
                 Get Started
+                <span aria-hidden="true">→</span>
               </Link>
               <Link href="/pricing" className={ctaClassName("secondary")}>
                 See Pricing
+                <span aria-hidden="true">→</span>
               </Link>
             </div>
           </ExItsReveal>
-          <ExItsVisualPlaceholder
-            title="Pinoy Business POS"
-            caption="Interface preview reserved for a real product screenshot. This is not an application capture."
-          />
+          <ExItsVisualPlaceholder title="Pinoy Business POS" variant="dashboard" />
         </ExItsContainer>
       </section>
 
@@ -120,10 +128,7 @@ export default function PosPage() {
           "Register management per branch",
         ]}
         visual={
-          <ExItsVisualPlaceholder
-            title="Selling"
-            caption="Screenshot slot for the POS selling screen. Real images will replace this treatment when design assets are ready."
-          />
+          <ExItsVisualPlaceholder title="Selling" variant="selling" />
         }
       />
 
@@ -139,10 +144,7 @@ export default function PosPage() {
         ]}
         reversed
         visual={
-          <ExItsVisualPlaceholder
-            title="Catalog & inventory"
-            caption="Screenshot slot for catalog and inventory views. Not a live product capture."
-          />
+          <ExItsVisualPlaceholder title="Catalog & inventory" variant="inventory" />
         }
       />
 
@@ -156,10 +158,7 @@ export default function PosPage() {
           "Customer digital storefront for online orders",
         ]}
         visual={
-          <ExItsVisualPlaceholder
-            title="Customers & Utang"
-            caption="Screenshot slot for customer and Utang management. Placeholder only."
-          />
+          <ExItsVisualPlaceholder title="Customers & Utang" variant="customers" />
         }
       />
 
@@ -175,10 +174,7 @@ export default function PosPage() {
         ]}
         reversed
         visual={
-          <ExItsVisualPlaceholder
-            title="Purchasing"
-            caption="Screenshot slot for purchasing and supplier workflows. Placeholder only."
-          />
+          <ExItsVisualPlaceholder title="Purchasing" variant="suppliers" />
         }
       />
 
@@ -277,10 +273,7 @@ export default function PosPage() {
           "Per-branch ordering toggle",
         ]}
         visual={
-          <ExItsVisualPlaceholder
-            title="Customer storefront"
-            caption="Screenshot slot for the customer storefront experience. Placeholder only."
-          />
+          <ExItsVisualPlaceholder title="Customer storefront" variant="network" />
         }
       />
 
@@ -295,10 +288,7 @@ export default function PosPage() {
         ]}
         reversed
         visual={
-          <ExItsVisualPlaceholder
-            title="Reports & shifts"
-            caption="Screenshot slot for reporting views. Placeholder only."
-          />
+          <ExItsVisualPlaceholder title="Reports & shifts" variant="reports" />
         }
       />
 

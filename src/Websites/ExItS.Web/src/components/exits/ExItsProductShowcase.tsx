@@ -15,6 +15,7 @@ export function ExItsProductShowcase({
   visual,
   reversed = false,
   id,
+  tone = "default",
 }: {
   label?: string;
   headline: string;
@@ -24,9 +25,10 @@ export function ExItsProductShowcase({
   visual?: ReactNode;
   reversed?: boolean;
   id?: string;
+  tone?: "default" | "surface" | "elevated" | "accent" | "navy" | "violet" | "energy";
 }) {
   return (
-    <ExItsSection id={id} className="border-b border-borderDefault py-20 lg:py-28">
+    <ExItsSection id={id} tone={tone} className="py-20 lg:py-28">
       <ExItsContainer>
         <div
           className={cn(

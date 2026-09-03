@@ -27,7 +27,7 @@ export default function PricingPage() {
         }}
       />
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
+      <ExItsSection tone="energy" className="py-16 lg:py-20">
         <ExItsContainer className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
             Simple pricing for every stage of your business
@@ -36,14 +36,14 @@ export default function PricingPage() {
             Pinoy Business POS is the flagship ExItS product. Commercial plan names, prices,
             and limits are being finalized — no peso amounts are published on this page yet.
           </p>
-          <p className="mt-4 rounded-xl border border-borderDefault bg-surface px-5 py-4 text-sm leading-relaxed text-muted">
+          <p className="mt-4 rounded-2xl border border-borderDefault bg-surface/80 px-5 py-4 text-sm leading-relaxed text-muted">
             Status: commercial pricing is still being finalized. The layout below is ready to
             receive approved plan data without inventing commercial terms.
           </p>
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-24">
+      <ExItsSection tone="violet" className="py-16 lg:py-24">
         <ExItsContainer>
           <div className="grid gap-6 lg:grid-cols-3">
             {pricingCardSlots.map((slot) => (
@@ -62,7 +62,7 @@ export default function PricingPage() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-24">
+      <ExItsSection tone="navy" className="py-16 lg:py-24">
         <ExItsContainer>
           <h2 className="text-3xl font-semibold tracking-tight text-primary lg:text-4xl">
             Confirmed capabilities

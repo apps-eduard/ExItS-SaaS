@@ -11,7 +11,7 @@ export const metadata: Metadata = buildPageMetadata("/contact");
 export default function ContactPage() {
   return (
     <main>
-      <ExItsSection className="border-b border-borderDefault py-16 lg:py-20">
+      <ExItsSection tone="accent" className="border-b border-borderDefault py-16 lg:py-20">
         <ExItsContainer className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
             Contact ExItS
@@ -27,7 +27,7 @@ export default function ContactPage() {
         </ExItsContainer>
       </ExItsSection>
 
-      <ExItsSection className="py-16 lg:py-24">
+      <ExItsSection tone="surface" className="py-16 lg:py-24">
         <ExItsContainer className="max-w-4xl">
           <ExItsContactFormsPanel />
         </ExItsContainer>

@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en-PH" className="h-full">
+    <html lang="en-PH" className="min-h-full">
       <body className="flex min-h-[100dvh] flex-col bg-base text-primary antialiased">
         <a
           href="#main-content"
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <ExItsHeader />
         <ExItsBreadcrumbs />
-        <div id="main-content" className="flex-1" tabIndex={-1}>
+        <div id="main-content" className="min-h-0 flex-1" tabIndex={-1}>
           {children}
         </div>
         <ExItsFooter />

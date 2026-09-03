@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Sparkles } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 
 import { ctaClassName } from "@/lib/cta";
 import { ExItsContainer } from "@/components/exits/ExItsContainer";
 import { ExItsOutlineHeading } from "@/components/exits/ExItsOutlineHeading";
-import { ExItsReveal } from "@/components/exits/ExItsReveal";
+import { ExItsAnimatedGradient } from "@/components/exits/ExItsAnimatedGradient";
+import { MotionDiv } from "@/lib/motion";
 
 export function ExItsHero({
   outline,
@@ -13,6 +18,7 @@ export function ExItsHero({
   primaryCta,
   secondaryCta,
   visual,
+  accentPhrase,
 }: {
   outline: string;
   solid: string;
@@ -20,29 +26,71 @@ export function ExItsHero({
   primaryCta: { href: string; label: string };
   secondaryCta: { href: string; label: string };
   visual: ReactNode;
+  /** Optional trailing phrase rendered with gradient text inside the solid line. */
+  accentPhrase?: string;
 }) {
+  const reducedMotion = useReducedMotion();
+
+  const step = (delay: number, node: ReactNode) =>
+    reducedMotion ? (
+      node
+    ) : (
+      <MotionDiv
+        initial={{ y: 18, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.45, ease: "easeOut", delay }}
+      >
+        {node}
+      </MotionDiv>
+    );
+
   return (
-    <section className="relative overflow-hidden border-b border-borderDefault">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.14),transparent_46%)]"
-        aria-hidden="true"
-      />
-      <ExItsContainer className="relative grid min-h-[80vh] items-center gap-12 py-16 lg:min-h-[calc(100svh-4.5rem)] lg:grid-cols-2 lg:py-24">
-        <ExItsReveal>
-          <ExItsOutlineHeading outline={outline} solid={solid} />
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-            {subHeadline}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href={primaryCta.href} className={ctaClassName("primary")}>
-              {primaryCta.label}
-            </Link>
-            <Link href={secondaryCta.href} className={ctaClassName("secondary")}>
-              {secondaryCta.label}
-            </Link>
-          </div>
-        </ExItsReveal>
-        <div className="lg:justify-self-end lg:w-full">{visual}</div>
+    <section className="relative overflow-hidden exits-section-fade">
+      <ExItsAnimatedGradient intensity="strong" />
+      <ExItsContainer className="relative z-10 grid min-h-[80vh] items-center gap-12 py-16 lg:min-h-[calc(100svh-4.5rem)] lg:grid-cols-2 lg:py-24">
+        <div>
+          {step(
+            0.04,
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-brandBright">
+              ExItS Platform
+            </p>,
+          )}
+          {step(
+            0.1,
+            <ExItsOutlineHeading outline={outline} solid={solid} accentPhrase={accentPhrase} />,
+          )}
+          {step(
+            0.18,
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
+              {subHeadline}
+            </p>,
+          )}
+          {step(
+            0.26,
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href={primaryCta.href} className={ctaClassName("primary")}>
+                <Sparkles className="h-4 w-4 opacity-90" aria-hidden="true" />
+                {primaryCta.label}
+                <span
+                  aria-hidden="true"
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  →
+                </span>
+              </Link>
+              <Link href={secondaryCta.href} className={ctaClassName("secondary")}>
+                {secondaryCta.label}
+                <span
+                  aria-hidden="true"
+                  className="transition-transform duration-300 group-hover/cta:translate-x-1"
+                >
+                  →
+                </span>
+              </Link>
+            </div>,
+          )}
+        </div>
+        {step(0.32, <div className="lg:justify-self-end lg:w-full">{visual}</div>)}
       </ExItsContainer>
     </section>
   );
