@@ -152,6 +152,8 @@ import { PurchaseOrderCreatePage } from "@/features/purchasing/PurchaseOrderCrea
 import { PurchaseOrderDetailPage } from "@/features/purchasing/PurchaseOrderDetailPage";
 import { PurchaseOrderReceivePage } from "@/features/purchasing/PurchaseOrderReceivePage";
 import { PrepareConnectedProductsPage } from "@/features/purchasing/PrepareConnectedProductsPage";
+import { IncomingOrdersListPage } from "@/features/purchasing/IncomingOrdersListPage";
+import { IncomingOrderDetailPage } from "@/features/purchasing/IncomingOrderDetailPage";
 import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage";
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
 import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
@@ -881,6 +883,22 @@ export const appRoutes = [
                   <RequireManagePurchasing>
                     <PurchaseOrderCreatePage />
                   </RequireManagePurchasing>
+                ),
+              },
+              {
+                path: "incoming-orders",
+                element: (
+                  <RequireViewPurchasing>
+                    <IncomingOrdersListPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: "incoming-orders/:connectedPurchaseOrderId",
+                element: (
+                  <RequireViewPurchasing>
+                    <IncomingOrderDetailPage />
+                  </RequireViewPurchasing>
                 ),
               },
               {

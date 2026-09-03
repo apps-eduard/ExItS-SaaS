@@ -41,6 +41,21 @@ export function resolveOrganizationNotificationHref(
     return "/suppliers/connected/requests";
   }
 
+  if (type === "ConnectedPurchaseOrderSubmitted" && relatedId) {
+    return `/purchasing/incoming-orders/${relatedId}`;
+  }
+  if (
+    (type === "ConnectedPurchaseOrderWithdrawn" ||
+      type === "ConnectedPurchaseOrderReceived" ||
+      type === "ConnectedPurchaseOrderPartiallyReceived" ||
+      type === "ConnectedPurchaseOrderReceivingIssue" ||
+      type === "ConnectedPurchaseOrderChangesAccepted" ||
+      type === "ConnectedPurchaseOrderChangesRejected") &&
+    relatedId
+  ) {
+    return `/purchasing/incoming-orders/${relatedId}`;
+  }
+
   const buyerFacing =
     type === "ConnectedPurchaseOrderAccepted" ||
     type === "ConnectedPurchaseOrderDeclined" ||

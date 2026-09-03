@@ -26,6 +26,15 @@ describe("resolveOrganizationNotificationHref", () => {
     ).toBe("/purchasing/22222222-2222-2222-2222-222222222222");
   });
 
+  it("routes supplier-facing connected PO submitted notifications to incoming orders", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "ConnectedPurchaseOrderSubmitted",
+        relatedId: "44444444-4444-4444-4444-444444444444",
+      }),
+    ).toBe("/purchasing/incoming-orders/44444444-4444-4444-4444-444444444444");
+  });
+
   it("routes customer-order notifications to seller order detail", () => {
     expect(
       resolveOrganizationNotificationHref({

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import {
   ClipboardList,
   FilePlus,
+  Inbox,
   PackageCheck,
   PackagePlus,
   Truck,
@@ -38,6 +39,15 @@ export function PurchasingHubPage() {
           icon: <ClipboardList />,
           href: "/purchasing/orders",
           testId: "purchasing-orders",
+        }
+      : null,
+    allowViewPurchasing
+      ? {
+          key: "incoming",
+          label: t("incomingOrders.title"),
+          icon: <Inbox />,
+          href: "/purchasing/incoming-orders",
+          testId: "purchasing-incoming-orders",
         }
       : null,
     allowViewPurchasing

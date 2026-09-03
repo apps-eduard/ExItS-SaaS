@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  acceptIncomingOrder,
   applyBuyerProductPricing,
   cancelConnectionRequest,
   approveConnection,
@@ -7,11 +8,14 @@ import {
   bulkMutateBuyerProductShares,
   createBuyerProductAndLink,
   declineConnection,
+  declineIncomingOrder,
+  fulfillIncomingOrder,
   INVENTORY_MUTATION_PATH_MARKERS,
   isShareFilterSharedOnly,
   linkProduct,
   listLinks,
   listRelationships,
+  prepareIncomingOrder,
   queryBuyerProductShares,
   requestConnection,
   searchExposedCatalog,
@@ -245,6 +249,39 @@ describe("pos-connected-suppliers-client", () => {
     expect(vi.mocked(fetch).mock.calls[4][1]?.method).toBe("DELETE");
     for (const url of urls) {
       assertNotInventoryMutationUrl(url);
+    }
+  });
+
+  it("incoming order accept/decline/prepare/fulfill never hit inventory mutation paths", async () => {
+    const order = {
+      connectedPurchaseOrderId: relationshipId,
+      relationshipId,
+      buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
+      supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerPurchaseOrderId: "33333333-3333-4333-8333-333333333333",
+      buyerPoNumber: "PO-1",
+      orderDate: "2026-09-04",
+      status: "New",
+      totalAmount: 12,
+      createdAtUtc: "2026-09-04T00:00:00Z",
+      updatedAtUtc: "2026-09-04T00:00:00Z",
+      lines: [],
+      displayStatus: "New",
+    };
+    vi.mocked(fetch).mockImplementation(() => Promise.resolve(jsonResponse(order)));
+
+    await acceptIncomingOrder(workspace, relationshipId);
+    await declineIncomingOrder(workspace, relationshipId, { declineReason: "OutOfStock" });
+    await prepareIncomingOrder(workspace, relationshipId);
+    await fulfillIncomingOrder(workspace, relationshipId);
+
+    const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+    expect(urls.some((u) => u.includes("/incoming-orders/") && u.endsWith("/accept"))).toBe(true);
+    for (const url of urls) {
+      assertNotInventoryMutationUrl(url);
+      for (const marker of INVENTORY_MUTATION_PATH_MARKERS) {
+        expect(url.toLowerCase()).not.toContain(marker.toLowerCase());
+      }
     }
   });
 });
