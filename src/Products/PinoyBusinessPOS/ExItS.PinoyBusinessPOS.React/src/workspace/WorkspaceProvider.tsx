@@ -983,10 +983,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const previous = previousSessionStatus.current;
     previousSessionStatus.current = sessionStatus;
-    if (
+    const expiredFromSession =
+      sessionStatus === "expired" &&
+      (previous === "authenticated" || previous === "loading" || previous === "cold_start_offline");
+    const signedOut =
       sessionStatus === "unauthenticated" &&
-      (previous === "authenticated" || previous === "expired" || previous === "loading")
-    ) {
+      (previous === "authenticated" ||
+        previous === "expired" ||
+        previous === "loading" ||
+        previous === "cold_start_offline");
+    if (expiredFromSession || signedOut) {
       signOutReset();
     }
   }, [sessionStatus, signOutReset]);

@@ -156,18 +156,23 @@ export function GuestOnly({ children }: { children: ReactNode }) {
 
 export function RequireOnlineSession({ children }: { children: ReactNode }) {
   const { status } = useSession();
+  const location = useLocation();
 
   if (status === "loading") {
     return <SessionLoading />;
   }
+  if (status === "expired") {
+    return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
+  }
   if (status !== "authenticated") {
-    return <Navigate to="/sign-in" replace />;
+    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
   }
   return children;
 }
 
 export function RequireOfflinePinFlow({ children }: { children: ReactNode }) {
   const { status } = useSession();
+  const location = useLocation();
 
   if (status === "loading") {
     return <SessionLoading />;
@@ -178,7 +183,10 @@ export function RequireOfflinePinFlow({ children }: { children: ReactNode }) {
   if (status === "cold_start_offline") {
     return <Navigate to="/" replace />;
   }
-  return <Navigate to="/sign-in" replace />;
+  if (status === "expired") {
+    return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
+  }
+  return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
 }
 
 /**
@@ -193,13 +201,17 @@ export function RequireAccountClass({
   children: ReactNode;
 }) {
   const { status, session } = useSession();
+  const location = useLocation();
   const { t } = useI18n();
 
   if (status === "loading") {
     return <SessionLoading />;
   }
+  if (status === "expired") {
+    return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
+  }
   if (!isAuthenticatedOrColdStartOffline(status)) {
-    return <Navigate to="/sign-in" replace />;
+    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
   }
 
   const accountClass = sessionAccountClass(session);
@@ -232,10 +244,15 @@ export function RequireOrganizationSession({ children }: { children: ReactNode }
  */
 export function AllowInvitationAccept({ children }: { children: ReactNode }) {
   const { status, session } = useSession();
+  const location = useLocation();
   const { t } = useI18n();
 
   if (status === "loading") {
     return <SessionLoading />;
+  }
+
+  if (status === "expired") {
+    return <Navigate to="/sign-in" replace state={{ expired: true, from: location.pathname }} />;
   }
 
   if (status === "authenticated") {
