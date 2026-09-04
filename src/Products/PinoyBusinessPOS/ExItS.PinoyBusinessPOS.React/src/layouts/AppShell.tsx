@@ -37,7 +37,14 @@ export function AppShell({
         {t("app.skipToContent")}
       </a>
       {header}
-      <main id="main-content" className="flex min-w-0 flex-1 flex-col gap-4 pt-6" tabIndex={-1}>
+      <main
+        id="main-content"
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          sellFloor ? "gap-0 pt-2" : "gap-4 pt-6",
+        )}
+        tabIndex={-1}
+      >
         {children}
       </main>
     </div>

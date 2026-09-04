@@ -1286,20 +1286,20 @@ body {
   max-width: min(100%, 100rem); /* ~1600px ceiling for ultra-wide */
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-shell--sell-floor #main-content {
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 900px) {
   .app-shell--sell-floor {
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-  }
-
-  .app-shell--sell-floor #main-content {
-    min-height: 0;
-    overflow: hidden;
   }
 }
 
@@ -1310,7 +1310,11 @@ body {
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
   width: auto;
-  min-height: calc(100dvh - 12rem);
+  /* Contained by sell-floor shell / AppShell; panes scroll inside */
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 @media (min-width: 900px) {
@@ -1319,12 +1323,6 @@ body {
     margin-right: calc(-1 * max(1.25rem, env(safe-area-inset-right)));
     padding-left: max(1.25rem, env(safe-area-inset-left));
     padding-right: max(1.25rem, env(safe-area-inset-right));
-    /* Fill remaining shell height below top bar; cart/products scroll inside panes */
-    flex: 1 1 auto;
-    height: auto;
-    max-height: 100%;
-    min-height: 0;
-    overflow: hidden;
   }
 }
 
@@ -1497,7 +1495,9 @@ body {
 .sell-floor-product-pane {
   min-height: 0;
   padding: 0.5rem;
+  padding-bottom: 1.25rem;
   background: color-mix(in srgb, var(--exits-surface-muted) 65%, var(--exits-surface));
+  overscroll-behavior: contain;
 }
 
 .sell-cart-shell {
@@ -11083,8 +11083,22 @@ a.exits-chip--primary:hover {
   margin-inline: auto;
 }
 
+/* Sell floor: lock workspace to viewport; only product/cart/sidebar panes scroll. */
+.operations-shell--sell-floor {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .operations-shell--sell-floor .operations-shell__body {
   max-width: min(100%, 100rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.operations-shell--sell-floor .operations-shell__main {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .operations-shell--sell-floor .operations-shell__content {
@@ -11092,6 +11106,15 @@ a.exits-chip--primary:hover {
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.operations-shell--sell-floor .operations-sidebar.admin-sidebar {
+  position: relative;
+  top: auto;
+  align-self: stretch;
+  height: 100%;
+  max-height: 100%;
 }
 
 .admin-shell__body {

@@ -52,31 +52,43 @@ export function OperationsShell({
       </a>
       {header}
 
-      <header className="operations-shell__header lg:hidden mt-2" data-testid="operations-mobile-header">
-        <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-          {t("operations.shell.operations")}
-        </p>
-        <h1 className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold">
-          {boundWorkspace?.organizationDisplayName ?? t("operations.shell.productName")}
-          {boundWorkspace?.branchName ? (
-            <span className="font-medium text-muted">
-              {" "}
-              · {boundWorkspace.branchName}
-            </span>
-          ) : null}
-        </h1>
-      </header>
+      {!sellFloor ? (
+        <header className="operations-shell__header lg:hidden mt-2" data-testid="operations-mobile-header">
+          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+            {t("operations.shell.operations")}
+          </p>
+          <h1 className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold">
+            {boundWorkspace?.organizationDisplayName ?? t("operations.shell.productName")}
+            {boundWorkspace?.branchName ? (
+              <span className="font-medium text-muted">
+                {" "}
+                · {boundWorkspace.branchName}
+              </span>
+            ) : null}
+          </h1>
+        </header>
+      ) : null}
 
-      <div className="operations-shell__body mt-3 flex min-w-0 flex-1 gap-4 lg:gap-6">
-        <div className="hidden lg:block" data-testid="operations-desktop-sidebar">
+      <div
+        className={cn(
+          "operations-shell__body flex min-h-0 min-w-0 flex-1 gap-4 lg:gap-6",
+          sellFloor ? "mt-2" : "mt-3",
+        )}
+      >
+        <div className="hidden min-h-0 lg:block" data-testid="operations-desktop-sidebar">
           <OperationsSidebar />
         </div>
 
-        <div className="operations-shell__main flex min-w-0 flex-1 flex-col gap-4">
+        <div
+          className={cn(
+            "operations-shell__main flex min-h-0 min-w-0 flex-1 flex-col",
+            sellFloor ? "gap-0" : "gap-4",
+          )}
+        >
           <main
             id="main-content"
             className={cn(
-              "operations-shell__content min-w-0 flex-1",
+              "operations-shell__content min-h-0 min-w-0 flex-1",
               !sellFloor && "pt-1",
             )}
             tabIndex={-1}

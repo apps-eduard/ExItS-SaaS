@@ -964,10 +964,11 @@ export function SellFloorPage() {
         </p>
       ) : null}
 
-      <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
+      <div className="sell-floor-layout flex min-h-0 min-w-0 flex-1 flex-col">
         <section
+          data-testid="sell-floor-browse"
           className={cn(
-            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-col",
+            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-1 flex-col",
             (showFloatingCart || showEmptyMobileCartBar) &&
               "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
           )}
@@ -1032,7 +1033,7 @@ export function SellFloorPage() {
           <div
             key={activeCategory}
             data-testid="sell-products"
-            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto"
+            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto overscroll-contain"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
