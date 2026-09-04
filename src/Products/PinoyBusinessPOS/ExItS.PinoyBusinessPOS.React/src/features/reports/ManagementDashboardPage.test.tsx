@@ -14,6 +14,9 @@ import {
 
 const getManagementOverview = vi.spyOn(posReportingClient, "getManagementOverview");
 const getDashboard = vi.spyOn(posReportingClient, "getDashboard");
+const getSalesByProductReport = vi.spyOn(posReportingClient, "getSalesByProductReport");
+const getProfitabilityReport = vi.spyOn(posReportingClient, "getProfitabilityReport");
+const getUtangReport = vi.spyOn(posReportingClient, "getUtangReport");
 const listOrganizationBranches = vi.spyOn(platformAuthClient, "listOrganizationBranches");
 
 function makeOverviewPayload() {
@@ -96,6 +99,61 @@ describe("ManagementDashboardPage scope clarity", () => {
       const total =
         branchId === TEST_BRANCH_B_ID ? 2000 : branchId === TEST_BRANCH_A_ID ? 1000 : 3000;
       return makeDashboardPayload(total);
+    });
+    getSalesByProductReport.mockResolvedValue({
+      fromDate: "2026-08-30",
+      toDate: "2026-08-30",
+      rows: [
+        {
+          productId: "11111111-1111-1111-1111-111111111111",
+          productName: "Coke 1.5L",
+          unitOfMeasure: "pc",
+          sellingMode: "Unit",
+          quantitySold: 10,
+          quantityReturned: 0,
+          netQuantity: 10,
+          grossSaleAmount: 820,
+          refundAmount: 0,
+          netAmount: 820,
+          preDiscountGrossSaleAmount: 820,
+          commercialDiscountAmount: 0,
+        },
+      ],
+    });
+    getProfitabilityReport.mockResolvedValue({
+      fromDate: "2026-08-30",
+      toDate: "2026-08-30",
+      branchId: null,
+      netSales: 1000,
+      cogsStatus: "Unavailable",
+      knownCogs: 0,
+      totalCogs: null,
+      grossProfit: null,
+      grossMarginPercent: null,
+      completedSaleCount: 1,
+      completeCostSaleCount: 0,
+      partialCostSaleCount: 0,
+      unavailableCostSaleCount: 1,
+      wasteLossKnownCost: 0,
+      wasteLossCostStatus: "Unavailable",
+      stockUseKnownCost: 0,
+      stockUseCostStatus: "Unavailable",
+      costCompletenessPercent: 0,
+      commercialDiscountTotal: 0,
+    });
+    getUtangReport.mockResolvedValue({
+      fromDate: "2026-08-30",
+      toDate: "2026-08-30",
+      activeCustomerOutstanding: 500,
+      overdueAmount: 0,
+      customersWithBalances: 2,
+      customersWithOverdue: 0,
+      creditsRecordedInPeriod: 0,
+      creditsRecordedCount: 0,
+      repaymentsRecordedInPeriod: 50,
+      repaymentsRecordedCount: 1,
+      productBasedUtangSalesInPeriod: 0,
+      productBasedUtangSaleCount: 0,
     });
     listOrganizationBranches.mockResolvedValue({
       ok: true,
@@ -213,5 +271,19 @@ describe("ManagementDashboardPage scope clarity", () => {
       expect(screen.getByTestId("dashboard-branch-performance")).toBeInTheDocument();
       expect(screen.getByTestId("dashboard-organization-overview")).toBeInTheDocument();
     });
+  });
+
+  it("renders premium charts from real dashboard payloads", async () => {
+    renderDashboardPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-sales-trend-chart")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-payment-mix")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-utang-radial")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-inventory-health")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-top-products-chart")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("dashboard-gross-margin")).not.toBeInTheDocument();
   });
 });
