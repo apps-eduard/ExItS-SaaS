@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, MapPin, Plus } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
@@ -207,7 +207,10 @@ export function BranchManagementListPage() {
         />
         {showAreasLink ? (
           <Button asChild variant="outline" data-testid="branch-mgmt-areas">
-            <Link to="/org/areas">{t("areas.title")}</Link>
+            <Link to="/org/areas">
+              <MapPin className="size-4" aria-hidden />
+              {t("areas.title")}
+            </Link>
           </Button>
         ) : null}
         {canCreate ? (
