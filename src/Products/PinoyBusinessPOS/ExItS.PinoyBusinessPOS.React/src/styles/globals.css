@@ -185,6 +185,14 @@
   --exits-list-card-padding-x: 0.875rem;
   --exits-entity-card-gap: 0.55rem;
   --exits-entity-card-meta-gap: 0.35rem 0.85rem;
+
+  /* Read-only status/attribute pills — separate from interactive filter chips */
+  --exits-status-chip-height: 1.625rem;
+  --exits-status-chip-padding-x: 0.625rem;
+  --exits-status-chip-font-size: 0.75rem;
+  --exits-status-chip-border-width: 1px;
+  --exits-status-chip-gap: 0.3rem;
+  --exits-status-chip-icon-size: 0.8125rem;
 }
 
 /*
@@ -280,6 +288,12 @@
   --exits-list-card-padding-x: 0.875rem;
   --exits-entity-card-gap: 0.55rem;
   --exits-entity-card-meta-gap: 0.35rem 0.85rem;
+  --exits-status-chip-height: 1.625rem;
+  --exits-status-chip-padding-x: 0.625rem;
+  --exits-status-chip-font-size: 0.75rem;
+  --exits-status-chip-border-width: 1px;
+  --exits-status-chip-gap: 0.3rem;
+  --exits-status-chip-icon-size: 0.8125rem;
 }
 
 [data-density="comfort"] {
@@ -298,6 +312,12 @@
   --exits-list-card-padding-x: 1rem;
   --exits-entity-card-gap: 0.7rem;
   --exits-entity-card-meta-gap: 0.45rem 1rem;
+  --exits-status-chip-height: 1.875rem;
+  --exits-status-chip-padding-x: 0.75rem;
+  --exits-status-chip-font-size: 0.8125rem;
+  --exits-status-chip-border-width: 1px;
+  --exits-status-chip-gap: 0.35rem;
+  --exits-status-chip-icon-size: 0.875rem;
 }
 
 [data-density="compact"] {
@@ -316,6 +336,12 @@
   --exits-list-card-padding-x: 0.7rem;
   --exits-entity-card-gap: 0.4rem;
   --exits-entity-card-meta-gap: 0.25rem 0.65rem;
+  --exits-status-chip-height: 1.375rem;
+  --exits-status-chip-padding-x: 0.5rem;
+  --exits-status-chip-font-size: 0.6875rem;
+  --exits-status-chip-border-width: 1px;
+  --exits-status-chip-gap: 0.25rem;
+  --exits-status-chip-icon-size: 0.75rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -420,6 +446,76 @@ body {
 .exits-alert-surface--success {
   background: var(--exits-success-soft);
   border-color: color-mix(in srgb, var(--exits-success) 35%, var(--exits-border));
+}
+
+/*
+ * Slim read-only status / attribute pills.
+ * Separate from interactive .exits-chip (filter/toolbar density).
+ * Balance: 26px vs interactive chips 36px.
+ */
+.exits-status-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--exits-status-chip-gap);
+  box-sizing: border-box;
+  height: var(--exits-status-chip-height);
+  min-height: var(--exits-status-chip-height);
+  max-height: var(--exits-status-chip-height);
+  padding: 0 var(--exits-status-chip-padding-x);
+  border-style: solid;
+  border-width: var(--exits-status-chip-border-width);
+  border-radius: 9999px;
+  font-size: var(--exits-status-chip-font-size);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
+}
+
+.exits-status-chip__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--exits-status-chip-icon-size);
+  height: var(--exits-status-chip-icon-size);
+}
+
+.exits-status-chip__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.exits-status-chip--success {
+  color: var(--exits-success);
+  border-color: color-mix(in srgb, var(--exits-success) 42%, transparent);
+  background: color-mix(in srgb, var(--exits-success) 8%, transparent);
+}
+
+.exits-status-chip--info {
+  color: var(--exits-info);
+  border-color: color-mix(in srgb, var(--exits-info) 42%, transparent);
+  background: color-mix(in srgb, var(--exits-info) 8%, transparent);
+}
+
+.exits-status-chip--warning {
+  color: var(--exits-warning);
+  border-color: color-mix(in srgb, var(--exits-warning) 42%, transparent);
+  background: color-mix(in srgb, var(--exits-warning) 8%, transparent);
+}
+
+.exits-status-chip--danger {
+  color: var(--exits-danger);
+  border-color: color-mix(in srgb, var(--exits-danger) 42%, transparent);
+  background: color-mix(in srgb, var(--exits-danger) 8%, transparent);
+}
+
+.exits-status-chip--neutral {
+  color: var(--exits-text-muted);
+  border-color: color-mix(in srgb, var(--exits-border-strong) 80%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, transparent);
 }
 
 /*

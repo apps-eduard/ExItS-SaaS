@@ -1,27 +1,34 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
+export type StatusChipTone = "info" | "success" | "warning" | "danger" | "neutral";
+
 export function StatusChip({
   children,
   tone = "info",
+  className,
+  icon,
 }: {
   children: ReactNode;
-  tone?: "info" | "success" | "warning" | "danger";
+  tone?: StatusChipTone;
+  className?: string;
+  /** Optional leading icon — scales via --exits-status-chip-icon-size. */
+  icon?: ReactNode;
 }) {
   return (
     <span
-      className={cn(
-        "inline-flex min-h-8 items-center rounded-full px-3 text-[length:var(--exits-text-xs)] font-semibold",
-        tone === "success" && "bg-[color-mix(in_srgb,var(--exits-success)_16%,transparent)]",
-        tone === "warning" && "bg-[color-mix(in_srgb,var(--exits-warning)_16%,transparent)]",
-        tone === "info" && "bg-[color-mix(in_srgb,var(--exits-info)_16%,transparent)]",
-        tone === "danger" && "bg-[color-mix(in_srgb,var(--exits-danger)_16%,transparent)]",
-      )}
+      className={cn("exits-status-chip", `exits-status-chip--${tone}`, className)}
+      data-tone={tone}
     >
+      {icon ? (
+        <span className="exits-status-chip__icon" aria-hidden>
+          {icon}
+        </span>
+      ) : null}
       {children}
     </span>
   );
 }
 
-/** Alias for StatusChip — same pill status treatment. */
+/** Alias for StatusChip — same slim read-only status/attribute pill. */
 export const StatusPill = StatusChip;
