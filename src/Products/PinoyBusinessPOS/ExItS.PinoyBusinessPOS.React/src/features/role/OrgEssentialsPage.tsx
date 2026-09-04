@@ -34,6 +34,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { AdminUsageMeter } from "@/features/admin/AdminUsageMeter";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -310,6 +311,12 @@ export function OrgEssentialsPage() {
     ? undefined
     : { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 } };
 
+  const showPlanSection = Boolean(
+    branchCapacityQuery.data ||
+      (areasQuery.data && areasQuery.data.maxAreas > 0) ||
+      deviceCapacityQuery.data,
+  );
+
   return (
     <div
       className="admin-overview-page admin-overview-page--v2 exits-page mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-4"
@@ -326,69 +333,122 @@ export function OrgEssentialsPage() {
         {...(fade ?? {})}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       >
-        {canDashboard ? (
-          <section className="admin-command__section" data-testid="org-group-today">
-            <h2 className="admin-command__title m-0">{t("org.group.today")}</h2>
-            {!online ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="org-overview-offline"
-              >
-                {t("org.overviewOffline")}
-              </p>
-            ) : null}
-            {online && overviewQuery.isLoading ? (
-              <LoadingState label={t("reports.loading")} />
-            ) : null}
-            {online && overviewError ? (
-              <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
-            ) : null}
-            {online && overview ? (
-              <div className="admin-today" data-testid="org-admin-overview">
-                <article className="admin-today__hero" data-testid="org-kpi-today-sales">
-                  <span className="admin-today__label">{t("dashboard.todaySales")}</span>
-                  <div className="admin-today__value">
-                    <MoneyDisplay amount={overview.todaySalesTotal} />
-                  </div>
-                  {overview.todaySalesTotal <= 0 ? (
-                    <p className="admin-today__empty m-0">{t("org.today.noSales")}</p>
-                  ) : (
-                    <p className="admin-today__meta m-0">
-                      {overview.todaySaleCount} {t("dashboard.transactions")}
-                    </p>
-                  )}
-                </article>
-                <div className="admin-today__strip" role="list">
-                  <div className="admin-today__chip" data-testid="org-kpi-open-utang" role="listitem">
-                    <span className="admin-today__chip-label">{t("dashboard.openUtang")}</span>
-                    <span
-                      className={cn(
-                        "admin-today__chip-value",
-                        overview.openUtangOutstanding > 0 && "admin-today__chip-value--attention",
+        {canDashboard || showPlanSection ? (
+          <div className="admin-overview-top" data-testid="org-overview-top">
+            {canDashboard ? (
+              <section className="admin-command__section" data-testid="org-group-today">
+                <h2 className="admin-command__title m-0">{t("org.group.today")}</h2>
+                {!online ? (
+                  <p
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid="org-overview-offline"
+                  >
+                    {t("org.overviewOffline")}
+                  </p>
+                ) : null}
+                {online && overviewQuery.isLoading ? (
+                  <LoadingState label={t("reports.loading")} />
+                ) : null}
+                {online && overviewError ? (
+                  <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
+                ) : null}
+                {online && overview ? (
+                  <div className="admin-today" data-testid="org-admin-overview">
+                    <article className="admin-today__hero" data-testid="org-kpi-today-sales">
+                      <span className="admin-today__label">{t("dashboard.todaySales")}</span>
+                      <div className="admin-today__value">
+                        <MoneyDisplay amount={overview.todaySalesTotal} />
+                      </div>
+                      {overview.todaySalesTotal <= 0 ? (
+                        <p className="admin-today__empty m-0">{t("org.today.noSales")}</p>
+                      ) : (
+                        <p className="admin-today__meta m-0">
+                          {overview.todaySaleCount} {t("dashboard.transactions")}
+                        </p>
                       )}
-                    >
-                      <MoneyDisplay amount={overview.openUtangOutstanding} />
-                    </span>
+                    </article>
+                    <div className="admin-today__strip" role="list">
+                      <div
+                        className="admin-today__chip"
+                        data-testid="org-kpi-open-utang"
+                        role="listitem"
+                      >
+                        <span className="admin-today__chip-label">{t("dashboard.openUtang")}</span>
+                        <span
+                          className={cn(
+                            "admin-today__chip-value",
+                            overview.openUtangOutstanding > 0 &&
+                              "admin-today__chip-value--attention",
+                          )}
+                        >
+                          <MoneyDisplay amount={overview.openUtangOutstanding} />
+                        </span>
+                      </div>
+                      <div
+                        className="admin-today__chip"
+                        data-testid="org-kpi-low-stock"
+                        role="listitem"
+                      >
+                        <span className="admin-today__chip-label">{t("dashboard.lowStock")}</span>
+                        <span
+                          className={cn(
+                            "admin-today__chip-value",
+                            overview.lowStockProductCount > 0 &&
+                              "admin-today__chip-value--attention",
+                          )}
+                        >
+                          {overview.lowStockProductCount}
+                        </span>
+                      </div>
+                      <div
+                        className="admin-today__chip"
+                        data-testid="org-kpi-open-shifts"
+                        role="listitem"
+                      >
+                        <span className="admin-today__chip-label">{t("dashboard.openShifts")}</span>
+                        <span className="admin-today__chip-value">{overview.openShiftCount}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="admin-today__chip" data-testid="org-kpi-low-stock" role="listitem">
-                    <span className="admin-today__chip-label">{t("dashboard.lowStock")}</span>
-                    <span
-                      className={cn(
-                        "admin-today__chip-value",
-                        overview.lowStockProductCount > 0 && "admin-today__chip-value--attention",
-                      )}
-                    >
-                      {overview.lowStockProductCount}
-                    </span>
-                  </div>
-                  <div className="admin-today__chip" data-testid="org-kpi-open-shifts" role="listitem">
-                    <span className="admin-today__chip-label">{t("dashboard.openShifts")}</span>
-                    <span className="admin-today__chip-value">{overview.openShiftCount}</span>
-                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            {showPlanSection ? (
+              <section className="admin-command__section" data-testid="org-group-plan">
+                <h2 className="admin-command__title m-0">{t("org.group.plan")}</h2>
+                <div className="admin-plan-usage" data-testid="org-plan-usage">
+                  <h3 className="admin-plan-usage__title m-0">{t("org.plan.usageTitle")}</h3>
+                  <ul className="admin-plan-usage__meters m-0 list-none p-0">
+                    {branchCapacityQuery.data ? (
+                      <AdminUsageMeter
+                        label={t("admin.context.branches")}
+                        used={branchCapacityQuery.data.used}
+                        allowed={branchCapacityQuery.data.allowed}
+                        testId="org-plan-capacity-branches"
+                      />
+                    ) : null}
+                    {areasQuery.data && areasQuery.data.maxAreas > 0 ? (
+                      <AdminUsageMeter
+                        label={t("admin.context.areas")}
+                        used={areasQuery.data.activeAreaCount}
+                        allowed={areasQuery.data.maxAreas}
+                        testId="org-plan-capacity-areas"
+                      />
+                    ) : null}
+                    {deviceCapacityQuery.data ? (
+                      <AdminUsageMeter
+                        label={t("admin.context.devices")}
+                        used={deviceCapacityQuery.data.used}
+                        allowed={deviceCapacityQuery.data.allowed}
+                        testId="org-plan-capacity-devices"
+                      />
+                    ) : null}
+                  </ul>
                 </div>
-              </div>
+              </section>
             ) : null}
-          </section>
+          </div>
         ) : null}
 
         <section className="admin-command__section" data-testid="org-attention-section">
@@ -499,7 +559,7 @@ export function OrgEssentialsPage() {
                   >
                     <Icon className="size-4 shrink-0" aria-hidden />
                     <span className="min-w-0">
-                      <span className="block font-semibold">{action.label}</span>
+                      <span className="block font-medium">{action.label}</span>
                       {action.locked && action.lockedHint ? (
                         <span className="block text-[length:var(--exits-text-xs)] text-muted">
                           {action.lockedHint}
@@ -512,40 +572,6 @@ export function OrgEssentialsPage() {
             </div>
           </section>
         ) : null}
-
-        {/* Mobile/tablet plan usage when XL context panel is hidden */}
-        <section
-          className="admin-command__section xl:hidden"
-          data-testid="org-plan-usage-mobile"
-        >
-          {(branchCapacityQuery.data ||
-            (areasQuery.data && areasQuery.data.maxAreas > 0) ||
-            deviceCapacityQuery.data) && (
-            <>
-              <h2 className="admin-command__title m-0">{t("admin.context.usageTitle")}</h2>
-              <ul className="admin-plan-usage-mobile m-0 list-none space-y-2 p-0">
-                {branchCapacityQuery.data ? (
-                  <li data-testid="org-mobile-capacity-branches">
-                    {t("admin.context.branches")}: {branchCapacityQuery.data.used}/
-                    {branchCapacityQuery.data.allowed}
-                  </li>
-                ) : null}
-                {areasQuery.data && areasQuery.data.maxAreas > 0 ? (
-                  <li data-testid="org-mobile-capacity-areas">
-                    {t("admin.context.areas")}: {areasQuery.data.activeAreaCount}/
-                    {areasQuery.data.maxAreas}
-                  </li>
-                ) : null}
-                {deviceCapacityQuery.data ? (
-                  <li data-testid="org-mobile-capacity-devices">
-                    {t("admin.context.devices")}: {deviceCapacityQuery.data.used}/
-                    {deviceCapacityQuery.data.allowed}
-                  </li>
-                ) : null}
-              </ul>
-            </>
-          )}
-        </section>
       </motion.div>
     </div>
   );

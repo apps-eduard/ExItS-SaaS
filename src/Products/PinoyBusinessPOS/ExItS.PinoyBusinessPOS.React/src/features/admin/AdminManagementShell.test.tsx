@@ -81,4 +81,13 @@ describe("AdminManagementShell", () => {
       "lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
     );
   });
+
+  it("does not inject XL Plan Usage on Overview; keeps it for /org/manage*", () => {
+    const { unmount } = renderShell("/org");
+    expect(screen.queryByTestId("admin-xl-context")).not.toBeInTheDocument();
+    unmount();
+
+    renderShell("/org/manage/staff");
+    expect(screen.getByTestId("admin-xl-context")).toBeInTheDocument();
+  });
 });

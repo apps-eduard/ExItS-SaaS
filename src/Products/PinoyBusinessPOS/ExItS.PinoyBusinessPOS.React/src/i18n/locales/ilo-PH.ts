@@ -2537,6 +2537,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "org.group.insights": "Insights",
   "org.group.operations": "Dagiti operasion",
   "org.group.today": "Ita iti maysa a kita",
+  "org.group.plan": "Plan",
+  "org.plan.usageTitle": "Usage",
   "org.group.workspace": "Lugar a trabaho",
   "org.lede": "Home ti Owner ken administrator ? kitaen ti aldaw ita, insights, ken organization tools.",
   "org.more.back": "Agsubli iti More",

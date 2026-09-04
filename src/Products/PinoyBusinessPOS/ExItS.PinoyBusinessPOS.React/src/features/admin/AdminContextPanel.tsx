@@ -7,55 +7,13 @@ import {
   canManageStoreAreas,
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
+import { AdminUsageMeter } from "@/features/admin/AdminUsageMeter";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { cn } from "@/lib/cn";
-
-function UsageMeter({
-  label,
-  used,
-  allowed,
-  testId,
-}: {
-  label: string;
-  used: number;
-  allowed: number;
-  testId: string;
-}) {
-  const pct = allowed > 0 ? Math.min(100, Math.round((used / allowed) * 100)) : 0;
-  const atLimit = allowed > 0 && used >= allowed;
-  return (
-    <li className="admin-context-panel__meter" data-testid={testId}>
-      <div className="admin-context-panel__row">
-        <span>{label}</span>
-        <strong>
-          {used} / {allowed}
-        </strong>
-      </div>
-      {allowed > 0 ? (
-        <div
-          className="admin-context-panel__track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={allowed}
-          aria-valuenow={used}
-          aria-label={label}
-        >
-          <span
-            className={cn(
-              "admin-context-panel__fill",
-              atLimit && "admin-context-panel__fill--limit",
-            )}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      ) : null}
-    </li>
-  );
-}
 
 /**
- * XL-only contextual panel. Shows real capacity data only — no invented metrics.
+ * XL contextual panel for manage routes — real capacity only.
+ * Overview (`/org`) renders Plan/Usage in-page instead of this shell widget.
  */
 export function AdminContextPanel() {
   const { t } = useI18n();
@@ -96,11 +54,14 @@ export function AdminContextPanel() {
   });
 
   const hasAny =
-    branchCapacityQuery.data ||
-    areasQuery.data ||
-    deviceCapacityQuery.data;
+    branchCapacityQuery.data || areasQuery.data || deviceCapacityQuery.data;
 
-  if (!hasAny && !branchCapacityQuery.isLoading && !areasQuery.isLoading && !deviceCapacityQuery.isLoading) {
+  if (
+    !hasAny &&
+    !branchCapacityQuery.isLoading &&
+    !areasQuery.isLoading &&
+    !deviceCapacityQuery.isLoading
+  ) {
     return null;
   }
 
@@ -113,7 +74,7 @@ export function AdminContextPanel() {
       <h2 className="admin-context-panel__title m-0">{t("admin.context.usageTitle")}</h2>
       <ul className="m-0 mt-3 list-none space-y-3 p-0">
         {branchCapacityQuery.data ? (
-          <UsageMeter
+          <AdminUsageMeter
             label={t("admin.context.branches")}
             used={branchCapacityQuery.data.used}
             allowed={branchCapacityQuery.data.allowed}
@@ -121,7 +82,7 @@ export function AdminContextPanel() {
           />
         ) : null}
         {areasQuery.data && areasQuery.data.maxAreas > 0 ? (
-          <UsageMeter
+          <AdminUsageMeter
             label={t("admin.context.areas")}
             used={areasQuery.data.activeAreaCount}
             allowed={areasQuery.data.maxAreas}
@@ -129,7 +90,7 @@ export function AdminContextPanel() {
           />
         ) : null}
         {deviceCapacityQuery.data ? (
-          <UsageMeter
+          <AdminUsageMeter
             label={t("admin.context.devices")}
             used={deviceCapacityQuery.data.used}
             allowed={deviceCapacityQuery.data.allowed}

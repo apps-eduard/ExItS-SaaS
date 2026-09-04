@@ -2568,6 +2568,8 @@ export const en = {
   "devices.revoke.successCurrentDevice":
     "This device was revoked. Register it again when you are ready to sell from here.",
   "org.group.today": "Today",
+  "org.group.plan": "Plan",
+  "org.plan.usageTitle": "Usage",
   "org.group.insights": "Insights",
   "org.group.operations": "Operations",
   "org.group.administration": "Administration",

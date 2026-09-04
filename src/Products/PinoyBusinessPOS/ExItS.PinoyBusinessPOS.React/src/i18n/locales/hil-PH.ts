@@ -2537,6 +2537,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "org.group.insights": "Insights",
   "org.group.operations": "Mga operasyon",
   "org.group.today": "Subong sa isa ka tan-aw",
+  "org.group.plan": "Plan",
+  "org.plan.usageTitle": "Usage",
   "org.group.workspace": "Lugar sang trabaho",
   "org.lede": "Home sang Owner kag administrator ? tan-awa ang adlaw subong, insights, kag organization tools.",
   "org.more.back": "Balik sa More",

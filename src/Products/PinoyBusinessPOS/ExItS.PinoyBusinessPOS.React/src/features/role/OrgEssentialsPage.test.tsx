@@ -156,6 +156,51 @@ describe("POS-ADMIN-OVERVIEW-V2", () => {
     getPosDeviceCapacity.mockResolvedValue({ ok: true, value: { used: 2, allowed: 10 } });
   });
 
+  it("renders Today and Plan sections in a shared top grid with Usage card", async () => {
+    renderOverview();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("org-overview-top")).toBeInTheDocument();
+      expect(screen.getByTestId("org-group-today")).toBeInTheDocument();
+      expect(screen.getByTestId("org-group-plan")).toBeInTheDocument();
+      expect(screen.getByTestId("org-plan-usage")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("org-group-today")).toHaveTextContent("Today");
+    expect(screen.getByTestId("org-group-plan")).toHaveTextContent("Plan");
+    expect(screen.getByTestId("org-plan-usage")).toHaveTextContent("Usage");
+    expect(screen.getByTestId("org-plan-usage")).not.toHaveTextContent("Plan usage");
+    expect(screen.queryByTestId("org-plan-usage-mobile")).not.toBeInTheDocument();
+
+    expect(screen.getByTestId("org-plan-capacity-branches")).toHaveTextContent("2 / 10");
+    expect(screen.getByTestId("org-plan-capacity-areas")).toHaveTextContent("1 / 3");
+    expect(screen.getByTestId("org-plan-capacity-devices")).toHaveTextContent("2 / 10");
+  });
+
+  it("does not mount shell Plan Usage panel on Overview", async () => {
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/org"]}>
+          <AdminManagementShell>
+            <OrgEssentialsPage />
+          </AdminManagementShell>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("org-plan-usage")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("admin-xl-context")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("admin-context-panel")).not.toBeInTheDocument();
+  });
+
+  it("keeps shell Plan Usage panel available on manage routes", () => {
+    renderShell("/org/manage/branches");
+    expect(screen.getByTestId("admin-xl-context")).toBeInTheDocument();
+  });
+
   it("renders command-center overview without duplicated nav tile walls", async () => {
     renderOverview();
 

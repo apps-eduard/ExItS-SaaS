@@ -2536,6 +2536,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "org.group.insights": "Insights",
   "org.group.operations": "Mga operasyon",
   "org.group.today": "Ngayon sa isang tingin",
+  "org.group.plan": "Plan",
+  "org.plan.usageTitle": "Usage",
   "org.group.workspace": "Workspace",
   "org.lede": "Home ng Owner at administrator ? tingnan ang araw na ito, insights, at organization tools.",
   "org.more.back": "Bumalik sa More",

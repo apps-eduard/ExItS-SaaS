@@ -2537,6 +2537,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "org.group.insights": "Insights",
   "org.group.operations": "Mga operasyon",
   "org.group.today": "Karon sa usa ka tan-aw",
+  "org.group.plan": "Plan",
+  "org.plan.usageTitle": "Usage",
   "org.group.workspace": "Lugar sa trabaho",
   "org.lede": "Home sa Owner ug administrator ? tan-awa ang adlaw karon, insights, ug organization tools.",
   "org.more.back": "Balik sa More",

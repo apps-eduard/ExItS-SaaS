@@ -16,16 +16,14 @@ type AdminManagementShellProps = {
  * Responsive Manage Business shell.
  * Below lg: stacked content + Admin bottom nav (Home / Manage / Review / More).
  * lg+: persistent expanded Admin sidebar (no tablet rail).
- * XL: optional usage context panel when capacity APIs return data.
+ * XL: optional usage context panel on /org/manage* when capacity APIs return data.
+ * Overview (/org) renders Plan/Usage in-page — not in this shell column.
  */
 export function AdminManagementShell({ children, header }: AdminManagementShellProps) {
   const { t } = useI18n();
   const location = useLocation();
   const { boundWorkspace } = useWorkspace();
-  const showContextPanel =
-    location.pathname === "/org" ||
-    location.pathname === "/org/" ||
-    location.pathname.startsWith("/org/manage");
+  const showContextPanel = location.pathname.startsWith("/org/manage");
 
   return (
     <div

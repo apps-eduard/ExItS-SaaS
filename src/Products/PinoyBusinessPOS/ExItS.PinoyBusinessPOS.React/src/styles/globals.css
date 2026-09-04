@@ -10666,9 +10666,52 @@ a.exits-chip--primary:hover {
 
 .admin-context-panel__title {
   font-size: var(--exits-text-sm);
-  font-weight: 700;
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: var(--exits-leading-tight);
 }
 
+.admin-usage-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-usage-meter__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: var(--exits-text-sm);
+}
+
+.admin-usage-meter__label {
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+}
+
+.admin-usage-meter__value {
+  font-weight: var(--exits-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-usage-meter__track {
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--exits-surface-muted);
+}
+
+.admin-usage-meter__fill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--exits-primary);
+}
+
+.admin-usage-meter__fill--limit {
+  background: var(--exits-warning);
+}
+
+/* Legacy aliases — shell panel meters now use .admin-usage-meter* */
 .admin-context-panel__row {
   display: flex;
   justify-content: space-between;
@@ -10755,10 +10798,25 @@ a.exits-chip--primary:hover {
   gap: 1rem;
 }
 
+.admin-overview-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .admin-overview-top {
+    grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr);
+    gap: 1rem 1.25rem;
+  }
+}
+
 .admin-command__title {
   font-size: var(--exits-text-sm);
   font-weight: var(--exits-font-weight-semibold);
   letter-spacing: var(--exits-tracking-normal);
+  line-height: var(--exits-leading-tight);
   margin-bottom: 0.55rem;
 }
 
@@ -10771,6 +10829,30 @@ a.exits-chip--primary:hover {
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface-elevated);
   box-shadow: var(--exits-shadow-sm);
+}
+
+.admin-plan-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface-elevated);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.admin-plan-usage__title {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: var(--exits-leading-tight);
+  color: var(--exits-text);
+}
+
+.admin-plan-usage__meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .admin-today__hero {
@@ -10976,11 +11058,6 @@ a.exits-chip--primary:hover {
 
 .admin-quick-action--locked {
   opacity: 0.78;
-}
-
-.admin-plan-usage-mobile {
-  font-size: var(--exits-text-sm);
-  color: var(--exits-text-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {
