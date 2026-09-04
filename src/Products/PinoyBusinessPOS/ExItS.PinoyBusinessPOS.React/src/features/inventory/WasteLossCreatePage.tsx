@@ -689,7 +689,7 @@ export function WasteLossCreatePage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("wasteLoss.reason")}
             <select
-              className="rounded-md border border-border bg-background px-3"
+              className="exits-select"
               value={reason}
               onChange={(e) => setReason(e.target.value as WasteLossReasonCode)}
               disabled={!allowManage || statusLocked}

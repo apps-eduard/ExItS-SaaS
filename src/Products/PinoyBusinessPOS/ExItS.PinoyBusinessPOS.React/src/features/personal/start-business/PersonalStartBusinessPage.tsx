@@ -453,7 +453,7 @@ export function PersonalStartBusinessPage() {
             {t("personal.startBusiness.billingCycle")}
           </span>
           <select
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-select"
             value={billingCycle}
             disabled={mutation.isPending}
             data-testid="start-business-billing"

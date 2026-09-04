@@ -6175,16 +6175,18 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .dashboard-toolbar__select,
+.exits-select.dashboard-toolbar__select,
 .catalog-form-select.dashboard-toolbar__select {
   width: 100%;
   box-sizing: border-box;
-  height: 2.4rem;
-  min-height: 2.4rem;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
   padding-block: 0;
-  padding-inline: 0.65rem;
-  font-size: var(--exits-text-xs);
-  font-weight: var(--exits-font-weight-medium);
-  line-height: 1.2;
+  padding-inline: var(--exits-control-padding-x) calc(var(--exits-control-padding-x) + 1.25rem);
+  font-size: var(--exits-text-md);
+  font-weight: 400;
+  line-height: calc(var(--exits-control-height) - 2px);
 }
 
 .dashboard-toolbar__actions {
@@ -8286,37 +8288,105 @@ textarea.exits-input {
   }
 }
 
-.catalog-form-select {
+/*
+ * Global native <select> closed-field visual (POS-REACT-GLOBAL-SELECT-VISUAL-NORMALIZATION-V1).
+ * Height follows --exits-control-height only (Compact 32 / Balance 36 / Comfort 44).
+ * Popup/options remain native browser/OS UI — no custom listbox.
+ */
+.exits-select,
+.catalog-form-select,
+select.exits-input,
+select.pc-field__control {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   box-sizing: border-box;
+  display: block;
   width: 100%;
   height: var(--exits-control-height);
   min-height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
+  margin: 0;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  padding: 0 var(--exits-control-padding-x);
-  font-size: var(--exits-text-sm);
-  font-weight: var(--exits-font-weight-regular);
+  background-color: var(--exits-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235a6570' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--exits-control-padding-x) center;
+  background-size: 1rem 1rem;
+  padding-block: 0;
+  padding-inline: var(--exits-control-padding-x) calc(var(--exits-control-padding-x) + 1.25rem);
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: 400;
+  line-height: calc(var(--exits-control-height) - 2px);
   color: var(--exits-text);
+  vertical-align: middle;
+  cursor: pointer;
   transition:
     border-color var(--exits-motion-fast) ease,
-    box-shadow var(--exits-motion-fast) ease;
+    box-shadow var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
 }
 
-.catalog-form-select--readonly {
-  background: var(--exits-surface-muted);
+[data-theme="dark"] .exits-select,
+[data-theme="dark"] .catalog-form-select,
+[data-theme="dark"] select.exits-input,
+[data-theme="dark"] select.pc-field__control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a3b3aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] .exits-select,
+  [data-theme="system"] .catalog-form-select,
+  [data-theme="system"] select.exits-input,
+  [data-theme="system"] select.pc-field__control,
+  :root:not([data-theme]) .exits-select,
+  :root:not([data-theme]) .catalog-form-select,
+  :root:not([data-theme]) select.exits-input,
+  :root:not([data-theme]) select.pc-field__control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a3b3aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+
+.exits-select:hover:not(:disabled):not(:focus-visible),
+.catalog-form-select:hover:not(:disabled):not(:focus-visible),
+select.exits-input:hover:not(:disabled):not(:focus-visible),
+select.pc-field__control:hover:not(:disabled):not(:focus-visible) {
+  border-color: var(--exits-border-strong);
+}
+
+.exits-select:focus,
+.catalog-form-select:focus,
+select.exits-input:focus,
+select.pc-field__control:focus {
+  outline: none;
+}
+
+.exits-select:focus-visible,
+.catalog-form-select:focus-visible,
+select.exits-input:focus-visible,
+select.pc-field__control:focus-visible {
+  outline: none;
+  border-color: var(--exits-ring);
+  box-shadow: 0 0 0 2px var(--exits-ring);
+}
+
+.exits-select:disabled,
+.catalog-form-select:disabled,
+select.exits-input:disabled,
+select.pc-field__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background-color: var(--exits-surface-muted);
   color: var(--exits-text-muted);
 }
 
-.catalog-form-select:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
-  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
-}
-
-.catalog-form-select:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.exits-select--readonly,
+.catalog-form-select--readonly {
+  background-color: var(--exits-surface-muted);
+  color: var(--exits-text-muted);
+  cursor: default;
 }
 
 .catalog-form-check {
@@ -8500,11 +8570,7 @@ textarea.exits-input {
   gap: 0.625rem;
 }
 
-.catalog-page__taxonomy .catalog-form-select {
-  min-height: var(--exits-control-height);
-  font-size: var(--exits-text-md);
-  background: var(--exits-surface);
-}
+/* Taxonomy selects inherit .exits-select / .catalog-form-select */
 
 .catalog-page__taxonomy-field {
   min-width: 0;
@@ -8574,11 +8640,7 @@ textarea.exits-input {
   padding-top: 0.75rem;
 }
 
-.catalog-page__filter-section--taxonomy .catalog-form-select {
-  min-height: var(--exits-control-height);
-  font-size: var(--exits-text-md);
-  background: var(--exits-surface);
-}
+/* Filter taxonomy selects inherit shared select standard */
 
 .catalog-page__filter-section--taxonomy .catalog-form-field {
   gap: 0.375rem;

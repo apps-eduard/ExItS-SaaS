@@ -294,7 +294,7 @@ export function InventoryTransferCreatePage() {
         <label className="flex flex-col gap-1">
           <span className="text-[length:var(--exits-text-sm)] font-medium">{t("transfer.toBranch")}</span>
           <select
-            className="exits-input"
+            className="exits-select"
             value={destinationBranchId}
             onChange={(e) => setDestinationBranchId(e.target.value)}
             data-testid="transfer-destination-branch"
@@ -393,7 +393,7 @@ export function InventoryTransferCreatePage() {
                 </div>
                 {tracksExpiration ? (
                   <select
-                    className="exits-input"
+                    className="exits-select"
                     value={lotByProduct[row.productId] ?? ""}
                     onFocus={() => void ensureLots(row.productId, true)}
                     onChange={(e) =>

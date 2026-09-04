@@ -240,7 +240,7 @@ export function ExpenseCreatePage() {
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="font-medium">{t("expense.category")}</span>
               <select
-                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="exits-select"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 data-testid="expense-category"

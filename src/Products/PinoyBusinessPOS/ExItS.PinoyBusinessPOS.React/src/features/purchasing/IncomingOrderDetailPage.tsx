@@ -281,7 +281,7 @@ export function IncomingOrderDetailPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("incomingOrders.declineReason")}
             <select
-              className="rounded-md border border-border bg-background px-3"
+              className="exits-select"
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               data-testid="incoming-order-decline-reason"

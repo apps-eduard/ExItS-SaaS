@@ -327,7 +327,7 @@ export function StockCountCreatePage() {
         <label className="flex flex-col gap-1.5">
           <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countPeriod")}</span>
           <select
-            className="exits-input"
+            className="exits-select"
             value={period}
             onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
             data-testid="stock-count-period"

@@ -152,7 +152,7 @@ export function ReceivePaymentSection({
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.paymentMethodAtReceipt")}
             <select
-              className="rounded-md border border-border bg-background px-3"
+              className="exits-select"
               value={paymentMethod}
               disabled={disabled}
               onChange={(e) =>

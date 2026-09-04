@@ -101,7 +101,7 @@ function TodoRelatedEntityPicker({
         {t("personal.todo.relatedPick")}
         <select
           data-testid={`${idPrefix}-related-pick`}
-          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="exits-select"
           value={form.relatedEntityId}
           onChange={(event) => setForm({ ...form, relatedEntityId: event.target.value })}
         >
@@ -261,7 +261,7 @@ export function TodoFormFields({
             {t("personal.todo.priority")}
             <select
               data-testid={`${idPrefix}-priority`}
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="exits-select"
               value={form.priority}
               onChange={(event) => setForm({ ...form, priority: event.target.value })}
             >
@@ -277,7 +277,7 @@ export function TodoFormFields({
             {t("personal.todo.relatedType")}
             <select
               data-testid={`${idPrefix}-related-type`}
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="exits-select"
               value={form.relatedEntityType}
               onChange={(event) =>
                 setForm({

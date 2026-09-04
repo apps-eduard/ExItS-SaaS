@@ -707,7 +707,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           {t("personal.utang.person")}
           <select
             data-testid="utang-rel-contact"
-            className="w-full min-w-0 max-w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="exits-select"
             value={contactId}
             onChange={(e) => setContactId(e.target.value)}
             required
@@ -1478,7 +1478,7 @@ export function PersonalRelationshipDetailPage() {
           <span className="sr-only">{t("personal.utang.entryType")}</span>
           <select
             data-testid="utang-entry-type"
-            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="exits-select"
             value={entryType}
             onChange={(e) => setEntryType(e.target.value as typeof entryType)}
           >
@@ -1790,7 +1790,7 @@ export function PersonalRelationshipDetailPage() {
                         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                           {t("personal.utang.disputeReason")}
                           <select
-                            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                            className="exits-select"
                             value={disputeReasonKey}
                             data-testid={`utang-dispute-reason-${entry.id}`}
                             onChange={(e) =>

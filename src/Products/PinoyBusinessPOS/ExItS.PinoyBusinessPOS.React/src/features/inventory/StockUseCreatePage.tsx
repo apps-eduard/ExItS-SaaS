@@ -391,7 +391,7 @@ export function StockUseCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("stockUse.reason")}
         <select
-          className="rounded-md border border-border bg-background px-3"
+          className="exits-select"
           value={reason}
           onChange={(e) => setReason(e.target.value as StockUseReasonCode)}
           disabled={!allowManage || statusLocked}

@@ -208,7 +208,7 @@ export function ExpenseCategoriesPage() {
       <label className="flex max-w-xs flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span className="text-muted">{t("expense.filter.status")}</span>
         <select
-          className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+          className="exits-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           data-testid="expense-category-status-filter"

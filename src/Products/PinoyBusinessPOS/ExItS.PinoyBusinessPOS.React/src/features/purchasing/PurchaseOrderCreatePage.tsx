@@ -502,7 +502,7 @@ export function PurchaseOrderCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("purchasing.supplier")}
         <select
-          className="rounded-md border border-border bg-background px-3"
+          className="exits-select"
           value={supplierId}
           onChange={(e) => onSupplierChange(e.target.value)}
           disabled={!allowManage || !online}

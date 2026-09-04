@@ -400,7 +400,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("supplierPayables.paymentMethod")}
                 <select
-                  className="rounded-md border border-border bg-background px-3"
+                  className="exits-select"
                   value={paymentMethod}
                   onChange={(e) =>
                     setPaymentMethod(e.target.value as SupplierPayablePaymentMethodCode)

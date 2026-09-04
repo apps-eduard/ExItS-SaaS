@@ -1077,7 +1077,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountScope")}
                 <select
                   data-testid="checkout-discount-scope"
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="exits-select"
                   value={discountScope}
                   disabled={saving}
                   onChange={(event) => setDiscountScope(event.target.value as DiscountScope)}
@@ -1090,7 +1090,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountMethod")}
                 <select
                   data-testid="checkout-discount-method"
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="exits-select"
                   value={discountMethod}
                   disabled={saving}
                   onChange={(event) => setDiscountMethod(event.target.value as DiscountMethod)}
@@ -1104,7 +1104,7 @@ export function CheckoutCashPage() {
                   {t("checkout.discountLine")}
                   <select
                     data-testid="checkout-discount-line"
-                    className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    className="exits-select"
                     value={discountLineNumber}
                     disabled={saving}
                     onChange={(event) => setDiscountLineNumber(Number(event.target.value))}

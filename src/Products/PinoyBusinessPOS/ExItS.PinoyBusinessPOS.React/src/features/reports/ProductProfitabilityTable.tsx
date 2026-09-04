@@ -185,7 +185,7 @@ export function ProductProfitabilityTable({
       <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span>{t("reports.rank.label")}</span>
         <select
-          className="rounded-md border border-border bg-background px-3"
+          className="exits-select"
           value={rankBy}
           onChange={(e) => onRankByChange(e.target.value as ProductProfitabilityRankBy)}
           data-testid="product-profitability-rank"

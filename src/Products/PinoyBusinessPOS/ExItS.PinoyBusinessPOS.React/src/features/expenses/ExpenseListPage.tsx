@@ -250,7 +250,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.status")}</span>
           <select
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-select"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -266,7 +266,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.payment")}</span>
           <select
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-select"
             value={paymentMethod}
             onChange={(e) => {
               setPaymentMethod(e.target.value);

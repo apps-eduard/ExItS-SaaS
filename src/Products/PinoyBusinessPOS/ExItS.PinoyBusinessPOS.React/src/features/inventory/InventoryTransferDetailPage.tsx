@@ -333,7 +333,7 @@ export function InventoryTransferDetailPage() {
                       {diff != null && diff > 0 ? (
                         <div className="flex flex-col gap-1">
                           <select
-                            className="exits-input"
+                            className="exits-select"
                             value={reasonByLine[line.lineId] ?? ""}
                             onChange={(e) =>
                               setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
@@ -402,7 +402,7 @@ export function InventoryTransferDetailPage() {
                   {diff != null && diff > 0 ? (
                     <>
                       <select
-                        className="exits-input"
+                        className="exits-select"
                         value={reasonByLine[line.lineId] ?? ""}
                         onChange={(e) =>
                           setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
