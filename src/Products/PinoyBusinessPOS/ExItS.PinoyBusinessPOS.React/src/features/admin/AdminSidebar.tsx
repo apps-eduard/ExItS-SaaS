@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { ArrowLeftRight } from "lucide-react";
 import {
   buildAdminNavGroups,
   flattenAdminNavItems,
@@ -76,6 +77,17 @@ export function AdminSidebar() {
           </div>
         ))}
       </nav>
+
+      <div className="admin-sidebar__footer">
+        <Link
+          to="/workspace"
+          className="admin-sidebar__switch"
+          data-testid="admin-sidebar-switch-workspace"
+        >
+          <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
+          <span>{t("workspace.switch")}</span>
+        </Link>
+      </div>
     </aside>
   );
 }

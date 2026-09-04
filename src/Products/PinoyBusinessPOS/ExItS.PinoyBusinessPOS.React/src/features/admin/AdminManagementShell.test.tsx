@@ -75,6 +75,8 @@ describe("AdminManagementShell", () => {
     expect(screen.getByTestId("admin-desktop-sidebar").className).toMatch(/\blg:block\b/);
     expect(screen.getByTestId("admin-nav-branches")).toBeInTheDocument();
     expect(screen.getByTestId("admin-nav-areas")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-sidebar-switch-workspace")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-sidebar-switch-workspace")).toHaveAttribute("href", "/workspace");
     expect(screen.getByTestId("admin-management-shell").className).toContain(
       "lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
     );

@@ -2383,7 +2383,7 @@ export const en = {
   "register.noOpenShift": "No open shift",
   "org.title": "Manage business",
   "org.lede":
-    "Owner and administrator home ? today?s store glance, insights, and organization tools.",
+    "What needs attention, how the business is doing today, and where to manage the important things.",
   "org.badge": "Admin",
   "org.body":
     "Organization Web / admin experience is separate from POS Manager operations. Invite staff requires Owner membership authority.",
@@ -2391,8 +2391,21 @@ export const en = {
   "org.emptyTitle": "Admin experience",
   "org.emptyDetail":
     "Assign Owner, Manager, or Cashier POS roles for selling. Heavy administration stays on this surface.",
-  "org.overviewOffline": "Connect to refresh today?s store overview.",
+  "org.overviewOffline": "Connect to refresh today's store overview.",
   "org.overviewOpenDashboard": "Open full dashboard",
+  "org.today.noSales": "No sales yet today",
+  "org.attention.title": "Needs attention",
+  "org.attention.clear": "No management issues need attention",
+  "org.attention.branchCapacity": "Branch capacity full",
+  "org.attention.deviceCapacity": "Device capacity full",
+  "org.attention.areaCapacity": "Area capacity full",
+  "org.glance.title": "Organization at a glance",
+  "org.glance.locations": "Locations",
+  "org.glance.locationsBreakdown": "{retail} Retail · {warehouse} Warehouse",
+  "org.glance.areas": "Areas",
+  "org.glance.staff": "Staff",
+  "org.glance.devices": "Devices",
+  "org.actions.title": "Quick actions",
   "org.ownershipTransfer.title": "Transfer ownership",
   "org.ownershipTransfer.lede":
     "Offer ownership of this organization to another Personal ExItS account. The recipient must accept.",
@@ -2554,7 +2567,7 @@ export const en = {
   "devices.revoke.unavailable": "Could not confirm your password right now. Try again in a moment.",
   "devices.revoke.successCurrentDevice":
     "This device was revoked. Register it again when you are ready to sell from here.",
-  "org.group.today": "Today at a glance",
+  "org.group.today": "Today",
   "org.group.insights": "Insights",
   "org.group.operations": "Operations",
   "org.group.administration": "Administration",

@@ -9,6 +9,50 @@ import {
 } from "@/access/pos-capabilities";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { cn } from "@/lib/cn";
+
+function UsageMeter({
+  label,
+  used,
+  allowed,
+  testId,
+}: {
+  label: string;
+  used: number;
+  allowed: number;
+  testId: string;
+}) {
+  const pct = allowed > 0 ? Math.min(100, Math.round((used / allowed) * 100)) : 0;
+  const atLimit = allowed > 0 && used >= allowed;
+  return (
+    <li className="admin-context-panel__meter" data-testid={testId}>
+      <div className="admin-context-panel__row">
+        <span>{label}</span>
+        <strong>
+          {used} / {allowed}
+        </strong>
+      </div>
+      {allowed > 0 ? (
+        <div
+          className="admin-context-panel__track"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={allowed}
+          aria-valuenow={used}
+          aria-label={label}
+        >
+          <span
+            className={cn(
+              "admin-context-panel__fill",
+              atLimit && "admin-context-panel__fill--limit",
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      ) : null}
+    </li>
+  );
+}
 
 /**
  * XL-only contextual panel. Shows real capacity data only — no invented metrics.
@@ -67,30 +111,30 @@ export function AdminContextPanel() {
       aria-label={t("admin.context.aria")}
     >
       <h2 className="admin-context-panel__title m-0">{t("admin.context.usageTitle")}</h2>
-      <ul className="m-0 mt-3 list-none space-y-2 p-0">
+      <ul className="m-0 mt-3 list-none space-y-3 p-0">
         {branchCapacityQuery.data ? (
-          <li className="admin-context-panel__row" data-testid="admin-context-branches">
-            <span>{t("admin.context.branches")}</span>
-            <strong>
-              {branchCapacityQuery.data.used}/{branchCapacityQuery.data.allowed}
-            </strong>
-          </li>
+          <UsageMeter
+            label={t("admin.context.branches")}
+            used={branchCapacityQuery.data.used}
+            allowed={branchCapacityQuery.data.allowed}
+            testId="admin-context-branches"
+          />
         ) : null}
         {areasQuery.data && areasQuery.data.maxAreas > 0 ? (
-          <li className="admin-context-panel__row" data-testid="admin-context-areas">
-            <span>{t("admin.context.areas")}</span>
-            <strong>
-              {areasQuery.data.activeAreaCount}/{areasQuery.data.maxAreas}
-            </strong>
-          </li>
+          <UsageMeter
+            label={t("admin.context.areas")}
+            used={areasQuery.data.activeAreaCount}
+            allowed={areasQuery.data.maxAreas}
+            testId="admin-context-areas"
+          />
         ) : null}
         {deviceCapacityQuery.data ? (
-          <li className="admin-context-panel__row" data-testid="admin-context-devices">
-            <span>{t("admin.context.devices")}</span>
-            <strong>
-              {deviceCapacityQuery.data.used}/{deviceCapacityQuery.data.allowed}
-            </strong>
-          </li>
+          <UsageMeter
+            label={t("admin.context.devices")}
+            used={deviceCapacityQuery.data.used}
+            allowed={deviceCapacityQuery.data.allowed}
+            testId="admin-context-devices"
+          />
         ) : null}
       </ul>
     </aside>
