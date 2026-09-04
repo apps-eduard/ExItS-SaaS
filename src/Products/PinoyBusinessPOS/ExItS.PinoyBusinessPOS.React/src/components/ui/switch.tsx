@@ -7,6 +7,8 @@ export type SwitchProps = Omit<
 > & {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  /** Visible ON/OFF caption (default true). */
+  showStateLabel?: boolean;
 };
 
 /**
@@ -19,6 +21,7 @@ export function Switch({
   className,
   disabled,
   id,
+  showStateLabel = true,
   ...props
 }: SwitchProps) {
   return (
@@ -37,6 +40,11 @@ export function Switch({
         onCheckedChange(!checked);
       }}
     >
+      {showStateLabel ? (
+        <span className="exits-switch__state" aria-hidden>
+          {checked ? "ON" : "OFF"}
+        </span>
+      ) : null}
       <span className="exits-switch__thumb" aria-hidden />
     </button>
   );

@@ -7986,13 +7986,13 @@ textarea.exits-input {
   margin: 0;
 }
 
-/* Compact settings switch */
+/* Compact settings switch — shows ON when checked (default active look) */
 .exits-switch {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  width: 2.75rem;
+  width: 3.25rem;
   height: 1.5rem;
   padding: 0;
   border: 1px solid var(--exits-border-strong);
@@ -8020,10 +8020,29 @@ textarea.exits-input {
   background: var(--exits-primary);
 }
 
+.exits-switch__state {
+  position: absolute;
+  z-index: 1;
+  font-size: 0.625rem;
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--exits-text-muted);
+  pointer-events: none;
+  right: 0.35rem;
+}
+
+.exits-switch--on .exits-switch__state {
+  left: 0.35rem;
+  right: auto;
+  color: var(--exits-primary-foreground);
+}
+
 .exits-switch__thumb {
   position: absolute;
   top: 50%;
   left: 0.15rem;
+  z-index: 2;
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 999px;
@@ -8034,7 +8053,7 @@ textarea.exits-input {
 }
 
 .exits-switch--on .exits-switch__thumb {
-  transform: translate(1.2rem, -50%);
+  transform: translate(1.7rem, -50%);
   background: var(--exits-primary-foreground);
 }
 

@@ -124,8 +124,10 @@ describe("CashHandlingSettingsPage", () => {
     const closing = screen.getByTestId("cash-handling-require-closing");
     expect(opening).toHaveAttribute("role", "switch");
     expect(opening).toHaveAttribute("aria-checked", "true");
+    expect(opening).toHaveTextContent("ON");
     expect(closing).toHaveAttribute("role", "switch");
     expect(closing).toHaveAttribute("aria-checked", "false");
+    expect(closing).toHaveTextContent("OFF");
     expect(screen.getByTestId("cash-handling-policy")).toHaveTextContent(
       "cashHandling.policyTitle",
     );
