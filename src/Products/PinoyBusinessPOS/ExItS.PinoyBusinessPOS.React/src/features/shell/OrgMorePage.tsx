@@ -39,6 +39,7 @@ export function OrgMorePage() {
 
   const sections = buildOrgMoreSections(sessionGrant, {
     showFinishSetup: shouldShowFinishSetupEntry(progressQuery.data),
+    branchType: boundWorkspace?.branchType,
   });
 
   return (

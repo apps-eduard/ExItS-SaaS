@@ -37,7 +37,11 @@ export function OrgBottomNav() {
   }
 
   const experience = boundWorkspace.experience ?? "operations";
-  const tabs = buildOrgBottomNavTabs({ grant: sessionGrant, experience });
+  const tabs = buildOrgBottomNavTabs({
+    grant: sessionGrant,
+    experience,
+    branchType: boundWorkspace.branchType,
+  });
   const activeId = matchOrgNavTab(location.pathname, tabs);
 
   if (tabs.length === 0) {

@@ -77,7 +77,9 @@ public sealed record OrganizationBranchDto(
     int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
     IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
     Guid? AreaId = null,
-    string? AreaName = null);
+    string? AreaName = null,
+    /// <summary>Retail (default) or Warehouse.</summary>
+    string BranchType = nameof(OrganizationBranchType.Retail));
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -108,7 +110,8 @@ public sealed record BranchManagementSummaryItemDto(
     int DeliverySectionsComplete,
     int DeliverySectionsTotal,
     Guid? AreaId = null,
-    string? AreaName = null);
+    string? AreaName = null,
+    string BranchType = nameof(OrganizationBranchType.Retail));
 
 public sealed record BranchStaffAccessItemDto(
     Guid MembershipId,
@@ -138,7 +141,8 @@ public sealed record CreateBranchCommand(
     bool DeliveryEnabled = false,
     bool CustomerOrderingEnabled = false,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    OrganizationBranchType BranchType = OrganizationBranchType.Retail);
 
 public sealed record UpdateBranchCommand(
     string Name,
@@ -153,7 +157,8 @@ public sealed record UpdateBranchCommand(
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    OrganizationBranchType? BranchType = null);
 
 public sealed record UpsertBranchDeliveryPolicyCommand(
     decimal MinimumOrderAmount,
@@ -401,7 +406,8 @@ public sealed class CreateBranch(
                 command.Longitude,
                 command.PickupEnabled,
                 command.DeliveryEnabled,
-                command.CustomerOrderingEnabled);
+                command.CustomerOrderingEnabled,
+                branchType: command.BranchType);
             if (!string.IsNullOrWhiteSpace(command.ContactPhone))
             {
                 branch.UpdateContactPhone(command.ContactPhone, clock.UtcNow);
@@ -475,6 +481,11 @@ public sealed class UpdateBranch(
             if (command.TimeZoneId is not null)
             {
                 branch.UpdateTimeZone(command.TimeZoneId, clock.UtcNow);
+            }
+
+            if (command.BranchType is OrganizationBranchType branchType)
+            {
+                branch.SetBranchType(branchType, clock.UtcNow);
             }
 
             if (command.Status is not null)
@@ -737,7 +748,8 @@ public sealed class ListBranchManagementSummaries(
                 b.DeliverySectionsComplete,
                 b.DeliverySectionsTotal,
                 b.AreaId,
-                b.AreaName))
+                b.AreaName,
+                b.BranchType))
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
@@ -1096,7 +1108,8 @@ internal static class BranchMapper
             readiness?.SetupSummary.DeliverySectionsTotal ?? BranchFulfillmentSetupSummary.DeliverySectionCount,
             activeDeliveryServiceAreas,
             x.AreaId?.Value,
-            areaName);
+            areaName,
+            x.BranchType.ToString());
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

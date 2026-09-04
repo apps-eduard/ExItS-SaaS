@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   canAccessReportsHub,
   canCreateSale,
@@ -94,23 +95,24 @@ export function RoleHomeShell({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { enter } = useSellingMode();
-  const { sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const { sessionGrant, deviceEnforcementEnabled, boundWorkspace } = useWorkspace();
   const showHomeDeviceRegister = deviceEnforcementEnabled !== false;
 
   const canAdmin = canUseAdminExperience(sessionGrant);
   const canOps = canUseOperationsExperience(sessionGrant);
-  const canSell = canCreateSale(sessionGrant);
+  const canSell = canCreateSale(sessionGrant, boundWorkspace?.branchType);
+  const warehouse = isWarehouseBranch(boundWorkspace?.branchType);
   const canCatalog = canManageCatalog(sessionGrant);
   const canInventory = canViewInventory(sessionGrant);
-  const canShifts = canViewShifts(sessionGrant);
-  const canOpenShift = canManageShifts(sessionGrant);
-  const canRegisters = canViewRegisters(sessionGrant);
-  const canCustomers = canViewCustomers(sessionGrant);
-  const canCustomerOrders = canViewCustomerOrders(sessionGrant);
+  const canShifts = !warehouse && canViewShifts(sessionGrant);
+  const canOpenShift = !warehouse && canManageShifts(sessionGrant);
+  const canRegisters = !warehouse && canViewRegisters(sessionGrant);
+  const canCustomers = !warehouse && canViewCustomers(sessionGrant);
+  const canCustomerOrders = !warehouse && canViewCustomerOrders(sessionGrant);
   const canSuppliers = canViewSuppliers(sessionGrant);
   const canPurchasing = canViewPurchasing(sessionGrant) || canViewInventory(sessionGrant);
-  const canReturns = canViewReturns(sessionGrant);
-  const canDashboard = canViewDashboard(sessionGrant);
+  const canReturns = !warehouse && canViewReturns(sessionGrant);
+  const canDashboard = !warehouse && canViewDashboard(sessionGrant);
   const canReports = canAccessReportsHub(sessionGrant);
   const canDevices = hasOrganizationManagementAuthority(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);

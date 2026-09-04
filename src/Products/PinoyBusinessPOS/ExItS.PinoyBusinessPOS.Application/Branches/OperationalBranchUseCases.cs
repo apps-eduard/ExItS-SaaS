@@ -17,7 +17,9 @@ public sealed record OperationalBranchContextDto(
     string Name,
     bool DeviceMatchesSelectedBranch,
     Guid? DeviceBoundBranchId,
-    bool OpenCashierShiftPresent);
+    bool OpenCashierShiftPresent,
+    /// <summary>Retail (default) or Warehouse.</summary>
+    string BranchType = "Retail");
 
 /// <summary>
 /// Server-side operational branch switch: org-scoped Active branch plus open-shift guard.
@@ -71,6 +73,9 @@ public sealed class SelectOperationalBranch(
             .GetNamesAsync(organizationId, [requestedBranchId], cancellationToken)
             .ConfigureAwait(false);
         names.TryGetValue(requestedBranchId, out var name);
+        var branchType = await branches
+            .GetBranchTypeAsync(organizationId, requestedBranchId, cancellationToken)
+            .ConfigureAwait(false);
 
         return ApplicationResult<OperationalBranchContextDto>.Success(
             new OperationalBranchContextDto(
@@ -79,6 +84,7 @@ public sealed class SelectOperationalBranch(
                 string.IsNullOrWhiteSpace(name) ? "Branch" : name,
                 deviceBoundBranchId is Guid deviceBranch && deviceBranch == requestedBranchId,
                 deviceBoundBranchId,
-                hasOpenShift));
+                hasOpenShift,
+                branchType));
     }
 }

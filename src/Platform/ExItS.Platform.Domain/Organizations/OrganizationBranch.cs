@@ -12,6 +12,18 @@ public enum OrganizationBranchStatus
 }
 
 /// <summary>
+/// Operational role of a branch location. Existing branches default to <see cref="Retail"/>.
+/// Warehouse is still a normal organization branch for inventory accounting — not a separate WMS.
+/// </summary>
+public enum OrganizationBranchType
+{
+    /// <summary>Selling + inventory location (POS checkout allowed).</summary>
+    Retail = 0,
+    /// <summary>Inventory / purchasing / transfers location; retail sales are not allowed.</summary>
+    Warehouse = 1
+}
+
+/// <summary>
 /// Authoritative physical operational location for an organization.
 /// Delivery fee policy is stored separately on <see cref="BranchDeliveryPolicy"/>.
 /// </summary>
@@ -23,6 +35,8 @@ public sealed class OrganizationBranch
     public PlatformOrganizationId OrganizationId { get; }
     public string Code { get; }
     public string Name { get; private set; }
+    /// <summary>Retail (default) or Warehouse. Controls retail-sale eligibility.</summary>
+    public OrganizationBranchType BranchType { get; private set; }
     public string? AddressLine1 { get; private set; }
     public string? AddressLine2 { get; private set; }
     public string? City { get; private set; }
@@ -74,6 +88,7 @@ public sealed class OrganizationBranch
         PlatformOrganizationId organizationId,
         string code,
         string name,
+        OrganizationBranchType branchType,
         string? addressLine1,
         string? addressLine2,
         string? city,
@@ -102,6 +117,7 @@ public sealed class OrganizationBranch
         OrganizationId = organizationId;
         Code = code;
         Name = name;
+        BranchType = branchType;
         AddressLine1 = addressLine1;
         AddressLine2 = addressLine2;
         City = city;
@@ -155,7 +171,8 @@ public sealed class OrganizationBranch
         bool pickupEnabled = false,
         bool deliveryEnabled = false,
         bool customerOrderingEnabled = false,
-        OrganizationBranchId? id = null) =>
+        OrganizationBranchId? id = null,
+        OrganizationBranchType branchType = OrganizationBranchType.Retail) =>
         CreateInternal(
             organizationId, code, name,
             addressLine1, addressLine2, city, region, postalCode, countryCode,
@@ -164,7 +181,8 @@ public sealed class OrganizationBranch
             isPrimary: false,
             status: OrganizationBranchStatus.Active,
             utcNow: utcNow,
-            id: id);
+            id: id,
+            branchType: branchType);
 
     internal static OrganizationBranch Rehydrate(
         OrganizationBranchId id,
@@ -193,12 +211,14 @@ public sealed class OrganizationBranch
         DateTimeOffset? suspendedAtUtc = null,
         PlatformUserId? suspendedByUserId = null,
         string? suspensionReason = null,
-        OrganizationAreaId? areaId = null) =>
+        OrganizationAreaId? areaId = null,
+        OrganizationBranchType branchType = OrganizationBranchType.Retail) =>
         new(
             id,
             organizationId,
             NormalizeCode(code),
             NormalizeName(name),
+            branchType,
             NormalizeOptional(addressLine1, 200),
             NormalizeOptional(addressLine2, 200),
             NormalizeOptional(city, 100),
@@ -222,6 +242,36 @@ public sealed class OrganizationBranch
             NormalizeSuspensionReason(suspensionReason),
             createdAtUtc,
             updatedAtUtc);
+
+    /// <summary>True when POS retail checkout / cashier-sale operations are allowed at this location.</summary>
+    public bool AllowsRetailSales => BranchType == OrganizationBranchType.Retail;
+
+    public void SetBranchType(OrganizationBranchType branchType, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        if (!Enum.IsDefined(branchType))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationBranchType,
+                "Branch type must be Retail or Warehouse.");
+        }
+
+        if (BranchType == branchType)
+        {
+            return;
+        }
+
+        BranchType = branchType;
+        if (branchType == OrganizationBranchType.Warehouse)
+        {
+            // Warehouse remains inventory-capable; retail storefront capabilities do not apply.
+            CustomerOrderingEnabled = false;
+            PickupEnabled = false;
+            DeliveryEnabled = false;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
 
     public void Rename(string name, DateTimeOffset utcNow)
     {
@@ -304,6 +354,13 @@ public sealed class OrganizationBranch
     public void SetCustomerOrderingEnabled(bool enabled, DateTimeOffset utcNow)
     {
         EnsureMutable(utcNow);
+        if (enabled && BranchType == OrganizationBranchType.Warehouse)
+        {
+            throw new DomainException(
+                DomainErrorCodes.OrganizationBranchWarehouseCustomerOrderingForbidden,
+                "Customer ordering is not available for warehouse branches.");
+        }
+
         CustomerOrderingEnabled = enabled;
         if (!enabled)
         {
@@ -522,10 +579,24 @@ public sealed class OrganizationBranch
         OrganizationBranchId? id,
         DateTimeOffset? suspendedAtUtc = null,
         PlatformUserId? suspendedByUserId = null,
-        string? suspensionReason = null)
+        string? suspensionReason = null,
+        OrganizationBranchType branchType = OrganizationBranchType.Retail)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         DomainTime.EnsureUtc(utcNow);
+        if (!Enum.IsDefined(branchType))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidOrganizationBranchType,
+                "Branch type must be Retail or Warehouse.");
+        }
+
+        if (branchType == OrganizationBranchType.Warehouse)
+        {
+            customerOrderingEnabled = false;
+            pickupEnabled = false;
+            deliveryEnabled = false;
+        }
 
         decimal? lat = null;
         decimal? lng = null;
@@ -555,6 +626,7 @@ public sealed class OrganizationBranch
             organizationId,
             NormalizeCode(code),
             NormalizeName(name),
+            branchType,
             NormalizeOptional(addressLine1, 200),
             NormalizeOptional(addressLine2, 200),
             NormalizeOptional(city, 100),

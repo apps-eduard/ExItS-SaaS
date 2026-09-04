@@ -178,8 +178,19 @@ export function canEnterSellFloor(grant: PosSessionGrantFacts | null | undefined
   return isSellFloorPosRole(roleCode);
 }
 
-/** WP04 UI gate — server remains authoritative for CreateSale later. */
-export function canCreateSale(grant: PosSessionGrantFacts | null | undefined): boolean {
+/** WP04 UI gate — server remains authoritative for CreateSale later.
+ * Warehouse branches never allow sales even when the role would.
+ */
+export function canCreateSale(
+  grant: PosSessionGrantFacts | null | undefined,
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType | string | null,
+): boolean {
+  if (
+    branchType != null &&
+    String(branchType).trim().toLowerCase() === "warehouse"
+  ) {
+    return false;
+  }
   return canEnterSellFloor(grant);
 }
 
@@ -655,8 +666,11 @@ export function canUseOperationsExperience(
 }
 
 /** Cashier / selling experience — CreateSale / EnterPos via role matrix. */
-export function canUseSellingExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
-  return canCreateSale(grant);
+export function canUseSellingExperience(
+  grant: PosSessionGrantFacts | null | undefined,
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType | string | null,
+): boolean {
+  return canCreateSale(grant, branchType);
 }
 
 export function canEnterOwnerRoleHome(grant: PosSessionGrantFacts | null | undefined): boolean {

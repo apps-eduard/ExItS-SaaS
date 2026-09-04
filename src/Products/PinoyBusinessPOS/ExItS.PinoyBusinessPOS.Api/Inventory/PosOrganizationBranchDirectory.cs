@@ -128,6 +128,32 @@ internal sealed class PosOrganizationBranchDirectory(
             && string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
     }
 
+    public async Task<string> GetBranchTypeAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken = default)
+    {
+        if (branchId == Guid.Empty)
+        {
+            return "Retail";
+        }
+
+        if (environment.IsEnvironment("Testing"))
+        {
+            return "Retail";
+        }
+
+        var branch = await GetBranchAsync(organizationId, branchId, cancellationToken).ConfigureAwait(false);
+        if (branch is null || string.IsNullOrWhiteSpace(branch.BranchType))
+        {
+            return "Retail";
+        }
+
+        return string.Equals(branch.BranchType, "Warehouse", StringComparison.OrdinalIgnoreCase)
+            ? "Warehouse"
+            : "Retail";
+    }
+
     /// <summary>
     /// Branch grouping for hierarchical reads. Platform List Branches already filters by caller
     /// branch access, so an inaccessible branch never reaches an area subtotal. Platform also owns the

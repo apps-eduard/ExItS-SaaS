@@ -10,6 +10,10 @@ import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
+import {
+  normalizeBranchType,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -24,6 +28,7 @@ export function BranchCreatePage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [codeTouched, setCodeTouched] = useState(false);
+  const [branchType, setBranchType] = useState<OrganizationBranchType>("Retail");
   const [contactPhone, setContactPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -54,6 +59,7 @@ export function BranchCreatePage() {
       const result = await createOrganizationBranch(organizationId, {
         name: trimmedName,
         code: trimmedCode,
+        branchType,
         contactPhone: contactPhone.trim() || null,
         addressLine1: addressLine1.trim() || null,
         addressLine2: addressLine2.trim() || null,
@@ -144,6 +150,23 @@ export function BranchCreatePage() {
                 required
               />
               <span className="font-normal text-muted">{t("branches.create.codeHelper")}</span>
+            </label>
+            <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("branches.type")}
+              <select
+                className="catalog-form-select font-normal"
+                value={branchType}
+                onChange={(e) => setBranchType(normalizeBranchType(e.target.value))}
+                data-testid="branch-create-type"
+              >
+                <option value="Retail">{t("branches.type.retail")}</option>
+                <option value="Warehouse">{t("branches.type.warehouse")}</option>
+              </select>
+              <span className="font-normal text-muted">
+                {branchType === "Warehouse"
+                  ? t("branches.type.warehouseHelp")
+                  : t("branches.type.retailHelp")}
+              </span>
             </label>
             <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
               {t("branches.contactPhone")}

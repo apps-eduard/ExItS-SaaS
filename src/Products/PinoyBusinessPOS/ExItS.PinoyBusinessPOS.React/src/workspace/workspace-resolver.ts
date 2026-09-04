@@ -1,4 +1,5 @@
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
+import { normalizeBranchType } from "@/features/branches/branch-type";
 import type { AccountClassName } from "@/session/account-class";
 import type {
   AccessibleOrganizationWorkspace,
@@ -40,6 +41,7 @@ export function mapActiveBranches(branches: PlatformBranch[]): AccessibleWorkspa
       isActive: true,
       areaId: branch.areaId ?? null,
       areaName: branch.areaName ?? null,
+      branchType: normalizeBranchType(branch.branchType),
     }));
 }
 

@@ -72,6 +72,8 @@ export type PlatformBranch = {
   customerOrderingReady?: boolean;
   areaId?: string | null;
   areaName?: string | null;
+  /** Retail (default) or Warehouse when Platform emits it. */
+  branchType?: string | null;
 };
 
 /** ListBranches returns `id`; some harnesses still read legacy `branchId`. */

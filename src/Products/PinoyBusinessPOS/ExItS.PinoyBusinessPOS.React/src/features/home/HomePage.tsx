@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
@@ -23,9 +24,13 @@ export function HomePage() {
     return <EmptyState title={t("home.emptyTitle")} detail={t("workspace.lede")} />;
   }
 
+  const experienceRoute = isWarehouseBranch(boundWorkspace.branchType)
+    ? "/warehouse"
+    : workingExperienceRoute(boundWorkspace.experience);
+
   return (
     <BoundHomeRedirect
-      experienceRoute={workingExperienceRoute(boundWorkspace.experience)}
+      experienceRoute={experienceRoute}
       canSwitchWorkspace={!isOrganizationContextLocked(session)}
     />
   );

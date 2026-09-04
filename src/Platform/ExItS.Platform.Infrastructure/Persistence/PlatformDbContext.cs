@@ -532,12 +532,20 @@ public sealed class PlatformDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_organization_branches_lat_long_pair",
                     "(latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_organization_branches_branch_type",
+                    "branch_type IN ('Retail', 'Warehouse')");
             });
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(32).IsRequired();
             entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.BranchType)
+                .HasColumnName("branch_type")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Retail");
             entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200);
             entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
             entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);

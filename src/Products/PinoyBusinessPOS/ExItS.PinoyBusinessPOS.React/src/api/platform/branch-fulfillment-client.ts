@@ -1,4 +1,8 @@
 import { platformRequest } from "@/api/platform/platform-http";
+import {
+  normalizeBranchType,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 
 function branchesBase(organizationId: string): string {
   return `/api/v1/platform/organizations/${organizationId}/branches`;
@@ -82,6 +86,8 @@ export type OrganizationBranchDto = {
   organizationId: string;
   code: string;
   name: string;
+  /** Retail (default) or Warehouse. */
+  branchType: OrganizationBranchType;
   isPrimary: boolean;
   status: string;
   addressLine1: string | null;
@@ -182,6 +188,7 @@ export type UpdateBranchRequest = {
   clearCoordinates?: boolean | null;
   contactPhone?: string | null;
   timeZoneId?: string | null;
+  branchType?: OrganizationBranchType | null;
 };
 
 export type UpsertBranchOperatingHoursRequest = {
@@ -250,6 +257,7 @@ export function normalizeOrganizationBranch(raw: unknown): OrganizationBranchDto
     organizationId: String(r.organizationId ?? r.OrganizationId ?? ""),
     code: String(r.code ?? r.Code ?? ""),
     name: String(r.name ?? r.Name ?? ""),
+    branchType: normalizeBranchType(r.branchType ?? r.BranchType),
     isPrimary: readBool(r, "isPrimary", "IsPrimary"),
     status: String(r.status ?? r.Status ?? ""),
     addressLine1: readString(r, "addressLine1", "AddressLine1"),

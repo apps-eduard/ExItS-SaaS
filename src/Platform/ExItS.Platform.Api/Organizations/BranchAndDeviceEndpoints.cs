@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Governance;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Governance;
 using ExItS.Platform.Domain.Organizations;
 
@@ -145,6 +146,8 @@ internal static class BranchAndDeviceEndpoints
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, PlatformAuditActions.OrganizationBranchCreated, ct).ConfigureAwait(false);
             if (denied is not null) return denied;
+            var branchType = ParseBranchTypeOrDefault(body.BranchType, out var branchTypeProblem);
+            if (branchTypeProblem is not null) return branchTypeProblem;
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
                 new CreateBranchCommand(
                     body.Code ?? string.Empty,
@@ -161,7 +164,8 @@ internal static class BranchAndDeviceEndpoints
                     body.DeliveryEnabled ?? false,
                     body.CustomerOrderingEnabled ?? false,
                     body.ContactPhone,
-                    body.TimeZoneId), ct).ConfigureAwait(false);
+                    body.TimeZoneId,
+                    branchType), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
                 await OrganizationGovernanceAuditWriter.WriteBranchAsync(
@@ -188,6 +192,21 @@ internal static class BranchAndDeviceEndpoints
                     "Branch status changes require suspend, reactivate, or archive actions with password step-up.",
                     StatusCodes.Status403Forbidden);
             }
+            OrganizationBranchType? updateBranchType = null;
+            if (!string.IsNullOrWhiteSpace(body.BranchType))
+            {
+                if (!Enum.TryParse<OrganizationBranchType>(body.BranchType, ignoreCase: true, out var parsedType)
+                    || !Enum.IsDefined(parsedType))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidOrganizationBranchType,
+                        "Branch type must be Retail or Warehouse.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                updateBranchType = parsedType;
+            }
+
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId),
                 new UpdateBranchCommand(
                     body.Name ?? string.Empty,
@@ -202,7 +221,8 @@ internal static class BranchAndDeviceEndpoints
                     body.Longitude,
                     body.ClearCoordinates,
                     body.ContactPhone,
-                    body.TimeZoneId), ct).ConfigureAwait(false);
+                    body.TimeZoneId,
+                    updateBranchType), ct).ConfigureAwait(false);
             if (result.IsSuccess && result.Value is not null)
             {
                 await OrganizationGovernanceAuditWriter.WriteBranchAsync(
@@ -861,6 +881,26 @@ internal static class BranchAndDeviceEndpoints
         });
         return app;
     }
+
+    private static OrganizationBranchType ParseBranchTypeOrDefault(string? raw, out IResult? problem)
+    {
+        problem = null;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return OrganizationBranchType.Retail;
+        }
+
+        if (!Enum.TryParse<OrganizationBranchType>(raw, ignoreCase: true, out var parsed) || !Enum.IsDefined(parsed))
+        {
+            problem = PlatformApiResults.Problem(
+                DomainErrorCodes.InvalidOrganizationBranchType,
+                "Branch type must be Retail or Warehouse.",
+                StatusCodes.Status400BadRequest);
+            return OrganizationBranchType.Retail;
+        }
+
+        return parsed;
+    }
 }
 
 internal sealed record CreateBranchRequest(
@@ -878,7 +918,8 @@ internal sealed record CreateBranchRequest(
     bool? DeliveryEnabled = null,
     bool? CustomerOrderingEnabled = null,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    string? BranchType = null);
 internal sealed record UpdateBranchRequest(
     string? Name,
     string? AddressLine1 = null,
@@ -892,7 +933,8 @@ internal sealed record UpdateBranchRequest(
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    string? BranchType = null);
 internal sealed record UpsertBranchDeliveryPolicyRequest(
     decimal MinimumOrderAmount,
     decimal BaseDeliveryFee,

@@ -10,6 +10,8 @@ export type AccessibleWorkspaceBranch = {
   /** Grouping area. Areas are never selectable as a workspace — only a branch is. */
   areaId?: string | null;
   areaName?: string | null;
+  /** Retail (default) or Warehouse. */
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType;
 };
 
 export type AccessibleOrganizationWorkspace = {
@@ -31,5 +33,7 @@ export type BoundWorkspace = {
   /** Null when bound for organization-level Manage Business only. */
   branchId: string | null;
   branchName: string | null;
+  /** Null when no branch is bound (Manage Business). Defaults to Retail when bound. */
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType | null;
   experience: import("@/workspace/working-experience").WorkingExperience;
 };

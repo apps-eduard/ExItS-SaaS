@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
@@ -291,6 +292,7 @@ public sealed class CheckoutSale
     private readonly ICatalogProductAvailabilityResolver? _availability;
     private readonly IEffectivePriceResolver? _effectivePrices;
     private readonly PartyBranchAccessService? _branchAccess;
+    private readonly IOrganizationBranchDirectory? _branches;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -308,7 +310,8 @@ public sealed class CheckoutSale
         IClock clock,
         ICatalogProductAvailabilityResolver? availability = null,
         IEffectivePriceResolver? effectivePrices = null,
-        PartyBranchAccessService? branchAccess = null)
+        PartyBranchAccessService? branchAccess = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -326,6 +329,7 @@ public sealed class CheckoutSale
         _availability = availability;
         _effectivePrices = effectivePrices;
         _branchAccess = branchAccess;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -356,6 +360,14 @@ public sealed class CheckoutSale
             return ApplicationResult<Sale>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required to record a sale.");
+        }
+
+        var warehouseBlock = await BranchRetailSalesGuard
+            .RejectIfWarehouseAsync(_branches, organizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (warehouseBlock is not null)
+        {
+            return ApplicationResult<Sale>.Failure(warehouseBlock.ErrorCode!, warehouseBlock.ErrorMessage!);
         }
 
         try

@@ -81,6 +81,8 @@ describe("pos-capabilities", () => {
 
     expect(canEnterSellFloor(cashier)).toBe(true);
     expect(canCreateSale(cashier)).toBe(true);
+    expect(canCreateSale(cashier, "Retail")).toBe(true);
+    expect(canCreateSale(cashier, "Warehouse")).toBe(false);
     expect(canUseAdminExperience(cashier)).toBe(false);
     expect(canUseOperationsExperience(cashier)).toBe(false);
     expect(canInviteOrganizationStaff(cashier)).toBe(false);

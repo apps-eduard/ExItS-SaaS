@@ -3,6 +3,7 @@ import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
+import type { OrganizationBranchType } from "@/features/branches/branch-type";
 
 type BranchDetailsFormProps = {
   name: string;
@@ -12,6 +13,7 @@ type BranchDetailsFormProps = {
   city: string;
   region: string;
   postalCode: string;
+  branchType: OrganizationBranchType;
   t: (key: MessageKey) => string;
   onChange: (field: string, value: string) => void;
 };
@@ -24,6 +26,7 @@ export function BranchDetailsForm({
   city,
   region,
   postalCode,
+  branchType,
   t,
   onChange,
 }: BranchDetailsFormProps) {
@@ -40,6 +43,23 @@ export function BranchDetailsForm({
               onChange={(e) => onChange("name", e.target.value)}
               data-testid="branch-name"
             />
+          </label>
+          <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.type")}
+            <select
+              className="catalog-form-select font-normal"
+              value={branchType}
+              onChange={(e) => onChange("branchType", e.target.value)}
+              data-testid="branch-type"
+            >
+              <option value="Retail">{t("branches.type.retail")}</option>
+              <option value="Warehouse">{t("branches.type.warehouse")}</option>
+            </select>
+            <span className="font-normal text-muted">
+              {branchType === "Warehouse"
+                ? t("branches.type.warehouseHelp")
+                : t("branches.type.retailHelp")}
+            </span>
           </label>
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.contactPhone")}

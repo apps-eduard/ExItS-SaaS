@@ -6,6 +6,8 @@ internal sealed class OrganizationBranchRecord
     public Guid OrganizationId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    /// <summary>Retail (default) or Warehouse. Persisted as the enum name.</summary>
+    public string BranchType { get; set; } = "Retail";
     public string? AddressLine1 { get; set; }
     public string? AddressLine2 { get; set; }
     public string? City { get; set; }

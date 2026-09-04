@@ -8,6 +8,10 @@ import {
   type OrganizationBranchDto,
   type UpdateBranchRequest,
 } from "@/api/platform/branch-fulfillment-client";
+import {
+  normalizeBranchType,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 
 function branchesBase(organizationId: string): string {
   return `/api/v1/platform/organizations/${organizationId}/branches`;
@@ -58,6 +62,7 @@ export type BranchManagementSummaryItemDto = {
   organizationId: string;
   code: string;
   name: string;
+  branchType: OrganizationBranchType;
   isPrimary: boolean;
   status: string;
   city: string | null;
@@ -102,6 +107,7 @@ export type CreateBranchRequest = {
   pickupEnabled?: boolean;
   deliveryEnabled?: boolean;
   customerOrderingEnabled?: boolean;
+  branchType?: OrganizationBranchType;
 };
 
 export type GovernanceCriticalActionBody = {
@@ -143,6 +149,7 @@ function normalizeSummaryItem(raw: unknown): BranchManagementSummaryItemDto {
     organizationId: String(r.organizationId ?? r.OrganizationId ?? ""),
     code: String(r.code ?? r.Code ?? ""),
     name: String(r.name ?? r.Name ?? ""),
+    branchType: normalizeBranchType(r.branchType ?? r.BranchType),
     isPrimary: readBool(r, "isPrimary", "IsPrimary"),
     status: String(r.status ?? r.Status ?? ""),
     city: readString(r, "city", "City"),
@@ -229,6 +236,7 @@ export async function createOrganizationBranch(
         pickupEnabled: body.pickupEnabled ?? false,
         deliveryEnabled: body.deliveryEnabled ?? false,
         customerOrderingEnabled: body.customerOrderingEnabled ?? false,
+        branchType: body.branchType ?? "Retail",
       },
       signal,
     });

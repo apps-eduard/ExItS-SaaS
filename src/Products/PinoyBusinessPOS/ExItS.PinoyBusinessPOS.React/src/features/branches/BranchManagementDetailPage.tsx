@@ -111,7 +111,16 @@ export function BranchManagementDetailPage() {
   const [activeTab, setActiveTab] = useState<DetailTab>(() =>
     parseDetailTab(searchParams.get("tab")),
   );
-  const [detailsDraft, setDetailsDraft] = useState({
+  const [detailsDraft, setDetailsDraft] = useState<{
+    name: string;
+    contactPhone: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    region: string;
+    postalCode: string;
+    branchType: "Retail" | "Warehouse";
+  }>({
     name: "",
     contactPhone: "",
     addressLine1: "",
@@ -119,6 +128,7 @@ export function BranchManagementDetailPage() {
     city: "",
     region: "",
     postalCode: "",
+    branchType: "Retail",
   });
   const [detailsMessage, setDetailsMessage] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
@@ -212,6 +222,7 @@ export function BranchManagementDetailPage() {
       city: branch.city ?? "",
       region: branch.region ?? "",
       postalCode: branch.postalCode ?? "",
+      branchType: branch.branchType === "Warehouse" ? "Warehouse" : "Retail",
     });
   }, [branch]);
 
@@ -263,6 +274,7 @@ export function BranchManagementDetailPage() {
         postalCode: detailsDraft.postalCode.trim() || null,
         countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
+        branchType: detailsDraft.branchType,
       });
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("branches.saveFailed"));
@@ -585,9 +597,18 @@ export function BranchManagementDetailPage() {
             city={detailsDraft.city}
             region={detailsDraft.region}
             postalCode={detailsDraft.postalCode}
+            branchType={detailsDraft.branchType}
             t={t}
             onChange={(field, value) =>
-              setDetailsDraft((prev) => ({ ...prev, [field]: value }))
+              setDetailsDraft((prev) => ({
+                ...prev,
+                [field]:
+                  field === "branchType"
+                    ? value === "Warehouse"
+                      ? "Warehouse"
+                      : "Retail"
+                    : value,
+              }))
             }
           />
           {detailsError ? (

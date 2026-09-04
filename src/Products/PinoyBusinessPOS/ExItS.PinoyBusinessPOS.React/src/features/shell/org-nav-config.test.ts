@@ -77,4 +77,52 @@ describe("org bottom nav config", () => {
     expect(cashierLinks.some((l) => l.to === "/inventory")).toBe(false);
     expect(cashierLinks.some((l) => l.to === "/settings/preferences")).toBe(true);
   });
+
+  it("hides sell and customers for warehouse branch and home goes to warehouse", () => {
+    const grant = baseGrant({ mappedPosRoleCode: "StoreManager" });
+    const tabs = buildOrgBottomNavTabs({
+      grant,
+      experience: "operations",
+      branchType: "Warehouse",
+    });
+    expect(tabs.some((t) => t.id === "sell")).toBe(false);
+    expect(tabs[0]?.to).toBe("/warehouse");
+    expect(tabs.some((t) => t.to === "/inventory")).toBe(true);
+    expect(tabs.some((t) => t.to === "/customers" || t.to === "/orders")).toBe(false);
+
+    const more = buildOrgMoreLinks(grant, { branchType: "Warehouse" });
+    expect(more.some((l) => l.to === "/customers")).toBe(false);
+    expect(more.some((l) => l.to === "/shifts")).toBe(false);
+    expect(more.some((l) => l.to === "/dashboard")).toBe(false);
+    expect(more.some((l) => l.to === "/inventory")).toBe(true);
+    expect(more.some((l) => l.to === "/inventory/transfers")).toBe(true);
+    expect(more.some((l) => l.to === "/purchasing")).toBe(true);
+  });
+
+  it("keeps retail nav unchanged when branchType is Retail", () => {
+    const tabs = buildOrgBottomNavTabs({
+      grant: baseGrant({ mappedPosRoleCode: "StoreManager" }),
+      experience: "operations",
+      branchType: "Retail",
+    });
+    expect(tabs.map((t) => t.id)).toEqual(["home", "catalog", "sell", "orders", "more"]);
+    expect(tabs.find((t) => t.id === "sell")).toBeTruthy();
+  });
+
+  it("switches nav when branch type changes between retail and warehouse", () => {
+    const grant = baseGrant({ mappedPosRoleCode: "StoreManager" });
+    const retail = buildOrgBottomNavTabs({
+      grant,
+      experience: "operations",
+      branchType: "Retail",
+    });
+    const warehouse = buildOrgBottomNavTabs({
+      grant,
+      experience: "operations",
+      branchType: "Warehouse",
+    });
+    expect(retail.some((t) => t.id === "sell")).toBe(true);
+    expect(warehouse.some((t) => t.id === "sell")).toBe(false);
+    expect(warehouse[0]?.to).toBe("/warehouse");
+  });
 });

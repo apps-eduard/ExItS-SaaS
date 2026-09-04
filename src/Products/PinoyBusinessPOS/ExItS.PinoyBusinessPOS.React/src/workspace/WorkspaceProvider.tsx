@@ -152,7 +152,11 @@ function findBranchLabel(
   workspaces: AccessibleOrganizationWorkspace[],
   organizationId: string,
   branchId: string,
-): { organizationDisplayName: string; branchName: string } | null {
+): {
+  organizationDisplayName: string;
+  branchName: string;
+  branchType: import("@/features/branches/branch-type").OrganizationBranchType;
+} | null {
   const organization = workspaces.find((item) => item.organizationId === organizationId);
   const branch = organization?.branches.find((item) => item.branchId === branchId);
   if (!organization || !branch) {
@@ -161,6 +165,7 @@ function findBranchLabel(
   return {
     organizationDisplayName: organization.displayName,
     branchName: branch.name,
+    branchType: branch.branchType ?? "Retail",
   };
 }
 
@@ -174,6 +179,7 @@ function findOrganizationLabel(
 function boundFromDestination(
   destination: WorkspaceDestination,
   workspaces: AccessibleOrganizationWorkspace[],
+  branchTypeOverride?: import("@/features/branches/branch-type").OrganizationBranchType | null,
 ): BoundWorkspace {
   const orgName =
     findOrganizationLabel(workspaces, destination.organizationId) ??
@@ -185,6 +191,7 @@ function boundFromDestination(
       organizationDisplayName: labels?.organizationDisplayName ?? orgName,
       branchId: destination.branchId,
       branchName: labels?.branchName ?? destination.branchName ?? destination.branchId,
+      branchType: branchTypeOverride ?? labels?.branchType ?? "Retail",
       experience: destination.experience,
     };
   }
@@ -193,6 +200,7 @@ function boundFromDestination(
     organizationDisplayName: orgName,
     branchId: null,
     branchName: null,
+    branchType: null,
     experience: destination.experience,
   };
 }
@@ -813,8 +821,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      setBoundWorkspace(boundFromDestination(destination, workspaces));
-      setSessionGrantState(result.grant);
+      setBoundWorkspace(
+        boundFromDestination(
+          destination,
+          workspaces,
+          operational.ok ? operational.context.branchType : undefined,
+        ),
+      );
       setGrantByOrganizationId((prev) => {
         const next = new Map(prev);
         next.set(destination.organizationId, result.grant);

@@ -3494,6 +3494,14 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("area_id");
 
+                    b.Property<string>("BranchType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Retail")
+                        .HasColumnName("branch_type");
+
                     b.Property<string>("City")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -3630,6 +3638,8 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("organization_branches", "platform", t =>
                         {
+                            t.HasCheckConstraint("ck_organization_branches_branch_type", "branch_type IN ('Retail', 'Warehouse')");
+
                             t.HasCheckConstraint("ck_organization_branches_lat_long_pair", "(latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_organization_branches_latitude", "latitude IS NULL OR (latitude >= -90 AND latitude <= 90)");

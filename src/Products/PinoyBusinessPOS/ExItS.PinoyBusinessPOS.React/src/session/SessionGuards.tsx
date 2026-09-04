@@ -427,9 +427,9 @@ export function WorkspaceBootGate({ children }: { children: ReactNode }) {
 }
 
 export function RequireCreateSale({ children }: { children: ReactNode }) {
-  const { sessionGrant } = useWorkspace();
+  const { sessionGrant, boundWorkspace } = useWorkspace();
 
-  if (!canCreateSale(sessionGrant)) {
+  if (!canCreateSale(sessionGrant, boundWorkspace?.branchType)) {
     return <SellAccessDeniedPage />;
   }
 

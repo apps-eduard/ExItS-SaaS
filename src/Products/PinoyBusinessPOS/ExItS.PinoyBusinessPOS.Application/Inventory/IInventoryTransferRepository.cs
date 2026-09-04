@@ -78,6 +78,15 @@ public interface IOrganizationBranchDirectory
         Guid branchId,
         CancellationToken cancellationToken = default) =>
         ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
+
+    /// <summary>
+    /// Platform branch type code (<c>Retail</c> / <c>Warehouse</c>). Defaults to Retail when unknown.
+    /// </summary>
+    Task<string> GetBranchTypeAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult("Retail");
 }
 
 public interface IInventoryTransferAlertSink

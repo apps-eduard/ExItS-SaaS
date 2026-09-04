@@ -105,6 +105,7 @@ export function BranchFulfillmentEditPage() {
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [branchType, setBranchType] = useState<"Retail" | "Warehouse">("Retail");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [hours, setHours] = useState<HoursDayDraft[]>(defaultHoursSchedule);
@@ -166,6 +167,7 @@ export function BranchFulfillmentEditPage() {
     setCity(branch.city ?? "");
     setRegion(branch.region ?? "");
     setPostalCode(branch.postalCode ?? "");
+    setBranchType(branch.branchType === "Warehouse" ? "Warehouse" : "Retail");
     setLatitude(formatCoordinate(branch.latitude));
     setLongitude(formatCoordinate(branch.longitude));
     const policy = branch.deliveryPolicy;
@@ -285,6 +287,7 @@ export function BranchFulfillmentEditPage() {
         countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         contactPhone: contactPhone.trim() || null,
         timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
+        branchType,
       });
       applyBranch(updated);
       await afterSectionSave("branches.savedDetails");
@@ -596,6 +599,7 @@ export function BranchFulfillmentEditPage() {
           city={city}
           region={region}
           postalCode={postalCode}
+          branchType={branchType}
           t={t}
           onChange={(field, value) => {
             if (field === "name") setName(value);
@@ -605,6 +609,8 @@ export function BranchFulfillmentEditPage() {
             else if (field === "city") setCity(value);
             else if (field === "region") setRegion(value);
             else if (field === "postalCode") setPostalCode(value);
+            else if (field === "branchType")
+              setBranchType(value === "Warehouse" ? "Warehouse" : "Retail");
           }}
         />
       ) : null}

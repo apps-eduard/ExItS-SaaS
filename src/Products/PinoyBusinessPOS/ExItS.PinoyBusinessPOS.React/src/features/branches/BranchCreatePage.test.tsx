@@ -50,6 +50,7 @@ describe("BranchCreatePage", () => {
     expect(screen.getByTestId("branch-create-country")).toHaveValue(BRANCH_DEFAULT_COUNTRY_CODE);
     expect(screen.getByTestId("branch-create-timezone")).toHaveAttribute("readonly");
     expect(screen.getByTestId("branch-create-timezone")).toHaveValue(BRANCH_DEFAULT_TIME_ZONE);
+    expect(screen.getByTestId("branch-create-type")).toHaveValue("Retail");
 
     await user.type(screen.getByTestId("branch-create-name"), "East Branch");
     expect(screen.getByTestId("branch-create-code")).toHaveValue("EAST-BRANCH");

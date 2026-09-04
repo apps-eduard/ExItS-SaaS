@@ -22,6 +22,7 @@ import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
+import { WarehouseDashboardPage } from "@/features/warehouse/WarehouseDashboardPage";
 import { ExpenseCategoriesPage } from "@/features/expenses/ExpenseCategoriesPage";
 import { ExpenseCreatePage } from "@/features/expenses/ExpenseCreatePage";
 import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
@@ -427,6 +428,20 @@ export const appRoutes = [
               { path: "offline-queued/:saleId", element: <OfflineSaleQueuedPage /> },
               { path: "sales/:saleId/summary", element: <TransactionSummaryPage /> },
             ],
+          },
+          {
+            path: "warehouse",
+            element: (
+              <RequireOrganizationSession>
+                <RequireBranchBound>
+                  <WarehouseDashboardPage />
+                </RequireBranchBound>
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "role/warehouse",
+            element: <Navigate to="/warehouse" replace />,
           },
           {
             path: "role/owner",

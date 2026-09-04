@@ -64,6 +64,9 @@ public static class DomainErrorCodes
     public const string InvalidOrganizationStatusTransition = "platform.organization.status.invalid_transition";
     public const string InvalidOrganizationBranchId = "platform.organization_branch.id.invalid";
     public const string InvalidOrganizationBranchCode = "platform.organization_branch.code.invalid";
+    public const string InvalidOrganizationBranchType = "platform.organization_branch.type.invalid";
+    public const string OrganizationBranchWarehouseCustomerOrderingForbidden =
+        "platform.organization_branch.warehouse.customer_ordering_forbidden";
     public const string InvalidOrganizationBranchStatusTransition = "platform.organization_branch.status.invalid_transition";
     public const string OrganizationBranchNotActive = "platform.organization_branch.not_active";
     public const string InvalidOrganizationBranchCoordinates = "platform.organization_branch.coordinates.invalid";

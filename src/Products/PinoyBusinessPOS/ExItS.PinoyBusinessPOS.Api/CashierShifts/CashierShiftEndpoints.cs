@@ -1,8 +1,10 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -118,6 +120,7 @@ internal static class CashierShiftEndpoints
             OpenCashierShiftRequest body,
             OpenCashierShift useCase,
             IPosCommercialAccessAccessor access,
+            IOrganizationBranchDirectory branches,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ManageShifts, out var organizationId, out var problem))
@@ -128,6 +131,21 @@ internal static class CashierShiftEndpoints
             if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
+            }
+
+            if (PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId)
+                && branchId is Guid warehouseBranchId)
+            {
+                var warehouseBlock = await BranchRetailSalesGuard
+                    .RejectIfWarehouseAsync(branches, organizationId, warehouseBranchId, ct)
+                    .ConfigureAwait(false);
+                if (warehouseBlock is not null)
+                {
+                    return PosApiResults.Problem(
+                        warehouseBlock.ErrorCode!,
+                        warehouseBlock.ErrorMessage!,
+                        StatusCodes.Status409Conflict);
+                }
             }
 
             var result = await useCase
