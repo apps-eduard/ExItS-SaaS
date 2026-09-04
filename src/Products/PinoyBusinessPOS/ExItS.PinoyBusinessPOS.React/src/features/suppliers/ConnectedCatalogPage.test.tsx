@@ -41,7 +41,6 @@ const classifyCatalogReadiness = vi.fn();
 const autoLinkExactMatches = vi.fn();
 const linkProduct = vi.fn();
 const createBuyerProductAndLink = vi.fn();
-const listCatalogProducts = vi.fn();
 
 vi.mock("@/api/pos/pos-suppliers-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/pos/pos-suppliers-client")>();
@@ -59,14 +58,6 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", async (importOriginal) => {
     autoLinkExactMatches: (...args: unknown[]) => autoLinkExactMatches(...args),
     linkProduct: (...args: unknown[]) => linkProduct(...args),
     createBuyerProductAndLink: (...args: unknown[]) => createBuyerProductAndLink(...args),
-  };
-});
-
-vi.mock("@/api/pos/pos-catalog-client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/api/pos/pos-catalog-client")>();
-  return {
-    ...actual,
-    listCatalogProducts: (...args: unknown[]) => listCatalogProducts(...args),
   };
 });
 
@@ -214,7 +205,6 @@ describe("ConnectedCatalogPage readiness UX", () => {
       createdNewProduct: true,
       alreadyLinked: false,
     });
-    listCatalogProducts.mockResolvedValue({ items: [], totalCount: 0 });
   });
 
   it("shows counters that match classified rows and Linked has no action buttons", async () => {
@@ -236,7 +226,11 @@ describe("ConnectedCatalogPage readiness UX", () => {
     await waitFor(() => screen.getByTestId(`connected-catalog-item-${exposureNew}`));
 
     expect(screen.getByTestId(`connected-create-link-${exposureNew}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`connected-find-existing-${exposureNew}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`connected-new-help-${exposureNew}`)).toHaveTextContent(
+      "No credible matching product was found in your catalog. Add it as a new product.",
+    );
+    expect(screen.queryByTestId(`connected-find-existing-${exposureNew}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("connected-link-picker")).not.toBeInTheDocument();
     expect(screen.getByTestId(`connected-confirm-match-${exposureReview}`)).toBeInTheDocument();
     expect(screen.getByTestId(`connected-add-as-new-${exposureReview}`)).toBeInTheDocument();
     expect(screen.queryByText("Choose another product")).not.toBeInTheDocument();

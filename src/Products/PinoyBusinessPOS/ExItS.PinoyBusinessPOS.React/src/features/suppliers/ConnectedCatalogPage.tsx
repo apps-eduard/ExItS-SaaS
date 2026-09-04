@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   canManageCatalog,
   canManagePurchasing,
   canViewPurchasing,
 } from "@/access/pos-capabilities";
-import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import {
   autoLinkExactMatches,
   classifyCatalogReadiness,
@@ -26,6 +25,7 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import {
   countByUserState,
@@ -37,13 +37,35 @@ import {
 
 const PAGE_SIZE = 25;
 
-function evidenceLabel(
-  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string,
-  matched: boolean,
-  key: "connected.evidenceName" | "connected.evidenceSku" | "connected.evidenceBarcode" | "connected.evidenceUom",
-): string {
-  const mark = matched ? "✓" : "✗";
-  return `${mark} ${t(key)}`;
+function formatPoPrice(value: number): string {
+  return `₱${value.toLocaleString("en-PH", {
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function EvidenceChip({
+  matched,
+  label,
+}: {
+  matched: boolean;
+  label: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-1 text-[length:var(--exits-text-xs)] font-semibold",
+        matched
+          ? "bg-[color-mix(in_srgb,var(--exits-success)_16%,transparent)] text-foreground"
+          : "bg-[var(--exits-surface-muted)] text-muted",
+      )}
+    >
+      <span aria-hidden className="mr-1">
+        {matched ? "✓" : "–"}
+      </span>
+      {label}
+    </span>
+  );
 }
 
 function statusTone(state: UserCatalogState): "success" | "info" | "warning" | "danger" {
@@ -82,16 +104,27 @@ function statusLabel(
 export function ConnectedCatalogPage() {
   const { t } = useI18n();
   const { supplierId } = useParams<{ supplierId: string }>();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(1);
-  const [readinessFilter, setReadinessFilter] = useState<CatalogReadinessFilter>("all");
+  const [readinessFilter, setReadinessFilter] = useState<CatalogReadinessFilter>(() => {
+    const setup = searchParams.get("setup");
+    if (
+      setup === "newProduct" ||
+      setup === "checkMatch" ||
+      setup === "attention" ||
+      setup === "linked" ||
+      setup === "all"
+    ) {
+      return setup;
+    }
+    return "all";
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [linkPickerExposureId, setLinkPickerExposureId] = useState<string | null>(null);
-  const [pickerSearch, setPickerSearch] = useState("");
   const [selectedConflictByExposure, setSelectedConflictByExposure] = useState<
     Record<string, string>
   >({});
@@ -161,17 +194,6 @@ export function ConnectedCatalogPage() {
     };
   }, [allowLink, queryClient, relationshipId, t, workspace]);
 
-  const pickerQuery = useQuery({
-    queryKey: ["catalog", "picker", workspace?.organizationId, pickerSearch],
-    enabled: Boolean(workspace) && Boolean(linkPickerExposureId),
-    queryFn: ({ signal }) =>
-      listCatalogProducts(
-        workspace!,
-        { search: pickerSearch || undefined, status: "Active", page: 1, pageSize: 20 },
-        signal,
-      ),
-  });
-
   const counts = useMemo(() => countByUserState(readinessQuery.data), [readinessQuery.data]);
 
   const filteredItems = useMemo(() => {
@@ -200,7 +222,6 @@ export function ConnectedCatalogPage() {
     try {
       await linkProduct(workspace, relationshipId, { exposureId, buyerProductId });
       setMessage(t("connected.linkSucceeded"));
-      setLinkPickerExposureId(null);
       await refreshAfterMutation();
     } catch (err) {
       setMessage(
@@ -272,7 +293,7 @@ export function ConnectedCatalogPage() {
     (readinessQuery.error.status === 403 || readinessQuery.error.status === 404);
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="connected-catalog-page">
+    <div className="flex min-w-0 flex-col gap-3" data-testid="connected-catalog-page">
       <PageHeader
         title={t("connected.catalogTitle")}
         description={t("connected.catalogHelp")}
@@ -280,18 +301,24 @@ export function ConnectedCatalogPage() {
         backTo={`/suppliers/${supplierId}`}
         backLabel={t("connected.backToSupplier")}
         backTestId="page-header-back-suppliers"
-      />
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="ghost" className="min-h-11" data-testid="connected-open-linked">
-          <Link to={`/suppliers/${supplierId}/linked-products`}>
+        trailing={
+          <Link
+            to={`/suppliers/${supplierId}/linked-products`}
+            className="text-[length:var(--exits-text-sm)] font-semibold text-foreground underline-offset-4 hover:underline"
+            data-testid="connected-open-linked"
+          >
             {t("connected.openLinkedProducts")}
           </Link>
-        </Button>
-      </div>
+        }
+      />
       {message ? (
-        <Card data-testid="connected-catalog-message">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{message}</p>
-        </Card>
+        <p
+          className="m-0 rounded-[var(--exits-radius-md)] bg-[color-mix(in_srgb,var(--exits-success)_12%,transparent)] px-3 py-2 text-[length:var(--exits-text-sm)]"
+          data-testid="connected-catalog-message"
+          role="status"
+        >
+          {message}
+        </p>
       ) : null}
       <SearchField
         label={t("connected.catalogSearch")}
@@ -345,99 +372,143 @@ export function ConnectedCatalogPage() {
           detail={t("connected.catalogNoMatchHelp")}
         />
       ) : null}
-      <ul className="m-0 grid list-none gap-2 p-0" data-testid="connected-catalog-list">
+      <ul className="m-0 grid list-none gap-3 p-0" data-testid="connected-catalog-list">
         {pageItems.map((item) => {
           const state = mapBackendStatusToUserState(item.status);
           const selectedConflictId =
             selectedConflictByExposure[item.exposureId] ??
             item.conflictCandidates[0]?.productId ??
             null;
+          const busy = busyKey != null;
           return (
             <li key={item.exposureId}>
-              <Card className="p-3" data-testid={`connected-catalog-item-${item.exposureId}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
+              <Card
+                as="article"
+                className="grid gap-3 p-3"
+                data-testid={`connected-catalog-item-${item.exposureId}`}
+              >
+                <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 font-semibold">{item.supplierName}</p>
-                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                      {item.supplierSku ?? t("connected.noSku")} · {t("connected.poPrice")}:{" "}
-                      {item.poPrice}
+                    <p className="m-0 text-[length:var(--exits-text-base)] font-semibold leading-snug">
+                      {item.supplierName}
                     </p>
-                    <div className="mt-2">
-                      <StatusChip tone={statusTone(state)}>
-                        {statusLabel(t, state)}
-                      </StatusChip>
+                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                      {item.supplierSku ?? t("connected.noSku")}
+                      {" · "}
+                      {item.unitOfMeasureCode}
+                    </p>
+                    <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] font-medium">
+                      <span className="text-muted">{t("connected.poPrice")}</span>
+                      {" "}
+                      {formatPoPrice(item.poPrice)}
+                    </p>
+                  </div>
+                  <StatusChip tone={statusTone(state)}>{statusLabel(t, state)}</StatusChip>
+                </div>
+
+                {state === "checkMatch" ? (
+                  <div
+                    className="grid gap-2 rounded-[var(--exits-radius-md)] bg-[var(--exits-surface-muted)] px-3 py-2.5"
+                    data-testid={`connected-check-match-${item.exposureId}`}
+                  >
+                    <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+                      {t("connected.candidateLabel")}
+                    </p>
+                    <p className="m-0 font-semibold">
+                      {item.candidateBuyerProductName ?? t("connected.candidateUnknown")}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <EvidenceChip matched={item.nameMatched} label={t("connected.evidenceName")} />
+                      <EvidenceChip matched={item.skuMatched} label={t("connected.evidenceSku")} />
+                      <EvidenceChip
+                        matched={item.barcodeMatched}
+                        label={t("connected.evidenceBarcode")}
+                      />
+                      <EvidenceChip
+                        matched={item.unitCompatible}
+                        label={t("connected.evidenceUom")}
+                      />
                     </div>
-                    {state === "checkMatch" ? (
-                      <div
-                        className="mt-2 grid gap-1 text-[length:var(--exits-text-sm)]"
-                        data-testid={`connected-check-match-${item.exposureId}`}
-                      >
-                        <p className="m-0 text-muted">{t("connected.candidateLabel")}</p>
-                        <p className="m-0 font-medium">
-                          {item.candidateBuyerProductName ?? t("connected.candidateUnknown")}
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-muted">
-                          <span>{evidenceLabel(t, item.nameMatched, "connected.evidenceName")}</span>
-                          <span>{evidenceLabel(t, item.skuMatched, "connected.evidenceSku")}</span>
-                          <span>
-                            {evidenceLabel(t, item.barcodeMatched, "connected.evidenceBarcode")}
-                          </span>
-                          <span>{evidenceLabel(t, item.unitCompatible, "connected.evidenceUom")}</span>
-                        </div>
-                        {item.matchDetails ? (
-                          <p className="m-0 text-muted">{item.matchDetails}</p>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {state === "attention" ? (
-                      <div
-                        className="mt-2 grid gap-2"
-                        data-testid={`connected-attention-${item.exposureId}`}
-                      >
-                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                          {item.matchDetails || t("connected.conflictHelp")}
-                        </p>
-                        {item.conflictCandidates.length > 0 ? (
-                          <ul className="m-0 grid list-none gap-1 p-0">
-                            {item.conflictCandidates.map((candidate) => (
-                              <li key={candidate.productId}>
-                                <label className="flex min-h-11 cursor-pointer items-center gap-2">
-                                  <input
-                                    type="radio"
-                                    name={`conflict-${item.exposureId}`}
-                                    checked={selectedConflictId === candidate.productId}
-                                    onChange={() =>
-                                      setSelectedConflictByExposure((current) => ({
-                                        ...current,
-                                        [item.exposureId]: candidate.productId,
-                                      }))
-                                    }
-                                    data-testid={`connected-conflict-pick-${candidate.productId}`}
-                                  />
-                                  <span>
-                                    {candidate.name}
-                                    {candidate.sku ? ` · ${candidate.sku}` : ""} ·{" "}
-                                    {candidate.unitOfMeasureCode}
-                                  </span>
-                                </label>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                            {t("connected.conflictNoCandidates")}
-                          </p>
-                        )}
-                      </div>
+                    {item.matchDetails ? (
+                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {item.matchDetails}
+                      </p>
                     ) : null}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                ) : null}
+
+                {state === "attention" ? (
+                  <div
+                    className="grid gap-2"
+                    data-testid={`connected-attention-${item.exposureId}`}
+                  >
+                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {item.matchDetails || t("connected.conflictHelp")}
+                    </p>
+                    {item.conflictCandidates.length > 0 ? (
+                      <ul className="m-0 grid list-none gap-1.5 p-0" role="radiogroup">
+                        {item.conflictCandidates.map((candidate) => {
+                          const selected = selectedConflictId === candidate.productId;
+                          return (
+                            <li key={candidate.productId}>
+                              <label
+                                className={cn(
+                                  "flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--exits-radius-md)] border px-3 py-2",
+                                  selected
+                                    ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_10%,transparent)]"
+                                    : "border-border bg-surface",
+                                )}
+                              >
+                                <input
+                                  type="radio"
+                                  className="size-4 shrink-0"
+                                  name={`conflict-${item.exposureId}`}
+                                  checked={selected}
+                                  onChange={() =>
+                                    setSelectedConflictByExposure((current) => ({
+                                      ...current,
+                                      [item.exposureId]: candidate.productId,
+                                    }))
+                                  }
+                                  data-testid={`connected-conflict-pick-${candidate.productId}`}
+                                />
+                                <span className="min-w-0">
+                                  <span className="block font-medium">{candidate.name}</span>
+                                  <span className="block text-[length:var(--exits-text-sm)] text-muted">
+                                    {candidate.sku ? `${candidate.sku} · ` : ""}
+                                    {candidate.unitOfMeasureCode}
+                                  </span>
+                                </span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("connected.conflictNoCandidates")}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                {state === "newProduct" ? (
+                  <p
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid={`connected-new-help-${item.exposureId}`}
+                  >
+                    {t("connected.newProductHelp")}
+                  </p>
+                ) : null}
+
+                {state === "newProduct" || state === "checkMatch" || state === "attention" ? (
+                  <div className="grid gap-2 border-t border-border pt-3">
                     {state === "newProduct" && allowCreate ? (
                       <Button
                         type="button"
-                        className="min-h-11"
+                        className="min-h-11 w-full"
                         data-testid={`connected-create-link-${item.exposureId}`}
-                        disabled={busyKey != null}
+                        disabled={busy}
                         onClick={() =>
                           void doCreateAndLink(
                             item.exposureId,
@@ -449,27 +520,12 @@ export function ConnectedCatalogPage() {
                         {t("connected.createAndLink")}
                       </Button>
                     ) : null}
-                    {state === "newProduct" && allowLink ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="min-h-11"
-                        data-testid={`connected-find-existing-${item.exposureId}`}
-                        disabled={busyKey != null}
-                        onClick={() => {
-                          setLinkPickerExposureId(item.exposureId);
-                          setPickerSearch("");
-                        }}
-                      >
-                        {t("connected.findExisting")}
-                      </Button>
-                    ) : null}
                     {state === "checkMatch" && allowLink && item.candidateBuyerProductId ? (
                       <Button
                         type="button"
-                        className="min-h-11"
+                        className="min-h-11 w-full"
                         data-testid={`connected-confirm-match-${item.exposureId}`}
-                        disabled={busyKey != null}
+                        disabled={busy}
                         onClick={() =>
                           void doLink(item.exposureId, item.candidateBuyerProductId!)
                         }
@@ -481,9 +537,9 @@ export function ConnectedCatalogPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11"
+                        className="min-h-11 w-full"
                         data-testid={`connected-add-as-new-${item.exposureId}`}
-                        disabled={busyKey != null}
+                        disabled={busy}
                         onClick={() =>
                           void doCreateAndLink(
                             item.exposureId,
@@ -498,9 +554,9 @@ export function ConnectedCatalogPage() {
                     {state === "attention" && allowLink && selectedConflictId ? (
                       <Button
                         type="button"
-                        className="min-h-11"
+                        className="min-h-11 w-full"
                         data-testid={`connected-link-selected-${item.exposureId}`}
-                        disabled={busyKey != null}
+                        disabled={busy}
                         onClick={() => void doLink(item.exposureId, selectedConflictId)}
                       >
                         {t("connected.linkSelected")}
@@ -510,9 +566,9 @@ export function ConnectedCatalogPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11"
+                        className="min-h-11 w-full"
                         data-testid={`connected-add-as-new-${item.exposureId}`}
-                        disabled={busyKey != null}
+                        disabled={busy}
                         onClick={() =>
                           void doCreateAndLink(
                             item.exposureId,
@@ -524,69 +580,29 @@ export function ConnectedCatalogPage() {
                         {t("connected.addAsNew")}
                       </Button>
                     ) : null}
-                    {state !== "linked" &&
-                    state !== "unclassified" &&
-                    !allowLink &&
-                    !allowCreate ? (
+                    {!allowLink && !allowCreate ? (
                       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                         {t("connected.catalogPermissionRequired")}
                       </p>
                     ) : null}
-                    {state === "unclassified" ? (
-                      <p
-                        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                        data-testid={`connected-unclassified-${item.exposureId}`}
-                      >
-                        {t("connected.statusPending")}
-                      </p>
-                    ) : null}
                   </div>
-                </div>
+                ) : null}
+
+                {state === "unclassified" ? (
+                  <p
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid={`connected-unclassified-${item.exposureId}`}
+                  >
+                    {t("connected.statusPending")}
+                  </p>
+                ) : null}
               </Card>
             </li>
           );
         })}
       </ul>
-      {linkPickerExposureId ? (
-        <Card data-testid="connected-link-picker">
-          <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-            {t("connected.chooseProduct")}
-          </h2>
-          <SearchField
-            label={t("connected.searchProducts")}
-            value={pickerSearch}
-            onChange={(event) => setPickerSearch(event.target.value)}
-            onClear={() => setPickerSearch("")}
-            placeholder={t("connected.searchProducts")}
-            data-testid="connected-picker-search"
-          />
-          <ul className="m-0 mt-2 grid list-none gap-2 p-0">
-            {pickerQuery.data?.items.map((product) => (
-              <li key={product.productId}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-11 w-full justify-start"
-                  data-testid={`connected-pick-${product.productId}`}
-                  onClick={() => void doLink(linkPickerExposureId, product.productId)}
-                >
-                  {product.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-2 min-h-11"
-            onClick={() => setLinkPickerExposureId(null)}
-          >
-            {t("connected.cancel")}
-          </Button>
-        </Card>
-      ) : null}
       {readinessQuery.isSuccess && filteredItems.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("suppliers.pageLabel")
               .replace("{page}", String(page))

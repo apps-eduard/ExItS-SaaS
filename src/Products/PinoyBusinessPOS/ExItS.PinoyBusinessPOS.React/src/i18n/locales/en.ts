@@ -3655,6 +3655,7 @@ export const en = {
   "suppliers.name": "Name",
   "suppliers.nameRequired": "Name is required.",
   "suppliers.code": "Supplier code",
+  "suppliers.contactDetails": "Contact details",
   "suppliers.contactPerson": "Contact person",
   "suppliers.mobile": "Mobile",
   "suppliers.telephone": "Telephone",
@@ -3816,7 +3817,7 @@ export const en = {
   "connected.browseProducts": "Browse shared products",
   "connected.catalogTitle": "Shared catalog",
   "connected.catalogHelp":
-    "Linked = supplier product is already connected to your catalog; safe exact matches may be linked automatically. New product = no credible matching product was found. Check match = one likely product was found and needs confirmation. Needs attention = conflicting or ambiguous matches need manual resolution.",
+    "Linked = supplier product is already connected to your catalog; safe exact matches may be linked automatically. New product = no credible matching product was found in your catalog — add it as a new product. Check match = one likely product was found and needs confirmation. Needs attention = conflicting or ambiguous matches need manual resolution.",
   "connected.catalogSearch": "Search shared products",
   "connected.catalogEmpty": "No products shared yet",
   "connected.catalogEmptyHelp": "The supplier has not shared products with you yet.",
@@ -3824,6 +3825,8 @@ export const en = {
   "connected.catalogNoMatchHelp": "Try a different search.",
   "connected.catalogDenied": "You do not have permission to view this catalog.",
   "connected.catalogPermissionRequired": "You need purchasing permission to link products.",
+  "connected.newProductHelp":
+    "No credible matching product was found in your catalog. Add it as a new product.",
   "connected.readinessFilters": "Setup status",
   "connected.filterAllCount": "All ({count})",
   "connected.filterNewProducts": "New products ({count})",
