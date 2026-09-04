@@ -31,7 +31,7 @@ export function RoleActionTile(props: RoleActionTileProps) {
     style,
   } = props;
   const classes = cn(
-    "role-action-tile inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-semibold no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    "role-action-tile inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-medium no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     primary
       ? "role-action-tile--primary border-primary bg-primary text-primary-foreground"
       : "border-border bg-surface text-foreground",

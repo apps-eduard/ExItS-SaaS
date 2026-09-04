@@ -41,8 +41,8 @@ export function ErrorState({
       data-testid="error-state"
     >
       <div className="flex flex-col gap-1">
-        <p className="m-0 font-semibold">{title}</p>
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{detail}</p>
+        <p className="exits-type-section-title m-0">{title}</p>
+        <p className="exits-type-muted m-0">{detail}</p>
       </div>
       {resolvedDiagnostic ? <CopyErrorDetailsButton report={resolvedDiagnostic} /> : null}
     </div>

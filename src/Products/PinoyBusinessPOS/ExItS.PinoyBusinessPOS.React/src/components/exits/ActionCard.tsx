@@ -33,11 +33,11 @@ export function ActionCard({
     >
       <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
       <span className="min-w-0 flex-1">
-        <span className="block text-[length:var(--exits-text-sm)] font-semibold wrap-break-word">
+        <span className="exits-type-card-title block wrap-break-word text-[length:var(--exits-text-sm)]">
           {title}
         </span>
         {subtitle ? (
-          <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted wrap-break-word">
+          <span className="exits-type-muted mt-0.5 block wrap-break-word text-[length:var(--exits-text-xs)]">
             {subtitle}
           </span>
         ) : null}

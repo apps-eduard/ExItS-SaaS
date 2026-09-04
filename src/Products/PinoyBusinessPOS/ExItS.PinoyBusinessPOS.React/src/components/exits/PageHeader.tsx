@@ -83,7 +83,7 @@ export function PageHeader({
                   <TitleIcon className="size-5" />
                 </span>
               ) : null}
-              <h1 className="page-header__title m-0 min-w-0 flex-1 truncate text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
+              <h1 className="page-header__title exits-type-page-title m-0 min-w-0 flex-1 truncate">
                 {title}
               </h1>
               {collapsible ? (

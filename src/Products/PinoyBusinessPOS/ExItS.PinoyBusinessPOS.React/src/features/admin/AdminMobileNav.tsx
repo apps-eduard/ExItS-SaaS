@@ -46,7 +46,9 @@ export function AdminMobileNav() {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[var(--exits-radius-md)] px-1 py-1 text-center text-[length:var(--exits-text-xs)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  isActive ? "font-semibold text-primary" : "text-muted hover:text-foreground",
+                  isActive
+                    ? "font-semibold text-primary"
+                    : "font-medium text-muted hover:text-foreground",
                 )}
               >
                 <Icon className="size-5 shrink-0" aria-hidden />

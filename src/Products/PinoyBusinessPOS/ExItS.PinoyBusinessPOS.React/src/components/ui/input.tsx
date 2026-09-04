@@ -15,7 +15,7 @@ export function Input({
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
-        <label htmlFor={fieldId} className="text-[length:var(--exits-text-sm)] font-semibold">
+        <label htmlFor={fieldId} className="exits-type-label">
           {label}
         </label>
         {labelAccessory}

@@ -40,7 +40,7 @@ export function SettingsSelect<T extends string>({
     <div className="flex min-w-0 flex-col gap-3 py-4">
       <span
         id={labelId}
-        className="text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+        className="exits-type-label text-foreground"
       >
         {label}
       </span>
@@ -56,10 +56,10 @@ export function SettingsSelect<T extends string>({
               aria-checked={selected}
               aria-label={`${label}: ${option.label}`}
               className={cn(
-                "flex min-h-[var(--exits-row-min-height)] min-w-0 items-center gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-semibold transition-[background-color,border-color,color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "flex min-h-[var(--exits-row-min-height)] min-w-0 items-center gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5 text-left text-[length:var(--exits-text-sm)] font-medium transition-[background-color,border-color,color,box-shadow] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isLastOdd && "col-span-2",
                 selected
-                  ? "border-primary bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_35%,transparent)]"
+                  ? "border-primary bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))] font-semibold text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_35%,transparent)]"
                   : "border-border bg-background text-foreground hover:bg-[var(--exits-surface-muted)]",
               )}
               onClick={() => {
