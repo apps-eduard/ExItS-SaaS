@@ -12,9 +12,9 @@ internal sealed class OperationalSetupRecord
     public string? BusinessAddress { get; set; }
     public string? ContactPhone { get; set; }
     public Guid? DefaultRegisterId { get; set; }
-    public string CashCountMode { get; set; } = "Optional";
-    public string OpeningCashCountMode { get; set; } = "Optional";
-    public string ClosingCashCountMode { get; set; } = "Optional";
+    public string CashCountMode { get; set; } = "Required";
+    public string OpeningCashCountMode { get; set; } = "Required";
+    public string ClosingCashCountMode { get; set; } = "Required";
     public bool IsCompleted { get; set; }
     public DateTimeOffset? CompletedAtUtc { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
