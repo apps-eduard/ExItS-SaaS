@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   canAccessReportsHub,
@@ -42,10 +43,10 @@ import { Card } from "@/components/ui/card";
 import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ManagerHomePage } from "@/features/role/ManagerHomePage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { Link, useNavigate } from "react-router-dom";
 
 type RoleHomeShellProps = {
   titleKey: "role.ownerTitle" | "role.managerTitle" | "role.cashierTitle";
@@ -572,17 +573,7 @@ export function OwnerRoleHomePage() {
 }
 
 export function ManagerRoleHomePage() {
-  return (
-    <RoleHomeShell
-      titleKey="role.managerTitle"
-      ledeKey="role.managerLede"
-      badgeKey="role.managerBadge"
-      bodyKey="role.managerBody"
-      returnRoute="/role/manager"
-      dashboardGuide
-      homeTestId="manager-home"
-    />
-  );
+  return <ManagerHomePage />;
 }
 
 export function CashierRoleHomePage() {

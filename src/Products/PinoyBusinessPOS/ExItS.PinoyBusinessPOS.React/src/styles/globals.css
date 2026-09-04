@@ -9675,6 +9675,15 @@ a.exits-chip--primary:hover {
 }
 
 /* Manager / Cashier role home */
+.manager-ops-home {
+  width: 100%;
+  max-width: 72rem;
+}
+
+.manager-ops-home__section {
+  min-width: 0;
+}
+
 .manager-home-page > header {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }

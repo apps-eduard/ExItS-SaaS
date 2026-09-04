@@ -68,7 +68,7 @@ vi.mock("@/api/pos/pos-purchase-orders-client", () => ({
 }));
 
 describe("WarehouseDashboardPage", () => {
-  it("renders warehouse home with branch name and stock alerts", async () => {
+  it("renders warehouse command center without Start selling", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
@@ -81,10 +81,15 @@ describe("WarehouseDashboardPage", () => {
     );
 
     expect(screen.getByTestId("warehouse-dashboard")).toBeInTheDocument();
-    expect(screen.getByText("warehouse.title")).toBeInTheDocument();
+    expect(screen.getByTestId("warehouse-dashboard")).toHaveAttribute(
+      "data-home-variant",
+      "warehouse",
+    );
+    expect(screen.getByText("managerHome.warehouseTitle")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByTestId("warehouse-alert-low-stock")).toHaveTextContent("2");
+      expect(screen.getByTestId("manager-attention-low-stock")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("warehouse-quick-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("manager-home-quick-actions")).toBeInTheDocument();
+    expect(screen.queryByTestId("manager-action-sell")).not.toBeInTheDocument();
   });
 });
