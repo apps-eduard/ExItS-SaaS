@@ -134,6 +134,22 @@ describe("pos-capabilities", () => {
     expect(resolveRoleHomeRoute(owner)).toBe("/role/owner");
   });
 
+  it("owner with POS sell role keeps admin experience even when management flag was historically false", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      // Historical bug: CanOperate cleared this flag for owners who also sell.
+      organizationManagementAuthority: false,
+    });
+
+    expect(hasOrganizationManagementAuthority(owner)).toBe(true);
+    expect(canUseAdminExperience(owner)).toBe(true);
+    expect(canSelectExperienceMode(owner, "admin")).toBe(true);
+    expect(canSelectExperienceMode(owner, "operations")).toBe(true);
+    expect(canSelectExperienceMode(owner, "selling")).toBe(true);
+  });
+
   it("OrganizationAdministrator has admin experience without CreateSale", () => {
     const admin = grant({
       membershipRole: "OrganizationAdministrator",

@@ -137,6 +137,41 @@ public sealed class ApiProductAccessNavigationTests(PostgreSqlFixture fixture) :
     }
 
     [Fact]
+    public async Task Owner_with_pos_selling_role_keeps_organization_management_authority_on_session_grant()
+    {
+        // Start-a-Business grants OrganizationOwner + POS Owner (CanOperate).
+        // Session grant must keep organizationManagementAuthority so Manage Business works.
+        var (token, _, orgId) = await StartBusinessAsync();
+
+        using var sessionGrant = Authed(
+            HttpMethod.Post,
+            "/api/v1/platform/auth/token",
+            token,
+            new
+            {
+                grantType = "session",
+                organizationId = orgId,
+                productCode = "pinoy-business-pos"
+            });
+        var issued = await _client.SendAsync(sessionGrant);
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        var body = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("productAccessAllowed").GetBoolean());
+        Assert.Equal("Owner", body.GetProperty("mappedPosRoleCode").GetString());
+        Assert.Equal("OrganizationOwner", body.GetProperty("membershipRole").GetString());
+        Assert.True(body.GetProperty("organizationManagementAuthority").GetBoolean());
+
+        var accessToken = body.GetProperty("accessToken").GetString();
+        using var introspect = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/introspect");
+        introspect.Content = JsonContent.Create(new { token = accessToken });
+        var introspectResponse = await _client.SendAsync(introspect);
+        Assert.Equal(HttpStatusCode.OK, introspectResponse.StatusCode);
+        var info = await introspectResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(info.GetProperty("organizationManagementAuthority").GetBoolean());
+        Assert.Equal("Owner", info.GetProperty("mappedPosRoleCode").GetString());
+    }
+
+    [Fact]
     public async Task Authorization_separates_entitlement_from_role_and_denies_without_role()
     {
         var (token, ownerId, orgId) = await StartBusinessAsync();

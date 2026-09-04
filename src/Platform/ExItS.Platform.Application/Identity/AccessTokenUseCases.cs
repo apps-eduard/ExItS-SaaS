@@ -477,12 +477,14 @@ public sealed class IssuePlatformAccessToken
 
         if (access.CanOperate)
         {
+            // Keep membership management authority when Owner/Admin also has a POS operate role.
+            // Selling capability and Organization Web admin are independent dimensions.
             return new ProductEntryResolution(
                 true,
                 access.ReasonCode,
                 access.ProductLocalRoleCode,
                 access.MappedPosRoleCode,
-                OrganizationManagementAuthority: false);
+                OrganizationManagementAuthority: OrganizationManagementAuthority.Qualifies(membership.Role));
         }
 
         // Owner/Administrator manage the business without an automatic POS checkout role.
@@ -662,6 +664,8 @@ public sealed class BindPlatformAccessTokenProductContext
         if (access.CanOperate)
         {
             // Product-local operate (may include checkout when role grants CreateSale).
+            // Owner/Admin membership still qualifies for Organization Web management.
+            organizationManagementAuthority = OrganizationManagementAuthority.Qualifies(membership.Role);
         }
         else if (OrganizationManagementAuthority.Qualifies(membership.Role))
         {
@@ -888,6 +892,9 @@ public sealed class IntrospectPlatformAccessToken
                     {
                         allowed = true;
                         reason = access.ReasonCode;
+                        // Membership management authority is independent of POS checkout operate.
+                        organizationManagementAuthority =
+                            OrganizationManagementAuthority.Qualifies(membership.Role);
                     }
                     else if (OrganizationManagementAuthority.Qualifies(membership.Role))
                     {

@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   canAccessReportsHub,
@@ -95,8 +96,9 @@ export function RoleHomeShell({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { enter } = useSellingMode();
-  const { sessionGrant, deviceEnforcementEnabled, boundWorkspace } = useWorkspace();
+  const { sessionGrant, deviceEnforcementEnabled, boundWorkspace, bindDestination } = useWorkspace();
   const showHomeDeviceRegister = deviceEnforcementEnabled !== false;
+  const [experienceSwitching, setExperienceSwitching] = useState(false);
 
   const canAdmin = canUseAdminExperience(sessionGrant);
   const canOps = canUseOperationsExperience(sessionGrant);
@@ -120,6 +122,54 @@ export function RoleHomeShell({
   function startSelling() {
     enter(returnRoute);
     navigate("/sell");
+  }
+
+  async function openManageBusiness() {
+    if (!boundWorkspace || experienceSwitching) {
+      navigate("/org");
+      return;
+    }
+    setExperienceSwitching(true);
+    try {
+      const ok = await bindDestination({
+        organizationId: boundWorkspace.organizationId,
+        organizationDisplayName: boundWorkspace.organizationDisplayName,
+        branchId: null,
+        branchName: null,
+        experience: "manage_business",
+        route: "/org",
+        labelKey: "experience.manageBusiness",
+      });
+      if (ok) {
+        navigate("/org");
+      }
+    } finally {
+      setExperienceSwitching(false);
+    }
+  }
+
+  async function openOperations() {
+    if (!boundWorkspace?.branchId || experienceSwitching) {
+      navigate(boundWorkspace?.branchId ? "/role/manager" : "/workspace");
+      return;
+    }
+    setExperienceSwitching(true);
+    try {
+      const ok = await bindDestination({
+        organizationId: boundWorkspace.organizationId,
+        organizationDisplayName: boundWorkspace.organizationDisplayName,
+        branchId: boundWorkspace.branchId,
+        branchName: boundWorkspace.branchName,
+        experience: "operations",
+        route: "/role/manager",
+        labelKey: "experience.operations",
+      });
+      if (ok) {
+        navigate("/role/manager");
+      }
+    } finally {
+      setExperienceSwitching(false);
+    }
   }
 
   const quickTiles: TileDef[] = [];
@@ -358,13 +408,26 @@ export function RoleHomeShell({
           aria-label={t("experience.chooserLabel")}
         >
           {canAdmin ? (
-            <Button asChild className="min-h-11 w-full">
-              <Link to="/org">{t("experience.manageBusiness")}</Link>
+            <Button
+              type="button"
+              className="min-h-11 w-full"
+              disabled={experienceSwitching}
+              onClick={() => void openManageBusiness()}
+              data-testid="experience-manage-business"
+            >
+              {t("experience.manageBusiness")}
             </Button>
           ) : null}
           {canOps ? (
-            <Button asChild variant="ghost" className="min-h-11 w-full">
-              <Link to="/role/manager">{t("experience.operations")}</Link>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 w-full"
+              disabled={experienceSwitching}
+              onClick={() => void openOperations()}
+              data-testid="experience-operations"
+            >
+              {t("experience.operations")}
             </Button>
           ) : null}
           {canSell ? (

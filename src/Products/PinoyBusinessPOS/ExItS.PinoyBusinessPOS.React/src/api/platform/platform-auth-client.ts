@@ -376,7 +376,7 @@ export async function issueSessionGrant(
   | { ok: false; status: number; body: PlatformProblem | null }
 > {
   try {
-    const grant = await platformRequest<SessionGrantResponse>({
+    const raw = await platformRequest<SessionGrantResponse & Record<string, unknown>>({
       method: "POST",
       path: AUTH_TOKEN_PATH,
       body: {
@@ -385,13 +385,49 @@ export async function issueSessionGrant(
         productCode: POS_PRODUCT_CODE,
       },
     });
-    return { ok: true, grant };
+    return { ok: true, grant: normalizeSessionGrantResponse(raw) };
   } catch (error) {
     if (error instanceof PlatformApiError) {
       return { ok: false, status: error.status, body: error.problem };
     }
     throw error;
   }
+}
+
+/** Prefer camelCase; accept PascalCase wire shapes from older proxies. */
+function normalizeSessionGrantResponse(
+  raw: SessionGrantResponse & Record<string, unknown>,
+): SessionGrantResponse {
+  const membershipRole =
+    (typeof raw.membershipRole === "string" ? raw.membershipRole : null) ??
+    (typeof raw.MembershipRole === "string" ? (raw.MembershipRole as string) : null);
+  const mappedPosRoleCode =
+    (typeof raw.mappedPosRoleCode === "string" ? raw.mappedPosRoleCode : null) ??
+    (typeof raw.MappedPosRoleCode === "string" ? (raw.MappedPosRoleCode as string) : null);
+  const productLocalRoleCode =
+    (typeof raw.productLocalRoleCode === "string" ? raw.productLocalRoleCode : null) ??
+    (typeof raw.ProductLocalRoleCode === "string" ? (raw.ProductLocalRoleCode as string) : null);
+  const productAccessReasonCode =
+    (typeof raw.productAccessReasonCode === "string" ? raw.productAccessReasonCode : null) ??
+    (typeof raw.ProductAccessReasonCode === "string"
+      ? (raw.ProductAccessReasonCode as string)
+      : null);
+  const organizationManagementAuthority =
+    raw.organizationManagementAuthority === true ||
+    raw.OrganizationManagementAuthority === true;
+  const productAccessAllowed =
+    raw.productAccessAllowed === true || raw.ProductAccessAllowed === true;
+
+  return {
+    ...raw,
+    accessToken: String(raw.accessToken ?? raw.AccessToken ?? ""),
+    productAccessAllowed,
+    productAccessReasonCode,
+    organizationManagementAuthority,
+    mappedPosRoleCode,
+    productLocalRoleCode,
+    membershipRole,
+  };
 }
 
 export async function bindWorkspaceWithSessionGrant(
