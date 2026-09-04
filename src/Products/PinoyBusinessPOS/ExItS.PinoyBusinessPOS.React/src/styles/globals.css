@@ -10281,23 +10281,20 @@ a.exits-chip--primary:hover {
 .branch-create-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: stretch;
-  gap: var(--exits-toolbar-gap);
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
 .branch-create-actions > .inline-flex,
 .branch-create-actions > button {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
-@media (min-width: 640px) {
-  .branch-create-actions {
-    justify-content: flex-end;
-  }
-
+@media (max-width: 639px) {
   .branch-create-actions > .inline-flex,
   .branch-create-actions > button {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
   }
 }
 

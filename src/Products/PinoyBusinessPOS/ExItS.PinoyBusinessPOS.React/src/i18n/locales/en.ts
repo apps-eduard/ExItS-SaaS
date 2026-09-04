@@ -4553,6 +4553,7 @@ export const en = {
   "branches.create.codeHelper": "Used internally to identify this branch.",
   "branches.create.codeRequired": "Branch code is required.",
   "branches.create.submit": "Create branch",
+  "branches.create.reset": "Reset",
   "branches.create.creating": "Creating…",
   "branches.create.success": "Branch created",
   "branches.create.codeConflict": "That branch code is already in use.",

@@ -99,11 +99,32 @@ describe("BranchCreatePage", () => {
     renderPage();
 
     expect(screen.getByTestId("branch-create-warehouse-locked")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-cancel")).toBeInTheDocument();
     expect(screen.getByTestId("branch-create-submit")).toBeInTheDocument();
-    expect(pageSource).toMatch(/<X[\s\S]*aria-hidden/);
+    expect(screen.getByTestId("branch-create-cancel")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-create-reset")).toBeInTheDocument();
+    expect(pageSource).not.toContain("branches.create.codeHelper");
     expect(pageSource).toMatch(/<Plus[\s\S]*aria-hidden/);
+    expect(pageSource).toMatch(/<X[\s\S]*aria-hidden/);
+    expect(pageSource).toMatch(/<RotateCcw[\s\S]*aria-hidden/);
     expect(pageSource).toMatch(/LockKeyhole/);
+  });
+
+  it("resets form fields to defaults", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByTestId("branch-create-name"), "East Branch");
+    await user.type(screen.getByTestId("branch-create-phone"), "09171234567");
+    await user.type(screen.getByTestId("branch-create-city"), "Iloilo");
+    expect(screen.getByTestId("branch-create-code")).toHaveValue("EAST-BRANCH");
+
+    await user.click(screen.getByTestId("branch-create-reset"));
+
+    expect(screen.getByTestId("branch-create-name")).toHaveValue("");
+    expect(screen.getByTestId("branch-create-code")).toHaveValue("");
+    expect(screen.getByTestId("branch-create-phone")).toHaveValue("");
+    expect(screen.getByTestId("branch-create-city")).toHaveValue("");
+    expect(screen.getByTestId("branch-create-type")).toHaveValue("Retail");
   });
 
   it("consumes global density control height for catalog selects", () => {

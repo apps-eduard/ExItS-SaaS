@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { LockKeyhole, Plus, X } from "lucide-react";
+import { LockKeyhole, Plus, RotateCcw, X } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
@@ -48,6 +48,20 @@ export function BranchCreatePage() {
       setCode(suggestBranchCode(name));
     }
   }, [name, codeTouched]);
+
+  function resetForm() {
+    setName("");
+    setCode("");
+    setCodeTouched(false);
+    setBranchType("Retail");
+    setContactPhone("");
+    setAddressLine1("");
+    setAddressLine2("");
+    setCity("");
+    setRegion("");
+    setPostalCode("");
+    setFormError(null);
+  }
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -169,7 +183,6 @@ export function BranchCreatePage() {
                 data-testid="branch-create-code"
                 required
               />
-              <span className="branch-create-field-helper">{t("branches.create.codeHelper")}</span>
             </label>
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.type")}
@@ -298,7 +311,17 @@ export function BranchCreatePage() {
           </div>
         ) : null}
 
-        <div className="branch-create-actions">
+        <div className="branch-create-actions gap-3">
+          <Button
+            type="submit"
+            disabled={createMutation.isPending}
+            data-testid="branch-create-submit"
+          >
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {createMutation.isPending
+              ? t("branches.create.creating")
+              : t("branches.create.submit")}
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -309,14 +332,14 @@ export function BranchCreatePage() {
             {t("branches.cancel")}
           </Button>
           <Button
-            type="submit"
+            type="button"
+            variant="outline"
+            data-testid="branch-create-reset"
             disabled={createMutation.isPending}
-            data-testid="branch-create-submit"
+            onClick={resetForm}
           >
-            <Plus className="size-4 shrink-0" aria-hidden />
-            {createMutation.isPending
-              ? t("branches.create.creating")
-              : t("branches.create.submit")}
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+            {t("branches.create.reset")}
           </Button>
         </div>
       </form>

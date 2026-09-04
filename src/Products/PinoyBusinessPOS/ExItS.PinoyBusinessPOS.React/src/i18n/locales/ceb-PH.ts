@@ -4998,6 +4998,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.create.failed": "Could not create branch.",
   "branches.create.lede": "Create a new business location. Fulfillment stays off until you configure it.",
   "branches.create.name": "Branch name",
+  "branches.create.reset": "Reset",
   "branches.create.submit": "Create branch",
   "branches.create.success": "Branch created",
   "branches.create.title": "Add branch",

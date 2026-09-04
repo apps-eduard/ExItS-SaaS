@@ -4997,6 +4997,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.create.failed": "Hindi magawa ang branch.",
   "branches.create.lede": "Gumawa ng bagong lokasyon. Naka-off ang fulfillment hanggang i-configure mo ito.",
   "branches.create.name": "Pangalan ng branch",
+  "branches.create.reset": "I-reset",
   "branches.create.submit": "Gumawa ng branch",
   "branches.create.success": "Nagawa ang branch",
   "branches.create.title": "Magdagdag ng branch",
