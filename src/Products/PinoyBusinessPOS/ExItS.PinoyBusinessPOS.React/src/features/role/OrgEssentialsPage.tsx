@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
@@ -43,7 +43,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 type AttentionItem = {
   id: string;
   label: string;
-  value: React.ReactNode;
+  value: ReactNode;
   tone: "attention" | "danger";
   to: string;
   testId: string;
