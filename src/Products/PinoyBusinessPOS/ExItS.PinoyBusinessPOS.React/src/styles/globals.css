@@ -183,6 +183,8 @@
   --exits-toolbar-gap: 0.5rem;
   --exits-list-card-padding-y: 0.75rem;
   --exits-list-card-padding-x: 0.875rem;
+  --exits-entity-card-gap: 0.55rem;
+  --exits-entity-card-meta-gap: 0.35rem 0.85rem;
 }
 
 /*
@@ -276,6 +278,8 @@
   --exits-toolbar-gap: 0.5rem;
   --exits-list-card-padding-y: 0.75rem;
   --exits-list-card-padding-x: 0.875rem;
+  --exits-entity-card-gap: 0.55rem;
+  --exits-entity-card-meta-gap: 0.35rem 0.85rem;
 }
 
 [data-density="comfort"] {
@@ -292,6 +296,8 @@
   --exits-toolbar-gap: 0.65rem;
   --exits-list-card-padding-y: 0.9rem;
   --exits-list-card-padding-x: 1rem;
+  --exits-entity-card-gap: 0.7rem;
+  --exits-entity-card-meta-gap: 0.45rem 1rem;
 }
 
 [data-density="compact"] {
@@ -308,6 +314,8 @@
   --exits-toolbar-gap: 0.375rem;
   --exits-list-card-padding-y: 0.55rem;
   --exits-list-card-padding-x: 0.7rem;
+  --exits-entity-card-gap: 0.4rem;
+  --exits-entity-card-meta-gap: 0.25rem 0.65rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -412,6 +420,210 @@ body {
 .exits-alert-surface--success {
   background: var(--exits-success-soft);
   border-color: color-mix(in srgb, var(--exits-success) 35%, var(--exits-border));
+}
+
+/*
+ * Reusable management entity / list card foundation.
+ * Content-driven height; density tokens own padding/gaps.
+ * Apply first to Branches; migrate Staff/Suppliers/etc. later.
+ */
+.exits-entity-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exits-entity-card-gap);
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  padding: var(--exits-list-card-padding-y) var(--exits-list-card-padding-x);
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  box-shadow: none;
+  transition:
+    border-color var(--exits-motion-fast) var(--exits-ease-standard),
+    box-shadow var(--exits-motion-fast) var(--exits-ease-standard),
+    background-color var(--exits-motion-fast) var(--exits-ease-standard);
+}
+
+.exits-entity-card--interactive:hover {
+  border-color: var(--exits-border-strong);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.exits-entity-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.exits-entity-card__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.exits-entity-card__title-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+}
+
+.exits-entity-card__title {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-md);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--exits-text);
+  overflow-wrap: anywhere;
+}
+
+.exits-entity-card__code-sep {
+  color: var(--exits-text-subtle);
+  font-weight: 500;
+}
+
+.exits-entity-card__code {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 550;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.exits-entity-card__subtitle {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--exits-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.exits-entity-card__badges {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  max-width: 46%;
+}
+
+.exits-entity-card__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--exits-entity-card-meta-gap);
+  margin: 0;
+  min-width: 0;
+}
+
+.exits-entity-card__meta-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.exits-entity-card__meta-item dt {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: 550;
+  color: var(--exits-text-muted);
+  line-height: 1.25;
+}
+
+.exits-entity-card__meta-item dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: 650;
+  color: var(--exits-text);
+  line-height: 1.25;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.exits-entity-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--exits-toolbar-gap);
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .exits-entity-card__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .exits-entity-card__meta-item {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+
+  .exits-entity-card__meta-item dd {
+    text-align: left;
+  }
+
+  .exits-entity-card__badges {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .exits-entity-card__title-row .exits-entity-card__code-sep {
+    display: inline;
+  }
+
+  .exits-entity-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--exits-entity-card-meta-gap);
+  }
+
+  .exits-entity-card__meta-item {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: baseline;
+    gap: 0.35rem;
+    grid-template-columns: none;
+  }
+
+  .exits-entity-card__meta-item dt {
+    font-size: var(--exits-text-sm);
+  }
+
+  .exits-entity-card__meta-item dd {
+    text-align: left;
+  }
+
+  .exits-entity-card__actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 639px) {
+  .exits-entity-card__title-row .exits-entity-card__code-sep {
+    display: none;
+  }
+
+  .exits-entity-card__title-row .exits-entity-card__code {
+    flex: 1 1 100%;
+  }
 }
 
 .sr-only {
@@ -9700,92 +9912,10 @@ a.exits-chip--primary:hover {
 
 .branch-mgmt-list {
   grid-template-columns: 1fr;
-}
-
-@media (min-width: 768px) {
-  .branch-mgmt-list {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 1440px) {
-  .branch-mgmt-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.branch-mgmt-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-}
-
-.branch-mgmt-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.branch-mgmt-card__title {
-  font-size: var(--exits-text-md);
-  line-height: 1.25;
-}
-
-.branch-mgmt-card__code {
-  font-size: var(--exits-text-sm);
-}
-
-.branch-mgmt-card__badges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.375rem;
-}
-
-.branch-mgmt-card__location {
-  font-size: var(--exits-text-sm);
-}
-
-.branch-mgmt-card__meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 0.75rem;
-  margin: 0;
-  font-size: var(--exits-text-sm);
-}
-
-.branch-mgmt-card__meta > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
-.branch-mgmt-card__meta dt {
-  margin: 0;
-  color: var(--exits-text-muted);
-  font-weight: 500;
-}
-
-.branch-mgmt-card__meta dd {
-  margin: 0;
-  font-weight: 600;
-}
-
-.branch-mgmt-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  gap: var(--exits-entity-card-gap);
 }
 
 @media (max-width: 360px) {
-  .branch-mgmt-card__meta {
-    grid-template-columns: 1fr;
-  }
-
   .branch-mgmt-toolbar {
     flex-direction: column;
     align-items: stretch;

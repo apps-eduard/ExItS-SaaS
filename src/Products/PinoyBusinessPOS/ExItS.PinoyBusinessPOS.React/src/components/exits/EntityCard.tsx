@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
+/**
+ * Lightweight wrapper around the global `.exits-entity-card` foundation.
+ * Prefer semantic CSS classes directly on management list pages when layout
+ * needs more structure (see BranchManagementListPage).
+ */
 export function EntityCard({
   title,
   subtitle,
@@ -29,23 +34,22 @@ export function EntityCard({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "flex min-h-[var(--exits-row-min-height)] w-full min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left",
-        interactive &&
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary",
+        "exits-entity-card",
+        interactive && "exits-entity-card--interactive",
         className,
       )}
     >
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate text-[length:var(--exits-text-sm)] font-semibold">{title}</div>
-          {subtitle ? (
-            <div className="mt-0.5 text-[length:var(--exits-text-xs)] text-muted">{subtitle}</div>
-          ) : null}
+      <div className="exits-entity-card__header">
+        <div className="exits-entity-card__identity">
+          <div className="exits-entity-card__title-row">
+            <div className="exits-entity-card__title">{title}</div>
+          </div>
+          {subtitle ? <div className="exits-entity-card__subtitle">{subtitle}</div> : null}
         </div>
-        {trailing}
+        {trailing ? <div className="exits-entity-card__badges">{trailing}</div> : null}
       </div>
       {meta ? <div className="text-[length:var(--exits-text-sm)] text-muted">{meta}</div> : null}
-      {footer}
+      {footer ? <div className="exits-entity-card__actions">{footer}</div> : null}
     </Comp>
   );
 }
@@ -61,7 +65,7 @@ export function ResponsiveEntityList({
 }) {
   return (
     <div
-      className={cn("grid min-w-0 gap-3", "grid-cols-1 md:grid-cols-2 xl:grid-cols-1", className)}
+      className={cn("grid min-w-0 gap-[var(--exits-entity-card-gap)]", "grid-cols-1", className)}
       role="list"
       aria-label={ariaLabel}
       data-testid="responsive-entity-list"

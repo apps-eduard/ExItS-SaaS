@@ -247,21 +247,29 @@ export function BranchManagementListPage() {
       ) : null}
 
       {summaryQuery.isSuccess && branches.length > 0 ? (
-        <ul className="branch-mgmt-list m-0 grid list-none gap-2 p-0" data-testid="branch-mgmt-items">
+        <ul className="branch-mgmt-list m-0 grid list-none p-0" data-testid="branch-mgmt-items">
           {branches.map((branch) => {
             const location = [branch.city, branch.region].filter(Boolean).join(", ");
             return (
               <li key={branch.id}>
                 <article
-                  className="exits-list__card branch-mgmt-card min-w-0"
+                  className="exits-entity-card exits-entity-card--interactive branch-mgmt-card min-w-0"
                   data-testid={`branch-mgmt-card-${branch.id}`}
                 >
-                  <div className="branch-mgmt-card__header">
-                    <div className="min-w-0">
-                      <h2 className="branch-mgmt-card__title m-0 truncate">{branch.name}</h2>
-                      <p className="branch-mgmt-card__code m-0 mt-1 text-muted">{branch.code}</p>
+                  <div className="exits-entity-card__header">
+                    <div className="exits-entity-card__identity">
+                      <div className="exits-entity-card__title-row">
+                        <h2 className="exits-entity-card__title">{branch.name}</h2>
+                        <span className="exits-entity-card__code-sep" aria-hidden>
+                          ·
+                        </span>
+                        <p className="exits-entity-card__code">{branch.code}</p>
+                      </div>
+                      {location ? (
+                        <p className="exits-entity-card__subtitle">{location}</p>
+                      ) : null}
                     </div>
-                    <div className="branch-mgmt-card__badges">
+                    <div className="exits-entity-card__badges">
                       {branch.isPrimary ? (
                         <span data-testid={`branch-mgmt-primary-${branch.id}`}>
                           <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
@@ -273,20 +281,14 @@ export function BranchManagementListPage() {
                     </div>
                   </div>
 
-                  {location ? (
-                    <p className="branch-mgmt-card__location m-0 text-muted">{location}</p>
-                  ) : null}
-
-                  <dl className="branch-mgmt-card__meta">
-                    <div>
+                  <dl className="exits-entity-card__meta">
+                    <div className="exits-entity-card__meta-item">
                       <dt>{t("branches.mgmt.staffAccess")}</dt>
                       <dd data-testid={`branch-mgmt-staff-${branch.id}`}>
-                        {branch.isPrimary || branch.assignedStaffCount === 0
-                          ? branch.assignedStaffCount
-                          : branch.assignedStaffCount}
+                        {branch.assignedStaffCount}
                       </dd>
                     </div>
-                    <div>
+                    <div className="exits-entity-card__meta-item">
                       <dt>{t("branches.mgmt.devices")}</dt>
                       <dd data-testid={`branch-mgmt-devices-${branch.id}`}>
                         {t("branches.mgmt.devicesActive").replace(
@@ -296,26 +298,28 @@ export function BranchManagementListPage() {
                       </dd>
                     </div>
                     {showAreasLink ? (
-                      <div>
+                      <div className="exits-entity-card__meta-item">
                         <dt>{t("areas.singular")}</dt>
                         <dd data-testid={`branch-mgmt-area-${branch.id}`}>
                           {branch.areaName ?? t("areas.unassigned")}
                         </dd>
                       </div>
                     ) : null}
-                    <div>
+                    <div className="exits-entity-card__meta-item">
                       <dt>{t("branches.mgmt.pickup")}</dt>
-                      <dd>{branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}</dd>
+                      <dd data-testid={`branch-mgmt-pickup-${branch.id}`}>
+                        {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                      </dd>
                     </div>
-                    <div>
+                    <div className="exits-entity-card__meta-item">
                       <dt>{t("branches.mgmt.delivery")}</dt>
-                      <dd>
+                      <dd data-testid={`branch-mgmt-delivery-${branch.id}`}>
                         {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
                       </dd>
                     </div>
                   </dl>
 
-                  <div className="branch-mgmt-card__actions">
+                  <div className="exits-entity-card__actions">
                     <Button asChild variant="outline" data-testid={`branch-mgmt-open-${branch.id}`}>
                       <Link to={`/org/branches/${branch.id}`}>{t("branches.mgmt.open")}</Link>
                     </Button>
@@ -331,7 +335,7 @@ export function BranchManagementListPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="min-w-11 px-3"
+                      size="icon"
                       data-testid={`branch-mgmt-more-${branch.id}`}
                       aria-label={t("branches.mgmt.more")}
                       onClick={() => setMenuBranch(branch)}
