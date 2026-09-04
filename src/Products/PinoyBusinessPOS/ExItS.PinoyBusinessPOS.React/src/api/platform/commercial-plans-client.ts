@@ -35,6 +35,7 @@ export const commercialPlanSchema = z.object({
   monthlyPrice: z.number(),
   annualPrice: z.number(),
   currencyCode: z.string(),
+  maxAreas: z.number().int().default(0),
 });
 
 export type CommercialPlanDto = z.infer<typeof commercialPlanSchema>;
@@ -69,6 +70,7 @@ function normalizePlan(raw: unknown): unknown {
     monthlyPrice: Number(pick(r, "monthlyPrice", "MonthlyPrice") ?? 0),
     annualPrice: Number(pick(r, "annualPrice", "AnnualPrice") ?? 0),
     currencyCode: String(pick(r, "currencyCode", "CurrencyCode") ?? "PHP"),
+    maxAreas: Number(pick(r, "maxAreas", "MaxAreas") ?? 0),
   };
 }
 
