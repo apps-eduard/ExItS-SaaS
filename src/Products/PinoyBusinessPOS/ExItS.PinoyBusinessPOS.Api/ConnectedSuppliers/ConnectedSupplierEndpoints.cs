@@ -149,7 +149,9 @@ internal static class ConnectedSupplierEndpoints
         group.MapPost("/incoming-orders/{id:guid}/prepare",async(HttpRequest req,Guid id,StartPreparingIncomingOrder use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/fulfill",async(HttpRequest req,Guid id,MarkIncomingOrderFulfilled use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
-        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId,ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/propose-changes",async(HttpRequest req,Guid id,ProposeIncomingOrderChangesRequest body,ProposeIncomingOrderChanges use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          PosOrganizationScope.TryGetActorId(req,out var actorId,out _);

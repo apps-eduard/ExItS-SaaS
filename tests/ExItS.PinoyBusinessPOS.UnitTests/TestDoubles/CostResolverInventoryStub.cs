@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -78,14 +79,14 @@ internal class CostResolverInventoryStub : IInventoryRepository
     public virtual Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task ExecuteWithProductReservationLocksAsync(
+    public virtual Task ExecuteWithProductReservationLocksAsync(
         PosOrganizationId organizationId,
         IReadOnlyCollection<CatalogProductId> productIds,
         Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
+    public virtual Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
     public Task<StockMovement?> GetMovementByIdAsync(
@@ -255,6 +256,14 @@ internal class CostResolverInventoryStub : IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
+
+    public virtual Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
 
     public Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,

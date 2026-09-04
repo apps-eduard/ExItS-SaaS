@@ -35,7 +35,8 @@ public sealed record PosPurchaseOrderLineDto(
     bool TracksExpiration = false,
     Guid? SupplierProductId = null,
     string? SkuSnapshot = null,
-    bool NeedsProductSetup = false);
+    bool NeedsProductSetup = false,
+    bool IsInventoryTracked = false);
 
 public sealed record PosPurchaseOrderDto(
     Guid PurchaseOrderId,
@@ -94,7 +95,10 @@ public sealed record PosGoodsReceiptLineDto(
     string DiscrepancyKind = "None",
     string? DiscrepancyNote = null,
     DateOnly? ExpiryDate = null,
-    string? LotNumber = null)
+    string? LotNumber = null,
+    bool InventoryTrackingEnabled = false,
+    decimal? PreviousTrackedStock = null,
+    decimal? NewTrackedStock = null)
 {
     /// <summary>Alias for clients that still expect ReceivedQty.</summary>
     public decimal ReceivedQty => QuantityReceived;
@@ -166,7 +170,8 @@ public sealed record ReceivePurchaseOrderRequest(
     string? Notes = null,
     decimal? PaidNow = null,
     DateOnly? DueDate = null,
-    string? PaymentMethodAtReceipt = null);
+    string? PaymentMethodAtReceipt = null,
+    bool EnableTrackingIfNeeded = false);
 
 public static class PurchaseMapper
 {
@@ -174,7 +179,8 @@ public static class PurchaseMapper
         PurchaseOrder po,
         ConnectedPurchaseOrder? connected = null,
         string? supplierName = null,
-        IReadOnlyDictionary<Guid, CatalogProduct>? products = null)
+        IReadOnlyDictionary<Guid, CatalogProduct>? products = null,
+        IReadOnlyDictionary<Guid, bool>? inventoryTrackedByProduct = null)
     {
         var display = string.IsNullOrEmpty(ConnectedPoDisplayStatus.ForBuyer(po, connected))
             ? po.Status.ToString()
@@ -193,7 +199,7 @@ public static class PurchaseMapper
             po.OrderedBy,
             po.CreatedAtUtc,
             po.UpdatedAtUtc,
-            po.Lines.Select(line => MapLine(line, products)).ToList(),
+            po.Lines.Select(line => MapLine(line, products, inventoryTrackedByProduct)).ToList(),
             DisplayStatus: display,
             ConnectedStatus: connected?.Status.ToString(),
             ConnectedPurchaseOrderId: connected?.Id.Value,
@@ -226,7 +232,8 @@ public static class PurchaseMapper
         ConnectedPurchaseOrder? connected,
         ISupplierRepository suppliers,
         ICatalogProductRepository products,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IInventoryRepository? inventory = null)
     {
         var supplier = await suppliers
             .GetByIdAsync(po.OrganizationId, po.SupplierId, cancellationToken)
@@ -239,12 +246,22 @@ public static class PurchaseMapper
         var catalog = productIds.Count == 0
             ? Array.Empty<CatalogProduct>()
             : await products.ListByIdsAsync(po.OrganizationId, productIds, cancellationToken).ConfigureAwait(false);
-        return Map(po, connected, supplier?.Name, catalog.ToDictionary(p => p.Id.Value));
+        IReadOnlyDictionary<Guid, bool>? trackedByProduct = null;
+        if (inventory is not null && productIds.Count > 0)
+        {
+            var accounts = await inventory
+                .ListByProductIdsAsync(po.OrganizationId, productIds, cancellationToken)
+                .ConfigureAwait(false);
+            trackedByProduct = accounts.ToDictionary(a => a.ProductId.Value, a => a.IsTracked);
+        }
+
+        return Map(po, connected, supplier?.Name, catalog.ToDictionary(p => p.Id.Value), trackedByProduct);
     }
 
     public static PosPurchaseOrderLineDto MapLine(
         PurchaseOrderLine line,
-        IReadOnlyDictionary<Guid, CatalogProduct>? products = null)
+        IReadOnlyDictionary<Guid, CatalogProduct>? products = null,
+        IReadOnlyDictionary<Guid, bool>? inventoryTrackedByProduct = null)
     {
         CatalogProduct? product = null;
         if (line.ProductId is not null
@@ -258,6 +275,10 @@ public static class PurchaseMapper
         var uom = line.UomSnapshot?.ToString()
             ?? (string.IsNullOrWhiteSpace(line.PurchaseUnitNameSnapshot) ? null : line.PurchaseUnitNameSnapshot)
             ?? product?.UnitOfMeasure.ToString();
+        var isTracked = line.ProductId is not null
+            && inventoryTrackedByProduct is not null
+            && inventoryTrackedByProduct.TryGetValue(line.ProductId.Value, out var tracked)
+            && tracked;
         return new(
             line.Id.Value,
             line.ProductId?.Value,
@@ -274,10 +295,13 @@ public static class PurchaseMapper
             product?.TracksExpiration ?? false,
             line.SupplierProductId?.Value,
             line.SkuSnapshot,
-            line.NeedsBuyerProductSetup);
+            line.NeedsBuyerProductSetup,
+            isTracked);
     }
 
-    public static PosGoodsReceiptDto Map(GoodsReceipt receipt) =>
+    public static PosGoodsReceiptDto Map(
+        GoodsReceipt receipt,
+        IReadOnlyDictionary<Guid, PurchaseReceiptStockOutcome>? stockByLineId = null) =>
         new(
             receipt.Id.Value,
             receipt.OrganizationId.Value,
@@ -289,24 +313,32 @@ public static class PurchaseMapper
             receipt.Notes,
             receipt.ReceivedAtUtc,
             receipt.ReceivedBy,
-            receipt.Lines.Select(l => new PosGoodsReceiptLineDto(
-                l.Id.Value,
-                l.PurchaseOrderLineId.Value,
-                l.ProductId.Value,
-                l.LineNumber,
-                l.NameSnapshot,
-                l.UomSnapshot.ToString(),
-                l.QuantityReceived,
-                l.UnitPurchaseCostSnapshot,
-                l.LineTotalSnapshot,
-                l.InventoryMovementId,
-                l.DamagedQty,
-                l.RejectedQty,
-                l.ShortClosedQty,
-                l.DiscrepancyKind.ToString(),
-                l.DiscrepancyNote,
-                l.ExpiryDate,
-                l.LotNumber)).ToList(),
+            receipt.Lines.Select(l =>
+            {
+                PurchaseReceiptStockOutcome? stock = null;
+                stockByLineId?.TryGetValue(l.Id.Value, out stock);
+                return new PosGoodsReceiptLineDto(
+                    l.Id.Value,
+                    l.PurchaseOrderLineId.Value,
+                    l.ProductId.Value,
+                    l.LineNumber,
+                    l.NameSnapshot,
+                    l.UomSnapshot.ToString(),
+                    l.QuantityReceived,
+                    l.UnitPurchaseCostSnapshot,
+                    l.LineTotalSnapshot,
+                    l.InventoryMovementId,
+                    l.DamagedQty,
+                    l.RejectedQty,
+                    l.ShortClosedQty,
+                    l.DiscrepancyKind.ToString(),
+                    l.DiscrepancyNote,
+                    l.ExpiryDate,
+                    l.LotNumber,
+                    stock?.TrackingWasEnabled ?? false,
+                    stock?.PreviousOnHand,
+                    stock?.NewOnHand);
+            }).ToList(),
             GoodsReceiptStatuses.ToCode(receipt.Status),
             receipt.VoidedAtUtc,
             receipt.VoidedByUserId,
@@ -319,17 +351,20 @@ public sealed class PurchaseOrderQueryService
     private readonly IConnectedPurchaseOrderRepository _connectedOrders;
     private readonly ISupplierRepository _suppliers;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryRepository? _inventory;
 
     public PurchaseOrderQueryService(
         IPurchaseOrderRepository orders,
         IConnectedPurchaseOrderRepository connectedOrders,
         ISupplierRepository suppliers,
-        ICatalogProductRepository products)
+        ICatalogProductRepository products,
+        IInventoryRepository? inventory = null)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
         _suppliers = suppliers;
         _products = products;
+        _inventory = inventory;
     }
 
     public async Task<PosPurchaseOrderDto?> GetByIdAsync(
@@ -355,7 +390,7 @@ public sealed class PurchaseOrderQueryService
         }
 
         return await PurchaseMapper
-            .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken)
+            .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken, _inventory)
             .ConfigureAwait(false);
     }
 
@@ -385,7 +420,7 @@ public sealed class PurchaseOrderQueryService
             }
 
             mapped.Add(await PurchaseMapper
-                .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken)
+                .MapWithNamesAsync(po, connected, _suppliers, _products, cancellationToken, _inventory)
                 .ConfigureAwait(false));
         }
 
@@ -428,7 +463,7 @@ public sealed class GoodsReceiptQueryService
                 PurchaseOrderId.From(purchaseOrderId),
                 cancellationToken)
             .ConfigureAwait(false);
-        return receipts.Select(PurchaseMapper.Map).ToList();
+        return receipts.Select(r => PurchaseMapper.Map(r)).ToList();
     }
 }
 
@@ -1991,6 +2026,7 @@ public sealed class ReceivePurchaseOrder
             var utcNow = _clock.GetUtcNow();
             var businessDate = GoodsReceiptNumbers.BusinessDateOf(utcNow);
             var receivingBranch = PosBranchId.From(receivingBranchId);
+            IReadOnlyList<PurchaseReceiptStockOutcome> stockOutcomes = [];
 
             var (_, receipt) = await _orders.ReceiveAsync(
                     org,
@@ -2018,8 +2054,15 @@ public sealed class ReceivePurchaseOrder
                     },
                     async (grn, po, ct) =>
                     {
-                        await _purchaseStock
-                            .ApplyReceiptAsync(org, grn, po, actorId, utcNow, ct)
+                        stockOutcomes = await _purchaseStock
+                            .ApplyReceiptAsync(
+                                org,
+                                grn,
+                                po,
+                                actorId,
+                                utcNow,
+                                request.EnableTrackingIfNeeded,
+                                ct)
                             .ConfigureAwait(false);
                         await _createPayable
                             .CreateFromGoodsReceiptAsync(
@@ -2078,7 +2121,10 @@ public sealed class ReceivePurchaseOrder
                     cancellationToken).ConfigureAwait(false);
             }
 
-            return ApplicationResult<PosGoodsReceiptDto>.Success(PurchaseMapper.Map(receipt));
+            return ApplicationResult<PosGoodsReceiptDto>.Success(
+                PurchaseMapper.Map(
+                    receipt,
+                    stockOutcomes.ToDictionary(o => o.LineId)));
         }
         catch (DomainException ex)
         {

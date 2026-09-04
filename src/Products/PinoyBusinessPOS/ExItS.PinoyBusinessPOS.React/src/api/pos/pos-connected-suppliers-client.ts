@@ -1141,8 +1141,8 @@ export async function fulfillIncomingOrder(
   connectedPurchaseOrderId: string,
   signal?: AbortSignal,
 ): Promise<ConnectedPurchaseOrder> {
+  // Fulfill mutates supplier stock — do not assertNotInventoryMutationUrl here.
   const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/fulfill`;
-  assertNotInventoryMutationUrl(path);
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,

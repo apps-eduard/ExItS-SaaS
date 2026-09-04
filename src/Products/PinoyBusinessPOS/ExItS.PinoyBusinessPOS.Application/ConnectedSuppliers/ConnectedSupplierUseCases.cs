@@ -2031,6 +2031,7 @@ public sealed class MarkIncomingOrderFulfilled
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ConnectedPurchaseOrderFulfillStock _fulfillStock;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2039,6 +2040,7 @@ public sealed class MarkIncomingOrderFulfilled
         IConnectedPurchaseOrderRepository orders,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
+        ConnectedPurchaseOrderFulfillStock fulfillStock,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IConnectedSupplierRelationshipRepository? relationships = null)
@@ -2046,17 +2048,29 @@ public sealed class MarkIncomingOrderFulfilled
         _orders = orders;
         _uow = uow;
         _access = access;
+        _fulfillStock = fulfillStock;
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
     }
 
-    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(Guid orgId, Guid id, CancellationToken ct = default)
+    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
+        Guid orgId,
+        Guid id,
+        Guid actorId,
+        CancellationToken ct = default)
     {
         var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManagePurchasing);
         if (!gate.IsSuccess)
         {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        if (actorId == Guid.Empty)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to fulfill a connected purchase order.");
         }
 
         var o = await _orders.GetAsync(ConnectedPurchaseOrderId.From(id), ct).ConfigureAwait(false);
@@ -2073,17 +2087,28 @@ public sealed class MarkIncomingOrderFulfilled
                 return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
             }
 
-            o.MarkFulfilled(_clock.GetUtcNow());
+            if (_relationships is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierErrorCodes.NotFound,
+                    "Relationship was not found.");
+            }
+
+            var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+            if (rel is null || rel.SupplierOrganizationId != PosOrganizationId.From(orgId))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierErrorCodes.NotFound,
+                    "Relationship was not found.");
+            }
+
+            var utcNow = _clock.GetUtcNow();
+            await _fulfillStock.ApplyAsync(o, rel, actorId, utcNow, ct).ConfigureAwait(false);
+            o.MarkFulfilled(utcNow);
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
             var poLabel = o.BuyerPoNumber ?? o.BuyerPurchaseOrderId.Value.ToString("D");
-            string? supplierName = null;
-            if (_relationships is not null)
-            {
-                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
-                supplierName = rel?.SupplierDisplayNameSnapshot;
-            }
 
             await _notifications.PublishAsync(
                 orgId,

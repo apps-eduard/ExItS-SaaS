@@ -37,6 +37,7 @@ export const posPurchaseOrderLineDtoSchema = z.object({
   lineNotes: z.string().nullable().optional(),
   closedShortQty: z.number().optional(),
   tracksExpiration: z.boolean().optional(),
+  isInventoryTracked: z.boolean().optional(),
   supplierProductId: guidSchema.nullable().optional(),
   skuSnapshot: z.string().nullable().optional(),
   needsProductSetup: z.boolean().optional().default(false),
@@ -114,6 +115,9 @@ export const posGoodsReceiptLineDtoSchema = z.object({
   receivedQty: z.number().optional(),
   expiryDate: z.string().nullable().optional(),
   lotNumber: z.string().nullable().optional(),
+  inventoryTrackingEnabled: z.boolean().optional(),
+  previousTrackedStock: z.number().nullable().optional(),
+  newTrackedStock: z.number().nullable().optional(),
 });
 
 export const posGoodsReceiptDtoSchema = z.object({
@@ -197,6 +201,8 @@ export type ReceivePurchaseOrderRequest = {
   paidNow?: number | null;
   dueDate?: string | null;
   paymentMethodAtReceipt?: string | null;
+  /** When true, enable inventory tracking on untracked lines being received. */
+  enableTrackingIfNeeded?: boolean;
 };
 
 export type ListPurchaseOrdersOptions = {
@@ -330,6 +336,9 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
   const methodAtReceipt = trimOrUndef(body.paymentMethodAtReceipt);
   if (methodAtReceipt) {
     payload.paymentMethodAtReceipt = methodAtReceipt;
+  }
+  if (body.enableTrackingIfNeeded === true) {
+    payload.enableTrackingIfNeeded = true;
   }
   return payload;
 }

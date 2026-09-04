@@ -2216,6 +2216,12 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
+                .HasDatabaseName("ux_stock_movements_connected_po_fulfill_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.ConnectedPurchaseOrder)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
                 .HasDatabaseName("ux_stock_movements_inventory_transfer_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL AND inventory_lot_id IS NULL");

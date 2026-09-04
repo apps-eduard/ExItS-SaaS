@@ -471,6 +471,7 @@ public static class DomainErrorCodes
     public const string InvalidCatalogSource = "pos.catalog.source.invalid";
 
     public const string InvalidCustomerOrderId = "pos.customer_order.id.invalid";
+    public const string InvalidConnectedPurchaseOrderId = "pos.connected_purchase_order.id.invalid";
     public const string InvalidCustomerOrderLineId = "pos.customer_order.line.id.invalid";
     public const string InvalidCustomerOrderNumber = "pos.customer_order.number.invalid";
     public const string InvalidCustomerOrderStatusTransition = "pos.customer_order.status.invalid_transition";

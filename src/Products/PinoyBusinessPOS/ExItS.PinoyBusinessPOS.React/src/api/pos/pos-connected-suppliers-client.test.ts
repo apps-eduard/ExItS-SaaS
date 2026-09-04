@@ -252,7 +252,7 @@ describe("pos-connected-suppliers-client", () => {
     }
   });
 
-  it("incoming order accept/decline/prepare/fulfill never hit inventory mutation paths", async () => {
+  it("incoming order accept/decline/prepare never hit inventory mutation paths", async () => {
     const order = {
       connectedPurchaseOrderId: relationshipId,
       relationshipId,
@@ -273,15 +273,42 @@ describe("pos-connected-suppliers-client", () => {
     await acceptIncomingOrder(workspace, relationshipId);
     await declineIncomingOrder(workspace, relationshipId, { declineReason: "OutOfStock" });
     await prepareIncomingOrder(workspace, relationshipId);
-    await fulfillIncomingOrder(workspace, relationshipId);
 
     const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
     expect(urls.some((u) => u.includes("/incoming-orders/") && u.endsWith("/accept"))).toBe(true);
+    expect(urls.some((u) => u.includes("/incoming-orders/") && u.endsWith("/prepare"))).toBe(true);
     for (const url of urls) {
       assertNotInventoryMutationUrl(url);
       for (const marker of INVENTORY_MUTATION_PATH_MARKERS) {
         expect(url.toLowerCase()).not.toContain(marker.toLowerCase());
       }
     }
+  });
+
+  it("fulfillIncomingOrder posts without assertNotInventoryMutationUrl (may mutate supplier stock)", async () => {
+    const order = {
+      connectedPurchaseOrderId: relationshipId,
+      relationshipId,
+      buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
+      supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerPurchaseOrderId: "33333333-3333-4333-8333-333333333333",
+      buyerPoNumber: "PO-1",
+      orderDate: "2026-09-04",
+      status: "Preparing",
+      totalAmount: 12,
+      createdAtUtc: "2026-09-04T00:00:00Z",
+      updatedAtUtc: "2026-09-04T00:00:00Z",
+      lines: [],
+      displayStatus: "Preparing",
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ ...order, status: "Fulfilled" }));
+
+    await expect(fulfillIncomingOrder(workspace, relationshipId)).resolves.toMatchObject({
+      status: "Fulfilled",
+    });
+
+    const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
+    expect(url).toContain(`/incoming-orders/${relationshipId}/fulfill`);
+    expect(vi.mocked(fetch).mock.calls[0]?.[1]?.method).toBe("POST");
   });
 });

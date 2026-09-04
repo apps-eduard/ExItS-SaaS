@@ -9,19 +9,29 @@ using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 namespace ExItS.PinoyBusinessPOS.Application.Purchasing;
 
 /// <summary>
-/// Purchase receive stock hook. Applied atomically inside receive transaction for tracked products only.
-/// Online-only; no offline purchasing queue.
+/// Purchase receive stock hook. Applied atomically inside receive transaction.
+/// Tracked products always receive stock. Untracked products receive stock only when
+/// <c>enableTrackingIfNeeded</c> is true (explicit caller confirmation).
 /// </summary>
 public interface IPurchaseStockService
 {
-    Task ApplyReceiptAsync(
+    Task<IReadOnlyList<PurchaseReceiptStockOutcome>> ApplyReceiptAsync(
         PosOrganizationId organizationId,
         GoodsReceipt receipt,
         PurchaseOrder purchaseOrder,
         Guid actorId,
         DateTimeOffset utcNow,
+        bool enableTrackingIfNeeded = false,
         CancellationToken cancellationToken = default);
 }
+
+public sealed record PurchaseReceiptStockOutcome(
+    Guid ProductId,
+    Guid LineId,
+    bool Applied,
+    bool TrackingWasEnabled,
+    decimal? PreviousOnHand,
+    decimal? NewOnHand);
 
 public sealed class PurchaseStockService : IPurchaseStockService
 {
@@ -48,12 +58,13 @@ public sealed class PurchaseStockService : IPurchaseStockService
         _branches = branches;
     }
 
-    public async Task ApplyReceiptAsync(
+    public async Task<IReadOnlyList<PurchaseReceiptStockOutcome>> ApplyReceiptAsync(
         PosOrganizationId organizationId,
         GoodsReceipt receipt,
         PurchaseOrder purchaseOrder,
         Guid actorId,
         DateTimeOffset utcNow,
+        bool enableTrackingIfNeeded = false,
         CancellationToken cancellationToken = default)
     {
         if (receipt.ReceivingBranchId is null)
@@ -78,21 +89,11 @@ public sealed class PurchaseStockService : IPurchaseStockService
             ? null
             : await _branches.GetPrimaryBranchIdAsync(organizationId.Value, cancellationToken).ConfigureAwait(false);
 
+        var outcomes = new List<PurchaseReceiptStockOutcome>();
+
         foreach (var line in receipt.Lines.OrderBy(l => l.LineNumber))
         {
             if (line.QuantityReceived <= 0m)
-            {
-                continue;
-            }
-
-            if (!accountsByProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
-            {
-                continue;
-            }
-
-            if (await _inventory
-                    .HasPurchaseReceiptAsync(organizationId, receipt.Id, line.ProductId, cancellationToken)
-                    .ConfigureAwait(false))
             {
                 continue;
             }
@@ -102,6 +103,60 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 throw new DomainException(
                     DomainErrorCodes.InvalidGoodsReceiptLine,
                     "Product was not found for goods receipt stock apply.");
+            }
+
+            var trackingWasEnabled = false;
+            if (!accountsByProduct.TryGetValue(line.ProductId.Value, out var account))
+            {
+                if (!enableTrackingIfNeeded)
+                {
+                    continue;
+                }
+
+                account = InventoryAccount.CreateUntracked(organizationId, line.ProductId, utcNow);
+                account.Enable(
+                    openingQuantity: null,
+                    product.UnitOfMeasure,
+                    actorId,
+                    utcNow,
+                    hasOpeningStockAlready: false,
+                    product.SellingMode);
+                await _inventory.AddAccountAsync(account, cancellationToken).ConfigureAwait(false);
+                accountsByProduct[line.ProductId.Value] = account;
+                trackingWasEnabled = true;
+            }
+            else if (!account.IsTracked)
+            {
+                if (!enableTrackingIfNeeded)
+                {
+                    continue;
+                }
+
+                account.Enable(
+                    openingQuantity: null,
+                    product.UnitOfMeasure,
+                    actorId,
+                    utcNow,
+                    hasOpeningStockAlready: await _inventory
+                        .HasOpeningStockAsync(organizationId, line.ProductId, cancellationToken)
+                        .ConfigureAwait(false),
+                    product.SellingMode);
+                await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
+                trackingWasEnabled = true;
+            }
+
+            if (await _inventory
+                    .HasPurchaseReceiptAsync(organizationId, receipt.Id, line.ProductId, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                outcomes.Add(new PurchaseReceiptStockOutcome(
+                    line.ProductId.Value,
+                    line.Id.Value,
+                    Applied: false,
+                    trackingWasEnabled,
+                    PreviousOnHand: account.OnHandQuantity,
+                    NewOnHand: account.OnHandQuantity));
+                continue;
             }
 
             if (product.TracksExpiration && line.ExpiryDate is null)
@@ -163,6 +218,16 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 .ConfigureAwait(false);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
             await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
+
+            outcomes.Add(new PurchaseReceiptStockOutcome(
+                line.ProductId.Value,
+                line.Id.Value,
+                Applied: true,
+                trackingWasEnabled,
+                PreviousOnHand: orgOnHandBefore,
+                NewOnHand: account.OnHandQuantity));
         }
+
+        return outcomes;
     }
 }

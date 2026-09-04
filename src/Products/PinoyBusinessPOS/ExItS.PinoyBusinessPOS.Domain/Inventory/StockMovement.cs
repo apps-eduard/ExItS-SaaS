@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -34,6 +35,7 @@ public sealed class StockMovement
     public const string WasteLossVoidRestorationReason = "Waste/loss void restoration";
     public const string PurchaseReceiptReversalReason = "Purchase receipt reversed";
     public const string DirectPurchaseReceiptReversalReason = "Direct purchase reversed";
+    public const string ConnectedPurchaseFulfillmentReason = "Connected purchase fulfillment";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -982,6 +984,38 @@ public sealed class StockMovement
             unitCost: normalizedCost);
     }
 
+    public static StockMovement ConnectedPurchaseFulfillment(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid connectedPurchaseOrderId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureConnectedPurchaseOrderId(connectedPurchaseOrderId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ConnectedPurchaseFulfillment,
+            -absolute,
+            ConnectedPurchaseFulfillmentReason,
+            StockMovementSourceType.ConnectedPurchaseOrder,
+            connectedPurchaseOrderId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
     public StockMovement WithLot(InventoryLotId lotId) =>
         new(
             Id,
@@ -1159,6 +1193,16 @@ public sealed class StockMovement
             throw new DomainException(
                 DomainErrorCodes.InvalidWasteLossId,
                 "WasteLossId cannot be an empty GUID.");
+        }
+    }
+
+    private static void EnsureConnectedPurchaseOrderId(Guid connectedPurchaseOrderId)
+    {
+        if (connectedPurchaseOrderId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPurchaseOrderId,
+                "ConnectedPurchaseOrderId cannot be an empty GUID.");
         }
     }
 

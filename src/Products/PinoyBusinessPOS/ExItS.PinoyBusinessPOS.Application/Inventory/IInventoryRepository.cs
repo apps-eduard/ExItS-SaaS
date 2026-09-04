@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -202,6 +203,12 @@ public interface IInventoryRepository
     Task<bool> HasDirectPurchaseReceiptReversalAsync(
         PosOrganizationId organizationId,
         DirectPurchaseReceiptId receiptId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 

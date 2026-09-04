@@ -210,6 +210,97 @@ describe("RMAP-17 purchasing clients", () => {
     expect(body.lines[0]?.lotNumber).toBe("LOT-A123");
   });
 
+  it("includes enableTrackingIfNeeded in receive body when true", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(
+        {
+          goodsReceiptId: grnId,
+          organizationId: workspace.organizationId,
+          purchaseOrderId: poId,
+          supplierId,
+          grnNumber: "GRN-2",
+          receivedDate: "2026-08-21",
+          deliveryReference: null,
+          notes: null,
+          receivedAtUtc: "2026-08-21T01:00:00Z",
+          receivedBy: "99999999-9999-4999-8999-999999999999",
+          lines: [
+            {
+              lineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              purchaseOrderLineId: lineId,
+              productId,
+              lineNumber: 1,
+              nameSnapshot: "Rice",
+              uomSnapshot: "kg",
+              quantityReceived: 4,
+              unitPurchaseCostSnapshot: 50,
+              lineTotalSnapshot: 200,
+              inventoryTrackingEnabled: true,
+              previousTrackedStock: null,
+              newTrackedStock: 4,
+            },
+          ],
+        },
+        201,
+      ),
+    );
+
+    const receipt = await receivePurchaseOrder(workspace, poId, {
+      goodsReceiptId: grnId,
+      enableTrackingIfNeeded: true,
+      lines: [{ productId, receiveQty: 4 }],
+    });
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as {
+      enableTrackingIfNeeded?: boolean;
+    };
+    expect(body.enableTrackingIfNeeded).toBe(true);
+    expect(receipt.lines[0]?.inventoryTrackingEnabled).toBe(true);
+    expect(receipt.lines[0]?.newTrackedStock).toBe(4);
+  });
+
+  it("omits enableTrackingIfNeeded from receive body when false or unset", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(
+        {
+          goodsReceiptId: grnId,
+          organizationId: workspace.organizationId,
+          purchaseOrderId: poId,
+          supplierId,
+          grnNumber: "GRN-3",
+          receivedDate: "2026-08-21",
+          receivedAtUtc: "2026-08-21T01:00:00Z",
+          receivedBy: "99999999-9999-4999-8999-999999999999",
+          lines: [
+            {
+              lineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              purchaseOrderLineId: lineId,
+              productId,
+              lineNumber: 1,
+              nameSnapshot: "Rice",
+              uomSnapshot: "kg",
+              quantityReceived: 4,
+              unitPurchaseCostSnapshot: 50,
+              lineTotalSnapshot: 200,
+            },
+          ],
+        },
+        201,
+      ),
+    );
+
+    await receivePurchaseOrder(workspace, poId, {
+      goodsReceiptId: grnId,
+      enableTrackingIfNeeded: false,
+      lines: [{ productId, receiveQty: 4 }],
+    });
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body).not.toHaveProperty("enableTrackingIfNeeded");
+  });
+
   it("lists goods receipts for a purchase order", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       jsonResponse([

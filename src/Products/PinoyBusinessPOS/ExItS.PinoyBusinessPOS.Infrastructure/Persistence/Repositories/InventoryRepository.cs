@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -677,6 +678,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.DirectPurchase)
                 && m.MovementType == nameof(StockMovementType.DirectPurchaseReceiptReversal),
+            cancellationToken);
+
+    public Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == connectedPurchaseOrderId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.ConnectedPurchaseOrder)
+                && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillment),
             cancellationToken);
 
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
