@@ -7974,18 +7974,25 @@ textarea.exits-input {
 }
 
 .catalog-form-select {
+  box-sizing: border-box;
   width: 100%;
-  min-height: var(--exits-touch-target-min);
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
-  padding: 0 0.75rem;
-  font-size: var(--exits-text-md);
-  font-weight: 400;
+  padding: 0 var(--exits-control-padding-x);
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-regular);
   color: var(--exits-text);
   transition:
     border-color var(--exits-motion-fast) ease,
     box-shadow var(--exits-motion-fast) ease;
+}
+
+.catalog-form-select--readonly {
+  background: var(--exits-surface-muted);
+  color: var(--exits-text-muted);
 }
 
 .catalog-form-select:focus-visible {
@@ -9298,7 +9305,8 @@ a.exits-chip--primary:hover {
 .catalog-form-section__title {
   margin: 0;
   font-size: var(--exits-text-sm);
-  font-weight: 600;
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: var(--exits-leading-tight);
   color: var(--exits-text);
 }
 
@@ -10068,7 +10076,6 @@ a.exits-chip--primary:hover {
   }
 }
 
-
 .staff-assign-role {
   display: flex;
   min-height: var(--exits-touch-target-min);
@@ -10242,6 +10249,58 @@ a.exits-chip--primary:hover {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.branch-create-form {
+  width: 100%;
+  max-width: 64rem;
+}
+
+.branch-create-field-helper {
+  margin: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-regular);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text-muted);
+}
+
+.branch-create-entitlement {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-regular);
+  line-height: var(--exits-leading-relaxed);
+  color: var(--exits-text-muted);
+}
+
+.branch-create-entitlement svg {
+  margin-top: 0.12rem;
+  color: var(--exits-text-subtle);
+}
+
+.branch-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: stretch;
+  gap: var(--exits-toolbar-gap);
+}
+
+.branch-create-actions > .inline-flex,
+.branch-create-actions > button {
+  flex: 1 1 auto;
+}
+
+@media (min-width: 640px) {
+  .branch-create-actions {
+    justify-content: flex-end;
+  }
+
+  .branch-create-actions > .inline-flex,
+  .branch-create-actions > button {
+    flex: 0 0 auto;
+  }
+}
+
 .branch-mgmt-capacity {
   display: flex;
   flex-direction: column;
@@ -10400,7 +10459,6 @@ a.exits-chip--primary:hover {
   }
 }
 
-
 .staff-assign-branch-note {
   padding: 0.75rem 0.875rem;
   border-radius: var(--exits-radius-md);
@@ -10423,7 +10481,6 @@ a.exits-chip--primary:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
 
 .staff-assign-branch-option {
   display: flex;
