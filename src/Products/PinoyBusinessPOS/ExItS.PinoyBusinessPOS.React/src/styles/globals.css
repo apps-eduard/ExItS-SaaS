@@ -10057,10 +10057,17 @@ a.exits-chip--primary:hover {
 }
 
 .staff-assign-roles {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
 }
+
+@media (min-width: 640px) {
+  .staff-assign-roles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 
 .staff-assign-role {
   display: flex;
@@ -10382,10 +10389,17 @@ a.exits-chip--primary:hover {
 }
 
 .staff-assign-branch-scopes {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
 }
+
+@media (min-width: 640px) {
+  .staff-assign-branch-scopes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 
 .staff-assign-branch-note {
   padding: 0.75rem 0.875rem;
@@ -10399,7 +10413,17 @@ a.exits-chip--primary:hover {
 
 .staff-assign-branch-list {
   margin-top: 0.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
 }
+
+@media (min-width: 640px) {
+  .staff-assign-branch-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 
 .staff-assign-branch-option {
   display: flex;

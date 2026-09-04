@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Save } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
   listMembershipBranchAssignments,
@@ -785,6 +786,7 @@ export function OrgStaffAssignPage() {
           data-testid="org-staff-assign-submit"
           onClick={requestAssign}
         >
+          <Save className="size-4 shrink-0" aria-hidden />
           {assignMutation.isPending
             ? t("staffAssign.submitting")
             : isChanging
