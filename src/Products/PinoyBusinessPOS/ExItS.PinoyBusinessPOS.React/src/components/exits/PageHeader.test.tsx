@@ -26,7 +26,7 @@ describe("PageHeader", () => {
     expect(toggle).not.toHaveTextContent("Info");
   });
 
-  it("renders canonical back link with accessible name and 44px touch target", () => {
+  it("renders canonical back link with accessible name and density-sized control", () => {
     renderHeader(
       <PageHeader
         title="Shifts"
@@ -39,8 +39,7 @@ describe("PageHeader", () => {
     const back = screen.getByTestId("page-header-back-shifts");
     expect(back).toHaveAttribute("href", "/shifts");
     expect(back).toHaveAccessibleName("Back to shifts");
-    expect(back.className).toMatch(/min-h-11/);
-    expect(back.className).toMatch(/min-w-11/);
+    expect(back.className).toMatch(/exits-control-height/);
   });
 
   it("reveals description on hover and hides on mouse leave", () => {

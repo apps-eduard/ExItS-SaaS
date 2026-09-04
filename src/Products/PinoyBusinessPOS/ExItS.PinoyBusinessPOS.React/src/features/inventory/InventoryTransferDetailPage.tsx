@@ -319,7 +319,7 @@ export function InventoryTransferDetailPage() {
                     <td className="px-2 py-2">{formatTransferQty(line.sentQty)}</td>
                     <td className="px-2 py-2">
                       <input
-                        className="exits-input min-h-11 w-28"
+                        className="exits-input w-28"
                         inputMode="decimal"
                         value={text}
                         onChange={(e) =>
@@ -333,7 +333,7 @@ export function InventoryTransferDetailPage() {
                       {diff != null && diff > 0 ? (
                         <div className="flex flex-col gap-1">
                           <select
-                            className="exits-input min-h-11"
+                            className="exits-input"
                             value={reasonByLine[line.lineId] ?? ""}
                             onChange={(e) =>
                               setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
@@ -348,7 +348,7 @@ export function InventoryTransferDetailPage() {
                             ))}
                           </select>
                           <input
-                            className="exits-input min-h-11"
+                            className="exits-input"
                             placeholder={t("transfer.discrepancyNote")}
                             value={noteByLine[line.lineId] ?? ""}
                             onChange={(e) =>
@@ -387,7 +387,7 @@ export function InventoryTransferDetailPage() {
                       {t("transfer.received")}
                     </span>
                     <input
-                      className="exits-input min-h-12 text-[length:var(--exits-text-lg)]"
+                      className="exits-input text-[length:var(--exits-text-lg)]"
                       inputMode="decimal"
                       value={text}
                       onChange={(e) =>
@@ -402,7 +402,7 @@ export function InventoryTransferDetailPage() {
                   {diff != null && diff > 0 ? (
                     <>
                       <select
-                        className="exits-input min-h-11"
+                        className="exits-input"
                         value={reasonByLine[line.lineId] ?? ""}
                         onChange={(e) =>
                           setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
@@ -416,7 +416,7 @@ export function InventoryTransferDetailPage() {
                         ))}
                       </select>
                       <input
-                        className="exits-input min-h-11"
+                        className="exits-input"
                         placeholder={t("transfer.discrepancyNote")}
                         value={noteByLine[line.lineId] ?? ""}
                         onChange={(e) =>
@@ -436,7 +436,7 @@ export function InventoryTransferDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={busy}
               onClick={() => setMode("detail")}
             >
@@ -444,7 +444,7 @@ export function InventoryTransferDetailPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={!canReceive}
               onClick={() => void onReceive()}
               data-testid="transfer-receive-submit"
@@ -580,7 +580,6 @@ export function InventoryTransferDetailPage() {
         {canDispatch ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={!canMutate}
             onClick={() => void onDispatch()}
             data-testid="transfer-dispatch"
@@ -591,7 +590,6 @@ export function InventoryTransferDetailPage() {
         {canReceive ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={!canMutate}
             onClick={() => {
               setLocalError(null);
@@ -606,7 +604,6 @@ export function InventoryTransferDetailPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canMutate}
             onClick={() => void onCancel()}
             data-testid="transfer-cancel"

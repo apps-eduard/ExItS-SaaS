@@ -29,7 +29,7 @@ export function EntityCard({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "flex min-h-[var(--exits-touch-target-min)] w-full min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left",
+        "flex min-h-[var(--exits-row-min-height)] w-full min-w-0 flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3 text-left",
         interactive &&
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:border-primary",
         className,

@@ -101,7 +101,7 @@ function TodoRelatedEntityPicker({
         {t("personal.todo.relatedPick")}
         <select
           data-testid={`${idPrefix}-related-pick`}
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={form.relatedEntityId}
           onChange={(event) => setForm({ ...form, relatedEntityId: event.target.value })}
         >
@@ -121,7 +121,7 @@ function TodoRelatedEntityPicker({
       {t("personal.todo.relatedId")}
       <input
         data-testid={`${idPrefix}-related-id`}
-        className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+        className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
         value={form.relatedEntityId}
         onChange={(event) => setForm({ ...form, relatedEntityId: event.target.value })}
         placeholder="00000000-0000-0000-0000-000000000000"
@@ -204,7 +204,7 @@ export function TodoFormFields({
             id={`${idPrefix}-title`}
             data-testid={`${idPrefix}-title`}
             autoFocus={titleAutoFocus}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={form.title}
             onChange={(event) => setForm({ ...form, title: event.target.value })}
             required
@@ -235,7 +235,7 @@ export function TodoFormFields({
             <input
               data-testid={`${idPrefix}-due`}
               type="datetime-local"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={form.dueAtLocal}
               onChange={(event) => setForm({ ...form, dueAtLocal: event.target.value })}
             />
@@ -246,7 +246,7 @@ export function TodoFormFields({
             <input
               data-testid={`${idPrefix}-reminder`}
               type="datetime-local"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={form.reminderAtLocal}
               onChange={(event) => setForm({ ...form, reminderAtLocal: event.target.value })}
             />
@@ -261,7 +261,7 @@ export function TodoFormFields({
             {t("personal.todo.priority")}
             <select
               data-testid={`${idPrefix}-priority`}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={form.priority}
               onChange={(event) => setForm({ ...form, priority: event.target.value })}
             >
@@ -277,7 +277,7 @@ export function TodoFormFields({
             {t("personal.todo.relatedType")}
             <select
               data-testid={`${idPrefix}-related-type`}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={form.relatedEntityType}
               onChange={(event) =>
                 setForm({

@@ -315,7 +315,7 @@ export function ProductionRunCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("production.produce.selectSetup")}
         <select
-          className="min-h-11 rounded-md border border-border bg-background px-3"
+          className="rounded-md border border-border bg-background px-3"
           value={definitionId ?? ""}
           onChange={(e) => onSelectDefinition(e.target.value)}
           disabled={!allowManage || statusLocked}
@@ -345,7 +345,7 @@ export function ProductionRunCreatePage() {
               type="number"
               min={0}
               step="any"
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={outputQuantity}
               onChange={(e) => {
                 const raw = e.target.value;
@@ -405,7 +405,7 @@ export function ProductionRunCreatePage() {
                           type="number"
                           min={0}
                           step="any"
-                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          className="rounded-md border border-border bg-background px-3"
                           value={
                             actualByProduct[row.materialProductId] ?? String(row.actual)
                           }
@@ -431,7 +431,7 @@ export function ProductionRunCreatePage() {
               {t("production.produce.expiration")}
               <input
                 type="date"
-                className="min-h-11 rounded-md border border-border bg-background px-3"
+                className="rounded-md border border-border bg-background px-3"
                 value={expirationDate}
                 onChange={(e) => setExpirationDate(e.target.value)}
                 disabled={!allowManage || statusLocked}
@@ -443,7 +443,7 @@ export function ProductionRunCreatePage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("production.produce.lotNumber")}
             <input
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={lotNumber}
               onChange={(e) => setLotNumber(e.target.value)}
               disabled={!allowManage || statusLocked}
@@ -454,7 +454,7 @@ export function ProductionRunCreatePage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("production.produce.reference")}
             <input
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
               disabled={!allowManage || statusLocked}
@@ -478,7 +478,7 @@ export function ProductionRunCreatePage() {
       <StickyActionBar>
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={
             !allowManage ||
             !online ||

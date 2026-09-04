@@ -58,13 +58,13 @@ export function PageHeader({
     <header className="page-header flex min-w-0 flex-col gap-1">
       <div className="flex min-w-0 gap-1.5">
         {showBack ? (
-          <div className="flex h-11 shrink-0 items-center">
+          <div className="flex h-[var(--exits-control-height)] shrink-0 items-center">
             <Link
               to={backTo!}
               data-testid={backTestId}
               aria-label={backLabel}
               className={cn(
-                "-ml-2 inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "-ml-2 inline-flex size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)] shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               )}
             >
               <ArrowLeft className="size-5 shrink-0" aria-hidden />
@@ -77,7 +77,7 @@ export function PageHeader({
           onMouseLeave={() => setInfoHovered(false)}
         >
           <div className="page-header__head">
-            <div className="page-header__title-row flex min-h-11 min-w-0 items-center gap-1.5">
+            <div className="page-header__title-row flex min-h-[var(--exits-control-height)] min-w-0 items-center gap-1.5">
               {TitleIcon ? (
                 <span className="page-header__title-icon shrink-0" aria-hidden>
                   <TitleIcon className="size-5" />

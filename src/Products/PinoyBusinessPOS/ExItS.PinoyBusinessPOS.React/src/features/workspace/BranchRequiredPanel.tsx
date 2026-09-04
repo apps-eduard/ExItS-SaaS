@@ -25,7 +25,7 @@ export function BranchRequiredPanel({
         title={t("workspace.branchRequiredTitle")}
         detail={t("workspace.branchRequiredDetail")}
       />
-      <Button asChild className="min-h-11 w-full gap-2 sm:w-auto">
+      <Button asChild className="w-full gap-2 sm:w-auto">
         <Link to="/workspace" data-testid="branch-required-choose-workspace">
           <MapPin className="size-4 shrink-0" aria-hidden />
           {t("workspace.branchRequiredCta")}

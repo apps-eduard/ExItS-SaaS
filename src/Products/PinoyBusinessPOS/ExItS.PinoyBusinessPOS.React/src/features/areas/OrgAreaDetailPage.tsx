@@ -195,7 +195,7 @@ export function OrgAreaDetailPage() {
             <label className="flex flex-col gap-1">
               <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.name")}</span>
               <input
-                className="exits-input min-h-11"
+                className="exits-input"
                 value={name}
                 maxLength={100}
                 disabled={busy || area.status !== "Active"}
@@ -206,7 +206,7 @@ export function OrgAreaDetailPage() {
             <label className="flex flex-col gap-1">
               <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.code")}</span>
               <input
-                className="exits-input min-h-11"
+                className="exits-input"
                 value={code}
                 maxLength={32}
                 disabled={busy || area.status !== "Active"}
@@ -216,7 +216,7 @@ export function OrgAreaDetailPage() {
             </label>
             <Button
               type="button"
-              className="min-h-11 w-full sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={busy || area.status !== "Active" || !name.trim()}
               data-testid="org-area-save"
               onClick={() => renameMutation.mutate()}
@@ -245,7 +245,6 @@ export function OrgAreaDetailPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11"
                       disabled={busy}
                       data-testid={`org-area-remove-${branch.id}`}
                       onClick={() => branchMutation.mutate({ branchId: branch.id, target: null })}
@@ -272,7 +271,6 @@ export function OrgAreaDetailPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11"
                         disabled={busy}
                         data-testid={`org-area-add-${branch.id}`}
                         onClick={() =>
@@ -293,7 +291,7 @@ export function OrgAreaDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 w-full sm:w-auto"
+                className="w-full sm:w-auto"
                 disabled={busy}
                 data-testid="org-area-archive"
                 onClick={() => setArchiveOpen(true)}

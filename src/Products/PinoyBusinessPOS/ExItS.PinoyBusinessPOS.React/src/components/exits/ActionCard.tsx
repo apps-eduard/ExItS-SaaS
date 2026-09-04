@@ -27,7 +27,7 @@ export function ActionCard({
       to={to}
       data-testid={testId}
       className={cn(
-        "flex min-h-11 min-w-0 items-start gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 text-foreground no-underline shadow-[0_1px_2px_color-mix(in_srgb,var(--exits-foreground)_6%,transparent)] transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex min-w-0 items-start gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 text-foreground no-underline shadow-[0_1px_2px_color-mix(in_srgb,var(--exits-foreground)_6%,transparent)] transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
     >

@@ -206,18 +206,18 @@ export function BranchManagementListPage() {
           ]}
         />
         {showAreasLink ? (
-          <Button asChild variant="outline" className="min-h-11" data-testid="branch-mgmt-areas">
+          <Button asChild variant="outline" data-testid="branch-mgmt-areas">
             <Link to="/org/areas">{t("areas.title")}</Link>
           </Button>
         ) : null}
         {canCreate ? (
           atLimit ? (
-            <Button type="button" className="branch-mgmt-add min-h-11" disabled data-testid="branch-mgmt-add">
+            <Button type="button" className="branch-mgmt-add" disabled data-testid="branch-mgmt-add">
               <Plus className="size-4" aria-hidden />
               {t("branches.mgmt.add")}
             </Button>
           ) : (
-            <Button asChild className="branch-mgmt-add min-h-11" data-testid="branch-mgmt-add">
+            <Button asChild className="branch-mgmt-add" data-testid="branch-mgmt-add">
               <Link to="/org/branches/new">
                 <Plus className="size-4" aria-hidden />
                 {t("branches.mgmt.add")}
@@ -316,13 +316,12 @@ export function BranchManagementListPage() {
                   </dl>
 
                   <div className="branch-mgmt-card__actions">
-                    <Button asChild variant="outline" className="min-h-11" data-testid={`branch-mgmt-open-${branch.id}`}>
+                    <Button asChild variant="outline" data-testid={`branch-mgmt-open-${branch.id}`}>
                       <Link to={`/org/branches/${branch.id}`}>{t("branches.mgmt.open")}</Link>
                     </Button>
                     <Button
                       asChild
                       variant="outline"
-                      className="min-h-11"
                       data-testid={`branch-mgmt-view-qr-${branch.id}`}
                     >
                       <Link to={`/org/branches/${branch.id}?focus=qr#branch-storefront-qr`}>
@@ -332,7 +331,7 @@ export function BranchManagementListPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="min-h-11 min-w-11 px-3"
+                      className="min-w-11 px-3"
                       data-testid={`branch-mgmt-more-${branch.id}`}
                       aria-label={t("branches.mgmt.more")}
                       onClick={() => setMenuBranch(branch)}
@@ -357,12 +356,12 @@ export function BranchManagementListPage() {
       >
         {menuBranch ? (
           <div className="flex flex-col gap-2">
-            <Button asChild variant="outline" className="min-h-11 justify-start">
+            <Button asChild variant="outline" className="justify-start">
               <Link to={`/org/branches/${menuBranch.id}`} onClick={() => setMenuBranch(null)}>
                 {t("branches.mgmt.open")}
               </Link>
             </Button>
-            <Button asChild variant="outline" className="min-h-11 justify-start">
+            <Button asChild variant="outline" className="justify-start">
               <Link
                 to={`/org/branches/${menuBranch.id}?focus=qr#branch-storefront-qr`}
                 onClick={() => setMenuBranch(null)}
@@ -370,7 +369,7 @@ export function BranchManagementListPage() {
                 {t("branches.mgmt.viewQr")}
               </Link>
             </Button>
-            <Button asChild variant="outline" className="min-h-11 justify-start">
+            <Button asChild variant="outline" className="justify-start">
               <Link
                 to={`/org/branches/${menuBranch.id}/fulfillment`}
                 onClick={() => setMenuBranch(null)}

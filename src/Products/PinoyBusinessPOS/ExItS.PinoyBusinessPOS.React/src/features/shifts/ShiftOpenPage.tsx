@@ -396,7 +396,7 @@ export function ShiftOpenPage() {
           <Button
             type="button"
             variant="outline"
-            className="mt-3 min-h-11"
+            className="mt-3"
             onClick={() => void registersQuery.refetch()}
           >
             <RotateCcw className="size-4 shrink-0" aria-hidden />
@@ -419,7 +419,7 @@ export function ShiftOpenPage() {
               when PosDeviceAuthorization:EnforcementEnabled=true for native installs.
 
             <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
-            <Button asChild variant="outline" className="mt-3 min-h-11">
+            <Button asChild variant="outline" className="mt-3">
               <Link to="/registers">{t("shift.goToRegisters")}</Link>
             </Button>
             */}
@@ -449,7 +449,7 @@ export function ShiftOpenPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-1 min-h-11"
+                    className="mt-1"
                     data-testid="shift-open-pwa-register-retry"
                     onClick={() => {
                       pwaEnsureAttemptedRef.current = false;
@@ -483,7 +483,7 @@ export function ShiftOpenPage() {
             ) : (
               <>
                 <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
-                <Button asChild variant="outline" className="mt-3 min-h-11">
+                <Button asChild variant="outline" className="mt-3">
                   <Link to="/registers">{t("shift.goToRegisters")}</Link>
                 </Button>
               </>
@@ -604,7 +604,7 @@ export function ShiftOpenPage() {
             <Button
               type="button"
               variant="outline"
-              className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+              className="catalog-form-actions__restore w-full sm:w-auto"
               disabled={
                 saving ||
                 selectedRegisterBusy ||
@@ -630,7 +630,7 @@ export function ShiftOpenPage() {
         <div className="catalog-form-actions__secondary">
           <ActionButtonLoading
             type="button"
-            className="catalog-form-actions__save min-h-11"
+            className="catalog-form-actions__save"
             disabled={startBlocked}
             loading={saving}
             data-testid="shift-open-confirm"

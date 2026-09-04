@@ -33,7 +33,7 @@ export function ShellNotificationButton({
 }: ShellNotificationButtonProps) {
   const accessibleName = badge ? unreadLabel.replace("{count}", badge) : label;
   const sharedClassName = cn(
-    "relative inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    "relative inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     disabled && "pointer-events-none opacity-60",
     className,
   );

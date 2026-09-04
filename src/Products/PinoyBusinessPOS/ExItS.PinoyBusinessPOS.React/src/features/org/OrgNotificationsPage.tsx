@@ -237,7 +237,6 @@ export function OrgNotificationsPage() {
                     {href ? (
                       <Button
                         type="button"
-                        className="min-h-11"
                         data-testid={`org-notification-open-${item.id}`}
                         disabled={markRead.isPending}
                         onClick={() => void openNotification(item.id, item.isRead, href)}
@@ -249,7 +248,6 @@ export function OrgNotificationsPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11"
                         data-testid={`org-notification-mark-read-${item.id}`}
                         disabled={markRead.isPending}
                         onClick={() => markRead.mutate(item.id)}

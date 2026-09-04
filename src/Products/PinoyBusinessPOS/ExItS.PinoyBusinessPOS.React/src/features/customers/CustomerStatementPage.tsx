@@ -96,7 +96,7 @@ export function CustomerStatementPage() {
             id="statement-start"
             data-testid="statement-period-start"
             type="date"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={periodStart}
             onChange={(event) => setPeriodStart(event.target.value)}
           />
@@ -110,7 +110,7 @@ export function CustomerStatementPage() {
             id="statement-end"
             data-testid="statement-period-end"
             type="date"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={periodEnd}
             onChange={(event) => setPeriodEnd(event.target.value)}
           />

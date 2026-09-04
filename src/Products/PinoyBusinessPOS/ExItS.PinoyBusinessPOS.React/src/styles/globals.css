@@ -160,20 +160,29 @@
   --exits-motion-slow: 420ms;
   --exits-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --exits-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
-  --exits-touch-target-min: 3rem;
-  --exits-control-height: 2.75rem;
+  --exits-touch-target-min: 2.75rem;
+  /*
+   * Visual control density (default = balance).
+   * Touch chrome (bottom nav) may use --exits-touch-target-min separately.
+   * Do not force every desktop toolbar control to the touch minimum.
+   */
+  --exits-control-height: 2.25rem;
+  --exits-control-padding-x: 0.875rem;
+  --exits-control-padding-y: 0;
+  --exits-control-height-lg: 2.75rem;
   --exits-page-padding: 1rem;
 
-  /*
-   * Density: default = balance (filter chips like Expiring stock).
-   * Future theme can set data-density="comfort|balance|compact" on <html>.
-   */
   --exits-chip-min-height: 2.25rem;
-  --exits-chip-padding-y: 0.3rem;
+  --exits-chip-padding-y: 0.35rem;
   --exits-chip-padding-x: 0.85rem;
   --exits-chip-font-size: var(--exits-text-sm);
   --exits-chip-gap: 0.5rem;
   --exits-chip-index-size: 1.25rem;
+
+  --exits-row-min-height: 2.75rem;
+  --exits-toolbar-gap: 0.5rem;
+  --exits-list-card-padding-y: 0.75rem;
+  --exits-list-card-padding-x: 0.875rem;
 }
 
 /*
@@ -252,31 +261,53 @@
   }
 }
 
+/* Density modes — visual control sizing (balance = default everyday density) */
 [data-density="balance"] {
+  --exits-control-height: 2.25rem;
+  --exits-control-padding-x: 0.875rem;
+  --exits-control-padding-y: 0;
   --exits-chip-min-height: 2.25rem;
-  --exits-chip-padding-y: 0.3rem;
+  --exits-chip-padding-y: 0.35rem;
   --exits-chip-padding-x: 0.85rem;
   --exits-chip-font-size: var(--exits-text-sm);
   --exits-chip-gap: 0.5rem;
   --exits-chip-index-size: 1.25rem;
+  --exits-row-min-height: 2.75rem;
+  --exits-toolbar-gap: 0.5rem;
+  --exits-list-card-padding-y: 0.75rem;
+  --exits-list-card-padding-x: 0.875rem;
 }
 
 [data-density="comfort"] {
+  --exits-control-height: 2.75rem;
+  --exits-control-padding-x: 1rem;
+  --exits-control-padding-y: 0;
   --exits-chip-min-height: 2.75rem;
-  --exits-chip-padding-y: 0.45rem;
+  --exits-chip-padding-y: 0.5rem;
   --exits-chip-padding-x: 1rem;
   --exits-chip-font-size: var(--exits-text-md);
   --exits-chip-gap: 0.625rem;
   --exits-chip-index-size: 1.5rem;
+  --exits-row-min-height: 3.25rem;
+  --exits-toolbar-gap: 0.65rem;
+  --exits-list-card-padding-y: 0.9rem;
+  --exits-list-card-padding-x: 1rem;
 }
 
 [data-density="compact"] {
+  --exits-control-height: 2rem;
+  --exits-control-padding-x: 0.7rem;
+  --exits-control-padding-y: 0;
   --exits-chip-min-height: 2rem;
   --exits-chip-padding-y: 0.2rem;
   --exits-chip-padding-x: 0.65rem;
   --exits-chip-font-size: var(--exits-text-xs);
   --exits-chip-gap: 0.375rem;
   --exits-chip-index-size: 1.1rem;
+  --exits-row-min-height: 2.35rem;
+  --exits-toolbar-gap: 0.375rem;
+  --exits-list-card-padding-y: 0.55rem;
+  --exits-list-card-padding-x: 0.7rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7995,7 +8026,7 @@ textarea.exits-input {
 .exits-list__card,
 .suppliers-list__card {
   height: 100%;
-  padding: 0.75rem 0.875rem;
+  padding: var(--exits-list-card-padding-y, 0.75rem) var(--exits-list-card-padding-x, 0.875rem);
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
@@ -8407,8 +8438,10 @@ button.exits-filter-pill.exits-filter-pill--button {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  box-sizing: border-box;
+  height: var(--exits-chip-min-height);
   min-height: var(--exits-chip-min-height);
-  padding: var(--exits-chip-padding-y) var(--exits-chip-padding-x);
+  padding: 0 var(--exits-chip-padding-x);
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
@@ -9655,7 +9688,14 @@ a.exits-chip--primary:hover {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--exits-toolbar-gap);
+}
+
+.exits-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--exits-toolbar-gap);
 }
 
 .branch-mgmt-list {

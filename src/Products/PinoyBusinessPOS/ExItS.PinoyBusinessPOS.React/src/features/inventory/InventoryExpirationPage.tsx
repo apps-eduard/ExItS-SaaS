@@ -294,7 +294,6 @@ export function InventoryExpirationPage() {
                   <Button
                     asChild
                     variant="outline"
-                    className="min-h-11"
                     data-testid={`expiring-lot-view-${lot.lotId}`}
                   >
                     <Link to={`/inventory/${lot.productId}`}>{t("inventory.viewProduct")}</Link>
@@ -302,7 +301,6 @@ export function InventoryExpirationPage() {
                   {canWriteOff ? (
                     <Button
                       asChild
-                      className="min-h-11"
                       data-testid={`expiring-lot-write-off-${lot.lotId}`}
                     >
                       <Link
@@ -328,7 +326,7 @@ export function InventoryExpirationPage() {
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           disabled={query.isFetchingNextPage}
           onClick={() => void query.fetchNextPage()}
           data-testid="inventory-expiring-load-more"

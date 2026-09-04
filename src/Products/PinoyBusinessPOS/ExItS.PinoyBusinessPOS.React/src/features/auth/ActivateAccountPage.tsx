@@ -183,7 +183,7 @@ export function ActivateAccountPage() {
               {formError}
             </p>
           ) : null}
-          <Button type="submit" className="w-full min-h-11" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? t("auth.activating") : t("auth.activateAccount")}
           </Button>
         </form>

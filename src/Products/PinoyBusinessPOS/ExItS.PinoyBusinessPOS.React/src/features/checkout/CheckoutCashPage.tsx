@@ -553,7 +553,7 @@ export function CheckoutCashPage() {
     return (
       <div data-testid="checkout-denied" className="flex flex-col gap-3">
         <PageHeader title={t("checkout.title")} description={t("checkout.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
+        <Button asChild variant="ghost" className="w-fit">
           <Link to="/">{t("notFound.home")}</Link>
         </Button>
       </div>
@@ -590,16 +590,16 @@ export function CheckoutCashPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             {online ? (
               deviceBlocked ? (
-                <Button asChild className="min-h-11" data-testid="checkout-register-device">
+                <Button asChild data-testid="checkout-register-device">
                   <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
                 </Button>
               ) : (
-                <Button asChild className="min-h-11" data-testid="checkout-open-shift">
+                <Button asChild data-testid="checkout-open-shift">
                   <Link to="/shifts/open">{t("shift.openTitle")}</Link>
                 </Button>
               )
             ) : null}
-            <Button asChild variant="ghost" className="min-h-11">
+            <Button asChild variant="ghost">
               <Link to="/sell">{t("checkout.backToCart")}</Link>
             </Button>
           </div>
@@ -1023,7 +1023,7 @@ export function CheckoutCashPage() {
                 maxLength={GCASH_REFERENCE_MAX_LENGTH}
                 value={gcashReference}
                 disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                 onChange={(event) => setGcashReference(event.target.value)}
               />
             </label>
@@ -1077,7 +1077,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountScope")}
                 <select
                   data-testid="checkout-discount-scope"
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   value={discountScope}
                   disabled={saving}
                   onChange={(event) => setDiscountScope(event.target.value as DiscountScope)}
@@ -1090,7 +1090,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountMethod")}
                 <select
                   data-testid="checkout-discount-method"
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   value={discountMethod}
                   disabled={saving}
                   onChange={(event) => setDiscountMethod(event.target.value as DiscountMethod)}
@@ -1104,7 +1104,7 @@ export function CheckoutCashPage() {
                   {t("checkout.discountLine")}
                   <select
                     data-testid="checkout-discount-line"
-                    className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                     value={discountLineNumber}
                     disabled={saving}
                     onChange={(event) => setDiscountLineNumber(Number(event.target.value))}
@@ -1127,7 +1127,7 @@ export function CheckoutCashPage() {
                   step="0.01"
                   value={discountValue}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => setDiscountValue(event.target.value)}
                 />
               </label>
@@ -1138,7 +1138,7 @@ export function CheckoutCashPage() {
                   type="text"
                   value={discountReason}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   onChange={(event) => setDiscountReason(event.target.value)}
                 />
               </label>
@@ -1154,7 +1154,7 @@ export function CheckoutCashPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 type="button"
-                className="checkout-discount-apply min-h-11 flex-1 sm:flex-none"
+                className="checkout-discount-apply flex-1 sm:flex-none"
                 data-testid="checkout-discount-add"
                 disabled={saving}
                 onClick={addDiscount}
@@ -1165,7 +1165,6 @@ export function CheckoutCashPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
                 data-testid="checkout-discount-cancel"
                 disabled={saving}
                 onClick={() => {
@@ -1318,7 +1317,7 @@ export function CheckoutCashPage() {
                   step="0.01"
                   value={cashReceived}
                   disabled={saving}
-                  className="checkout-cash-received-row__input min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  className="checkout-cash-received-row__input rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => {
                     tenderEditedRef.current = true;
                     setCashReceived(event.target.value);
@@ -1327,7 +1326,7 @@ export function CheckoutCashPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="checkout-cash-received-row__exact min-h-11 shrink-0"
+                  className="checkout-cash-received-row__exact shrink-0"
                   data-testid="checkout-cash-exact"
                   disabled={saving}
                   onClick={() => {
@@ -1446,7 +1445,7 @@ export function CheckoutCashPage() {
                   type="date"
                   value={dueDate}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   onChange={(event) => setDueDate(event.target.value)}
                 />
               </label>

@@ -410,7 +410,7 @@ export function RoleHomeShell({
           {canAdmin ? (
             <Button
               type="button"
-              className="min-h-11 w-full"
+              className="w-full"
               disabled={experienceSwitching}
               onClick={() => void openManageBusiness()}
               data-testid="experience-manage-business"
@@ -422,7 +422,7 @@ export function RoleHomeShell({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-full"
+              className="w-full"
               disabled={experienceSwitching}
               onClick={() => void openOperations()}
               data-testid="experience-operations"
@@ -431,7 +431,7 @@ export function RoleHomeShell({
             </Button>
           ) : null}
           {canSell ? (
-            <Button type="button" className="min-h-11 w-full" onClick={startSelling}>
+            <Button type="button" className="w-full" onClick={startSelling}>
               {t("experience.startSelling")}
             </Button>
           ) : null}
@@ -441,7 +441,6 @@ export function RoleHomeShell({
           {canSell ? (
             <Button
               type="button"
-              className="min-h-11"
               variant={primarySell ? "default" : "ghost"}
               onClick={startSelling}
             >
@@ -452,7 +451,6 @@ export function RoleHomeShell({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               onClick={() => navigate("/workspace")}
             >
               {t("workspace.switch")}
@@ -462,22 +460,22 @@ export function RoleHomeShell({
       )}
 
       {canShifts ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shifts">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-shifts">
           <Link to="/shifts">{t("shift.hubTitle")}</Link>
         </Button>
       ) : null}
       {canOpenShift ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shift-open">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-shift-open">
           <Link to="/shifts/open">{t("shift.openTitle")}</Link>
         </Button>
       ) : null}
       {canRegisters ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-registers">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-registers">
           <Link to="/registers">{t("register.listTitle")}</Link>
         </Button>
       ) : null}
       {canDevices ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-org-devices">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-org-devices">
           <Link to="/org/devices">{t("devices.listTitle")}</Link>
         </Button>
       ) : null}
@@ -485,31 +483,31 @@ export function RoleHomeShell({
         <Button
           asChild
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="open-branch-fulfillment"
         >
           <Link to="/org/branches">{t("org.branchesLink")}</Link>
         </Button>
       ) : null}
       {showHomeDeviceRegister ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-device-register">
           <Link to="/devices/register">{t("devices.registerThisDevice")}</Link>
         </Button>
       ) : null}
       {canCatalog ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>
         </Button>
       ) : null}
       {canInventory ? (
         <>
-          <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-inventory">
+          <Button asChild variant="ghost" className="w-fit" data-testid="open-inventory">
             <Link to="/inventory">{t("inventory.open")}</Link>
           </Button>
           <Button
             asChild
             variant="ghost"
-            className="min-h-11 w-fit"
+            className="w-fit"
             data-testid="open-expiring-stock-home"
           >
             <Link to="/inventory/expiration">{t("inventory.openExpiring")}</Link>
@@ -517,7 +515,7 @@ export function RoleHomeShell({
         </>
       ) : null}
       {canCustomers ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customers">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-customers">
           <Link to="/customers">{t("customers.open")}</Link>
         </Button>
       ) : null}
@@ -525,34 +523,34 @@ export function RoleHomeShell({
         <Button
           asChild
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="open-customer-orders"
         >
           <Link to="/orders">{t("orders.openQueue")}</Link>
         </Button>
       ) : null}
       {canSuppliers ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-suppliers">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-suppliers">
           <Link to="/suppliers">{t("suppliers.open")}</Link>
         </Button>
       ) : null}
       {canPurchasing ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-purchasing">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-purchasing">
           <Link to="/purchasing">{t("purchasing.open")}</Link>
         </Button>
       ) : null}
       {canReturns ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-returns">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-returns">
           <Link to="/returns">{t("returns.open")}</Link>
         </Button>
       ) : null}
       {canDashboard ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-dashboard">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-dashboard">
           <Link to="/dashboard">{t("dashboard.open")}</Link>
         </Button>
       ) : null}
       {canReports ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-reports">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-reports">
           <Link to="/reports">{t("reports.open")}</Link>
         </Button>
       ) : null}

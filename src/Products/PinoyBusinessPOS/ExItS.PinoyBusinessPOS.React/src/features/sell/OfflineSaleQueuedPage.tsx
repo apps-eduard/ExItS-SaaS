@@ -32,7 +32,7 @@ export function OfflineSaleQueuedPage() {
         </div>
       </Card>
       <div className="flex flex-wrap gap-2">
-        <Button asChild className="min-h-11" data-testid="offline-sale-queued-new-sale">
+        <Button asChild data-testid="offline-sale-queued-new-sale">
           <Link to="/sell">{t("offline.queuedNewSale")}</Link>
         </Button>
       </div>

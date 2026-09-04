@@ -467,7 +467,7 @@ export function OrgStaffPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => void staffQuery.refetch()}
           >
             {t("staffManage.retry")}

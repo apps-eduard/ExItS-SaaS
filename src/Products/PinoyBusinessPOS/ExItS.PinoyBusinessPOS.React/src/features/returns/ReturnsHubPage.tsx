@@ -165,7 +165,6 @@ export function ReturnsHubPage() {
                       {canReturn ? (
                         <Button
                           type="button"
-                          className="min-h-11"
                           data-testid={`returns-open-sale-${sale.saleId}`}
                           onClick={() => navigate(`/returns/sale/${sale.saleId}`)}
                         >

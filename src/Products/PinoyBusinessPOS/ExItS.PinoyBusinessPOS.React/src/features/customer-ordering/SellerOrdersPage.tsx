@@ -102,7 +102,7 @@ export function SellerOrdersPage() {
             title={t("orders.error")}
             detail={describePosApiError(query.error, t, "error.detail")}
           />
-          <Button type="button" className="min-h-11 w-fit" onClick={() => void query.refetch()}>
+          <Button type="button" className="w-fit" onClick={() => void query.refetch()}>
             {t("orders.retry")}
           </Button>
         </div>

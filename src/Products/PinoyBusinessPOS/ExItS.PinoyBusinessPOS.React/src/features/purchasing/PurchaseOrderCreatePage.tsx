@@ -491,7 +491,7 @@ export function PurchaseOrderCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("purchasing.receivingBranch")}
         <input
-          className="min-h-11 rounded-md border border-border bg-muted px-3"
+          className="rounded-md border border-border bg-muted px-3"
           value={boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? ""}
           readOnly
           data-testid="po-branch"
@@ -502,7 +502,7 @@ export function PurchaseOrderCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("purchasing.supplier")}
         <select
-          className="min-h-11 rounded-md border border-border bg-background px-3"
+          className="rounded-md border border-border bg-background px-3"
           value={supplierId}
           onChange={(e) => onSupplierChange(e.target.value)}
           disabled={!allowManage || !online}
@@ -521,7 +521,7 @@ export function PurchaseOrderCreatePage() {
         {t("purchasing.orderDate")}
         <input
           type="date"
-          className="min-h-11 rounded-md border border-border bg-background px-3"
+          className="rounded-md border border-border bg-background px-3"
           value={orderDate}
           onChange={(e) => setOrderDate(e.target.value)}
           disabled={!allowManage || !online}
@@ -589,7 +589,7 @@ export function PurchaseOrderCreatePage() {
                   title={t("purchasing.noReadyProducts")}
                   detail={t("purchasing.noReadyProductsHelp")}
                   action={
-                    <Button asChild className="min-h-11" data-testid="po-open-shared-catalog">
+                    <Button asChild data-testid="po-open-shared-catalog">
                       <Link to={sharedCatalogHref}>{t("purchasing.openSharedCatalog")}</Link>
                     </Button>
                   }
@@ -653,7 +653,6 @@ export function PurchaseOrderCreatePage() {
                           <div className="flex justify-end">
                             <Button
                               type="button"
-                              className="min-h-11"
                               data-testid={`po-add-${product.buyerProductId}`}
                               disabled={!allowManage || !online || saving || cannotAdd}
                               onClick={() => setConnectedQty(product, 1)}
@@ -696,7 +695,7 @@ export function PurchaseOrderCreatePage() {
                   title={t("purchasing.noSetupProducts")}
                   detail={t("purchasing.noSetupProductsHelp")}
                   action={
-                    <Button asChild className="min-h-11" data-testid="po-open-shared-catalog-setup">
+                    <Button asChild data-testid="po-open-shared-catalog-setup">
                       <Link to={sharedCatalogSetupHref}>{t("purchasing.openSharedCatalog")}</Link>
                     </Button>
                   }
@@ -723,7 +722,7 @@ export function PurchaseOrderCreatePage() {
                           {formatCompactPoPrice(item.poPrice)}
                         </p>
                       </div>
-                      <Button asChild className="min-h-11 w-full" data-testid={`po-connect-${item.exposureId}`}>
+                      <Button asChild className="w-full" data-testid={`po-connect-${item.exposureId}`}>
                         <Link to={sharedCatalogSetupHref}>{t("purchasing.connectInSharedCatalog")}</Link>
                       </Button>
                     </Card>
@@ -759,7 +758,7 @@ export function PurchaseOrderCreatePage() {
               <li key={p.productId}>
                 <button
                   type="button"
-                  className={`min-h-11 w-full rounded-md border px-3 text-left ${
+                  className={` w-full rounded-md border px-3 text-left ${
                     selectedProduct?.productId === p.productId
                       ? "border-primary bg-muted"
                       : "border-border bg-background"
@@ -779,7 +778,7 @@ export function PurchaseOrderCreatePage() {
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.qty")}
                 <input
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={qtyText}
                   onChange={(e) => setQtyText(e.target.value)}
                   data-testid="po-line-qty"
@@ -788,7 +787,7 @@ export function PurchaseOrderCreatePage() {
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.unitCost")}
                 <input
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={costText}
                   onChange={(e) => setCostText(e.target.value)}
                   data-testid="po-line-cost"
@@ -797,7 +796,7 @@ export function PurchaseOrderCreatePage() {
               <div className="flex items-end">
                 <Button
                   type="button"
-                  className="min-h-11 w-full"
+                  className="w-full"
                   onClick={addExternalLine}
                   data-testid="po-add-line"
                 >
@@ -831,7 +830,7 @@ export function PurchaseOrderCreatePage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="mt-2 min-h-11"
+                      className="mt-2"
                       onClick={() =>
                         setExternalLines((prev) =>
                           prev.filter((l) => l.productId !== line.productId),
@@ -868,7 +867,7 @@ export function PurchaseOrderCreatePage() {
           </div>
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             disabled={
               !allowManage ||
               !online ||
@@ -886,7 +885,6 @@ export function PurchaseOrderCreatePage() {
       ) : (
         <Button
           type="button"
-          className="min-h-11"
           disabled
           data-testid="po-create-submit"
         >

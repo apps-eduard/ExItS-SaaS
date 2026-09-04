@@ -261,7 +261,6 @@ export function CatalogCategoriesPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-11"
                           data-testid={`catalog-category-rename-save-${category.categoryId}`}
                           disabled={!renameDraft.trim() || renameMutation.isPending}
                           onClick={() =>
@@ -282,7 +281,6 @@ export function CatalogCategoriesPage() {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="min-h-11"
                           aria-label={t("catalog.cancelRename")}
                           onClick={cancelRename}
                         >
@@ -305,7 +303,7 @@ export function CatalogCategoriesPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="catalog-category-row__action min-h-11"
+                      className="catalog-category-row__action"
                       data-testid={`catalog-category-rename-${category.categoryId}`}
                       disabled={isActing}
                       onClick={() => beginRename(category.categoryId, category.name)}
@@ -317,7 +315,7 @@ export function CatalogCategoriesPage() {
                       <Button
                         type="button"
                         variant="destructive"
-                        className="catalog-category-row__action min-h-11"
+                        className="catalog-category-row__action"
                         data-testid={`catalog-category-deactivate-${category.categoryId}`}
                         disabled={isActing}
                         onClick={() => void handleStatusToggle(category.categoryId, true)}
@@ -333,7 +331,7 @@ export function CatalogCategoriesPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="catalog-category-row__action catalog-form-actions__restore min-h-11"
+                        className="catalog-category-row__action catalog-form-actions__restore"
                         data-testid={`catalog-category-reactivate-${category.categoryId}`}
                         disabled={isActing}
                         onClick={() => void handleStatusToggle(category.categoryId, false)}

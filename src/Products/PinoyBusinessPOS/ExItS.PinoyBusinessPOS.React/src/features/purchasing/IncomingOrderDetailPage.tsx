@@ -281,7 +281,7 @@ export function IncomingOrderDetailPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("incomingOrders.declineReason")}
             <select
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               data-testid="incoming-order-decline-reason"
@@ -307,7 +307,6 @@ export function IncomingOrderDetailPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={busy}
               onClick={() => setShowDecline(false)}
             >
@@ -316,7 +315,6 @@ export function IncomingOrderDetailPage() {
             <Button
               type="button"
               variant="destructive"
-              className="min-h-11"
               disabled={!canAct}
               data-testid="incoming-order-decline-confirm"
               onClick={() => declineMutation.mutate()}
@@ -332,7 +330,7 @@ export function IncomingOrderDetailPage() {
           <Button
             type="button"
             variant="destructive"
-            className="min-h-11 flex-1"
+            className="flex-1"
             disabled={!canAct}
             data-testid="incoming-order-decline"
             onClick={() => setShowDecline(true)}
@@ -341,7 +339,7 @@ export function IncomingOrderDetailPage() {
           </Button>
           <Button
             type="button"
-            className="min-h-11 flex-1"
+            className="flex-1"
             disabled={!canAct}
             data-testid="incoming-order-accept"
             onClick={() => acceptMutation.mutate()}
@@ -354,7 +352,7 @@ export function IncomingOrderDetailPage() {
       {isAccepted ? (
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={!canAct}
           data-testid="incoming-order-prepare"
           onClick={() => prepareMutation.mutate()}
@@ -366,7 +364,7 @@ export function IncomingOrderDetailPage() {
       {isPreparing ? (
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={!canAct}
           data-testid="incoming-order-fulfill"
           onClick={() => fulfillMutation.mutate()}
@@ -379,7 +377,7 @@ export function IncomingOrderDetailPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("incomingOrders.viewOnly")}</p>
       ) : null}
 
-      <Button asChild variant="ghost" className="min-h-11">
+      <Button asChild variant="ghost">
         <Link to="/purchasing/incoming-orders">{t("incomingOrders.backList")}</Link>
       </Button>
     </div>

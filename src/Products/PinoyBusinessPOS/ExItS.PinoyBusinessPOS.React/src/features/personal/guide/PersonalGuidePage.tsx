@@ -103,7 +103,7 @@ function FeatureCard({
     >
       <button
         type="button"
-        className="personal-guide-card__header flex min-h-11 w-full items-start gap-3 px-3 py-3 text-left"
+        className="personal-guide-card__header flex w-full items-start gap-3 px-3 py-3 text-left"
         aria-expanded={expanded}
         aria-controls={panelId}
         data-testid={`guide-card-toggle-${feature.code}`}
@@ -154,12 +154,12 @@ function FeatureCard({
           </div>
         ) : null}
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button asChild className="min-h-11 w-full sm:w-auto" data-testid={`guide-try-${feature.code}`}>
+          <Button asChild className="w-full sm:w-auto" data-testid={`guide-try-${feature.code}`}>
             <Link to={feature.route}>{t("personal.guide.tryIt")}</Link>
           </Button>
           <label
             htmlFor={switchId}
-            className="flex min-h-11 cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)]"
+            className="flex cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)]"
           >
             <input
               id={switchId}
@@ -214,7 +214,7 @@ function CategorySection({
       <button
         type="button"
         id={headingId}
-        className="catalog-form-section__title m-0 flex min-h-11 w-full items-center justify-between gap-2 text-left text-muted"
+        className="catalog-form-section__title m-0 flex w-full items-center justify-between gap-2 text-left text-muted"
         aria-expanded={open}
         aria-controls={panelId}
         data-testid={`guide-category-toggle-${category}`}
@@ -376,7 +376,7 @@ export function PersonalGuidePage() {
         ))
       )}
 
-      <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)]">
+      <label className="flex cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)]">
         <input
           type="checkbox"
           role="switch"

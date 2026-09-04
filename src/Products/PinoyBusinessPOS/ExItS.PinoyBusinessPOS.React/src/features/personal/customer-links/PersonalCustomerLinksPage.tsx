@@ -444,7 +444,7 @@ function PendingTabContent({
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <Button
                       type="button"
-                      className="min-h-11 w-full sm:w-auto"
+                      className="w-full sm:w-auto"
                       disabled={actionsDisabled}
                       data-testid={`customer-link-accept-${request.id}`}
                       onClick={() => void onAcceptGroup(group)}
@@ -459,7 +459,7 @@ function PendingTabContent({
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11 w-full sm:w-auto"
+                      className="w-full sm:w-auto"
                       disabled={actionsDisabled}
                       data-testid={`customer-link-decline-${request.id}`}
                       onClick={() => void onDeclineGroup(group)}
@@ -475,7 +475,7 @@ function PendingTabContent({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11 w-full text-destructive sm:w-auto"
+                    className="w-full text-destructive sm:w-auto"
                     disabled={actionsDisabled}
                     data-testid={`customer-link-block-${request.id}`}
                     onClick={() => {

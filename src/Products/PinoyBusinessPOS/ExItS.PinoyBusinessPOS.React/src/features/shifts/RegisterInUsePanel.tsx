@@ -46,14 +46,13 @@ export function RegisterInUsePanel({
       {onChooseRegister ? (
         <Button
           type="button"
-          className="min-h-11"
           data-testid={`${testId}-choose-register`}
           onClick={onChooseRegister}
         >
           {t("shift.chooseAnotherRegister")}
         </Button>
       ) : (
-        <Button asChild className="min-h-11" data-testid={`${testId}-choose-register`}>
+        <Button asChild data-testid={`${testId}-choose-register`}>
           <Link to={chooseRegisterHref}>{t("shift.chooseAnotherRegister")}</Link>
         </Button>
       )}

@@ -79,7 +79,7 @@ export function ReceivePaymentSection({
         >
           <button
             type="button"
-            className={`min-h-11 rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
+            className={` rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
               mode === "paidInFull"
                 ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_12%,transparent)] font-medium"
                 : "border-border bg-background"
@@ -94,7 +94,7 @@ export function ReceivePaymentSection({
           {allowSupplierCredit ? (
             <button
               type="button"
-              className={`min-h-11 rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
+              className={` rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
                 creditMode
                   ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_12%,transparent)] font-medium"
                   : "border-border bg-background"
@@ -139,7 +139,7 @@ export function ReceivePaymentSection({
             <input
               type="text"
               inputMode="decimal"
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={paidNowText}
               disabled={disabled}
               onChange={(e) => onPaidNowChange(e.target.value)}
@@ -152,7 +152,7 @@ export function ReceivePaymentSection({
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.paymentMethodAtReceipt")}
             <select
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={paymentMethod}
               disabled={disabled}
               onChange={(e) =>
@@ -174,7 +174,7 @@ export function ReceivePaymentSection({
             {t("purchasing.dueDateOptional")}
             <input
               type="date"
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={dueDate}
               disabled={disabled}
               onChange={(e) => onDueDateChange(e.target.value)}

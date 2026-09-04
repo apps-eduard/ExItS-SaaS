@@ -202,7 +202,7 @@ export function WarehouseDashboardPage() {
                   <li key={transfer.transferId}>
                     <Link
                       to={`/inventory/transfers/${transfer.transferId}`}
-                      className="exits-list-row flex min-h-11 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 no-underline"
+                      className="exits-list-row flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 no-underline"
                       data-testid="warehouse-incoming-transfer"
                     >
                       <span className="font-medium text-foreground">
@@ -218,7 +218,7 @@ export function WarehouseDashboardPage() {
                   <li key={po.purchaseOrderId}>
                     <Link
                       to={`/purchasing/${po.purchaseOrderId}`}
-                      className="exits-list-row flex min-h-11 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 no-underline"
+                      className="exits-list-row flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 no-underline"
                       data-testid="warehouse-incoming-po"
                     >
                       <span className="font-medium text-foreground">

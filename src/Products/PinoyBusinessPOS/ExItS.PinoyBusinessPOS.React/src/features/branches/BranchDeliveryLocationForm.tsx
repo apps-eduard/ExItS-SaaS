@@ -68,7 +68,6 @@ export function BranchDeliveryLocationForm({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11"
           disabled={gpsBusy || busy}
           onClick={onCaptureGps}
           data-testid="branch-gps-assist"
@@ -78,7 +77,6 @@ export function BranchDeliveryLocationForm({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11"
           disabled={busy || !mapProviderReady}
           onClick={() => setPickerOpen(true)}
           data-testid="branch-choose-on-map"
@@ -104,7 +102,7 @@ export function BranchDeliveryLocationForm({
 
       {mapLinks ? (
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="min-h-11">
+          <Button asChild variant="outline">
             <a
               href={mapLinks.google}
               target="_blank"
@@ -114,7 +112,7 @@ export function BranchDeliveryLocationForm({
               {t("branches.openGoogleMaps")}
             </a>
           </Button>
-          <Button asChild variant="outline" className="min-h-11">
+          <Button asChild variant="outline">
             <a href={mapLinks.osm} target="_blank" rel="noreferrer" data-testid="branch-maps-osm">
               {t("branches.openOsm")}
             </a>

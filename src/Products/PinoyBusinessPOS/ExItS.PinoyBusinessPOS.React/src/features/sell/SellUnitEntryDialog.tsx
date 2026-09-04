@@ -177,7 +177,7 @@ export function SellUnitEntryDialog({
             min={whole ? 1 : step}
             step={step}
             value={quantity}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
             onChange={(event) => {
               const next = Number(event.target.value);
               if (!Number.isFinite(next)) {

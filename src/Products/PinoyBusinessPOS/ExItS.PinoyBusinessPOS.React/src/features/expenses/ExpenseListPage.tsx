@@ -250,7 +250,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.status")}</span>
           <select
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -266,7 +266,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.payment")}</span>
           <select
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={paymentMethod}
             onChange={(e) => {
               setPaymentMethod(e.target.value);
@@ -282,7 +282,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.expenseNumber")}</span>
           <input
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={expenseNumber}
             onChange={(e) => {
               setExpenseNumber(e.target.value);
@@ -296,7 +296,7 @@ export function ExpenseListPage() {
           <span className="text-muted">{t("expense.filter.fromDate")}</span>
           <input
             type="date"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={fromDate}
             onChange={(e) => {
               setFromDate(e.target.value);
@@ -309,7 +309,7 @@ export function ExpenseListPage() {
           <span className="text-muted">{t("expense.filter.toDate")}</span>
           <input
             type="date"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={toDate}
             onChange={(e) => {
               setToDate(e.target.value);
@@ -382,7 +382,6 @@ export function ExpenseListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={page <= 1 || listQuery.isFetching}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -396,7 +395,6 @@ export function ExpenseListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={page >= totalPages || listQuery.isFetching}
             onClick={() => setPage((p) => p + 1)}
           >

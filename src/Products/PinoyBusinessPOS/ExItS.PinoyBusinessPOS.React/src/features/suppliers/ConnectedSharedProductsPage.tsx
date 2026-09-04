@@ -319,7 +319,6 @@ export function ConnectedSharedProductsPage() {
         <div className="flex flex-wrap gap-2" data-testid="connected-bulk-actions">
           <Button
             type="button"
-            className="min-h-11"
             disabled={busy}
             data-testid="connected-bulk-share"
             onClick={() => void runBulk("Share")}
@@ -329,7 +328,6 @@ export function ConnectedSharedProductsPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             disabled={busy}
             data-testid="connected-bulk-unshare"
             onClick={() => void runBulk("Unshare")}
@@ -339,7 +337,7 @@ export function ConnectedSharedProductsPage() {
           <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
             <span>{t("connected.buyerPrice")}</span>
             <input
-              className="min-h-11 w-28 rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] px-2"
+              className="w-28 rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] px-2"
               inputMode="decimal"
               value={buyerPrice}
               onChange={(event) => setBuyerPrice(event.target.value)}
@@ -349,7 +347,6 @@ export function ConnectedSharedProductsPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             disabled={busy}
             data-testid="connected-apply-buyer-price"
             onClick={() => void applyFixedPrice()}
@@ -369,7 +366,6 @@ export function ConnectedSharedProductsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={page <= 1}
               data-testid="connected-share-prev"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -379,7 +375,6 @@ export function ConnectedSharedProductsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={page >= totalPages}
               data-testid="connected-share-next"
               onClick={() => setPage((current) => current + 1)}

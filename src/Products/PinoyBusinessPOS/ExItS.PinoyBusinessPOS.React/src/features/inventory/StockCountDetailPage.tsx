@@ -393,7 +393,7 @@ export function StockCountDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={busy}
               onClick={() => setMode("detail")}
               data-testid="stock-count-back-to-count"
@@ -402,7 +402,7 @@ export function StockCountDetailPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={!canMutate || (summary?.remaining ?? 1) > 0}
               onClick={() => void onComplete()}
               data-testid="stock-count-complete"
@@ -502,7 +502,7 @@ export function StockCountDetailPage() {
               <label className="flex flex-col gap-1">
                 <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.fieldTitle")}</span>
                 <input
-                  className="exits-input min-h-11"
+                  className="exits-input"
                   value={draftTitle}
                   onChange={(e) => setDraftTitle(e.target.value)}
                   maxLength={80}
@@ -513,7 +513,7 @@ export function StockCountDetailPage() {
                 <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.countDate")}</span>
                 <input
                   type="date"
-                  className="exits-input min-h-11"
+                  className="exits-input"
                   value={draftDate}
                   onChange={(e) => setDraftDate(e.target.value)}
                   data-testid="stock-count-edit-date"
@@ -532,7 +532,6 @@ export function StockCountDetailPage() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  className="min-h-11"
                   disabled={!canMutate}
                   onClick={() => void onSaveDraftMeta()}
                   data-testid="stock-count-save-draft-meta"
@@ -542,7 +541,6 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
                   onClick={() => setDraftEditing(false)}
                 >
                   {t("stockCount.backToCount")}
@@ -554,7 +552,7 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 w-full sm:w-auto"
+                className="w-full sm:w-auto"
                 onClick={() => navigate("/inventory/stock-counts/new")}
                 data-testid="stock-count-recreate-hint"
               >
@@ -566,7 +564,6 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={!canMutate}
                 onClick={() => setDraftEditing(true)}
                 data-testid="stock-count-edit"
@@ -575,7 +572,6 @@ export function StockCountDetailPage() {
               </Button>
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={!canMutate || count.lines.length === 0}
                 onClick={() => void onStart()}
                 data-testid="stock-count-start"
@@ -585,7 +581,6 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={!canMutate}
                 onClick={() => void onCancel()}
                 data-testid="stock-count-cancel"
@@ -688,7 +683,7 @@ export function StockCountDetailPage() {
                           ref={(el) => {
                             inputRefs.current[line.productId] = el;
                           }}
-                          className="exits-input min-h-11 w-28"
+                          className="exits-input w-28"
                           inputMode="decimal"
                           value={text}
                           disabled={readOnly || !allowManage || !online || busy}
@@ -745,7 +740,7 @@ export function StockCountDetailPage() {
                         ref={(el) => {
                           inputRefs.current[line.productId] = el;
                         }}
-                        className="exits-input min-h-12 text-[length:var(--exits-text-lg)]"
+                        className="exits-input text-[length:var(--exits-text-lg)]"
                         inputMode="decimal"
                         value={text}
                         disabled={readOnly || !allowManage || !online || busy}
@@ -789,7 +784,7 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => void onSaveProgress()}
                   data-testid="stock-count-save-progress"
@@ -798,7 +793,7 @@ export function StockCountDetailPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => {
                     setLocalError(null);
@@ -811,7 +806,7 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => void onCancel()}
                   data-testid="stock-count-cancel-in-progress"
@@ -861,7 +856,6 @@ export function StockCountDetailPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11"
                         disabled={!canMutate}
                         onClick={() => {
                           void refreshAfter(

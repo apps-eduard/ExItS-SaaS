@@ -176,7 +176,6 @@ export function BranchOverviewPanel({
         readiness.customerOrderingReady ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={busy}
             onClick={onEnableOrdering}
             data-testid="enable-ordering"
@@ -188,7 +187,6 @@ export function BranchOverviewPanel({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={busy}
             onClick={onPauseOrders}
             data-testid="pause-ordering"
@@ -199,7 +197,6 @@ export function BranchOverviewPanel({
         {readiness.onlineOrdersPaused ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={busy}
             onClick={onResumeOrders}
             data-testid="resume-ordering"

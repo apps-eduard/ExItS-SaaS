@@ -507,7 +507,7 @@ export function CatalogProductsPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="mt-3 min-h-11 self-start"
+                  className="mt-3 self-start"
                   data-testid="catalog-clear-filters"
                   onClick={clearSheetFilters}
                 >

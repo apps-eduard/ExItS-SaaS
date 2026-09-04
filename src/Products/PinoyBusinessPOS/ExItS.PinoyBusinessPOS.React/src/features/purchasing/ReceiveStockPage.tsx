@@ -403,7 +403,7 @@ export function ReceiveStockPage() {
             {t("purchasing.purchaseDate")}
             <input
               type="date"
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
               data-testid="direct-purchase-date"
@@ -412,7 +412,7 @@ export function ReceiveStockPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.boughtFrom")}
             <select
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={supplierId}
               onChange={(e) => {
                 setSupplierId(e.target.value);
@@ -437,7 +437,7 @@ export function ReceiveStockPage() {
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               {t("purchasing.sourceName")}
               <input
-                className="min-h-11 rounded-md border border-border bg-background px-3"
+                className="rounded-md border border-border bg-background px-3"
                 value={sourceName}
                 onChange={(e) => setSourceName(e.target.value)}
                 placeholder={t("purchasing.sourcePlaceholder")}
@@ -448,7 +448,7 @@ export function ReceiveStockPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.reference")}
             <input
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
             />
@@ -481,7 +481,7 @@ export function ReceiveStockPage() {
               <li key={p.productId}>
                 <button
                   type="button"
-                  className="min-h-11 w-full rounded-md border border-border bg-background px-3 text-left"
+                  className="w-full rounded-md border border-border bg-background px-3 text-left"
                   onClick={() => beginAdd(p)}
                   data-testid={`direct-product-${p.productId}`}
                 >
@@ -498,7 +498,7 @@ export function ReceiveStockPage() {
                 <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                   {t("purchasing.qty")}
                   <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
+                    className="rounded-md border border-border bg-background px-3"
                     value={qtyText}
                     onChange={(e) => setQtyText(e.target.value)}
                     data-testid="direct-line-qty"
@@ -507,7 +507,7 @@ export function ReceiveStockPage() {
                 <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                   {t("purchasing.unitCost")}
                   <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
+                    className="rounded-md border border-border bg-background px-3"
                     value={costText}
                     onChange={(e) => setCostText(e.target.value)}
                     data-testid="direct-line-cost"
@@ -519,7 +519,7 @@ export function ReceiveStockPage() {
                       {t("purchasing.expiryDate")}
                       <input
                         type="date"
-                        className="min-h-11 rounded-md border border-border bg-background px-3"
+                        className="rounded-md border border-border bg-background px-3"
                         value={expiry}
                         onChange={(e) => setExpiry(e.target.value)}
                         data-testid="direct-line-expiry"
@@ -528,7 +528,7 @@ export function ReceiveStockPage() {
                     <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                       {t("purchasing.lotNumber")}
                       <input
-                        className="min-h-11 rounded-md border border-border bg-background px-3"
+                        className="rounded-md border border-border bg-background px-3"
                         value={lot}
                         onChange={(e) => setLot(e.target.value)}
                         data-testid="direct-line-lot"
@@ -540,7 +540,6 @@ export function ReceiveStockPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  className="min-h-11"
                   onClick={saveSheet}
                   data-testid="direct-save-line"
                 >
@@ -549,7 +548,6 @@ export function ReceiveStockPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
                   onClick={() => setSheetProduct(null)}
                 >
                   {t("purchasing.cancel")}
@@ -601,7 +599,6 @@ export function ReceiveStockPage() {
 
           <Button
             type="button"
-            className="min-h-11"
             disabled={lines.length === 0 || !allowManage || !online}
             onClick={() => {
               if (validatePayment() === null) {
@@ -647,14 +644,12 @@ export function ReceiveStockPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               onClick={() => setReviewing(false)}
             >
               {t("purchasing.backToReceipt")}
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={saving || statusLocked}
               onClick={() => void confirm()}
               data-testid="direct-confirm"

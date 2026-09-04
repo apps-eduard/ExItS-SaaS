@@ -50,7 +50,7 @@ export function PersonalGuideHomeCard() {
           .replace("{explored}", String(guide.explored))
           .replace("{total}", String(guide.total))}
       </p>
-      <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="personal-guide-home-continue">
+      <Button asChild className="w-full sm:w-auto" data-testid="personal-guide-home-continue">
         <Link to={PERSONAL_GUIDE_ROUTE}>{t("personal.home.guideCardContinue")}</Link>
       </Button>
     </section>

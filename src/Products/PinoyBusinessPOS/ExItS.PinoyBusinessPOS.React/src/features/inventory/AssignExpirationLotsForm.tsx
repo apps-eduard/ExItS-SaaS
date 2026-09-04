@@ -205,7 +205,7 @@ export function AssignExpirationLotsForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 w-fit"
+                  className="w-fit"
                   onClick={() => removeRow(row.id)}
                   data-testid={`enable-expiration-remove-${index}`}
                 >
@@ -221,7 +221,7 @@ export function AssignExpirationLotsForm({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 w-fit"
+          className="w-fit"
           onClick={addRow}
           disabled={!canAddRow}
           data-testid="enable-expiration-add-row"
@@ -292,7 +292,6 @@ export function AssignExpirationLotsForm({
       <div className="flex flex-wrap justify-end gap-2" data-testid="enable-expiration-primary-actions">
         <Button
           type="button"
-          className="min-h-11"
           disabled={!canSubmit}
           onClick={() => void onSubmit()}
           data-testid="enable-expiration-submit"

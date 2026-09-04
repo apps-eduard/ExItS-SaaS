@@ -218,7 +218,7 @@ export function ConnectedIncomingRequestsPage() {
             <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
               {t("connected.catalogSharing")}
             </legend>
-            <label className="mb-2 flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+            <label className="mb-2 flex items-start gap-2 text-[length:var(--exits-text-sm)]">
               <input
                 type="radio"
                 name="sharing-mode"
@@ -232,7 +232,7 @@ export function ConnectedIncomingRequestsPage() {
                 <span className="text-muted">{t("connected.allEligibleProductsHelp")}</span>
               </span>
             </label>
-            <label className="flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+            <label className="flex items-start gap-2 text-[length:var(--exits-text-sm)]">
               <input
                 type="radio"
                 name="sharing-mode"
@@ -249,7 +249,7 @@ export function ConnectedIncomingRequestsPage() {
             <label className="mt-3 flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="font-medium">{t("connected.customerDiscount")}</span>
               <input
-                className="min-h-11 w-full max-w-[8rem] rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3"
+                className="w-full max-w-[8rem] rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3"
                 inputMode="decimal"
                 value={discountPercent}
                 onChange={(event) => setDiscountPercent(event.target.value)}
@@ -266,7 +266,6 @@ export function ConnectedIncomingRequestsPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={Boolean(busyId)}
               onClick={() => setAcceptSetup(null)}
               data-testid="connected-accept-cancel"
@@ -275,7 +274,6 @@ export function ConnectedIncomingRequestsPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={Boolean(busyId)}
               onClick={() => {
                 void confirmAcceptAndShare();
@@ -305,7 +303,6 @@ export function ConnectedIncomingRequestsPage() {
           <div className="connected-incoming-row__actions mt-3">
             <Button
               type="button"
-              className="min-h-11"
               data-testid="connected-share-now"
               onClick={() =>
                 navigate(`/suppliers/connected/buyers/${sharePrompt.relationshipId}/shared-products`)
@@ -316,7 +313,6 @@ export function ConnectedIncomingRequestsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="connected-share-later"
               onClick={() => setSharePrompt(null)}
             >
@@ -393,7 +389,6 @@ export function ConnectedIncomingRequestsPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11"
                       data-testid={`connected-approve-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
                       onClick={() => void respond(item.relationshipId, true, name)}
@@ -408,7 +403,6 @@ export function ConnectedIncomingRequestsPage() {
                     <Button
                       type="button"
                       variant="destructive"
-                      className="min-h-11"
                       data-testid={`connected-decline-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
                       onClick={() => void respond(item.relationshipId, false, name)}

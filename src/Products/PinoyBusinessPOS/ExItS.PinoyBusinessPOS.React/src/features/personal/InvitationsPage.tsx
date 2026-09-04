@@ -144,7 +144,7 @@ function ConnectionRequestCard({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onDecline}
           >
@@ -157,7 +157,7 @@ function ConnectionRequestCard({
           </Button>
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onAccept}
           >
@@ -174,7 +174,7 @@ function ConnectionRequestCard({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={actionsDisabled}
             onClick={onRevoke}
           >
@@ -367,7 +367,7 @@ export function InvitationsPage() {
           </div>
           <HandCoins className="size-6 shrink-0 text-primary" aria-hidden="true" />
         </div>
-        <Button asChild variant="outline" className="min-h-[var(--exits-touch-target-min)] justify-between">
+        <Button asChild variant="outline" className="justify-between">
           <Link to="/personal/utang/invitations" data-testid="invitations-open-utang">
             <span>{t("invitations.openUtangInvites")}</span>
             <ChevronRight className="size-4" aria-hidden="true" />
@@ -493,7 +493,7 @@ export function InvitationsPage() {
               </p>
             </div>
           </div>
-          <Button asChild className="min-h-11 w-full sm:w-auto">
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/personal/people">{t("invitations.openPeople")}</Link>
           </Button>
         </Card>

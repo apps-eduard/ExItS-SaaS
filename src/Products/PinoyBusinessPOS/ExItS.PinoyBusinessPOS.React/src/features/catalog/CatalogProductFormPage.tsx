@@ -276,7 +276,7 @@ function CatalogProductNameConflictPanel({
       ) : null}
       <Link
         to={`/catalog/products/${existing.productId}/edit`}
-        className="mt-2 inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline"
+        className="mt-2 inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline"
         data-testid="catalog-name-conflict-use-existing"
       >
         {t("catalog.duplicate.useExisting")}
@@ -1395,7 +1395,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 {productId ? (
                   <Link
                     to={`/inventory/${productId}/expiration`}
-                    className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
+                    className="inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
                     data-testid="catalog-manage-expiration-settings"
                   >
                     {t("inventory.manageExpirationSettings")}
@@ -1485,8 +1485,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                       variant="ghost"
 
-                      className="min-h-11"
-
                       onClick={() =>
                         setUnitDrafts((current) => current.filter((row) => row.key !== draft.key))
                       }
@@ -1564,8 +1562,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                   variant="ghost"
 
-                  className="min-h-11"
-
                   onClick={() =>
                     setUnitDrafts((current) => [...current, createEmptyUnitDraft("Purchase")])
                   }
@@ -1577,8 +1573,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   type="button"
 
                   variant="ghost"
-
-                  className="min-h-11"
 
                   onClick={() =>
                     setUnitDrafts((current) => [...current, createEmptyUnitDraft("Sell")])

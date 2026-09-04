@@ -269,14 +269,12 @@ export function BranchCreatePage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             onClick={() => navigate("/org/branches")}
           >
             {t("branches.cancel")}
           </Button>
           <Button
             type="submit"
-            className="min-h-11"
             disabled={createMutation.isPending}
             data-testid="branch-create-submit"
           >

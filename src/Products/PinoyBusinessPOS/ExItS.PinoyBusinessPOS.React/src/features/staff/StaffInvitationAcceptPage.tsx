@@ -90,7 +90,7 @@ export function StaffInvitationAcceptPage() {
             {t("staffAccept.separateCredentials")}
           </p>
           <Button
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => {
               void (async () => {
                 if (sessionStatus === "authenticated") {
@@ -123,7 +123,7 @@ export function StaffInvitationAcceptPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed">
               {t("staffAccept.requiresPersonalDetail")}
             </p>
-            <Button asChild className="min-h-11 w-full sm:w-auto">
+            <Button asChild className="w-full sm:w-auto">
               <Link
                 to="/sign-in"
                 state={{ from: `/personal/invitations/accept?token=${encodeURIComponent(token)}` }}
@@ -155,7 +155,7 @@ export function StaffInvitationAcceptPage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted">
             {t("staffAccept.passwordHint")}
           </p>
-          <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={submitting}>
+          <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
             {submitting ? t("staffAccept.submitting") : t("staffAccept.submit")}
           </Button>
         </form>

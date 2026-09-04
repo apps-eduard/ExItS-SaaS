@@ -179,7 +179,7 @@ export function PersonalProfilePage() {
               </span>
               <input
                 data-testid="personal-profile-display-name"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                 value={editDisplayName}
                 disabled={saveMutation.isPending}
                 maxLength={100}

@@ -589,7 +589,7 @@ export function OperationalReportPage() {
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="report-refresh"
           disabled={activeQuery.isFetching}
           onClick={() => void activeQuery.refetch()}

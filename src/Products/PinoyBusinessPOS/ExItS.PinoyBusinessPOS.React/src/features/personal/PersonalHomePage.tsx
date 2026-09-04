@@ -142,7 +142,7 @@ export function PersonalHomePage() {
         <div className="exits-animate-toolbar flex w-full justify-center">
           <Button
             type="button"
-            className="personal-error-retry min-h-11 w-full"
+            className="personal-error-retry w-full"
             onClick={() => void dashboardQuery.refetch()}
           >
             <RefreshCw className="size-4 shrink-0" aria-hidden />
@@ -264,7 +264,7 @@ export function PersonalHomePage() {
                   <li key={`${store.organizationId}:${store.businessCustomerId}`}>
                     <Link
                       to={store.href}
-                      className="personal-stores-to-pay-row exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                      className="personal-stores-to-pay-row exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
                       data-testid={`personal-store-row-${store.organizationId}`}
                     >
                       <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">
@@ -326,7 +326,7 @@ export function PersonalHomePage() {
               <li key={item.key}>
                 <Link
                   to={item.href}
-                  className="personal-attention-row exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                  className="personal-attention-row exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
                   data-testid={`personal-attention-${item.kind}`}
                 >
                   <span className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-medium">

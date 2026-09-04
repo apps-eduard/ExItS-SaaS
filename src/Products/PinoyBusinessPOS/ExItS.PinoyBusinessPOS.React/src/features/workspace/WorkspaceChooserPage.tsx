@@ -277,7 +277,7 @@ export function WorkspaceChooserPage() {
             />
             <Button
               type="button"
-              className="min-h-11 w-full sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
             >
               {t("workspace.grantProbeRetry")}
@@ -381,7 +381,7 @@ export function WorkspaceChooserPage() {
                 />
                 <Button
                   type="button"
-                  className="min-h-11 w-full sm:w-auto"
+                  className="w-full sm:w-auto"
                   onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
                 >
                   {t("workspace.grantProbeRetry")}
@@ -561,7 +561,7 @@ function OrganizationWorkspaceCard({
       {canCollapse ? (
         <button
           type="button"
-          className="flex min-h-11 w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           aria-expanded={expanded}
           onClick={onToggle}
         >
@@ -677,7 +677,7 @@ function DestinationTile({
       <Button
         type="button"
         variant="default"
-        className="min-h-11 w-full justify-center gap-2"
+        className="w-full justify-center gap-2"
         disabled={busy || bindingKey != null}
         onClick={() => onSelect(destination)}
         data-testid={`workspace-destination-${destination.experience}`}
@@ -696,7 +696,7 @@ function DestinationTile({
       data-testid={`workspace-destination-${destination.experience}`}
       aria-label={label}
       className={cn(
-        "inline-flex min-h-11 w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+        "inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
       )}
     >
       <Icon className="size-5 shrink-0 text-primary" aria-hidden />

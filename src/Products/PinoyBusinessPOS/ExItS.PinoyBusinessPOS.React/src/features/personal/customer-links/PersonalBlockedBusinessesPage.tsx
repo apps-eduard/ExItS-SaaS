@@ -138,7 +138,7 @@ export function PersonalBlockedBusinessesPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="mt-3 min-h-11"
+                      className="mt-3"
                       disabled={unblock.isPending}
                       data-testid={`unblock-business-${row.organizationId}`}
                       onClick={() => unblock.mutate(row.organizationId)}

@@ -157,7 +157,7 @@ export function ReportFilters({
 
           <Button
             type="button"
-            className="min-h-11 w-fit"
+            className="w-fit"
             data-testid="report-apply-filters"
             disabled={loading || (preset === "custom" && !customValid)}
             onClick={onApply}

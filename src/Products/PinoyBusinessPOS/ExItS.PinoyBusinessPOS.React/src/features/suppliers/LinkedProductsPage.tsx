@@ -117,7 +117,7 @@ export function LinkedProductsPage() {
         backLabel={t("connected.backToSupplier")}
         backTestId="page-header-back-suppliers"
       />
-      <Button asChild className="min-h-11 self-start" data-testid="linked-browse-catalog">
+      <Button asChild className="self-start" data-testid="linked-browse-catalog">
         <Link to={`/suppliers/${supplierId}/connected-catalog`}>
           {t("connected.browseProducts")}
         </Link>
@@ -168,7 +168,6 @@ export function LinkedProductsPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     data-testid={`linked-unlink-${link.linkId}`}
                     disabled={busyId === link.linkId}
                     onClick={() => void unlink(link.linkId)}

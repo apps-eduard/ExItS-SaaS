@@ -160,7 +160,7 @@ export function ArchivedNotificationsPage() {
                       >
                         <button
                           type="button"
-                          className="flex min-h-[var(--exits-touch-target-min)] w-full flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="flex min-h-[var(--exits-row-min-height)] w-full flex-col items-start gap-1 bg-transparent p-0 text-left text-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           disabled={!canNavigate}
                           onClick={() => {
                             if (!item.isRead) {
@@ -221,7 +221,6 @@ export function ArchivedNotificationsPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-[var(--exits-touch-target-min)]"
             disabled={loadingMore}
             data-testid="archived-notifications-load-more"
             onClick={() => void loadMore()}

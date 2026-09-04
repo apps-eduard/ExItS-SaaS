@@ -391,7 +391,7 @@ export function StockUseCreatePage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("stockUse.reason")}
         <select
-          className="min-h-11 rounded-md border border-border bg-background px-3"
+          className="rounded-md border border-border bg-background px-3"
           value={reason}
           onChange={(e) => setReason(e.target.value as StockUseReasonCode)}
           disabled={!allowManage || statusLocked}
@@ -440,7 +440,7 @@ export function StockUseCreatePage() {
                       type="number"
                       min={0}
                       step="any"
-                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      className="rounded-md border border-border bg-background px-3"
                       value={qtyByProduct[line.productId] ?? String(line.quantity)}
                       onChange={(e) => updateLineQty(line.productId, e.target.value)}
                       disabled={statusLocked}
@@ -450,7 +450,7 @@ export function StockUseCreatePage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11 w-fit"
+                    className="w-fit"
                     onClick={() => removeLine(line.productId)}
                     disabled={statusLocked}
                   >
@@ -519,7 +519,7 @@ export function StockUseCreatePage() {
                       type="number"
                       min={0}
                       step="any"
-                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      className="rounded-md border border-border bg-background px-3"
                       value={qtyByProduct[row.productId] ?? "1"}
                       onChange={(e) =>
                         setQtyByProduct((prev) => ({
@@ -533,7 +533,6 @@ export function StockUseCreatePage() {
                   </label>
                   <Button
                     type="button"
-                    className="min-h-11"
                     disabled={!allowManage || !online || statusLocked || row.onHand <= 0}
                     onClick={() => addOrUpdateFromPicker(row)}
                     data-testid={`stock-use-add-${row.productId}`}
@@ -550,7 +549,7 @@ export function StockUseCreatePage() {
       <StickyActionBar>
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={
             !allowManage ||
             !online ||

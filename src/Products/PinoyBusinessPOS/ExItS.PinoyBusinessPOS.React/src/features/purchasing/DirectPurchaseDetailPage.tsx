@@ -278,7 +278,7 @@ export function DirectPurchaseDetailPage() {
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 w-fit"
+          className="w-fit"
           onClick={() => {
             setVoidOpen(true);
             setError(null);
@@ -325,7 +325,6 @@ export function DirectPurchaseDetailPage() {
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={voiding || !voidReason.trim()}
                 onClick={() => void onVoid()}
                 data-testid="direct-purchase-reverse-confirm"
@@ -335,7 +334,6 @@ export function DirectPurchaseDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={voiding}
                 onClick={() => {
                   setVoidOpen(false);

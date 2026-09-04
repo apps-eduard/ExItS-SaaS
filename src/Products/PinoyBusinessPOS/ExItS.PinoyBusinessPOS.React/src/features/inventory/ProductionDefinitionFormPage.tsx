@@ -338,7 +338,7 @@ export function ProductionDefinitionFormPage() {
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("production.setups.name")}
         <input
-          className="min-h-11 rounded-md border border-border bg-background px-3"
+          className="rounded-md border border-border bg-background px-3"
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={!allowManage}
@@ -359,7 +359,7 @@ export function ProductionDefinitionFormPage() {
                 type="number"
                 min={0}
                 step="any"
-                className="min-h-11 rounded-md border border-border bg-background px-3"
+                className="rounded-md border border-border bg-background px-3"
                 value={outputQuantity}
                 onChange={(e) => setOutputQuantity(e.target.value)}
                 disabled={!allowManage}
@@ -372,7 +372,7 @@ export function ProductionDefinitionFormPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-fit"
+              className="w-fit"
               disabled={!allowManage}
               onClick={() => {
                 setOutputProductId(null);
@@ -411,7 +411,6 @@ export function ProductionDefinitionFormPage() {
                     </div>
                     <Button
                       type="button"
-                      className="min-h-11"
                       disabled={!allowManage || !online}
                       onClick={() => selectOutput(product)}
                     >
@@ -445,7 +444,7 @@ export function ProductionDefinitionFormPage() {
                       type="number"
                       min={0}
                       step="any"
-                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      className="rounded-md border border-border bg-background px-3"
                       value={
                         materialQty[material.materialProductId] ?? String(material.quantity)
                       }
@@ -458,7 +457,7 @@ export function ProductionDefinitionFormPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11 w-fit"
+                    className="w-fit"
                     disabled={!allowManage}
                     onClick={() =>
                       setMaterials((prev) =>
@@ -494,7 +493,7 @@ export function ProductionDefinitionFormPage() {
                       type="number"
                       min={0}
                       step="any"
-                      className="min-h-11 rounded-md border border-border bg-background px-3"
+                      className="rounded-md border border-border bg-background px-3"
                       value={materialQty[product.productId] ?? "1"}
                       onChange={(e) =>
                         setMaterialQty((prev) => ({
@@ -507,7 +506,6 @@ export function ProductionDefinitionFormPage() {
                   </label>
                   <Button
                     type="button"
-                    className="min-h-11"
                     disabled={!allowManage || !online}
                     onClick={() => addMaterial(product)}
                   >
@@ -523,7 +521,7 @@ export function ProductionDefinitionFormPage() {
       <StickyActionBar>
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={!allowManage || !online || saving}
           onClick={() => void submit()}
           data-testid="production-setup-save"

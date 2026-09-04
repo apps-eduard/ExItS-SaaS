@@ -90,7 +90,6 @@ export function PersonalIdentityResolvePanel({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="personal-identity-clear"
               disabled={busy}
               onClick={onClear}

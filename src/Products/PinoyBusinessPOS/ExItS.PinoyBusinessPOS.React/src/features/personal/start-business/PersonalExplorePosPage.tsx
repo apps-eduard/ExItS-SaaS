@@ -102,7 +102,7 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
           title={t("personal.explore.errorTitle")}
           detail={t("personal.explore.errorDetail")}
         />
-        <Button type="button" className="min-h-11 w-fit" onClick={() => void plansQuery.refetch()}>
+        <Button type="button" className="w-fit" onClick={() => void plansQuery.refetch()}>
           {t("personal.explore.retry")}
         </Button>
       </div>
@@ -274,7 +274,6 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                         <Button
                           type="button"
                           variant="ghost"
-                          className="min-h-11"
                           disabled
                           data-testid={`explore-current-${planKey}`}
                         >
@@ -285,7 +284,6 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                           {trialAvailable ? (
                             <Button
                               type="button"
-                              className="min-h-11"
                               data-testid={`explore-start-trial-${planKey}`}
                               onClick={() =>
                                 navigate(
@@ -300,7 +298,6 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                             <Button
                               type="button"
                               variant={trialAvailable ? "ghost" : "default"}
-                              className="min-h-11"
                               data-testid={`explore-subscribe-${planKey}`}
                               onClick={() =>
                                 navigate(
@@ -329,7 +326,7 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-fit"
+              className="w-fit"
               data-testid="explore-compare-toggle"
               aria-expanded={compareOpen}
               onClick={() => setCompareOpen((open) => !open)}

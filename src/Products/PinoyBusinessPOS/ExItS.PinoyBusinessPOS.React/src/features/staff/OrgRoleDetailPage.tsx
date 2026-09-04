@@ -100,7 +100,7 @@ export function OrgRoleDetailPage() {
           </div>
 
           <div className="exits-animate-toolbar">
-            <Link className="exits-chip min-h-11" to={pageBackNav.orgStaff.to} data-testid="org-role-manage-staff">
+            <Link className="exits-chip" to={pageBackNav.orgStaff.to} data-testid="org-role-manage-staff">
               {t("staffManage.title")}
             </Link>
           </div>

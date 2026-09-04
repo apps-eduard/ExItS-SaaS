@@ -213,7 +213,6 @@ export function ExpenseDetailPage() {
           <Button
             type="button"
             variant="destructive"
-            className="min-h-11"
             data-testid="expense-void-open"
             onClick={() => setVoidOpen(true)}
           >
@@ -223,7 +222,7 @@ export function ExpenseDetailPage() {
       ) : null}
 
       {isVoided && allowManage ? (
-        <Button asChild variant="outline" className="min-h-11 w-fit" data-testid="expense-record-replacement">
+        <Button asChild variant="outline" className="w-fit" data-testid="expense-record-replacement">
           <Link to={`/expenses/new?${replacementQuery.toString()}`}>
             {t("expense.recordReplacement")}
           </Link>
@@ -257,7 +256,6 @@ export function ExpenseDetailPage() {
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={voiding || !voidReason.trim()}
                 onClick={() => void onVoid()}
                 data-testid="expense-void-confirm"
@@ -267,7 +265,6 @@ export function ExpenseDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={voiding}
                 onClick={() => {
                   setVoidOpen(false);

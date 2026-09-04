@@ -115,7 +115,7 @@ export function RegistersListPage() {
         </p>
       ) : null}
 
-      <Button asChild variant="ghost" className="min-h-11 w-fit">
+      <Button asChild variant="ghost" className="w-fit">
         <Link to="/shifts">{t("shift.hubTitle")}</Link>
       </Button>
     </div>

@@ -143,7 +143,7 @@ export function ReportScopeControls({
           id={selectId}
           className={cn(
             "catalog-form-select max-w-full",
-            compact ? "dashboard-toolbar__select min-h-9" : "min-h-11",
+            compact ? "dashboard-toolbar__select min-h-9" : "",
           )}
           data-testid="report-scope-select"
           disabled={loading || branchesQuery.isLoading}

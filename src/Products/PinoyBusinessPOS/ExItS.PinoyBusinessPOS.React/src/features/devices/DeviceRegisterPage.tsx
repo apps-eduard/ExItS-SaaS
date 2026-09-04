@@ -233,7 +233,7 @@ export function DeviceRegisterPage() {
           <Button
             type="button"
             variant="outline"
-            className="device-register-actions__cancel min-h-11"
+            className="device-register-actions__cancel"
             data-testid="devices-register-cancel"
             onClick={() => navigate(pageBackNav.orgDevices.to)}
           >
@@ -241,7 +241,7 @@ export function DeviceRegisterPage() {
           </Button>
           <Button
             type="button"
-            className="device-register-actions__submit min-h-11"
+            className="device-register-actions__submit"
             data-testid="devices-register-submit"
             disabled={registerMutation.isPending || capacityBlocked}
             onClick={() => registerMutation.mutate()}

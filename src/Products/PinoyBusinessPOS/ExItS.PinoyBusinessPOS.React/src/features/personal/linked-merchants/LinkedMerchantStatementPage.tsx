@@ -518,14 +518,14 @@ export function LinkedMerchantStatementPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)]">
               {t("personal.merchantStatement.historyLocked")}
             </p>
-            <Button asChild className="min-h-11 w-full">
+            <Button asChild className="w-full">
               <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
             </Button>
           </div>
         ) : olderItems.length === 0 && !olderLoadAttempted ? (
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             disabled={busyOlder}
             data-testid="linked-merchant-older-load"
             onClick={() => void loadOlder()}

@@ -291,7 +291,6 @@ export function SupplierDetailPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
                 data-testid="supplier-change-location"
                 disabled={locationLoading || locationSaving}
                 onClick={() => void startChangeLocation()}
@@ -315,7 +314,7 @@ export function SupplierDetailPage() {
                   {locationBranches.map((branch) => (
                     <label
                       key={branch.branchId}
-                      className="flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)]"
+                      className="flex items-center gap-2 text-[length:var(--exits-text-sm)]"
                     >
                       <input
                         type="radio"
@@ -334,7 +333,6 @@ export function SupplierDetailPage() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  className="min-h-11"
                   data-testid="supplier-location-save"
                   disabled={locationLoading || locationSaving || !selectedBranchId}
                   onClick={() => void saveSupplierLocation()}
@@ -344,7 +342,6 @@ export function SupplierDetailPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
                   data-testid="supplier-location-cancel"
                   disabled={locationSaving}
                   onClick={() => resetLocationEditor()}
@@ -419,7 +416,6 @@ export function SupplierDetailPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="supplier-cancel-request"
               disabled={acting}
               onClick={() => void cancelPendingRequest()}
@@ -437,7 +433,7 @@ export function SupplierDetailPage() {
           aria-label={t("connected.browseProducts")}
           data-testid="supplier-connected-actions"
         >
-          <Button asChild className="min-h-11" data-testid="supplier-browse-catalog">
+          <Button asChild data-testid="supplier-browse-catalog">
             <Link to={`/suppliers/${supplierId}/connected-catalog`}>
               {t("connected.browseProducts")}
             </Link>
@@ -445,7 +441,6 @@ export function SupplierDetailPage() {
           <Button
             asChild
             variant="ghost"
-            className="min-h-11"
             data-testid="supplier-linked-products"
           >
             <Link to={`/suppliers/${supplierId}/linked-products`}>
@@ -459,7 +454,7 @@ export function SupplierDetailPage() {
 
       <div className="flex flex-wrap gap-2">
         {allowManage ? (
-          <Button asChild className="min-h-11" data-testid="supplier-edit">
+          <Button asChild data-testid="supplier-edit">
             <Link to={`/suppliers/${supplierId}/edit`}>{t("suppliers.edit")}</Link>
           </Button>
         ) : null}
@@ -467,7 +462,6 @@ export function SupplierDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             data-testid="supplier-toggle-status"
             disabled={acting}
             onClick={() => void toggleStatus()}

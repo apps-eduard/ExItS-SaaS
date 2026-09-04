@@ -274,7 +274,6 @@ export function CatalogBrandsPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-11"
                           data-testid={`catalog-brand-rename-save-${brand.brandId}`}
                           disabled={!renameDraft.trim() || renameMutation.isPending}
                           onClick={() =>
@@ -295,7 +294,6 @@ export function CatalogBrandsPage() {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="min-h-11"
                           aria-label={t("catalog.cancelRename")}
                           onClick={cancelRename}
                         >
@@ -316,7 +314,7 @@ export function CatalogBrandsPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="catalog-brand-row__action min-h-11"
+                      className="catalog-brand-row__action"
                       data-testid={`catalog-brand-rename-${brand.brandId}`}
                       disabled={isActing}
                       onClick={() => beginRename(brand.brandId, brand.name)}
@@ -328,7 +326,7 @@ export function CatalogBrandsPage() {
                       <Button
                         type="button"
                         variant="destructive"
-                        className="catalog-brand-row__action min-h-11"
+                        className="catalog-brand-row__action"
                         data-testid={`catalog-brand-deactivate-${brand.brandId}`}
                         disabled={isActing}
                         onClick={() => void handleStatusToggle(brand.brandId, true)}
@@ -344,7 +342,7 @@ export function CatalogBrandsPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="catalog-brand-row__action catalog-form-actions__restore min-h-11"
+                        className="catalog-brand-row__action catalog-form-actions__restore"
                         data-testid={`catalog-brand-reactivate-${brand.brandId}`}
                         disabled={isActing}
                         onClick={() => void handleStatusToggle(brand.brandId, false)}

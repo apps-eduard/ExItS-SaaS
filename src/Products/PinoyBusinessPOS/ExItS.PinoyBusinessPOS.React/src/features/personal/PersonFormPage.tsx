@@ -367,7 +367,7 @@ export function PersonCreateForm({
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none"
                     data-testid="person-add-cancel"
                     disabled={saving || resolving}
                     onClick={() => {

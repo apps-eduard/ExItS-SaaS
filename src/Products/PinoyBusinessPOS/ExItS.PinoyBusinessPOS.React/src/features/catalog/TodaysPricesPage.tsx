@@ -375,7 +375,7 @@ export function TodaysPricesPage() {
                     {dirty ? (
                       <Button
                         type="button"
-                        className="catalog-prices-row__save min-h-11 shrink-0"
+                        className="catalog-prices-row__save shrink-0"
                         disabled={!canSave || saving}
                         onClick={() => void saveProduct(row.productId)}
                         data-testid={`price-save-${row.productId}`}

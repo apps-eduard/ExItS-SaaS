@@ -71,7 +71,7 @@ export function BottomSheet({
         {title ? (
           <div className="bottom-sheet__header flex shrink-0 items-center justify-between gap-3">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
-            <Button type="button" variant="ghost" className="min-h-11 shrink-0" onClick={onClose}>
+            <Button type="button" variant="ghost" className="shrink-0" onClick={onClose}>
               {closeLabel}
             </Button>
           </div>

@@ -46,7 +46,7 @@ export function TestUserSelector({
       </span>
       <select
         id="pos-test-user"
-        className="h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[0.75rem] border border-border bg-surface px-3 text-[length:var(--exits-text-sm)] text-foreground"
+        className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-[0.75rem] border border-border bg-surface px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-sm)] text-foreground"
         defaultValue=""
         onChange={(event) => {
           const key = event.target.value;

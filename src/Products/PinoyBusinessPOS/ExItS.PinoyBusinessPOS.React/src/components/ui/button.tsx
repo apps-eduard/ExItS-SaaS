@@ -18,8 +18,14 @@ const buttonVariants = cva(
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
       },
       size: {
-        default: "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] px-4",
-        icon: "size-[var(--exits-touch-target-min)] min-h-[var(--exits-touch-target-min)] min-w-[var(--exits-touch-target-min)] p-0",
+        /** Follows Preferences density (compact 32 / balance 36 / comfort 44). */
+        default:
+          "h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] px-[var(--exits-control-padding-x)]",
+        /** Square control matching density height. */
+        icon: "size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)] p-0",
+        /** Exceptional CTA only — not for routine CRUD / toolbar actions. */
+        large:
+          "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
     },
     defaultVariants: {

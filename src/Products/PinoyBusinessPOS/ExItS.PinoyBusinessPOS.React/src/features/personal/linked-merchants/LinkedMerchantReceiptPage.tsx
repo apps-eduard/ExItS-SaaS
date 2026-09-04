@@ -139,7 +139,7 @@ export function LinkedMerchantReceiptPage() {
           title={t("personal.merchantStatement.historyLockedTitle")}
           detail={state.detail}
         />
-        <Button asChild className="min-h-11 w-fit">
+        <Button asChild className="w-fit">
           <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
         </Button>
       </div>

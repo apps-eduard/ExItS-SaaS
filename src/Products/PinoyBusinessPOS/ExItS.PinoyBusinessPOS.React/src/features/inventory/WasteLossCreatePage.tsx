@@ -634,10 +634,10 @@ export function WasteLossCreatePage() {
         <Card data-testid="waste-loss-lot-unavailable">
           <p className="m-0 font-medium">{t("wasteLoss.lotNoLongerAvailable")}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="min-h-11" data-testid="waste-loss-back-expiration">
+            <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
               <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
             </Button>
-            <Button asChild className="min-h-11" data-testid="waste-loss-start-fresh">
+            <Button asChild data-testid="waste-loss-start-fresh">
               <Link to="/inventory/waste-loss/new">{t("wasteLoss.recordWasteLoss")}</Link>
             </Button>
           </div>
@@ -648,7 +648,7 @@ export function WasteLossCreatePage() {
         <Card data-testid="waste-loss-lot-zero">
           <p className="m-0 font-medium">{t("wasteLoss.noStockRemainsInLot")}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="min-h-11" data-testid="waste-loss-back-expiration">
+            <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
               <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
             </Button>
           </div>
@@ -689,7 +689,7 @@ export function WasteLossCreatePage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("wasteLoss.reason")}
             <select
-              className="min-h-11 rounded-md border border-border bg-background px-3"
+              className="rounded-md border border-border bg-background px-3"
               value={reason}
               onChange={(e) => setReason(e.target.value as WasteLossReasonCode)}
               disabled={!allowManage || statusLocked}
@@ -750,7 +750,7 @@ export function WasteLossCreatePage() {
                           type="number"
                           min={0}
                           step="any"
-                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          className="rounded-md border border-border bg-background px-3"
                           value={qtyByProduct[line.productId] ?? String(line.quantity)}
                           onChange={(e) => updateLineQty(line.productId, e.target.value)}
                           disabled={statusLocked}
@@ -786,7 +786,7 @@ export function WasteLossCreatePage() {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="min-h-11 w-fit"
+                          className="w-fit"
                           onClick={() => removeLine(line.productId)}
                           disabled={statusLocked}
                         >
@@ -839,7 +839,7 @@ export function WasteLossCreatePage() {
                             type="number"
                             min={0}
                             step="any"
-                            className="min-h-11 rounded-md border border-border bg-background px-3"
+                            className="rounded-md border border-border bg-background px-3"
                             value={qtyByProduct[row.productId] ?? "1"}
                             onChange={(e) =>
                               setQtyByProduct((prev) => ({
@@ -853,7 +853,6 @@ export function WasteLossCreatePage() {
                         </label>
                         <Button
                           type="button"
-                          className="min-h-11"
                           disabled={!allowManage || !online || statusLocked || row.onHand <= 0}
                           onClick={() => void addOrUpdateFromPicker(row)}
                           data-testid={`waste-loss-add-${row.productId}`}
@@ -871,7 +870,7 @@ export function WasteLossCreatePage() {
           <StickyActionBar>
             <Button
               type="button"
-              className="min-h-11 w-full"
+              className="w-full"
               disabled={
                 !allowManage ||
                 !online ||

@@ -317,7 +317,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                     {showPay ? (
                       <Button
                         type="button"
-                        className="min-h-11"
                         data-testid={`supplier-payable-record-${payable.payableId}`}
                         onClick={() => setPaymentTarget(payable)}
                       >
@@ -327,7 +326,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                     <Button
                       type="button"
                       variant="ghost"
-                      className="min-h-11"
                       data-testid={`supplier-payable-detail-${payable.payableId}`}
                       onClick={() => setDetailTarget(payable)}
                     >
@@ -393,7 +391,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                 <input
                   type="text"
                   inputMode="decimal"
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={amountText}
                   onChange={(e) => setAmountText(e.target.value)}
                   data-testid="supplier-payment-amount"
@@ -402,7 +400,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("supplierPayables.paymentMethod")}
                 <select
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={paymentMethod}
                   onChange={(e) =>
                     setPaymentMethod(e.target.value as SupplierPayablePaymentMethodCode)
@@ -419,7 +417,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("supplierPayables.reference")}
                 <input
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={reference}
                   maxLength={SUPPLIER_PAYABLE_PAYMENT_REFERENCE_MAX}
                   onChange={(e) => setReference(e.target.value)}
@@ -441,7 +439,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
                 disabled={recording}
                 onClick={() => setPaymentTarget(null)}
                 data-testid="supplier-payment-cancel"
@@ -450,7 +447,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               </Button>
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={recording}
                 onClick={() => void onRecordPayment()}
                 data-testid="supplier-payment-confirm"
@@ -582,7 +578,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               {allowManage && online && canRecordPayment(detailTarget) ? (
                 <Button
                   type="button"
-                  className="min-h-11"
                   data-testid="supplier-payable-detail-record"
                   onClick={() => {
                     setPaymentTarget(detailTarget);
@@ -595,7 +590,6 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
                 onClick={() => setDetailTarget(null)}
                 data-testid="supplier-payable-detail-close"
               >

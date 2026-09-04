@@ -283,7 +283,7 @@ export function InventoryTransferCreatePage() {
         <label className="flex flex-col gap-1">
           <span className="text-[length:var(--exits-text-sm)] font-medium">{t("transfer.fromBranch")}</span>
           <input
-            className="exits-input min-h-11"
+            className="exits-input"
             value={sourceName}
             readOnly
             data-testid="transfer-source-branch"
@@ -294,7 +294,7 @@ export function InventoryTransferCreatePage() {
         <label className="flex flex-col gap-1">
           <span className="text-[length:var(--exits-text-sm)] font-medium">{t("transfer.toBranch")}</span>
           <select
-            className="exits-input min-h-11"
+            className="exits-input"
             value={destinationBranchId}
             onChange={(e) => setDestinationBranchId(e.target.value)}
             data-testid="transfer-destination-branch"
@@ -350,7 +350,6 @@ export function InventoryTransferCreatePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
                   onClick={() => removeLine(line.key)}
                   data-testid={`transfer-remove-${line.key}`}
                 >
@@ -394,7 +393,7 @@ export function InventoryTransferCreatePage() {
                 </div>
                 {tracksExpiration ? (
                   <select
-                    className="exits-input min-h-11"
+                    className="exits-input"
                     value={lotByProduct[row.productId] ?? ""}
                     onFocus={() => void ensureLots(row.productId, true)}
                     onChange={(e) =>
@@ -415,7 +414,7 @@ export function InventoryTransferCreatePage() {
                   <label className="flex min-w-[8rem] flex-1 flex-col gap-1">
                     <span className="text-[length:var(--exits-text-sm)]">{t("transfer.quantity")}</span>
                     <input
-                      className="exits-input min-h-11"
+                      className="exits-input"
                       inputMode="decimal"
                       value={qtyByProduct[row.productId] ?? ""}
                       onChange={(e) =>
@@ -426,7 +425,6 @@ export function InventoryTransferCreatePage() {
                   </label>
                   <Button
                     type="button"
-                    className="min-h-11"
                     disabled={!online}
                     onClick={() => void addLine(row)}
                     data-testid={`transfer-add-${row.productId}`}
@@ -443,7 +441,7 @@ export function InventoryTransferCreatePage() {
       <StickyActionBar>
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={!online || saving || lines.length === 0 || !destinationBranchId}
           onClick={() => void saveDraft()}
           data-testid="transfer-save-draft"

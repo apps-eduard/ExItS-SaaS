@@ -57,7 +57,7 @@ export function CashCountHistoryBlock({
     <div data-testid={testId} className="flex flex-col gap-2">
       <button
         type="button"
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-left shadow-sm transition-colors hover:bg-surface-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-left shadow-sm transition-colors hover:bg-surface-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-expanded={expanded}
         data-testid={`${testId}-toggle`}
         onClick={() => setExpanded((value) => !value)}

@@ -86,7 +86,7 @@ export function ForgotPasswordPage() {
             required
             disabled={submitting || isOffline}
           />
-          <Button type="submit" className="w-full min-h-11" disabled={submitting || isOffline}>
+          <Button type="submit" className="w-full" disabled={submitting || isOffline}>
             {submitting ? t("auth.forgotPasswordSubmitting") : t("auth.forgotPasswordSubmit")}
           </Button>
         </form>

@@ -143,7 +143,6 @@ export function WasteLossListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canPrev || query.isFetching}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -157,7 +156,6 @@ export function WasteLossListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canNext || query.isFetching}
             onClick={() => setPage((p) => p + 1)}
           >

@@ -52,7 +52,7 @@ export function CatalogImportJobPage() {
       <div className="flex flex-col gap-4" data-testid="catalog-import-job-page">
         <PageHeader title={t("catalogImport.progressTitle")} />
         <OnlineRequiredCard code={ONLINE_REQUIRED_CODES.CatalogImport} />
-        <Button asChild variant="ghost" className="min-h-11 self-start">
+        <Button asChild variant="ghost" className="self-start">
           <Link to="/catalog">{t("catalogImport.backToProducts")}</Link>
         </Button>
       </div>
@@ -139,17 +139,16 @@ export function CatalogImportJobPage() {
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="catalog-import-job-refresh"
           onClick={() => void jobQuery.refetch()}
           disabled={jobQuery.isFetching}
         >
           {t("catalogImport.refresh")}
         </Button>
-        <Button asChild className="min-h-11">
+        <Button asChild>
           <Link to="/catalog">{t("catalogImport.goToProducts")}</Link>
         </Button>
-        <Button asChild variant="ghost" className="min-h-11">
+        <Button asChild variant="ghost">
           <Link to="/catalog">{t("catalogImport.reviewLocal")}</Link>
         </Button>
       </div>

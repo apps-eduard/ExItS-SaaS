@@ -495,16 +495,16 @@ export function BranchManagementDetailPage() {
               </div>
             </dl>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => selectTab("details")}>
+              <Button type="button" variant="outline" onClick={() => selectTab("details")}>
                 {t("branches.detail.details")}
               </Button>
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => selectTab("staff")}>
+              <Button type="button" variant="outline" onClick={() => selectTab("staff")}>
                 {t("branches.detail.staff")}
               </Button>
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => selectTab("devices")}>
+              <Button type="button" variant="outline" onClick={() => selectTab("devices")}>
                 {t("branches.detail.devices")}
               </Button>
-              <Button asChild variant="outline" className="min-h-11" data-testid="branch-mgmt-configure-fulfillment">
+              <Button asChild variant="outline" data-testid="branch-mgmt-configure-fulfillment">
                 <Link to={branchFulfillmentEditPath(branch.id)}>
                   {t("branches.detail.configureFulfillment")}
                 </Link>
@@ -533,7 +533,6 @@ export function BranchManagementDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     data-testid="branch-make-primary"
                     onClick={() => setConfirmPrimary(true)}
                   >
@@ -544,7 +543,6 @@ export function BranchManagementDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     data-testid="branch-suspend"
                     onClick={() => setLifecycleAction("suspend")}
                   >
@@ -555,7 +553,6 @@ export function BranchManagementDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     data-testid="branch-reactivate"
                     onClick={() => setLifecycleAction("reactivate")}
                   >
@@ -566,7 +563,6 @@ export function BranchManagementDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     data-testid="branch-archive"
                     onClick={() => setLifecycleAction("archive")}
                   >
@@ -621,7 +617,7 @@ export function BranchManagementDetailPage() {
           ) : null}
           <Button
             type="button"
-            className="min-h-11 self-start"
+            className="self-start"
             data-testid="branch-details-save"
             disabled={saveDetailsMutation.isPending}
             onClick={() => saveDetailsMutation.mutate()}
@@ -666,7 +662,7 @@ export function BranchManagementDetailPage() {
               ))}
             </ul>
           ) : null}
-          <Button asChild variant="outline" className="min-h-11 self-start" data-testid="branch-devices-manage">
+          <Button asChild variant="outline" className="self-start" data-testid="branch-devices-manage">
             <Link to="/org/devices">{t("branches.devices.manage")}</Link>
           </Button>
         </div>
@@ -693,7 +689,7 @@ export function BranchManagementDetailPage() {
               </dd>
             </div>
           </dl>
-          <Button asChild className="min-h-11 self-start" data-testid="branch-fulfillment-configure">
+          <Button asChild className="self-start" data-testid="branch-fulfillment-configure">
             <Link to={branchFulfillmentEditPath(branch.id)}>
               {t("branches.detail.configureFulfillment")}
             </Link>
@@ -785,7 +781,6 @@ export function BranchManagementDetailPage() {
           ) : null}
           <Button
             type="button"
-            className="min-h-11"
             data-testid="branch-lifecycle-confirm"
             disabled={
               lifecycleMutation.isPending ||

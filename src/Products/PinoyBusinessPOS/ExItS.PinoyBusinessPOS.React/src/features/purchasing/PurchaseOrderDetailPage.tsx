@@ -235,7 +235,7 @@ function GoodsReceiptCard({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 w-fit"
+          className="w-fit"
           onClick={() => {
             setVoidOpen(true);
             setVoidError(null);
@@ -281,7 +281,6 @@ function GoodsReceiptCard({
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={voiding || !voidReason.trim()}
                 onClick={() => void onVoid()}
                 data-testid={`po-receipt-reverse-confirm-${receipt.goodsReceiptId}`}
@@ -291,7 +290,6 @@ function GoodsReceiptCard({
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={voiding}
                 onClick={() => {
                   setVoidOpen(false);
@@ -469,7 +467,7 @@ export function PurchaseOrderDetailPage() {
               String(po?.productSetupRequiredCount ?? po?.lines.filter((l) => l.needsProductSetup).length ?? 0),
             )}
           </p>
-          <Button asChild className="mt-3 min-h-11" data-testid="po-prepare-products">
+          <Button asChild className="mt-3" data-testid="po-prepare-products">
             <Link to={`/purchasing/${purchaseOrderId}/prepare-products`}>
               {t("purchasing.prepareProductsAction")}
             </Link>
@@ -651,7 +649,6 @@ export function PurchaseOrderDetailPage() {
         {canSubmit ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={busy}
             onClick={() =>
               void runAction(
@@ -671,14 +668,13 @@ export function PurchaseOrderDetailPage() {
           </Button>
         ) : null}
         {canReceive ? (
-          <Button asChild className="min-h-11" data-testid="po-receive">
+          <Button asChild data-testid="po-receive">
             <Link to={`/purchasing/${purchaseOrderId}/receive`}>{t("purchasing.receive")}</Link>
           </Button>
         ) : null}
         {canAcceptChanges ? (
           <Button
             type="button"
-            className="min-h-11"
             disabled={busy}
             onClick={() =>
               void runAction(
@@ -695,7 +691,6 @@ export function PurchaseOrderDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             disabled={busy}
             onClick={() =>
               void runAction(

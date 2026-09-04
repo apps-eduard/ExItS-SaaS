@@ -168,13 +168,12 @@ export function ExpenseCreatePage() {
           </p>
         </Card>
         <div className="flex flex-wrap gap-2">
-          <Button asChild className="min-h-11" data-testid="expense-view-recorded">
+          <Button asChild data-testid="expense-view-recorded">
             <Link to={`/expenses/${recordedId}`}>{t("expense.viewExpense")}</Link>
           </Button>
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             data-testid="expense-record-another"
             onClick={() => {
               setRecordedId(null);
@@ -189,7 +188,7 @@ export function ExpenseCreatePage() {
           >
             {t("expense.recordAnother")}
           </Button>
-          <Button asChild variant="ghost" className="min-h-11">
+          <Button asChild variant="ghost">
             <Link to="/expenses">{t("expense.backList")}</Link>
           </Button>
         </div>
@@ -226,7 +225,7 @@ export function ExpenseCreatePage() {
             detail={t("expense.noActiveCategoriesDetail")}
           />
           <div className="mt-3">
-            <Button asChild className="min-h-11" data-testid="expense-create-category-cta">
+            <Button asChild data-testid="expense-create-category-cta">
               <Link to="/expenses/categories">{t("expense.createCategory")}</Link>
             </Button>
           </div>
@@ -241,7 +240,7 @@ export function ExpenseCreatePage() {
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="font-medium">{t("expense.category")}</span>
               <select
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 data-testid="expense-category"
@@ -265,7 +264,6 @@ export function ExpenseCreatePage() {
                     key={method}
                     type="button"
                     variant={paymentMethod === method ? "default" : "outline"}
-                    className="min-h-11"
                     data-testid={`expense-payment-${method}`}
                     aria-pressed={paymentMethod === method}
                     onClick={() => setPaymentMethod(method)}
@@ -280,7 +278,7 @@ export function ExpenseCreatePage() {
               <span className="font-medium">{t("expense.expenseDate")}</span>
               <input
                 type="date"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
                 data-testid="expense-date"
@@ -293,7 +291,7 @@ export function ExpenseCreatePage() {
               <span className="font-medium">{t("expense.amount")}</span>
               <input
                 inputMode="decimal"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                 value={amountText}
                 onChange={(e) => setAmountText(e.target.value)}
                 placeholder="0.00"
@@ -307,7 +305,7 @@ export function ExpenseCreatePage() {
                 <span className="font-normal text-muted">({t("expense.optional")})</span>
               </span>
               <input
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                 value={payee}
                 maxLength={EXPENSE_PAYEE_MAX}
                 onChange={(e) => setPayee(e.target.value)}
@@ -322,7 +320,7 @@ export function ExpenseCreatePage() {
                   <span className="font-normal text-muted">({t("expense.optional")})</span>
                 </span>
                 <input
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                   value={gCashReference}
                   maxLength={EXPENSE_GCASH_REFERENCE_MAX}
                   onChange={(e) => setGCashReference(e.target.value)}
@@ -352,7 +350,7 @@ export function ExpenseCreatePage() {
         <StickyActionBar>
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={!online || submitting}
             onClick={() => void onSubmit()}
             data-testid="expense-submit"

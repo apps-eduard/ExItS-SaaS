@@ -148,7 +148,7 @@ export function SellCustomQuantityDialog({
             min={0.001}
             step={0.001}
             value={rawValue}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
             onChange={(event) => setRawValue(event.target.value)}
           />
         </label>

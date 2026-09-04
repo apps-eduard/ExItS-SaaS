@@ -453,7 +453,7 @@ export function ConnectedCatalogPage() {
                             <li key={candidate.productId}>
                               <label
                                 className={cn(
-                                  "flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--exits-radius-md)] border px-3 py-2",
+                                  "flex cursor-pointer items-center gap-3 rounded-[var(--exits-radius-md)] border px-3 py-2",
                                   selected
                                     ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_10%,transparent)]"
                                     : "border-border bg-surface",
@@ -506,7 +506,7 @@ export function ConnectedCatalogPage() {
                     {state === "newProduct" && allowCreate ? (
                       <Button
                         type="button"
-                        className="min-h-11 w-full"
+                        className="w-full"
                         data-testid={`connected-create-link-${item.exposureId}`}
                         disabled={busy}
                         onClick={() =>
@@ -523,7 +523,7 @@ export function ConnectedCatalogPage() {
                     {state === "checkMatch" && allowLink && item.candidateBuyerProductId ? (
                       <Button
                         type="button"
-                        className="min-h-11 w-full"
+                        className="w-full"
                         data-testid={`connected-confirm-match-${item.exposureId}`}
                         disabled={busy}
                         onClick={() =>
@@ -537,7 +537,7 @@ export function ConnectedCatalogPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11 w-full"
+                        className="w-full"
                         data-testid={`connected-add-as-new-${item.exposureId}`}
                         disabled={busy}
                         onClick={() =>
@@ -554,7 +554,7 @@ export function ConnectedCatalogPage() {
                     {state === "attention" && allowLink && selectedConflictId ? (
                       <Button
                         type="button"
-                        className="min-h-11 w-full"
+                        className="w-full"
                         data-testid={`connected-link-selected-${item.exposureId}`}
                         disabled={busy}
                         onClick={() => void doLink(item.exposureId, selectedConflictId)}
@@ -566,7 +566,7 @@ export function ConnectedCatalogPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11 w-full"
+                        className="w-full"
                         data-testid={`connected-add-as-new-${item.exposureId}`}
                         disabled={busy}
                         onClick={() =>
@@ -612,7 +612,6 @@ export function ConnectedCatalogPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={page <= 1}
               data-testid="connected-catalog-prev"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -622,7 +621,6 @@ export function ConnectedCatalogPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={page >= totalPages}
               data-testid="connected-catalog-next"
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}

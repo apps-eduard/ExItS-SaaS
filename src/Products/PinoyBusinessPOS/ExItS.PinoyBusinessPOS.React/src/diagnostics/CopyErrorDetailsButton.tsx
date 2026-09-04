@@ -28,7 +28,6 @@ export function CopyErrorDetailsButton({
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="copy-error-details"
           onClick={() => void copyReport()}
         >
@@ -41,7 +40,6 @@ export function CopyErrorDetailsButton({
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="toggle-technical-details"
           aria-expanded={showTechnical}
           onClick={() => setShowTechnical((current) => !current)}

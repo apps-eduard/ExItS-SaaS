@@ -162,7 +162,6 @@ export function BranchMapPickerDialog({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             onClick={onCancel}
             data-testid="branch-map-picker-cancel"
           >
@@ -170,7 +169,6 @@ export function BranchMapPickerDialog({
           </Button>
           <Button
             type="button"
-            className="min-h-11"
             disabled={!tilesUrl}
             onClick={() => onConfirm(draft.latitude, draft.longitude)}
             data-testid="branch-map-picker-confirm"

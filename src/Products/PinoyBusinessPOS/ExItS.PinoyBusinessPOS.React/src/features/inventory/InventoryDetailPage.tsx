@@ -516,7 +516,7 @@ export function InventoryDetailPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11 w-fit"
+                className="w-fit"
                 disabled={lotsQuery.isFetchingNextPage}
                 onClick={() => void lotsQuery.fetchNextPage()}
                 data-testid="inventory-lots-load-more"
@@ -548,7 +548,7 @@ export function InventoryDetailPage() {
           <>
             <button
               type="button"
-              className="flex w-full min-h-12 items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               aria-expanded={statusDetailsOpen}
               aria-controls={statusDetailsId}
               onClick={() => setStatusDetailsOpen((open) => !open)}
@@ -684,7 +684,7 @@ export function InventoryDetailPage() {
                               >
                                 <button
                                   type="button"
-                                  className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                                   aria-expanded={expanded}
                                   onClick={() => toggleArea(key, expanded)}
                                   data-testid={`inventory-area-toggle-${key}`}
@@ -769,7 +769,7 @@ export function InventoryDetailPage() {
         <div className="flex flex-col gap-2" data-testid="inventory-quick-actions">
           {needsExpirationSetup ? (
             <>
-              <Button asChild type="button" className="min-h-12 w-full">
+              <Button asChild type="button" className="w-full">
                 <Link
                   to={expirationSettingsPath(productId!, "assign")}
                   data-testid="inventory-expiration-setup-assign"
@@ -777,7 +777,7 @@ export function InventoryDetailPage() {
                   {t("inventory.assignExpirationDates")}
                 </Link>
               </Button>
-              <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+              <Button asChild type="button" variant="outline" className="w-full">
                 <Link
                   to={expirationSettingsPath(productId!, "warning")}
                   data-testid="inventory-manage-expiration"
@@ -787,7 +787,7 @@ export function InventoryDetailPage() {
               </Button>
             </>
           ) : tracksExpiration ? (
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+            <Button asChild type="button" variant="outline" className="w-full">
               <Link
                 to={expirationSettingsPath(productId!, "warning")}
                 data-testid="inventory-manage-expiration"
@@ -796,7 +796,7 @@ export function InventoryDetailPage() {
               </Link>
             </Button>
           ) : (
-            <Button asChild type="button" className="min-h-12 w-full">
+            <Button asChild type="button" className="w-full">
               <Link
                 to={expirationSettingsPath(productId!)}
                 data-testid="inventory-enable-expiration"
@@ -806,7 +806,7 @@ export function InventoryDetailPage() {
             </Button>
           )}
           <div className="grid grid-cols-2 gap-2">
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+            <Button asChild type="button" variant="outline" className="w-full">
               <Link
                 to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
                 data-testid="inventory-record-stock-use"
@@ -814,7 +814,7 @@ export function InventoryDetailPage() {
                 {t("inventory.recordStockUse")}
               </Link>
             </Button>
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+            <Button asChild type="button" variant="outline" className="w-full">
               <Link
                 to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
                 data-testid="inventory-record-waste-loss"
@@ -861,7 +861,7 @@ export function InventoryDetailPage() {
                   ? t("inventory.sellingPriceBranch")
                   : t("inventory.sellingPriceOrganization")}
               </span>
-              <Button asChild type="button" variant="ghost" className="mt-1 min-h-11 w-fit px-0">
+              <Button asChild type="button" variant="ghost" className="mt-1 w-fit px-0">
                 <Link
                   to={`/catalog/products/${account.productId}/edit`}
                   data-testid="inventory-review-selling-price"
@@ -938,7 +938,6 @@ export function InventoryDetailPage() {
           ) : null}
           <Button
             type="button"
-            className="min-h-11"
             disabled={enableMutation.isPending}
             onClick={() => enableMutation.mutate()}
             data-testid="inventory-enable"
@@ -1003,7 +1002,6 @@ export function InventoryDetailPage() {
             ) : null}
             <Button
               type="button"
-              className="min-h-11"
               disabled={addOpeningStockMutation.isPending}
               onClick={() => addOpeningStockMutation.mutate()}
               data-testid="inventory-add-opening-stock-submit"
@@ -1014,7 +1012,7 @@ export function InventoryDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11 w-fit"
+            className="w-fit"
             disabled={disableMutation.isPending || !canDisableInventory}
             onClick={() => disableMutation.mutate()}
             data-testid="inventory-disable"
@@ -1169,7 +1167,6 @@ export function InventoryDetailPage() {
 
             <Button
               type="button"
-              className="min-h-11"
               disabled={adjusting || statusLocked || !adjustQty.trim()}
               onClick={() => void onAdjust()}
               data-testid="inventory-adjust"
@@ -1185,7 +1182,7 @@ export function InventoryDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11 w-fit"
+            className="w-fit"
             disabled={disableMutation.isPending || !canDisableInventory}
             onClick={() => disableMutation.mutate()}
             data-testid="inventory-disable"

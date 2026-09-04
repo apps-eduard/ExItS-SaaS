@@ -19,7 +19,7 @@ export function UtangAccountCard({ row }: UtangAccountCardProps) {
   return (
     <Link
       to={`/personal/utang/relationships/${row.relationshipId}`}
-      className="utang-account-card exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+      className="utang-account-card exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
       data-testid={`utang-account-${row.relationshipId}`}
     >
       <PersonAvatar name={row.displayName} size="sm" />

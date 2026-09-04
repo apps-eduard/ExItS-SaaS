@@ -184,7 +184,7 @@ export function ReturnDetailPage() {
       </section>
 
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="ghost" className="min-h-11">
+        <Button asChild variant="ghost">
           <Link to={`/sell/sales/${detail.saleId}/summary`}>{t("returns.viewTransaction")}</Link>
         </Button>
       </div>

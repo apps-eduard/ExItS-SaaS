@@ -496,7 +496,6 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant={deviceEnforcementEnabled === false ? "outline" : "default"}
-                className="min-h-11"
                 data-testid="devices-register-optional"
                 onClick={() => openRegisterForm(boundWorkspace?.branchId ?? null)}
               >
@@ -506,7 +505,6 @@ export function OrgPosDevicesPage() {
             {currentBrowser.state === "revoked" ? (
               <Button
                 type="button"
-                className="min-h-11"
                 data-testid="devices-register-again"
                 onClick={() => openRegisterForm(currentBrowser.device?.branchId ?? null)}
               >
@@ -556,7 +554,7 @@ export function OrgPosDevicesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="device-register-actions__cancel min-h-11"
+                  className="device-register-actions__cancel"
                   data-testid="devices-register-cancel"
                   onClick={() => {
                     setRegisterFormOpen(false);
@@ -568,7 +566,7 @@ export function OrgPosDevicesPage() {
               ) : null}
               <Button
                 type="button"
-                className="device-register-actions__submit min-h-11"
+                className="device-register-actions__submit"
                 data-testid="devices-register-browser"
                 disabled={registerMutation.isPending || capacityBlocked}
                 onClick={() => registerMutation.mutate()}
@@ -785,7 +783,7 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="devices-revoke-actions__cancel min-h-11"
+                className="devices-revoke-actions__cancel"
                 data-testid="devices-revoke-cancel"
                 onClick={closeRevoke}
               >
@@ -794,7 +792,7 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant="destructive"
-                className="devices-revoke-actions__confirm min-h-11"
+                className="devices-revoke-actions__confirm"
                 data-testid="devices-revoke-confirm"
                 disabled={
                   revokeMutation.isPending || revokeReasonTooShort || !revokePassword.trim()

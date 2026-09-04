@@ -178,7 +178,7 @@ export function PersonalUtangHubPage() {
       ) : null}
 
       <div className="exits-animate-panel">
-        <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="utang-hub-record">
+        <Button asChild className="w-full sm:w-auto" data-testid="utang-hub-record">
           <Link to="/personal/utang/lent">
             <HandCoins className="size-4 shrink-0" aria-hidden />
             {t("personal.utang.recordLent")}
@@ -207,7 +207,7 @@ export function PersonalUtangHubPage() {
           </p>
           <Link
             to="/personal/utang/lent"
-            className="inline-flex min-h-11 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
+            className="inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
             data-testid="utang-hub-pending-review"
           >
             {t("personal.utang.reviewAccounts")}
@@ -310,7 +310,7 @@ export function PersonalUtangHubPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("personal.utang.searchPlaceholder")}
-                  className="min-h-11 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface pl-10 pr-3 text-[length:var(--exits-text-sm)]"
+                  className="w-full rounded-[var(--exits-radius-md)] border border-border bg-surface pl-10 pr-3 text-[length:var(--exits-text-sm)]"
                   data-testid="utang-hub-search"
                 />
               </label>

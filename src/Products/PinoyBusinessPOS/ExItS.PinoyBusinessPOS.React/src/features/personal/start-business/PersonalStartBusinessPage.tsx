@@ -205,7 +205,7 @@ export function PersonalStartBusinessPage() {
           title={t("personal.startBusiness.planRequired")}
           detail={t("personal.startBusiness.planRequiredDetail")}
         />
-        <Button asChild className="min-h-11 w-fit" data-testid="start-business-go-explore">
+        <Button asChild className="w-fit" data-testid="start-business-go-explore">
           <Link to="/personal/explore-pos">{t("personal.explore.title")}</Link>
         </Button>
       </div>
@@ -232,7 +232,7 @@ export function PersonalStartBusinessPage() {
           title={t("personal.startBusiness.planLoadFailed")}
           detail={t("personal.startBusiness.planLoadFailedDetail")}
         />
-        <Button asChild className="min-h-11 w-fit">
+        <Button asChild className="w-fit">
           <Link to="/personal/explore-pos">{t("personal.explore.title")}</Link>
         </Button>
       </div>
@@ -285,7 +285,7 @@ export function PersonalStartBusinessPage() {
                   aria-selected={selected}
                   disabled={mutation.isPending}
                   data-testid={`start-business-type-${type.code}`}
-                  className={`min-h-11 rounded-[var(--exits-radius-md)] border px-3 py-2 text-left transition-colors ${
+                  className={` rounded-[var(--exits-radius-md)] border px-3 py-2 text-left transition-colors ${
                     selected
                       ? "border-primary bg-[var(--exits-surface-muted)]"
                       : "border-border bg-surface hover:bg-[var(--exits-surface-muted)]"
@@ -319,7 +319,7 @@ export function PersonalStartBusinessPage() {
           <input
             ref={displayNameInputRef}
             data-testid="start-business-display-name"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={displayName}
             disabled={mutation.isPending}
             placeholder={t("personal.startBusiness.displayNamePlaceholder")}
@@ -333,7 +333,7 @@ export function PersonalStartBusinessPage() {
           </span>
           <input
             data-testid="start-business-slug"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 text-muted"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 text-muted"
             value={slugPreview}
             readOnly
             aria-readonly="true"
@@ -357,7 +357,7 @@ export function PersonalStartBusinessPage() {
         <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
           {t("personal.startBusiness.contactHelper")}
         </p>
-        <label className="mt-3 flex min-h-11 items-center gap-2">
+        <label className="mt-3 flex items-center gap-2">
           <input
             type="checkbox"
             checked={useMyContactDetails}
@@ -453,7 +453,7 @@ export function PersonalStartBusinessPage() {
             {t("personal.startBusiness.billingCycle")}
           </span>
           <select
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={billingCycle}
             disabled={mutation.isPending}
             data-testid="start-business-billing"
@@ -481,7 +481,7 @@ export function PersonalStartBusinessPage() {
 
       <Button
         type="button"
-        className="min-h-11 w-fit"
+        className="w-fit"
         disabled={mutation.isPending}
         data-testid="start-business-submit"
         onClick={() => {
@@ -515,7 +515,7 @@ function Field({
       <span className="text-[length:var(--exits-text-sm)] font-medium">{label}</span>
       <input
         data-testid={testId}
-        className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+        className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}

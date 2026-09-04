@@ -108,7 +108,7 @@ export function CustomerPersonalLinkPanel({
 
       {checkingExisting && !alreadyInContacts ? (
         <p
-          className="m-0 inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
+          className="m-0 inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
           data-testid="customer-personal-link-checking"
         >
           <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -127,7 +127,7 @@ export function CustomerPersonalLinkPanel({
             <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               {t("customers.alreadyInContacts").replace("{name}", existingMatch.displayName)}
             </p>
-            <Button asChild className="min-h-11 w-full sm:w-auto">
+            <Button asChild className="w-full sm:w-auto">
               <Link
                 to={`/customers/${existingMatch.customerId}`}
                 data-testid="customer-already-in-contacts-open"

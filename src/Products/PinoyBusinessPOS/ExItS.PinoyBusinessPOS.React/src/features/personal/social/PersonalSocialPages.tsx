@@ -100,7 +100,7 @@ export function PersonalInvitationsPage() {
                 <div className="invitation-card__actions mt-2 grid grid-cols-2 gap-2">
                   <Button
                     type="button"
-                    className="min-h-11 w-full gap-2"
+                    className="w-full gap-2"
                     disabled={resend.isPending}
                     data-testid={`utang-invite-resend-${invite.id}`}
                     onClick={() => resend.mutate(invite.id)}
@@ -111,7 +111,7 @@ export function PersonalInvitationsPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11 w-full gap-2"
+                    className="w-full gap-2"
                     disabled={revoke.isPending}
                     data-testid={`utang-invite-revoke-${invite.id}`}
                     onClick={() => revoke.mutate(invite.id)}
@@ -176,7 +176,6 @@ export function PersonalUtangInviteAcceptPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              className="min-h-11"
               disabled={accept.isPending || decline.isPending}
               onClick={() => accept.mutate()}
               data-testid="utang-invite-accept-btn"
@@ -187,7 +186,6 @@ export function PersonalUtangInviteAcceptPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={accept.isPending || decline.isPending}
               onClick={() => decline.mutate()}
               data-testid="utang-invite-decline-btn"
@@ -413,7 +411,7 @@ export function PersonalNotificationsPage() {
                       <div className="flex w-full min-w-0 flex-col gap-1.5">
                         <Button
                           asChild
-                          className="min-h-11 w-full"
+                          className="w-full"
                           data-testid="notification-open-customer-links"
                         >
                           <Link
@@ -435,7 +433,7 @@ export function PersonalNotificationsPage() {
                     ) : null}
                     {isCustomerLink && customerLinkState === "accepted" ? (
                       <div className="flex w-full min-w-0 flex-col gap-1.5">
-                        <Button asChild className="min-h-11 w-full" data-testid="notification-open-linked-stores">
+                        <Button asChild className="w-full" data-testid="notification-open-linked-stores">
                           <Link
                             to="/personal/linked-merchants"
                             onClick={() => {
@@ -462,7 +460,7 @@ export function PersonalNotificationsPage() {
                       <div className="flex w-full min-w-0 flex-col gap-1.5">
                         <Button
                           asChild
-                          className="min-h-11 w-full"
+                          className="w-full"
                           data-testid="notification-open-customer-links"
                         >
                           <Link
@@ -482,7 +480,6 @@ export function PersonalNotificationsPage() {
                     {isTodo ? (
                       <Button
                         asChild
-                        className="min-h-11"
                         data-testid="notification-open-todo"
                       >
                         <Link
@@ -501,7 +498,6 @@ export function PersonalNotificationsPage() {
                     {isUtang ? (
                       <Button
                         asChild
-                        className="min-h-11"
                         data-testid="notification-open-utang"
                       >
                         <Link
@@ -521,7 +517,6 @@ export function PersonalNotificationsPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11"
                         data-testid={`notification-mark-read-${item.id}`}
                         disabled={markRead.isPending}
                         onClick={() => markRead.mutate(item.id)}
@@ -625,7 +620,7 @@ export function RelationshipInviteReminderPanel({
       {inviteeContactId ? (
         <Button
           type="button"
-          className="min-h-11 w-fit"
+          className="w-fit"
           disabled={invite.isPending}
           onClick={() => invite.mutate()}
           data-testid="utang-invite-create"
@@ -648,7 +643,7 @@ export function RelationshipInviteReminderPanel({
           {t("personal.social.reminderWhen")}
           <input
             type="datetime-local"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={scheduledFor}
             onChange={(e) => setScheduledFor(e.target.value)}
             data-testid="utang-reminder-when"
@@ -658,7 +653,6 @@ export function RelationshipInviteReminderPanel({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             data-testid="utang-reminder-preset-hour"
             onClick={() => setPreset("hour")}
           >
@@ -667,7 +661,6 @@ export function RelationshipInviteReminderPanel({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             data-testid="utang-reminder-preset-tomorrow"
             onClick={() => setPreset("tomorrow")}
           >
@@ -677,7 +670,7 @@ export function RelationshipInviteReminderPanel({
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
           {t("personal.social.reminderServerHint")}
         </p>
-        <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={createReminder.isPending}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={createReminder.isPending}>
           <BellPlus className="size-4 shrink-0" aria-hidden="true" />
           {t("personal.social.addReminder")}
         </Button>
@@ -707,7 +700,6 @@ export function RelationshipInviteReminderPanel({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     onClick={() => cancel.mutate(reminder.id)}
                   >
                     {t("personal.social.cancelReminder")}

@@ -233,7 +233,6 @@ function BranchPricingRow(props: {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={props.disabled || !canSaveCustom || props.saving || props.removing}
               data-testid={`${props.draft.productUnitId ?? "base"}-save-override`}
               onClick={props.onSaveCustom}
@@ -250,7 +249,6 @@ function BranchPricingRow(props: {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={props.disabled || props.saving || props.removing}
               data-testid={`${props.draft.productUnitId ?? "base"}-use-organization-default`}
               onClick={props.onUseOrganizationDefault}

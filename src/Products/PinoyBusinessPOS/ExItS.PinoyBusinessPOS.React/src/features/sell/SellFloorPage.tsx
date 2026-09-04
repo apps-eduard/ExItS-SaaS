@@ -1058,7 +1058,7 @@ export function SellFloorPage() {
                 allowManageCatalog ? (
                   <Link
                     to="/catalog/products/new"
-                    className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+                    className="inline-flex items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
                     data-testid="sell-empty-add-product"
                   >
                     {t("sell.catalogEmptyAddProduct")}

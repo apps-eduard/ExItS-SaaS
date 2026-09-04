@@ -237,7 +237,7 @@ export function CashHandlingSettingsPage() {
       ) : null}
 
       <Card className="flex flex-col gap-3">
-        <label className="flex min-h-11 cursor-pointer items-start gap-3">
+        <label className="flex cursor-pointer items-start gap-3">
           <input
             data-testid="cash-handling-require-opening"
             type="checkbox"
@@ -252,7 +252,7 @@ export function CashHandlingSettingsPage() {
             </span>
           </span>
         </label>
-        <label className="flex min-h-11 cursor-pointer items-start gap-3">
+        <label className="flex cursor-pointer items-start gap-3">
           <input
             data-testid="cash-handling-require-closing"
             type="checkbox"
@@ -272,7 +272,7 @@ export function CashHandlingSettingsPage() {
         </p>
         <Button
           type="button"
-          className="min-h-11 w-fit"
+          className="w-fit"
           disabled={savingPolicy}
           data-testid="cash-handling-save-policy"
           onClick={() => void savePolicy()}
@@ -306,7 +306,7 @@ export function CashHandlingSettingsPage() {
             {denominations.map((denom) => (
               <li
                 key={denom.denominationId}
-                className="flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                className="flex min-w-0 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                 data-testid={`cash-handling-denom-${formatDenominationValue(denom.value)}`}
               >
                 <span className="min-w-0 truncate tabular-nums font-medium">
@@ -339,14 +339,13 @@ export function CashHandlingSettingsPage() {
               min={0}
               step="0.01"
               placeholder={t("cashHandling.addDenominationPlaceholder")}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
             />
           </label>
           <Button
             type="button"
-            className="min-h-11"
             disabled={savingDenoms}
             data-testid="cash-handling-add"
             onClick={() => void addDenomination()}
@@ -356,7 +355,7 @@ export function CashHandlingSettingsPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11 inline-flex items-center gap-2 border border-border"
+            className="inline-flex items-center gap-2 border border-border"
             disabled={savingDenoms}
             data-testid="cash-handling-reset-defaults"
             onClick={() => void resetDenominationsToDefault()}

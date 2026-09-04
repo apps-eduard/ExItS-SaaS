@@ -309,7 +309,7 @@ export function CatalogGlobalBrowsePage() {
         <div className="catalog-form-actions__secondary">
           <Button
             type="button"
-            className="catalog-form-actions__save min-h-11"
+            className="catalog-form-actions__save"
             data-testid="catalog-global-import"
             disabled={!canGovern || selectedNewCount === 0 || importMutation.isPending}
             onClick={() => {

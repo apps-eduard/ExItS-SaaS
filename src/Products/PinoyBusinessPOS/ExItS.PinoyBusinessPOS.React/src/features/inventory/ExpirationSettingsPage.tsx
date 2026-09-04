@@ -325,7 +325,7 @@ export function ExpirationSettingsPage() {
           ) : (
             <Button
               type="button"
-              className="min-h-11 w-fit"
+              className="w-fit"
               disabled={enableMutation.isPending}
               onClick={() => enableMutation.mutate()}
               data-testid="expiration-settings-enable"
@@ -354,7 +354,7 @@ export function ExpirationSettingsPage() {
           />
           <Button
             type="button"
-            className="min-h-11 w-fit"
+            className="w-fit"
             disabled={saveWarningMutation.isPending || needsRepair}
             onClick={() => saveWarningMutation.mutate()}
             data-testid="expiration-settings-save"
@@ -366,7 +366,7 @@ export function ExpirationSettingsPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-fit"
+              className="w-fit"
               disabled={disableMutation.isPending || !disableAllowed}
               onClick={() => disableMutation.mutate()}
               data-testid="expiration-settings-disable"
@@ -384,7 +384,7 @@ export function ExpirationSettingsPage() {
 
       <Link
         to={`/inventory/${productId}`}
-        className="inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold underline underline-offset-2"
+        className="inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold underline underline-offset-2"
         data-testid="expiration-settings-view-lots"
       >
         <Package className="size-4 shrink-0" aria-hidden />

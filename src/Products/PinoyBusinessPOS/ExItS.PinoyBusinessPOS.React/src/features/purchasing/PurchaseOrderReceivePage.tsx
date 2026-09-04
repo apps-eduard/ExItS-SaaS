@@ -433,7 +433,6 @@ export function PurchaseOrderReceivePage() {
           <div className="mt-4">
             <Button
               type="button"
-              className="min-h-11"
               onClick={() => navigate(`/purchasing/${purchaseOrderId}`, { replace: true })}
               data-testid="receive-back-to-po"
             >
@@ -510,7 +509,6 @@ export function PurchaseOrderReceivePage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               disabled={busy || statusLocked}
               onClick={() => setTrackingConfirm(false)}
               data-testid="receive-tracking-back"
@@ -519,7 +517,6 @@ export function PurchaseOrderReceivePage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={!canReceive || busy || statusLocked}
               onClick={() => void postReceive(true)}
               data-testid="receive-confirm"
@@ -584,7 +581,7 @@ export function PurchaseOrderReceivePage() {
                       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                         {t("purchasing.goodReceived")}
                         <input
-                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          className="rounded-md border border-border bg-background px-3"
                           value={line.goodText}
                           onChange={(e) => updateLine(line.productId, { goodText: e.target.value })}
                           data-testid={`receive-good-${line.productId}`}
@@ -593,7 +590,7 @@ export function PurchaseOrderReceivePage() {
                       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                         {t("purchasing.damaged")}
                         <input
-                          className="min-h-11 rounded-md border border-border bg-background px-3"
+                          className="rounded-md border border-border bg-background px-3"
                           value={line.damagedText}
                           onChange={(e) =>
                             updateLine(line.productId, { damagedText: e.target.value })
@@ -607,7 +604,7 @@ export function PurchaseOrderReceivePage() {
                             {t("purchasing.expiryDate")} *
                             <input
                               type="date"
-                              className="min-h-11 rounded-md border border-border bg-background px-3"
+                              className="rounded-md border border-border bg-background px-3"
                               value={line.expiryDate}
                               onChange={(e) =>
                                 updateLine(line.productId, { expiryDate: e.target.value })
@@ -618,7 +615,7 @@ export function PurchaseOrderReceivePage() {
                           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                             {t("purchasing.lotNumber")}
                             <input
-                              className="min-h-11 rounded-md border border-border bg-background px-3"
+                              className="rounded-md border border-border bg-background px-3"
                               value={line.lotNumber}
                               onChange={(e) =>
                                 updateLine(line.productId, { lotNumber: e.target.value })
@@ -659,7 +656,7 @@ export function PurchaseOrderReceivePage() {
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.deliveryReference")}
                 <input
-                  className="min-h-11 rounded-md border border-border bg-background px-3"
+                  className="rounded-md border border-border bg-background px-3"
                   value={deliveryReference}
                   onChange={(e) => setDeliveryReference(e.target.value)}
                 />
@@ -719,14 +716,12 @@ export function PurchaseOrderReceivePage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
                   onClick={() => setReviewing(false)}
                 >
                   {t("purchasing.backToReceipt")}
                 </Button>
                 <Button
                   type="button"
-                  className="min-h-11"
                   disabled={!canReceive || busy || statusLocked}
                   onClick={onReviewConfirmClick}
                   data-testid="receive-confirm"
@@ -737,7 +732,6 @@ export function PurchaseOrderReceivePage() {
             ) : (
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={!canReceive || busy}
                 onClick={onReview}
                 data-testid="receive-review"

@@ -204,7 +204,6 @@ export function BranchStaffAccessPanel({
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             data-testid="branch-staff-add"
             onClick={() => {
               setActionError(null);

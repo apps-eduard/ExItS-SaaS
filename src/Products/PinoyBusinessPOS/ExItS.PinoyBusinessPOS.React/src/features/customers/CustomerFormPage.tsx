@@ -504,7 +504,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       (eligibilityLoading || checkingExisting) &&
       !existingContact ? (
         <p
-          className="m-0 inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
+          className="m-0 inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
           data-testid="customer-link-eligibility-loading"
         >
           <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -536,7 +536,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             {eligibilityMessage(linkEligibility.status)}
           </p>
           {existingContact ? (
-            <Button asChild className="mt-2 min-h-11 w-full sm:w-auto">
+            <Button asChild className="mt-2 w-full sm:w-auto">
               <Link
                 to={`/customers/${existingContact.customerId}`}
                 data-testid="customer-link-view-existing"

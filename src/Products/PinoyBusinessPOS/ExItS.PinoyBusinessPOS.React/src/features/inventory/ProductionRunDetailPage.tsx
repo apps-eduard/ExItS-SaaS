@@ -232,7 +232,7 @@ export function ProductionRunDetailPage() {
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 w-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={!online || voiding}
           onClick={() => void onVoid()}
           data-testid="production-run-void"

@@ -78,7 +78,7 @@ export function ShiftsHubPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="mt-2 min-h-11 px-0"
+                className="mt-2 px-0"
                 onClick={() => void refresh()}
               >
                 {t("shift.retry")}

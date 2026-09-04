@@ -67,7 +67,7 @@ export function TransactionSummaryPage() {
     return (
       <div data-testid="transaction-summary-missing" className="flex flex-col gap-3">
         <PageHeader title={t("summary.title")} description={t("summary.missingSale")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
+        <Button asChild variant="ghost" className="w-fit">
           <Link to="/sell">{t("summary.newSale")}</Link>
         </Button>
       </div>
@@ -82,7 +82,7 @@ export function TransactionSummaryPage() {
     return (
       <div data-testid="transaction-summary-error" className="flex flex-col gap-3">
         <PageHeader title={t("summary.title")} description={t("summary.loadError")} />
-        <Button asChild className="min-h-11 w-fit">
+        <Button asChild className="w-fit">
           <Link to="/sell">{t("summary.newSale")}</Link>
         </Button>
       </div>
@@ -169,7 +169,7 @@ export function TransactionSummaryPage() {
       <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2">
         <button
           type="button"
-          className="flex w-full min-h-11 items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
+          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
           aria-expanded={disclaimerOpen}
           data-testid="transaction-summary-disclaimer-toggle"
           onClick={() => setDisclaimerOpen((open) => !open)}
@@ -412,7 +412,7 @@ export function TransactionSummaryPage() {
               maxLength={VOID_REASON_MAX_LENGTH}
               value={voidReason}
               disabled={voiding}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               onChange={(event) => setVoidReason(event.target.value)}
             />
           </label>
@@ -427,7 +427,7 @@ export function TransactionSummaryPage() {
           <Button
             type="button"
             variant="destructive"
-            className="mt-3 min-h-11 w-full"
+            className="mt-3 w-full"
             data-testid="summary-void-confirm"
             disabled={voiding}
             onClick={() => void onVoid()}
@@ -450,7 +450,7 @@ export function TransactionSummaryPage() {
         className={cn("grid gap-2", showReturnAction ? "grid-cols-2" : "grid-cols-1")}
         data-testid="summary-footer-actions"
       >
-        <Button asChild className="min-h-11 w-full gap-2" data-testid="summary-new-sale">
+        <Button asChild className="w-full gap-2" data-testid="summary-new-sale">
           <Link to="/sell">
             <Plus className="size-4 shrink-0" aria-hidden />
             {t("summary.newSale")}
@@ -460,7 +460,7 @@ export function TransactionSummaryPage() {
           <Button
             asChild
             variant="outline"
-            className="min-h-11 w-full gap-2"
+            className="w-full gap-2"
             data-testid="summary-return-items"
           >
             <Link to={`/returns/sale/${sale.saleId}`}>

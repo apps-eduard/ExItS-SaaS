@@ -134,13 +134,13 @@ export function PersonalStaffInvitationsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-staff-accepted-open"
             onClick={() => void openWorkplace(success.staffLogin)}
           >
             {t("personal.workplaces.openNamed").replace("{org}", success.organizationDisplayName)}
           </Button>
-          <Button asChild type="button" variant="outline" className="min-h-11 w-full">
+          <Button asChild type="button" variant="outline" className="w-full">
             <Link to="/personal/workplaces" data-testid="personal-staff-accepted-workplaces">
               {t("personal.workplaces.viewMine")}
             </Link>

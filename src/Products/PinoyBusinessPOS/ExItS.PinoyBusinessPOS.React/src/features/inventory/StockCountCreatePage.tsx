@@ -284,7 +284,7 @@ export function StockCountCreatePage() {
 
   const productRowClass =
     "flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2";
-  const productActionClass = "min-h-11 w-full shrink-0 sm:w-auto";
+  const productActionClass = " w-full shrink-0 sm:w-auto";
 
   return (
     <div
@@ -327,7 +327,7 @@ export function StockCountCreatePage() {
         <label className="flex flex-col gap-1.5">
           <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countPeriod")}</span>
           <select
-            className="exits-input min-h-11"
+            className="exits-input"
             value={period}
             onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
             data-testid="stock-count-period"
@@ -343,7 +343,7 @@ export function StockCountCreatePage() {
         <label className="flex flex-col gap-1.5">
           <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.fieldTitle")}</span>
           <input
-            className="exits-input min-h-11"
+            className="exits-input"
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             maxLength={80}
@@ -357,7 +357,7 @@ export function StockCountCreatePage() {
           <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countDate")}</span>
           <input
             type="date"
-            className="exits-input min-h-11"
+            className="exits-input"
             value={countDate}
             onChange={(e) => applyCountDate(e.target.value)}
             data-testid="stock-count-date"
@@ -478,7 +478,7 @@ export function StockCountCreatePage() {
       <StickyActionBar className="px-3 py-3 sm:px-4">
         <Button
           type="button"
-          className="min-h-12 w-full flex-1"
+          className="w-full flex-1"
           disabled={!online || saving || selected.length === 0}
           onClick={() => void saveDraft()}
           data-testid="stock-count-save-draft"

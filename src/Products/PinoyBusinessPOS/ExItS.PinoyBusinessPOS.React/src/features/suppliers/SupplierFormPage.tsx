@@ -232,7 +232,7 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
           <input
             id={field.testId}
             data-testid={field.testId}
-            className="supplier-form-control min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="supplier-form-control rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={form[field.key]}
             disabled={saving}
             onChange={(event) => setField(field.key, event.target.value)}
@@ -293,14 +293,13 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
       <div className="supplier-form-actions sticky bottom-0 z-5 mt-1 flex flex-wrap gap-2 border-t border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] py-3 backdrop-blur-sm">
         <Button
           type="button"
-          className="min-h-11"
           data-testid="supplier-save"
           disabled={saving}
           onClick={() => void onSubmit()}
         >
           {saving ? t("suppliers.saving") : t("suppliers.save")}
         </Button>
-        <Button asChild variant="ghost" className="min-h-11" disabled={saving}>
+        <Button asChild variant="ghost" disabled={saving}>
           <Link to={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new"}>
             {t("suppliers.back")}
           </Link>

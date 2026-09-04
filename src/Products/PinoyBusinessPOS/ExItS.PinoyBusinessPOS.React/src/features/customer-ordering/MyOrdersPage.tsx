@@ -150,7 +150,7 @@ export function MyOrdersPage() {
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
           <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptyBuyerDetail")} />
-          <Button asChild className="min-h-11 w-full gap-2" data-testid="my-orders-open-stores-empty">
+          <Button asChild className="w-full gap-2" data-testid="my-orders-open-stores-empty">
             <Link to="/personal/linked-merchants">
               <Store className="size-4 shrink-0" aria-hidden />
               {t("personal.merchantsTitle")}

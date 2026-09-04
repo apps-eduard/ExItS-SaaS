@@ -251,7 +251,7 @@ export function ConnectedRequestPage() {
         <label className="mt-1 flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="font-medium">{t("connected.businessQrOrOrgId")}</span>
           <input
-            className="connected-request-input min-h-11 w-full rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 uppercase"
+            className="connected-request-input w-full rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 uppercase"
             data-testid="connected-request-input"
             value={payload}
             disabled={busy}
@@ -301,7 +301,7 @@ export function ConnectedRequestPage() {
               {resolved.branches.map((branch) => (
                 <label
                   key={branch.branchId}
-                  className="flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)]"
+                  className="flex items-center gap-2 text-[length:var(--exits-text-sm)]"
                 >
                   <input
                     type="radio"

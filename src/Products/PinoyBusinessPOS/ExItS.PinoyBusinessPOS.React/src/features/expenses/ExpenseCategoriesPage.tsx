@@ -186,7 +186,7 @@ export function ExpenseCategoriesPage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span className="font-medium">{t("expense.createCategory")}</span>
             <input
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
               value={name}
               maxLength={EXPENSE_CATEGORY_NAME_MAX}
               onChange={(e) => setName(e.target.value)}
@@ -195,7 +195,7 @@ export function ExpenseCategoriesPage() {
           </label>
           <Button
             type="button"
-            className="min-h-11 w-fit"
+            className="w-fit"
             disabled={!online || creating || !name.trim()}
             onClick={() => void onCreate()}
             data-testid="expense-category-create-submit"
@@ -208,7 +208,7 @@ export function ExpenseCategoriesPage() {
       <label className="flex max-w-xs flex-col gap-1 text-[length:var(--exits-text-sm)]">
         <span className="text-muted">{t("expense.filter.status")}</span>
         <select
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           data-testid="expense-category-status-filter"
@@ -245,7 +245,7 @@ export function ExpenseCategoriesPage() {
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
                     <input
-                      className="min-h-11 w-full rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                      className="w-full rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
                       value={editName}
                       maxLength={EXPENSE_CATEGORY_NAME_MAX}
                       onChange={(e) => setEditName(e.target.value)}
@@ -266,7 +266,6 @@ export function ExpenseCategoriesPage() {
                       <>
                         <Button
                           type="button"
-                          className="min-h-11"
                           disabled={busyId === category.categoryId}
                           onClick={() => void onSaveEdit()}
                           data-testid="expense-category-save"
@@ -276,7 +275,6 @@ export function ExpenseCategoriesPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-11"
                           onClick={() => setEditing(null)}
                         >
                           {t("expense.cancel")}
@@ -287,7 +285,6 @@ export function ExpenseCategoriesPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="min-h-11"
                           disabled={busyId === category.categoryId}
                           onClick={() => {
                             setEditing(category);
@@ -301,7 +298,6 @@ export function ExpenseCategoriesPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="min-h-11"
                             disabled={busyId === category.categoryId}
                             onClick={() => void onDeactivate(category)}
                             data-testid={`expense-category-deactivate-${category.categoryId}`}
@@ -312,7 +308,6 @@ export function ExpenseCategoriesPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="min-h-11"
                             disabled={busyId === category.categoryId}
                             onClick={() => void onReactivate(category)}
                             data-testid={`expense-category-reactivate-${category.categoryId}`}

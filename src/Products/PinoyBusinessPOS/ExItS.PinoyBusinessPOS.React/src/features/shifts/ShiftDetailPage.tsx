@@ -299,7 +299,7 @@ export function ShiftDetailPage() {
               inputMode="decimal"
               min={0}
               step="0.01"
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums shadow-sm"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums shadow-sm"
               value={closingCash}
               onChange={(event) => {
                 setClosingCash(event.target.value);
@@ -318,7 +318,7 @@ export function ShiftDetailPage() {
               type="text"
               maxLength={512}
               placeholder={t("shift.closingNotesLabel")}
-              className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 shadow-sm"
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 shadow-sm"
               value={closingNotes}
               onChange={(event) => setClosingNotes(event.target.value)}
             />
@@ -341,7 +341,7 @@ export function ShiftDetailPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11 w-full sm:w-auto"
+                className="w-full sm:w-auto"
                 disabled={saving}
                 data-testid="shift-close-skip-cash"
                 onClick={() => void onClose(true)}
@@ -352,7 +352,7 @@ export function ShiftDetailPage() {
             ) : null}
             <Button
               type="button"
-              className="min-h-11 w-full flex-1 sm:w-auto"
+              className="w-full flex-1 sm:w-auto"
               disabled={saving}
               data-testid="shift-close-confirm"
               onClick={() => void onClose(false)}
@@ -372,7 +372,7 @@ export function ShiftDetailPage() {
         {open ? (
           <Button
             type="button"
-            className="min-h-11 inline-flex items-center justify-center gap-2"
+            className="inline-flex items-center justify-center gap-2"
             data-testid="shift-go-sell"
             onClick={() => navigate("/sell")}
           >

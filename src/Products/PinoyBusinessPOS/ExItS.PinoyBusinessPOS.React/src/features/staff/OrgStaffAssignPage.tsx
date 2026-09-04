@@ -780,7 +780,7 @@ export function OrgStaffAssignPage() {
       <div className="exits-animate-toolbar">
         <Button
           type="button"
-          className="min-h-11 w-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={!canSubmit}
           data-testid="org-staff-assign-submit"
           onClick={requestAssign}

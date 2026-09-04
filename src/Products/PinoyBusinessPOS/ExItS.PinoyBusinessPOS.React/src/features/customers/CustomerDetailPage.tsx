@@ -536,17 +536,17 @@ export function CustomerDetailPage() {
 
       <div className="flex flex-wrap gap-2">
         {allowEdit ? (
-          <Button asChild className="min-h-11" data-testid="customer-edit">
+          <Button asChild data-testid="customer-edit">
             <Link to={`/customers/${customerId}/edit`}>{t("customers.edit")}</Link>
           </Button>
         ) : null}
         {allowRepay ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="customer-repay">
+          <Button asChild variant="ghost" data-testid="customer-repay">
             <Link to={`/customers/${customerId}/repay`}>{t("customers.recordPayment")}</Link>
           </Button>
         ) : null}
         {allowStatement && online ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="customer-statement">
+          <Button asChild variant="ghost" data-testid="customer-statement">
             <Link to={`/customers/${customerId}/statement`}>{t("customers.viewStatement")}</Link>
           </Button>
         ) : null}
@@ -554,7 +554,6 @@ export function CustomerDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             data-testid="customer-toggle-status"
             disabled={acting}
             onClick={() => void toggleStatus()}

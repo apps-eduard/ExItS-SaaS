@@ -133,7 +133,6 @@ export function OrgAreasPage() {
       <div className="branch-mgmt-toolbar">
         <Button
           type="button"
-          className="min-h-11"
           disabled={atLimit || createMutation.isPending}
           data-testid="org-areas-add"
           onClick={() => {
@@ -152,7 +151,7 @@ export function OrgAreasPage() {
           <label className="flex flex-col gap-1">
             <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.name")}</span>
             <input
-              className="exits-input min-h-11"
+              className="exits-input"
               value={name}
               maxLength={100}
               data-testid="org-areas-name"
@@ -165,7 +164,7 @@ export function OrgAreasPage() {
           <label className="flex flex-col gap-1">
             <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.code")}</span>
             <input
-              className="exits-input min-h-11"
+              className="exits-input"
               value={code}
               maxLength={32}
               data-testid="org-areas-code"
@@ -180,7 +179,7 @@ export function OrgAreasPage() {
           </label>
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={createMutation.isPending || !name.trim()}
             data-testid="org-areas-submit"
             onClick={() => createMutation.mutate()}
@@ -242,7 +241,6 @@ export function OrgAreasPage() {
                       <Button
                         asChild
                         variant="outline"
-                        className="min-h-11"
                         data-testid={`org-area-open-${area.id}`}
                       >
                         <Link to={`/org/areas/${area.id}`}>{t("areas.open")}</Link>

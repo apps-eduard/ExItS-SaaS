@@ -120,7 +120,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           data-testid="account-menu-trigger"
           className={cn(
             compact
-              ? "app-top-bar__avatar inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              ? "app-top-bar__avatar inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               : "inline-flex min-h-[var(--exits-touch-target-min)] items-center gap-2 rounded-full border border-border bg-surface px-1.5 py-1 text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-2.5",
             expanded && "bg-[var(--exits-surface-muted)]",
           )}

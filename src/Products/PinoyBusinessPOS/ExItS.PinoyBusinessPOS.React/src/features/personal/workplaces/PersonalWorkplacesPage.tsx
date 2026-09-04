@@ -233,7 +233,7 @@ export function PersonalWorkplacesPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-workplaces-accepted-open"
             onClick={() => void openWorkplace(accepted.staffLogin)}
           >
@@ -242,7 +242,7 @@ export function PersonalWorkplacesPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-workplaces-accepted-view"
             onClick={() => setAccepted(null)}
           >
@@ -340,7 +340,7 @@ export function PersonalWorkplacesPage() {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      className="min-h-11 flex-1"
+                      className="flex-1"
                       disabled={acceptMutation.isPending || !online}
                       data-testid={`personal-workplaces-accept-${invitation.id}`}
                       onClick={() => void onAccept(invitation)}
@@ -353,7 +353,6 @@ export function PersonalWorkplacesPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11"
                       onClick={() => {
                         setAcceptForId(null);
                         setPassword("");
@@ -367,7 +366,7 @@ export function PersonalWorkplacesPage() {
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    className="min-h-11 flex-1"
+                    className="flex-1"
                     disabled={!online}
                     data-testid={`personal-workplaces-start-accept-${invitation.id}`}
                     onClick={() => {
@@ -380,7 +379,6 @@ export function PersonalWorkplacesPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     disabled={declineMutation.isPending || !online}
                     data-testid={`personal-workplaces-decline-${invitation.id}`}
                     onClick={() => void onDecline(invitation.id)}
@@ -466,7 +464,7 @@ export function PersonalWorkplacesPage() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                className="min-h-11 flex-1"
+                className="flex-1"
                 disabled={!isActiveMembershipStatus(workplace.membershipStatus)}
                 data-testid={`personal-workplace-open-${workplace.membershipId}`}
                 onClick={() => void openWorkplace(workplace.staffLogin)}
@@ -476,7 +474,6 @@ export function PersonalWorkplacesPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 data-testid={`personal-workplace-copy-${workplace.membershipId}`}
                 onClick={() => void copyLogin(workplace.staffLogin, workplace.membershipId)}
               >

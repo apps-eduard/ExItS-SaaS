@@ -407,7 +407,7 @@ export function MerchantCheckoutPage() {
         />
         <Button
           type="button"
-          className="min-h-11 w-fit"
+          className="w-fit"
           onClick={() => void storefrontQuery.refetch()}
         >
           {t("orders.retry")}
@@ -442,7 +442,7 @@ export function MerchantCheckoutPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-fit"
+              className="w-fit"
               data-testid="stock-conflict-refresh"
               onClick={() => void storefrontQuery.refetch()}
             >

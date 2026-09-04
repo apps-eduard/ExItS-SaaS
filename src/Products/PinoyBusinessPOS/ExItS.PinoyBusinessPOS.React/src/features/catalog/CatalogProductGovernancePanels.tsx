@@ -222,7 +222,6 @@ export function CatalogPromoteControls(props: {
       <Button
         type="button"
         variant="outline"
-        className="min-h-11"
         data-testid="catalog-promote"
         onClick={() => {
           setError(null);
@@ -252,7 +251,6 @@ export function CatalogPromoteControls(props: {
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={promoteMutation.isPending}
                 data-testid="catalog-promote-confirm"
                 onClick={() => promoteMutation.mutate()}
@@ -265,7 +263,6 @@ export function CatalogPromoteControls(props: {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={promoteMutation.isPending}
                 data-testid="catalog-promote-cancel"
                 onClick={() => setOpen(false)}
@@ -452,7 +449,6 @@ export function CatalogBranchAvailabilitySection(props: {
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={mutation.isPending}
                 data-testid="catalog-stop-offering-confirm"
                 onClick={() =>
@@ -470,7 +466,6 @@ export function CatalogBranchAvailabilitySection(props: {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={mutation.isPending}
                 onClick={() => setPendingDisable(null)}
               >

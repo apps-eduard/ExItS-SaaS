@@ -145,7 +145,7 @@ export function SellWeightEntryDialog({
             min={unitCode === "g" ? 1 : 0.001}
             step={unitCode === "g" ? 1 : 0.001}
             value={rawValue}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
             onChange={(event) => setRawValue(event.target.value)}
           />
         </label>
@@ -162,7 +162,7 @@ export function SellWeightEntryDialog({
                 role="radio"
                 aria-checked={unitCode === code}
                 data-testid={`sell-weight-unit-${code}`}
-                className={`min-h-11 flex-1 rounded-[var(--exits-radius-md)] border px-3 ${
+                className={` flex-1 rounded-[var(--exits-radius-md)] border px-3 ${
                   unitCode === code
                     ? "border-primary bg-[var(--exits-surface-muted)]"
                     : "border-border"

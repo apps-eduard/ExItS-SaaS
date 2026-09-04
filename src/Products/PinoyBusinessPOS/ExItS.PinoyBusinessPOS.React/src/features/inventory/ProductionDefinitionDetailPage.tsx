@@ -202,7 +202,7 @@ export function ProductionDefinitionDetailPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row">
         {allowManage ? (
-          <Button asChild className="min-h-11" disabled={!online}>
+          <Button asChild disabled={!online}>
             <Link to={`/inventory/production/setups/${definitionId}/edit`}>
               {t("production.setups.edit")}
             </Link>
@@ -212,7 +212,6 @@ export function ProductionDefinitionDetailPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!online || toggling}
             onClick={() => void onToggleActive()}
             data-testid="production-setup-toggle-active"
@@ -223,7 +222,7 @@ export function ProductionDefinitionDetailPage() {
           </Button>
         ) : null}
         {allowManage && definition.isActive ? (
-          <Button asChild variant="outline" className="min-h-11" disabled={!online}>
+          <Button asChild variant="outline" disabled={!online}>
             <Link to={`/inventory/production/produce?definitionId=${definitionId}`}>
               {t("production.homeProduce")}
             </Link>

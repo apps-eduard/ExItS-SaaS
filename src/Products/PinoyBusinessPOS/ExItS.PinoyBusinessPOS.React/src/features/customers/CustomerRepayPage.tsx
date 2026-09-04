@@ -257,7 +257,7 @@ export function CustomerRepayPage() {
             min="0.01"
             step="0.01"
             inputMode="decimal"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={paymentAmount}
             disabled={saving || amountOwed <= 0}
             onChange={(event) => setPaymentAmount(event.target.value)}
@@ -271,7 +271,7 @@ export function CustomerRepayPage() {
           <input
             id="customer-payment-remarks"
             data-testid="customer-payment-remarks"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={remarks}
             disabled={saving}
             onChange={(event) => setRemarks(event.target.value)}
@@ -290,7 +290,6 @@ export function CustomerRepayPage() {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          className="min-h-11"
           data-testid="customer-payment-submit"
           disabled={saving || statusLocked || amountOwed <= 0}
           onClick={() => void onSubmit()}
