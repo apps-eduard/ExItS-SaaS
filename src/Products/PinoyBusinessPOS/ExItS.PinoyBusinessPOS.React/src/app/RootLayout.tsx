@@ -5,6 +5,8 @@ import { PersonalMerchantCartProvider } from "@/features/customer-ordering/Perso
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
 import { AdminManagementShell } from "@/features/admin/AdminManagementShell";
 import { shouldUseAdminManagementShell } from "@/features/admin/admin-nav-config";
+import { OperationsShell } from "@/features/operations/OperationsShell";
+import { shouldUseOperationsShell } from "@/features/operations/operations-nav-config";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
 import {
   isSellTransactionPath,
@@ -23,7 +25,7 @@ export function RootLayout() {
   const isPersonal = location.pathname.startsWith("/personal") || isContextSwitch;
   const isOnboarding = location.pathname.startsWith("/onboarding");
   const { status: sessionStatus } = useSession();
-  const { status: workspaceStatus, boundWorkspace } = useWorkspace();
+  const { status: workspaceStatus, boundWorkspace, sessionGrant } = useWorkspace();
   const cartOverlayHidesNav = useOrgBottomNavHidden();
   const sellTransactionHidesNav = isSellTransactionPath(location.pathname);
   const useAdminShell =
@@ -35,14 +37,27 @@ export function RootLayout() {
       experience: boundWorkspace.experience,
       pathname: location.pathname,
     });
-  const showOrgBottomNav =
+  const useOpsShell =
     !isPersonal &&
     !isOnboarding &&
     !useAdminShell &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
+    boundWorkspace != null &&
+    shouldUseOperationsShell({
+      experience: boundWorkspace.experience,
+      pathname: location.pathname,
+      grant: sessionGrant,
+    });
+  const showOrgBottomNav =
+    !isPersonal &&
+    !isOnboarding &&
+    !useAdminShell &&
+    !useOpsShell &&
+    isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
   const orgBottomNavVisible =
     showOrgBottomNav && !cartOverlayHidesNav && !sellTransactionHidesNav;
+  const operationsHideBottomNav = cartOverlayHidesNav || sellTransactionHidesNav;
 
   const showWorkspaceTransition = workspaceStatus === "binding";
   const isSellFloor =
@@ -56,6 +71,14 @@ export function RootLayout() {
           <AdminManagementShell header={<AppTopBar />}>
             <Outlet />
           </AdminManagementShell>
+        ) : useOpsShell ? (
+          <OperationsShell
+            header={<AppTopBar />}
+            sellFloor={isSellFloor}
+            hideBottomNav={operationsHideBottomNav}
+          >
+            <Outlet />
+          </OperationsShell>
         ) : (
           <AppShell
             header={isPersonal ? undefined : <AppTopBar />}

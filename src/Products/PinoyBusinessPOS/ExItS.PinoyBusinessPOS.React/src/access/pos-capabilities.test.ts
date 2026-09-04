@@ -169,6 +169,21 @@ describe("pos-capabilities", () => {
     expect(canCreateSale(admin)).toBe(false);
     expect(canManageCatalog(admin)).toBe(false);
     expect(canUseOperationsExperience(admin)).toBe(false);
+    expect(canEnterManagerRoleHome(admin)).toBe(false);
+  });
+
+  it("pure OrganizationAdministrator without product access cannot enter Manager", () => {
+    const admin = grant({
+      membershipRole: "OrganizationAdministrator",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: null,
+      productLocalRoleCode: null,
+      productAccessAllowed: false,
+    });
+    expect(canUseAdminExperience(admin)).toBe(true);
+    expect(canUseOperationsExperience(admin)).toBe(false);
+    expect(canEnterManagerRoleHome(admin)).toBe(false);
+    expect(canUseSellingExperience(admin)).toBe(false);
   });
 
   it("denies ManageCatalog for Cashier", () => {

@@ -38,8 +38,13 @@ export function OrgMorePage() {
   });
 
   const sections = buildOrgMoreSections(sessionGrant, {
-    showFinishSetup: shouldShowFinishSetupEntry(progressQuery.data),
+    showFinishSetup:
+      boundWorkspace?.experience === "manage_business"
+        ? shouldShowFinishSetupEntry(progressQuery.data)
+        : false,
     branchType: boundWorkspace?.branchType,
+    // Manager More must not expose Admin configuration destinations.
+    excludeAdminDestinations: boundWorkspace?.experience !== "manage_business",
   });
 
   return (

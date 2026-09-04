@@ -97,36 +97,10 @@ export function buildOrgBottomNavTabs(input: {
   const left: OrgNavTab[] = [home];
   const right: OrgNavTab[] = [];
 
-  if (canManageCatalog(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/catalog",
-      end: false,
-      labelKey: "org.nav.catalog",
-      testId: "org-nav-catalog",
-    });
-  } else if (canViewInventory(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/inventory",
-      end: false,
-      labelKey: "org.nav.catalog",
-      testId: "org-nav-catalog",
-    });
-  }
-
   if (canViewCustomerOrders(input.grant)) {
     right.push({
       id: "orders",
       to: "/orders",
-      end: false,
-      labelKey: "org.nav.orders",
-      testId: "org-nav-orders",
-    });
-  } else if (canViewCustomers(input.grant)) {
-    right.push({
-      id: "orders",
-      to: "/customers",
       end: false,
       labelKey: "org.nav.orders",
       testId: "org-nav-orders",
@@ -140,6 +114,25 @@ export function buildOrgBottomNavTabs(input: {
     labelKey: "org.nav.more",
     testId: "org-nav-more",
   });
+
+  // Prefer Inventory over Catalog for the stock slot (Manager IA).
+  if (canViewInventory(input.grant)) {
+    left.push({
+      id: "catalog",
+      to: "/inventory",
+      end: false,
+      labelKey: "org.nav.inventory",
+      testId: "org-nav-catalog",
+    });
+  } else if (canManageCatalog(input.grant)) {
+    left.push({
+      id: "catalog",
+      to: "/catalog",
+      end: false,
+      labelKey: "org.nav.catalog",
+      testId: "org-nav-catalog",
+    });
+  }
 
   const sell: OrgNavTab | null = canCreateSale(input.grant, input.branchType)
     ? {
@@ -181,9 +174,6 @@ function buildWarehouseBottomNavTabs(
       labelKey: "org.nav.inventory",
       testId: "org-nav-catalog",
     });
-  }
-
-  if (canViewInventory(grant)) {
     tabs.push({
       id: "orders",
       to: "/inventory/transfers",
@@ -263,9 +253,15 @@ export function buildOrgMoreLinks(
 /** Grouped More hub sections for scannable UX (Manager-home style panels). */
 export function buildOrgMoreSections(
   grant: PosSessionGrantFacts | null | undefined,
-  options?: { showFinishSetup?: boolean; branchType?: OrganizationBranchType | string | null },
+  options?: {
+    showFinishSetup?: boolean;
+    branchType?: OrganizationBranchType | string | null;
+    /** When true (Manager More), omit Admin configuration destinations. */
+    excludeAdminDestinations?: boolean;
+  },
 ): OrgMoreSection[] {
   const warehouse = isWarehouseBranch(options?.branchType);
+  const excludeAdmin = options?.excludeAdminDestinations === true;
   const operations: OrgMoreLink[] = [];
   const insights: OrgMoreLink[] = [];
   const organization: OrgMoreLink[] = [];
@@ -398,49 +394,51 @@ export function buildOrgMoreSections(
     });
   }
 
-  if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
-    organization.push({
-      to: "/org",
-      labelKey: "org.more.organization",
-      testId: "org-more-org",
-      icon: ClipboardList,
-    });
-  }
-  if (options?.showFinishSetup && hasOrganizationManagementAuthority(grant)) {
-    organization.unshift({
-      to: "/onboarding",
-      labelKey: "org.more.finishSetup",
-      testId: "org-more-finish-setup",
-      icon: ListChecks,
-    });
-  }
-  if (hasOrganizationManagementAuthority(grant)) {
-    organization.push({
-      to: "/org/devices",
-      labelKey: "org.more.devices",
-      testId: "org-more-devices",
-      icon: MonitorSmartphone,
-    });
-  }
-  if (canInviteOrganizationStaff(grant)) {
-    organization.push({
-      to: "/org/branches",
-      labelKey: "org.more.branches",
-      testId: "org-more-branches",
-      icon: MapPin,
-    });
-    organization.push({
-      to: "/org/staff",
-      labelKey: "org.more.staff",
-      testId: "org-more-staff",
-      icon: Users,
-    });
-    organization.push({
-      to: "/org/roles",
-      labelKey: "org.more.roles",
-      testId: "org-more-roles",
-      icon: ShieldCheck,
-    });
+  if (!excludeAdmin) {
+    if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
+      organization.push({
+        to: "/org",
+        labelKey: "org.more.organization",
+        testId: "org-more-org",
+        icon: ClipboardList,
+      });
+    }
+    if (options?.showFinishSetup && hasOrganizationManagementAuthority(grant)) {
+      organization.unshift({
+        to: "/onboarding",
+        labelKey: "org.more.finishSetup",
+        testId: "org-more-finish-setup",
+        icon: ListChecks,
+      });
+    }
+    if (hasOrganizationManagementAuthority(grant)) {
+      organization.push({
+        to: "/org/devices",
+        labelKey: "org.more.devices",
+        testId: "org-more-devices",
+        icon: MonitorSmartphone,
+      });
+    }
+    if (canInviteOrganizationStaff(grant)) {
+      organization.push({
+        to: "/org/branches",
+        labelKey: "org.more.branches",
+        testId: "org-more-branches",
+        icon: MapPin,
+      });
+      organization.push({
+        to: "/org/staff",
+        labelKey: "org.more.staff",
+        testId: "org-more-staff",
+        icon: Users,
+      });
+      organization.push({
+        to: "/org/roles",
+        labelKey: "org.more.roles",
+        testId: "org-more-roles",
+        icon: ShieldCheck,
+      });
+    }
   }
 
   settings.push({

@@ -11010,6 +11010,23 @@ a.exits-chip--primary:hover {
 }
 
 /* ---- Manage Business admin shell ---- */
+.operations-shell__body {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+}
+
+.operations-shell--sell-floor .operations-shell__body {
+  max-width: min(100%, 100rem);
+}
+
+.operations-shell--sell-floor .operations-shell__content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
 .admin-shell__body {
   width: 100%;
   max-width: 1600px;
