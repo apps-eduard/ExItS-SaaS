@@ -792,7 +792,7 @@ export function CheckoutCashPage() {
     !utangCreditOk;
 
   return (
-    <div data-testid="checkout-cash-page" className="flex min-w-0 flex-col gap-4">
+    <div data-testid="checkout-cash-page" className="checkout-cash-page">
       <PageHeader
         title={t("checkout.title")}
         description={t("checkout.cashLede")}
@@ -850,7 +850,7 @@ export function CheckoutCashPage() {
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("checkout.orderPreview")}
         </h2>
-        <ul className="mb-0 mt-2 list-none space-y-2 p-0">
+        <ul className="checkout-sale-preview__lines">
           {cart.lines.map((line, index) => (
             <li
               key={line.lineKey}
@@ -910,7 +910,7 @@ export function CheckoutCashPage() {
           </p>
           <p
             data-testid="checkout-discount-total"
-            className="m-0 mt-1 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
+            className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
           >
             <span className="text-muted">{t("checkout.discount")}</span>
             <span>
@@ -920,7 +920,7 @@ export function CheckoutCashPage() {
           </p>
           <p
             data-testid="checkout-amount-to-pay"
-            className="mb-0 mt-2 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
+            className="mb-0 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
           >
             <span>{t("checkout.amountToPay")}</span>
             <MoneyDisplay amount={amountToPay} />
@@ -1180,7 +1180,7 @@ export function CheckoutCashPage() {
           {appliedDiscounts.length === 0 && !discountFormOpen ? (
             <p
               data-testid="checkout-discount-empty"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)] text-muted"
             >
               {t("checkout.discountEmpty")}
             </p>
@@ -1388,20 +1388,20 @@ export function CheckoutCashPage() {
               {t("checkout.fieldRequired")}
             </span>
           </h2>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+          <p className="checkout-utang-panel__lede text-[length:var(--exits-text-xs)] text-muted">
             {t("checkout.utangDebtHint")} {t("checkout.utangCustomerRequired")}
           </p>
           {utangNeedsCustomerLookup ? (
             <p
               data-testid="checkout-utang-customer-denied"
-              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
             >
               {t("checkout.utangCustomerDenied")}
             </p>
           ) : (
             <>
               {selectedCustomer ? (
-                <div className="mt-3">
+                <div className="mt-2">
                   <CheckoutCustomerSelectedCard
                     customer={selectedCustomer}
                     overlay={customerLinkOverlay}
@@ -1435,7 +1435,7 @@ export function CheckoutCashPage() {
                 />
               ) : null}
               <label
-                className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                className="mt-2 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
                 htmlFor="checkout-utang-due-date"
               >
                 {t("checkout.utangDueDate")}
