@@ -36,8 +36,9 @@ export function ExItsHero({
       node
     ) : (
       <MotionDiv
-        initial={{ y: 18, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        // LCP-safe: never start at opacity 0 (avoids blank/black screen if JS is slow)
+        initial={{ y: 14 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.45, ease: "easeOut", delay }}
       >
         {node}
