@@ -821,6 +821,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
+      // Keep React sessionGrant in lockstep with persisted POS grant/token before
+      // status becomes "bound" so RequireManagerRoleHome never evaluates a stale grant.
+      setSessionGrantState(result.grant);
       setBoundWorkspace(
         boundFromDestination(
           destination,
