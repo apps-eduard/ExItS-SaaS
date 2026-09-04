@@ -75,6 +75,8 @@ import { BranchManagementListPage } from "@/features/branches/BranchManagementLi
 import { OrgAreaDetailPage } from "@/features/areas/OrgAreaDetailPage";
 import { OrgAreasPage } from "@/features/areas/OrgAreasPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
+import { AdminManageHubPage } from "@/features/admin/AdminManageHubPage";
+import { AdminMoreHubPage } from "@/features/admin/AdminMoreHubPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
@@ -502,6 +504,8 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <OrgEssentialsPage /> },
+              { path: "manage", element: <AdminManageHubPage /> },
+              { path: "more", element: <AdminMoreHubPage /> },
               { path: "business-qr", element: <OrgBusinessQrPage /> },
               {
                 path: "ownership-transfer",

@@ -3,6 +3,8 @@ import { AppTopBar } from "@/components/exits/AppTopBar";
 import { WorkspaceTransitionOverlay } from "@/components/exits/loading/WorkspaceTransitionOverlay";
 import { PersonalMerchantCartProvider } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
+import { AdminManagementShell } from "@/features/admin/AdminManagementShell";
+import { shouldUseAdminManagementShell } from "@/features/admin/admin-nav-config";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
 import {
   isSellTransactionPath,
@@ -24,9 +26,19 @@ export function RootLayout() {
   const { status: workspaceStatus, boundWorkspace } = useWorkspace();
   const cartOverlayHidesNav = useOrgBottomNavHidden();
   const sellTransactionHidesNav = isSellTransactionPath(location.pathname);
+  const useAdminShell =
+    !isPersonal &&
+    !isOnboarding &&
+    isAuthenticatedOrColdStartOffline(sessionStatus) &&
+    boundWorkspace != null &&
+    shouldUseAdminManagementShell({
+      experience: boundWorkspace.experience,
+      pathname: location.pathname,
+    });
   const showOrgBottomNav =
     !isPersonal &&
     !isOnboarding &&
+    !useAdminShell &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
   const orgBottomNavVisible =
@@ -40,13 +52,19 @@ export function RootLayout() {
     <>
       <WorkspaceBootNavigator />
       <PersonalMerchantCartProvider>
-        <AppShell
-          header={isPersonal ? undefined : <AppTopBar />}
-          withOrgBottomNav={orgBottomNavVisible}
-          sellFloor={isSellFloor}
-        >
-          <Outlet />
-        </AppShell>
+        {useAdminShell ? (
+          <AdminManagementShell header={<AppTopBar />}>
+            <Outlet />
+          </AdminManagementShell>
+        ) : (
+          <AppShell
+            header={isPersonal ? undefined : <AppTopBar />}
+            withOrgBottomNav={orgBottomNavVisible}
+            sellFloor={isSellFloor}
+          >
+            <Outlet />
+          </AppShell>
+        )}
         {orgBottomNavVisible ? <OrgBottomNav /> : null}
         <WorkspaceTransitionOverlay
           active={showWorkspaceTransition}
