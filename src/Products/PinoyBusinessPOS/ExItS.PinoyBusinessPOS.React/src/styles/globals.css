@@ -8141,17 +8141,11 @@ textarea.exits-input {
 
 .cash-handling-denom-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 768px) {
-  .cash-handling-denom-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .cash-handling-denom-row {

@@ -196,7 +196,7 @@ describe("CashHandlingSettingsPage", () => {
   it("uses density tokens and responsive denomination grid", () => {
     expect(globalsCss).toContain(".cash-handling-denom-grid");
     expect(globalsCss).toMatch(
-      /\.cash-handling-denom-grid[\s\S]*?@media \(min-width: 768px\)[\s\S]*?repeat\(2/,
+      /\.cash-handling-denom-grid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2/,
     );
     expect(globalsCss).toMatch(
       /\.cash-handling-denom-row[\s\S]*?min-height:\s*var\(--exits-control-height\)/,
