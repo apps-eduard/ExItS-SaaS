@@ -8496,6 +8496,20 @@ textarea.exits-input {
   margin-top: 0.25rem;
 }
 
+.catalog-page__filters-desktop {
+  gap: 0.625rem;
+}
+
+.catalog-page__taxonomy .catalog-form-select {
+  min-height: var(--exits-control-height);
+  font-size: var(--exits-text-md);
+  background: var(--exits-surface);
+}
+
+.catalog-page__taxonomy-field {
+  min-width: 0;
+}
+
 .catalog-page__filters-mobile-toolbar {
   align-items: center;
 }
@@ -8514,6 +8528,20 @@ textarea.exits-input {
 
 .catalog-filter-scroll-row {
   min-width: 0;
+}
+
+.catalog-page__filter-groups {
+  gap: 0.625rem;
+}
+
+.catalog-page__filter-section-label {
+  margin: 0 0 0.35rem;
+  font-size: var(--exits-text-xs);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--exits-text-muted, var(--exits-muted, #6b7280));
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .catalog-page__filter-groups .catalog-page__filter-scroll-track {
@@ -8561,9 +8589,9 @@ textarea.exits-input {
 }
 
 .catalog-page__filter-groups--sheet .catalog-page__filter-section-label {
-  margin: 0 0 0.5rem;
-  font-size: var(--exits-text-sm);
-  font-weight: 600;
+  margin: 0 0 0.35rem;
+  font-size: var(--exits-text-xs);
+  font-weight: 500;
   color: var(--exits-text-muted, var(--exits-muted, #6b7280));
 }
 
@@ -8574,7 +8602,7 @@ textarea.exits-input {
 
 .catalog-page__filter-groups--sheet .catalog-page__filter-section--usage {
   min-width: 0;
-  margin-top: -0.125rem;
+  margin-top: 0;
 }
 
 .catalog-page__filter-scroll-track {
@@ -8905,13 +8933,21 @@ textarea.exits-input {
 
 .catalog-product-row__meta {
   font-size: 0.65rem;
+  font-weight: 400;
   line-height: 1.25;
 }
 
 .catalog-product-row__ids {
   font-size: 0.65rem;
+  font-weight: 400;
   line-height: 1.25;
   letter-spacing: 0.01em;
+}
+
+.catalog-product-row__usage {
+  font-size: 0.65rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 /* Same bordered pill language as inventory "Tracks expiry". */

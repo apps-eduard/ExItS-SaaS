@@ -27,6 +27,7 @@ import { BackgroundRefreshIndicator } from "@/components/exits/loading/Backgroun
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { BottomSheet } from "@/components/exits/SheetDialog";
+import { StatusChip } from "@/components/exits/StatusChip";
 import {
   buildCatalogActiveFilterChips,
   countCatalogSheetFilters,
@@ -100,21 +101,21 @@ const SCOPE_FILTERS: Array<{
   key: string;
   labelKey:
     | "catalog.governance.scopeAll"
-    | "catalog.governance.scopeOrganization"
-    | "catalog.governance.scopeBranch";
+    | "catalog.filters.scopeOrganization"
+    | "catalog.filters.scopeBranch";
   testId: string;
 }> = [
   { value: "", key: "all", labelKey: "catalog.governance.scopeAll", testId: "catalog-scope-all" },
   {
     value: "OrganizationStandard",
     key: "OrganizationStandard",
-    labelKey: "catalog.governance.scopeOrganization",
+    labelKey: "catalog.filters.scopeOrganization",
     testId: "catalog-scope-OrganizationStandard",
   },
   {
     value: "BranchLocal",
     key: "BranchLocal",
-    labelKey: "catalog.governance.scopeBranch",
+    labelKey: "catalog.filters.scopeBranch",
     testId: "catalog-scope-BranchLocal",
   },
 ];
@@ -399,8 +400,8 @@ export function CatalogProductsPage() {
       />
 
       {isDesktopFilters ? (
-        <div className="catalog-page__filters-desktop flex min-w-0 flex-col gap-2">
-          <div className="catalog-page__filters flex flex-wrap gap-2">
+        <div className="catalog-page__filters-desktop flex min-w-0 flex-col gap-2.5">
+          <div className="catalog-page__taxonomy grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
             <CatalogCategoryBrandSelects
               categoryId={categoryId}
               brandId={brandId}
@@ -438,7 +439,7 @@ export function CatalogProductsPage() {
             </FilterButton>
             <div className="catalog-page__status-quick min-w-0 flex-1">
               <CatalogFilterScrollRow
-                ariaLabel={t("catalog.statusFilter")}
+                ariaLabel={t("catalog.filters.status")}
                 testId="catalog-status-filters-mobile"
                 items={STATUS_FILTERS.map((filter) => ({
                   key: filter.key,
@@ -597,9 +598,7 @@ export function CatalogProductsPage() {
                       className="catalog-product-row__scope mt-1 inline-flex"
                       data-testid="catalog-product-scope-badge"
                     >
-                      <span className="catalog-product-row__badge catalog-product-row__badge--scope">
-                        {scopeBadge}
-                      </span>
+                      <StatusChip tone="info">{scopeBadge}</StatusChip>
                     </span>
                   ) : null}
                   {offeringLabel ? (
@@ -645,15 +644,9 @@ export function CatalogProductsPage() {
                       </span>
                     </span>
                   ) : null}
-                  <span
-                    className={
-                      isActive
-                        ? "catalog-product-row__badge catalog-product-row__badge--active"
-                        : "catalog-product-row__badge catalog-product-row__badge--inactive"
-                    }
-                  >
+                  <StatusChip tone={isActive ? "success" : "neutral"}>
                     {product.status}
-                  </span>
+                  </StatusChip>
                 </span>
               </Link>
             </li>
@@ -725,13 +718,7 @@ function CatalogCategoryBrandSelects({
 }: CatalogCategoryBrandSelectsProps) {
   const fields = (
     <>
-      <label
-        className={
-          stacked
-            ? "catalog-form-field flex w-full flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold"
-            : "catalog-form-field flex min-w-[10rem] flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold"
-        }
-      >
+      <label className="catalog-form-field catalog-page__taxonomy-field flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] font-medium">
         {categoryLabel}
         <select
           className="catalog-form-select"
@@ -747,13 +734,7 @@ function CatalogCategoryBrandSelects({
           ))}
         </select>
       </label>
-      <label
-        className={
-          stacked
-            ? "catalog-form-field flex w-full flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold"
-            : "catalog-form-field flex min-w-[10rem] flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold"
-        }
-      >
+      <label className="catalog-form-field catalog-page__taxonomy-field flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] font-medium">
         {brandLabel}
         <select
           className="catalog-form-select"
@@ -773,7 +754,7 @@ function CatalogCategoryBrandSelects({
   );
 
   if (stacked) {
-    return <div className="flex min-w-0 flex-col gap-2">{fields}</div>;
+    return <div className="catalog-page__taxonomy catalog-page__taxonomy--stacked flex min-w-0 flex-col gap-2">{fields}</div>;
   }
 
   return fields;
@@ -869,21 +850,31 @@ function CatalogProductFilterChipBars({
   if (layout === "sheet") {
     return (
       <div
-        className="catalog-page__filter-groups catalog-page__filter-groups--sheet flex min-w-0 flex-col gap-1.5"
+        className="catalog-page__filter-groups catalog-page__filter-groups--sheet flex min-w-0 flex-col gap-2"
         data-testid="catalog-filter-groups-sheet"
       >
         <section className="catalog-page__filter-section catalog-page__filter-section--scope">
-          <p className="catalog-page__filter-section-label">{t("catalog.governance.scopeFilter")}</p>
+          <p className="catalog-page__filter-section-label">{t("catalog.filters.scope")}</p>
           <CatalogFilterScrollRow
-            ariaLabel={t("catalog.governance.scopeFilter")}
+            ariaLabel={t("catalog.filters.scope")}
             testId="catalog-scope-filters"
             items={scopeItems}
           />
         </section>
+        {includeStatus ? (
+          <section className="catalog-page__filter-section catalog-page__filter-section--status">
+            <p className="catalog-page__filter-section-label">{t("catalog.filters.status")}</p>
+            <CatalogFilterScrollRow
+              ariaLabel={t("catalog.filters.status")}
+              testId="catalog-status-filters"
+              items={statusItems}
+            />
+          </section>
+        ) : null}
         <section className="catalog-page__filter-section catalog-page__filter-section--usage">
-          <p className="catalog-page__filter-section-label">{t("catalog.businessUsage.label")}</p>
+          <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
           <CatalogFilterScrollRow
-            ariaLabel={t("catalog.businessUsage.label")}
+            ariaLabel={t("catalog.filters.use")}
             testId="catalog-usage-filters"
             items={usageItems}
           />
@@ -892,39 +883,34 @@ function CatalogProductFilterChipBars({
     );
   }
 
-  const rows: Array<{ ariaLabel: string; testId: string; items: CatalogFilterScrollRowProps["items"] }> =
-    [
-      {
-        ariaLabel: t("catalog.governance.scopeFilter"),
-        testId: "catalog-scope-filters",
-        items: scopeItems,
-      },
-    ];
-
-  if (includeStatus) {
-    rows.push({
-      ariaLabel: t("catalog.statusFilter"),
-      testId: "catalog-status-filters",
-      items: statusItems,
-    });
-  }
-
-  rows.push({
-    ariaLabel: t("catalog.businessUsage.label"),
-    testId: "catalog-usage-filters",
-    items: usageItems,
-  });
-
   return (
-    <div className="catalog-page__filter-groups flex min-w-0 flex-col gap-2">
-      {rows.map((row) => (
+    <div className="catalog-page__filter-groups flex min-w-0 flex-col gap-2" data-testid="catalog-filter-groups">
+      <section className="catalog-page__filter-section catalog-page__filter-section--scope">
+        <p className="catalog-page__filter-section-label">{t("catalog.filters.scope")}</p>
         <CatalogFilterScrollRow
-          key={row.testId}
-          ariaLabel={row.ariaLabel}
-          testId={row.testId}
-          items={row.items}
+          ariaLabel={t("catalog.filters.scope")}
+          testId="catalog-scope-filters"
+          items={scopeItems}
         />
-      ))}
+      </section>
+      {includeStatus ? (
+        <section className="catalog-page__filter-section catalog-page__filter-section--status">
+          <p className="catalog-page__filter-section-label">{t("catalog.filters.status")}</p>
+          <CatalogFilterScrollRow
+            ariaLabel={t("catalog.filters.status")}
+            testId="catalog-status-filters"
+            items={statusItems}
+          />
+        </section>
+      ) : null}
+      <section className="catalog-page__filter-section catalog-page__filter-section--usage">
+        <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
+        <CatalogFilterScrollRow
+          ariaLabel={t("catalog.filters.use")}
+          testId="catalog-usage-filters"
+          items={usageItems}
+        />
+      </section>
     </div>
   );
 }
