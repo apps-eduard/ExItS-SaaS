@@ -141,18 +141,21 @@ export function DashboardMetricCard({
 export function DashboardComparisonTrend({
   comparison,
   absoluteLabel,
-  pctUnavailableLabel,
   vsPriorLabel,
 }: {
   comparison: PeriodComparisonFacts;
-  absoluteLabel: ReactNode;
-  pctUnavailableLabel: string;
+  absoluteLabel?: ReactNode;
+  /** @deprecated Unused — unavailable comparisons are omitted. */
+  pctUnavailableLabel?: string;
   vsPriorLabel: string;
 }) {
   const pct = comparison.percentageChange;
   const available = comparison.percentageAvailable && pct != null;
-  const absolute = comparison.absoluteChange ?? 0;
-  const direction = absolute > 0 ? "up" : absolute < 0 ? "down" : "flat";
+  if (!available) {
+    return null;
+  }
+
+  const direction = pct! > 0 ? "up" : pct! < 0 ? "down" : "flat";
   const Icon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
 
   return (
@@ -169,20 +172,12 @@ export function DashboardComparisonTrend({
         <Icon />
       </span>
       <span className="dashboard-trend__copy">
-        <span className="dashboard-trend__absolute">{absoluteLabel}</span>
-        {available ? (
-          <span className="dashboard-trend__pct">
-            {pct! > 0 ? "+" : ""}
-            {pct!.toFixed(pct! % 1 === 0 ? 0 : 1)}%
-          </span>
-        ) : (
-          <span className="dashboard-trend__pct dashboard-trend__pct--muted">{pctUnavailableLabel}</span>
-        )}
-        <span className="dashboard-trend__vs">
-          {vsPriorLabel
-            .replace("{from}", comparison.comparisonFromDate)
-            .replace("{to}", comparison.comparisonToDate)}
+        <span className="dashboard-trend__pct">
+          {pct! > 0 ? "+" : ""}
+          {pct!.toFixed(pct! % 1 === 0 ? 0 : 1)}%
         </span>
+        {absoluteLabel ? <span className="dashboard-trend__absolute">{absoluteLabel}</span> : null}
+        <span className="dashboard-trend__vs">{vsPriorLabel}</span>
       </span>
     </div>
   );

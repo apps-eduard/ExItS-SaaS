@@ -9,12 +9,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { formatPeso } from "@/lib/format-money";
 import {
   CHART_INTRO_MS,
   readDashboardChartTheme,
 } from "@/features/reports/dashboard/chart-theme";
+import { DashboardQuietEmpty } from "@/features/reports/dashboard/DashboardToolbar";
 import { usePrefersReducedMotion } from "@/features/reports/dashboard/useChartMotion";
 
 export type RankedBarRow = {
@@ -31,14 +31,16 @@ export function RankedHorizontalBars({
   animationKey,
   valueFormatter = formatPeso,
   testId = "dashboard-ranked-bars",
+  emptyTestId,
   ariaLabel,
 }: {
   rows: ReadonlyArray<RankedBarRow>;
   emptyTitle: string;
-  emptyDetail: string;
+  emptyDetail?: string;
   animationKey: string;
   valueFormatter?: (value: number) => string;
   testId?: string;
+  emptyTestId?: string;
   ariaLabel: string;
 }) {
   const reduced = usePrefersReducedMotion();
@@ -55,10 +57,16 @@ export function RankedHorizontalBars({
   );
 
   if (data.length === 0) {
-    return <EmptyState title={emptyTitle} detail={emptyDetail} />;
+    return (
+      <DashboardQuietEmpty
+        title={emptyTitle}
+        detail={emptyDetail}
+        testId={emptyTestId ?? `${testId}-empty`}
+      />
+    );
   }
 
-  const height = Math.max(160, data.length * 36 + 24);
+  const height = Math.max(140, data.length * 34 + 16);
 
   return (
     <div
@@ -100,7 +108,7 @@ export function RankedHorizontalBars({
           <Bar
             dataKey="value"
             radius={[0, 6, 6, 0]}
-            barSize={16}
+            barSize={14}
             isAnimationActive={reduced ? false : "auto"}
             animationDuration={CHART_INTRO_MS}
             animationEasing="ease-out"

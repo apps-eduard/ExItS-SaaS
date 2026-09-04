@@ -1,17 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  Banknote,
-  BarChart3,
-  CalendarDays,
-  Clock3,
-  Package,
-  RefreshCw,
-  ShieldAlert,
-  Smartphone,
-  Wallet,
-} from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { Clock3 } from "lucide-react";
 import {
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
@@ -27,18 +17,17 @@ import {
   getUtangReport,
 } from "@/api/pos/pos-reporting-client";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
-import {
-  DashboardComparisonTrend,
-  DashboardHeroMetric,
-  DashboardMetricCard,
-  DashboardScopeBadge,
-} from "@/features/reports/DashboardMetricCards";
+import { DashboardComparisonTrend } from "@/features/reports/DashboardMetricCards";
 import { AnimatedMoneyValue } from "@/features/reports/dashboard/AnimatedMetricValue";
+import {
+  DashboardPanel,
+  DashboardQuietEmpty,
+  DashboardToolbar,
+} from "@/features/reports/dashboard/DashboardToolbar";
 import { InventoryHealthBars } from "@/features/reports/dashboard/InventoryHealthBars";
 import { PaymentMixDonut } from "@/features/reports/dashboard/PaymentMixDonut";
 import { RankedHorizontalBars } from "@/features/reports/dashboard/RankedHorizontalBars";
@@ -49,8 +38,6 @@ import {
   resolveDashboardBranchScopeLabel,
   resolveDashboardOrganizationScopeLabel,
 } from "@/features/reports/dashboard-scope";
-import { ReportFilters } from "@/features/reports/ReportFilters";
-import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import {
   canSelectAllBranches,
   listOrganizationBranches,
@@ -70,8 +57,39 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const BRANCH_RANK_LIMIT = 8;
 
+function KpiStripItem({
+  label,
+  children,
+  tone = "default",
+  testId,
+  metricScope,
+}: {
+  label: string;
+  children: React.ReactNode;
+  tone?: "default" | "emphasis" | "attention";
+  testId: string;
+  metricScope?: "branch" | "organization";
+}) {
+  return (
+    <div
+      className={cn(
+        "dashboard-kpi-chip",
+        tone === "emphasis" && "dashboard-kpi-chip--emphasis",
+        tone === "attention" && "dashboard-kpi-chip--attention",
+      )}
+      data-testid={testId}
+      data-metric-scope={metricScope}
+      role="listitem"
+    >
+      <span className="dashboard-kpi-chip__label">{label}</span>
+      <span className="dashboard-kpi-chip__value">{children}</span>
+    </div>
+  );
+}
+
 export function ManagementDashboardPage() {
   const { t } = useI18n();
+  const reduceMotion = useReducedMotion();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [preset, setPreset] = useState<ReportDatePreset>("today");
   const [custom, setCustom] = useState<ReportDateRangeValue>(() =>
@@ -247,6 +265,12 @@ export function ManagementDashboardPage() {
     setApplied(resolveReportDatePreset(preset, new Date(), custom));
   }
 
+  function onCompareBranches() {
+    if (allowAll) {
+      setScopeSelection({ mode: "all" });
+    }
+  }
+
   const overviewError = overviewQuery.isError
     ? describePosApiError(overviewQuery.error, t, "reports.loadError")
     : null;
@@ -292,13 +316,17 @@ export function ManagementDashboardPage() {
     }));
   }, [productsQuery.data?.rows, productRank]);
 
+  const fadeUp = reduceMotion
+    ? undefined
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
   return (
     <div
-      className="dashboard-page exits-page flex min-w-0 flex-col gap-3"
+      className="dashboard-page dashboard-page--v2 exits-page flex min-w-0 flex-col gap-3"
       data-testid="management-dashboard-page"
     >
       <PageHeader
@@ -309,629 +337,448 @@ export function ManagementDashboardPage() {
         backTestId="page-header-back-reports"
       />
 
-      <ExitsChipBar
-        variant="actions"
-        ariaLabel={t("dashboard.title")}
-        testId="dashboard-toolbar"
-        className="exits-animate-toolbar"
-        items={[
-          {
-            key: "reports",
-            label: t("reports.open"),
-            icon: <BarChart3 />,
-            href: "/reports",
-            testId: "open-reports-hub",
-          },
-          {
-            key: "refresh",
-            label: t("dashboard.refresh"),
-            icon: <RefreshCw className={cn(refreshing && "dashboard-refresh-spin")} />,
-            testId: "dashboard-refresh",
-            disabled: refreshing,
-            onSelect: () => {
-              void overviewQuery.refetch();
-              void dashboardQuery.refetch();
-              void productsQuery.refetch();
-              void profitabilityQuery.refetch();
-              void utangReportQuery.refetch();
-              if (branchRankEnabled) {
-                void branchRankQuery.refetch();
-              }
-            },
-          },
-        ]}
-      />
-
-      <ReportFilters
+      <DashboardToolbar
         preset={preset}
         range={applied}
         custom={custom}
-        scopeSlot={
-          workspace ? (
-            <div className="flex min-w-0 flex-col gap-1.5">
-              <ReportScopeControls
-                scopeMode={scopeMode}
-                organizationId={workspace.organizationId}
-                currentBranchId={workspace.branchId}
-                currentBranchName={boundWorkspace?.branchName}
-                selection={scopeSelection}
-                onSelectionChange={setScopeSelection}
-                allowAllBranches={allowAll}
-                loading={dashboardQuery.isFetching}
-              />
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="dashboard-scope-filter-note"
-              >
-                {t("dashboard.scope.filterNote")}
-              </p>
-            </div>
-          ) : null
-        }
         onPresetChange={onPresetChange}
         onCustomChange={setCustom}
         onApply={onApply}
         loading={dashboardQuery.isFetching}
+        refreshing={refreshing}
+        onRefresh={() => {
+          void overviewQuery.refetch();
+          void dashboardQuery.refetch();
+          void productsQuery.refetch();
+          void profitabilityQuery.refetch();
+          void utangReportQuery.refetch();
+          if (branchRankEnabled) {
+            void branchRankQuery.refetch();
+          }
+        }}
+        scopeMode={scopeMode}
+        organizationId={workspace.organizationId}
+        currentBranchId={workspace.branchId}
+        currentBranchName={boundWorkspace?.branchName}
+        selection={scopeSelection}
+        onSelectionChange={setScopeSelection}
+        allowAllBranches={allowAll}
       />
 
-      <section
-        className="catalog-form-section exits-animate-panel gap-3"
-        data-testid="management-overview-panel"
-      >
-        <div className="dashboard-section__header">
-          <h2 className="catalog-form-section__title">{t("dashboard.section.organizationOverview")}</h2>
-          <p className="dashboard-section__lede">{t("dashboard.todayOverview")}</p>
-        </div>
-        {overviewQuery.isLoading ? <LoadingState label={t("reports.loading")} /> : null}
-        {overviewError ? (
-          <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
-        ) : null}
-        {overview ? (
-          <div className="dashboard-metrics" role="list">
-            <DashboardHeroMetric
-              label={t("dashboard.todaySales")}
-              meta={`${overview.todaySaleCount} ${t("dashboard.transactions")} · ${overview.businessDate}`}
-              scopeLabel={organizationScopeLabel}
-              scopeTestId="scope-today-sales"
-              metricScope="organization"
-              testId="kpi-today-sales"
-            >
-              <AnimatedMoneyValue
-                amount={overview.todaySalesTotal}
-                animationKey={`today|${overview.businessDate}`}
-              />
-            </DashboardHeroMetric>
+      <p className="sr-only" data-testid="dashboard-scope-filter-note">
+        {t("dashboard.scope.filterNote")}
+      </p>
 
-            <div className="dashboard-metric-grid" role="list">
-              <DashboardMetricCard
-                label={t("dashboard.todayCash")}
-                icon={Banknote}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-today-cash"
-                metricScope="organization"
-                testId="kpi-today-cash"
-                tone="emphasis"
-              >
-                <MoneyDisplay amount={overview.todayCashSalesTotal} />
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.todayUtang")}
-                icon={Wallet}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-today-utang"
-                metricScope="organization"
-                testId="kpi-today-utang"
-                to="/customers"
-              >
-                <MoneyDisplay amount={overview.todayUtangSalesTotal} />
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.paymentsReceived")}
-                icon={Smartphone}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-payments-received"
-                metricScope="organization"
-                testId="kpi-payments-received"
-              >
-                <MoneyDisplay amount={overview.todayPaymentsReceived} />
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.openUtang")}
-                icon={Wallet}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-open-utang"
-                metricScope="organization"
-                testId="kpi-open-utang"
-                tone={overview.openUtangOutstanding > 0 ? "attention" : "default"}
-                to="/customers"
-              >
-                <MoneyDisplay amount={overview.openUtangOutstanding} />
-              </DashboardMetricCard>
-            </div>
+      {overviewQuery.isLoading && dashboardQuery.isLoading ? (
+        <LoadingState label={t("reports.loading")} />
+      ) : null}
+      {overviewError ? (
+        <ErrorState title={t("reports.errorTitle")} detail={overviewError} />
+      ) : null}
+      {dashboardError ? (
+        <ErrorState title={t("reports.errorTitle")} detail={dashboardError} />
+      ) : null}
 
-            <div className="dashboard-metric-grid dashboard-metric-grid--ops" role="list">
-              <DashboardMetricCard
-                label={t("dashboard.businessDate")}
-                icon={CalendarDays}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-business-date"
-                metricScope="organization"
-                testId="kpi-business-date"
-              >
-                {overview.businessDate}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.lowStock")}
-                icon={Package}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-low-stock-today"
-                metricScope="organization"
-                testId="kpi-low-stock"
-                tone={overview.lowStockProductCount > 0 ? "attention" : "success"}
-                to="/inventory"
-              >
-                {overview.lowStockProductCount}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.expiredLots")}
-                icon={ShieldAlert}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-expired-lots"
-                metricScope="organization"
-                testId="kpi-expired-lots"
-                tone={overview.expiredLotCount > 0 ? "attention" : "default"}
-                to="/inventory/expiration"
-              >
-                {overview.expiredLotCount}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.nearExpiryLots")}
-                icon={AlertTriangle}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-near-expiry"
-                metricScope="organization"
-                testId="kpi-near-expiry"
-                tone={overview.nearExpiryLotCount > 0 ? "attention" : "default"}
-                to="/inventory/expiration"
-              >
-                {overview.nearExpiryLotCount}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.openShifts")}
-                icon={Clock3}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-open-shifts"
-                metricScope="organization"
-                testId="kpi-open-shifts"
-              >
-                {overview.openShiftCount}
-              </DashboardMetricCard>
-              <DashboardMetricCard
-                label={t("dashboard.activeRegisters")}
-                icon={BarChart3}
-                scopeLabel={organizationScopeLabel}
-                scopeTestId="scope-active-registers"
-                metricScope="organization"
-                testId="kpi-active-registers"
-              >
-                {overview.activeRegisterCount}
-              </DashboardMetricCard>
-            </div>
+      {dashboardQuery.isLoading && !dashboard ? (
+        <div className="dashboard-skeleton" data-testid="dashboard-period-skeleton" aria-busy>
+          <div className="dashboard-skeleton__hero" />
+          <div className="dashboard-skeleton__chart" />
+          <div className="dashboard-skeleton__grid">
+            <div className="dashboard-skeleton__panel" />
+            <div className="dashboard-skeleton__panel" />
           </div>
-        ) : null}
-      </section>
-
-      <section
-        className="catalog-form-section exits-animate-panel gap-3"
-        data-testid="period-dashboard-panel"
-      >
-        <div className="dashboard-period-header">
-          <h2 className="catalog-form-section__title">{t("dashboard.periodTitle")}</h2>
-          <p className="dashboard-period-range m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {applied.fromDate} → {applied.toDate}
-          </p>
         </div>
-        {dashboardQuery.isLoading ? (
-          <div className="dashboard-skeleton" data-testid="dashboard-period-skeleton" aria-busy>
-            <div className="dashboard-skeleton__hero" />
-            <div className="dashboard-skeleton__chart" />
-            <div className="dashboard-skeleton__grid">
-              <div className="dashboard-skeleton__panel" />
-              <div className="dashboard-skeleton__panel" />
-            </div>
-          </div>
-        ) : null}
-        {dashboardError ? (
-          <ErrorState title={t("reports.errorTitle")} detail={dashboardError} />
-        ) : null}
-        {dashboard ? (
-          <div className="dashboard-metrics dashboard-exec" role="list">
-            <section
-              className="dashboard-section dashboard-exec__sales"
-              data-testid="dashboard-branch-performance"
-            >
-              <div className="dashboard-section__header">
-                <h3 className="catalog-form-section__title">{t("dashboard.section.salesPerformance")}</h3>
-              </div>
+      ) : null}
 
-              <DashboardHeroMetric
-                label={t("dashboard.completedSales")}
-                meta={`${dashboard.completedSaleCount} ${t("dashboard.transactions")}`}
-                scopeLabel={branchScopeLabel}
-                scopeTestId="scope-period-sales"
-                metricScope="branch"
-                testId="kpi-period-sales"
-                className="dashboard-hero-metric--flagship"
-                trend={
-                  dashboard.salesTotalComparison ? (
-                    <DashboardComparisonTrend
-                      comparison={dashboard.salesTotalComparison}
-                      absoluteLabel={
-                        <MoneyDisplay amount={dashboard.salesTotalComparison.absoluteChange ?? 0} />
-                      }
-                      pctUnavailableLabel={t("dashboard.pctUnavailable")}
-                      vsPriorLabel={t("dashboard.vsPriorPeriod")}
-                    />
-                  ) : null
-                }
-              >
+      {dashboard ? (
+        <motion.div
+          className="dashboard-exec dashboard-exec--v2"
+          key={animationKey}
+          {...(fadeUp ?? {})}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <section
+            className="dashboard-sales-block"
+            data-testid="dashboard-branch-performance"
+            data-metric-scope="branch"
+          >
+            <div className="dashboard-sales-block__header">
+              <h2 className="dashboard-section-title">{t("dashboard.section.salesPerformance")}</h2>
+              <span className="dashboard-panel__scope" data-testid="scope-period-sales">
+                {branchScopeLabel}
+              </span>
+            </div>
+
+            <article
+              className="dashboard-hero"
+              data-testid="kpi-period-sales"
+              data-metric-scope="branch"
+            >
+              <span className="dashboard-hero__label">{t("dashboard.totalSales")}</span>
+              <div className="dashboard-hero__value">
                 <AnimatedMoneyValue
                   amount={dashboard.completedSalesTotal}
                   animationKey={animationKey}
                 />
-              </DashboardHeroMetric>
-
-              <div className="dashboard-metric-grid dashboard-metric-grid--secondary" role="list">
-                <DashboardMetricCard
-                  label={t("dashboard.transactions")}
-                  icon={BarChart3}
-                  scopeLabel={branchScopeLabel}
-                  metricScope="branch"
-                  testId="kpi-period-txns"
-                >
-                  {dashboard.completedSaleCount}
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.avgSale")}
-                  icon={Banknote}
-                  scopeLabel={branchScopeLabel}
-                  metricScope="branch"
-                  testId="kpi-period-avg-sale"
-                  tone="emphasis"
-                >
-                  {averageSale != null ? (
-                    <MoneyDisplay amount={averageSale} />
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.cashSales")}
-                  icon={Banknote}
-                  scopeLabel={branchScopeLabel}
-                  scopeTestId="scope-period-cash"
-                  metricScope="branch"
-                  testId="kpi-period-cash"
-                  tone="emphasis"
-                >
-                  <MoneyDisplay amount={dashboard.cashSalesTotal} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.gcashSales")}
-                  icon={Smartphone}
-                  scopeLabel={branchScopeLabel}
-                  scopeTestId="scope-period-gcash"
-                  metricScope="branch"
-                  testId="kpi-period-gcash"
-                >
-                  <MoneyDisplay amount={dashboard.manualGCashSalesTotal} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.utangSales")}
-                  icon={Wallet}
-                  scopeLabel={branchScopeLabel}
-                  scopeTestId="scope-period-utang-sales"
-                  metricScope="branch"
-                  testId="kpi-period-utang"
-                  to="/customers"
-                >
-                  <MoneyDisplay amount={dashboard.utangSalesTotal} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.voidedSales")}
-                  icon={ShieldAlert}
-                  scopeLabel={branchScopeLabel}
-                  scopeTestId="scope-period-voids"
-                  metricScope="branch"
-                  testId="kpi-period-voids"
-                  tone={dashboard.voidedSaleCount > 0 ? "attention" : "default"}
-                >
-                  {dashboard.voidedSaleCount}
-                </DashboardMetricCard>
               </div>
-
-              <div className="dashboard-chart-panel dashboard-chart-panel--wide">
-                <div className="dashboard-section__header dashboard-section__header--inline">
-                  <h4 className="catalog-form-section__title">{t("dashboard.salesTrend")}</h4>
-                  <DashboardScopeBadge label={branchScopeLabel} testId="scope-sales-by-day" />
-                </div>
-                <SalesTrendAreaChart
-                  points={dashboard.salesByDay}
-                  emptyTitle={t("reports.emptyTitle")}
-                  emptyDetail={t("dashboard.salesByDayEmpty")}
-                  animationKey={animationKey}
-                  ariaLabel={t("dashboard.salesTrend")}
-                />
-              </div>
-            </section>
-
-            <div className="dashboard-exec__analytics">
-              <div className="dashboard-chart-panel">
-                <div className="dashboard-section__header dashboard-section__header--inline">
-                  <h4 className="catalog-form-section__title">{t("dashboard.paymentMix")}</h4>
-                  <DashboardScopeBadge label={branchScopeLabel} testId="scope-payment-breakdown" />
-                </div>
-                <PaymentMixDonut
-                  rows={dashboard.paymentMethodBreakdown}
-                  totalLabel={t("dashboard.completedSales")}
-                  emptyTitle={t("reports.emptyTitle")}
-                  emptyDetail={t("reports.emptyDetail")}
-                  animationKey={animationKey}
-                />
-              </div>
-
-              <div className="dashboard-chart-panel" data-testid="dashboard-utang-health">
-                <div className="dashboard-section__header dashboard-section__header--inline">
-                  <h4 className="catalog-form-section__title">{t("dashboard.utangHealth")}</h4>
-                  <DashboardScopeBadge
-                    label={organizationScopeLabel}
-                    testId="scope-utang-health"
+              {dashboard.completedSalesTotal <= 0 ? (
+                <p className="dashboard-hero__empty m-0">{t("dashboard.noSalesYet")}</p>
+              ) : (
+                <p className="dashboard-hero__meta m-0">
+                  {dashboard.completedSaleCount} {t("dashboard.transactions")}
+                </p>
+              )}
+              {dashboard.salesTotalComparison ? (
+                <div className="dashboard-hero__trend">
+                  <DashboardComparisonTrend
+                    comparison={dashboard.salesTotalComparison}
+                    vsPriorLabel={t("dashboard.vsPriorShort")}
                   />
                 </div>
-                <UtangOverdueRadial
-                  outstanding={dashboard.activeCustomerUtangOutstanding}
-                  overdue={dashboard.overdueUtangAmount}
-                  overdueLabel={t("dashboard.overdueShare")}
-                  outstandingLabel={t("dashboard.utangOutstanding")}
-                  ofLabel={t("dashboard.of")}
-                  animationKey={animationKey}
-                  customersHref="/customers"
-                />
-                <div className="dashboard-utang-facts" role="list">
-                  <DashboardMetricCard
-                    label={t("dashboard.utangSales")}
-                    icon={Wallet}
-                    metricScope="branch"
-                    testId="kpi-utang-period-sales-fact"
-                  >
+              ) : null}
+            </article>
+
+            <div className="dashboard-kpi-strip" role="list" data-testid="dashboard-kpi-strip">
+              <KpiStripItem
+                label={t("dashboard.transactions")}
+                testId="kpi-period-txns"
+                metricScope="branch"
+              >
+                {dashboard.completedSaleCount}
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.avgSale")}
+                testId="kpi-period-avg-sale"
+                metricScope="branch"
+                tone="emphasis"
+              >
+                {averageSale != null ? <MoneyDisplay amount={averageSale} /> : "—"}
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.cashSales")}
+                testId="kpi-period-cash"
+                metricScope="branch"
+                tone="emphasis"
+              >
+                <MoneyDisplay amount={dashboard.cashSalesTotal} />
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.gcashSales")}
+                testId="kpi-period-gcash"
+                metricScope="branch"
+              >
+                <MoneyDisplay amount={dashboard.manualGCashSalesTotal} />
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.utangSales")}
+                testId="kpi-period-utang"
+                metricScope="branch"
+              >
+                <MoneyDisplay amount={dashboard.utangSalesTotal} />
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.voidedSales")}
+                testId="kpi-period-voids"
+                metricScope="branch"
+                tone={dashboard.voidedSaleCount > 0 ? "attention" : "default"}
+              >
+                {dashboard.voidedSaleCount}
+              </KpiStripItem>
+              <KpiStripItem
+                label={t("dashboard.expenses")}
+                testId="kpi-period-expenses"
+                metricScope="organization"
+              >
+                <span data-testid="scope-period-expenses" className="sr-only">
+                  {organizationScopeLabel}
+                </span>
+                <MoneyDisplay amount={dashboard.recordedExpenseTotal} />
+              </KpiStripItem>
+            </div>
+
+            <DashboardPanel
+              title={t("dashboard.salesTrend")}
+              className="dashboard-panel--trend"
+              testId="dashboard-sales-trend-panel"
+            >
+              <SalesTrendAreaChart
+                points={dashboard.salesByDay}
+                emptyTitle={t("dashboard.salesTrendEmpty")}
+                emptyDetail={t("dashboard.salesTrendEmptyDetail")}
+                animationKey={animationKey}
+                ariaLabel={t("dashboard.salesTrend")}
+              />
+            </DashboardPanel>
+          </section>
+
+          <div className="dashboard-exec__analytics">
+            <DashboardPanel
+              title={t("dashboard.paymentMix")}
+              scopeLabel={branchScopeLabel}
+              scopeTestId="scope-payment-breakdown"
+              testId="dashboard-payment-panel"
+            >
+              <PaymentMixDonut
+                rows={dashboard.paymentMethodBreakdown}
+                totalLabel={t("dashboard.totalSales")}
+                emptyTitle={t("dashboard.paymentMixEmpty")}
+                animationKey={animationKey}
+              />
+            </DashboardPanel>
+
+            <DashboardPanel
+              title={t("dashboard.utangHealth")}
+              scopeLabel={organizationScopeLabel}
+              scopeTestId="scope-utang-health"
+              testId="dashboard-utang-health"
+            >
+              <UtangOverdueRadial
+                outstanding={dashboard.activeCustomerUtangOutstanding}
+                overdue={dashboard.overdueUtangAmount}
+                overdueLabel={t("dashboard.overdueShare")}
+                outstandingLabel={t("dashboard.utangOutstanding")}
+                ofLabel={t("dashboard.of")}
+                clearTitle={t("dashboard.utangClear")}
+                clearDetail={t("dashboard.utangClearDetail")}
+                animationKey={animationKey}
+                customersHref="/customers"
+              />
+              {dashboard.activeCustomerUtangOutstanding > 0 ||
+              dashboard.utangSalesTotal > 0 ||
+              (utangReportQuery.data?.repaymentsRecordedInPeriod ?? 0) > 0 ? (
+                <div className="dashboard-mini-facts" role="list">
+                  <KpiStripItem label={t("dashboard.utangSales")} testId="kpi-utang-period-sales-fact">
                     <MoneyDisplay amount={dashboard.utangSalesTotal} />
-                  </DashboardMetricCard>
+                  </KpiStripItem>
                   {utangReportQuery.data ? (
-                    <DashboardMetricCard
-                      label={t("dashboard.repayments")}
-                      icon={Banknote}
-                      metricScope="organization"
-                      testId="kpi-utang-repayments"
-                      to="/customers"
-                    >
+                    <KpiStripItem label={t("dashboard.repayments")} testId="kpi-utang-repayments">
                       <MoneyDisplay amount={utangReportQuery.data.repaymentsRecordedInPeriod} />
-                    </DashboardMetricCard>
+                    </KpiStripItem>
                   ) : null}
-                  <DashboardMetricCard
+                  <KpiStripItem
                     label={t("dashboard.overdueUtang")}
-                    icon={AlertTriangle}
-                    scopeLabel={organizationScopeLabel}
-                    scopeTestId="scope-period-overdue-utang"
-                    metricScope="organization"
                     testId="kpi-period-overdue-utang"
                     tone={dashboard.overdueUtangAmount > 0 ? "attention" : "default"}
-                    to="/customers"
                   >
                     <MoneyDisplay amount={dashboard.overdueUtangAmount} />
-                  </DashboardMetricCard>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-exec__ops">
-              <div className="dashboard-chart-panel">
-                <div className="dashboard-section__header dashboard-section__header--inline">
-                  <h4 className="catalog-form-section__title">{t("dashboard.inventoryHealth")}</h4>
-                  <DashboardScopeBadge
-                    label={organizationScopeLabel}
-                    testId="scope-inventory-health"
-                  />
-                </div>
-                <InventoryHealthBars
-                  animationKey={animationKey}
-                  rows={[
-                    {
-                      key: "low-stock",
-                      label: t("dashboard.lowStock"),
-                      count: overview?.lowStockProductCount ?? dashboard.lowStockProductCount,
-                      href: "/inventory",
-                      tone:
-                        (overview?.lowStockProductCount ?? dashboard.lowStockProductCount) > 0
-                          ? "attention"
-                          : "default",
-                    },
-                    {
-                      key: "near-expiry",
-                      label: t("dashboard.nearExpiryLots"),
-                      count: overview?.nearExpiryLotCount ?? 0,
-                      href: "/inventory/expiration",
-                      tone: (overview?.nearExpiryLotCount ?? 0) > 0 ? "attention" : "default",
-                    },
-                    {
-                      key: "expired",
-                      label: t("dashboard.expiredLots"),
-                      count: overview?.expiredLotCount ?? 0,
-                      href: "/inventory/expiration",
-                      tone: (overview?.expiredLotCount ?? 0) > 0 ? "danger" : "default",
-                    },
-                  ]}
-                />
-              </div>
-
-              {grossProfitAvailable && profitabilityQuery.data ? (
-                <div className="dashboard-chart-panel" data-testid="dashboard-gross-margin">
-                  <div className="dashboard-section__header dashboard-section__header--inline">
-                    <h4 className="catalog-form-section__title">{t("dashboard.grossMargin")}</h4>
-                    <DashboardScopeBadge label={branchScopeLabel} testId="scope-gross-margin" />
-                  </div>
-                  <GrossMarginRadial
-                    marginPercent={profitabilityQuery.data.grossMarginPercent!}
-                    grossProfit={profitabilityQuery.data.grossProfit!}
-                    revenue={profitabilityQuery.data.netSales}
-                    marginLabel={t("dashboard.grossMargin")}
-                    profitLabel={t("dashboard.grossProfit")}
-                    animationKey={animationKey}
-                  />
+                  </KpiStripItem>
                 </div>
               ) : null}
+            </DashboardPanel>
+          </div>
 
-              {branchRankEnabled && branchRankQuery.data && branchRankQuery.data.length > 0 ? (
-                <div className="dashboard-chart-panel" data-testid="dashboard-branch-ranking">
-                  <div className="dashboard-section__header dashboard-section__header--inline">
-                    <h4 className="catalog-form-section__title">{t("dashboard.branchRanking")}</h4>
-                    <DashboardScopeBadge
-                      label={t("dashboard.scope.allBranches")}
-                      testId="scope-branch-ranking"
-                    />
-                  </div>
-                  <RankedHorizontalBars
-                    rows={branchRankQuery.data}
-                    emptyTitle={t("reports.emptyTitle")}
-                    emptyDetail={t("dashboard.branchRankingEmpty")}
-                    animationKey={animationKey}
-                    testId="dashboard-branch-rank-chart"
-                    ariaLabel={t("dashboard.branchRanking")}
-                  />
-                </div>
-              ) : !grossProfitAvailable ? (
-                <div
-                  className="dashboard-chart-panel dashboard-chart-panel--muted"
-                  data-testid="dashboard-branch-ranking-unavailable"
-                >
-                  <div className="dashboard-section__header">
-                    <h4 className="catalog-form-section__title">{t("dashboard.branchRanking")}</h4>
-                    <p className="dashboard-section__lede m-0">
-                      {t("dashboard.branchRankingHint")}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="dashboard-chart-panel dashboard-chart-panel--wide">
-              <div className="dashboard-section__header dashboard-section__header--inline">
-                <h4 className="catalog-form-section__title">{t("dashboard.topProducts")}</h4>
-                <div className="dashboard-rank-toggle" role="group" aria-label={t("dashboard.topProducts")}>
-                  <button
-                    type="button"
-                    className={cn(
-                      "dashboard-rank-toggle__btn",
-                      productRank === "sales" && "dashboard-rank-toggle__btn--active",
-                    )}
-                    onClick={() => setProductRank("sales")}
-                    data-testid="top-products-rank-sales"
-                  >
-                    {t("dashboard.rankBySales")}
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(
-                      "dashboard-rank-toggle__btn",
-                      productRank === "quantity" && "dashboard-rank-toggle__btn--active",
-                    )}
-                    onClick={() => setProductRank("quantity")}
-                    data-testid="top-products-rank-qty"
-                  >
-                    {t("dashboard.rankByQuantity")}
-                  </button>
-                </div>
-              </div>
-              {productsQuery.isLoading ? (
-                <LoadingState label={t("reports.loading")} />
-              ) : (
-                <RankedHorizontalBars
-                  rows={topProductRows}
-                  emptyTitle={t("reports.emptyTitle")}
-                  emptyDetail={t("dashboard.topProductsEmpty")}
-                  animationKey={`${animationKey}|${productRank}`}
-                  valueFormatter={
-                    productRank === "quantity"
-                      ? (v) => v.toLocaleString("en-PH")
-                      : formatPeso
-                  }
-                  testId="dashboard-top-products-chart"
-                  ariaLabel={t("dashboard.topProducts")}
-                />
-              )}
-            </div>
-
-            <section
-              className="dashboard-section"
-              data-testid="dashboard-organization-overview"
+          <div className="dashboard-exec__ops">
+            <DashboardPanel
+              title={t("dashboard.inventoryHealth")}
+              scopeLabel={organizationScopeLabel}
+              scopeTestId="scope-inventory-health"
+              testId="dashboard-inventory-panel"
             >
-              <div className="dashboard-section__header">
-                <h3 className="catalog-form-section__title">
-                  {t("dashboard.section.organizationOverview")}
-                </h3>
-                <p className="dashboard-section__lede">{t("dashboard.scope.periodOrgNote")}</p>
-              </div>
+              <InventoryHealthBars
+                animationKey={animationKey}
+                clearTitle={t("dashboard.inventoryClear")}
+                clearDetail={t("dashboard.inventoryClearDetail")}
+                rows={[
+                  {
+                    key: "low-stock",
+                    label: t("dashboard.lowStock"),
+                    count: overview?.lowStockProductCount ?? dashboard.lowStockProductCount,
+                    href: "/inventory",
+                    tone: "attention",
+                  },
+                  {
+                    key: "near-expiry",
+                    label: t("dashboard.nearExpiryLots"),
+                    count: overview?.nearExpiryLotCount ?? 0,
+                    href: "/inventory/expiration",
+                    tone: "attention",
+                  },
+                  {
+                    key: "expired",
+                    label: t("dashboard.expiredLots"),
+                    count: overview?.expiredLotCount ?? 0,
+                    href: "/inventory/expiration",
+                    tone: "danger",
+                  },
+                ]}
+              />
+            </DashboardPanel>
 
-              <div className="dashboard-metric-grid" role="list">
-                <DashboardMetricCard
-                  label={t("dashboard.expenses")}
-                  icon={Wallet}
-                  scopeLabel={organizationScopeLabel}
-                  scopeTestId="scope-period-expenses"
-                  metricScope="organization"
-                  testId="kpi-period-expenses"
-                >
-                  <MoneyDisplay amount={dashboard.recordedExpenseTotal} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.utangOutstanding")}
-                  icon={Wallet}
-                  scopeLabel={organizationScopeLabel}
-                  scopeTestId="scope-period-utang-outstanding"
-                  metricScope="organization"
-                  testId="kpi-period-utang-outstanding"
-                  tone={dashboard.activeCustomerUtangOutstanding > 0 ? "attention" : "default"}
-                  to="/customers"
-                >
-                  <MoneyDisplay amount={dashboard.activeCustomerUtangOutstanding} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
-                  label={t("dashboard.overdueUtang")}
-                  icon={AlertTriangle}
-                  scopeLabel={organizationScopeLabel}
-                  metricScope="organization"
-                  testId="kpi-period-overdue-utang-org"
-                  tone={dashboard.overdueUtangAmount > 0 ? "attention" : "default"}
-                  to="/customers"
-                >
-                  <MoneyDisplay amount={dashboard.overdueUtangAmount} />
-                </DashboardMetricCard>
-                <DashboardMetricCard
+            {grossProfitAvailable && profitabilityQuery.data ? (
+              <DashboardPanel
+                title={t("dashboard.grossMargin")}
+                scopeLabel={branchScopeLabel}
+                scopeTestId="scope-gross-margin"
+                testId="dashboard-gross-margin"
+              >
+                <GrossMarginRadial
+                  marginPercent={profitabilityQuery.data.grossMarginPercent!}
+                  grossProfit={profitabilityQuery.data.grossProfit!}
+                  revenue={profitabilityQuery.data.netSales}
+                  marginLabel={t("dashboard.grossMargin")}
+                  profitLabel={t("dashboard.grossProfit")}
+                  animationKey={animationKey}
+                />
+              </DashboardPanel>
+            ) : null}
+
+            {branchRankEnabled && branchRankQuery.data && branchRankQuery.data.length > 0 ? (
+              <DashboardPanel
+                title={t("dashboard.branchRanking")}
+                scopeLabel={t("dashboard.scope.allBranches")}
+                scopeTestId="scope-branch-ranking"
+                testId="dashboard-branch-ranking"
+              >
+                <RankedHorizontalBars
+                  rows={branchRankQuery.data}
+                  emptyTitle={t("dashboard.branchRankingEmpty")}
+                  animationKey={animationKey}
+                  testId="dashboard-branch-rank-chart"
+                  ariaLabel={t("dashboard.branchRanking")}
+                />
+              </DashboardPanel>
+            ) : (
+              <DashboardPanel
+                title={t("dashboard.branchRanking")}
+                compact
+                testId="dashboard-branch-ranking-unavailable"
+              >
+                <DashboardQuietEmpty
+                  title={t("dashboard.branchRankingHint")}
+                  testId="dashboard-branch-compare-cta"
+                  action={
+                    allowAll ? (
+                      <button
+                        type="button"
+                        className="dashboard-toolbar__apply"
+                        data-testid="dashboard-compare-branches"
+                        onClick={onCompareBranches}
+                      >
+                        {t("dashboard.compareBranches")}
+                      </button>
+                    ) : null
+                  }
+                />
+              </DashboardPanel>
+            )}
+          </div>
+
+          <DashboardPanel
+            title={t("dashboard.topProducts")}
+            scopeLabel={branchScopeLabel}
+            className="dashboard-panel--wide"
+            testId="dashboard-top-products-panel"
+          >
+            <div className="dashboard-rank-toggle" role="group" aria-label={t("dashboard.topProducts")}>
+              <button
+                type="button"
+                className={cn(
+                  "dashboard-rank-toggle__btn",
+                  productRank === "sales" && "dashboard-rank-toggle__btn--active",
+                )}
+                onClick={() => setProductRank("sales")}
+                data-testid="top-products-rank-sales"
+              >
+                {t("dashboard.rankBySales")}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "dashboard-rank-toggle__btn",
+                  productRank === "quantity" && "dashboard-rank-toggle__btn--active",
+                )}
+                onClick={() => setProductRank("quantity")}
+                data-testid="top-products-rank-qty"
+              >
+                {t("dashboard.rankByQuantity")}
+              </button>
+            </div>
+            {productsQuery.isLoading ? (
+              <LoadingState label={t("reports.loading")} />
+            ) : (
+              <RankedHorizontalBars
+                rows={topProductRows}
+                emptyTitle={t("dashboard.topProductsEmpty")}
+                animationKey={`${animationKey}|${productRank}`}
+                valueFormatter={
+                  productRank === "quantity" ? (v) => v.toLocaleString("en-PH") : formatPeso
+                }
+                testId="dashboard-top-products-chart"
+                emptyTestId="dashboard-top-products-empty"
+                ariaLabel={t("dashboard.topProducts")}
+              />
+            )}
+          </DashboardPanel>
+
+          <section
+            className="dashboard-ops-strip"
+            data-testid="dashboard-organization-overview"
+            data-metric-scope="organization"
+          >
+            <div className="dashboard-sales-block__header">
+              <h2 className="dashboard-section-title">{t("dashboard.section.operations")}</h2>
+              <span className="dashboard-panel__scope" data-testid="scope-operations">
+                {organizationScopeLabel}
+              </span>
+            </div>
+            <div className="dashboard-kpi-strip dashboard-kpi-strip--ops" role="list">
+              {overview ? (
+                <>
+                  <KpiStripItem label={t("dashboard.businessDate")} testId="kpi-business-date">
+                    {overview.businessDate}
+                  </KpiStripItem>
+                  <KpiStripItem
+                    label={t("dashboard.openUtang")}
+                    testId="kpi-open-utang"
+                    tone={overview.openUtangOutstanding > 0 ? "attention" : "default"}
+                  >
+                    <MoneyDisplay amount={overview.openUtangOutstanding} />
+                  </KpiStripItem>
+                  <KpiStripItem
+                    label={t("dashboard.lowStock")}
+                    testId="kpi-low-stock"
+                    tone={overview.lowStockProductCount > 0 ? "attention" : "default"}
+                  >
+                    {overview.lowStockProductCount}
+                  </KpiStripItem>
+                  <KpiStripItem
+                    label={t("dashboard.openShifts")}
+                    testId="kpi-open-shifts"
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <Clock3 className="size-3.5 opacity-60" aria-hidden />
+                      {overview.openShiftCount}
+                    </span>
+                  </KpiStripItem>
+                  <KpiStripItem
+                    label={t("dashboard.activeRegisters")}
+                    testId="kpi-active-registers"
+                  >
+                    {overview.activeRegisterCount}
+                  </KpiStripItem>
+                  <KpiStripItem
+                    label={t("dashboard.todaySales")}
+                    testId="kpi-today-sales"
+                    metricScope="organization"
+                  >
+                    <span data-testid="scope-today-sales" className="sr-only">
+                      {organizationScopeLabel}
+                    </span>
+                    <MoneyDisplay amount={overview.todaySalesTotal} />
+                  </KpiStripItem>
+                </>
+              ) : (
+                <KpiStripItem
                   label={t("dashboard.lowStock")}
-                  icon={Package}
-                  scopeLabel={organizationScopeLabel}
-                  scopeTestId="scope-period-low-stock"
-                  metricScope="organization"
                   testId="kpi-period-low-stock"
-                  tone={dashboard.lowStockProductCount > 0 ? "attention" : "success"}
-                  to="/inventory"
                 >
                   {dashboard.lowStockProductCount}
-                </DashboardMetricCard>
-              </div>
-            </section>
-          </div>
-        ) : null}
-      </section>
+                </KpiStripItem>
+              )}
+            </div>
+          </section>
+        </motion.div>
+      ) : null}
     </div>
   );
 }

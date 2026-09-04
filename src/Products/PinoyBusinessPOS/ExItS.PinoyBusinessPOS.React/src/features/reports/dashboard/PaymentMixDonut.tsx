@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { formatReportPaymentMethod } from "@/api/pos/pos-reporting-client";
 import { formatPeso } from "@/lib/format-money";
@@ -10,6 +9,7 @@ import {
   paymentMethodColor,
   readDashboardChartTheme,
 } from "@/features/reports/dashboard/chart-theme";
+import { DashboardQuietEmpty } from "@/features/reports/dashboard/DashboardToolbar";
 import { usePrefersReducedMotion } from "@/features/reports/dashboard/useChartMotion";
 
 type PaymentRow = {
@@ -34,7 +34,7 @@ export function PaymentMixDonut({
   rows: ReadonlyArray<PaymentRow>;
   totalLabel: string;
   emptyTitle: string;
-  emptyDetail: string;
+  emptyDetail?: string;
   animationKey: string;
 }) {
   const reduced = usePrefersReducedMotion();
@@ -53,13 +53,19 @@ export function PaymentMixDonut({
   }, [rows, theme]);
 
   if (data.length === 0 || total <= 0) {
-    return <EmptyState title={emptyTitle} detail={emptyDetail} />;
+    return (
+      <DashboardQuietEmpty
+        title={emptyTitle}
+        detail={emptyDetail}
+        testId="dashboard-payment-mix-empty"
+      />
+    );
   }
 
   return (
     <div className="dashboard-payment-mix" data-testid="dashboard-payment-mix">
       <div className="dashboard-payment-mix__chart" key={animationKey}>
-        <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={180}>
           <PieChart>
             <Pie
               data={data}

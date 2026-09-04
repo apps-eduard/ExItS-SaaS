@@ -8,9 +8,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { formatPeso } from "@/lib/format-money";
 import { CHART_INTRO_MS, readDashboardChartTheme } from "@/features/reports/dashboard/chart-theme";
+import { DashboardQuietEmpty } from "@/features/reports/dashboard/DashboardToolbar";
 import { usePrefersReducedMotion } from "@/features/reports/dashboard/useChartMotion";
 
 export type SalesTrendPoint = {
@@ -52,23 +52,31 @@ export function SalesTrendAreaChart({
     [points],
   );
 
-  if (data.length === 0) {
-    return <EmptyState title={emptyTitle} detail={emptyDetail} />;
+  const hasActivity = data.some((d) => d.amount > 0);
+
+  if (!hasActivity) {
+    return (
+      <DashboardQuietEmpty
+        title={emptyTitle}
+        detail={emptyDetail}
+        testId="dashboard-sales-trend-empty"
+      />
+    );
   }
 
   return (
     <div
-      className="dashboard-rechart"
+      className="dashboard-rechart dashboard-rechart--trend"
       data-testid="dashboard-sales-trend-chart"
       role="img"
       aria-label={ariaLabel}
       key={animationKey}
     >
-      <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id={`salesFill-${animationKey}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={theme.primary} stopOpacity={0.28} />
+              <stop offset="0%" stopColor={theme.primary} stopOpacity={0.32} />
               <stop offset="100%" stopColor={theme.primary} stopOpacity={0.02} />
             </linearGradient>
           </defs>

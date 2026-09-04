@@ -10,13 +10,13 @@ const t = (key: keyof typeof en) => en[key];
 
 describe("dashboard-scope", () => {
   it("labels organization scope explicitly", () => {
-    expect(resolveDashboardOrganizationScopeLabel(t)).toBe("Organization-wide");
+    expect(resolveDashboardOrganizationScopeLabel(t)).toBe("Organization");
   });
 
   it("labels current branch with name when available", () => {
     expect(
       resolveDashboardBranchScopeLabel(t, { mode: "current" }, "Main Branch"),
-    ).toBe("Branch: Main Branch");
+    ).toBe("Main Branch");
   });
 
   it("labels all branches selection", () => {
@@ -30,7 +30,7 @@ describe("dashboard-scope", () => {
         { mode: "branch", branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" },
         "Second Branch",
       ),
-    ).toBe("Branch: Second Branch");
+    ).toBe("Second Branch");
   });
 
   it("falls back to generic branch label without display name", () => {

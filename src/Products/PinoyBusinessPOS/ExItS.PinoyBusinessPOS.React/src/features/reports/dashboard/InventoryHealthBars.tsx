@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { DashboardQuietEmpty } from "@/features/reports/dashboard/DashboardToolbar";
 import { usePrefersReducedMotion } from "@/features/reports/dashboard/useChartMotion";
 
 export type InventoryHealthRow = {
@@ -13,12 +14,27 @@ export type InventoryHealthRow = {
 export function InventoryHealthBars({
   rows,
   animationKey,
+  clearTitle,
+  clearDetail,
 }: {
   rows: ReadonlyArray<InventoryHealthRow>;
   animationKey: string;
+  clearTitle: string;
+  clearDetail?: string;
 }) {
   const reduced = usePrefersReducedMotion();
-  const max = Math.max(...rows.map((r) => r.count), 1);
+  const issueRows = rows.filter((r) => r.count > 0);
+  const max = Math.max(...issueRows.map((r) => r.count), 1);
+
+  if (issueRows.length === 0) {
+    return (
+      <DashboardQuietEmpty
+        title={clearTitle}
+        detail={clearDetail}
+        testId="dashboard-inventory-clear"
+      />
+    );
+  }
 
   return (
     <ul
@@ -26,8 +42,8 @@ export function InventoryHealthBars({
       data-testid="dashboard-inventory-health"
       data-animation-key={animationKey}
     >
-      {rows.map((row, index) => {
-        const widthPct = Math.max(row.count > 0 ? 8 : 2, (row.count / max) * 100);
+      {issueRows.map((row, index) => {
+        const widthPct = Math.max(12, (row.count / max) * 100);
         const inner = (
           <>
             <div className="dashboard-status-bars__top">

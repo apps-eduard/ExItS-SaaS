@@ -11,6 +11,7 @@ import {
   CHART_INTRO_MS,
   readDashboardChartTheme,
 } from "@/features/reports/dashboard/chart-theme";
+import { DashboardQuietEmpty } from "@/features/reports/dashboard/DashboardToolbar";
 import { usePrefersReducedMotion } from "@/features/reports/dashboard/useChartMotion";
 
 export function UtangOverdueRadial({
@@ -19,6 +20,8 @@ export function UtangOverdueRadial({
   overdueLabel,
   outstandingLabel,
   ofLabel,
+  clearTitle,
+  clearDetail,
   animationKey,
   customersHref,
 }: {
@@ -27,24 +30,36 @@ export function UtangOverdueRadial({
   overdueLabel: string;
   outstandingLabel: string;
   ofLabel: string;
+  clearTitle: string;
+  clearDetail?: string;
   animationKey: string;
   customersHref?: string;
 }) {
   const reduced = usePrefersReducedMotion();
   const theme = useMemo(() => readDashboardChartTheme(), []);
-
   const pct =
-    outstanding > 0 ? Math.min(100, Math.round((Math.max(0, overdue) / outstanding) * 100)) : 0;
-
+    outstanding > 0
+      ? Math.min(100, Math.round((Math.max(0, overdue) / outstanding) * 100))
+      : 0;
   const data = useMemo(
     () => [{ name: "overdue", value: pct, fill: pct > 0 ? theme.danger : theme.success }],
     [pct, theme.danger, theme.success],
   );
 
+  if (outstanding <= 0) {
+    return (
+      <DashboardQuietEmpty
+        title={clearTitle}
+        detail={clearDetail}
+        testId="dashboard-utang-clear"
+      />
+    );
+  }
+
   const body = (
     <div className="dashboard-radial" data-testid="dashboard-utang-radial" key={animationKey}>
       <div className="dashboard-radial__chart">
-        <ResponsiveContainer width="100%" height="100%" minHeight={180}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={160}>
           <RadialBarChart
             cx="50%"
             cy="50%"
@@ -119,7 +134,7 @@ export function GrossMarginRadial({
   return (
     <div className="dashboard-radial" data-testid="dashboard-gross-margin-radial" key={animationKey}>
       <div className="dashboard-radial__chart">
-        <ResponsiveContainer width="100%" height="100%" minHeight={180}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={160}>
           <RadialBarChart
             cx="50%"
             cy="50%"

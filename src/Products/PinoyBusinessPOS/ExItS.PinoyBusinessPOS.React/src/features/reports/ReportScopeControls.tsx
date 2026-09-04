@@ -17,6 +17,8 @@ type ReportScopeControlsProps = {
   onSelectionChange: (next: ReportBranchScopeSelection) => void;
   allowAllBranches: boolean;
   loading?: boolean;
+  /** Compact select for dashboard toolbar (no helper copy). */
+  compact?: boolean;
 };
 
 export function ReportScopeControls({
@@ -28,6 +30,7 @@ export function ReportScopeControls({
   onSelectionChange,
   allowAllBranches,
   loading = false,
+  compact = false,
 }: ReportScopeControlsProps) {
   const { t } = useI18n();
   const selectId = useId();
@@ -64,29 +67,41 @@ export function ReportScopeControls({
 
   if (scopeMode === "organization_only") {
     return (
-      <div className="flex min-w-0 flex-col gap-1.5" data-testid="report-scope-org-only">
-        <span className="text-[length:var(--exits-text-sm)] font-semibold">
-          {t("reports.scope.label")}
-        </span>
+      <div
+        className={cn("flex min-w-0 flex-col gap-1.5", compact && "dashboard-scope-compact")}
+        data-testid="report-scope-org-only"
+      >
+        {!compact ? (
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">
+            {t("reports.scope.label")}
+          </span>
+        ) : null}
         <span
           className="text-[length:var(--exits-text-sm)]"
           data-testid="report-scope-value"
         >
           {t("reports.scope.allBranches")}
         </span>
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("reports.scope.orgOnlyNote")}
-        </p>
+        {!compact ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("reports.scope.orgOnlyNote")}
+          </p>
+        ) : null}
       </div>
     );
   }
 
   if (singleBranch && !allowAllBranches) {
     return (
-      <div className="flex min-w-0 flex-col gap-1.5" data-testid="report-scope-single">
-        <span className="text-[length:var(--exits-text-sm)] font-semibold">
-          {t("reports.scope.label")}
-        </span>
+      <div
+        className={cn("flex min-w-0 flex-col gap-1.5", compact && "dashboard-scope-compact")}
+        data-testid="report-scope-single"
+      >
+        {!compact ? (
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">
+            {t("reports.scope.label")}
+          </span>
+        ) : null}
         <span className="text-[length:var(--exits-text-sm)]" data-testid="report-scope-value">
           {displayName}
         </span>
@@ -104,56 +119,77 @@ export function ReportScopeControls({
           : "__current__";
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5" data-testid="report-branch-filter">
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-1.5",
+        compact && "dashboard-scope-compact",
+      )}
+      data-testid="report-branch-filter"
+    >
       <div className="flex min-w-0 flex-col gap-1.5" data-testid="report-scope-controls">
-      <label
-        htmlFor={selectId}
-        className="text-[length:var(--exits-text-sm)] font-semibold"
-      >
-        {t("reports.scope.label")}
-      </label>
-      <select
-        id={selectId}
-        className={cn("catalog-form-select min-h-11 max-w-full")}
-        data-testid="report-scope-select"
-        disabled={loading || branchesQuery.isLoading}
-        value={selectValue}
-        onChange={(event) => {
-          const value = event.target.value;
-          if (value === "__all__") {
-            onSelectionChange({ mode: "all" });
-            return;
-          }
-          if (value.startsWith("__current__")) {
-            onSelectionChange({ mode: "current" });
-            return;
-          }
-          onSelectionChange({ mode: "branch", branchId: value });
-        }}
-      >
-        <option value={currentBranchId ? `__current__:${currentBranchId}` : "__current__"}>
-          {t("reports.scope.currentBranch")}
-          {currentBranchName ? ` — ${currentBranchName}` : ""}
-        </option>
-        {allowAllBranches ? (
-          <option value="__all__">{t("reports.scope.allBranches")}</option>
-        ) : null}
-        {!singleBranch
-          ? branches
-              .filter((b) => b.id !== currentBranchId)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))
-          : null}
-      </select>
-      <p
-        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-        data-testid="report-scope-value"
-      >
-        {displayName}
-      </p>
+        {!compact ? (
+          <label
+            htmlFor={selectId}
+            className="text-[length:var(--exits-text-sm)] font-semibold"
+          >
+            {t("reports.scope.label")}
+          </label>
+        ) : (
+          <label htmlFor={selectId} className="sr-only">
+            {t("reports.scope.label")}
+          </label>
+        )}
+        <select
+          id={selectId}
+          className={cn(
+            "catalog-form-select max-w-full",
+            compact ? "dashboard-toolbar__select min-h-9" : "min-h-11",
+          )}
+          data-testid="report-scope-select"
+          disabled={loading || branchesQuery.isLoading}
+          value={selectValue}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value === "__all__") {
+              onSelectionChange({ mode: "all" });
+              return;
+            }
+            if (value.startsWith("__current__")) {
+              onSelectionChange({ mode: "current" });
+              return;
+            }
+            onSelectionChange({ mode: "branch", branchId: value });
+          }}
+        >
+          <option value={currentBranchId ? `__current__:${currentBranchId}` : "__current__"}>
+            {t("reports.scope.currentBranch")}
+            {currentBranchName ? ` — ${currentBranchName}` : ""}
+          </option>
+          {allowAllBranches ? (
+            <option value="__all__">{t("reports.scope.allBranches")}</option>
+          ) : null}
+          {!singleBranch
+            ? branches
+                .filter((b) => b.id !== currentBranchId)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))
+            : null}
+        </select>
+        {!compact ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="report-scope-value"
+          >
+            {displayName}
+          </p>
+        ) : (
+          <span className="sr-only" data-testid="report-scope-value">
+            {displayName}
+          </span>
+        )}
       </div>
     </div>
   );
