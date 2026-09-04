@@ -23,7 +23,7 @@ export function Input({
       <input
         id={fieldId}
         className={cn(
-          "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-md)] text-foreground",
+          "h-[var(--exits-control-height)] min-h-[var(--exits-touch-target-min)] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-[length:var(--exits-text-md)] text-foreground transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)] placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-border-strong)] focus-visible:outline-none focus-visible:border-[var(--exits-ring)] focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-[var(--exits-surface-muted)]",
           className,
         )}
         {...props}

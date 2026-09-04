@@ -3,7 +3,7 @@ export const PWA_SHORT_NAME = "ExItS POS";
 export const PWA_START_URL = "/";
 export const PWA_DISPLAY = "standalone" as const;
 export const PWA_THEME_COLOR = "#166534";
-export const PWA_BACKGROUND_COLOR = "#f3f6f4";
+export const PWA_BACKGROUND_COLOR = "#f3f4f6";
 export const PWA_DESCRIPTION = "Pinoy Business POS client. Online-first static application shell.";
 
 export const PWA_ICON_FILES = [

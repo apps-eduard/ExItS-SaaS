@@ -118,7 +118,7 @@ export function DropdownMenu({
           aria-labelledby={triggerId}
           aria-label={menuLabel}
           className={cn(
-            "absolute top-[calc(100%+0.35rem)] z-40 min-w-[14rem] max-w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--exits-radius-md)] border border-border bg-surface py-1 shadow-[0_8px_24px_rgba(20,32,26,0.12)]",
+            "absolute top-[calc(100%+0.35rem)] z-40 min-w-[14rem] max-w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] py-1 shadow-[var(--exits-shadow-md)]",
             align === "end" ? "right-0" : "left-0",
           )}
         >

@@ -25,6 +25,7 @@ function cssVar(name: string, fallback: string): string {
 export function readDashboardChartTheme() {
   return {
     primary: cssVar("--exits-primary", FALLBACK.primary),
+    primarySoft: cssVar("--exits-primary-soft", "#eef6f1"),
     success: cssVar("--exits-success", FALLBACK.success),
     warning: cssVar("--exits-warning", FALLBACK.warning),
     danger: cssVar("--exits-danger", FALLBACK.danger),
@@ -32,6 +33,7 @@ export function readDashboardChartTheme() {
     text: cssVar("--exits-text", FALLBACK.text),
     border: cssVar("--exits-border", FALLBACK.border),
     surface: cssVar("--exits-surface", FALLBACK.surface),
+    ring: cssVar("--exits-ring", FALLBACK.primary),
     gcash: FALLBACK.gcash,
     utang: FALLBACK.utang,
     other: FALLBACK.other,
