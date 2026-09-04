@@ -9605,7 +9605,14 @@ a.exits-chip--primary:hover {
 }
 
 .staff-page .staff-list {
-  gap: 0.75rem;
+  gap: var(--exits-entity-card-gap, 0.55rem);
+}
+
+@media (min-width: 1024px) {
+  .staff-page .staff-list,
+  .staff-page .staff-list.exits-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .staff-page .staff-list > li {
@@ -10023,6 +10030,22 @@ a.exits-chip--primary:hover {
 
   .branch-mgmt-add {
     width: 100%;
+  }
+}
+
+.org-role-permissions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--exits-entity-card-gap, 0.55rem);
+}
+
+@media (min-width: 1024px) {
+  .org-role-permissions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .org-role-permissions > .catalog-form-section {
+    height: 100%;
   }
 }
 
