@@ -130,19 +130,19 @@ export function resolveSetupCompleted(setup: PosOperationalSetupDto | null | und
 export function resolveOpeningCashCountMode(
   setup: PosOperationalSetupDto | null | undefined,
 ): string {
-  return setup?.openingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Optional";
+  return setup?.openingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Required";
 }
 
 export function resolveClosingCashCountMode(
   setup: PosOperationalSetupDto | null | undefined,
 ): string {
-  return setup?.closingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Optional";
+  return setup?.closingCashCountMode?.trim() || setup?.cashCountMode?.trim() || "Required";
 }
 
-/** Required when mode is Required. Empty/missing defaults to Optional (not required). */
+/** Required when mode is Required. Empty/missing defaults to Required (both policies on). */
 export function resolveCashCountRequired(cashCountMode: string | null | undefined): boolean {
   if (!cashCountMode || cashCountMode.trim().length === 0) {
-    return false;
+    return true;
   }
   return cashCountMode.localeCompare("Required", undefined, { sensitivity: "accent" }) === 0;
 }

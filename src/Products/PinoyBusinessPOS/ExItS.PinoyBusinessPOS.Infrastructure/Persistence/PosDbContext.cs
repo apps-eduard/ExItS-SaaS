@@ -4373,17 +4373,17 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Optional");
+                .HasDefaultValue("Required");
             entity.Property(e => e.OpeningCashCountMode)
                 .HasColumnName("opening_cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Optional");
+                .HasDefaultValue("Required");
             entity.Property(e => e.ClosingCashCountMode)
                 .HasColumnName("closing_cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Optional");
+                .HasDefaultValue("Required");
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed").IsRequired();
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");

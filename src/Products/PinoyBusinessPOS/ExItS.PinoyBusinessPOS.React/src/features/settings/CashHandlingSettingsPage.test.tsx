@@ -69,7 +69,7 @@ const setupDto = {
   taxRatePercent: 12,
   cashCountMode: "Required",
   openingCashCountMode: "Required",
-  closingCashCountMode: "Optional",
+  closingCashCountMode: "Required",
   isComplete: true,
   isCompleted: true,
   createdAtUtc: "2026-01-01T00:00:00Z",
@@ -126,8 +126,8 @@ describe("CashHandlingSettingsPage", () => {
     expect(opening).toHaveAttribute("aria-checked", "true");
     expect(opening).toHaveTextContent("ON");
     expect(closing).toHaveAttribute("role", "switch");
-    expect(closing).toHaveAttribute("aria-checked", "false");
-    expect(closing).toHaveTextContent("OFF");
+    expect(closing).toHaveAttribute("aria-checked", "true");
+    expect(closing).toHaveTextContent("ON");
     expect(screen.getByTestId("cash-handling-policy")).toHaveTextContent(
       "cashHandling.policyTitle",
     );
@@ -147,7 +147,7 @@ describe("CashHandlingSettingsPage", () => {
       }),
       expect.objectContaining({
         openingCashCountMode: "Required",
-        closingCashCountMode: "Required",
+        closingCashCountMode: "Optional",
       }),
     );
     expect(pageSource).toMatch(/<Save[\s\S]*aria-hidden/);
