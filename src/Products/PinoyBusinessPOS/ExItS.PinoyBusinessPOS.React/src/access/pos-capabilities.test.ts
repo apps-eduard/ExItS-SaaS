@@ -40,6 +40,10 @@ import {
   canViewShifts,
   canViewStatement,
   canVoidSale,
+  canManageStoreAreas,
+  canUseWarehouseBranches,
+  FEATURE_STORE_AREA_MANAGEMENT,
+  FEATURE_STORE_WAREHOUSE,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
   resolveEffectivePosRoleCode,
@@ -508,5 +512,16 @@ describe("pos-capabilities", () => {
     expect(canManageCatalog(owner)).toBe(true);
     expect(canGovernOrganizationCatalog(manager)).toBe(false);
     expect(canManageCatalog(manager)).toBe(true);
+  });
+
+  it("gates Area and Warehouse on dedicated feature codes", () => {
+    expect(canManageStoreAreas(grant({ featureCodes: [] }))).toBe(false);
+    expect(
+      canManageStoreAreas(grant({ featureCodes: [FEATURE_STORE_AREA_MANAGEMENT] })),
+    ).toBe(true);
+    expect(canUseWarehouseBranches(grant({ featureCodes: [] }))).toBe(false);
+    expect(
+      canUseWarehouseBranches(grant({ grantedFeatureCodes: [FEATURE_STORE_WAREHOUSE] })),
+    ).toBe(true);
   });
 });

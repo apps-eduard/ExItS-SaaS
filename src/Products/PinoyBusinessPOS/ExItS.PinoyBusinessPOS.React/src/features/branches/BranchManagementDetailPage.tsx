@@ -5,6 +5,7 @@ import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
+  canUseWarehouseBranches,
 } from "@/access/pos-capabilities";
 import {
   issueBranchArchiveStepUp,
@@ -106,6 +107,7 @@ export function BranchManagementDetailPage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canGovern = canInviteOrganizationStaff(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
 
   const [activeTab, setActiveTab] = useState<DetailTab>(() =>
@@ -598,6 +600,7 @@ export function BranchManagementDetailPage() {
             region={detailsDraft.region}
             postalCode={detailsDraft.postalCode}
             branchType={detailsDraft.branchType}
+            warehouseAllowed={warehouseAllowed}
             t={t}
             onChange={(field, value) =>
               setDetailsDraft((prev) => ({

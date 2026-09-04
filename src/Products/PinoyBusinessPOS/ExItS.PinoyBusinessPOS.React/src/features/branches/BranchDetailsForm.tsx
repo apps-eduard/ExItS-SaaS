@@ -14,6 +14,8 @@ type BranchDetailsFormProps = {
   region: string;
   postalCode: string;
   branchType: OrganizationBranchType;
+  /** When false, Warehouse option is hidden (plan entitlement). */
+  warehouseAllowed?: boolean;
   t: (key: MessageKey) => string;
   onChange: (field: string, value: string) => void;
 };
@@ -27,6 +29,7 @@ export function BranchDetailsForm({
   region,
   postalCode,
   branchType,
+  warehouseAllowed = true,
   t,
   onChange,
 }: BranchDetailsFormProps) {
@@ -53,12 +56,16 @@ export function BranchDetailsForm({
               data-testid="branch-type"
             >
               <option value="Retail">{t("branches.type.retail")}</option>
-              <option value="Warehouse">{t("branches.type.warehouse")}</option>
+              {warehouseAllowed || branchType === "Warehouse" ? (
+                <option value="Warehouse">{t("branches.type.warehouse")}</option>
+              ) : null}
             </select>
             <span className="font-normal text-muted">
-              {branchType === "Warehouse"
-                ? t("branches.type.warehouseHelp")
-                : t("branches.type.retailHelp")}
+              {!warehouseAllowed && branchType !== "Warehouse"
+                ? t("branches.type.warehouseLocked")
+                : branchType === "Warehouse"
+                  ? t("branches.type.warehouseHelp")
+                  : t("branches.type.retailHelp")}
             </span>
           </label>
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">

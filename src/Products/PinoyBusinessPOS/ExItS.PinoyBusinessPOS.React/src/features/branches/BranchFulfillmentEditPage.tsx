@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
-import { canManageBranchFulfillment } from "@/access/pos-capabilities";
+import { canManageBranchFulfillment, canUseWarehouseBranches } from "@/access/pos-capabilities";
 import {
   addBranchDeliveryServiceArea,
   deleteBranchDeliveryServiceArea,
@@ -76,6 +76,7 @@ export function BranchFulfillmentEditPage() {
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId;
   const mapProviderReady = isMapProviderConfigured();
 
@@ -600,6 +601,7 @@ export function BranchFulfillmentEditPage() {
           region={region}
           postalCode={postalCode}
           branchType={branchType}
+          warehouseAllowed={warehouseAllowed}
           t={t}
           onChange={(field, value) => {
             if (field === "name") setName(value);

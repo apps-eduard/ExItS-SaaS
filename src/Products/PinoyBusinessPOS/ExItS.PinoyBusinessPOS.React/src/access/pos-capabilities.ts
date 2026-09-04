@@ -23,6 +23,8 @@ export const FEATURE_STORE_CUSTOMER_ORDERING = "store-customer-ordering";
 export const FEATURE_STORE_DELIVERY_ORDERS = "store-delivery-orders";
 export const FEATURE_STORE_EXPENSES_VIEW = "store-expenses-view";
 export const FEATURE_STORE_EXPENSES_MANAGE = "store-expenses-manage";
+export const FEATURE_STORE_AREA_MANAGEMENT = "store-area-management";
+export const FEATURE_STORE_WAREHOUSE = "store-warehouse";
 
 function featureGrantDenied(
   grant: PosSessionGrantFacts | null | undefined,
@@ -473,6 +475,16 @@ export function canViewAdvancedReports(grant: PosSessionGrantFacts | null | unde
 /** File export entitlement (`store-export`). Gates Organization report CSV export UI. */
 export function canExportData(grant: PosSessionGrantFacts | null | undefined): boolean {
   return grantHasFeatureCode(grant, FEATURE_STORE_EXPORT) === true;
+}
+
+/** Area management entitlement (`store-area-management`). Server remains authoritative. */
+export function canManageStoreAreas(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_AREA_MANAGEMENT) === true;
+}
+
+/** Warehouse branch entitlement (`store-warehouse`). Server remains authoritative. */
+export function canUseWarehouseBranches(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_WAREHOUSE) === true;
 }
 
 /**

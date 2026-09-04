@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { canInviteOrganizationStaff } from "@/access/pos-capabilities";
+import { canInviteOrganizationStaff, canManageStoreAreas } from "@/access/pos-capabilities";
 import {
   createOrganizationArea,
   listOrganizationAreas,
@@ -21,7 +21,9 @@ export function OrgAreasPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
-  const canManage = canInviteOrganizationStaff(sessionGrant);
+  const canManageStaff = canInviteOrganizationStaff(sessionGrant);
+  const areasEntitled = canManageStoreAreas(sessionGrant);
+  const canManage = canManageStaff && areasEntitled;
   const organizationId = boundWorkspace?.organizationId ?? null;
 
   const [name, setName] = useState("");
@@ -85,7 +87,11 @@ export function OrgAreasPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="org-areas-denied">
         <PageHeader
           title={t("areas.title")}
-          description={t("areas.denied")}
+          description={
+            canManageStaff && !areasEntitled
+              ? t("areas.entitlementRequired")
+              : t("areas.denied")
+          }
           backTo={pageBackNav.org.to}
           backLabel={t(pageBackNav.org.labelKey)}
           backTestId="page-header-back-org"

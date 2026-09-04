@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { canInviteOrganizationStaff, canManageBranchFulfillment } from "@/access/pos-capabilities";
+import { canInviteOrganizationStaff, canManageBranchFulfillment, canUseWarehouseBranches } from "@/access/pos-capabilities";
 import { createOrganizationBranch } from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -23,6 +23,7 @@ export function BranchCreatePage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
 
   const [name, setName] = useState("");
@@ -79,6 +80,9 @@ export function BranchCreatePage() {
         }
         if (codeHint.includes("capacity_exceeded")) {
           throw new Error(t("branches.create.capacityExceeded"));
+        }
+        if (codeHint.includes("warehouse_entitlement")) {
+          throw new Error(t("branches.create.warehouseEntitlement"));
         }
         throw new Error(result.body?.detail ?? t("branches.create.failed"));
       }
@@ -160,12 +164,16 @@ export function BranchCreatePage() {
                 data-testid="branch-create-type"
               >
                 <option value="Retail">{t("branches.type.retail")}</option>
-                <option value="Warehouse">{t("branches.type.warehouse")}</option>
+                {warehouseAllowed ? (
+                  <option value="Warehouse">{t("branches.type.warehouse")}</option>
+                ) : null}
               </select>
               <span className="font-normal text-muted">
-                {branchType === "Warehouse"
-                  ? t("branches.type.warehouseHelp")
-                  : t("branches.type.retailHelp")}
+                {!warehouseAllowed
+                  ? t("branches.type.warehouseLocked")
+                  : branchType === "Warehouse"
+                    ? t("branches.type.warehouseHelp")
+                    : t("branches.type.retailHelp")}
               </span>
             </label>
             <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
