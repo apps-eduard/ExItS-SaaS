@@ -18,6 +18,11 @@ const workspaceState = vi.hoisted(() => ({
     mappedPosRoleCode: "StoreManager",
     productLocalRoleCode: "StoreManager",
   } as PosSessionGrantFacts,
+  hasOpenShift: false,
+  currentShift: null as null | {
+    shiftId: string;
+    registerName: string;
+  },
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -38,8 +43,8 @@ vi.mock("@/selling/SellingModeProvider", () => ({
 
 vi.mock("@/features/shifts/ShiftContextProvider", () => ({
   useShiftContext: () => ({
-    currentShift: null,
-    hasOpenShift: false,
+    currentShift: workspaceState.currentShift,
+    hasOpenShift: workspaceState.hasOpenShift,
     loading: false,
     errorMessage: null,
     denied: false,
@@ -154,6 +159,8 @@ describe("ManagerHomePage", () => {
       mappedPosRoleCode: "StoreManager",
       productLocalRoleCode: "StoreManager",
     };
+    workspaceState.hasOpenShift = false;
+    workspaceState.currentShift = null;
   });
 
   it("authority: StoreManager may enter Manager Home; pure OrgAdmin and Cashier may not", () => {
@@ -230,5 +237,65 @@ describe("ManagerHomePage", () => {
     await waitFor(() => {
       expect(screen.getByText("Branch B")).toBeInTheDocument();
     });
+  });
+
+  it("polishes retail action cards: neutral sell, chevrons, shift sixth action, insight cards", async () => {
+    renderHome();
+    await waitFor(() => {
+      expect(screen.getByTestId("manager-action-sell")).toBeInTheDocument();
+    });
+
+    const sell = screen.getByTestId("manager-action-sell");
+    expect(sell.className).toContain("manager-action-card");
+    expect(sell.className).not.toContain("role-action-tile--primary");
+    expect(sell.className).not.toMatch(/\bbg-primary\b/);
+    expect(sell.querySelector(".manager-action-card__chevron")).toBeTruthy();
+
+    expect(screen.getByTestId("manager-action-shift")).toHaveTextContent(
+      "managerHome.shift.openAction",
+    );
+    expect(screen.getByTestId("manager-action-shift")).toHaveAttribute("href", "/shifts/open");
+    expect(screen.queryByTestId("manager-shift-view")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("manager-shift-open")).not.toBeInTheDocument();
+
+    const dashboard = screen.getByTestId("manager-insight-dashboard");
+    const reports = screen.getByTestId("manager-insight-reports");
+    expect(dashboard.className).toContain("manager-action-card");
+    expect(reports.className).toContain("manager-action-card");
+    expect(dashboard).toHaveAttribute("href", "/dashboard");
+    expect(reports).toHaveAttribute("href", "/reports");
+    expect(dashboard.querySelector(".manager-action-card__chevron")).toBeTruthy();
+    expect(reports.querySelector(".manager-action-card__chevron")).toBeTruthy();
+
+    expect(screen.getByTestId("manager-home-quick-actions").querySelectorAll(".manager-action-card"))
+      .toHaveLength(6);
+  });
+
+  it("shows View shift quick action when shift is open and removes floating link", async () => {
+    workspaceState.hasOpenShift = true;
+    workspaceState.currentShift = {
+      shiftId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      registerName: "PWA-0001",
+    };
+    renderHome();
+    await waitFor(() => {
+      expect(screen.getByTestId("manager-action-shift")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("manager-action-shift")).toHaveTextContent("managerHome.shift.view");
+    expect(screen.getByTestId("manager-action-shift")).toHaveAttribute(
+      "href",
+      "/shifts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    );
+    expect(screen.queryByTestId("manager-shift-view")).not.toBeInTheDocument();
+
+    const shiftMetric = screen.getByTestId("manager-today-shift");
+    expect(shiftMetric).toHaveAttribute("data-value-scale", "restrained");
+    expect(shiftMetric.querySelector(".exits-type-kpi")).toBeNull();
+    expect(screen.getByTestId("manager-today-register")).toHaveAttribute(
+      "data-value-scale",
+      "restrained",
+    );
+    expect(screen.getByTestId("manager-today-register").querySelector(".exits-type-kpi")).toBeNull();
+    expect(screen.getByTestId("manager-today-sales").querySelector(".exits-type-kpi")).toBeTruthy();
   });
 });

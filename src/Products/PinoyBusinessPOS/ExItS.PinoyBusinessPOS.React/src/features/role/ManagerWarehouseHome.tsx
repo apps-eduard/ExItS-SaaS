@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  BarChart3,
   Boxes,
   ClipboardList,
+  FileBarChart,
   PackagePlus,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
@@ -21,7 +24,6 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { getManagementOverview } from "@/api/pos/pos-reporting-client";
-import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -33,10 +35,12 @@ import {
   type ManagerAttentionItem,
 } from "@/features/role/manager-home-data";
 import {
+  ManagerActionCard,
+  ManagerActionGrid,
   ManagerAttentionLink,
   ManagerHealthyAttention,
   ManagerHomeSection,
-  ManagerInsightLink,
+  ManagerInsightCard,
   ManagerMetricCard,
   ManagerSnapshotLink,
 } from "@/features/role/ManagerHomeShared";
@@ -184,19 +188,24 @@ export function ManagerWarehouseHome({
     transferCount: incomingTransfers.length,
   });
 
-  const quickTiles: ActionTileDef[] = [];
+  const quickActions: {
+    key: string;
+    label: string;
+    icon: LucideIcon;
+    testId: string;
+    to: string;
+  }[] = [];
   if (canManageInv) {
-    quickTiles.push({
+    quickActions.push({
       key: "receive",
       label: t("purchasing.receiveStock"),
       icon: PackagePlus,
       testId: "manager-action-receive",
-      primary: true,
       to: "/purchasing/receive-stock",
     });
   }
   if (canCreatePo) {
-    quickTiles.push({
+    quickActions.push({
       key: "create-po",
       label: t("managerHome.action.createPo"),
       icon: ClipboardList,
@@ -205,14 +214,14 @@ export function ManagerWarehouseHome({
     });
   }
   if (canInventory) {
-    quickTiles.push({
+    quickActions.push({
       key: "transfer",
       label: t("warehouse.action.transferStock"),
       icon: ArrowLeftRight,
       testId: "manager-action-transfer",
       to: "/inventory/transfers",
     });
-    quickTiles.push({
+    quickActions.push({
       key: "inventory",
       label: t("warehouse.action.inventory"),
       icon: Boxes,
@@ -320,12 +329,22 @@ export function ManagerWarehouseHome({
             )}
           </ManagerHomeSection>
 
-          {quickTiles.length > 0 ? (
+          {quickActions.length > 0 ? (
             <ManagerHomeSection
               title={t("managerHome.section.quickActions")}
               testId="manager-home-quick-actions"
             >
-              <ActionTileGrid tiles={quickTiles.slice(0, 5)} emphasizePrimary={false} />
+              <ManagerActionGrid>
+                {quickActions.map((action) => (
+                  <ManagerActionCard
+                    key={action.key}
+                    label={action.label}
+                    icon={action.icon}
+                    testId={action.testId}
+                    to={action.to}
+                  />
+                ))}
+              </ManagerActionGrid>
             </ManagerHomeSection>
           ) : null}
 
@@ -334,7 +353,13 @@ export function ManagerWarehouseHome({
               title={t("managerHome.section.stockSnapshot")}
               testId="manager-home-snapshot"
             >
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div
+                className={
+                  snapshotModules.length === 3
+                    ? "grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                    : "grid grid-cols-1 gap-2 sm:grid-cols-2"
+                }
+              >
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   let titleKey: MessageKey = "managerHome.snapshot.inventory";
@@ -384,22 +409,24 @@ export function ManagerWarehouseHome({
               title={t("managerHome.section.insights")}
               testId="manager-home-insights"
             >
-              <div className="flex flex-wrap gap-4">
+              <ManagerActionGrid>
                 {canDashboard ? (
-                  <ManagerInsightLink
+                  <ManagerInsightCard
                     label={t("dashboard.open")}
                     href="/dashboard"
+                    icon={BarChart3}
                     testId="manager-insight-dashboard"
                   />
                 ) : null}
                 {canReports ? (
-                  <ManagerInsightLink
+                  <ManagerInsightCard
                     label={t("reports.open")}
                     href="/reports"
+                    icon={FileBarChart}
                     testId="manager-insight-reports"
                   />
                 ) : null}
-              </div>
+              </ManagerActionGrid>
             </ManagerHomeSection>
           ) : null}
         </>

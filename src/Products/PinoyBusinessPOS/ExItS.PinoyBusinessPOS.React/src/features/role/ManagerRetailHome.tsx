@@ -1,13 +1,17 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
+  BarChart3,
   ClipboardList,
+  Clock3,
+  FileBarChart,
   PackagePlus,
   Receipt,
   ShoppingCart,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   canAccessReportsHub,
   canCreateSale,
@@ -32,7 +36,6 @@ import {
   getDashboard,
   getManagementOverview,
 } from "@/api/pos/pos-reporting-client";
-import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -43,10 +46,12 @@ import {
   type ManagerAttentionItem,
 } from "@/features/role/manager-home-data";
 import {
+  ManagerActionCard,
+  ManagerActionGrid,
   ManagerAttentionLink,
   ManagerHealthyAttention,
   ManagerHomeSection,
-  ManagerInsightLink,
+  ManagerInsightCard,
   ManagerMetricCard,
   ManagerSnapshotLink,
 } from "@/features/role/ManagerHomeShared";
@@ -102,6 +107,15 @@ function attentionDetail(item: ManagerAttentionItem, t: (key: MessageKey) => str
       return "";
   }
 }
+
+type QuickAction = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  testId: string;
+  to?: string;
+  onClick?: () => void;
+};
 
 export function ManagerRetailHome() {
   const { t } = useI18n();
@@ -237,19 +251,18 @@ export function ManagerRetailHome() {
     navigate("/sell");
   }
 
-  const quickTiles: ActionTileDef[] = [];
+  const quickActions: QuickAction[] = [];
   if (canSell) {
-    quickTiles.push({
+    quickActions.push({
       key: "sell",
       label: t("role.startSelling"),
       icon: ShoppingCart,
       testId: "manager-action-sell",
-      primary: true,
       onClick: startSelling,
     });
   }
   if (canManageInv) {
-    quickTiles.push({
+    quickActions.push({
       key: "receive",
       label: t("purchasing.receiveStock"),
       icon: PackagePlus,
@@ -258,7 +271,7 @@ export function ManagerRetailHome() {
     });
   }
   if (canCreatePo) {
-    quickTiles.push({
+    quickActions.push({
       key: "create-po",
       label: t("managerHome.action.createPo"),
       icon: ClipboardList,
@@ -267,7 +280,7 @@ export function ManagerRetailHome() {
     });
   }
   if (canInventory) {
-    quickTiles.push({
+    quickActions.push({
       key: "transfer",
       label: t("warehouse.action.transferStock"),
       icon: ArrowLeftRight,
@@ -275,14 +288,38 @@ export function ManagerRetailHome() {
       to: "/inventory/transfers",
     });
   }
-  if (canExpenses && quickTiles.length < 5) {
-    quickTiles.push({
+  if (canExpenses) {
+    quickActions.push({
       key: "expense",
       label: t("managerHome.action.recordExpense"),
       icon: Receipt,
       testId: "manager-action-expense",
       to: "/expenses/new",
     });
+  }
+
+  const shiftQuickActionAvailable =
+    canShifts &&
+    ((hasOpenShift && Boolean(currentShift?.shiftId)) || (!hasOpenShift && canOpenShift));
+
+  if (shiftQuickActionAvailable) {
+    if (hasOpenShift && currentShift?.shiftId) {
+      quickActions.push({
+        key: "shift",
+        label: t("managerHome.shift.view"),
+        icon: Clock3,
+        testId: "manager-action-shift",
+        to: `/shifts/${currentShift.shiftId}`,
+      });
+    } else if (!hasOpenShift && canOpenShift) {
+      quickActions.push({
+        key: "shift",
+        label: t("managerHome.shift.openAction"),
+        icon: Clock3,
+        testId: "manager-action-shift",
+        to: "/shifts/open",
+      });
+    }
   }
 
   const salesTotal = dashboard?.completedSalesTotal ?? 0;
@@ -299,19 +336,12 @@ export function ManagerRetailHome() {
     purchaseOrdersQuery.error ??
     transfersQuery.error;
 
-  const shiftValue = hasOpenShift
-    ? t("managerHome.shift.open")
-    : t("managerHome.shift.closed");
-  const shiftHint = hasOpenShift
-    ? currentShift?.registerName?.trim() ||
-      (currentShift ? t("managerHome.shift.view") : undefined)
-    : canOpenShift
-      ? t("managerHome.shift.openAction")
-      : undefined;
-  const registerValue =
-    hasOpenShift && currentShift?.registerName?.trim()
-      ? currentShift.registerName.trim()
-      : t("managerHome.register.none");
+  const registerName = currentShift?.registerName?.trim() || undefined;
+  const shiftStatusValue = hasOpenShift ? (
+    <StatusChip tone="success">{t("managerHome.shift.open")}</StatusChip>
+  ) : (
+    t("managerHome.shift.closed")
+  );
 
   return (
     <div
@@ -358,42 +388,22 @@ export function ManagerRetailHome() {
               {canShifts ? (
                 <ManagerMetricCard
                   label={t("managerHome.today.shift")}
-                  value={shiftValue}
-                  hint={shiftHint}
+                  value={shiftStatusValue}
+                  hint={hasOpenShift ? registerName : undefined}
                   tone={hasOpenShift ? "success" : "default"}
+                  valueScale="restrained"
                   testId="manager-today-shift"
                 />
               ) : null}
               {canShifts && hasOpenShift ? (
                 <ManagerMetricCard
                   label={t("managerHome.today.register")}
-                  value={registerValue}
+                  value={registerName ?? t("managerHome.register.none")}
+                  valueScale="restrained"
                   testId="manager-today-register"
                 />
               ) : null}
             </div>
-            {canShifts ? (
-              <div className="flex flex-wrap gap-2">
-                {hasOpenShift && currentShift ? (
-                  <Link
-                    className="text-[length:var(--exits-text-sm)] font-medium text-primary no-underline hover:underline"
-                    to={`/shifts/${currentShift.shiftId}`}
-                    data-testid="manager-shift-view"
-                  >
-                    {t("managerHome.shift.view")}
-                  </Link>
-                ) : null}
-                {!hasOpenShift && canOpenShift ? (
-                  <Link
-                    className="text-[length:var(--exits-text-sm)] font-medium text-primary no-underline hover:underline"
-                    to="/shifts/open"
-                    data-testid="manager-shift-open"
-                  >
-                    {t("managerHome.shift.openAction")}
-                  </Link>
-                ) : null}
-              </div>
-            ) : null}
           </ManagerHomeSection>
 
           <ManagerHomeSection
@@ -421,12 +431,32 @@ export function ManagerRetailHome() {
             )}
           </ManagerHomeSection>
 
-          {quickTiles.length > 0 ? (
+          {quickActions.length > 0 ? (
             <ManagerHomeSection
               title={t("managerHome.section.quickActions")}
               testId="manager-home-quick-actions"
             >
-              <ActionTileGrid tiles={quickTiles.slice(0, 5)} emphasizePrimary={false} />
+              <ManagerActionGrid>
+                {quickActions.slice(0, 6).map((action) =>
+                  action.to ? (
+                    <ManagerActionCard
+                      key={action.key}
+                      label={action.label}
+                      icon={action.icon}
+                      testId={action.testId}
+                      to={action.to}
+                    />
+                  ) : (
+                    <ManagerActionCard
+                      key={action.key}
+                      label={action.label}
+                      icon={action.icon}
+                      testId={action.testId}
+                      onClick={action.onClick!}
+                    />
+                  ),
+                )}
+              </ManagerActionGrid>
             </ManagerHomeSection>
           ) : null}
 
@@ -435,7 +465,13 @@ export function ManagerRetailHome() {
               title={t("managerHome.section.snapshot")}
               testId="manager-home-snapshot"
             >
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div
+                className={
+                  snapshotModules.length === 3
+                    ? "grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                    : "grid grid-cols-1 gap-2 sm:grid-cols-2"
+                }
+              >
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   if (mod.summaryKind === "inventory") {
@@ -493,22 +529,24 @@ export function ManagerRetailHome() {
               title={t("managerHome.section.insights")}
               testId="manager-home-insights"
             >
-              <div className="flex flex-wrap gap-4">
+              <ManagerActionGrid>
                 {canDashboard ? (
-                  <ManagerInsightLink
+                  <ManagerInsightCard
                     label={t("dashboard.open")}
                     href="/dashboard"
+                    icon={BarChart3}
                     testId="manager-insight-dashboard"
                   />
                 ) : null}
                 {canReports ? (
-                  <ManagerInsightLink
+                  <ManagerInsightCard
                     label={t("reports.open")}
                     href="/reports"
+                    icon={FileBarChart}
                     testId="manager-insight-reports"
                   />
                 ) : null}
-              </div>
+              </ManagerActionGrid>
             </ManagerHomeSection>
           ) : null}
         </>

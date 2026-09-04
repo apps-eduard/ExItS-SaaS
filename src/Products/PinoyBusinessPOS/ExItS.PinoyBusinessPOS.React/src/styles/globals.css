@@ -9684,6 +9684,64 @@ a.exits-chip--primary:hover {
   min-width: 0;
 }
 
+.manager-metric-value--restrained {
+  font-size: var(--exits-text-xl);
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: var(--exits-leading-tight);
+}
+
+.manager-metric-value--restrained .exits-status-chip {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+}
+
+.manager-action-card {
+  transition:
+    background-color var(--exits-motion-fast) ease,
+    border-color var(--exits-motion-fast) ease,
+    box-shadow var(--exits-motion-fast) ease;
+}
+
+.manager-action-card:hover {
+  border-color: var(--exits-border-strong, var(--exits-border));
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.manager-action-card:hover .manager-action-card__chevron {
+  transform: translateX(2px);
+}
+
+.manager-action-card__chevron {
+  transition: transform var(--exits-motion-fast) ease;
+}
+
+.manager-action-card--quiet {
+  background: var(--exits-surface);
+}
+
+.manager-nav-row {
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    box-shadow var(--exits-motion-fast) ease;
+}
+
+.manager-nav-row:hover {
+  border-color: var(--exits-border-strong, var(--exits-border));
+  box-shadow: var(--exits-shadow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manager-action-card:hover .manager-action-card__chevron {
+    transform: none;
+  }
+
+  .manager-action-card,
+  .manager-action-card__chevron,
+  .manager-nav-row {
+    transition: none;
+  }
+}
+
 .manager-home-page > header {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
