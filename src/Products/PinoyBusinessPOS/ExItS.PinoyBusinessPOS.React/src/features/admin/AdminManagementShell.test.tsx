@@ -51,21 +51,32 @@ describe("AdminManagementShell", () => {
     });
   });
 
-  it("renders admin shell with mobile nav and without exposing Sell", () => {
+  it("renders admin bottom nav with Home Manage Review More and no Sell", () => {
     renderShell("/org");
     expect(screen.getByTestId("admin-management-shell")).toBeInTheDocument();
     expect(screen.getByTestId("admin-mobile-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-mobile-nav").className).toMatch(/\blg:hidden\b/);
     expect(screen.getByTestId("admin-mobile-header")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-mobile-header").className).toMatch(/\blg:hidden\b/);
+    expect(screen.getByTestId("admin-mobile-home")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-mobile-manage")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-mobile-review")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-mobile-more")).toBeInTheDocument();
     expect(screen.queryByTestId("org-bottom-nav")).not.toBeInTheDocument();
     expect(screen.queryByTestId("org-nav-sell")).not.toBeInTheDocument();
     expect(screen.getByTestId("admin-shell-child")).toBeInTheDocument();
   });
 
-  it("exposes tablet rail and desktop sidebar containers", () => {
+  it("keeps desktop sidebar at lg+ and removes tablet rail", () => {
     renderShell("/org/branches");
-    expect(screen.getByTestId("admin-tablet-rail")).toBeInTheDocument();
+    expect(screen.queryByTestId("admin-tablet-rail")).not.toBeInTheDocument();
     expect(screen.getByTestId("admin-desktop-sidebar")).toBeInTheDocument();
-    expect(screen.getAllByTestId("admin-nav-branches").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByTestId("admin-nav-areas").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("admin-desktop-sidebar").className).toMatch(/\bhidden\b/);
+    expect(screen.getByTestId("admin-desktop-sidebar").className).toMatch(/\blg:block\b/);
+    expect(screen.getByTestId("admin-nav-branches")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-nav-areas")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-management-shell").className).toContain(
+      "lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
+    );
   });
 });

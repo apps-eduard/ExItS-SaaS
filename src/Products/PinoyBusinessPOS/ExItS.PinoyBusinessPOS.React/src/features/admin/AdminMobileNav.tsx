@@ -31,7 +31,7 @@ export function AdminMobileNav() {
     <nav
       data-testid="admin-mobile-nav"
       aria-label={t("admin.mobile.aria")}
-      className="admin-mobile-nav md:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="admin-mobile-nav lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1">
         {tabs.map((tab) => {

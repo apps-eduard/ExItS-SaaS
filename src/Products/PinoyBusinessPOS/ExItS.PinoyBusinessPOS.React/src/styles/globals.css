@@ -9133,10 +9133,6 @@ a.exits-chip--primary:hover {
   padding: 0.75rem 0.5rem;
 }
 
-.admin-sidebar--rail {
-  width: 4.75rem;
-}
-
 .admin-sidebar--expanded {
   width: 15.5rem;
 }
@@ -9165,12 +9161,6 @@ a.exits-chip--primary:hover {
   margin-top: 0.25rem;
 }
 
-.admin-sidebar__rail-mark {
-  text-align: center;
-  font-size: var(--exits-text-xs);
-  font-weight: 700;
-}
-
 .admin-sidebar__group + .admin-sidebar__group {
   margin-top: 0.85rem;
 }
@@ -9194,11 +9184,6 @@ a.exits-chip--primary:hover {
   color: inherit;
   text-decoration: none;
   font-size: var(--exits-text-sm);
-}
-
-.admin-sidebar--rail .admin-sidebar__link {
-  justify-content: center;
-  padding-inline: 0.35rem;
 }
 
 .admin-sidebar__link:hover {

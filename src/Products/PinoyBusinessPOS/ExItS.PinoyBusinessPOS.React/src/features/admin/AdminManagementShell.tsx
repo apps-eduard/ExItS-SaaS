@@ -14,9 +14,8 @@ type AdminManagementShellProps = {
 
 /**
  * Responsive Manage Business shell.
- * Mobile: stacked content + admin bottom nav (no desktop sidebar).
- * Tablet (md): compact left rail.
- * Desktop (lg): expanded sidebar.
+ * Below lg: stacked content + Admin bottom nav (Home / Manage / Review / More).
+ * lg+: persistent expanded Admin sidebar (no tablet rail).
  * XL: optional usage context panel when capacity APIs return data.
  */
 export function AdminManagementShell({ children, header }: AdminManagementShellProps) {
@@ -33,7 +32,8 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       className={cn(
         "admin-shell flex min-h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden",
         "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
-        "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] md:pb-[max(2rem,env(safe-area-inset-bottom))]",
+        // Bottom nav remains through tablet (< lg); reserve space until desktop sidebar.
+        "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
       )}
       data-testid="admin-management-shell"
     >
@@ -46,7 +46,7 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       {header}
 
       <header
-        className="admin-shell__header md:hidden mt-2"
+        className="admin-shell__header lg:hidden mt-2"
         data-testid="admin-mobile-header"
       >
         <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
@@ -58,9 +58,6 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       </header>
 
       <div className="admin-shell__body mt-3 flex min-w-0 flex-1 gap-4 lg:gap-6">
-        <div className="hidden md:block lg:hidden" data-testid="admin-tablet-rail">
-          <AdminSidebar rail />
-        </div>
         <div className="hidden lg:block" data-testid="admin-desktop-sidebar">
           <AdminSidebar />
         </div>
