@@ -76,7 +76,7 @@ describe("slim global status chips", () => {
       /\.exits-status-chip--success\s*\{[\s\S]*?border-color:\s*color-mix/,
     );
     expect(globalsCss).toMatch(
-      /\.exits-status-chip--success\s*\{[\s\S]*?background:\s*color-mix[\s\S]*?8%/,
+      /\.exits-status-chip--success\s*\{[\s\S]*?background:\s*color-mix[\s\S]*?5%/,
     );
   });
 
