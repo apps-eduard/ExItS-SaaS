@@ -293,11 +293,12 @@ public sealed class Plan
 
     private static void ValidateCommercialLimits(int maxBranches, int maxActiveStaff, int maxActivePosDevices, int maxActiveBusinessTypes, int defaultTrialDays, int sortOrder, int maxAreas)
     {
-        if (maxAreas < 1 || maxAreas > 10_000)
+        // 0 = Area management not included on the plan (Starter/Growth).
+        if (maxAreas < 0 || maxAreas > 10_000)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPlanStatusTransition,
-                "MaxAreas must be between 1 and 10000.");
+                "MaxAreas must be between 0 and 10000.");
         }
 
         if (maxBranches < 1 || maxBranches > 10_000)

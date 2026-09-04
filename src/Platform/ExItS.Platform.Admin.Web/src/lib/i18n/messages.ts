@@ -1237,7 +1237,7 @@ export const enMessages = {
   "plans.create.monthlyPrice": "Monthly price (optional)",
   "plans.create.annualPrice": "Annual price (optional)",
   "plans.create.currency": "Currency",
-  "plans.create.maxAreasRange": "Max areas must be a whole number between 1 and 10000.",
+  "plans.create.maxAreasRange": "Max areas must be a whole number between 0 and 10000 (0 = no Area management).",
   "plans.create.catalogUnavailable":
     "Product catalog could not be loaded. Close and try again later.",
   "plans.create.catalogEmpty": "No products are available in the catalog.",
@@ -3623,7 +3623,7 @@ export const filPhMessages: Record<MessageKey, string> = {
   "plans.create.monthlyPrice": "Buwanang presyo (opsyonal)",
   "plans.create.annualPrice": "Taunang presyo (opsyonal)",
   "plans.create.currency": "Currency",
-  "plans.create.maxAreasRange": "Ang max areas ay dapat buong numero mula 1 hanggang 10000.",
+  "plans.create.maxAreasRange": "Ang max areas ay dapat buong numero mula 0 hanggang 10000 (0 = walang Area management).",
   "plans.create.catalogUnavailable":
     "Hindi ma-load ang product catalog. Isara at subukang muli mamaya.",
   "plans.create.catalogEmpty": "Walang produktong available sa catalog.",

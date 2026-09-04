@@ -105,6 +105,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS delivery-order fulfillment capability (paired with customer ordering).</summary>
     public const string StoreDeliveryOrders = "store-delivery-orders";
 
+    /// <summary>POS Area management (grouping / navigation). Capacity uses plan-max-areas.</summary>
+    public const string StoreAreaManagement = "store-area-management";
+
+    /// <summary>POS Warehouse branch type. Warehouse branches still consume plan-max-branches.</summary>
+    public const string StoreWarehouse = "store-warehouse";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

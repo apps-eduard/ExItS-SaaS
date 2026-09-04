@@ -224,7 +224,10 @@ public static class PlanChangeImpact
         int? activeBranchCount,
         bool branchCountAvailable,
         string? branchCountUnavailableReason = null,
-        int? activeBusinessTypeCount = null)
+        int? activeBusinessTypeCount = null,
+        int? activeAreaCount = null,
+        int? activeWarehouseBranchCount = null,
+        bool targetWarehouseEnabled = true)
     {
         var conflicts = new List<PlanUsageConflict>();
         if (branchCountAvailable && activeBranchCount.HasValue && activeBranchCount.Value > targetPlan.MaxBranches)
@@ -256,6 +259,26 @@ public static class PlanChangeImpact
                 $"Deactivate {excess} optional business type{(excess == 1 ? string.Empty : "s")} before switching to {targetPlan.DisplayName}. Merchant catalog and history are not deleted."));
         }
 
+        if (activeAreaCount.HasValue && activeAreaCount.Value > targetPlan.MaxAreas)
+        {
+            conflicts.Add(new PlanUsageConflict(
+                "Areas",
+                activeAreaCount.Value,
+                targetPlan.MaxAreas,
+                targetPlan.MaxAreas <= 0
+                    ? $"Your organization has {activeAreaCount.Value} Area{(activeAreaCount.Value == 1 ? string.Empty : "s")}. Archive Areas before downgrading — Area management is not included on {targetPlan.DisplayName}."
+                    : $"Current Areas ({activeAreaCount.Value}) exceed the target limit ({targetPlan.MaxAreas}). Archive excess Areas before downgrading. Merchant data is not deleted."));
+        }
+
+        if (activeWarehouseBranchCount is > 0 && !targetWarehouseEnabled)
+        {
+            conflicts.Add(new PlanUsageConflict(
+                "Warehouse",
+                activeWarehouseBranchCount.Value,
+                0,
+                "Your organization has a Warehouse branch. Change it to a supported branch configuration before downgrading."));
+        }
+
         var lost = new List<string>();
         if (currentPlan.CustomerCreditEnabled && !targetPlan.CustomerCreditEnabled)
         {
@@ -272,6 +295,17 @@ public static class PlanChangeImpact
             lost.Add("Export");
         }
 
+        if (currentPlan.MaxAreas > 0 && targetPlan.MaxAreas <= 0)
+        {
+            lost.Add("Area management");
+        }
+
+        if (!targetWarehouseEnabled
+            && activeWarehouseBranchCount is > 0)
+        {
+            lost.Add("Warehouse branches");
+        }
+
         return new PlanChangeImpactPreview(
             currentPlan.Id.Value,
             currentPlan.DisplayName,
@@ -282,7 +316,7 @@ public static class PlanChangeImpact
             branchCountAvailable,
             branchCountUnavailableReason,
             conflicts,
-            lost,
+            lost.Distinct(StringComparer.Ordinal).ToList(),
             conflicts.Count > 0);
     }
 }
@@ -293,17 +327,23 @@ public sealed class PreviewOrganizationPlanChange
     private readonly IPlanRepository _plans;
     private readonly IOrganizationProductUsageReader _usageReader;
     private readonly IOrganizationBusinessTypeEntitlementResolver _businessTypeEntitlements;
+    private readonly IOrganizationBranchRepository _branches;
+    private readonly IOrganizationAreaRepository _areas;
 
     public PreviewOrganizationPlanChange(
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
         IOrganizationProductUsageReader usageReader,
-        IOrganizationBusinessTypeEntitlementResolver businessTypeEntitlements)
+        IOrganizationBusinessTypeEntitlementResolver businessTypeEntitlements,
+        IOrganizationBranchRepository branches,
+        IOrganizationAreaRepository areas)
     {
         _subscriptions = subscriptions;
         _plans = plans;
         _usageReader = usageReader;
         _businessTypeEntitlements = businessTypeEntitlements;
+        _branches = branches;
+        _areas = areas;
     }
 
     public async Task<ApplicationResult<PlanChangeImpactPreview>> ExecuteAsync(
@@ -355,6 +395,14 @@ public sealed class PreviewOrganizationPlanChange
             activeBusinessTypeCount = entitlement.Value.EffectiveBusinessTypeIds.Count;
         }
 
+        var orgBranches = await _branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var warehouseCount = orgBranches.Count(b =>
+            b.Status != OrganizationBranchStatus.Archived
+            && b.BranchType == OrganizationBranchType.Warehouse);
+        var activeAreaCount = await _areas.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var targetWarehouseEnabled = await PlanPublishedWarehouseEnabledAsync(targetPlan.Id, cancellationToken)
+            .ConfigureAwait(false);
+
         return ApplicationResult<PlanChangeImpactPreview>.Success(
             PlanChangeImpact.Evaluate(
                 currentPlan,
@@ -363,7 +411,22 @@ public sealed class PreviewOrganizationPlanChange
                 branchCount,
                 branchCountAvailable,
                 unavailableReason,
-                activeBusinessTypeCount));
+                activeBusinessTypeCount,
+                activeAreaCount,
+                warehouseCount,
+                targetWarehouseEnabled));
+    }
+
+    private async Task<bool> PlanPublishedWarehouseEnabledAsync(PlanId planId, CancellationToken cancellationToken)
+    {
+        var versions = await _plans.ListVersionsAsync(planId, cancellationToken).ConfigureAwait(false);
+        var published = versions
+            .Where(v => v.Status == PlanVersionStatus.Published)
+            .OrderByDescending(v => v.VersionNumber)
+            .FirstOrDefault();
+        return published?.Grants.Any(g =>
+            g.Enabled
+            && string.Equals(g.FeatureCode.Value, FeatureCode.StoreWarehouse, StringComparison.Ordinal)) == true;
     }
 }
 
@@ -372,6 +435,8 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
     private readonly IOrganizationBusinessTypeEntitlementResolver _businessTypeEntitlements;
+    private readonly IOrganizationBranchRepository _branches;
+    private readonly IOrganizationAreaRepository _areas;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -379,12 +444,16 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
         IOrganizationBusinessTypeEntitlementResolver businessTypeEntitlements,
+        IOrganizationBranchRepository branches,
+        IOrganizationAreaRepository areas,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _subscriptions = subscriptions;
         _plans = plans;
         _businessTypeEntitlements = businessTypeEntitlements;
+        _branches = branches;
+        _areas = areas;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -432,6 +501,38 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity,
                 $"Deactivate {excess} optional business type{(excess == 1 ? string.Empty : "s")} before switching to {targetPlan.DisplayName}. Merchant catalog and history are not deleted.");
+        }
+
+        var activeAreaCount = await _areas.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (activeAreaCount > targetPlan.MaxAreas)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PlanDowngradeBlockedByAreaCapacity,
+                targetPlan.MaxAreas <= 0
+                    ? $"Your organization has {activeAreaCount} Area{(activeAreaCount == 1 ? string.Empty : "s")}. Archive Areas before downgrading — Area management is not included on {targetPlan.DisplayName}."
+                    : $"Current Areas ({activeAreaCount}) exceed the target limit ({targetPlan.MaxAreas}). Archive excess Areas before downgrading.");
+        }
+
+        var orgBranches = await _branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var warehouseCount = orgBranches.Count(b =>
+            b.Status != OrganizationBranchStatus.Archived
+            && b.BranchType == OrganizationBranchType.Warehouse);
+        if (warehouseCount > 0)
+        {
+            var versions = await _plans.ListVersionsAsync(targetPlan.Id, cancellationToken).ConfigureAwait(false);
+            var published = versions
+                .Where(v => v.Status == PlanVersionStatus.Published)
+                .OrderByDescending(v => v.VersionNumber)
+                .FirstOrDefault();
+            var warehouseAllowed = published?.Grants.Any(g =>
+                g.Enabled
+                && string.Equals(g.FeatureCode.Value, FeatureCode.StoreWarehouse, StringComparison.Ordinal)) == true;
+            if (!warehouseAllowed)
+            {
+                return ApplicationResult<Subscription>.Failure(
+                    ApplicationErrorCodes.PlanDowngradeBlockedByWarehouse,
+                    "Your organization has a Warehouse branch. Change it to a supported branch configuration before downgrading.");
+            }
         }
 
         try

@@ -356,6 +356,7 @@ public sealed class CreateBranch(
     IBranchDeliveryPolicyRepository policies,
     ISubscriptionRepository subscriptions,
     IPlanRepository plans,
+    EntitlementQueryService entitlements,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -376,6 +377,19 @@ public sealed class CreateBranch(
             return ApplicationResult<OrganizationBranchDto>.Failure(
                 ApplicationErrorCodes.BranchCapacityExceeded,
                 "The active POS plan branch limit has been reached.");
+        }
+
+        if (command.BranchType is OrganizationBranchType.Warehouse)
+        {
+            var warehouseGate = await PosWarehouseEntitlement
+                .EnsureAllowedAsync(organizationId, entitlements, cancellationToken)
+                .ConfigureAwait(false);
+            if (!warehouseGate.IsSuccess)
+            {
+                return ApplicationResult<OrganizationBranchDto>.Failure(
+                    warehouseGate.ErrorCode!,
+                    warehouseGate.ErrorMessage!);
+            }
         }
 
         OrganizationBranch branch;
@@ -435,6 +449,7 @@ public sealed class CreateBranch(
 public sealed class UpdateBranch(
     IOrganizationBranchRepository branches,
     IBranchDeliveryPolicyRepository policies,
+    EntitlementQueryService entitlements,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -485,6 +500,20 @@ public sealed class UpdateBranch(
 
             if (command.BranchType is OrganizationBranchType branchType)
             {
+                if (branchType is OrganizationBranchType.Warehouse
+                    && branch.BranchType is not OrganizationBranchType.Warehouse)
+                {
+                    var warehouseGate = await PosWarehouseEntitlement
+                        .EnsureAllowedAsync(organizationId, entitlements, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!warehouseGate.IsSuccess)
+                    {
+                        return ApplicationResult<OrganizationBranchDto>.Failure(
+                            warehouseGate.ErrorCode!,
+                            warehouseGate.ErrorMessage!);
+                    }
+                }
+
                 branch.SetBranchType(branchType, clock.UtcNow);
             }
 
@@ -1018,6 +1047,30 @@ public sealed class EnsureMainBranchExists(
             .ConfigureAwait(false);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return main;
+    }
+}
+
+internal static class PosWarehouseEntitlement
+{
+    public static async Task<ApplicationResult<bool>> EnsureAllowedAsync(
+        PlatformOrganizationId organizationId,
+        EntitlementQueryService entitlements,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await entitlements
+            .GetLatestAsync(organizationId.Value, ProductCode.PinoyBusinessPos, cancellationToken)
+            .ConfigureAwait(false);
+        var allowed = snapshot?.Grants.Any(g =>
+            g.Enabled
+            && string.Equals(g.FeatureCode, FeatureCode.StoreWarehouse, StringComparison.Ordinal)) == true;
+        if (!allowed)
+        {
+            return ApplicationResult<bool>.Failure(
+                ApplicationErrorCodes.WarehouseEntitlementRequired,
+                "Warehouse branches require a Pro or Pro+ plan with warehouse entitlement.");
+        }
+
+        return ApplicationResult<bool>.Success(true);
     }
 }
 

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace ExItS.Platform.Application.Catalog;
 
 /// <summary>
-/// Idempotently seeds MVP Pinoy Business POS commercial plans (Starter / Growth / Pro),
+/// Idempotently seeds Pinoy Business POS commercial plans (Starter / Growth / Pro / Pro+),
 /// remaps legacy Local Validation / Start-Business / Business provisional subscriptions onto Growth,
 /// and retires unused legacy plans when no active-like subscriptions remain.
 /// </summary>
@@ -27,8 +27,11 @@ public sealed class EnsureMvpPosPlans
         (FeatureCode.PlanMaxActiveStaff, FeatureValueType.QuantityLimit),
         (FeatureCode.PlanMaxActivePosDevices, FeatureValueType.QuantityLimit),
         (FeatureCode.PlanMaxActiveBusinessTypes, FeatureValueType.QuantityLimit),
+        (FeatureCode.PlanMaxAreas, FeatureValueType.QuantityLimit),
         (FeatureCode.StoreAdvancedReports, FeatureValueType.Boolean),
         (FeatureCode.StoreExport, FeatureValueType.Boolean),
+        (FeatureCode.StoreAreaManagement, FeatureValueType.Boolean),
+        (FeatureCode.StoreWarehouse, FeatureValueType.Boolean),
         (FeatureCode.CustomerCreditCreate, FeatureValueType.Boolean),
         (FeatureCode.CustomerCreditView, FeatureValueType.Boolean),
         (FeatureCode.CustomerCreditRepay, FeatureValueType.Boolean),
@@ -79,10 +82,7 @@ public sealed class EnsureMvpPosPlans
         FeatureCode.StoreReturnsView,
         FeatureCode.StoreReturnsManage,
         FeatureCode.StoreRegistersView,
-        FeatureCode.StoreRegistersManage,
-        // V1: grant on all commercial BasicStore plans so tests/dev work; capability checks remain for future Pro-only.
-        FeatureCode.StoreCustomerOrdering,
-        FeatureCode.StoreDeliveryOrders
+        FeatureCode.StoreRegistersManage
     ];
 
     private readonly IProductRepository _products;
@@ -276,7 +276,8 @@ public sealed class EnsureMvpPosPlans
                     spec.MonthlyPrice,
                     spec.AnnualPrice,
                     spec.CurrencyCode,
-                    cancellationToken)
+                    cancellationToken,
+                    maxAreas: spec.MaxAreas)
                 .ConfigureAwait(false);
 
             if (!created.IsSuccess || created.Value is null)
@@ -314,7 +315,8 @@ public sealed class EnsureMvpPosPlans
                     spec.AnnualPrice,
                     spec.CurrencyCode,
                     expectedUpdatedAtUtc: null,
-                    cancellationToken)
+                    cancellationToken,
+                    maxAreas: spec.MaxAreas)
                 .ConfigureAwait(false);
 
             if (!updated.IsSuccess || updated.Value is null)
@@ -645,6 +647,7 @@ public sealed class EnsureMvpPosPlans
         || plan.MaxActiveStaff != spec.MaxActiveStaff
         || plan.MaxActivePosDevices != spec.MaxActivePosDevices
         || plan.MaxActiveBusinessTypes != spec.MaxActiveBusinessTypes
+        || plan.MaxAreas != spec.MaxAreas
         || plan.CustomerCreditEnabled != spec.CustomerCreditEnabled
         || plan.AdvancedReportsEnabled != spec.AdvancedReportsEnabled
         || plan.ExportEnabled != spec.ExportEnabled
@@ -657,6 +660,7 @@ public sealed class EnsureMvpPosPlans
 
     public static FeatureGrantSpec[] BuildGrants(MvpPosPlanCatalog.Spec spec)
     {
+        var areaManagementEnabled = spec.MaxAreas > 0;
         var grants = new List<FeatureGrantSpec>
         {
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxBranches), spec.MaxBranches),
@@ -665,11 +669,20 @@ public sealed class EnsureMvpPosPlans
             FeatureGrantSpec.Limit(
                 FeatureCode.Create(FeatureCode.PlanMaxActiveBusinessTypes),
                 spec.MaxActiveBusinessTypes),
+            FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxAreas), Math.Max(0, spec.MaxAreas)),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.StoreAdvancedReports), spec.AdvancedReportsEnabled),
-            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.StoreExport), spec.ExportEnabled)
+            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.StoreExport), spec.ExportEnabled),
+            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.StoreAreaManagement), areaManagementEnabled),
+            FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.StoreWarehouse), spec.WarehouseEnabled),
+            FeatureGrantSpec.Boolean(
+                FeatureCode.Create(FeatureCode.StoreCustomerOrdering),
+                spec.CustomerOrderingEnabled),
+            FeatureGrantSpec.Boolean(
+                FeatureCode.Create(FeatureCode.StoreDeliveryOrders),
+                spec.DeliveryOrdersEnabled)
         };
 
         foreach (var code in BasicStoreFeatureCodes)

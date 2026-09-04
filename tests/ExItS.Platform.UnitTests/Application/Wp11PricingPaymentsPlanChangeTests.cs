@@ -280,7 +280,13 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var downgrade = new ScheduleOrganizationSubscriptionDowngrade(
-            ctx.Subscriptions, ctx.Plans, new EmptyBusinessTypeEntitlementResolver(), ctx.UnitOfWork, ctx.Clock);
+            ctx.Subscriptions,
+            ctx.Plans,
+            new EmptyBusinessTypeEntitlementResolver(),
+            new EmptyOrganizationBranchRepository(),
+            new InMemoryOrganizationAreaRepository(),
+            ctx.UnitOfWork,
+            ctx.Clock);
         var effective = T0.AddMonths(1);
         var result = await downgrade.ExecuteAsync(
             ctx.Organization.Id,
@@ -305,7 +311,13 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             ctx.Organization.Id,
             [primary, bakery, veg]);
         var downgrade = new ScheduleOrganizationSubscriptionDowngrade(
-            ctx.Subscriptions, ctx.Plans, resolver, ctx.UnitOfWork, ctx.Clock);
+            ctx.Subscriptions,
+            ctx.Plans,
+            resolver,
+            new EmptyOrganizationBranchRepository(),
+            new InMemoryOrganizationAreaRepository(),
+            ctx.UnitOfWork,
+            ctx.Clock);
         var result = await downgrade.ExecuteAsync(
             ctx.Organization.Id,
             ProductCode.Create(ProductCode.PinoyBusinessPos),
