@@ -112,6 +112,7 @@ describe("OrgRolesPage", () => {
     renderPage();
 
     expect(await screen.findByTestId("org-roles-list")).toBeInTheDocument();
+    expect(screen.getByTestId("org-roles-list").className).toContain("org-roles-list");
     expect(screen.getByText("POS Owner")).toBeInTheDocument();
     expect(screen.getByText("Manager")).toBeInTheDocument();
     expect(screen.getByText("Cashier")).toBeInTheDocument();
