@@ -388,7 +388,6 @@ builder.Services.AddScoped<RecordExpense>();
 builder.Services.AddScoped<VoidExpense>();
 builder.Services.AddScoped<ExpenseSummaryService>();
 builder.Services.AddScoped<SupplierQueryService>();
-builder.Services.AddScoped<BuyerConnectedSupplierMaster>();
 builder.Services.AddScoped<CreateSupplier>();
 builder.Services.AddScoped<UpdateSupplier>();
 builder.Services.AddScoped<ActivateSupplier>();
