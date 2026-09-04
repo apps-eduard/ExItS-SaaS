@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
@@ -16,15 +16,22 @@ import {
   type OrganizationCashDenominationDto,
 } from "@/api/pos/pos-operational-setup-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatDenominationCurrency } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function isRequired(mode: string): boolean {
   return mode.localeCompare("Required", undefined, { sensitivity: "accent" }) === 0;
+}
+
+function removeDenominationLabel(template: string, amountLabel: string): string {
+  return template.includes("{amount}")
+    ? template.replace("{amount}", amountLabel)
+    : `${template} ${amountLabel}`;
 }
 
 export function CashHandlingSettingsPage() {
@@ -138,7 +145,6 @@ export function CashHandlingSettingsPage() {
       setRequireOpening(null);
       setRequireClosing(null);
       setOkMessage(t("cashHandling.saved"));
-      // keep local setup via invalidate
       void updated;
     } catch {
       setError(t("cashHandling.saveError"));
@@ -218,7 +224,10 @@ export function CashHandlingSettingsPage() {
   }
 
   return (
-    <div data-testid="cash-handling-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="cash-handling-page"
+      className="cash-handling-page exits-page flex min-w-0 flex-col gap-4"
+    >
       <PageHeader
         title={t("cashHandling.title")}
         description={t("cashHandling.lede")}
@@ -228,65 +237,93 @@ export function CashHandlingSettingsPage() {
       />
 
       {error ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">{error}</p>
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] font-normal text-[var(--exits-danger)]"
+          role="alert"
+        >
+          {error}
+        </p>
       ) : null}
       {okMessage ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-success)]">
+        <p className="m-0 text-[length:var(--exits-text-sm)] font-normal text-[var(--exits-success)]">
           {okMessage}
         </p>
       ) : null}
 
-      <Card className="flex flex-col gap-3">
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            data-testid="cash-handling-require-opening"
-            type="checkbox"
-            className="mt-1 size-5"
-            checked={openingRequired}
-            onChange={(event) => setRequireOpening(event.target.checked)}
-          />
-          <span>
-            <span className="block font-medium">{t("cashHandling.requireOpening")}</span>
-            <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
-              {t("cashHandling.requireOpeningHelp")}
-            </span>
-          </span>
-        </label>
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            data-testid="cash-handling-require-closing"
-            type="checkbox"
-            className="mt-1 size-5"
-            checked={closingRequired}
-            onChange={(event) => setRequireClosing(event.target.checked)}
-          />
-          <span>
-            <span className="block font-medium">{t("cashHandling.requireClosing")}</span>
-            <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
-              {t("cashHandling.requireClosingHelp")}
-            </span>
-          </span>
-        </label>
-        <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("cashHandling.snapshotHint")}
-        </p>
-        <Button
-          type="button"
-          className="w-fit"
-          disabled={savingPolicy}
-          data-testid="cash-handling-save-policy"
-          onClick={() => void savePolicy()}
-        >
-          {t("cashHandling.save")}
-        </Button>
-      </Card>
+      <section
+        className="catalog-form-section cash-handling-section exits-animate-panel gap-0"
+        data-testid="cash-handling-policy"
+      >
+        <h2 className="catalog-form-section__title exits-type-section-title">
+          {t("cashHandling.policyTitle")}
+        </h2>
 
-      <Card className="flex flex-col gap-3">
+        <div className="cash-handling-policy-rows">
+          <div className="cash-handling-policy-row">
+            <div className="cash-handling-policy-row__text min-w-0">
+              <p className="cash-handling-policy-row__eyebrow exits-type-label m-0">
+                {t("cashHandling.openingTitle")}
+              </p>
+              <p className="cash-handling-policy-row__title m-0" id="cash-handling-opening-label">
+                {t("cashHandling.requireOpening")}
+              </p>
+              <p className="cash-handling-policy-row__help m-0">
+                {t("cashHandling.requireOpeningHelp")}
+              </p>
+            </div>
+            <Switch
+              checked={openingRequired}
+              onCheckedChange={setRequireOpening}
+              aria-labelledby="cash-handling-opening-label"
+              data-testid="cash-handling-require-opening"
+            />
+          </div>
+
+          <div className="cash-handling-policy-row">
+            <div className="cash-handling-policy-row__text min-w-0">
+              <p className="cash-handling-policy-row__eyebrow exits-type-label m-0">
+                {t("cashHandling.closingTitle")}
+              </p>
+              <p className="cash-handling-policy-row__title m-0" id="cash-handling-closing-label">
+                {t("cashHandling.requireClosing")}
+              </p>
+              <p className="cash-handling-policy-row__help m-0">
+                {t("cashHandling.requireClosingHelp")}
+              </p>
+            </div>
+            <Switch
+              checked={closingRequired}
+              onCheckedChange={setRequireClosing}
+              aria-labelledby="cash-handling-closing-label"
+              data-testid="cash-handling-require-closing"
+            />
+          </div>
+        </div>
+
+        <p className="cash-handling-policy-note m-0">{t("cashHandling.snapshotHint")}</p>
+
+        <div className="cash-handling-policy-actions">
+          <Button
+            type="button"
+            disabled={savingPolicy}
+            data-testid="cash-handling-save-policy"
+            onClick={() => void savePolicy()}
+          >
+            <Save className="size-4 shrink-0" aria-hidden />
+            {t("cashHandling.save")}
+          </Button>
+        </div>
+      </section>
+
+      <section
+        className="catalog-form-section cash-handling-section exits-animate-panel gap-3"
+        data-testid="cash-handling-denominations"
+      >
         <div>
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          <h2 className="catalog-form-section__title exits-type-section-title">
             {t("cashHandling.denominationsTitle")}
           </h2>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+          <p className="cash-handling-section-help m-0 mt-1">
             {t("cashHandling.denominationsHelp")}
           </p>
         </div>
@@ -294,77 +331,78 @@ export function CashHandlingSettingsPage() {
         {denominations.length === 0 ? (
           <div data-testid="cash-handling-denoms-empty">
             <p className="m-0 font-medium">{t("cashHandling.emptyDenoms")}</p>
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            <p className="cash-handling-section-help mb-0 mt-1">
               {t("cashHandling.emptyDenomsDetail")}
             </p>
           </div>
         ) : (
-          <ul
-            className="m-0 grid list-none grid-cols-2 gap-2 p-0"
-            data-testid="cash-handling-denoms-list"
-          >
-            {denominations.map((denom) => (
-              <li
-                key={denom.denominationId}
-                className="flex min-w-0 items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                data-testid={`cash-handling-denom-${formatDenominationValue(denom.value)}`}
-              >
-                <span className="min-w-0 truncate tabular-nums font-medium">
-                  {formatDenominationValue(denom.value)}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  disabled={savingDenoms}
-                  aria-label={t("cashHandling.remove")}
-                  data-testid={`cash-handling-remove-${formatDenominationValue(denom.value)}`}
-                  onClick={() => void removeDenomination(denom)}
+          <ul className="cash-handling-denom-grid" data-testid="cash-handling-denoms-list">
+            {denominations.map((denom) => {
+              const amountLabel = formatDenominationCurrency(denom.value);
+              const valueKey = formatDenominationValue(denom.value);
+              return (
+                <li
+                  key={denom.denominationId}
+                  className="cash-handling-denom-row"
+                  data-testid={`cash-handling-denom-${valueKey}`}
                 >
-                  <Trash2 className="size-[15px]" aria-hidden />
-                </Button>
-              </li>
-            ))}
+                  <span className="cash-handling-denom-row__value tabular-nums">{amountLabel}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="cash-handling-denom-row__remove"
+                    disabled={savingDenoms}
+                    aria-label={removeDenominationLabel(t("cashHandling.remove"), amountLabel)}
+                    data-testid={`cash-handling-remove-${valueKey}`}
+                    onClick={() => void removeDenomination(denom)}
+                  >
+                    <Trash2 className="size-4 shrink-0" aria-hidden />
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         )}
 
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <div className="cash-handling-add-row">
+          <label className="cash-handling-add-field exits-type-label">
             <span>{t("cashHandling.addDenomination")}</span>
             <input
               data-testid="cash-handling-add-value"
               type="number"
               inputMode="decimal"
               min={0}
-              step="0.01"
+              step="any"
               placeholder={t("cashHandling.addDenominationPlaceholder")}
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+              className="exits-input exits-input--no-spin cash-handling-amount-input tabular-nums"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
             />
           </label>
-          <Button
-            type="button"
-            disabled={savingDenoms}
-            data-testid="cash-handling-add"
-            onClick={() => void addDenomination()}
-          >
-            {t("cashHandling.add")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="inline-flex items-center gap-2 border border-border"
-            disabled={savingDenoms}
-            data-testid="cash-handling-reset-defaults"
-            onClick={() => void resetDenominationsToDefault()}
-          >
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-            {t("cashHandling.resetDefaults")}
-          </Button>
+          <div className="cash-handling-add-actions">
+            <Button
+              type="button"
+              disabled={savingDenoms}
+              data-testid="cash-handling-add"
+              onClick={() => void addDenomination()}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {t("cashHandling.add")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={savingDenoms}
+              data-testid="cash-handling-reset-defaults"
+              onClick={() => void resetDenominationsToDefault()}
+            >
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("cashHandling.resetDefaults")}
+            </Button>
+          </div>
         </div>
-      </Card>
+      </section>
     </div>
   );
 }

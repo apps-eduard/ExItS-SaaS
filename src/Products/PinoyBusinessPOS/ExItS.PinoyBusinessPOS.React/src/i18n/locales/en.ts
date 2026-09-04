@@ -4076,6 +4076,9 @@ export const en = {
   "cashHandling.title": "Cash handling",
   "cashHandling.lede":
     "Choose when cashiers must count cash, and which denominations appear as helpers.",
+  "cashHandling.policyTitle": "Shift cash count",
+  "cashHandling.openingTitle": "Opening shift",
+  "cashHandling.closingTitle": "Closing shift",
   "cashHandling.requireOpening": "Require cash count when opening shift",
   "cashHandling.requireClosing": "Require cash count when closing shift",
   "cashHandling.requireOpeningHelp": "Cashiers must enter opening cash before the shift can start.",
@@ -4088,11 +4091,11 @@ export const en = {
   "cashHandling.add": "Add",
   "cashHandling.resetDefaults": "Reset to defaults",
   "cashHandling.resetSaved": "Cash denominations reset to defaults.",
-  "cashHandling.remove": "Remove",
+  "cashHandling.remove": "Remove {amount} denomination",
   "cashHandling.save": "Save changes",
   "cashHandling.saved": "Cash handling settings saved.",
   "cashHandling.snapshotHint":
-    "Changes apply to the next shift. An already open shift keeps the policy it started with.",
+    "Changes apply to the next shift. An already-open shift keeps the policy it started with.",
   "cashHandling.emptyDenoms": "No cash denominations configured",
   "cashHandling.emptyDenomsDetail":
     "You can still enter the total cash amount manually when opening or closing a shift.",
