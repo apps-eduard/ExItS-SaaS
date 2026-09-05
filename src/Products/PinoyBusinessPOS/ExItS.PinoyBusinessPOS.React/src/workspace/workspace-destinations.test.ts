@@ -21,7 +21,7 @@ function grant(partial: Partial<SessionGrantResponse>): SessionGrantResponse {
 function workspace(
   orgId: string,
   name: string,
-  branches: Array<{ id: string; name: string }>,
+  branches: Array<{ id: string; name: string; branchType?: "Retail" | "Warehouse" }>,
 ): AccessibleOrganizationWorkspace {
   return {
     organizationId: orgId,
@@ -30,8 +30,9 @@ function workspace(
       branchId: b.id,
       name: b.name,
       secondaryLine: "Active",
-      isPrimary: index === 0,
+      isPrimary: index === 0 && b.branchType !== "Warehouse",
       isActive: true,
+      branchType: b.branchType ?? "Retail",
     })),
   };
 }
@@ -147,5 +148,36 @@ describe("workspace destinations", () => {
     expect(destinations.filter((d) => d.experience === "manage_business")).toHaveLength(1);
     expect(destinations.filter((d) => d.experience === "operations")).toHaveLength(2);
     expect(destinations.filter((d) => d.experience === "start_selling")).toHaveLength(2);
+  });
+
+  it("warehouse locations never get Start selling and use Warehouse operations label", () => {
+    const owner = grant({
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: "Owner",
+      productAccessAllowed: true,
+    });
+    const destinations = buildOrganizationDestinations({
+      workspace: workspace("org-1", "Store", [
+        { id: "b1", name: "Main", branchType: "Retail" },
+        { id: "w1", name: "Iloilo Warehouse", branchType: "Warehouse" },
+      ]),
+      grant: owner,
+    });
+
+    const warehouseOps = destinations.filter(
+      (d) => d.branchId === "w1" && d.experience === "operations",
+    );
+    const warehouseSell = destinations.filter(
+      (d) => d.branchId === "w1" && d.experience === "start_selling",
+    );
+    const retailSell = destinations.filter(
+      (d) => d.branchId === "b1" && d.experience === "start_selling",
+    );
+
+    expect(warehouseOps).toHaveLength(1);
+    expect(warehouseOps[0]?.labelKey).toBe("experience.warehouseOperations");
+    expect(warehouseSell).toHaveLength(0);
+    expect(retailSell).toHaveLength(1);
   });
 });

@@ -2660,6 +2660,18 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "experience.operations": "Operations",
 
+  "workspace.locations": "Locations",
+
+  "workspace.locationsWithCount": "Locations ({count})",
+
+  "workspace.locationCountOne": "1 location",
+
+  "workspace.locationCountMany": "{count} locations",
+
+  "workspace.locationTypeBreakdown": "{retail} Retail · {warehouse} Warehouse",
+
+  "experience.warehouseOperations": "Warehouse operations",
+
   "experience.securityRole": "Security role",
 
   "experience.startSelling": "Sugdi ang pagbaligya",

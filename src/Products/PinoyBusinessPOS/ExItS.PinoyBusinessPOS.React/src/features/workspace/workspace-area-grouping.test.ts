@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   groupWorkspaceBranchesByArea,
   resolveWorkspaceBranchGroupingMode,
+  summarizeWorkspaceLocations,
 } from "@/features/workspace/workspace-area-grouping";
 import type { AccessibleWorkspaceBranch } from "@/workspace/types";
 
@@ -10,6 +11,7 @@ function branch(
   name: string,
   areaId: string | null = null,
   areaName: string | null = null,
+  branchType: AccessibleWorkspaceBranch["branchType"] = "Retail",
 ): AccessibleWorkspaceBranch {
   return {
     branchId,
@@ -19,6 +21,7 @@ function branch(
     isActive: true,
     areaId,
     areaName,
+    branchType,
   };
 }
 
@@ -81,5 +84,14 @@ describe("workspace area grouping", () => {
     ]);
 
     expect(groups[0].areaName).toBe("PANAY");
+  });
+
+  it("summarizes retail and warehouse counts for area headings", () => {
+    const breakdown = summarizeWorkspaceLocations([
+      branch("b1", "Main", "a1", "North", "Retail"),
+      branch("b2", "Side", "a1", "North", "Retail"),
+      branch("w1", "WH", "a1", "North", "Warehouse"),
+    ]);
+    expect(breakdown).toEqual({ total: 3, retail: 2, warehouse: 1 });
   });
 });

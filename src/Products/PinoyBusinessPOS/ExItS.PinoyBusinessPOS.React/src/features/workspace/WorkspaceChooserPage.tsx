@@ -4,6 +4,7 @@ import {
   ChevronRight,
   LayoutGrid,
   ShoppingCart,
+  Warehouse,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +24,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { resolveFriendlyPosRole } from "@/lib/user-display";
@@ -30,9 +32,11 @@ import { cn } from "@/lib/cn";
 import { normalizePosError } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   groupWorkspaceBranchesByArea,
   resolveWorkspaceBranchGroupingMode,
+  summarizeWorkspaceLocations,
 } from "@/features/workspace/workspace-area-grouping";
 import { useWorkspace, type WorkspaceGrantProbeFailure } from "@/workspace/WorkspaceProvider";
 import { workspaceBindFailureTitleKey } from "@/workspace/workspace-bind-error";
@@ -44,14 +48,16 @@ import type {
   AccessibleOrganizationWorkspace,
   AccessibleWorkspaceBranch,
 } from "@/workspace/types";
-import type { WorkingExperience } from "@/workspace/working-experience";
 
-function destinationIcon(experience: WorkingExperience): LucideIcon {
-  if (experience === "manage_business") {
+function destinationIcon(destination: WorkspaceDestination): LucideIcon {
+  if (destination.experience === "manage_business") {
     return BriefcaseBusiness;
   }
-  if (experience === "start_selling") {
+  if (destination.experience === "start_selling") {
     return ShoppingCart;
+  }
+  if (destination.labelKey === "experience.warehouseOperations") {
+    return Warehouse;
   }
   return LayoutGrid;
 }
@@ -83,6 +89,23 @@ function staffCountLabel(count: number, t: (key: MessageKey) => string): string 
     return t("orgRoles.staffCountOne");
   }
   return t("orgRoles.staffCountMany").replace("{count}", String(count));
+}
+
+function locationCountLabel(count: number, t: (key: MessageKey) => string): string {
+  if (count === 1) {
+    return t("workspace.locationCountOne");
+  }
+  return t("workspace.locationCountMany").replace("{count}", String(count));
+}
+
+function locationBreakdownLabel(
+  retail: number,
+  warehouse: number,
+  t: (key: MessageKey) => string,
+): string {
+  return t("workspace.locationTypeBreakdown")
+    .replace("{retail}", String(retail))
+    .replace("{warehouse}", String(warehouse));
 }
 
 function resolveOwnWorkspaceRoleLabel(
@@ -491,11 +514,11 @@ function OrganizationWorkspaceCard({
     [grant, organization],
   );
   const manageBusiness = destinations.find((d) => d.experience === "manage_business");
-  const branchCount = organization.branches.length;
-  const branchesHeading =
-    branchCount === 0
-      ? t("workspace.branches")
-      : t("workspace.branchesWithCount").replace("{count}", String(branchCount));
+  const locationCount = organization.branches.length;
+  const locationsHeading =
+    locationCount === 0
+      ? t("workspace.locations")
+      : t("workspace.locationsWithCount").replace("{count}", String(locationCount));
   const groupingMode = useMemo(
     () => resolveWorkspaceBranchGroupingMode(organization.branches),
     [organization.branches],
@@ -507,6 +530,7 @@ function OrganizationWorkspaceCard({
   );
 
   function renderBranchTile(branch: AccessibleWorkspaceBranch) {
+    const warehouse = isWarehouseBranch(branch.branchType);
     const branchDestinations = destinations.filter((d) => d.branchId === branch.branchId);
     const meta = branchCardMetaLine({
       grant,
@@ -518,8 +542,19 @@ function OrganizationWorkspaceCard({
         key={branch.branchId}
         className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
         data-testid={`workspace-branch-${branch.branchId}`}
+        data-branch-type={warehouse ? "Warehouse" : "Retail"}
       >
-        <p className="m-0 truncate font-semibold">{branch.name}</p>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <p className="m-0 min-w-0 flex-1 truncate font-semibold">{branch.name}</p>
+          <div className="flex flex-wrap gap-1">
+            <StatusChip tone={warehouse ? "warning" : "info"}>
+              {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
+            </StatusChip>
+            {!warehouse && branch.isPrimary ? (
+              <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
+            ) : null}
+          </div>
+        </div>
         <p
           className="m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted"
           data-testid={`workspace-branch-meta-${branch.branchId}`}
@@ -535,7 +570,7 @@ function OrganizationWorkspaceCard({
           >
             {branchDestinations.map((destination) => (
               <DestinationTile
-                key={`${destination.experience}:${destination.branchId}`}
+                key={`${destination.experience}:${destination.branchId}:${destination.labelKey}`}
                 destination={destination}
                 bindingKey={bindingKey}
                 onSelect={onSelectDestination}
@@ -545,6 +580,17 @@ function OrganizationWorkspaceCard({
           </div>
         ) : null}
       </li>
+    );
+  }
+
+  function renderAreaGroupMeta(branches: AccessibleWorkspaceBranch[]) {
+    const breakdown = summarizeWorkspaceLocations(branches);
+    return (
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+        {locationCountLabel(breakdown.total, t)}
+        <span aria-hidden> · </span>
+        {locationBreakdownLabel(breakdown.retail, breakdown.warehouse, t)}
+      </p>
     );
   }
 
@@ -598,13 +644,13 @@ function OrganizationWorkspaceCard({
             ) : null}
 
             {organization.branches.length > 0 ? (
-              <section aria-labelledby={`branches-${organization.organizationId}`}>
+              <section aria-labelledby={`locations-${organization.organizationId}`}>
                 <h3
-                  id={`branches-${organization.organizationId}`}
+                  id={`locations-${organization.organizationId}`}
                   className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-                  data-testid="workspace-branches-heading"
+                  data-testid="workspace-locations-heading"
                 >
-                  {branchesHeading}
+                  {locationsHeading}
                 </h3>
                 {groupingMode === "grouped" ? (
                   <div className="flex flex-col gap-4" data-testid="workspace-area-groups">
@@ -614,7 +660,7 @@ function OrganizationWorkspaceCard({
                         aria-labelledby={`area-${organization.organizationId}-${group.key}`}
                         data-testid={`workspace-area-group-${group.key}`}
                       >
-                        <div className="mb-2 flex min-w-0 flex-wrap items-baseline gap-x-2">
+                        <div className="mb-3 border-b border-border pb-2">
                           <h4
                             id={`area-${organization.organizationId}-${group.key}`}
                             className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
@@ -623,12 +669,9 @@ function OrganizationWorkspaceCard({
                               ? t("areas.unassigned")
                               : (group.areaName ?? t("areas.singular"))}
                           </h4>
-                          <span className="text-[length:var(--exits-text-xs)] text-muted">
-                            {t("areas.branchCount").replace(
-                              "{count}",
-                              String(group.branches.length),
-                            )}
-                          </span>
+                          <div data-testid={`workspace-area-meta-${group.key}`}>
+                            {renderAreaGroupMeta(group.branches)}
+                          </div>
                         </div>
                         <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
                           {group.branches.map(renderBranchTile)}
@@ -669,7 +712,7 @@ function DestinationTile({
 }) {
   const key = `${destination.organizationId}:${destination.experience}:${destination.branchId ?? "org"}`;
   const busy = bindingKey === key;
-  const Icon = destinationIcon(destination.experience);
+  const Icon = destinationIcon(destination);
   const label = busy ? t("workspace.opening") : t(destination.labelKey);
 
   if (primary) {
@@ -694,6 +737,7 @@ function DestinationTile({
       disabled={busy || bindingKey != null}
       onClick={() => onSelect(destination)}
       data-testid={`workspace-destination-${destination.experience}`}
+      data-label-key={destination.labelKey}
       aria-label={label}
       className={cn(
         "inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
