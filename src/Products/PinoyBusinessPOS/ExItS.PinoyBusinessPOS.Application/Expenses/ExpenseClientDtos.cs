@@ -23,6 +23,7 @@ public sealed record PosExpenseCategoryPagedResult(
 public sealed record PosExpenseDto(
     Guid ExpenseId,
     Guid OrganizationId,
+    Guid? BranchId,
     string ExpenseNumber,
     Guid CategoryId,
     string? CategoryName,
@@ -48,7 +49,8 @@ public sealed record RecordExpenseRequest(
     DateOnly ExpenseDate,
     string? Payee = null,
     string? GCashReference = null,
-    Guid? ExpenseId = null);
+    Guid? ExpenseId = null,
+    Guid? BranchId = null);
 
 public sealed record VoidExpenseRequest(string Reason);
 
@@ -79,3 +81,12 @@ public sealed record PosExpenseSummaryDto(
     int VoidedCount,
     IReadOnlyList<ExpenseCategorySummaryDto> ByCategory,
     IReadOnlyList<ExpensePaymentSummaryDto> ByPaymentMethod);
+
+public sealed record PosExpenseScopeBranchDto(Guid BranchId, string Name);
+
+public sealed record PosExpenseScopeOptionsDto(
+    bool CanViewOrganization,
+    bool CanCreateOrganizationWide,
+    bool CanViewAllBranches,
+    bool CanViewAllExpenses,
+    IReadOnlyList<PosExpenseScopeBranchDto> Branches);

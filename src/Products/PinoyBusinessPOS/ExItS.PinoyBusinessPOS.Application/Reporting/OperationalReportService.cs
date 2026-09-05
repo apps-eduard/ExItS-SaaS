@@ -950,7 +950,12 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var list = await expenses.ListForSummaryAsync(org, range.FromDate, range.ToDate, ct).ConfigureAwait(false);
+        var list = await expenses
+            .ListForSummaryAsync(
+                org,
+                new ExpenseFilter(FromDate: range.FromDate, ToDate: range.ToDate),
+                ct)
+            .ConfigureAwait(false);
         var recorded = list.Where(e => e.Status == Domain.Expenses.ExpenseStatus.Recorded).ToList();
         var voided = list.Where(e => e.Status == Domain.Expenses.ExpenseStatus.Voided).ToList();
 

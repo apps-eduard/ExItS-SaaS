@@ -40,8 +40,8 @@ export function ExpenseCategoriesPage() {
 
   const organizationId = boundWorkspace?.organizationId ?? null;
   const workspace = useMemo(
-    () => (organizationId ? expenseWorkspaceScope(organizationId) : null),
-    [organizationId],
+    () => (organizationId ? expenseWorkspaceScope(organizationId, boundWorkspace?.branchId) : null),
+    [organizationId, boundWorkspace?.branchId],
   );
 
   useEffect(() => {

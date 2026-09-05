@@ -5,6 +5,7 @@ import { ChevronRight, Plus, Tags } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   expenseWorkspaceScope,
+  getExpenseScopeOptions,
   getExpenseSummary,
   listExpenses,
 } from "@/api/pos/pos-expense-client";
@@ -22,6 +23,14 @@ import {
   expenseStatusLabelKey,
   formatExpenseDate,
 } from "@/features/expenses/expense-labels";
+import {
+  defaultExpenseViewScope,
+  expenseViewScopeSelectValue,
+  expenseViewScopeToQuery,
+  parseExpenseViewScopeSelectValue,
+  shouldShowExpenseViewScopeSelector,
+  type ExpenseViewScopeSelection,
+} from "@/features/expenses/expense-scope";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { cn } from "@/lib/cn";
@@ -54,11 +63,13 @@ export function ExpenseListPage() {
   const [expenseNumber, setExpenseNumber] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [viewScope, setViewScope] = useState<ExpenseViewScopeSelection | null>(null);
 
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const currentBranchId = boundWorkspace?.branchId ?? null;
   const workspace = useMemo(
-    () => (organizationId ? expenseWorkspaceScope(organizationId) : null),
-    [organizationId],
+    () => (organizationId ? expenseWorkspaceScope(organizationId, currentBranchId) : null),
+    [organizationId, currentBranchId],
   );
 
   useEffect(() => {
@@ -68,7 +79,26 @@ export function ExpenseListPage() {
     setExpenseNumber("");
     setFromDate("");
     setToDate("");
+    setViewScope(null);
   }, [organizationId]);
+
+  const scopeOptionsQuery = useQuery({
+    queryKey: ["expenses-scope-options", organizationId],
+    enabled: Boolean(workspace) && online,
+    queryFn: ({ signal }) => getExpenseScopeOptions(workspace!, signal),
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (!scopeOptionsQuery.data || viewScope) {
+      return;
+    }
+    setViewScope(defaultExpenseViewScope(scopeOptionsQuery.data, currentBranchId));
+  }, [scopeOptionsQuery.data, currentBranchId, viewScope]);
+
+  const scopeQuery = viewScope ? expenseViewScopeToQuery(viewScope) : null;
+  const showScopeSelector =
+    scopeOptionsQuery.data != null && shouldShowExpenseViewScopeSelector(scopeOptionsQuery.data);
 
   const listQuery = useQuery({
     queryKey: [
@@ -80,8 +110,10 @@ export function ExpenseListPage() {
       expenseNumber,
       fromDate,
       toDate,
+      scopeQuery?.scope,
+      scopeQuery?.branchId,
     ],
-    enabled: Boolean(workspace) && online,
+    enabled: Boolean(workspace) && online && Boolean(scopeQuery),
     queryFn: ({ signal }) =>
       listExpenses(
         workspace!,
@@ -93,18 +125,32 @@ export function ExpenseListPage() {
           expenseNumber: expenseNumber.trim() || undefined,
           fromDate: fromDate || undefined,
           toDate: toDate || undefined,
+          scope: scopeQuery!.scope,
+          branchId: scopeQuery!.branchId,
         },
         signal,
       ),
   });
 
   const summaryQuery = useQuery({
-    queryKey: ["expenses-summary", organizationId, fromDate, toDate],
-    enabled: Boolean(workspace) && online,
+    queryKey: [
+      "expenses-summary",
+      organizationId,
+      fromDate,
+      toDate,
+      scopeQuery?.scope,
+      scopeQuery?.branchId,
+    ],
+    enabled: Boolean(workspace) && online && Boolean(scopeQuery),
     queryFn: ({ signal }) =>
       getExpenseSummary(
         workspace!,
-        { fromDate: fromDate || undefined, toDate: toDate || undefined },
+        {
+          fromDate: fromDate || undefined,
+          toDate: toDate || undefined,
+          scope: scopeQuery!.scope,
+          branchId: scopeQuery!.branchId,
+        },
         signal,
       ),
   });
@@ -128,13 +174,6 @@ export function ExpenseListPage() {
         backLabel={t(pageBackNav.more.labelKey)}
         backTestId="page-header-back-more"
       />
-
-      <p
-        className="m-0 rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
-        data-testid="expense-org-scope-banner"
-      >
-        {t("expense.orgScopeBanner")}
-      </p>
 
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("expense.offline")}</p>
@@ -181,6 +220,42 @@ export function ExpenseListPage() {
           ]}
         />
       )}
+
+      {showScopeSelector && viewScope && scopeOptionsQuery.data ? (
+        <label
+          className="flex max-w-sm min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]"
+          data-testid="expense-scope-control"
+        >
+          <span className="font-semibold">{t("expense.scope.label")}</span>
+          <select
+            className="exits-select"
+            value={expenseViewScopeSelectValue(viewScope)}
+            onChange={(e) => {
+              const next = parseExpenseViewScopeSelectValue(e.target.value);
+              if (next) {
+                setViewScope(next);
+                setPage(1);
+              }
+            }}
+            data-testid="expense-scope-select"
+          >
+            {scopeOptionsQuery.data.branches.map((branch) => (
+              <option key={branch.branchId} value={`branch:${branch.branchId}`}>
+                {branch.name}
+              </option>
+            ))}
+            {scopeOptionsQuery.data.canViewAllBranches ? (
+              <option value="allBranches">{t("expense.scope.allBranches")}</option>
+            ) : null}
+            {scopeOptionsQuery.data.canViewOrganization ? (
+              <option value="organization">{t("expense.scope.organization")}</option>
+            ) : null}
+            {scopeOptionsQuery.data.canViewAllExpenses ? (
+              <option value="allExpenses">{t("expense.scope.allExpenses")}</option>
+            ) : null}
+          </select>
+        </label>
+      ) : null}
 
       {summary ? (
         <div

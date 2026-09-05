@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageExpenses } from "@/access/pos-capabilities";
@@ -8,6 +8,7 @@ import {
   EXPENSE_PAYEE_MAX,
   EXPENSE_PAYMENT_METHODS,
   expenseWorkspaceScope,
+  getExpenseScopeOptions,
   listExpenseCategories,
   recordExpense,
   type ExpensePaymentMethodCode,
@@ -24,6 +25,12 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { expensePaymentLabelKey, todayExpenseDateInput } from "@/features/expenses/expense-labels";
+import {
+  defaultExpenseCreateTarget,
+  expenseCreateTargetToBranchId,
+  shouldShowExpenseCreateScopeSelector,
+  type ExpenseCreateTarget,
+} from "@/features/expenses/expense-scope";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import {
@@ -50,9 +57,10 @@ export function ExpenseCreatePage() {
   const allowManage = canManageExpenses(sessionGrant);
 
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const currentBranchId = boundWorkspace?.branchId ?? null;
   const workspace = useMemo(
-    () => (organizationId ? expenseWorkspaceScope(organizationId) : null),
-    [organizationId],
+    () => (organizationId ? expenseWorkspaceScope(organizationId, currentBranchId) : null),
+    [organizationId, currentBranchId],
   );
 
   const categoriesQuery = useQuery({
@@ -62,6 +70,14 @@ export function ExpenseCreatePage() {
       listExpenseCategories(workspace!, { status: "Active", page: 1, pageSize: 100 }, signal),
   });
 
+  const scopeOptionsQuery = useQuery({
+    queryKey: ["expenses-scope-options", organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) => getExpenseScopeOptions(workspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const [createTarget, setCreateTarget] = useState<ExpenseCreateTarget | null>(null);
   const [categoryId, setCategoryId] = useState(searchParams.get("categoryId") ?? "");
   const [amountText, setAmountText] = useState(() => initialAmountText(searchParams.get("amount")));
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethodCode>(
@@ -78,6 +94,13 @@ export function ExpenseCreatePage() {
   const [recordedId, setRecordedId] = useState<string | null>(null);
   const [recordedNumber, setRecordedNumber] = useState<string | null>(null);
   const [recordedAmount, setRecordedAmount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!scopeOptionsQuery.data || createTarget) {
+      return;
+    }
+    setCreateTarget(defaultExpenseCreateTarget(scopeOptionsQuery.data, currentBranchId));
+  }, [scopeOptionsQuery.data, currentBranchId, createTarget]);
 
   if (!allowManage) {
     return (
@@ -127,6 +150,10 @@ export function ExpenseCreatePage() {
       setError(t("expense.validation.dateRequired"));
       return;
     }
+    if (!createTarget) {
+      setError(t("expense.validation.scopeRequired"));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -144,6 +171,7 @@ export function ExpenseCreatePage() {
         expenseDate,
         payee: payee.trim() || null,
         gCashReference: paymentMethod === "ManualGCash" ? gCashReference.trim() || null : null,
+        branchId: expenseCreateTargetToBranchId(createTarget),
       });
       setRecordedId(created.expenseId);
       setRecordedNumber(created.expenseNumber);
@@ -250,6 +278,45 @@ export function ExpenseCreatePage() {
       {activeCategories.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="flex flex-col gap-3 p-3">
+            {scopeOptionsQuery.data
+            && createTarget
+            && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data) ? (
+              <label
+                className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                data-testid="expense-create-scope"
+              >
+                <span className="font-medium">{t("expense.scope.createLabel")}</span>
+                <select
+                  className="exits-select"
+                  value={
+                    createTarget.kind === "organization"
+                      ? "organization"
+                      : `branch:${createTarget.branchId}`
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "organization") {
+                      setCreateTarget({ kind: "organization" });
+                      return;
+                    }
+                    if (value.startsWith("branch:")) {
+                      setCreateTarget({ kind: "branch", branchId: value.slice("branch:".length) });
+                    }
+                  }}
+                  data-testid="expense-create-scope-select"
+                >
+                  {scopeOptionsQuery.data.branches.map((branch) => (
+                    <option key={branch.branchId} value={`branch:${branch.branchId}`}>
+                      {branch.name}
+                    </option>
+                  ))}
+                  {scopeOptionsQuery.data.canCreateOrganizationWide ? (
+                    <option value="organization">{t("expense.scope.organization")}</option>
+                  ) : null}
+                </select>
+              </label>
+            ) : null}
+
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="font-medium">{t("expense.category")}</span>
               <select

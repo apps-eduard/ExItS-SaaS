@@ -118,6 +118,29 @@ function emptySummary(): expenseClient.PosExpenseSummaryDto {
   };
 }
 
+function singleBranchScopeOptions(): expenseClient.PosExpenseScopeOptionsDto {
+  return {
+    canViewOrganization: false,
+    canCreateOrganizationWide: false,
+    canViewAllBranches: false,
+    canViewAllExpenses: false,
+    branches: [{ branchId, name: "Main Branch" }],
+  };
+}
+
+function ownerScopeOptions(): expenseClient.PosExpenseScopeOptionsDto {
+  return {
+    canViewOrganization: true,
+    canCreateOrganizationWide: true,
+    canViewAllBranches: true,
+    canViewAllExpenses: true,
+    branches: [
+      { branchId, name: "Main Branch" },
+      { branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", name: "Iloilo Branch" },
+    ],
+  };
+}
+
 describe("Expense React CRUD", () => {
   beforeEach(() => {
     workspaceMock.boundWorkspace.branchName = "Main Branch";
@@ -134,6 +157,7 @@ describe("Expense React CRUD", () => {
       pageSize: 20,
     });
     vi.spyOn(expenseClient, "getExpenseSummary").mockResolvedValue(emptySummary());
+    vi.spyOn(expenseClient, "getExpenseScopeOptions").mockResolvedValue(singleBranchScopeOptions());
     vi.spyOn(expenseClient, "listExpenseCategories").mockResolvedValue({
       items: [activeCategory()],
       totalCount: 1,
@@ -146,7 +170,7 @@ describe("Expense React CRUD", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows organization-wide scope and does not claim Main Branch expenses", async () => {
+  it("hides scope selector for a single authorized branch and removes org-wide banner", async () => {
     render(
       <AppProviders>
         <MemoryRouter initialEntries={["/expenses"]}>
@@ -158,10 +182,46 @@ describe("Expense React CRUD", () => {
     );
 
     expect(await screen.findByTestId("expense-list-page")).toBeInTheDocument();
-    const banner = screen.getByTestId("expense-org-scope-banner");
-    expect(banner).toHaveTextContent(/Organization-wide/i);
-    expect(banner).not.toHaveTextContent(/Main Branch/i);
-    expect(screen.queryByText(/Main Branch Expenses/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("expense-org-scope-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("expense-scope-control")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(expenseClient.listExpenses).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: orgId, branchId }),
+        expect.objectContaining({ scope: "branch", branchId }),
+        expect.anything(),
+      );
+    });
+  });
+
+  it("shows scope selector for multiple scopes and refreshes queries on change", async () => {
+    vi.spyOn(expenseClient, "getExpenseScopeOptions").mockResolvedValue(ownerScopeOptions());
+    const user = userEvent.setup();
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/expenses"]}>
+          <Routes>
+            <Route path="/expenses" element={<ExpenseListPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const select = await screen.findByTestId("expense-scope-select");
+    expect(select).toBeInTheDocument();
+    await user.selectOptions(select, "allBranches");
+    await waitFor(() => {
+      expect(expenseClient.listExpenses).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ scope: "allBranches" }),
+        expect.anything(),
+      );
+      expect(expenseClient.getExpenseSummary).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ scope: "allBranches" }),
+        expect.anything(),
+      );
+    });
   });
 
   it("shows empty state with record CTA for manage users", async () => {
@@ -237,9 +297,7 @@ describe("Expense React CRUD", () => {
     expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("Cash");
     expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("71.4%");
     expect(screen.getByTestId(`expense-row-${expenseId}`)).toHaveTextContent("EXP-20260829-0001");
-    expect(screen.getByTestId("expense-org-scope-banner")).toHaveTextContent(
-      "Organization-wide — not limited to the current branch.",
-    );
+    expect(screen.queryByTestId("expense-org-scope-banner")).not.toBeInTheDocument();
   });
 
   it("passes list filters to the server client", async () => {
@@ -270,20 +328,19 @@ describe("Expense React CRUD", () => {
 
     await waitFor(() => {
       expect(listSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ organizationId: orgId }),
+        expect.objectContaining({ organizationId: orgId, branchId }),
         expect.objectContaining({
           status: "Voided",
           paymentMethod: "ManualGCash",
           expenseNumber: "EXP-9",
           fromDate: "2026-08-01",
           toDate: "2026-08-31",
+          scope: "branch",
+          branchId,
         }),
         expect.anything(),
       );
     });
-    expect(listSpy.mock.calls.some((c) => c[0] && "branchId" in (c[0] as object) && (c[0] as { branchId?: string }).branchId)).toBe(
-      false,
-    );
   });
 
   it("shows filtered empty copy when filters return none", async () => {

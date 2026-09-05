@@ -73,11 +73,9 @@ internal sealed class ExpenseRepository : IExpenseRepository
 
     public async Task<IReadOnlyList<Expense>> ListForSummaryAsync(
         PosOrganizationId organizationId,
-        DateOnly? fromDate,
-        DateOnly? toDate,
+        ExpenseFilter filter,
         CancellationToken cancellationToken = default)
     {
-        var filter = new ExpenseFilter(FromDate: fromDate, ToDate: toDate);
         var query = ApplyFilter(_db.Expenses.AsNoTracking().Where(e => e.OrganizationId == organizationId.Value), filter);
         var records = await query
             .OrderBy(e => e.ExpenseDate)
@@ -259,7 +257,55 @@ internal sealed class ExpenseRepository : IExpenseRepository
             query = query.Where(e => e.ExpenseNumber.Contains(term));
         }
 
+        if (filter.BranchScope is not null)
+        {
+            query = ApplyBranchScope(query, filter.BranchScope);
+        }
+
         return query;
+    }
+
+    private static IQueryable<ExpenseRecord> ApplyBranchScope(
+        IQueryable<ExpenseRecord> query,
+        ExpenseBranchScopeCriteria scope)
+    {
+        switch (scope.Kind)
+        {
+            case ExpenseBranchScopeKind.SingleBranch:
+            {
+                var branchId = scope.BranchId;
+                if (branchId is null)
+                {
+                    return query.Where(_ => false);
+                }
+
+                return query.Where(e => e.BranchId == branchId);
+            }
+            case ExpenseBranchScopeKind.AllAuthorizedBranches:
+            {
+                var ids = scope.AuthorizedBranchIds?.ToList() ?? [];
+                if (ids.Count == 0)
+                {
+                    return query.Where(_ => false);
+                }
+
+                return query.Where(e => e.BranchId != null && ids.Contains(e.BranchId.Value));
+            }
+            case ExpenseBranchScopeKind.OrganizationWide:
+                return query.Where(e => e.BranchId == null);
+            case ExpenseBranchScopeKind.AllExpenses:
+            {
+                var ids = scope.AuthorizedBranchIds?.ToList() ?? [];
+                if (ids.Count == 0)
+                {
+                    return query.Where(e => e.BranchId == null);
+                }
+
+                return query.Where(e => e.BranchId == null || ids.Contains(e.BranchId.Value));
+            }
+            default:
+                return query.Where(_ => false);
+        }
     }
 
     private static bool IsExpenseNumberConflict(DbUpdateException exception) =>

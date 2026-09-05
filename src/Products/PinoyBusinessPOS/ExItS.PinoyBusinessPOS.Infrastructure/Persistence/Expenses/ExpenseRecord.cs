@@ -4,6 +4,8 @@ internal sealed class ExpenseRecord
 {
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
+    /// <summary>Null = organization-wide; set = Platform OrganizationBranchId.</summary>
+    public Guid? BranchId { get; set; }
     public string ExpenseNumber { get; set; } = string.Empty;
     public Guid CategoryId { get; set; }
     public string Status { get; set; } = string.Empty;

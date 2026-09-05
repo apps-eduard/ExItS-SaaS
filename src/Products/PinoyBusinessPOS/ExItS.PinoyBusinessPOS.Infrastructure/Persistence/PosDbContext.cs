@@ -3397,6 +3397,7 @@ public sealed class PosDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
             entity.Property(e => e.ExpenseNumber)
                 .HasColumnName("expense_number")
                 .HasMaxLength(ExpenseNumbers.MaxLength)
@@ -3448,6 +3449,9 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.CategoryId })
                 .HasDatabaseName("ix_expenses_org_category_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BranchId })
+                .HasDatabaseName("ix_expenses_org_branch_id");
 
             entity.HasOne<ExpenseCategoryRecord>()
                 .WithMany()

@@ -30,9 +30,18 @@ describe("pos-expense-client", () => {
     localStorage.clear();
   });
 
-  it("expenseWorkspaceScope omits branchId", () => {
+  it("expenseWorkspaceScope includes optional branchId for preferred scope", () => {
     expect(expenseWorkspaceScope("11111111-1111-1111-1111-111111111111")).toEqual({
       organizationId: "11111111-1111-1111-1111-111111111111",
+    });
+    expect(
+      expenseWorkspaceScope(
+        "11111111-1111-1111-1111-111111111111",
+        "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      ),
+    ).toEqual({
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      branchId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
     });
   });
 

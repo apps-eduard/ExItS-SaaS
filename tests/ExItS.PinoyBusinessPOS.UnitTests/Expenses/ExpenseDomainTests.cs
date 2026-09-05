@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Expenses;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Expenses;
 
@@ -69,6 +70,27 @@ public sealed class ExpenseDomainTests
 
         var again = Assert.Throws<DomainException>(() => expense.Void("Again", Actor, Now));
         Assert.Equal(DomainErrorCodes.InvalidExpenseStatusTransition, again.ErrorCode);
+    }
+
+    [Fact]
+    public void Record_with_branchId_sets_BranchId_and_null_stays_null()
+    {
+        var branchId = PosBranchId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+        var withBranch = Expense.Record(
+            OrgA,
+            ExpenseNumbers.Format(ExpenseDate, 1),
+            CategoryId,
+            ExpensePaymentMethod.Cash,
+            100m,
+            "Branch supplies",
+            ExpenseDate,
+            Actor,
+            Now,
+            branchId: branchId);
+        Assert.Equal(branchId, withBranch.BranchId);
+
+        var orgWide = Record();
+        Assert.Null(orgWide.BranchId);
     }
 
     private static Expense Record(

@@ -258,6 +258,64 @@ public sealed class PosExpenseApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Branch_scope_create_and_organization_list_see_null_branch_expenses()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var category = await CreateCategoryAsync(client, org, "Utilities");
+        var branchId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+        using var orgWide = Scoped(HttpMethod.Post, Expenses, org);
+        orgWide.Content = JsonContent.Create(
+            new RecordExpenseRequest(
+                category.CategoryId,
+                "Cash",
+                75m,
+                "Org rent",
+                new DateOnly(2026, 7, 30)),
+            options: JsonOptions);
+        using var orgWideResponse = await client.SendAsync(orgWide);
+        Assert.Equal(HttpStatusCode.Created, orgWideResponse.StatusCode);
+        var orgExpense = await orgWideResponse.Content.ReadFromJsonAsync<PosExpenseDto>(JsonOptions);
+        Assert.NotNull(orgExpense);
+        Assert.Null(orgExpense!.BranchId);
+
+        using var branchCreate = Scoped(HttpMethod.Post, Expenses, org);
+        branchCreate.Content = JsonContent.Create(
+            new RecordExpenseRequest(
+                category.CategoryId,
+                "Cash",
+                40m,
+                "Branch supplies",
+                new DateOnly(2026, 7, 30),
+                BranchId: branchId),
+            options: JsonOptions);
+        using var branchResponse = await client.SendAsync(branchCreate);
+        Assert.Equal(HttpStatusCode.Created, branchResponse.StatusCode);
+        var branchExpense = await branchResponse.Content.ReadFromJsonAsync<PosExpenseDto>(JsonOptions);
+        Assert.NotNull(branchExpense);
+        Assert.Equal(branchId, branchExpense!.BranchId);
+
+        using var orgList = Scoped(HttpMethod.Get, $"{Expenses}?scope=organization&page=1", org);
+        using var orgListResponse = await client.SendAsync(orgList);
+        orgListResponse.EnsureSuccessStatusCode();
+        var orgPage = await orgListResponse.Content.ReadFromJsonAsync<PagedResult<PosExpenseDto>>(JsonOptions);
+        Assert.NotNull(orgPage);
+        Assert.Contains(orgPage!.Items, e => e.ExpenseId == orgExpense.ExpenseId && e.BranchId is null);
+        Assert.DoesNotContain(orgPage.Items, e => e.ExpenseId == branchExpense.ExpenseId);
+
+        using var scopeOptions = Scoped(HttpMethod.Get, $"{Expenses}/scope-options", org);
+        using var scopeResponse = await client.SendAsync(scopeOptions);
+        scopeResponse.EnsureSuccessStatusCode();
+        var options = await scopeResponse.Content.ReadFromJsonAsync<PosExpenseScopeOptionsDto>(JsonOptions);
+        Assert.NotNull(options);
+        Assert.True(options!.CanViewOrganization);
+        Assert.True(options.CanCreateOrganizationWide);
+        Assert.True(options.CanViewAllExpenses);
+    }
+
+    [Fact]
     public async Task List_categories_seeds_five_defaults_for_new_organization()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

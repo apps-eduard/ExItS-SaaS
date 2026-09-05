@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Expenses;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
@@ -54,13 +55,15 @@ internal static class ExpenseEntityMapper
             record.VoidedAtUtc,
             record.VoidedBy,
             record.VoidReason,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.BranchId is null ? null : PosBranchId.From(record.BranchId.Value));
 
     public static ExpenseRecord ToRecord(Expense expense) =>
         new()
         {
             Id = expense.Id.Value,
             OrganizationId = expense.OrganizationId.Value,
+            BranchId = expense.BranchId?.Value,
             ExpenseNumber = expense.ExpenseNumber,
             CategoryId = expense.CategoryId.Value,
             Status = expense.Status.ToString(),

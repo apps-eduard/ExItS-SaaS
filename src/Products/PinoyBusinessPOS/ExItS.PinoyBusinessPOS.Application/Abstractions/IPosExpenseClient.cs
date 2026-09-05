@@ -40,7 +40,11 @@ public interface IPosExpenseClient
         string? expenseNumber = null,
         int page = 1,
         int pageSize = 20,
+        string? scope = null,
+        Guid? branchId = null,
         CancellationToken ct = default);
+
+    Task<ApiResult<PosExpenseScopeOptionsDto>> GetScopeOptionsAsync(CancellationToken ct = default);
 
     Task<ApiResult<PosExpenseDto>> GetExpenseAsync(Guid expenseId, CancellationToken ct = default);
 
@@ -54,5 +58,7 @@ public interface IPosExpenseClient
     Task<ApiResult<PosExpenseSummaryDto>> GetSummaryAsync(
         DateOnly? fromDate = null,
         DateOnly? toDate = null,
+        string? scope = null,
+        Guid? branchId = null,
         CancellationToken ct = default);
 }

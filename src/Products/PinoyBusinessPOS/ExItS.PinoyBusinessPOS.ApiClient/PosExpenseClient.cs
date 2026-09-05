@@ -70,6 +70,8 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         string? expenseNumber = null,
         int page = 1,
         int pageSize = 20,
+        string? scope = null,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var query = new StringBuilder(ExpensesPath).Append('?');
@@ -80,13 +82,22 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         AppendOptional(query, "expenseNumber", expenseNumber);
         AppendOptional(query, "fromDate", fromDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
         AppendOptional(query, "toDate", toDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        AppendOptional(query, "scope", scope);
         if (categoryId is not null)
         {
             query.Append("&categoryId=").Append(categoryId.Value.ToString("D"));
         }
 
+        if (branchId is not null)
+        {
+            query.Append("&branchId=").Append(branchId.Value.ToString("D"));
+        }
+
         return SendAsync<PosExpensePagedResult>(HttpMethod.Get, query.ToString(), null, null, ct);
     }
+
+    public Task<ApiResult<PosExpenseScopeOptionsDto>> GetScopeOptionsAsync(CancellationToken ct = default) =>
+        SendAsync<PosExpenseScopeOptionsDto>(HttpMethod.Get, $"{ExpensesPath}/scope-options", null, null, ct);
 
     public Task<ApiResult<PosExpenseDto>> GetExpenseAsync(Guid expenseId, CancellationToken ct = default) =>
         SendAsync<PosExpenseDto>(HttpMethod.Get, $"{ExpensesPath}/{expenseId:D}", null, null, ct);
@@ -115,6 +126,8 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
     public Task<ApiResult<PosExpenseSummaryDto>> GetSummaryAsync(
         DateOnly? fromDate = null,
         DateOnly? toDate = null,
+        string? scope = null,
+        Guid? branchId = null,
         CancellationToken ct = default)
     {
         var parts = new List<string>();
@@ -126,6 +139,16 @@ public sealed class PosExpenseClient(HttpClient httpClient, IConnectivityService
         if (toDate is not null)
         {
             parts.Add("toDate=" + Uri.EscapeDataString(toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(scope))
+        {
+            parts.Add("scope=" + Uri.EscapeDataString(scope.Trim()));
+        }
+
+        if (branchId is not null)
+        {
+            parts.Add("branchId=" + branchId.Value.ToString("D"));
         }
 
         var path = parts.Count == 0
