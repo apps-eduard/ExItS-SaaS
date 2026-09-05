@@ -88,6 +88,10 @@ public sealed class PosDbContext : DbContext
     internal DbSet<StockCountRecord> StockCounts => Set<StockCountRecord>();
     internal DbSet<StockCountLineRecord> StockCountLines => Set<StockCountLineRecord>();
     internal DbSet<StockCountNumberSequenceRecord> StockCountNumberSequences => Set<StockCountNumberSequenceRecord>();
+    internal DbSet<SupplyRouteRecord> SupplyRoutes => Set<SupplyRouteRecord>();
+    internal DbSet<StockRequestRecord> StockRequests => Set<StockRequestRecord>();
+    internal DbSet<StockRequestLineRecord> StockRequestLines => Set<StockRequestLineRecord>();
+    internal DbSet<StockRequestNumberSequenceRecord> StockRequestNumberSequences => Set<StockRequestNumberSequenceRecord>();
     internal DbSet<InventoryTransferRecord> InventoryTransfers => Set<InventoryTransferRecord>();
     internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
@@ -2383,6 +2387,155 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
+        modelBuilder.Entity<SupplyRouteRecord>(entity =>
+        {
+            entity.ToTable("supply_routes", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_supply_routes_distinct_locations",
+                    "source_location_id <> destination_location_id");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SourceLocationId).HasColumnName("source_location_id").IsRequired();
+            entity.Property(e => e.DestinationLocationId).HasColumnName("destination_location_id").IsRequired();
+            entity.Property(e => e.IsPreferred).HasColumnName("is_preferred").IsRequired();
+            entity.Property(e => e.IsActive).HasColumnName("is_active").IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(SupplyRoute.NotesMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceLocationId, e.DestinationLocationId })
+                .IsUnique()
+                .HasDatabaseName("ux_supply_routes_org_source_destination");
+            entity.HasIndex(e => new { e.OrganizationId, e.DestinationLocationId })
+                .IsUnique()
+                .HasDatabaseName("ux_supply_routes_org_destination_preferred")
+                .HasFilter("is_preferred = TRUE AND is_active = TRUE");
+            entity.HasIndex(e => new { e.OrganizationId, e.DestinationLocationId, e.IsActive })
+                .HasDatabaseName("ix_supply_routes_org_destination_active");
+        });
+
+        modelBuilder.Entity<StockRequestRecord>(entity =>
+        {
+            entity.ToTable("stock_requests", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_requests_status",
+                    $"status IN ({string.Join(", ", StockRequestStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_stock_requests_distinct_locations",
+                    "requested_source_location_id <> destination_location_id");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.DestinationLocationId).HasColumnName("destination_location_id").IsRequired();
+            entity.Property(e => e.RequestedSourceLocationId).HasColumnName("requested_source_location_id").IsRequired();
+            entity.Property(e => e.RequestNumber)
+                .HasColumnName("request_number")
+                .HasMaxLength(StockRequestNumbers.MaxLength);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(StockRequestStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(StockRequest.NotesMaxLength);
+            entity.Property(e => e.RequestedBy).HasColumnName("requested_by").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.RejectedBy).HasColumnName("rejected_by");
+            entity.Property(e => e.RejectedAtUtc).HasColumnName("rejected_at_utc");
+            entity.Property(e => e.RejectionReason)
+                .HasColumnName("rejection_reason")
+                .HasMaxLength(StockRequest.RejectionReasonMaxLength);
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.RequestNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_requests_org_request_number")
+                .HasFilter("request_number IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.DestinationLocationId })
+                .HasDatabaseName("ix_stock_requests_org_destination");
+            entity.HasIndex(e => new { e.OrganizationId, e.RequestedSourceLocationId })
+                .HasDatabaseName("ix_stock_requests_org_source");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_stock_requests_org_status");
+        });
+
+        modelBuilder.Entity<StockRequestLineRecord>(entity =>
+        {
+            entity.ToTable("stock_request_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_request_lines_requested_positive",
+                    "requested_quantity > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.StockRequestId).HasColumnName("stock_request_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.RequestedQuantity).HasColumnName("requested_quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(StockRequestLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitOfMeasure)
+                .HasColumnName("unit_of_measure")
+                .HasMaxLength(32)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.StockRequestId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_request_lines_request_line_number");
+            entity.HasOne<StockRequestRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StockRequestId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_stock_request_lines_requests");
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_request_lines_products");
+        });
+
+        modelBuilder.Entity<StockRequestNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("stock_request_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_stock_request_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_stock_request_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
         modelBuilder.Entity<InventoryTransferRecord>(entity =>
         {
             entity.ToTable("inventory_transfers", tb =>
@@ -2398,6 +2551,7 @@ public sealed class PosDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.StockRequestId).HasColumnName("stock_request_id");
             entity.Property(e => e.TransferNumber)
                 .HasColumnName("transfer_number")
                 .HasMaxLength(InventoryTransferNumbers.MaxLength);
@@ -2435,6 +2589,14 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_inventory_transfers_org_destination");
             entity.HasIndex(e => new { e.OrganizationId, e.Status })
                 .HasDatabaseName("ix_inventory_transfers_org_status");
+            entity.HasIndex(e => new { e.OrganizationId, e.StockRequestId })
+                .HasDatabaseName("ix_inventory_transfers_org_stock_request");
+
+            entity.HasOne<StockRequestRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.StockRequestId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_inventory_transfers_stock_requests");
         });
 
         modelBuilder.Entity<InventoryTransferLineRecord>(entity =>

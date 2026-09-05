@@ -12,7 +12,8 @@ public sealed record CreateInventoryTransferRequest(
     Guid SourceBranchId,
     Guid DestinationBranchId,
     IReadOnlyList<InventoryTransferLineRequest> Lines,
-    string? Notes = null);
+    string? Notes = null,
+    Guid? StockRequestId = null);
 
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
@@ -43,6 +44,7 @@ public sealed record InventoryTransferLineDto(
 public sealed record InventoryTransferDto(
     Guid TransferId,
     Guid OrganizationId,
+    Guid? StockRequestId,
     string? TransferNumber,
     Guid SourceBranchId,
     string? SourceBranchName,
@@ -66,6 +68,7 @@ public sealed record InventoryTransferDto(
 
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,
+    Guid? StockRequestId,
     string? TransferNumber,
     Guid SourceBranchId,
     string? SourceBranchName,

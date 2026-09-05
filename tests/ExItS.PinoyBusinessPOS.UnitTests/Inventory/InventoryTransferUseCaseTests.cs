@@ -506,7 +506,18 @@ public sealed class InventoryTransferUseCaseTests
             var lotStock = new InventoryLotStockService(Lots);
             Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, Branches, UnitOfWork, Clock);
             Dispatch = new DispatchInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, Branches, Alerts, UnitOfWork, Clock);
-            Receive = new ReceiveInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, Branches, Alerts, UnitOfWork, Clock);
+            Receive = new ReceiveInventoryTransfer(
+                Transfers,
+                Inventory,
+                Balances,
+                Products,
+                Lots,
+                lotStock,
+                Branches,
+                Alerts,
+                new InMemoryStockRequests(),
+                UnitOfWork,
+                Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
             Queries = new InventoryTransferQueryService(Transfers, Branches);
         }
@@ -822,6 +833,13 @@ public sealed class InventoryTransferUseCaseTests
             return Task.FromResult<(IReadOnlyList<InventoryTransfer>, int)>((items.Skip(skip).Take(take).ToList(), items.Count));
         }
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdAsync(
+            PosOrganizationId organizationId,
+            StockRequestId stockRequestId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                _items.Where(t => t.OrganizationId == organizationId && t.StockRequestId == stockRequestId).ToList());
+
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
         {
             _items.Add(transfer);
@@ -999,6 +1017,43 @@ public sealed class InventoryTransferUseCaseTests
 
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class InMemoryStockRequests : IStockRequestRepository
+    {
+        public Task<StockRequest?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            StockRequestId stockRequestId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<StockRequest?>(null);
+
+        public Task<(IReadOnlyList<StockRequest> Items, int TotalCount)> ListByDestinationAsync(
+            PosOrganizationId organizationId,
+            PosBranchId destinationLocationId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
+
+        public Task<(IReadOnlyList<StockRequest> Items, int TotalCount)> ListBySourceAsync(
+            PosOrganizationId organizationId,
+            PosBranchId sourceLocationId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
+
+        public Task AddAsync(StockRequest stockRequest, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(StockRequest stockRequest, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<string> AllocateNextNumberAsync(
+            PosOrganizationId organizationId,
+            DateOnly businessDateUtc,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(StockRequestNumbers.Format(businessDateUtc, 1));
     }
 
     private sealed class EmptyProductUnits : ICatalogProductUnitRepository

@@ -353,6 +353,15 @@ builder.Services.AddScoped<CreateInventoryTransfer>();
 builder.Services.AddScoped<DispatchInventoryTransfer>();
 builder.Services.AddScoped<ReceiveInventoryTransfer>();
 builder.Services.AddScoped<CancelInventoryTransfer>();
+builder.Services.AddScoped<SupplyRouteQueryService>();
+builder.Services.AddScoped<UpsertSupplyRoutes>();
+builder.Services.AddScoped<SetPreferredSupplyRoute>();
+builder.Services.AddScoped<DisableSupplyRoute>();
+builder.Services.AddScoped<StockRequestQueryService>();
+builder.Services.AddScoped<CreateStockRequest>();
+builder.Services.AddScoped<RejectStockRequest>();
+builder.Services.AddScoped<CancelStockRequest>();
+builder.Services.AddScoped<FulfillStockRequestViaTransfer>();
 builder.Services.AddHttpClient<IOrganizationBranchDirectory, PosOrganizationBranchDirectory>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;

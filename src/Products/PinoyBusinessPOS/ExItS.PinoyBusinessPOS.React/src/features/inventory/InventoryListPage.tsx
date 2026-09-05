@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Trash2 } from "lucide-react";
 import { canManageCatalog, canManageInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -90,6 +90,22 @@ export function InventoryListPage() {
         href: "/inventory/transfers",
         testId: "open-transfers",
       });
+      if (allowManage) {
+        items.push({
+          key: "request-stock",
+          label: t("inventory.openRequestStock"),
+          icon: <PackagePlus />,
+          href: "/inventory/stock-requests/new",
+          testId: "open-request-stock",
+        });
+        items.push({
+          key: "incoming-stock-requests",
+          label: t("inventory.openIncomingStockRequests"),
+          icon: <ClipboardList />,
+          href: "/inventory/stock-requests",
+          testId: "open-incoming-stock-requests",
+        });
+      }
     }
     items.push(
       {
@@ -115,7 +131,7 @@ export function InventoryListPage() {
       },
     );
     return items;
-  }, [multiBranch, t]);
+  }, [multiBranch, allowManage, t]);
 
   const query = useQuery({
     queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],

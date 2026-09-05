@@ -74,6 +74,8 @@ public static class DependencyInjection
         services.AddScoped<InventoryLotStockService>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
         services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();
+        services.AddScoped<ISupplyRouteRepository, SupplyRouteRepository>();
+        services.AddScoped<IStockRequestRepository, StockRequestRepository>();
         services.AddScoped<IInventoryBranchBalanceRepository, InventoryBranchBalanceRepository>();
         services.AddScoped<IInventoryBranchReorderRepository, InventoryBranchReorderRepository>();
         services.AddScoped<IBranchInventoryQueryRepository, BranchInventoryQueryRepository>();

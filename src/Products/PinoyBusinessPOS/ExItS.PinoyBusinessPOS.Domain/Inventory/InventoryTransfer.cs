@@ -17,6 +17,7 @@ public sealed class InventoryTransfer
 
     public InventoryTransferId Id { get; }
     public PosOrganizationId OrganizationId { get; }
+    public StockRequestId? StockRequestId { get; private set; }
     public string? TransferNumber { get; private set; }
     public PosBranchId SourceBranchId { get; }
     public PosBranchId DestinationBranchId { get; }
@@ -43,6 +44,7 @@ public sealed class InventoryTransfer
     private InventoryTransfer(
         InventoryTransferId id,
         PosOrganizationId organizationId,
+        StockRequestId? stockRequestId,
         string? transferNumber,
         PosBranchId sourceBranchId,
         PosBranchId destinationBranchId,
@@ -61,6 +63,7 @@ public sealed class InventoryTransfer
     {
         Id = id;
         OrganizationId = organizationId;
+        StockRequestId = stockRequestId;
         TransferNumber = transferNumber;
         SourceBranchId = sourceBranchId;
         DestinationBranchId = destinationBranchId;
@@ -86,7 +89,8 @@ public sealed class InventoryTransfer
         Guid createdBy,
         DateTimeOffset utcNow,
         string? notes = null,
-        InventoryTransferId? id = null)
+        InventoryTransferId? id = null,
+        StockRequestId? stockRequestId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(createdBy);
@@ -97,6 +101,7 @@ public sealed class InventoryTransfer
         return new InventoryTransfer(
             transferId,
             organizationId,
+            stockRequestId,
             transferNumber: null,
             sourceBranchId,
             destinationBranchId,
@@ -112,6 +117,12 @@ public sealed class InventoryTransfer
             cancelledAtUtc: null,
             cancelledBy: null,
             BuildDraftLines(transferId, organizationId, lines));
+    }
+
+    public InventoryTransfer WithStockRequest(StockRequestId stockRequestId)
+    {
+        StockRequestId = stockRequestId;
+        return this;
     }
 
     public void UpdateDraft(
@@ -248,6 +259,7 @@ public sealed class InventoryTransfer
     public static InventoryTransfer Rehydrate(
         InventoryTransferId id,
         PosOrganizationId organizationId,
+        StockRequestId? stockRequestId,
         string? transferNumber,
         PosBranchId sourceBranchId,
         PosBranchId destinationBranchId,
@@ -266,6 +278,7 @@ public sealed class InventoryTransfer
         new(
             id,
             organizationId,
+            stockRequestId,
             transferNumber,
             sourceBranchId,
             destinationBranchId,

@@ -17,6 +17,11 @@ public interface IInventoryTransferRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdAsync(
+        PosOrganizationId organizationId,
+        StockRequestId stockRequestId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);

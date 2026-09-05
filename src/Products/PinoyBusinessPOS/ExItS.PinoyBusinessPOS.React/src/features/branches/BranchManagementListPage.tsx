@@ -283,6 +283,12 @@ export function BranchManagementListPage() {
         trailing={addLocationControl}
       />
 
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm" data-testid="branch-mgmt-supply-routes">
+          <Link to="/org/supply-routes">{t("branches.mgmt.supplyRoutes")}</Link>
+        </Button>
+      </div>
+
       {capacity ? (
         <div className="branch-mgmt-capacity" data-testid="branch-mgmt-capacity">
           <p className="branch-mgmt-capacity__label m-0">{t("branches.mgmt.capacity")}</p>

@@ -55,6 +55,7 @@ export const inventoryTransferLineDtoSchema = z.object({
 export const inventoryTransferDtoSchema = z.object({
   transferId: guidSchema,
   organizationId: guidSchema,
+  stockRequestId: guidSchema.nullable().optional(),
   transferNumber: z.string().nullable().optional(),
   sourceBranchId: guidSchema,
   sourceBranchName: z.string().nullable().optional(),
@@ -79,6 +80,7 @@ export const inventoryTransferDtoSchema = z.object({
 
 export const inventoryTransferListItemDtoSchema = z.object({
   transferId: guidSchema,
+  stockRequestId: guidSchema.nullable().optional(),
   transferNumber: z.string().nullable().optional(),
   sourceBranchId: guidSchema,
   sourceBranchName: z.string().nullable().optional(),

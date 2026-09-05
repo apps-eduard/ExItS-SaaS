@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowRight, Ban, PackageCheck, Truck } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -695,6 +695,15 @@ export function InventoryTransferDetailPage() {
           {destName}
         </span>
       </div>
+
+      {transfer.stockRequestId ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-stock-request-link">
+          <span className="text-muted">{t("transfer.requestedBy")}: {destName}. </span>
+          <Link className="underline" to={`/inventory/stock-requests/${transfer.stockRequestId}`}>
+            {t("transfer.stockRequest")}
+          </Link>
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2" data-testid="transfer-qty-summary">
         <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5">

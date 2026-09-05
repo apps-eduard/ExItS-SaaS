@@ -70,6 +70,7 @@ public sealed class InventoryTransferQueryService
         new(
             transfer.Id.Value,
             transfer.OrganizationId.Value,
+            transfer.StockRequestId?.Value,
             transfer.TransferNumber,
             transfer.SourceBranchId.Value,
             names.GetValueOrDefault(transfer.SourceBranchId.Value),
@@ -110,6 +111,7 @@ public sealed class InventoryTransferQueryService
         IReadOnlyDictionary<Guid, string> names) =>
         new(
             transfer.Id.Value,
+            transfer.StockRequestId?.Value,
             transfer.TransferNumber,
             transfer.SourceBranchId.Value,
             names.GetValueOrDefault(transfer.SourceBranchId.Value),
@@ -198,7 +200,10 @@ public sealed class CreateInventoryTransfer
                 drafts.Value!,
                 actorId,
                 _clock.UtcNow,
-                request.Notes);
+                request.Notes,
+                stockRequestId: request.StockRequestId is Guid requestId && requestId != Guid.Empty
+                    ? StockRequestId.From(requestId)
+                    : null);
 
             var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
             var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
@@ -514,6 +519,7 @@ public sealed class ReceiveInventoryTransfer
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
+    private readonly IStockRequestRepository _stockRequests;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -526,6 +532,7 @@ public sealed class ReceiveInventoryTransfer
         InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
+        IStockRequestRepository stockRequests,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -537,6 +544,7 @@ public sealed class ReceiveInventoryTransfer
         _lots = lots;
         _branches = branches;
         _alerts = alerts;
+        _stockRequests = stockRequests;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -721,6 +729,32 @@ public sealed class ReceiveInventoryTransfer
                 await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                 await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                 await _balances.UpsertAsync(destBalance, ct).ConfigureAwait(false);
+            }
+
+            if (transfer.StockRequestId is StockRequestId stockRequestId)
+            {
+                var stockRequest = await _stockRequests
+                    .GetByIdAsync(orgId, stockRequestId, ct)
+                    .ConfigureAwait(false);
+                if (stockRequest is not null)
+                {
+                    var linkedTransfers = await _transfers
+                        .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
+                        .ConfigureAwait(false);
+                    var receivedByProduct = linkedTransfers
+                        .Where(t => t.Id != transfer.Id)
+                        .SelectMany(t => t.Lines)
+                        .GroupBy(t => t.ProductId.Value)
+                        .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
+                    foreach (var line in transfer.Lines)
+                    {
+                        receivedByProduct[line.ProductId.Value] =
+                            receivedByProduct.GetValueOrDefault(line.ProductId.Value) + line.ReceivedQty;
+                    }
+
+                    stockRequest.RecalculateStatusFromReceivedQuantities(receivedByProduct, utcNow);
+                    await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
+                }
             }
 
             await _transfers.UpdateAsync(transfer, ct).ConfigureAwait(false);

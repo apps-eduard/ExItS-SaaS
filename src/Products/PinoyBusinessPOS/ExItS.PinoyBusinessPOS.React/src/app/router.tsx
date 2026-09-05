@@ -72,6 +72,10 @@ import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillment
 import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
 import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
 import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
+import { SupplyRoutesPage } from "@/features/replenishment/SupplyRoutesPage";
+import { StockRequestCreatePage } from "@/features/replenishment/StockRequestCreatePage";
+import { StockRequestDetailPage } from "@/features/replenishment/StockRequestDetailPage";
+import { StockRequestListPage } from "@/features/replenishment/StockRequestListPage";
 import { OrgAreaDetailPage } from "@/features/areas/OrgAreaDetailPage";
 import { OrgAreasPage } from "@/features/areas/OrgAreasPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
@@ -566,6 +570,14 @@ export const appRoutes = [
                 ),
               },
               {
+                path: "supply-routes",
+                element: (
+                  <RequireInviteStaff>
+                    <SupplyRoutesPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
                 path: "branches/new",
                 element: (
                   <RequireInviteStaff>
@@ -671,6 +683,9 @@ export const appRoutes = [
               { path: "transfers", element: <InventoryTransferListPage /> },
               { path: "transfers/new", element: <InventoryTransferCreatePage /> },
               { path: "transfers/:transferId", element: <InventoryTransferDetailPage /> },
+              { path: "stock-requests", element: <StockRequestListPage /> },
+              { path: "stock-requests/new", element: <StockRequestCreatePage /> },
+              { path: "stock-requests/:stockRequestId", element: <StockRequestDetailPage /> },
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },
               { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },

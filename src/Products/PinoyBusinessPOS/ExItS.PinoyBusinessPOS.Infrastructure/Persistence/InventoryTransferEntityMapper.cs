@@ -13,6 +13,7 @@ internal static class InventoryTransferEntityMapper
         InventoryTransfer.Rehydrate(
             InventoryTransferId.From(record.Id),
             PosOrganizationId.From(record.OrganizationId),
+            record.StockRequestId is null ? null : StockRequestId.From(record.StockRequestId.Value),
             record.TransferNumber,
             PosBranchId.From(record.SourceBranchId),
             PosBranchId.From(record.DestinationBranchId),
@@ -53,6 +54,7 @@ internal static class InventoryTransferEntityMapper
         {
             Id = transfer.Id.Value,
             OrganizationId = transfer.OrganizationId.Value,
+            StockRequestId = transfer.StockRequestId?.Value,
             TransferNumber = transfer.TransferNumber,
             SourceBranchId = transfer.SourceBranchId.Value,
             DestinationBranchId = transfer.DestinationBranchId.Value,
@@ -72,6 +74,7 @@ internal static class InventoryTransferEntityMapper
     public static void ApplyToRecord(InventoryTransfer transfer, InventoryTransferRecord record)
     {
         record.TransferNumber = transfer.TransferNumber;
+        record.StockRequestId = transfer.StockRequestId?.Value;
         record.Status = InventoryTransferStatuses.ToCode(transfer.Status);
         record.Notes = transfer.Notes;
         record.UpdatedAtUtc = transfer.UpdatedAtUtc;

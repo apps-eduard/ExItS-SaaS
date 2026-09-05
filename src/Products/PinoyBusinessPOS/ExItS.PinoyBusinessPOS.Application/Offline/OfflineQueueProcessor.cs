@@ -505,6 +505,18 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for inventory transfer cancel. Online-only.</summary>
     public const string InventoryTransferCancel = "inventory_transfer.cancel";
 
+    /// <summary>Server-side idempotency for stock request create. Online-only.</summary>
+    public const string StockRequestCreate = "stock_request.create";
+
+    /// <summary>Server-side idempotency for stock request reject. Online-only.</summary>
+    public const string StockRequestReject = "stock_request.reject";
+
+    /// <summary>Server-side idempotency for stock request cancel. Online-only.</summary>
+    public const string StockRequestCancel = "stock_request.cancel";
+
+    /// <summary>Server-side idempotency for stock request fulfill via transfer. Online-only.</summary>
+    public const string StockRequestFulfillTransfer = "stock_request.fulfill_transfer";
+
     /// <summary>Server-side idempotency operation type for cashier shift cash movements. Online-only.</summary>
     public const string CashierShiftMovement = "cashier_shift.movement";
 

@@ -243,6 +243,22 @@ public static class DomainErrorCodes
     public const string InventoryTransferReceiveRequiresLines = "pos.inventory.transfer.receive.lines.required";
     public const string InventoryTransferDuplicateProduct = "pos.inventory.transfer.duplicate_product";
     public const string InventoryTransferSameBranch = "pos.inventory.transfer.same_branch";
+    public const string InvalidSupplyRouteId = "pos.inventory.supply_route.id.invalid";
+    public const string SupplyRouteSameLocation = "pos.inventory.supply_route.same_location";
+    public const string SupplyRouteDuplicateSource = "pos.inventory.supply_route.duplicate_source";
+    public const string InvalidSupplyRouteNotes = "pos.inventory.supply_route.notes.invalid";
+    public const string InvalidStockRequestId = "pos.inventory.stock_request.id.invalid";
+    public const string InvalidStockRequestLineId = "pos.inventory.stock_request.line.id.invalid";
+    public const string InvalidStockRequestNumber = "pos.inventory.stock_request.number.invalid";
+    public const string InvalidStockRequestStatus = "pos.inventory.stock_request.status.invalid";
+    public const string InvalidStockRequestStatusTransition = "pos.inventory.stock_request.status.invalid_transition";
+    public const string InvalidStockRequestQuantity = "pos.inventory.stock_request.quantity.invalid";
+    public const string InvalidStockRequestNotes = "pos.inventory.stock_request.notes.invalid";
+    public const string InvalidStockRequestLine = "pos.inventory.stock_request.line.invalid";
+    public const string InvalidStockRequestRejectionReason = "pos.inventory.stock_request.rejection_reason.invalid";
+    public const string StockRequestRequiresLines = "pos.inventory.stock_request.lines.required";
+    public const string StockRequestDuplicateProduct = "pos.inventory.stock_request.duplicate_product";
+    public const string StockRequestRouteRequired = "pos.inventory.stock_request.route.required";
 
     public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
     public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";

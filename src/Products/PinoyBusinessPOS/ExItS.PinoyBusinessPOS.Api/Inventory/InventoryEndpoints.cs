@@ -24,6 +24,7 @@ internal static class InventoryEndpoints
         group.MapGet("/movements/{movementId:guid}", GetMovementById);
         MapStockCounts(group);
         InventoryTransferEndpoints.Map(group);
+        StockRequestEndpoints.Map(group);
 
         group.MapGet("/{productId:guid}", GetByProduct);
         group.MapPut("/{productId:guid}/reorder", SetReorder);
