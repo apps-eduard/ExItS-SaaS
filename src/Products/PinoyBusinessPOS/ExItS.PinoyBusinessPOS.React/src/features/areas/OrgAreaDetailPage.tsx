@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -30,6 +32,7 @@ export function OrgAreaDetailPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [formReady, setFormReady] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -107,6 +110,8 @@ export function OrgAreaDetailPage() {
     },
     onSuccess: async () => {
       setActionError(null);
+      setEditing(false);
+      setFormReady(false);
       await refresh();
     },
     onError: (error: Error) => setActionError(error.message),
@@ -176,6 +181,13 @@ export function OrgAreaDetailPage() {
         backTo="/org/areas"
         backLabel={t("areas.title")}
         backTestId="page-header-back-areas"
+        trailing={
+          area ? (
+            <StatusChip tone={area.status === "Active" ? "success" : "info"}>
+              {area.status === "Active" ? t("areas.status.active") : t("areas.status.archived")}
+            </StatusChip>
+          ) : null
+        }
       />
 
       {loading ? <LoadingSkeleton count={3} label={t("loading.label")} /> : null}
@@ -191,107 +203,192 @@ export function OrgAreaDetailPage() {
       {area ? (
         <>
           <section className="catalog-form-section exits-animate-panel gap-3" data-testid="org-area-rename">
-            <h2 className="catalog-form-section__title">{t("areas.rename")}</h2>
-            <label className="flex flex-col gap-1">
-              <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.name")}</span>
-              <input
-                className="exits-input"
-                value={name}
-                maxLength={100}
-                disabled={busy || area.status !== "Active"}
-                data-testid="org-area-name"
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.code")}</span>
-              <input
-                className="exits-input"
-                value={code}
-                maxLength={32}
-                disabled={busy || area.status !== "Active"}
-                data-testid="org-area-code"
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </label>
-            <Button
-              type="button"
-              className="w-full sm:w-auto"
-              disabled={busy || area.status !== "Active" || !name.trim()}
-              data-testid="org-area-save"
-              onClick={() => renameMutation.mutate()}
-            >
-              {renameMutation.isPending ? t("areas.saving") : t("areas.save")}
-            </Button>
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <h2 className="catalog-form-section__title m-0">{t("areas.rename")}</h2>
+              {area.status === "Active" && !editing ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-testid="org-area-edit"
+                  onClick={() => setEditing(true)}
+                >
+                  {t("areas.edit")}
+                </Button>
+              ) : null}
+            </div>
+
+            {!editing ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="org-area-summary">
+                <span className="font-medium">{area.name}</span>
+                {area.code ? (
+                  <>
+                    <span className="text-muted"> · </span>
+                    <span className="text-muted">{area.code}</span>
+                  </>
+                ) : null}
+              </p>
+            ) : (
+              <>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.name")}</span>
+                  <input
+                    className="exits-input"
+                    value={name}
+                    maxLength={100}
+                    disabled={busy}
+                    data-testid="org-area-name"
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.code")}</span>
+                  <input
+                    className="exits-input"
+                    value={code}
+                    maxLength={32}
+                    disabled={busy}
+                    data-testid="org-area-code"
+                    onChange={(event) => setCode(event.target.value)}
+                  />
+                </label>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    data-testid="org-area-edit-cancel"
+                    onClick={() => {
+                      setName(area.name);
+                      setCode(area.code ?? "");
+                      setEditing(false);
+                    }}
+                  >
+                    {t("areas.cancel")}
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={busy || !name.trim()}
+                    data-testid="org-area-save"
+                    onClick={() => renameMutation.mutate()}
+                  >
+                    {renameMutation.isPending ? t("areas.saving") : t("areas.save")}
+                  </Button>
+                </div>
+              </>
+            )}
           </section>
 
           <section className="catalog-form-section exits-animate-panel gap-3" data-testid="org-area-branches">
-            <h2 className="catalog-form-section__title">{t("areas.detail.branches")}</h2>
+            <h2 className="catalog-form-section__title">{t("areas.detail.assigned")}</h2>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("areas.groupingOnlyNote")}
+              {t("areas.locationCount").replace("{count}", String(inArea.length))}
             </p>
             {inArea.length === 0 ? (
               <p className="m-0 text-muted" data-testid="org-area-no-branches">
-                {t("areas.detail.noBranches")}
+                {t("areas.detail.noLocations")}
               </p>
             ) : (
               <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-area-branch-list">
-                {inArea.map((branch) => (
-                  <li key={branch.id} className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate">
-                      {branch.name}
-                      {branch.code ? ` · ${branch.code}` : ""}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={busy}
-                      data-testid={`org-area-remove-${branch.id}`}
-                      onClick={() => branchMutation.mutate({ branchId: branch.id, target: null })}
+                {inArea.map((branch) => {
+                  const warehouse = isWarehouseBranch(branch.branchType);
+                  return (
+                    <li
+                      key={branch.id}
+                      className="exits-entity-card min-w-0"
+                      data-testid={`org-area-assigned-${branch.id}`}
                     >
-                      {t("areas.detail.remove")}
-                    </Button>
-                  </li>
-                ))}
+                      <div className="exits-entity-card__header">
+                        <div className="exits-entity-card__identity min-w-0">
+                          <h3 className="exits-entity-card__title m-0 truncate">{branch.name}</h3>
+                        </div>
+                        <div className="exits-entity-card__badges">
+                          <StatusChip tone={warehouse ? "warning" : "info"}>
+                            {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
+                          </StatusChip>
+                          {!warehouse && branch.isPrimary ? (
+                            <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="exits-entity-card__actions">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={busy}
+                          data-testid={`org-area-remove-${branch.id}`}
+                          onClick={() =>
+                            branchMutation.mutate({ branchId: branch.id, target: null })
+                          }
+                        >
+                          {t("areas.detail.remove")}
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-
-            {area.status === "Active" && outsideArea.length > 0 ? (
-              <>
-                <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("areas.detail.availableBranches")}
-                </h3>
-                <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-area-available-list">
-                  {outsideArea.map((branch) => (
-                    <li key={branch.id} className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate">
-                        {branch.name}
-                        {branch.areaName ? ` · ${branch.areaName}` : ""}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={busy}
-                        data-testid={`org-area-add-${branch.id}`}
-                        onClick={() =>
-                          branchMutation.mutate({ branchId: branch.id, target: areaId ?? null })
-                        }
-                      >
-                        {branch.areaId ? t("areas.detail.move") : t("areas.detail.assign")}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
           </section>
+
+          {area.status === "Active" && outsideArea.length > 0 ? (
+            <section
+              className="catalog-form-section exits-animate-panel gap-3"
+              data-testid="org-area-available"
+            >
+              <h2 className="catalog-form-section__title">{t("areas.detail.available")}</h2>
+              <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-area-available-list">
+                {outsideArea.map((branch) => {
+                  const warehouse = isWarehouseBranch(branch.branchType);
+                  return (
+                    <li
+                      key={branch.id}
+                      className="exits-entity-card min-w-0"
+                      data-testid={`org-area-available-${branch.id}`}
+                    >
+                      <div className="exits-entity-card__header">
+                        <div className="exits-entity-card__identity min-w-0">
+                          <h3 className="exits-entity-card__title m-0 truncate">{branch.name}</h3>
+                          {branch.areaName ? (
+                            <p className="exits-entity-card__subtitle m-0">{branch.areaName}</p>
+                          ) : null}
+                        </div>
+                        <div className="exits-entity-card__badges">
+                          <StatusChip tone={warehouse ? "warning" : "info"}>
+                            {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
+                          </StatusChip>
+                          {!warehouse && branch.isPrimary ? (
+                            <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="exits-entity-card__actions">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={busy}
+                          data-testid={`org-area-add-${branch.id}`}
+                          onClick={() =>
+                            branchMutation.mutate({
+                              branchId: branch.id,
+                              target: areaId ?? null,
+                            })
+                          }
+                        >
+                          {t("areas.detail.assign")}
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
 
           {area.status === "Active" ? (
             <div className="exits-animate-toolbar">
               <Button
                 type="button"
                 variant="outline"
-                className="w-full sm:w-auto"
                 disabled={busy}
                 data-testid="org-area-archive"
                 onClick={() => setArchiveOpen(true)}

@@ -10336,11 +10336,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.singular": "Area",
 
-  "areas.lede": "Grupoen dagiti sanga para iti access ti staff, panagdaliasat, ken report.",
+  "areas.lede": "Ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.groupingOnlyNote":
 
-    "Panaggrupo laeng ti Area. Ti stock, register, shift, ken lako ket agtalinaed iti tunggal sanga.",
+    "Inaayos ng Area ang mga retail branch at warehouse ayon sa rehiyon. Nanatili sa bawat lokasyon ang sariling inventory at operasyon.",
 
   "areas.add": "Agnayon ti area",
 
@@ -10352,11 +10352,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.capacityLimit": "Agingga iti {allowed} nga area ti suportaran ti agdama a plano.",
 
-  "areas.branchCount": "{count} a sanga",
+  "areas.branchCount": "{count} lokasyon",
 
   "areas.unassigned": "Awan ti area",
 
-  "areas.unassignedCount": "{count} a sanga ti awan iti aniaman nga area.",
+  "areas.unassignedCount": "{count} lokasyon ang hindi naka-assign sa area",
 
   "areas.status.active": "Aktibo",
 
@@ -10366,7 +10366,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.emptyDetail":
 
-    "Agnayon ti area no kayatmo a grupoen dagiti sanga para iti access ti staff.",
+    "Magdagdag ng area para ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.loadError": "Saan a ma-load dagiti area.",
 
@@ -10384,7 +10384,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.entitlementRequired": "Area management requires Pro or Pro+. Upgrade your plan to enable areas.",
 
-  "areas.create.title": "Baro nga area",
+  "areas.create.title": "Magdagdag ng area",
 
   "areas.create.name": "Nagan ti area",
 
@@ -10396,7 +10396,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.rename": "Detalye ti area",
 
-  "areas.save": "Idulin ti area",
+  "areas.save": "I-save ang mga pagbabago",
 
   "areas.saving": "Maidulinâ€¦",
 
@@ -10408,7 +10408,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.archiveConfirmDetail":
 
-    "Ikkaten nga umuna dagiti amin a sanga ken area access ti staff. Ti panag-archive ket saan a mangikkat iti sanga wenno mangyalis iti stock.",
+    "Alisin muna ang lahat ng lokasyon at area access ng staff. Hindi nagbubura ng lokasyon o naglilipat ng stock ang pag-archive.",
 
   "areas.archiveConfirmAction": "I-archive ti area",
 
@@ -10416,19 +10416,31 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.detail.lede":
 
-    "Ag-assign, agyalis, wenno agikkat ti sanga. Awan ti operasion a kumuyog iti panagyalis.",
+    "Mag-assign ng retail branch at warehouse sa area na ito. Nanatili sa bawat lokasyon ang operasyon.",
 
-  "areas.detail.branches": "Dagiti sanga iti daytoy nga area",
+  "areas.detail.branches": "Mga naka-assign na lokasyon",
 
-  "areas.detail.noBranches": "Awan pay ti sanga iti daytoy nga area.",
+  "areas.detail.noBranches": "Wala pang naka-assign na lokasyon.",
 
-  "areas.detail.availableBranches": "Dadduma a sanga",
+  "areas.detail.availableBranches": "Mga available na lokasyon",
 
-  "areas.detail.assign": "Inayon",
+  "areas.detail.assign": "I-assign",
 
-  "areas.detail.move": "Iyalis ditoy",
+  "areas.detail.move": "I-assign",
 
   "areas.detail.remove": "Ikkaten",
+
+  "areas.locationCount": "{count} lokasyon",
+
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
+
+  "areas.edit": "I-edit",
+
+  "areas.detail.assigned": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noLocations": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.available": "Mga available na lokasyon",
 
   "branches.mgmt.devices": "POS devices",
 

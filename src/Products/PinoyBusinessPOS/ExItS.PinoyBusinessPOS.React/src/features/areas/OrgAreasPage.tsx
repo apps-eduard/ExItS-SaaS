@@ -7,15 +7,27 @@ import {
   createOrganizationArea,
   listOrganizationAreas,
 } from "@/api/platform/organization-areas-client";
+import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { BottomSheet } from "@/components/exits/SheetDialog";
+import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function locationBreakdown(
+  branches: Array<{ branchType?: string | null }>,
+): { total: number; retail: number; warehouse: number } {
+  const retail = branches.filter((branch) => !isWarehouseBranch(branch.branchType)).length;
+  const warehouse = branches.filter((branch) => isWarehouseBranch(branch.branchType)).length;
+  return { total: branches.length, retail, warehouse };
+}
 
 export function OrgAreasPage() {
   const { t } = useI18n();
@@ -38,6 +50,18 @@ export function OrgAreasPage() {
       const result = await listOrganizationAreas(organizationId!, signal);
       if (!result.ok) {
         throw new Error(result.body?.detail ?? t("areas.loadError"));
+      }
+      return result.value;
+    },
+  });
+
+  const branchesQuery = useQuery({
+    queryKey: ["branch-management-summary", organizationId],
+    enabled: Boolean(organizationId && canManage),
+    queryFn: async ({ signal }) => {
+      const result = await listBranchManagementSummaries(organizationId!, signal);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? t("branches.mgmt.loadError"));
       }
       return result.value;
     },
@@ -72,6 +96,18 @@ export function OrgAreasPage() {
   });
 
   const data = areasQuery.data;
+  const liveBranches = useMemo(
+    () =>
+      (branchesQuery.data ?? []).filter(
+        (branch) => normalizeBranchStatusFilter(branch.status) !== "Archived",
+      ),
+    [branchesQuery.data],
+  );
+  const unassigned = useMemo(
+    () => liveBranches.filter((branch) => !branch.areaId),
+    [liveBranches],
+  );
+  const unassignedBreakdown = locationBreakdown(unassigned);
   const activeAreas = useMemo(
     () => (data?.areas ?? []).filter((area) => area.status === "Active"),
     [data],
@@ -81,6 +117,31 @@ export function OrgAreasPage() {
     [data],
   );
   const atLimit = data != null && data.maxAreas > 0 && data.activeAreaCount >= data.maxAreas;
+
+  function areaBreakdown(areaId: string) {
+    return locationBreakdown(liveBranches.filter((branch) => branch.areaId === areaId));
+  }
+
+  function closeForm() {
+    setFormOpen(false);
+    setSubmitError(null);
+  }
+
+  const addAreaControl = (
+    <Button
+      type="button"
+      className="branch-mgmt-add"
+      disabled={atLimit || createMutation.isPending}
+      data-testid="org-areas-add"
+      onClick={() => {
+        setFormOpen(true);
+        setSubmitError(null);
+      }}
+    >
+      <Plus className="size-4 shrink-0" aria-hidden />
+      <span>{t("areas.add")}</span>
+    </Button>
+  );
 
   if (!canManage) {
     return (
@@ -108,11 +169,8 @@ export function OrgAreasPage() {
         backTo={pageBackNav.org.to}
         backLabel={t(pageBackNav.org.labelKey)}
         backTestId="page-header-back-org"
+        trailing={addAreaControl}
       />
-
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="org-areas-note">
-        {t("areas.groupingOnlyNote")}
-      </p>
 
       {data ? (
         <div className="branch-mgmt-capacity" data-testid="org-areas-capacity">
@@ -130,26 +188,126 @@ export function OrgAreasPage() {
         </div>
       ) : null}
 
-      <div className="branch-mgmt-toolbar">
-        <Button
-          type="button"
-          disabled={atLimit || createMutation.isPending}
-          data-testid="org-areas-add"
-          onClick={() => {
-            setFormOpen((open) => !open);
-            setSubmitError(null);
-          }}
-        >
-          <Plus className="size-4" aria-hidden />
-          {t("areas.add")}
-        </Button>
-      </div>
+      {areasQuery.isLoading || branchesQuery.isLoading ? (
+        <LoadingSkeleton count={3} label={t("loading.label")} />
+      ) : null}
 
-      {formOpen ? (
-        <section className="catalog-form-section exits-animate-panel gap-3" data-testid="org-areas-form">
-          <h2 className="catalog-form-section__title">{t("areas.create.title")}</h2>
+      {areasQuery.isError || branchesQuery.isError ? (
+        <ErrorState
+          title={t("error.title")}
+          detail={
+            areasQuery.error instanceof Error
+              ? areasQuery.error.message
+              : branchesQuery.error instanceof Error
+                ? branchesQuery.error.message
+                : t("areas.loadError")
+          }
+        />
+      ) : null}
+
+      {areasQuery.isSuccess && data ? (
+        <>
+          {data.areas.length === 0 ? (
+            <EmptyState title={t("areas.emptyTitle")} detail={t("areas.emptyDetail")} />
+          ) : (
+            <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-areas-items">
+              {[...activeAreas, ...archivedAreas].map((area) => {
+                const breakdown = areaBreakdown(area.id);
+                return (
+                  <li key={area.id}>
+                    <article
+                      className="exits-entity-card exits-entity-card--interactive min-w-0"
+                      data-testid={`org-area-card-${area.id}`}
+                    >
+                      <div className="exits-entity-card__header">
+                        <div className="exits-entity-card__identity">
+                          <div className="exits-entity-card__title-row">
+                            <h2 className="exits-entity-card__title">{area.name}</h2>
+                            {area.code ? (
+                              <>
+                                <span className="exits-entity-card__code-sep" aria-hidden>
+                                  ·
+                                </span>
+                                <p className="exits-entity-card__code">{area.code}</p>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="exits-entity-card__badges">
+                          <StatusChip tone={area.status === "Active" ? "success" : "info"}>
+                            {area.status === "Active"
+                              ? t("areas.status.active")
+                              : t("areas.status.archived")}
+                          </StatusChip>
+                        </div>
+                      </div>
+                      <div className="exits-entity-card__meta">
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)]"
+                          data-testid={`org-area-branch-count-${area.id}`}
+                        >
+                          {t("areas.locationCount").replace("{count}", String(breakdown.total))}
+                        </p>
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`org-area-type-breakdown-${area.id}`}
+                        >
+                          {t("areas.locationBreakdown")
+                            .replace("{retail}", String(breakdown.retail))
+                            .replace("{warehouse}", String(breakdown.warehouse))}
+                        </p>
+                      </div>
+                      <div className="exits-entity-card__actions">
+                        <Button asChild variant="outline" data-testid={`org-area-open-${area.id}`}>
+                          <Link to={`/org/areas/${area.id}`}>
+                            {t("areas.open")}
+                            <span aria-hidden> →</span>
+                          </Link>
+                        </Button>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {unassignedBreakdown.total > 0 ? (
+            <div className="branch-mgmt-capacity" data-testid="org-areas-unassigned">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                {t("areas.unassignedCount").replace(
+                  "{count}",
+                  String(unassignedBreakdown.total),
+                )}
+              </p>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("areas.locationBreakdown")
+                  .replace("{retail}", String(unassignedBreakdown.retail))
+                  .replace("{warehouse}", String(unassignedBreakdown.warehouse))}
+              </p>
+            </div>
+          ) : (
+            <p className="m-0 text-muted" data-testid="org-areas-unassigned">
+              {t("areas.unassignedCount").replace("{count}", "0")}
+            </p>
+          )}
+        </>
+      ) : null}
+
+      <BottomSheet
+        open={formOpen}
+        onClose={closeForm}
+        panelId="org-areas-create-panel"
+        testId="org-areas-form"
+        title={t("areas.create.title")}
+        closeLabel={t("areas.cancel")}
+        panelClassName="sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--exits-radius-lg)]"
+      >
+        <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.name")}</span>
+            <span className="text-[length:var(--exits-text-sm)] font-medium">
+              {t("areas.create.name")}
+            </span>
             <input
               className="exits-input"
               value={name}
@@ -162,7 +320,9 @@ export function OrgAreasPage() {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[length:var(--exits-text-sm)]">{t("areas.create.code")}</span>
+            <span className="text-[length:var(--exits-text-sm)] font-medium">
+              {t("areas.create.code")}
+            </span>
             <input
               className="exits-input"
               value={code}
@@ -173,93 +333,27 @@ export function OrgAreasPage() {
                 setSubmitError(null);
               }}
             />
-            <span className="text-[length:var(--exits-text-sm)] text-muted">
-              {t("areas.create.codeHelper")}
-            </span>
           </label>
-          <Button
-            type="button"
-            className="w-full sm:w-auto"
-            disabled={createMutation.isPending || !name.trim()}
-            data-testid="org-areas-submit"
-            onClick={() => createMutation.mutate()}
-          >
-            {createMutation.isPending ? t("areas.saving") : t("areas.create.submit")}
-          </Button>
-        </section>
-      ) : null}
-
-      {submitError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{submitError}</p>
+          {submitError ? (
+            <div className="exits-alert exits-alert--error" role="alert">
+              <p className="m-0 text-[length:var(--exits-text-sm)]">{submitError}</p>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="outline" data-testid="org-areas-cancel" onClick={closeForm}>
+              {t("areas.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={createMutation.isPending || !name.trim()}
+              data-testid="org-areas-submit"
+              onClick={() => createMutation.mutate()}
+            >
+              {createMutation.isPending ? t("areas.saving") : t("areas.create.submit")}
+            </Button>
+          </div>
         </div>
-      ) : null}
-
-      {areasQuery.isLoading ? <LoadingSkeleton count={3} label={t("loading.label")} /> : null}
-
-      {areasQuery.isError ? (
-        <ErrorState
-          title={t("error.title")}
-          detail={
-            areasQuery.error instanceof Error ? areasQuery.error.message : t("areas.loadError")
-          }
-        />
-      ) : null}
-
-      {areasQuery.isSuccess && data ? (
-        <>
-          {data.areas.length === 0 ? (
-            <EmptyState title={t("areas.emptyTitle")} detail={t("areas.emptyDetail")} />
-          ) : (
-            <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-areas-items">
-              {[...activeAreas, ...archivedAreas].map((area) => (
-                <li key={area.id}>
-                  <article
-                    className="exits-list__card min-w-0"
-                    data-testid={`org-area-card-${area.id}`}
-                  >
-                    <div className="branch-mgmt-card__header">
-                      <div className="min-w-0">
-                        <h2 className="branch-mgmt-card__title m-0 truncate">{area.name}</h2>
-                        {area.code ? (
-                          <p className="branch-mgmt-card__code m-0 mt-1 text-muted">{area.code}</p>
-                        ) : null}
-                      </div>
-                      <StatusChip tone={area.status === "Active" ? "success" : "info"}>
-                        {area.status === "Active"
-                          ? t("areas.status.active")
-                          : t("areas.status.archived")}
-                      </StatusChip>
-                    </div>
-                    <p
-                      className="m-0 text-muted"
-                      data-testid={`org-area-branch-count-${area.id}`}
-                    >
-                      {t("areas.branchCount").replace("{count}", String(area.branchCount))}
-                    </p>
-                    <div className="branch-mgmt-card__actions">
-                      <Button
-                        asChild
-                        variant="outline"
-                        data-testid={`org-area-open-${area.id}`}
-                      >
-                        <Link to={`/org/areas/${area.id}`}>{t("areas.open")}</Link>
-                      </Button>
-                    </div>
-                  </article>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <p className="m-0 text-muted" data-testid="org-areas-unassigned">
-            {t("areas.unassignedCount").replace(
-              "{count}",
-              String(data.unassignedBranchCount),
-            )}
-          </p>
-        </>
-      ) : null}
+      </BottomSheet>
     </div>
   );
 }

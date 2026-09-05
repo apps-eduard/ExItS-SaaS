@@ -10336,11 +10336,11 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.singular": "Area",
 
-  "areas.lede": "Grupoha ang mga sanga para sa access sa staff, nabigasyon, ug taho.",
+  "areas.lede": "Ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.groupingOnlyNote":
 
-    "Panggrupo ra ang Area. Ang stock, register, shift, ug baligya magpabilin sa matag sanga.",
+    "Inaayos ng Area ang mga retail branch at warehouse ayon sa rehiyon. Nanatili sa bawat lokasyon ang sariling inventory at operasyon.",
 
   "areas.add": "Pagdugang ug area",
 
@@ -10352,11 +10352,11 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.capacityLimit": "Hangtod {allowed} ka area ang gisakop sa imong plano karon.",
 
-  "areas.branchCount": "{count} ka sanga",
+  "areas.branchCount": "{count} lokasyon",
 
   "areas.unassigned": "Walay area",
 
-  "areas.unassignedCount": "{count} ka sanga ang wala sa bisan unsang area.",
+  "areas.unassignedCount": "{count} lokasyon ang hindi naka-assign sa area",
 
   "areas.status.active": "Aktibo",
 
@@ -10366,7 +10366,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.emptyDetail":
 
-    "Pagdugang ug area kon gusto nimong grupohon ang mga sanga para sa access sa staff.",
+    "Magdagdag ng area para ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.loadError": "Dili ma-load ang mga area.",
 
@@ -10384,7 +10384,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.entitlementRequired": "Area management requires Pro or Pro+. Upgrade your plan to enable areas.",
 
-  "areas.create.title": "Bag-ong area",
+  "areas.create.title": "Magdagdag ng area",
 
   "areas.create.name": "Ngalan sa area",
 
@@ -10396,7 +10396,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.rename": "Detalye sa area",
 
-  "areas.save": "I-save ang area",
+  "areas.save": "I-save ang mga pagbabago",
 
   "areas.saving": "Gi-saveâ€¦",
 
@@ -10408,7 +10408,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.archiveConfirmDetail":
 
-    "Kuhaa una ang tanang sanga ug area access sa staff. Ang pag-archive dili magtangtang ug sanga o magbalhin ug stock.",
+    "Alisin muna ang lahat ng lokasyon at area access ng staff. Hindi nagbubura ng lokasyon o naglilipat ng stock ang pag-archive.",
 
   "areas.archiveConfirmAction": "I-archive ang area",
 
@@ -10416,19 +10416,31 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "areas.detail.lede":
 
-    "Pag-assign, pagbalhin, o pagkuha ug sanga. Walay operasyon nga mouban sa pagbalhin.",
+    "Mag-assign ng retail branch at warehouse sa area na ito. Nanatili sa bawat lokasyon ang operasyon.",
 
-  "areas.detail.branches": "Mga sanga niini nga area",
+  "areas.detail.branches": "Mga naka-assign na lokasyon",
 
-  "areas.detail.noBranches": "Wala pay sanga niini nga area.",
+  "areas.detail.noBranches": "Wala pang naka-assign na lokasyon.",
 
-  "areas.detail.availableBranches": "Ubang sanga",
+  "areas.detail.availableBranches": "Mga available na lokasyon",
 
-  "areas.detail.assign": "Idugang",
+  "areas.detail.assign": "I-assign",
 
-  "areas.detail.move": "Balhina dinhi",
+  "areas.detail.move": "I-assign",
 
   "areas.detail.remove": "Kuhaa",
+
+  "areas.locationCount": "{count} lokasyon",
+
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
+
+  "areas.edit": "I-edit",
+
+  "areas.detail.assigned": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noLocations": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.available": "Mga available na lokasyon",
 
   "branches.mgmt.devices": "POS devices",
 

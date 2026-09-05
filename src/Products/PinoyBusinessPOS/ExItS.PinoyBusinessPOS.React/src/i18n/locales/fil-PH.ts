@@ -10334,11 +10334,11 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.singular": "Area",
 
-  "areas.lede": "Pagpangkatin ang mga branch para sa access ng staff, nabigasyon, at ulat.",
+  "areas.lede": "Ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.groupingOnlyNote":
 
-    "Pang-grupo lang ang Area. Nananatili sa bawat branch ang stock, register, shift, at benta.",
+    "Inaayos ng Area ang mga retail branch at warehouse ayon sa rehiyon. Nanatili sa bawat lokasyon ang sariling inventory at operasyon.",
 
   "areas.add": "Magdagdag ng area",
 
@@ -10350,11 +10350,11 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.capacityLimit": "Hanggang {allowed} area ang sakop ng kasalukuyang plano mo.",
 
-  "areas.branchCount": "{count} branch",
+  "areas.branchCount": "{count} lokasyon",
 
   "areas.unassigned": "Walang area",
 
-  "areas.unassignedCount": "{count} branch ang wala sa anumang area.",
+  "areas.unassignedCount": "{count} lokasyon ang hindi naka-assign sa area",
 
   "areas.status.active": "Aktibo",
 
@@ -10364,7 +10364,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.emptyDetail":
 
-    "Magdagdag ng area kapag gusto mong pagpangkatin ang mga branch para sa access ng staff.",
+    "Magdagdag ng area para ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.loadError": "Hindi ma-load ang mga area.",
 
@@ -10382,7 +10382,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.entitlementRequired": "Area management requires Pro or Pro+. Upgrade your plan to enable areas.",
 
-  "areas.create.title": "Bagong area",
+  "areas.create.title": "Magdagdag ng area",
 
   "areas.create.name": "Pangalan ng area",
 
@@ -10394,7 +10394,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.rename": "Detalye ng area",
 
-  "areas.save": "I-save ang area",
+  "areas.save": "I-save ang mga pagbabago",
 
   "areas.saving": "Sine-save?",
 
@@ -10406,7 +10406,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.archiveConfirmDetail":
 
-    "Alisin muna ang lahat ng branch at area access ng staff. Hindi nagbubura ng branch o naglilipat ng stock ang pag-archive.",
+    "Alisin muna ang lahat ng lokasyon at area access ng staff. Hindi nagbubura ng lokasyon o naglilipat ng stock ang pag-archive.",
 
   "areas.archiveConfirmAction": "I-archive ang area",
 
@@ -10414,19 +10414,31 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.detail.lede":
 
-    "Mag-assign, maglipat, o mag-alis ng branch. Walang operasyon na kasamang lumilipat.",
+    "Mag-assign ng retail branch at warehouse sa area na ito. Nanatili sa bawat lokasyon ang operasyon.",
 
-  "areas.detail.branches": "Mga branch sa area na ito",
+  "areas.detail.branches": "Mga naka-assign na lokasyon",
 
-  "areas.detail.noBranches": "Wala pang branch sa area na ito.",
+  "areas.detail.noBranches": "Wala pang naka-assign na lokasyon.",
 
-  "areas.detail.availableBranches": "Ibang branch",
+  "areas.detail.availableBranches": "Mga available na lokasyon",
 
-  "areas.detail.assign": "Idagdag",
+  "areas.detail.assign": "I-assign",
 
-  "areas.detail.move": "Ilipat dito",
+  "areas.detail.move": "I-assign",
 
   "areas.detail.remove": "Alisin",
+
+  "areas.locationCount": "{count} lokasyon",
+
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
+
+  "areas.edit": "I-edit",
+
+  "areas.detail.assigned": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noLocations": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.available": "Mga available na lokasyon",
 
   "branches.mgmt.devices": "Mga POS device",
 

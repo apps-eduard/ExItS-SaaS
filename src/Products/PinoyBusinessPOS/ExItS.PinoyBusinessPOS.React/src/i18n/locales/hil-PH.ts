@@ -10336,11 +10336,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.singular": "Area",
 
-  "areas.lede": "Grupuha ang mga sanga para sa access sang staff, pag-navigate, kag report.",
+  "areas.lede": "Ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.groupingOnlyNote":
 
-    "Pang-grupo lang ang Area. Ang stock, register, shift, kag baligya nagapabilin sa kada sanga.",
+    "Inaayos ng Area ang mga retail branch at warehouse ayon sa rehiyon. Nanatili sa bawat lokasyon ang sariling inventory at operasyon.",
 
   "areas.add": "Magdugang sang area",
 
@@ -10352,11 +10352,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.capacityLimit": "Tubtob {allowed} ka area lang ang nasakop sang imo plano subong.",
 
-  "areas.branchCount": "{count} ka sanga",
+  "areas.branchCount": "{count} lokasyon",
 
   "areas.unassigned": "Wala sang area",
 
-  "areas.unassignedCount": "{count} ka sanga ang wala sa bisan ano nga area.",
+  "areas.unassignedCount": "{count} lokasyon ang hindi naka-assign sa area",
 
   "areas.status.active": "Aktibo",
 
@@ -10366,7 +10366,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.emptyDetail":
 
-    "Magdugang sang area kon gusto mo grupuhon ang mga sanga para sa access sang staff.",
+    "Magdagdag ng area para ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
 
   "areas.loadError": "Indi ma-load ang mga area.",
 
@@ -10384,7 +10384,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.entitlementRequired": "Area management requires Pro or Pro+. Upgrade your plan to enable areas.",
 
-  "areas.create.title": "Bag-o nga area",
+  "areas.create.title": "Magdagdag ng area",
 
   "areas.create.name": "Ngalan sang area",
 
@@ -10396,7 +10396,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.rename": "Detalye sang area",
 
-  "areas.save": "Itipig ang area",
+  "areas.save": "I-save ang mga pagbabago",
 
   "areas.saving": "Ginatipigâ€¦",
 
@@ -10408,7 +10408,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.archiveConfirmDetail":
 
-    "Kuhaa anay ang tanan nga sanga kag area access sang staff. Ang pag-archive wala nagakuha sang sanga ukon nagabalhin sang stock.",
+    "Alisin muna ang lahat ng lokasyon at area access ng staff. Hindi nagbubura ng lokasyon o naglilipat ng stock ang pag-archive.",
 
   "areas.archiveConfirmAction": "Padayon kag i-archive",
 
@@ -10416,19 +10416,31 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "areas.detail.lede":
 
-    "Mag-assign, magbalhin, ukon magkuha sang sanga. Wala sang operasyon nga nagasunod sa pagbalhin.",
+    "Mag-assign ng retail branch at warehouse sa area na ito. Nanatili sa bawat lokasyon ang operasyon.",
 
-  "areas.detail.branches": "Mga sanga sa sini nga area",
+  "areas.detail.branches": "Mga naka-assign na lokasyon",
 
-  "areas.detail.noBranches": "Wala pa sang sanga sa sini nga area.",
+  "areas.detail.noBranches": "Wala pang naka-assign na lokasyon.",
 
-  "areas.detail.availableBranches": "Iban nga sanga",
+  "areas.detail.availableBranches": "Mga available na lokasyon",
 
-  "areas.detail.assign": "Idugang",
+  "areas.detail.assign": "I-assign",
 
-  "areas.detail.move": "Balhina diri",
+  "areas.detail.move": "I-assign",
 
   "areas.detail.remove": "Kuhaa",
+
+  "areas.locationCount": "{count} lokasyon",
+
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
+
+  "areas.edit": "I-edit",
+
+  "areas.detail.assigned": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noLocations": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.available": "Mga available na lokasyon",
 
   "branches.mgmt.devices": "POS devices",
 
