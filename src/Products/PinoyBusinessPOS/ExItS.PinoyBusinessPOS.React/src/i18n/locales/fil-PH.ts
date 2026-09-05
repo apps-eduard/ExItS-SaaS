@@ -10518,8 +10518,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.create.details.retail": "Retail branch details",
   "branches.create.details.warehouse": "Warehouse details",
   "branches.create.submit.retail": "Create retail branch",
-  "branches.create.submit.warehouse": "Create warehouse",
-  "branches.mgmt.openWarehouse": "Open warehouse",
+  "branches.create.submit.warehouse": "Create warehouse"  "branches.mgmt.openWarehouse": "Open warehouse",
   "branches.mgmt.devicesShort": "Devices",
   "branches.create.name.warehouse": "Warehouse name",
   "branches.create.code.warehouse": "Warehouse code",
