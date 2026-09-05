@@ -202,7 +202,6 @@ describe("Inventory Transfer React flow", () => {
     const dispatchSpy = vi
       .spyOn(transferClient, "dispatchInventoryTransfer")
       .mockResolvedValue(inTransitTransfer() as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(
       <AppProviders>
@@ -220,6 +219,7 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.getByTestId("transfer-dispatch")).toBeInTheDocument();
     expect(screen.queryByTestId("transfer-receive")).not.toBeInTheDocument();
     await userEvent.click(screen.getByTestId("transfer-dispatch"));
+    await userEvent.click(await screen.findByTestId("transfer-dispatch-confirm-confirm"));
     await waitFor(() => expect(dispatchSpy).toHaveBeenCalled());
   });
 
@@ -282,8 +282,6 @@ describe("Inventory Transfer React flow", () => {
         },
       ],
     } as never);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-
     render(
       <AppProviders>
         <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
@@ -301,6 +299,7 @@ describe("Inventory Transfer React flow", () => {
     await userEvent.type(qty, "22");
     await userEvent.selectOptions(screen.getByTestId(`transfer-discrepancy-${lineId}`), "ShortShipment");
     await userEvent.click(screen.getByTestId("transfer-receive-submit"));
+    await userEvent.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
     await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
     expect(receiveSpy.mock.calls[0]?.[2]).toEqual({
       lines: [

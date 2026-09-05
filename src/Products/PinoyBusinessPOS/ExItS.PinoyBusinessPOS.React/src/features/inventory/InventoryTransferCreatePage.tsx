@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowRightLeft, Plus, RotateCcw, X } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listInventory,
@@ -20,8 +21,19 @@ import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const qtyFieldClassName = cn(
+  "box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
+  "w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface",
+  "px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] font-normal text-foreground",
+  "outline-none transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
+  "placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-border-strong)]",
+  "focus-visible:border-[var(--exits-ring)] focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
+  "exits-input--no-spin",
+);
 
 type DraftLine = {
   key: string;
@@ -143,31 +155,49 @@ export function InventoryTransferCreatePage() {
     }
 
     const key = `${row.productId}:${sourceLotId ?? "none"}`;
-    if (lines.some((l) => l.key === key)) {
-      setError(t("transfer.duplicateLine"));
-      return;
-    }
-
     setError(null);
-    setLines((prev) => [
-      ...prev,
-      {
-        key,
-        productId: row.productId,
-        name: row.name,
-        unitOfMeasure: row.unitOfMeasure,
-        quantity: qtyParsed,
-        tracksExpiration,
-        sourceLotId,
-        lotNumber,
-        expirationDate,
-      },
-    ]);
+    setLines((prev) => {
+      const existingIndex = prev.findIndex((l) => l.key === key);
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next[existingIndex] = { ...next[existingIndex], quantity: qtyParsed };
+        return next;
+      }
+      return [
+        ...prev,
+        {
+          key,
+          productId: row.productId,
+          name: row.name,
+          unitOfMeasure: row.unitOfMeasure,
+          quantity: qtyParsed,
+          tracksExpiration,
+          sourceLotId,
+          lotNumber,
+          expirationDate,
+        },
+      ];
+    });
     setQtyByProduct((prev) => ({ ...prev, [row.productId]: "" }));
   }
 
   function removeLine(key: string) {
     setLines((prev) => prev.filter((l) => l.key !== key));
+  }
+
+  function resetForm() {
+    if (saving) {
+      return;
+    }
+    setDestinationBranchId("");
+    setNotes("");
+    setSearch("");
+    setDebounced("");
+    setLines([]);
+    setQtyByProduct({});
+    setLotByProduct({});
+    setError(null);
+    operationIdRef.current = null;
   }
 
   async function saveDraft() {
@@ -279,20 +309,20 @@ export function InventoryTransferCreatePage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-[length:var(--exits-text-sm)] font-medium">{t("transfer.fromBranch")}</span>
-          <input
-            className="exits-input"
-            value={sourceName}
-            readOnly
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="exits-type-label">{t("transfer.fromBranch")}</span>
+          <p
+            className="m-0 text-[length:var(--exits-text-md)] font-medium text-foreground"
             data-testid="transfer-source-branch"
-          />
-          <span className="text-[length:var(--exits-text-xs)] text-muted">{t("transfer.sourceFixedHint")}</span>
-        </label>
+          >
+            {sourceName}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.sourceFixedHint")}</p>
+        </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-[length:var(--exits-text-sm)] font-medium">{t("transfer.toBranch")}</span>
+        <label className="flex min-w-0 flex-col gap-1">
+          <span className="exits-type-label">{t("transfer.toBranch")}</span>
           <select
             className="exits-select"
             value={destinationBranchId}
@@ -310,13 +340,14 @@ export function InventoryTransferCreatePage() {
         </label>
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-[length:var(--exits-text-sm)] font-medium">
+      <label className="flex min-w-0 flex-col gap-1">
+        <span className="exits-type-label">
           {t("transfer.notes")}{" "}
           <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
         </span>
         <textarea
-          className="exits-input min-h-20"
+          className="exits-input resize-y [min-height:unset]"
+          rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           maxLength={512}
@@ -324,23 +355,23 @@ export function InventoryTransferCreatePage() {
         />
       </label>
 
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.baseUomHint")}</p>
-
-      <section className="flex flex-col gap-2" data-testid="transfer-draft-lines">
-        <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">{t("transfer.items")}</h2>
+      <section className="flex flex-col gap-1.5" data-testid="transfer-draft-lines">
+        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {t("transfer.items")}
+        </h2>
         {lines.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.draftEmpty")}</p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.itemsEmpty")}</p>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
             {lines.map((line) => (
               <li
                 key={line.key}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                className="flex items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
                 data-testid={`transfer-line-${line.key}`}
               >
-                <div className="min-w-0">
-                  <p className="m-0 font-medium">{line.name}</p>
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">{line.name}</p>
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                     {line.quantity} {line.unitOfMeasure}
                     {line.lotNumber || line.expirationDate
                       ? ` · ${t("transfer.lot")}: ${line.lotNumber ?? "—"} · ${t("transfer.expiry")}: ${line.expirationDate ?? "—"}`
@@ -349,11 +380,14 @@ export function InventoryTransferCreatePage() {
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label={t("transfer.remove")}
                   onClick={() => removeLine(line.key)}
                   data-testid={`transfer-remove-${line.key}`}
                 >
-                  {t("transfer.remove")}
+                  <X className="size-4" aria-hidden />
                 </Button>
               </li>
             ))}
@@ -362,7 +396,12 @@ export function InventoryTransferCreatePage() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">{t("transfer.addProducts")}</h2>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+            {t("transfer.addProducts")}
+          </h2>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.baseUomHint")}</p>
+        </div>
         <SearchField
           label={t("transfer.searchProducts")}
           value={search}
@@ -375,77 +414,112 @@ export function InventoryTransferCreatePage() {
         {!pickerQuery.isLoading && pickerRows.length === 0 ? (
           <EmptyState title={t("transfer.noProducts")} detail={t("transfer.noProductsDetail")} />
         ) : null}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="transfer-product-picker">
-          {pickerRows.map((row) => {
-            const tracksExpiration = row.tracksExpiration === true;
-            const lots = lotsCache[row.productId] ?? [];
-            return (
-              <li
-                key={row.productId}
-                className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="m-0 font-medium">{row.name}</p>
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {row.unitOfMeasure}
-                    {tracksExpiration ? ` · ${t("transfer.tracksExpiry")}` : ""}
-                  </p>
-                </div>
-                {tracksExpiration ? (
-                  <select
-                    className="exits-select"
-                    value={lotByProduct[row.productId] ?? ""}
-                    onFocus={() => void ensureLots(row.productId, true)}
-                    onChange={(e) =>
-                      setLotByProduct((prev) => ({ ...prev, [row.productId]: e.target.value }))
-                    }
-                    data-testid={`transfer-lot-${row.productId}`}
-                  >
-                    <option value="">{t("transfer.selectLot")}</option>
-                    {lots.map((lot) => (
-                      <option key={lot.lotId} value={lot.lotId}>
-                        {(lot.lotNumber ?? t("transfer.lot")) +
-                          ` · ${lot.expirationDate ?? "—"} · ${lot.quantityOnHand}`}
-                      </option>
-                    ))}
-                  </select>
-                ) : null}
-                <div className="flex flex-wrap items-end gap-2">
-                  <label className="flex min-w-[8rem] flex-1 flex-col gap-1">
-                    <span className="text-[length:var(--exits-text-sm)]">{t("transfer.quantity")}</span>
+        {pickerRows.length > 0 ? (
+          <ul
+            className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
+            data-testid="transfer-product-picker"
+          >
+            {pickerRows.map((row) => {
+              const tracksExpiration = row.tracksExpiration === true;
+              const lots = lotsCache[row.productId] ?? [];
+              return (
+                <li
+                  key={row.productId}
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                        {row.name}
+                      </p>
+                      <p className="m-0 truncate text-[length:var(--exits-text-xs)] text-muted">
+                        {row.unitOfMeasure}
+                        {tracksExpiration ? ` · ${t("transfer.tracksExpiry")}` : ""}
+                      </p>
+                    </div>
+                    <label className="sr-only" htmlFor={`transfer-qty-${row.productId}`}>
+                      {t("transfer.quantity")}
+                    </label>
                     <input
-                      className="exits-input"
+                      id={`transfer-qty-${row.productId}`}
+                      type="number"
                       inputMode="decimal"
+                      step="any"
+                      min={0}
+                      className={cn(qtyFieldClassName, "w-[5.5rem] shrink-0")}
+                      placeholder={t("transfer.quantity")}
                       value={qtyByProduct[row.productId] ?? ""}
                       onChange={(e) =>
                         setQtyByProduct((prev) => ({ ...prev, [row.productId]: e.target.value }))
                       }
                       data-testid={`transfer-picker-qty-${row.productId}`}
                     />
-                  </label>
-                  <Button
-                    type="button"
-                    disabled={!online}
-                    onClick={() => void addLine(row)}
-                    data-testid={`transfer-add-${row.productId}`}
-                  >
-                    {t("transfer.addProduct")}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    <Button
+                      type="button"
+                      size="icon"
+                      className="shrink-0 rounded-full"
+                      disabled={!online}
+                      aria-label={t("transfer.addProduct")}
+                      onClick={() => void addLine(row)}
+                      data-testid={`transfer-add-${row.productId}`}
+                    >
+                      <Plus className="size-4" aria-hidden />
+                    </Button>
+                  </div>
+                  {tracksExpiration ? (
+                    <select
+                      className="exits-select mt-2"
+                      value={lotByProduct[row.productId] ?? ""}
+                      onFocus={() => void ensureLots(row.productId, true)}
+                      onChange={(e) =>
+                        setLotByProduct((prev) => ({ ...prev, [row.productId]: e.target.value }))
+                      }
+                      data-testid={`transfer-lot-${row.productId}`}
+                    >
+                      <option value="">{t("transfer.selectLot")}</option>
+                      {lots.map((lot) => (
+                        <option key={lot.lotId} value={lot.lotId}>
+                          {(lot.lotNumber ?? t("transfer.lot")) +
+                            ` · ${lot.expirationDate ?? "—"} · ${lot.quantityOnHand}`}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </section>
 
-      <StickyActionBar>
+      <StickyActionBar className="justify-end shadow-[0_-4px_24px_color-mix(in_srgb,var(--exits-foreground)_8%,transparent)]">
         <Button
           type="button"
-          className="w-full"
+          variant="outline"
+          disabled={saving}
+          onClick={() => navigate("/inventory/transfers")}
+          data-testid="transfer-cancel-create"
+        >
+          <X className="size-4 shrink-0" aria-hidden />
+          {t("transfer.cancelCreate")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={saving}
+          onClick={resetForm}
+          data-testid="transfer-reset-create"
+        >
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+          {t("transfer.resetCreate")}
+        </Button>
+        <Button
+          type="button"
           disabled={!online || saving || lines.length === 0 || !destinationBranchId}
           onClick={() => void saveDraft()}
           data-testid="transfer-save-draft"
         >
+          <ArrowRightLeft className="size-4 shrink-0" aria-hidden />
           {saving ? t("transfer.saving") : t("transfer.saveDraft")}
         </Button>
       </StickyActionBar>

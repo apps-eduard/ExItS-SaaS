@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,7 @@ export function InventoryTransferListPage() {
 
   const multiBranch = orgBranches.length >= 2;
   const currentBranchName = boundWorkspace?.branchName ?? t("transfer.currentBranch");
+  const canCreate = allowManage && multiBranch && online;
 
   const query = useQuery({
     queryKey: [
@@ -107,76 +108,84 @@ export function InventoryTransferListPage() {
         backTo={pageBackNav.inventory.to}
         backLabel={t(pageBackNav.inventory.labelKey)}
         backTestId="page-header-back-inventory"
+        trailing={
+          allowManage && multiBranch ? (
+            <Button asChild disabled={!online}>
+              <Link
+                to={online ? "/inventory/transfers/new" : "#"}
+                data-testid="transfer-new"
+                aria-disabled={!online}
+                onClick={(event) => {
+                  if (!online) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("transfer.new")}
+              </Link>
+            </Button>
+          ) : null
+        }
       />
 
-      <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-current-branch">
-        {t("transfer.currentBranch")}: <strong>{currentBranchName}</strong>
+      <p
+        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+        data-testid="transfer-current-branch"
+      >
+        {t("transfer.currentBranch")}: {currentBranchName}
       </p>
-
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
 
-      {allowManage && multiBranch ? (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="exits-type-label">{t("transfer.filter.direction")}</span>
         <ExitsChipBar
-          variant="actions"
-          ariaLabel={t("transfer.title")}
-          testId="transfer-toolbar"
+          variant="filter"
+          ariaLabel={t("transfer.filter.direction")}
+          testId="transfer-direction-filters"
           items={[
             {
-              key: "new",
-              label: t("transfer.new"),
-              icon: <ArrowLeftRight />,
-              href: online ? "/inventory/transfers/new" : undefined,
-              disabled: !online,
-              testId: "transfer-new",
-              emphasis: "primary",
+              key: "all",
+              label: t("transfer.filter.all"),
+              state: direction === "" ? "active" : "idle",
+              onSelect: () => setDirection(""),
+              testId: "transfer-direction-all",
+            },
+            {
+              key: "outgoing",
+              label: t("transfer.filter.outgoing"),
+              state: direction === "outgoing" ? "active" : "idle",
+              onSelect: () => setDirection("outgoing"),
+              testId: "transfer-direction-outgoing",
+            },
+            {
+              key: "incoming",
+              label: t("transfer.filter.incoming"),
+              state: direction === "incoming" ? "active" : "idle",
+              onSelect: () => setDirection("incoming"),
+              testId: "transfer-direction-incoming",
             },
           ]}
         />
-      ) : null}
+      </div>
 
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("transfer.filter.direction")}
-        testId="transfer-direction-filters"
-        items={[
-          {
-            key: "all",
-            label: t("transfer.filter.all"),
-            state: direction === "" ? "active" : "idle",
-            onSelect: () => setDirection(""),
-            testId: "transfer-direction-all",
-          },
-          {
-            key: "outgoing",
-            label: t("transfer.filter.outgoing"),
-            state: direction === "outgoing" ? "active" : "idle",
-            onSelect: () => setDirection("outgoing"),
-            testId: "transfer-direction-outgoing",
-          },
-          {
-            key: "incoming",
-            label: t("transfer.filter.incoming"),
-            state: direction === "incoming" ? "active" : "idle",
-            onSelect: () => setDirection("incoming"),
-            testId: "transfer-direction-incoming",
-          },
-        ]}
-      />
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("transfer.filter.status")}
-        testId="transfer-status-filters"
-        items={STATUS_FILTERS.map((filter) => ({
-          key: filter.value || "all-status",
-          label: t(filter.labelKey),
-          state: status === filter.value ? "active" : "idle",
-          onSelect: () => setStatus(filter.value),
-          testId: `transfer-status-${filter.value || "all"}`,
-        }))}
-      />
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="exits-type-label">{t("transfer.filter.status")}</span>
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("transfer.filter.status")}
+          testId="transfer-status-filters"
+          items={STATUS_FILTERS.map((filter) => ({
+            key: filter.value || "all-status",
+            label: t(filter.labelKey),
+            state: status === filter.value ? "active" : "idle",
+            onSelect: () => setStatus(filter.value),
+            testId: `transfer-status-${filter.value || "all"}`,
+          }))}
+        />
+      </div>
 
       {query.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
       {query.isError ? (
@@ -187,19 +196,21 @@ export function InventoryTransferListPage() {
         <>
           <EmptyState
             title={t("transfer.empty")}
-            detail={
-              multiBranch ? t("transfer.emptyDetail") : t("transfer.singleBranchDetail")
-            }
+            detail={multiBranch ? t("transfer.emptyDetail") : t("transfer.singleBranchDetail")}
           />
-          {allowManage && multiBranch && online ? (
+          {canCreate ? (
             <Button asChild>
               <Link to="/inventory/transfers/new" data-testid="transfer-empty-cta">
+                <Plus className="size-4 shrink-0" aria-hidden />
                 {t("transfer.new")}
               </Link>
             </Button>
           ) : null}
           {!multiBranch ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="transfer-single-branch">
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="transfer-single-branch"
+            >
               {t("transfer.requiresTwoBranches")}
             </p>
           ) : null}
@@ -207,51 +218,71 @@ export function InventoryTransferListPage() {
       ) : null}
 
       {items.length > 0 ? (
-        <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="transfer-list">
-          {items.map((item) => {
-            const source = branchDisplayName(item.sourceBranchName, item.sourceBranchId);
-            const dest = branchDisplayName(item.destinationBranchName, item.destinationBranchId);
-            return (
-              <li key={item.transferId}>
-                <Link
-                  to={`/inventory/transfers/${item.transferId}`}
-                  className="exits-list__card transfer-row block min-w-0 text-foreground no-underline"
-                  data-testid={`transfer-row-${item.transferId}`}
-                >
-                  <span className="transfer-row__main min-w-0">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">
-                        {item.transferNumber?.trim() || t("transfer.draftNumber")}
+        <section className="flex min-w-0 flex-col gap-1.5">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+            {t("transfer.listSection")}
+          </h2>
+          <ul
+            className="m-0 flex w-full list-none flex-col gap-2 p-0"
+            data-testid="transfer-list"
+          >
+            {items.map((item) => {
+              const source = branchDisplayName(item.sourceBranchName, item.sourceBranchId);
+              const dest = branchDisplayName(item.destinationBranchName, item.destinationBranchId);
+              const transferNumber = item.transferNumber?.trim() || "";
+              return (
+                <li key={item.transferId} className="min-w-0">
+                  <Link
+                    to={`/inventory/transfers/${item.transferId}`}
+                    className="exits-list__card transfer-row flex w-full min-w-0 items-center gap-3 text-foreground no-underline"
+                    data-testid={`transfer-row-${item.transferId}`}
+                  >
+                    <span className="transfer-row__main flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="flex min-w-0 items-start justify-between gap-2">
+                        <span className="min-w-0">
+                          {transferNumber ? (
+                            <span className="mb-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
+                              {transferNumber}
+                            </span>
+                          ) : null}
+                          <span className="block truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+                            {source} → {dest}
+                          </span>
+                        </span>
+                        <StatusChip tone={inventoryTransferStatusTone(item.status)}>
+                          {t(inventoryTransferStatusLabelKey(item.status))}
+                        </StatusChip>
                       </span>
-                      <StatusChip tone={inventoryTransferStatusTone(item.status)}>
-                        {t(inventoryTransferStatusLabelKey(item.status))}
-                      </StatusChip>
+                      <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                        <span>{t("transfer.linesCount").replace("{count}", String(item.lineCount))}</span>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {t("transfer.sent")} {formatTransferQty(item.totalSentQty)}
+                        </span>
+                        <span aria-hidden>·</span>
+                        <span>
+                          {t("transfer.received")} {formatTransferQty(item.totalReceivedQty)}
+                        </span>
+                        {item.totalDifferenceQty !== 0 ? (
+                          <>
+                            <span aria-hidden>·</span>
+                            <span>
+                              {t("transfer.difference")} {formatTransferQty(item.totalDifferenceQty)}
+                            </span>
+                          </>
+                        ) : null}
+                      </span>
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">
+                        {formatTransferTimestamp(item.updatedAtUtc)}
+                      </span>
                     </span>
-                    <span className="mt-1 block text-[length:var(--exits-text-sm)]">
-                      {source} → {dest}
-                    </span>
-                    <span className="block text-[length:var(--exits-text-sm)] text-muted">
-                      {t("transfer.linesCount").replace("{count}", String(item.lineCount))}
-                      {" · "}
-                      {t("transfer.sent")}: {formatTransferQty(item.totalSentQty)}
-                      {" · "}
-                      {t("transfer.received")}: {formatTransferQty(item.totalReceivedQty)}
-                      {item.totalDifferenceQty !== 0
-                        ? ` · ${t("transfer.difference")}: ${formatTransferQty(item.totalDifferenceQty)}`
-                        : ""}
-                    </span>
-                    <span className="block text-[length:var(--exits-text-xs)] text-muted">
-                      {formatTransferTimestamp(item.updatedAtUtc)}
-                    </span>
-                  </span>
-                  <span className="transfer-row__aside flex shrink-0 items-center gap-2">
-                    <ChevronRight className="size-5 text-muted" aria-hidden />
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       {totalCount > PAGE_SIZE ? (

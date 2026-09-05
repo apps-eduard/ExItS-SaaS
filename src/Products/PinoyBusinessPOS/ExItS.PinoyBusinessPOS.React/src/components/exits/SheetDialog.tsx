@@ -91,6 +91,10 @@ export function ConfirmationDialog({
   cancelLabel,
   onConfirm,
   onCancel,
+  confirmTone = "default",
+  cancelTone = "ghost",
+  confirmIcon,
+  cancelIcon,
   testId = "confirmation-dialog",
 }: {
   open: boolean;
@@ -100,15 +104,25 @@ export function ConfirmationDialog({
   cancelLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Use danger for destructive confirms (void, cancel transfer, etc.). */
+  confirmTone?: "default" | "danger";
+  /** Match page danger-outline actions (e.g. Cancel transfer). */
+  cancelTone?: "ghost" | "danger-outline";
+  confirmIcon?: ReactNode;
+  cancelIcon?: ReactNode;
   testId?: string;
 }) {
-  if (!open) {
+  useBodyScrollLock(open);
+
+  // Portal to body so ancestor overflow/transform cannot trap `position: fixed`
+  // or let sticky action bars steal clicks from the confirm button.
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
       role="presentation"
       onClick={onCancel}
       data-testid={`${testId}-backdrop`}
@@ -127,19 +141,43 @@ export function ConfirmationDialog({
         </h2>
         <p
           id={`${testId}-detail`}
-          className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+          className="m-0 mt-2 whitespace-pre-line text-[length:var(--exits-text-sm)] text-muted"
         >
           {detail}
         </p>
         <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button
+            type="button"
+            variant={cancelTone === "danger-outline" ? "outline" : "ghost"}
+            className={
+              cancelTone === "danger-outline"
+                ? "border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
+                : undefined
+            }
+            onClick={(event) => {
+              event.stopPropagation();
+              onCancel();
+            }}
+            data-testid={`${testId}-cancel`}
+          >
+            {cancelIcon}
             {cancelLabel}
           </Button>
-          <Button type="button" onClick={onConfirm}>
+          <Button
+            type="button"
+            variant={confirmTone === "danger" ? "destructive" : "default"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onConfirm();
+            }}
+            data-testid={`${testId}-confirm`}
+          >
+            {confirmIcon}
             {confirmLabel}
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
