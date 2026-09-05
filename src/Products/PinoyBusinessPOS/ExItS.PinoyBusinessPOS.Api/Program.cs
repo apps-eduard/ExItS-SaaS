@@ -355,6 +355,8 @@ builder.Services.AddScoped<ReceiveInventoryTransfer>();
 builder.Services.AddScoped<CancelInventoryTransfer>();
 builder.Services.AddScoped<SupplyRouteQueryService>();
 builder.Services.AddScoped<UpsertSupplyRoutes>();
+builder.Services.AddScoped<UpsertSupplyCoverageBySource>();
+builder.Services.AddScoped<DeactivateNonWarehouseSupplySources>();
 builder.Services.AddScoped<SetPreferredSupplyRoute>();
 builder.Services.AddScoped<DisableSupplyRoute>();
 builder.Services.AddScoped<StockRequestQueryService>();

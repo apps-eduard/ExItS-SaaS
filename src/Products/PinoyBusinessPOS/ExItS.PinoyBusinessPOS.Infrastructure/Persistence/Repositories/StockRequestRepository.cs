@@ -41,6 +41,19 @@ internal sealed class SupplyRouteRepository : ISupplyRouteRepository
         return records.Select(StockRequestEntityMapper.ToDomain).ToList();
     }
 
+    public async Task<IReadOnlyList<SupplyRoute>> ListBySourceAsync(
+        PosOrganizationId organizationId,
+        PosBranchId sourceLocationId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.SupplyRoutes.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && r.SourceLocationId == sourceLocationId.Value)
+            .OrderBy(r => r.DestinationLocationId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(StockRequestEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<SupplyRoute>> ListAllAsync(
         PosOrganizationId organizationId,
         CancellationToken cancellationToken = default)

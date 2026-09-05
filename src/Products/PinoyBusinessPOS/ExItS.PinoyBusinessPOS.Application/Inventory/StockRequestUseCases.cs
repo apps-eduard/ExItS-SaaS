@@ -129,6 +129,26 @@ public sealed class UpsertSupplyRoutes
                         "Route source location was not found in this organization.");
                 }
 
+                if (item.IsActive)
+                {
+                    if (!await _branches.IsActiveInOrganizationAsync(organizationId, item.SourceLocationId, cancellationToken).ConfigureAwait(false))
+                    {
+                        return ApplicationResult<IReadOnlyList<SupplyRouteDto>>.Failure(
+                            DomainErrorCodes.SupplyRouteSourceInactive,
+                            "Supply warehouse must be an active location.");
+                    }
+
+                    var sourceType = await _branches
+                        .GetBranchTypeAsync(organizationId, item.SourceLocationId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
+                    {
+                        return ApplicationResult<IReadOnlyList<SupplyRouteDto>>.Failure(
+                            DomainErrorCodes.SupplyRouteSourceMustBeWarehouse,
+                            "Only Warehouse locations may be replenishment supply sources.");
+                    }
+                }
+
                 if (existingBySource.TryGetValue(item.SourceLocationId, out var existingRoute))
                 {
                     existingRoute.UpdateNotes(item.Notes, utcNow);
@@ -521,6 +541,23 @@ public sealed class CreateStockRequest
             return ApplicationResult<StockRequestDto>.Failure(
                 DomainErrorCodes.StockRequestRouteRequired,
                 "An active supply route is required for the requested source and destination.");
+        }
+
+        var sourceType = await _branches
+            .GetBranchTypeAsync(organizationId, request.RequestedSourceLocationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                DomainErrorCodes.StockRequestSourceMustBeWarehouse,
+                "Stock requests may only be sourced from Warehouse locations.");
+        }
+
+        if (!await _branches.IsActiveInOrganizationAsync(organizationId, request.RequestedSourceLocationId, cancellationToken).ConfigureAwait(false))
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                DomainErrorCodes.SupplyRouteSourceInactive,
+                "Supply warehouse must be an active location.");
         }
 
         if (request.Lines is null || request.Lines.Count == 0)

@@ -6,36 +6,53 @@ import { listBranchManagementSummaries } from "@/api/platform/organization-branc
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import {
   listSupplyRoutes,
-  upsertSupplyRoutesForDestination,
+  upsertSupplyCoverageBySource,
   type SupplyRouteDto,
 } from "@/api/pos/pos-supply-routes-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BottomSheet } from "@/components/exits/SheetDialog";
-import { isWarehouseBranch } from "@/features/branches/branch-type";
-import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
+import {
+  areaRetailMembers,
+  areaTriState,
+  connectedDestinationIds,
+  filterLocationsBySearch,
+  otherWarehouses,
+  preferredSourceByDestination,
+  retailDestinations,
+  toggleAreaSelection,
+  warehouseCoverageSummary,
+  warehouseSources,
+  type CoverageLocation,
+} from "@/features/replenishment/supply-coverage-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-type AreaFilter = "all" | "unassigned" | string;
+function plural(
+  t: (key: MessageKey) => string,
+  count: number,
+  oneKey: MessageKey,
+  manyKey: MessageKey,
+): string {
+  return (count === 1 ? t(oneKey) : t(manyKey)).replace("{count}", String(count));
+}
 
 export function SupplyRoutesPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
-  const [areaFilter, setAreaFilter] = useState<AreaFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "retail" | "warehouse">("all");
-  const [search, setSearch] = useState("");
-  const [manageDestinationId, setManageDestinationId] = useState<string | null>(null);
-  const [selectedSources, setSelectedSources] = useState<Record<string, boolean>>({});
-  const [preferredSourceId, setPreferredSourceId] = useState<string | null>(null);
+  const [searchWarehouses, setSearchWarehouses] = useState("");
+  const [manageSourceId, setManageSourceId] = useState<string | null>(null);
+  const [selectedDestinations, setSelectedDestinations] = useState<Set<string>>(new Set());
+  const [preferredOverride, setPreferredOverride] = useState<Set<string>>(new Set());
+  const [coverageSearch, setCoverageSearch] = useState("");
 
   const orgId = boundWorkspace?.organizationId;
   const workspace = useMemo(
@@ -69,66 +86,59 @@ export function SupplyRoutesPage() {
     queryFn: ({ signal }) => listSupplyRoutes(workspace!, signal),
   });
 
-  const destinations = useMemo(() => {
-    const branches = branchesQuery.data ?? [];
-    const q = search.trim().toLowerCase();
-    return branches.filter((b) => {
-      if (normalizeBranchStatusFilter(b.status) !== "Active") return false;
-      if (typeFilter === "warehouse" && !isWarehouseBranch(b.branchType)) return false;
-      if (typeFilter === "retail" && isWarehouseBranch(b.branchType)) return false;
-      if (areaFilter === "unassigned" && b.areaId) return false;
-      if (areaFilter !== "all" && areaFilter !== "unassigned" && b.areaId !== areaFilter) return false;
-      if (q && !b.name.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [branchesQuery.data, areaFilter, typeFilter, search]);
+  const locations: CoverageLocation[] = useMemo(
+    () =>
+      (branchesQuery.data ?? []).map((b) => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        branchType: b.branchType,
+        status: b.status,
+        areaId: b.areaId,
+        areaName: b.areaName,
+      })),
+    [branchesQuery.data],
+  );
 
-  const routesByDestination = useMemo(() => {
-    const map = new Map<string, SupplyRouteDto[]>();
-    for (const route of routesQuery.data ?? []) {
-      const list = map.get(route.destinationLocationId) ?? [];
-      list.push(route);
-      map.set(route.destinationLocationId, list);
-    }
-    return map;
-  }, [routesQuery.data]);
+  const routes: SupplyRouteDto[] = useMemo(() => routesQuery.data ?? [], [routesQuery.data]);
+  const warehouses = useMemo(() => {
+    const list = warehouseSources(locations);
+    const q = searchWarehouses.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (w) => w.name.toLowerCase().includes(q) || (w.code ?? "").toLowerCase().includes(q),
+    );
+  }, [locations, searchWarehouses]);
 
   const nameById = useMemo(() => {
-    const map = new Map<string, { name: string; warehouse: boolean }>();
-    for (const b of branchesQuery.data ?? []) {
-      map.set(b.id, { name: b.name, warehouse: isWarehouseBranch(b.branchType) });
-    }
+    const map = new Map<string, string>();
+    for (const loc of locations) map.set(loc.id, loc.name);
     return map;
-  }, [branchesQuery.data]);
+  }, [locations]);
 
-  const manageDestination = destinations.find((d) => d.id === manageDestinationId) ?? null;
+  const preferredByDest = useMemo(() => preferredSourceByDestination(routes), [routes]);
 
-  const openManage = (destinationId: string) => {
-    const existing = routesByDestination.get(destinationId) ?? [];
-    const selected: Record<string, boolean> = {};
-    for (const route of existing.filter((r) => r.isActive)) {
-      selected[route.sourceLocationId] = true;
-    }
-    setSelectedSources(selected);
-    setPreferredSourceId(existing.find((r) => r.isPreferred && r.isActive)?.sourceLocationId ?? null);
-    setManageDestinationId(destinationId);
+  const manageWarehouse = locations.find((l) => l.id === manageSourceId) ?? null;
+
+  const openManage = (sourceId: string) => {
+    setSelectedDestinations(connectedDestinationIds(routes, sourceId));
+    setPreferredOverride(new Set());
+    setCoverageSearch("");
+    setManageSourceId(sourceId);
   };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!workspace || !manageDestinationId) return;
-      const sourceIds = Object.entries(selectedSources)
-        .filter(([, on]) => on)
-        .map(([id]) => id);
-      const routes = sourceIds.map((sourceLocationId) => ({
-        sourceLocationId,
-        isActive: true,
-        isPreferred: preferredSourceId === sourceLocationId,
-      }));
-      await upsertSupplyRoutesForDestination(workspace, manageDestinationId, routes);
+      if (!workspace || !manageSourceId) return;
+      await upsertSupplyCoverageBySource(
+        workspace,
+        manageSourceId,
+        [...selectedDestinations],
+        [...preferredOverride],
+      );
     },
     onSuccess: async () => {
-      setManageDestinationId(null);
+      setManageSourceId(null);
       await queryClient.invalidateQueries({ queryKey: ["supply-routes", orgId] });
     },
   });
@@ -149,125 +159,87 @@ export function SupplyRoutesPage() {
     return <ErrorState title={t("supplyRoutes.loadError")} detail={detail} />;
   }
 
+  const areas = areasQuery.data ?? [];
+  const coverageRetail = retailDestinations(locations);
+  const coverageOtherWarehouses = manageSourceId
+    ? otherWarehouses(locations, manageSourceId)
+    : [];
+  const visibleRetail = filterLocationsBySearch(coverageRetail, coverageSearch);
+  const visibleOtherWh = filterLocationsBySearch(coverageOtherWarehouses, coverageSearch);
+  const areaIdsOrdered = [
+    ...areas.map((a) => a.id),
+    ...(coverageRetail.some((r) => !r.areaId) ? [null as string | null] : []),
+  ];
+
   return (
     <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="supply-routes-page">
       <PageHeader
         title={t("supplyRoutes.title")}
-        description={t("supplyRoutes.lede")}
+        description={t("supplyRoutes.ledeWarehouseFirst")}
         backTo={pageBackNav.orgBranches.to}
         backLabel={t(pageBackNav.orgBranches.labelKey)}
         backTestId="page-header-back-branches"
       />
 
-      <ExitsChipBar
-        ariaLabel={t("supplyRoutes.filter.area")}
-        variant="filter"
-        items={[
-          {
-            key: "all",
-            label: t("supplyRoutes.filter.all"),
-            state: areaFilter === "all" ? "active" : "idle",
-            onSelect: () => setAreaFilter("all"),
-          },
-          ...(areasQuery.data ?? []).map((a) => ({
-            key: a.id,
-            label: a.name,
-            state: (areaFilter === a.id ? "active" : "idle") as "active" | "idle",
-            onSelect: () => setAreaFilter(a.id),
-          })),
-          {
-            key: "unassigned",
-            label: t("supplyRoutes.filter.unassigned"),
-            state: areaFilter === "unassigned" ? "active" : "idle",
-            onSelect: () => setAreaFilter("unassigned"),
-          },
-        ]}
-      />
-
-      <ExitsChipBar
-        ariaLabel={t("supplyRoutes.filter.type")}
-        variant="filter"
-        items={[
-          {
-            key: "all-types",
-            label: t("supplyRoutes.filter.allTypes"),
-            state: typeFilter === "all" ? "active" : "idle",
-            onSelect: () => setTypeFilter("all"),
-          },
-          {
-            key: "retail",
-            label: t("supplyRoutes.filter.retail"),
-            state: typeFilter === "retail" ? "active" : "idle",
-            onSelect: () => setTypeFilter("retail"),
-          },
-          {
-            key: "warehouse",
-            label: t("supplyRoutes.filter.warehouse"),
-            state: typeFilter === "warehouse" ? "active" : "idle",
-            onSelect: () => setTypeFilter("warehouse"),
-          },
-        ]}
-      />
-
       <input
         className="exits-input"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t("supplyRoutes.search")}
-        data-testid="supply-routes-search"
+        value={searchWarehouses}
+        onChange={(e) => setSearchWarehouses(e.target.value)}
+        placeholder={t("supplyRoutes.searchWarehouses")}
+        data-testid="supply-routes-search-warehouses"
       />
 
-      {destinations.length === 0 ? (
-        <EmptyState title={t("supplyRoutes.empty")} detail={t("supplyRoutes.emptyDetail")} />
+      {warehouses.length === 0 ? (
+        <EmptyState
+          title={t("supplyRoutes.noWarehouses")}
+          detail={t("supplyRoutes.noWarehousesDetail")}
+        />
       ) : (
-        <ul className="flex flex-col gap-2">
-          {destinations.map((dest) => {
-            const routes = (routesByDestination.get(dest.id) ?? []).filter((r) => r.isActive);
-            const preferred = routes.find((r) => r.isPreferred);
-            const others = routes.filter((r) => !r.isPreferred);
+        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="supply-routes-warehouse-list">
+          {warehouses.map((wh) => {
+            const summary = warehouseCoverageSummary(locations, routes, wh.id);
             return (
               <li
-                key={dest.id}
+                key={wh.id}
                 className="rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] p-3"
-                data-testid={`supply-route-card-${dest.id}`}
+                data-testid={`supply-warehouse-card-${wh.id}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-medium">{dest.name}</div>
-                    <StatusChip tone="info">
-                      {isWarehouseBranch(dest.branchType)
-                        ? t("supplyRoutes.type.warehouse")
-                        : t("supplyRoutes.type.retail")}
-                    </StatusChip>
+                    <div className="font-medium">{wh.name}</div>
+                    <StatusChip tone="info">{t("supplyRoutes.type.warehouse")}</StatusChip>
                   </div>
                   {allowManage ? (
-                    <Button type="button" variant="outline" onClick={() => openManage(dest.id)}>
-                      {t("supplyRoutes.manageSources")}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => openManage(wh.id)}
+                      data-testid={`supply-manage-coverage-${wh.id}`}
+                    >
+                      {t("supplyRoutes.manageCoverage")}
                     </Button>
                   ) : null}
                 </div>
                 <div className="mt-2 text-[length:var(--exits-text-sm)] text-muted">
-                  <div>{t("supplyRoutes.preferred")}</div>
-                  <div className="text-foreground">
-                    {preferred
-                      ? `${nameById.get(preferred.sourceLocationId)?.name ?? preferred.sourceLocationId} [${
-                          nameById.get(preferred.sourceLocationId)?.warehouse
-                            ? t("supplyRoutes.type.warehouse")
-                            : t("supplyRoutes.type.retail")
-                        }]`
-                      : t("supplyRoutes.none")}
+                  <div className="font-medium text-foreground">{t("supplyRoutes.coverage")}</div>
+                  <div>
+                    {plural(t, summary.retailCount, "supplyRoutes.count.retailOne", "supplyRoutes.count.retailMany")}
+                    {summary.warehouseCount > 0
+                      ? ` · ${plural(t, summary.warehouseCount, "supplyRoutes.count.warehouseOne", "supplyRoutes.count.warehouseMany")}`
+                      : ""}
                   </div>
-                  {others.length > 0 ? (
-                    <>
-                      <div className="mt-1">{t("supplyRoutes.otherSources")}</div>
-                      <ul>
-                        {others.map((r) => (
-                          <li key={r.routeId}>
-                            {nameById.get(r.sourceLocationId)?.name ?? r.sourceLocationId}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
+                  {summary.fullAreaNames.length > 0 ? (
+                    <div className="mt-1">
+                      {t("supplyRoutes.areasFullyCovered")}: {summary.fullAreaNames.join(", ")}
+                    </div>
+                  ) : null}
+                  {summary.partialAreas.length > 0 ? (
+                    <div className="mt-1">
+                      {t("supplyRoutes.areasPartial")}:{" "}
+                      {summary.partialAreas
+                        .map((a) => `${a.name} · ${a.selected} of ${a.total}`)
+                        .join("; ")}
+                    </div>
                   ) : null}
                 </div>
               </li>
@@ -283,58 +255,214 @@ export function SupplyRoutesPage() {
       </p>
 
       <BottomSheet
-        open={manageDestination !== null}
-        onClose={() => setManageDestinationId(null)}
-        panelId="supply-routes-manage-panel"
-        testId="supply-routes-manage-panel"
-        title={t("supplyRoutes.manageTitle").replace("{name}", manageDestination?.name ?? "")}
+        open={manageWarehouse !== null}
+        onClose={() => setManageSourceId(null)}
+        panelId="supply-coverage-panel"
+        testId="supply-coverage-panel"
+        presentation="sheet-mobile-dialog-desktop"
+        panelClassName="md:max-w-[720px] md:max-h-[80vh] md:flex md:flex-col"
+        title={t("supplyRoutes.coverageTitle").replace("{name}", manageWarehouse?.name ?? "")}
         closeLabel={t("branches.cancel")}
       >
-        <div className="flex flex-col gap-2" data-testid="supply-routes-manage">
-          {(branchesQuery.data ?? [])
-            .filter(
-              (b) =>
-                b.id !== manageDestinationId && normalizeBranchStatusFilter(b.status) === "Active",
-            )
-            .map((source) => {
-              const checked = Boolean(selectedSources[source.id]);
-              return (
-                <label key={source.id} className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) =>
-                      setSelectedSources((prev) => ({ ...prev, [source.id]: e.target.checked }))
-                    }
-                  />
-                  <span className="flex-1">
-                    {source.name} [
-                    {isWarehouseBranch(source.branchType)
-                      ? t("supplyRoutes.type.warehouse")
-                      : t("supplyRoutes.type.retail")}
-                    ]
-                  </span>
-                  <button
-                    type="button"
-                    className="text-[length:var(--exits-text-xs)] underline disabled:opacity-40"
-                    disabled={!checked}
-                    onClick={() => setPreferredSourceId(source.id)}
-                  >
-                    {preferredSourceId === source.id
-                      ? t("supplyRoutes.preferredBadge")
-                      : t("supplyRoutes.setPreferred")}
-                  </button>
-                </label>
-              );
-            })}
-          <Button
-            type="button"
-            disabled={saveMutation.isPending || !allowManage}
-            onClick={() => saveMutation.mutate()}
-            data-testid="supply-routes-save"
-          >
-            {t("expense.save")}
-          </Button>
+        <div
+          className="flex min-h-0 flex-1 flex-col gap-3 md:overflow-hidden"
+          data-testid="supply-coverage-manage"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("supplyRoutes.coverageLede")}
+          </p>
+          <input
+            className="exits-input"
+            value={coverageSearch}
+            onChange={(e) => setCoverageSearch(e.target.value)}
+            placeholder={t("supplyRoutes.searchLocations")}
+            data-testid="supply-coverage-search"
+          />
+
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto md:pr-1">
+            <section>
+              <h3 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("supplyRoutes.areasHeading")}
+              </h3>
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {areas.map((area) => {
+                  const members = areaRetailMembers(locations, area.id);
+                  if (members.length === 0) return null;
+                  const memberIds = members.map((m) => m.id);
+                  const state = areaTriState(memberIds, selectedDestinations);
+                  const selectedCount = memberIds.filter((id) => selectedDestinations.has(id)).length;
+                  return (
+                    <li key={area.id}>
+                      <label className="flex cursor-pointer items-start gap-2 text-[length:var(--exits-text-sm)]">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={state === "checked"}
+                          ref={(el) => {
+                            if (el) el.indeterminate = state === "partial";
+                          }}
+                          onChange={() =>
+                            setSelectedDestinations((prev) => toggleAreaSelection(memberIds, prev))
+                          }
+                          data-testid={`supply-area-${area.id}`}
+                        />
+                        <span>
+                          <span className="font-medium text-foreground">{area.name}</span>
+                          <span className="block text-muted">
+                            {state === "partial"
+                              ? t("supplyRoutes.areaPartialCount")
+                                  .replace("{selected}", String(selectedCount))
+                                  .replace("{total}", String(members.length))
+                              : plural(
+                                  t,
+                                  members.length,
+                                  "supplyRoutes.count.retailOne",
+                                  "supplyRoutes.count.retailMany",
+                                )}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("supplyRoutes.retailLocations")}
+              </h3>
+              {areaIdsOrdered.map((areaId) => {
+                const members = areaRetailMembers(locations, areaId);
+                const visible = members.filter((m) => visibleRetail.some((v) => v.id === m.id));
+                if (visible.length === 0) return null;
+                const heading =
+                  areaId === null
+                    ? t("supplyRoutes.unassigned")
+                    : areas.find((a) => a.id === areaId)?.name ?? t("supplyRoutes.unassigned");
+                return (
+                  <div key={areaId ?? "unassigned"} className="mb-3">
+                    <div className="mb-1 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {heading}
+                    </div>
+                    <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                      {visible.map((loc) => {
+                        const checked = selectedDestinations.has(loc.id);
+                        const preferredId = preferredByDest.get(loc.id);
+                        const pendingPreferred = preferredOverride.has(loc.id);
+                        const preferredName = pendingPreferred
+                          ? manageWarehouse?.name
+                          : preferredId
+                            ? nameById.get(preferredId)
+                            : null;
+                        const canSetPreferred =
+                          checked &&
+                          allowManage &&
+                          manageSourceId &&
+                          preferredId !== manageSourceId &&
+                          !pendingPreferred;
+                        return (
+                          <li key={loc.id} className="flex flex-col gap-0.5">
+                            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  const checkedNow = e.target.checked;
+                                  setSelectedDestinations((prev) => {
+                                    const next = new Set(prev);
+                                    if (checkedNow) next.add(loc.id);
+                                    else next.delete(loc.id);
+                                    return next;
+                                  });
+                                  if (!checkedNow) {
+                                    setPreferredOverride((p) => {
+                                      const cleared = new Set(p);
+                                      cleared.delete(loc.id);
+                                      return cleared;
+                                    });
+                                  }
+                                }}
+                                data-testid={`supply-dest-${loc.id}`}
+                              />
+                              <span className="flex-1 truncate">{loc.name}</span>
+                              <StatusChip tone="neutral">{t("supplyRoutes.type.retail")}</StatusChip>
+                            </label>
+                            {checked && preferredName ? (
+                              <div className="pl-6 text-[length:var(--exits-text-xs)] text-muted">
+                                {t("supplyRoutes.preferredLabel")}: {preferredName}
+                              </div>
+                            ) : null}
+                            {canSetPreferred ? (
+                              <button
+                                type="button"
+                                className="pl-6 text-left text-[length:var(--exits-text-xs)] underline"
+                                onClick={() =>
+                                  setPreferredOverride((prev) => new Set(prev).add(loc.id))
+                                }
+                                data-testid={`supply-set-preferred-${loc.id}`}
+                              >
+                                {t("supplyRoutes.setThisWarehousePreferred")}
+                              </button>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })}
+            </section>
+
+            <details className="rounded-[var(--exits-radius-sm)] border border-[var(--exits-border)] p-2">
+              <summary className="cursor-pointer text-[length:var(--exits-text-sm)] font-semibold">
+                {t("supplyRoutes.otherWarehouses")}
+              </summary>
+              <ul className="mt-2 m-0 flex list-none flex-col gap-1.5 p-0">
+                {visibleOtherWh.length === 0 ? (
+                  <li className="text-[length:var(--exits-text-sm)] text-muted">
+                    {t("supplyRoutes.otherWarehousesEmpty")}
+                  </li>
+                ) : (
+                  visibleOtherWh.map((loc) => (
+                    <li key={loc.id}>
+                      <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                        <input
+                          type="checkbox"
+                          checked={selectedDestinations.has(loc.id)}
+                          onChange={(e) => {
+                            setSelectedDestinations((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(loc.id);
+                              else next.delete(loc.id);
+                              return next;
+                            });
+                          }}
+                          data-testid={`supply-wh-dest-${loc.id}`}
+                        />
+                        <span className="flex-1 truncate">{loc.name}</span>
+                        <StatusChip tone="info">{t("supplyRoutes.type.warehouse")}</StatusChip>
+                      </label>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </details>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--exits-border)] pt-3">
+            <Button type="button" variant="outline" onClick={() => setManageSourceId(null)}>
+              {t("branches.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={saveMutation.isPending || !allowManage}
+              onClick={() => saveMutation.mutate()}
+              data-testid="supply-coverage-save"
+            >
+              {t("supplyRoutes.saveChanges")}
+            </Button>
+          </div>
           {saveMutation.isError ? (
             <p className="text-danger text-[length:var(--exits-text-sm)]">{t("supplyRoutes.saveError")}</p>
           ) : null}

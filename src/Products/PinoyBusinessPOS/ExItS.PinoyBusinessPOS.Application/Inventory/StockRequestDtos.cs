@@ -21,6 +21,11 @@ public sealed record UpsertSupplyRoutesRequest(
     Guid DestinationLocationId,
     IReadOnlyList<UpsertSupplyRouteItemRequest> Routes);
 
+public sealed record UpsertSupplyCoverageBySourceRequest(
+    Guid SourceLocationId,
+    IReadOnlyList<Guid> DestinationLocationIds,
+    IReadOnlyList<Guid>? SetPreferredForDestinationIds = null);
+
 public sealed record SetPreferredSupplyRouteRequest(Guid SourceLocationId);
 
 public sealed record StockRequestLineRequest(Guid ProductId, decimal RequestedQuantity);

@@ -11,6 +11,10 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
+  warehouseOnlyActiveRoutes,
+  type CoverageLocation,
+} from "@/features/replenishment/supply-coverage-helpers";
+import {
   hasConfiguredInternalSource,
   pickPreferredSourceId,
 } from "@/features/replenishment/stock-request-helpers";
@@ -36,12 +40,31 @@ export function StockRequestCreatePage() {
     [boundWorkspace],
   );
 
-  const branchNames = useMemo(() => {
+  const orgBranches = useMemo(() => {
     const org = workspaces.find((w) => w.organizationId === boundWorkspace?.organizationId);
-    const map = new Map<string, string>();
-    for (const b of org?.branches ?? []) map.set(b.branchId, b.name);
-    return map;
+    return org?.branches ?? [];
   }, [workspaces, boundWorkspace?.organizationId]);
+
+  const branchNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const b of orgBranches) map.set(b.branchId, b.name);
+    return map;
+  }, [orgBranches]);
+
+  const locationById = useMemo(() => {
+    const map = new Map<string, CoverageLocation>();
+    for (const b of orgBranches) {
+      map.set(b.branchId, {
+        id: b.branchId,
+        name: b.name,
+        branchType: b.branchType ?? "Retail",
+        status: b.isActive ? "Active" : "Inactive",
+        areaId: b.areaId,
+        areaName: b.areaName,
+      });
+    }
+    return map;
+  }, [orgBranches]);
 
   const routesQuery = useQuery({
     queryKey: ["supply-routes-dest", workspace?.organizationId, workspace?.branchId],
@@ -56,8 +79,8 @@ export function StockRequestCreatePage() {
   });
 
   const activeRoutes = useMemo(
-    () => (routesQuery.data ?? []).filter((r) => r.isActive),
-    [routesQuery.data],
+    () => warehouseOnlyActiveRoutes(routesQuery.data ?? [], locationById),
+    [routesQuery.data, locationById],
   );
 
   useEffect(() => {

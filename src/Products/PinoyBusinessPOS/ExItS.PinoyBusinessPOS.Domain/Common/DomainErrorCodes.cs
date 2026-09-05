@@ -246,6 +246,9 @@ public static class DomainErrorCodes
     public const string InvalidSupplyRouteId = "pos.inventory.supply_route.id.invalid";
     public const string SupplyRouteSameLocation = "pos.inventory.supply_route.same_location";
     public const string SupplyRouteDuplicateSource = "pos.inventory.supply_route.duplicate_source";
+    public const string SupplyRouteSourceMustBeWarehouse = "pos.inventory.supply_route.source.must_be_warehouse";
+    public const string SupplyRouteSourceInactive = "pos.inventory.supply_route.source.inactive";
+    public const string SupplyRouteDestinationInactive = "pos.inventory.supply_route.destination.inactive";
     public const string InvalidSupplyRouteNotes = "pos.inventory.supply_route.notes.invalid";
     public const string InvalidStockRequestId = "pos.inventory.stock_request.id.invalid";
     public const string InvalidStockRequestLineId = "pos.inventory.stock_request.line.id.invalid";
@@ -259,6 +262,7 @@ public static class DomainErrorCodes
     public const string StockRequestRequiresLines = "pos.inventory.stock_request.lines.required";
     public const string StockRequestDuplicateProduct = "pos.inventory.stock_request.duplicate_product";
     public const string StockRequestRouteRequired = "pos.inventory.stock_request.route.required";
+    public const string StockRequestSourceMustBeWarehouse = "pos.inventory.stock_request.source.must_be_warehouse";
 
     public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
     public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";

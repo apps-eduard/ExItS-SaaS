@@ -24,12 +24,13 @@ public sealed class SupplyRouteAndStockRequestDomainTests
     }
 
     [Fact]
-    public void Supply_route_allows_warehouse_to_retail_and_retail_to_retail()
+    public void Supply_route_domain_allows_any_distinct_locations_branch_type_is_application_rule()
     {
         var whToRetail = SupplyRoute.Create(Org, Warehouse, BranchA, Utc, isPreferred: true);
         Assert.True(whToRetail.IsPreferred);
         Assert.True(whToRetail.IsActive);
 
+        // Domain remains location-agnostic; Upsert/CreateStockRequest enforce Warehouse sources.
         var retailToRetail = SupplyRoute.Create(Org, BranchA, BranchB, Utc);
         Assert.Equal(BranchA, retailToRetail.SourceLocationId);
         Assert.Equal(BranchB, retailToRetail.DestinationLocationId);

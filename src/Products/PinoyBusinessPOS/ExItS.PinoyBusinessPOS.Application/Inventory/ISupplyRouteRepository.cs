@@ -15,6 +15,11 @@ public interface ISupplyRouteRepository
         PosBranchId destinationLocationId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SupplyRoute>> ListBySourceAsync(
+        PosOrganizationId organizationId,
+        PosBranchId sourceLocationId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<SupplyRoute>> ListAllAsync(
         PosOrganizationId organizationId,
         CancellationToken cancellationToken = default);

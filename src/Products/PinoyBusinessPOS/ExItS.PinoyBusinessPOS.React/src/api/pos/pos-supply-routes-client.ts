@@ -66,3 +66,24 @@ export async function upsertSupplyRoutesForDestination(
   });
   return z.array(supplyRouteDtoSchema).parse(data);
 }
+
+export async function upsertSupplyCoverageBySource(
+  workspace: PosWorkspaceScope,
+  sourceLocationId: string,
+  destinationLocationIds: string[],
+  setPreferredForDestinationIds?: string[],
+  signal?: AbortSignal,
+): Promise<SupplyRouteDto[]> {
+  const data = await posRequest<unknown>({
+    method: "PUT",
+    path: `${PATH}/by-source/${sourceLocationId}`,
+    workspace,
+    signal,
+    body: {
+      sourceLocationId,
+      destinationLocationIds,
+      setPreferredForDestinationIds: setPreferredForDestinationIds ?? [],
+    },
+  });
+  return z.array(supplyRouteDtoSchema).parse(data);
+}

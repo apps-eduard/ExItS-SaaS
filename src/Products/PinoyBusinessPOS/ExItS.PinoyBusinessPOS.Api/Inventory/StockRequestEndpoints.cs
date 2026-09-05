@@ -14,6 +14,7 @@ internal static class StockRequestEndpoints
         group.MapGet("/supply-routes", ListSupplyRoutes);
         group.MapGet("/supply-routes/by-destination/{destinationLocationId:guid}", ListSupplyRoutesByDestination);
         group.MapPut("/supply-routes/by-destination/{destinationLocationId:guid}", UpsertSupplyRoutesForDestination);
+        group.MapPut("/supply-routes/by-source/{sourceLocationId:guid}", UpsertSupplyCoverageForSource);
         group.MapPost("/supply-routes/by-destination/{destinationLocationId:guid}/preferred", SetPreferredRoute);
         group.MapPost("/supply-routes/{routeId:guid}/disable", DisableRoute);
 
@@ -71,6 +72,24 @@ internal static class StockRequestEndpoints
         }
 
         var payload = body with { DestinationLocationId = destinationLocationId };
+        var result = await useCase.ExecuteAsync(organizationId, payload, ct).ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> UpsertSupplyCoverageForSource(
+        HttpRequest request,
+        Guid sourceLocationId,
+        UpsertSupplyCoverageBySourceRequest body,
+        UpsertSupplyCoverageBySource useCase,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var payload = body with { SourceLocationId = sourceLocationId };
         var result = await useCase.ExecuteAsync(organizationId, payload, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
