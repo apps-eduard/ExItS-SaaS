@@ -132,6 +132,8 @@ describe("BranchManagementListPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("branch-mgmt-capacity")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("branch-mgmt-supply-routes")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-mgmt-supply-routes")).toHaveAttribute("href", "/org/supply-routes");
     expect(screen.getByRole("heading", { name: "branches.mgmt.title" })).toBeInTheDocument();
     expect(screen.getByTestId("branch-mgmt-capacity")).toHaveTextContent("branches.mgmt.capacity");
     expect(screen.getByTestId("branch-mgmt-capacity-value")).toHaveTextContent(

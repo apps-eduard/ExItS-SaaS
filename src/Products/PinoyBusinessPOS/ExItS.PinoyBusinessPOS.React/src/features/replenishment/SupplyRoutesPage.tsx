@@ -142,12 +142,11 @@ export function SupplyRoutesPage() {
   }
 
   if (branchesQuery.isError || routesQuery.isError) {
-    return (
-      <ErrorState
-        title={t("supplyRoutes.loadError")}
-        detail={t("supplyRoutes.loadError")}
-      />
-    );
+    const detail =
+      (routesQuery.error instanceof Error && routesQuery.error.message) ||
+      (branchesQuery.error instanceof Error && branchesQuery.error.message) ||
+      t("supplyRoutes.loadError");
+    return <ErrorState title={t("supplyRoutes.loadError")} detail={detail} />;
   }
 
   return (
@@ -242,7 +241,7 @@ export function SupplyRoutesPage() {
                     </StatusChip>
                   </div>
                   {allowManage ? (
-                    <Button type="button" variant="outline" size="sm" onClick={() => openManage(dest.id)}>
+                    <Button type="button" variant="outline" onClick={() => openManage(dest.id)}>
                       {t("supplyRoutes.manageSources")}
                     </Button>
                   ) : null}

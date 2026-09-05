@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Warehouse } from "lucide-react";
+import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Route, Warehouse } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
@@ -191,6 +191,15 @@ export function BranchManagementListPage() {
     return actions;
   }
 
+  const supplyRoutesControl = (
+    <Button asChild variant="outline" data-testid="branch-mgmt-supply-routes">
+      <Link to="/org/supply-routes" className="inline-flex items-center gap-2">
+        <Route className="size-4 shrink-0" aria-hidden />
+        <span>{t("branches.mgmt.supplyRoutes")}</span>
+      </Link>
+    </Button>
+  );
+
   const addLocationControl =
     canCreate ? (
       atLimit ? (
@@ -258,6 +267,13 @@ export function BranchManagementListPage() {
       )
     ) : null;
 
+  const headerActions = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {supplyRoutesControl}
+      {addLocationControl}
+    </div>
+  );
+
   if (!canManage) {
     return (
       <div className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3" data-testid="branch-mgmt-denied">
@@ -280,14 +296,8 @@ export function BranchManagementListPage() {
         backTo={pageBackNav.org.to}
         backLabel={t(pageBackNav.org.labelKey)}
         backTestId="page-header-back-org"
-        trailing={addLocationControl}
+        trailing={headerActions}
       />
-
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm" data-testid="branch-mgmt-supply-routes">
-          <Link to="/org/supply-routes">{t("branches.mgmt.supplyRoutes")}</Link>
-        </Button>
-      </div>
 
       {capacity ? (
         <div className="branch-mgmt-capacity" data-testid="branch-mgmt-capacity">

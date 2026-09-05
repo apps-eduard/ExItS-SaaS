@@ -119,7 +119,7 @@ public partial class AddPosSupplyRoutesAndStockRequests : Migration
                     name: "fk_stock_request_lines_products",
                     column: x => x.product_id,
                     principalSchema: "pos",
-                    principalTable: "catalog_products",
+                    principalTable: "products",
                     principalColumn: "id",
                     onDelete: ReferentialAction.Restrict);
             });
