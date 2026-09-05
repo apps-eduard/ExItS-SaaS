@@ -288,6 +288,21 @@ describe("BranchManagementListPage", () => {
 
     await user.click(screen.getByTestId(`branch-mgmt-more-${branchId}`));
     expect(screen.getByTestId("branch-mgmt-more-panel")).toBeInTheDocument();
+    expect(screen.getByTestId(`branch-mgmt-more-fulfillment-${branchId}`)).toHaveAttribute(
+      "href",
+      `/org/branches/${branchId}/fulfillment`,
+    );
+    expect(screen.getByTestId(`branch-mgmt-more-staff-${branchId}`)).toHaveAttribute(
+      "href",
+      `/org/branches/${branchId}?tab=staff`,
+    );
+    // Primary card actions are not duplicated in the overlay.
+    expect(
+      within(screen.getByTestId("branch-mgmt-more-panel")).queryByText("branches.mgmt.open"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("branch-mgmt-more-panel")).queryByText("branches.mgmt.viewQr"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows Warehouse type chip and hides retail-only metadata", async () => {
@@ -308,5 +323,26 @@ describe("BranchManagementListPage", () => {
     expect(screen.getByTestId(`branch-mgmt-open-${warehouseId}`)).toHaveTextContent(
       "branches.mgmt.openWarehouse",
     );
+  });
+
+  it("warehouse more menu excludes fulfillment and QR", async () => {
+    const user = userEvent.setup();
+    listBranchManagementSummaries.mockResolvedValue({
+      ok: true,
+      value: [warehouseBranch()],
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`branch-mgmt-more-${warehouseId}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`branch-mgmt-more-${warehouseId}`));
+    const panel = screen.getByTestId("branch-mgmt-more-panel");
+    expect(within(panel).getByTestId(`branch-mgmt-more-staff-${warehouseId}`)).toBeInTheDocument();
+    expect(within(panel).getByTestId(`branch-mgmt-more-devices-${warehouseId}`)).toBeInTheDocument();
+    expect(
+      within(panel).queryByTestId(`branch-mgmt-more-fulfillment-${warehouseId}`),
+    ).not.toBeInTheDocument();
+    expect(within(panel).queryByText("branches.mgmt.viewQr")).not.toBeInTheDocument();
   });
 });

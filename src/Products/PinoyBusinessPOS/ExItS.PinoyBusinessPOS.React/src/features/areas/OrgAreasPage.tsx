@@ -301,7 +301,8 @@ export function OrgAreasPage() {
         testId="org-areas-form"
         title={t("areas.create.title")}
         closeLabel={t("areas.cancel")}
-        panelClassName="sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--exits-radius-lg)]"
+        presentation="sheet-mobile-dialog-desktop"
+        panelClassName="md:max-w-md"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">

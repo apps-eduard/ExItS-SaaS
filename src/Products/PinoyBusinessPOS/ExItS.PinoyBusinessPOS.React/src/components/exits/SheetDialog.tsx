@@ -22,6 +22,8 @@ function useBodyScrollLock(locked: boolean) {
   }, [locked]);
 }
 
+export type BottomSheetPresentation = "sheet" | "sheet-mobile-dialog-desktop";
+
 export function BottomSheet({
   open,
   onClose,
@@ -31,6 +33,8 @@ export function BottomSheet({
   testId = "bottom-sheet",
   closeLabel = "Close",
   panelClassName,
+  /** Mobile bottom sheet; from md+ optionally center as a compact dialog. */
+  presentation = "sheet",
 }: {
   open: boolean;
   onClose: () => void;
@@ -41,13 +45,30 @@ export function BottomSheet({
   closeLabel?: string;
   /** Extra classes for the dialog panel (e.g. desktop max-width). */
   panelClassName?: string;
+  presentation?: BottomSheetPresentation;
 }) {
   useBodyScrollLock(open);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
 
   // Unmount when closed so transform animations on ancestors cannot trap `position: fixed`.
   if (!open || typeof document === "undefined") {
     return null;
   }
+
+  const responsiveDialog = presentation === "sheet-mobile-dialog-desktop";
 
   return createPortal(
     <>
@@ -60,8 +81,17 @@ export function BottomSheet({
       <div
         id={panelId}
         data-testid={testId}
+        data-presentation={presentation}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[70] flex max-h-[75dvh] min-h-0 flex-col gap-3 overflow-hidden rounded-t-[var(--exits-radius-lg)] border border-border bg-surface p-4 shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+          "fixed z-[70] flex min-h-0 flex-col gap-3 overflow-hidden border border-border bg-surface p-4",
+          responsiveDialog
+            ? [
+                // Mobile: bottom sheet
+                "inset-x-0 bottom-0 max-h-[75dvh] rounded-t-[var(--exits-radius-lg)] shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+                // md+: centered compact dialog
+                "md:inset-auto md:left-1/2 md:top-1/2 md:w-[min(100%-2rem,40rem)] md:max-h-[75vh] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[var(--exits-radius-lg)] md:shadow-[var(--exits-shadow-lg)]",
+              ]
+            : "inset-x-0 bottom-0 max-h-[75dvh] rounded-t-[var(--exits-radius-lg)] shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
           panelClassName,
         )}
         role="dialog"
@@ -76,7 +106,9 @@ export function BottomSheet({
             </Button>
           </div>
         ) : null}
-        <div className="bottom-sheet__body flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+        <div className="bottom-sheet__body flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+          {children}
+        </div>
       </div>
     </>,
     document.body,

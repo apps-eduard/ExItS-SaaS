@@ -839,6 +839,7 @@ export function BranchManagementDetailPage() {
                 : t("branches.detail.makePrimary")
         }
         closeLabel={t("branches.cancel")}
+        presentation="sheet-mobile-dialog-desktop"
       >
         <div className="flex flex-col gap-3">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">

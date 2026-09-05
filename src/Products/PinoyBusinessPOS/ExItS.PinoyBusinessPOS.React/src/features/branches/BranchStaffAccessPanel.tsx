@@ -268,6 +268,7 @@ export function BranchStaffAccessPanel({
         testId="branch-staff-add-panel"
         title={t("branches.staff.add")}
         closeLabel={t("branches.cancel")}
+        presentation="sheet-mobile-dialog-desktop"
       >
         <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
           {t("branches.staff.search")}

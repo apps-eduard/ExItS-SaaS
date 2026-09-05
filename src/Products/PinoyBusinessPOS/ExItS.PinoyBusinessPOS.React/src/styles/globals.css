@@ -11184,11 +11184,10 @@ a.exits-chip--primary:hover {
   min-width: 0;
 }
 
-.branch-mgmt-filter-group__label {
-  font-size: var(--exits-text-xs);
-  font-weight: var(--exits-font-weight-medium);
-  color: var(--exits-text-muted);
-  min-width: 3.25rem;
+.branch-mgmt-more-menu [role="menu"] {
+  min-width: 14rem;
+  max-width: 16.25rem;
+  width: max-content;
 }
 
 .branch-mgmt-toolbar {

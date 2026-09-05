@@ -142,6 +142,15 @@ describe("BranchStaffAccessPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("branch-staff-search")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("branch-staff-add-panel")).toHaveAttribute(
+      "data-presentation",
+      "sheet-mobile-dialog-desktop",
+    );
     expect(await screen.findByText("Maria Santos")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("branch-staff-add-panel-backdrop"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("branch-staff-add-panel")).not.toBeInTheDocument();
+    });
   });
 });

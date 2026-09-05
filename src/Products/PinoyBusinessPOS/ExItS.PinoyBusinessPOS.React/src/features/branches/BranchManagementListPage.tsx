@@ -87,7 +87,10 @@ export function BranchManagementListPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [menuBranch, setMenuBranch] = useState<BranchManagementSummaryItemDto | null>(null);
+  const [mobileMenuBranch, setMobileMenuBranch] = useState<BranchManagementSummaryItemDto | null>(
+    null,
+  );
+  const [desktopMenuId, setDesktopMenuId] = useState<string | null>(null);
 
   const summaryQuery = useQuery({
     queryKey: ["branch-management-summary", organizationId],
@@ -162,6 +165,30 @@ export function BranchManagementListPage() {
   function goCreate(type: "retail" | "warehouse") {
     setAddMenuOpen(false);
     navigate(`/org/branches/new?type=${type}`);
+  }
+
+  function branchSecondaryActions(branch: BranchManagementSummaryItemDto) {
+    const warehouse = isWarehouseBranch(branch.branchType);
+    const actions: Array<{ testId: string; label: string; to: string }> = [
+      {
+        testId: `branch-mgmt-more-staff-${branch.id}`,
+        label: t("branches.detail.staff"),
+        to: `/org/branches/${branch.id}?tab=staff`,
+      },
+      {
+        testId: `branch-mgmt-more-devices-${branch.id}`,
+        label: t("branches.detail.devices"),
+        to: `/org/branches/${branch.id}?tab=devices`,
+      },
+    ];
+    if (!warehouse) {
+      actions.push({
+        testId: `branch-mgmt-more-fulfillment-${branch.id}`,
+        label: t("branches.detail.configureFulfillment"),
+        to: `/org/branches/${branch.id}/fulfillment`,
+      });
+    }
+    return actions;
   }
 
   const addLocationControl =
@@ -506,16 +533,59 @@ export function BranchManagementListPage() {
                         </Link>
                       </Button>
                     ) : null}
+
+                    {/* Mobile: open BottomSheet */}
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
+                      className="md:hidden"
                       data-testid={`branch-mgmt-more-${branch.id}`}
                       aria-label={t("branches.mgmt.more")}
-                      onClick={() => setMenuBranch(branch)}
+                      aria-haspopup="dialog"
+                      onClick={() => setMobileMenuBranch(branch)}
                     >
                       <MoreHorizontal className="size-4" aria-hidden />
                     </Button>
+
+                    {/* Desktop/tablet: anchored DropdownMenu */}
+                    <DropdownMenu
+                      open={desktopMenuId === branch.id}
+                      onOpenChange={(open) => setDesktopMenuId(open ? branch.id : null)}
+                      align="end"
+                      menuLabel={t("branches.mgmt.more")}
+                      className="branch-mgmt-more-menu hidden md:inline-flex"
+                      trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+                        <Button
+                          type="button"
+                          id={id}
+                          variant="ghost"
+                          size="icon"
+                          data-testid={`branch-mgmt-more-desktop-${branch.id}`}
+                          aria-label={t("branches.mgmt.more")}
+                          aria-haspopup="menu"
+                          aria-expanded={expanded}
+                          aria-controls={controls}
+                          onClick={onClick}
+                          onKeyDown={onKeyDown}
+                        >
+                          <MoreHorizontal className="size-4" aria-hidden />
+                        </Button>
+                      )}
+                    >
+                      {branchSecondaryActions(branch).map((action) => (
+                        <MenuItem
+                          key={action.to}
+                          data-testid={action.testId}
+                          onSelect={() => {
+                            setDesktopMenuId(null);
+                            navigate(action.to);
+                          }}
+                        >
+                          {action.label}
+                        </MenuItem>
+                      ))}
+                    </DropdownMenu>
                   </div>
                 </article>
               </li>
@@ -525,40 +595,28 @@ export function BranchManagementListPage() {
       ) : null}
 
       <BottomSheet
-        open={menuBranch !== null}
-        onClose={() => setMenuBranch(null)}
+        open={mobileMenuBranch !== null}
+        onClose={() => setMobileMenuBranch(null)}
         panelId="branch-mgmt-more-panel"
         testId="branch-mgmt-more-panel"
-        title={menuBranch?.name ?? t("branches.mgmt.more")}
+        title={mobileMenuBranch?.name ?? t("branches.mgmt.more")}
         closeLabel={t("branches.cancel")}
       >
-        {menuBranch ? (
-          <div className="flex flex-col gap-2">
-            <Button asChild variant="outline" className="justify-start">
-              <Link to={`/org/branches/${menuBranch.id}`} onClick={() => setMenuBranch(null)}>
-                {t("branches.mgmt.open")}
-              </Link>
-            </Button>
-            {!isWarehouseBranch(menuBranch.branchType) ? (
-              <Button asChild variant="outline" className="justify-start">
-                <Link
-                  to={`/org/branches/${menuBranch.id}?focus=qr#branch-storefront-qr`}
-                  onClick={() => setMenuBranch(null)}
-                >
-                  {t("branches.mgmt.viewQr")}
+        {mobileMenuBranch ? (
+          <div className="flex flex-col gap-2" data-testid="branch-mgmt-more-actions">
+            {branchSecondaryActions(mobileMenuBranch).map((action) => (
+              <Button
+                key={action.to}
+                asChild
+                variant="outline"
+                className="justify-start"
+                data-testid={action.testId}
+              >
+                <Link to={action.to} onClick={() => setMobileMenuBranch(null)}>
+                  {action.label}
                 </Link>
               </Button>
-            ) : null}
-            {!isWarehouseBranch(menuBranch.branchType) ? (
-              <Button asChild variant="outline" className="justify-start">
-                <Link
-                  to={`/org/branches/${menuBranch.id}/fulfillment`}
-                  onClick={() => setMenuBranch(null)}
-                >
-                  {t("branches.detail.configureFulfillment")}
-                </Link>
-              </Button>
-            ) : null}
+            ))}
           </div>
         ) : null}
       </BottomSheet>
