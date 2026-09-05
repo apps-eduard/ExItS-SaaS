@@ -168,11 +168,11 @@ export function BranchManagementListPage() {
     canCreate ? (
       atLimit ? (
         <Button type="button" className="branch-mgmt-add" disabled data-testid="branch-mgmt-add">
-          <Plus className="size-4" aria-hidden />
-          {t("branches.mgmt.add")}
-          <ChevronDown className="size-3.5 opacity-70" aria-hidden />
-        </Button>
-      ) : (
+              <Plus className="size-4 shrink-0" aria-hidden />
+              <span>{t("branches.mgmt.add")}</span>
+              <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden />
+            </Button>
+          ) : (
         <DropdownMenu
           open={addMenuOpen}
           onOpenChange={setAddMenuOpen}
@@ -191,9 +191,9 @@ export function BranchManagementListPage() {
               onClick={onClick}
               onKeyDown={onKeyDown}
             >
-              <Plus className="size-4" aria-hidden />
-              {t("branches.mgmt.add")}
-              <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+              <Plus className="size-4 shrink-0" aria-hidden />
+              <span>{t("branches.mgmt.add")}</span>
+              <ChevronDown className="size-3.5 shrink-0 opacity-70" aria-hidden />
             </Button>
           )}
         >
@@ -302,7 +302,7 @@ export function BranchManagementListPage() {
       ) : null}
 
       <div className="branch-mgmt-toolbar">
-        <div className="branch-mgmt-filters flex min-w-0 flex-col gap-2">
+        <div className="branch-mgmt-filters">
           <div className="branch-mgmt-filter-group">
             <span className="branch-mgmt-filter-group__label">{t("branches.mgmt.filter.typeLabel")}</span>
             <ExitsChipBar
@@ -489,7 +489,11 @@ export function BranchManagementListPage() {
 
                   <div className="exits-entity-card__actions">
                     <Button asChild variant="outline" data-testid={`branch-mgmt-open-${branch.id}`}>
-                      <Link to={`/org/branches/${branch.id}`}>{t("branches.mgmt.open")}</Link>
+                      <Link to={`/org/branches/${branch.id}`}>
+                        {warehouse
+                          ? t("branches.mgmt.openWarehouse")
+                          : t("branches.mgmt.open")}
+                      </Link>
                     </Button>
                     {!warehouse ? (
                       <Button

@@ -197,7 +197,9 @@ export function BranchCreatePage() {
           </h2>
           <div className="catalog-form-section__grid">
             <label className="exits-type-label flex flex-col gap-1.5">
-              {t("branches.create.name")}
+              {branchType === "Warehouse"
+                ? t("branches.create.name.warehouse")
+                : t("branches.create.name")}
               <input
                 className="catalog-form-select"
                 value={name}
@@ -207,7 +209,9 @@ export function BranchCreatePage() {
               />
             </label>
             <label className="exits-type-label flex flex-col gap-1.5">
-              {t("branches.create.code")}
+              {branchType === "Warehouse"
+                ? t("branches.create.code.warehouse")
+                : t("branches.create.code")}
               <input
                 className="catalog-form-select uppercase"
                 value={code}

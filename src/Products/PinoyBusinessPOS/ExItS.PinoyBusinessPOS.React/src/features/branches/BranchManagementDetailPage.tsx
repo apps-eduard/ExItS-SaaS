@@ -5,7 +5,10 @@ import { CircleAlert, Eye, EyeOff } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
+  canManageInventory,
   canUseWarehouseBranches,
+  canViewInventory,
+  canViewPurchasing,
 } from "@/access/pos-capabilities";
 import {
   issueBranchArchiveStepUp,
@@ -35,37 +38,44 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchStaffAccessPanel } from "@/features/branches/BranchStaffAccessPanel";
 import { BranchStorefrontQrPanel } from "@/features/branches/BranchStorefrontQrPanel";
+import { branchAdminCopy } from "@/features/branches/branch-admin-copy";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
 import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-const DETAIL_TABS = ["overview", "details", "staff", "devices", "fulfillment"] as const;
-type DetailTab = (typeof DETAIL_TABS)[number];
+const RETAIL_DETAIL_TABS = ["overview", "details", "staff", "devices", "fulfillment"] as const;
+const WAREHOUSE_DETAIL_TABS = ["overview", "details", "staff", "devices"] as const;
+type DetailTab = (typeof RETAIL_DETAIL_TABS)[number];
 
-const TAB_LABEL_KEYS: Record<DetailTab, MessageKey> = {
-  overview: "branches.detail.overview",
-  details: "branches.detail.details",
-  staff: "branches.detail.staff",
-  devices: "branches.detail.devices",
-  fulfillment: "branches.detail.fulfillment",
-};
-
-type LifecycleAction = "suspend" | "reactivate" | "archive" | "set-primary";
-
-const MIN_REASON_LENGTH = 8;
-
-function parseDetailTab(value: string | null | undefined): DetailTab {
-  if (value && DETAIL_TABS.includes(value as DetailTab)) {
+function parseDetailTab(
+  value: string | null | undefined,
+  warehouse: boolean,
+): DetailTab {
+  if (warehouse) {
+    if (value === "fulfillment") {
+      return "overview";
+    }
+    if (value && (WAREHOUSE_DETAIL_TABS as readonly string[]).includes(value)) {
+      return value as DetailTab;
+    }
+    return "overview";
+  }
+  if (value && (RETAIL_DETAIL_TABS as readonly string[]).includes(value)) {
     return value as DetailTab;
   }
   return "overview";
 }
+
+type LifecycleAction = "suspend" | "reactivate" | "archive" | "set-primary";
+
+const MIN_REASON_LENGTH = 8;
 
 function statusLabel(status: string, t: (key: MessageKey) => string): string {
   switch (normalizeBranchStatusFilter(status)) {
@@ -108,11 +118,12 @@ export function BranchManagementDetailPage() {
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canGovern = canInviteOrganizationStaff(sessionGrant);
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
+  const canInventory = canViewInventory(sessionGrant);
+  const canReceive = canManageInventory(sessionGrant);
+  const canPurchasing = canViewPurchasing(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
 
-  const [activeTab, setActiveTab] = useState<DetailTab>(() =>
-    parseDetailTab(searchParams.get("tab")),
-  );
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
   const [detailsDraft, setDetailsDraft] = useState<{
     name: string;
     contactPhone: string;
@@ -142,10 +153,6 @@ export function BranchManagementDetailPage() {
   const [lifecycleError, setLifecycleError] = useState<string | null>(null);
   const [confirmPrimary, setConfirmPrimary] = useState(false);
 
-  useEffect(() => {
-    setActiveTab(parseDetailTab(searchParams.get("tab")));
-  }, [searchParams]);
-
   const branchQuery = useQuery({
     queryKey: ["branch-management-detail", organizationId, branchId],
     enabled: Boolean(organizationId && branchId && canManage),
@@ -159,6 +166,20 @@ export function BranchManagementDetailPage() {
   });
 
   useEffect(() => {
+    const warehouse = isWarehouseBranch(branchQuery.data?.branchType);
+    const nextTab = parseDetailTab(searchParams.get("tab"), warehouse);
+    setActiveTab(nextTab);
+    if (warehouse && searchParams.get("tab") === "fulfillment") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("tab");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, branchQuery.data?.branchType, setSearchParams]);
+
+  useEffect(() => {
+    if (isWarehouseBranch(branchQuery.data?.branchType)) {
+      return;
+    }
     if (searchParams.get("focus") !== "qr" && window.location.hash !== "#branch-storefront-qr") {
       return;
     }
@@ -240,12 +261,14 @@ export function BranchManagementDetailPage() {
     lifecycleAction === "set-primary";
 
   function selectTab(tab: DetailTab) {
-    setActiveTab(tab);
+    const warehouse = isWarehouseBranch(branch?.branchType);
+    const resolved = parseDetailTab(tab, warehouse);
+    setActiveTab(resolved);
     const next = new URLSearchParams(searchParams);
-    if (tab === "overview") {
+    if (resolved === "overview") {
       next.delete("tab");
     } else {
-      next.set("tab", tab);
+      next.set("tab", resolved);
     }
     setSearchParams(next, { replace: true });
   }
@@ -283,9 +306,9 @@ export function BranchManagementDetailPage() {
       }
       return result.value;
     },
-    onSuccess: async () => {
+    onSuccess: async (updated) => {
       setDetailsError(null);
-      setDetailsMessage(t("branches.detail.updated"));
+      setDetailsMessage(t(branchAdminCopy(updated.branchType).updatedMessage));
       await queryClient.invalidateQueries({
         queryKey: ["branch-management-detail", organizationId, branchId],
       });
@@ -407,8 +430,50 @@ export function BranchManagementDetailPage() {
     );
   }
 
+  const copy = branchAdminCopy(branch.branchType);
+  const isWarehouse = copy.warehouse;
+  const detailTabs = isWarehouse ? WAREHOUSE_DETAIL_TABS : RETAIL_DETAIL_TABS;
+  const warehouseOps = [
+    canInventory
+      ? {
+          id: "inventory",
+          to: "/inventory",
+          label: t("branches.detail.op.inventory"),
+          testId: "branch-warehouse-op-inventory",
+        }
+      : null,
+    canReceive
+      ? {
+          id: "receive",
+          to: "/purchasing/receive-stock",
+          label: t("branches.detail.op.receive"),
+          testId: "branch-warehouse-op-receive",
+        }
+      : null,
+    canInventory
+      ? {
+          id: "transfers",
+          to: "/inventory/transfers",
+          label: t("branches.detail.op.transfers"),
+          testId: "branch-warehouse-op-transfers",
+        }
+      : null,
+    canPurchasing
+      ? {
+          id: "purchasing",
+          to: "/purchasing",
+          label: t("branches.detail.op.purchasing"),
+          testId: "branch-warehouse-op-purchasing",
+        }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; to: string; label: string; testId: string }>;
+
   return (
-    <div className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3" data-testid="branch-mgmt-detail">
+    <div
+      className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="branch-mgmt-detail"
+      data-branch-type={isWarehouse ? "Warehouse" : "Retail"}
+    >
       <PageHeader
         title={branch.name}
         description={t("branches.mgmt.lede")}
@@ -420,19 +485,18 @@ export function BranchManagementDetailPage() {
       <div className="branch-mgmt-card__badges flex flex-wrap gap-2">
         <span data-testid="branch-detail-code">{branch.code}</span>
         <span data-testid="branch-detail-type-chip">
-          <StatusChip tone={branch.branchType === "Warehouse" ? "warning" : "info"}>
-            {branch.branchType === "Warehouse"
-              ? t("branches.type.warehouse")
-              : t("branches.type.retail")}
+          <StatusChip tone={isWarehouse ? "warning" : "info"}>
+            {isWarehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
           </StatusChip>
         </span>
-        {branch.isPrimary ? (
+        {!isWarehouse && branch.isPrimary ? (
           <span data-testid="branch-detail-primary-badge">
             <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
           </span>
-        ) : (
+        ) : null}
+        {!isWarehouse && !branch.isPrimary ? (
           <StatusChip tone="info">{t("branches.mgmt.secondary")}</StatusChip>
-        )}
+        ) : null}
         <StatusChip
           tone={
             statusKind === "Active" ? "success" : statusKind === "Suspended" ? "warning" : "info"
@@ -446,10 +510,19 @@ export function BranchManagementDetailPage() {
         ariaLabel={t("branches.setupTabsLabel")}
         testId="branch-mgmt-tabs"
         activeKey={activeTab}
-        onChange={(key) => selectTab(parseDetailTab(key))}
-        items={DETAIL_TABS.map((tab) => ({
+        onChange={(key) => selectTab(parseDetailTab(key, isWarehouse))}
+        items={detailTabs.map((tab) => ({
           key: tab,
-          label: t(TAB_LABEL_KEYS[tab]),
+          label:
+            tab === "overview"
+              ? t(copy.overviewTab)
+              : tab === "details"
+                ? t(copy.detailsTab)
+                : tab === "staff"
+                  ? t("branches.detail.staff")
+                  : tab === "devices"
+                    ? t("branches.detail.devices")
+                    : t("branches.detail.fulfillment"),
           testId: `branch-mgmt-tab-${tab}`,
         }))}
       />
@@ -463,47 +536,59 @@ export function BranchManagementDetailPage() {
       {activeTab === "overview" ? (
         <div className="flex flex-col gap-3" data-testid="branch-mgmt-overview">
           <section className="catalog-form-section exits-animate-panel gap-2">
-            <h2 className="catalog-form-section__title">{t("branches.detail.overview")}</h2>
+            <h2 className="catalog-form-section__title">{t(copy.overviewTab)}</h2>
             <dl className="branch-mgmt-card__meta">
               <div>
-                <dt>{t("branches.create.name")}</dt>
+                <dt>{t(copy.nameLabel)}</dt>
                 <dd>{branch.name}</dd>
               </div>
               <div>
-                <dt>{t("branches.detail.codeReadonly")}</dt>
+                <dt>{t(copy.codeLabel)}</dt>
                 <dd>{branch.code}</dd>
               </div>
               <div>
-                <dt>{t("branches.mgmt.staffAccess")}</dt>
-                <dd>{summary?.assignedStaffCount ?? "—"}</dd>
+                <dt>{t("areas.singular")}</dt>
+                <dd data-testid="branch-detail-area">
+                  {summary?.areaName ?? t("areas.unassigned")}
+                </dd>
               </div>
               <div>
-                <dt>{t("branches.mgmt.devices")}</dt>
-                <dd>
+                <dt>{t("branches.mgmt.staffAccess")}</dt>
+                <dd data-testid="branch-detail-staff-count">
+                  {summary?.assignedStaffCount ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>{t(copy.devicesLabel)}</dt>
+                <dd data-testid="branch-detail-device-count">
                   {t("branches.mgmt.devicesActive").replace(
                     "{count}",
                     String(summary?.activeDeviceCount ?? 0),
                   )}
                 </dd>
               </div>
-              <div>
-                <dt>{t("branches.mgmt.pickup")}</dt>
-                <dd>
-                  {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                  {branch.pickupSectionsComplete}/{branch.pickupSectionsTotal}
-                </dd>
-              </div>
-              <div>
-                <dt>{t("branches.mgmt.delivery")}</dt>
-                <dd>
-                  {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                  {branch.deliverySectionsComplete}/{branch.deliverySectionsTotal}
-                </dd>
-              </div>
+              {!isWarehouse ? (
+                <>
+                  <div>
+                    <dt>{t("branches.mgmt.pickup")}</dt>
+                    <dd>
+                      {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
+                      {summary?.pickupSectionsComplete ?? 0}/{summary?.pickupSectionsTotal ?? 2}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t("branches.mgmt.delivery")}</dt>
+                    <dd>
+                      {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
+                      {summary?.deliverySectionsComplete ?? 0}/{summary?.deliverySectionsTotal ?? 5}
+                    </dd>
+                  </div>
+                </>
+              ) : null}
             </dl>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={() => selectTab("details")}>
-                {t("branches.detail.details")}
+                {t(copy.detailsTab)}
               </Button>
               <Button type="button" variant="outline" onClick={() => selectTab("staff")}>
                 {t("branches.detail.staff")}
@@ -511,15 +596,36 @@ export function BranchManagementDetailPage() {
               <Button type="button" variant="outline" onClick={() => selectTab("devices")}>
                 {t("branches.detail.devices")}
               </Button>
-              <Button asChild variant="outline" data-testid="branch-mgmt-configure-fulfillment">
-                <Link to={branchFulfillmentEditPath(branch.id)}>
-                  {t("branches.detail.configureFulfillment")}
-                </Link>
-              </Button>
+              {!isWarehouse ? (
+                <Button asChild variant="outline" data-testid="branch-mgmt-configure-fulfillment">
+                  <Link to={branchFulfillmentEditPath(branch.id)}>
+                    {t("branches.detail.configureFulfillment")}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           </section>
 
-          {organizationId ? (
+          {isWarehouse && warehouseOps.length > 0 ? (
+            <section
+              className="catalog-form-section exits-animate-panel gap-2"
+              data-testid="branch-warehouse-operations"
+            >
+              <h2 className="catalog-form-section__title">{t("branches.detail.operations")}</h2>
+              <div className="flex flex-wrap gap-2">
+                {warehouseOps.map((op) => (
+                  <Button key={op.id} asChild variant="outline" data-testid={op.testId}>
+                    <Link to={op.to}>
+                      {op.label}
+                      <span aria-hidden> →</span>
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!isWarehouse && organizationId ? (
             <BranchStorefrontQrPanel
               organizationId={organizationId}
               organizationDisplayName={boundWorkspace?.organizationDisplayName ?? "store"}
@@ -531,12 +637,12 @@ export function BranchManagementDetailPage() {
 
           {canGovern ? (
             <section className="catalog-form-section exits-animate-panel gap-2" data-testid="branch-lifecycle">
-              <h2 className="catalog-form-section__title">{t("branches.detail.lifecycleTitle")}</h2>
+              <h2 className="catalog-form-section__title">{t(copy.lifecycleTitle)}</h2>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("branches.detail.historyKept")}
               </p>
               <div className="flex flex-wrap gap-2">
-                {!branch.isPrimary && statusKind === "Active" ? (
+                {!isWarehouse && !branch.isPrimary && statusKind === "Active" ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -585,7 +691,7 @@ export function BranchManagementDetailPage() {
       {activeTab === "details" ? (
         <div className="flex flex-col gap-3" data-testid="branch-mgmt-details">
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("branches.detail.codeReadonly")}
+            {t(copy.codeLabel)}
             <input
               className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
               value={branch.code}
@@ -675,7 +781,7 @@ export function BranchManagementDetailPage() {
         </div>
       ) : null}
 
-      {activeTab === "fulfillment" ? (
+      {activeTab === "fulfillment" && !isWarehouse ? (
         <div className="flex flex-col gap-3" data-testid="branch-fulfillment-summary">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("branches.detail.fulfillmentLede")}
@@ -685,14 +791,14 @@ export function BranchManagementDetailPage() {
               <dt>{t("branches.mgmt.pickup")}</dt>
               <dd>
                 {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                {branch.pickupSectionsComplete}/{branch.pickupSectionsTotal}
+                {summary?.pickupSectionsComplete ?? 0}/{summary?.pickupSectionsTotal ?? 2}
               </dd>
             </div>
             <div>
               <dt>{t("branches.mgmt.delivery")}</dt>
               <dd>
                 {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                {branch.deliverySectionsComplete}/{branch.deliverySectionsTotal}
+                {summary?.deliverySectionsComplete ?? 0}/{summary?.deliverySectionsTotal ?? 5}
               </dd>
             </div>
           </dl>

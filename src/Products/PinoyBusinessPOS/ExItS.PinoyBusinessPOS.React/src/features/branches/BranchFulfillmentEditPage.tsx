@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
 import { canManageBranchFulfillment, canUseWarehouseBranches } from "@/access/pos-capabilities";
@@ -50,6 +50,7 @@ import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   BRANCH_SETUP_TABS,
   BRANCH_SETUP_TAB_LABEL_KEYS,
@@ -232,6 +233,9 @@ export function BranchFulfillmentEditPage() {
   }
 
   const branch = detailQuery.data.branch;
+  if (isWarehouseBranch(branch.branchType)) {
+    return <Navigate to={`/org/branches/${branch.id}`} replace />;
+  }
   const currentReadiness = readiness ?? detailQuery.data.readiness;
   const branchBackPath = branchFulfillmentBackPath(branchId);
   const branchBackLabel =

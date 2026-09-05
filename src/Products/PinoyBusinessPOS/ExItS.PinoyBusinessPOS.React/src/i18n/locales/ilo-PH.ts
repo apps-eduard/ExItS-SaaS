@@ -10320,7 +10320,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.devices.manage": "Manage devices",
 
-  "branches.mgmt.add": "Add location",
+  "branches.mgmt.add": "Branch & Warehouse",
 
   "branches.mgmt.capacity": "Location capacity",
 
@@ -10506,7 +10506,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.mgmt.addRetail": "Add retail branch",
   "branches.mgmt.addWarehouse": "Add warehouse",
   "branches.mgmt.addWarehouseLocked": "Available on Pro",
-  "branches.mgmt.addMenuLabel": "Add location options",
+  "branches.mgmt.addMenuLabel": "Add Branch & Warehouse",
   "branches.mgmt.capacityBreakdown": "{retail} Retail · {warehouse} Warehouses",
   "branches.mgmt.filter.typeLabel": "Type",
   "branches.mgmt.filter.statusLabel": "Status",
@@ -10520,5 +10520,21 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.create.details.retail": "Retail branch details",
   "branches.create.details.warehouse": "Warehouse details",
   "branches.create.submit.retail": "Create retail branch",
-  "branches.create.submit.warehouse": "Create warehouse"
+  "branches.create.submit.warehouse": "Create warehouse",
+  "branches.mgmt.openWarehouse": "Open warehouse",
+  "branches.mgmt.devicesShort": "Devices",
+  "branches.create.name.warehouse": "Warehouse name",
+  "branches.create.code.warehouse": "Warehouse code",
+  "branches.detail.overview.warehouse": "Warehouse overview",
+  "branches.detail.details.warehouse": "Warehouse details",
+  "branches.detail.codeReadonly.warehouse": "Warehouse code",
+  "branches.detail.lifecycleTitle.warehouse": "Warehouse lifecycle",
+  "branches.detail.updated.warehouse": "Warehouse updated",
+  "branches.detail.operations": "Warehouse operations",
+  "branches.detail.op.inventory": "Inventory",
+  "branches.detail.op.receive": "Receive stock",
+  "branches.detail.op.transfers": "Transfers",
+  "branches.detail.op.purchasing": "Purchasing",
+  "branches.detailsTitle.warehouse": "Warehouse details",
+  "branches.type.warehouseLabel": "Warehouse type"
 };

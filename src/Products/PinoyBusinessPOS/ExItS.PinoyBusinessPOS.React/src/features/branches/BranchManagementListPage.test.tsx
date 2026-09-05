@@ -305,5 +305,8 @@ describe("BranchManagementListPage", () => {
     expect(within(card).queryByTestId(`branch-mgmt-pickup-${warehouseId}`)).not.toBeInTheDocument();
     expect(within(card).queryByTestId(`branch-mgmt-delivery-${warehouseId}`)).not.toBeInTheDocument();
     expect(within(card).queryByTestId(`branch-mgmt-view-qr-${warehouseId}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`branch-mgmt-open-${warehouseId}`)).toHaveTextContent(
+      "branches.mgmt.openWarehouse",
+    );
   });
 });

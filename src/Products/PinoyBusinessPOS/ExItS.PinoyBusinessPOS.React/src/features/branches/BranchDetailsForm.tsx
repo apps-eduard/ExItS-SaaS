@@ -1,4 +1,5 @@
 import type { MessageKey } from "@/i18n/messages";
+import { branchAdminCopy } from "@/features/branches/branch-admin-copy";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
@@ -33,13 +34,14 @@ export function BranchDetailsForm({
   t,
   onChange,
 }: BranchDetailsFormProps) {
+  const copy = branchAdminCopy(branchType);
   return (
     <div className="flex flex-col gap-3" data-testid="branch-details-tab">
       <section className="catalog-form-section exits-animate-panel gap-3">
-        <h2 className="catalog-form-section__title">{t("branches.detailsTitle")}</h2>
+        <h2 className="catalog-form-section__title">{t(copy.detailsTitle)}</h2>
         <div className="catalog-form-section__grid">
           <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("branches.name")}
+            {t(copy.nameLabel)}
             <input
               className="catalog-form-select font-normal"
               value={name}
@@ -48,7 +50,7 @@ export function BranchDetailsForm({
             />
           </label>
           <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("branches.type")}
+            {t(copy.typeLabel)}
             <select
               className="catalog-form-select font-normal"
               value={branchType}

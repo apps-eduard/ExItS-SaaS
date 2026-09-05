@@ -11054,6 +11054,23 @@ a.exits-chip--primary:hover {
   line-height: var(--exits-leading-relaxed);
 }
 
+.branch-mgmt-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (min-width: 1024px) {
+  .branch-mgmt-filters {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem 1.25rem;
+  }
+}
+
 .branch-mgmt-filter-group {
   display: flex;
   flex-wrap: wrap;
