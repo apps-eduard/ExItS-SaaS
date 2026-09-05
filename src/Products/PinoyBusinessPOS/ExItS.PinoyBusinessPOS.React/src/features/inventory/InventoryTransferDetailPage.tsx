@@ -29,6 +29,7 @@ import {
   inventoryTransferDiscrepancyLabelKey,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
+  isReceiveLineReady,
   parseReceivedQuantity,
 } from "@/features/inventory/inventory-transfer-labels";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -199,6 +200,17 @@ export function InventoryTransferDetailPage() {
         setConfirmKind(null);
         return;
       }
+      if (parsed === "exceeds") {
+        setLocalError({
+          title: t("transfer.receiveFailedTitle"),
+          detail: t("transfer.receivedExceedsSent").replace(
+            "{sent}",
+            formatTransferQty(line.sentQty),
+          ),
+        });
+        setConfirmKind(null);
+        return;
+      }
       const entry: (typeof lines)[number] = {
         productId: line.productId,
         receivedQty: parsed,
@@ -206,9 +218,15 @@ export function InventoryTransferDetailPage() {
       };
       if (parsed < line.sentQty) {
         const reason = reasonByLine[line.lineId]?.trim();
-        if (reason) {
-          entry.discrepancyReason = reason;
+        if (!reason) {
+          setLocalError({
+            title: t("transfer.receiveFailedTitle"),
+            detail: t("transfer.discrepancyReasonRequired"),
+          });
+          setConfirmKind(null);
+          return;
         }
+        entry.discrepancyReason = reason;
         const note = noteByLine[line.lineId]?.trim();
         if (note) {
           entry.discrepancyNote = note;
@@ -283,6 +301,14 @@ export function InventoryTransferDetailPage() {
   const canDispatch = canMutate && isSource && isDraft;
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
   const canReceive = canMutate && isDestination && isInTransit;
+  const receiveFormReady = transfer.lines.every((line) =>
+    isReceiveLineReady(
+      receivedByLine[line.lineId] ?? "",
+      line.sentQty,
+      reasonByLine[line.lineId],
+    ),
+  );
+  const canSubmitReceive = canReceive && receiveFormReady;
 
   const dialogCancelIcon = <Ban className="size-4 shrink-0" aria-hidden />;
 
@@ -416,8 +442,19 @@ export function InventoryTransferDetailPage() {
               {transfer.lines.map((line) => {
                 const text = receivedByLine[line.lineId] ?? "";
                 const parsed = parseReceivedQuantity(text, line.sentQty);
-                const diff =
-                  parsed === "empty" || parsed === "invalid" ? null : line.sentQty - parsed;
+                const qtyReady = parsed !== "empty" && parsed !== "invalid" && parsed !== "exceeds";
+                const diff = qtyReady ? line.sentQty - parsed : null;
+                const needsDiscrepancy = diff != null && diff > 0;
+                const reasonMissing = needsDiscrepancy && !(reasonByLine[line.lineId]?.trim());
+                const qtyError =
+                  parsed === "exceeds"
+                    ? t("transfer.receivedExceedsSent").replace(
+                        "{sent}",
+                        formatTransferQty(line.sentQty),
+                      )
+                    : parsed === "invalid"
+                      ? t("transfer.invalidReceivedQuantity")
+                      : null;
                 return (
                   <tr key={line.lineId} className="border-b border-border align-top">
                     <td className="px-2 py-2">
@@ -432,22 +469,37 @@ export function InventoryTransferDetailPage() {
                     <td className="px-2 py-2">{formatTransferQty(line.sentQty)}</td>
                     <td className="px-2 py-2">
                       <input
-                        className="exits-input w-28"
+                        className={`exits-input w-28${qtyError ? " border-destructive" : ""}`}
                         inputMode="decimal"
                         value={text}
+                        aria-invalid={qtyError ? true : undefined}
+                        aria-describedby={
+                          qtyError ? `transfer-receive-qty-error-${line.lineId}` : undefined
+                        }
                         onChange={(e) =>
                           setReceivedByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                         }
                         data-testid={`transfer-receive-qty-${line.lineId}`}
                       />
+                      {qtyError ? (
+                        <p
+                          id={`transfer-receive-qty-error-${line.lineId}`}
+                          className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-destructive"
+                          data-testid={`transfer-receive-qty-error-${line.lineId}`}
+                        >
+                          {qtyError}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-2 py-2">{diff == null ? "—" : formatTransferQty(diff)}</td>
                     <td className="px-2 py-2">
-                      {diff != null && diff > 0 ? (
+                      {needsDiscrepancy ? (
                         <div className="flex flex-col gap-1">
                           <select
-                            className="exits-select"
+                            className={`exits-select${reasonMissing ? " border-destructive" : ""}`}
                             value={reasonByLine[line.lineId] ?? ""}
+                            required
+                            aria-invalid={reasonMissing ? true : undefined}
                             onChange={(e) =>
                               setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                             }
@@ -460,6 +512,11 @@ export function InventoryTransferDetailPage() {
                               </option>
                             ))}
                           </select>
+                          {reasonMissing ? (
+                            <p className="m-0 text-[length:var(--exits-text-xs)] text-destructive">
+                              {t("transfer.discrepancyReasonRequired")}
+                            </p>
+                          ) : null}
                           <input
                             className="exits-input"
                             placeholder={t("transfer.discrepancyNote")}
@@ -486,8 +543,19 @@ export function InventoryTransferDetailPage() {
           {transfer.lines.map((line) => {
             const text = receivedByLine[line.lineId] ?? "";
             const parsed = parseReceivedQuantity(text, line.sentQty);
-            const diff =
-              parsed === "empty" || parsed === "invalid" ? null : line.sentQty - parsed;
+            const qtyReady = parsed !== "empty" && parsed !== "invalid" && parsed !== "exceeds";
+            const diff = qtyReady ? line.sentQty - parsed : null;
+            const needsDiscrepancy = diff != null && diff > 0;
+            const reasonMissing = needsDiscrepancy && !(reasonByLine[line.lineId]?.trim());
+            const qtyError =
+              parsed === "exceeds"
+                ? t("transfer.receivedExceedsSent").replace(
+                    "{sent}",
+                    formatTransferQty(line.sentQty),
+                  )
+                : parsed === "invalid"
+                  ? t("transfer.invalidReceivedQuantity")
+                  : null;
             return (
               <li key={line.lineId}>
                 <Card className="flex flex-col gap-2 p-3" data-testid={`transfer-receive-card-${line.lineId}`}>
@@ -500,26 +568,38 @@ export function InventoryTransferDetailPage() {
                       {t("transfer.received")}
                     </span>
                     <input
-                      className="exits-input text-[length:var(--exits-text-lg)]"
+                      className={`exits-input text-[length:var(--exits-text-lg)]${qtyError ? " border-destructive" : ""}`}
                       inputMode="decimal"
                       value={text}
+                      aria-invalid={qtyError ? true : undefined}
                       onChange={(e) =>
                         setReceivedByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                       }
                       data-testid={`transfer-receive-qty-mobile-${line.lineId}`}
                     />
+                    {qtyError ? (
+                      <span
+                        className="text-[length:var(--exits-text-xs)] text-destructive"
+                        data-testid={`transfer-receive-qty-error-mobile-${line.lineId}`}
+                      >
+                        {qtyError}
+                      </span>
+                    ) : null}
                   </label>
                   <p className="m-0 text-[length:var(--exits-text-sm)]">
                     {t("transfer.difference")}: {diff == null ? "—" : formatTransferQty(diff)}
                   </p>
-                  {diff != null && diff > 0 ? (
+                  {needsDiscrepancy ? (
                     <>
                       <select
-                        className="exits-select"
+                        className={`exits-select${reasonMissing ? " border-destructive" : ""}`}
                         value={reasonByLine[line.lineId] ?? ""}
+                        required
+                        aria-invalid={reasonMissing ? true : undefined}
                         onChange={(e) =>
                           setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                         }
+                        data-testid={`transfer-discrepancy-mobile-${line.lineId}`}
                       >
                         <option value="">{t("transfer.selectDiscrepancy")}</option>
                         {INVENTORY_TRANSFER_DISCREPANCY_REASONS.map((code) => (
@@ -528,6 +608,11 @@ export function InventoryTransferDetailPage() {
                           </option>
                         ))}
                       </select>
+                      {reasonMissing ? (
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-destructive">
+                          {t("transfer.discrepancyReasonRequired")}
+                        </p>
+                      ) : null}
                       <input
                         className="exits-input"
                         placeholder={t("transfer.discrepancyNote")}
@@ -558,7 +643,7 @@ export function InventoryTransferDetailPage() {
             <Button
               type="button"
               className="flex-1"
-              disabled={!canReceive}
+              disabled={!canSubmitReceive}
               onClick={() => {
                 setLocalError(null);
                 setConfirmKind("receive");

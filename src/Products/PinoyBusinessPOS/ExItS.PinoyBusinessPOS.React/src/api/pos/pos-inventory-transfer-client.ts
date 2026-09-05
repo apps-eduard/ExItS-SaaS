@@ -90,6 +90,10 @@ export const inventoryTransferListItemDtoSchema = z.object({
   totalReceivedQty: z.number(),
   totalDifferenceQty: z.number(),
   updatedAtUtc: z.string(),
+  createdBy: guidSchema,
+  dispatchedBy: guidSchema.nullable().optional(),
+  receivedBy: guidSchema.nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
 });
 
 export const inventoryTransferPagedResultSchema = z.object({

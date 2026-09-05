@@ -120,7 +120,11 @@ public sealed class InventoryTransferQueryService
             transfer.TotalSentQty,
             transfer.TotalReceivedQty,
             transfer.TotalDifferenceQty,
-            transfer.UpdatedAtUtc);
+            transfer.UpdatedAtUtc,
+            transfer.CreatedBy,
+            transfer.DispatchedBy,
+            transfer.ReceivedBy,
+            transfer.CancelledBy);
 }
 
 public sealed class CreateInventoryTransfer

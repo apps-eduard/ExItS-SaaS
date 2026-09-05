@@ -102,17 +102,69 @@ export function parseTransferQuantity(text: string): number | "invalid" | "empty
   return value;
 }
 
-export function parseReceivedQuantity(
-  text: string,
-  sentQty: number,
-): number | "invalid" | "empty" {
+export type ReceivedQuantityParse = number | "invalid" | "empty" | "exceeds";
+
+export function parseReceivedQuantity(text: string, sentQty: number): ReceivedQuantityParse {
   const trimmed = text.trim();
   if (trimmed === "") {
     return "empty";
   }
   const value = Number(trimmed);
-  if (!Number.isFinite(value) || value < 0 || value > sentQty) {
+  if (!Number.isFinite(value) || value < 0) {
     return "invalid";
   }
+  if (value > sentQty) {
+    return "exceeds";
+  }
   return value;
+}
+
+/** Receive line is ready when qty is 0–sent and short/missing lines have a discrepancy reason. */
+export function isReceiveLineReady(
+  receivedText: string,
+  sentQty: number,
+  discrepancyReason: string | undefined | null,
+): boolean {
+  const parsed = parseReceivedQuantity(receivedText, sentQty);
+  if (parsed === "empty" || parsed === "invalid" || parsed === "exceeds") {
+    return false;
+  }
+  if (parsed < sentQty && !discrepancyReason?.trim()) {
+    return false;
+  }
+  return true;
+}
+
+/** Most recent executor for list cards, based on transfer status. */
+export function inventoryTransferExecutor(item: {
+  status: string;
+  createdBy: string;
+  dispatchedBy?: string | null;
+  receivedBy?: string | null;
+  cancelledBy?: string | null;
+}): { actorId: string; labelKey: MessageKey } {
+  switch (item.status) {
+    case "Cancelled":
+      return {
+        actorId: item.cancelledBy || item.createdBy,
+        labelKey: "transfer.byCancelled",
+      };
+    case "Received":
+    case "PartiallyReceived":
+      return {
+        actorId: item.receivedBy || item.dispatchedBy || item.createdBy,
+        labelKey: "transfer.byReceived",
+      };
+    case "InTransit":
+      return {
+        actorId: item.dispatchedBy || item.createdBy,
+        labelKey: "transfer.byDispatched",
+      };
+    case "Draft":
+    default:
+      return {
+        actorId: item.createdBy,
+        labelKey: "transfer.byCreated",
+      };
+  }
 }

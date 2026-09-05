@@ -12,10 +12,12 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
   branchDisplayName,
   formatTransferQty,
   formatTransferTimestamp,
+  inventoryTransferExecutor,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
 } from "@/features/inventory/inventory-transfer-labels";
@@ -89,11 +91,23 @@ export function InventoryTransferListPage() {
     setPage(1);
   }, [workspace?.organizationId, workspace?.branchId, status, direction]);
 
+  const items = query.data?.items ?? [];
+  const actorIds = useMemo(
+    () =>
+      items.flatMap((item) => [
+        item.createdBy,
+        item.dispatchedBy,
+        item.receivedBy,
+        item.cancelledBy,
+      ]),
+    [items],
+  );
+  const actors = useActorDirectory(workspace?.organizationId, actorIds);
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const items = query.data?.items ?? [];
   const totalCount = query.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -139,52 +153,54 @@ export function InventoryTransferListPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
 
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="exits-type-label">{t("transfer.filter.direction")}</span>
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("transfer.filter.direction")}
-          testId="transfer-direction-filters"
-          items={[
-            {
-              key: "all",
-              label: t("transfer.filter.all"),
-              state: direction === "" ? "active" : "idle",
-              onSelect: () => setDirection(""),
-              testId: "transfer-direction-all",
-            },
-            {
-              key: "outgoing",
-              label: t("transfer.filter.outgoing"),
-              state: direction === "outgoing" ? "active" : "idle",
-              onSelect: () => setDirection("outgoing"),
-              testId: "transfer-direction-outgoing",
-            },
-            {
-              key: "incoming",
-              label: t("transfer.filter.incoming"),
-              state: direction === "incoming" ? "active" : "idle",
-              onSelect: () => setDirection("incoming"),
-              testId: "transfer-direction-incoming",
-            },
-          ]}
-        />
-      </div>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+        <div className="flex min-w-0 shrink-0 flex-col gap-1">
+          <span className="exits-type-label">{t("transfer.filter.direction")}</span>
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("transfer.filter.direction")}
+            testId="transfer-direction-filters"
+            items={[
+              {
+                key: "all",
+                label: t("transfer.filter.all"),
+                state: direction === "" ? "active" : "idle",
+                onSelect: () => setDirection(""),
+                testId: "transfer-direction-all",
+              },
+              {
+                key: "outgoing",
+                label: t("transfer.filter.outgoing"),
+                state: direction === "outgoing" ? "active" : "idle",
+                onSelect: () => setDirection("outgoing"),
+                testId: "transfer-direction-outgoing",
+              },
+              {
+                key: "incoming",
+                label: t("transfer.filter.incoming"),
+                state: direction === "incoming" ? "active" : "idle",
+                onSelect: () => setDirection("incoming"),
+                testId: "transfer-direction-incoming",
+              },
+            ]}
+          />
+        </div>
 
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="exits-type-label">{t("transfer.filter.status")}</span>
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("transfer.filter.status")}
-          testId="transfer-status-filters"
-          items={STATUS_FILTERS.map((filter) => ({
-            key: filter.value || "all-status",
-            label: t(filter.labelKey),
-            state: status === filter.value ? "active" : "idle",
-            onSelect: () => setStatus(filter.value),
-            testId: `transfer-status-${filter.value || "all"}`,
-          }))}
-        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="exits-type-label">{t("transfer.filter.status")}</span>
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("transfer.filter.status")}
+            testId="transfer-status-filters"
+            items={STATUS_FILTERS.map((filter) => ({
+              key: filter.value || "all-status",
+              label: t(filter.labelKey),
+              state: status === filter.value ? "active" : "idle",
+              onSelect: () => setStatus(filter.value),
+              testId: `transfer-status-${filter.value || "all"}`,
+            }))}
+          />
+        </div>
       </div>
 
       {query.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
@@ -223,18 +239,26 @@ export function InventoryTransferListPage() {
             {t("transfer.listSection")}
           </h2>
           <ul
-            className="m-0 flex w-full list-none flex-col gap-2 p-0"
+            className="m-0 grid w-full list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
             data-testid="transfer-list"
           >
             {items.map((item) => {
               const source = branchDisplayName(item.sourceBranchName, item.sourceBranchId);
               const dest = branchDisplayName(item.destinationBranchName, item.destinationBranchId);
               const transferNumber = item.transferNumber?.trim() || "";
+              const executor = inventoryTransferExecutor(item);
+              const resolved = actors.resolve(executor.actorId);
+              const executorName =
+                resolved?.displayName && resolved.actorStatus !== "NotAvailable"
+                  ? resolved.displayName
+                  : actors.isResolving
+                    ? "…"
+                    : t("common.notAvailable");
               return (
                 <li key={item.transferId} className="min-w-0">
                   <Link
                     to={`/inventory/transfers/${item.transferId}`}
-                    className="exits-list__card transfer-row flex w-full min-w-0 items-center gap-3 text-foreground no-underline"
+                    className="exits-list__card transfer-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
                     data-testid={`transfer-row-${item.transferId}`}
                   >
                     <span className="transfer-row__main flex min-w-0 flex-1 flex-col gap-1">
@@ -272,8 +296,13 @@ export function InventoryTransferListPage() {
                           </>
                         ) : null}
                       </span>
-                      <span className="text-[length:var(--exits-text-xs)] text-muted">
-                        {formatTransferTimestamp(item.updatedAtUtc)}
+                      <span
+                        className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`transfer-executor-${item.transferId}`}
+                      >
+                        <span>{t(executor.labelKey).replace("{name}", executorName)}</span>
+                        <span aria-hidden>·</span>
+                        <span>{formatTransferTimestamp(item.updatedAtUtc)}</span>
                       </span>
                     </span>
                     <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />

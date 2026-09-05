@@ -149,6 +149,13 @@ public sealed class InventoryTransferLine
         DiscrepancyNote = NormalizeNote(receive.DiscrepancyNote);
         if (qty < SentQty)
         {
+            if (receive.DiscrepancyReason is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidInventoryTransferDiscrepancyReason,
+                    "Discrepancy reason is required when received quantity is less than sent.");
+            }
+
             DiscrepancyReason = receive.DiscrepancyReason;
         }
         else

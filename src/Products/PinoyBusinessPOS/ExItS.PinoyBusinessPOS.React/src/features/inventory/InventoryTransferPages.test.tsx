@@ -169,6 +169,8 @@ describe("Inventory Transfer React flow", () => {
           totalReceivedQty: 0,
           totalDifferenceQty: 24,
           updatedAtUtc: "2026-08-29T09:00:00Z",
+          createdBy: "99999999-9999-9999-9999-999999999999",
+          dispatchedBy: "99999999-9999-9999-9999-999999999999",
         },
       ],
       totalCount: 1,
@@ -381,7 +383,9 @@ describe("Inventory Transfer React flow", () => {
     expect(qty).toHaveValue("24");
     await userEvent.clear(qty);
     await userEvent.type(qty, "22");
+    expect(screen.getByTestId("transfer-receive-submit")).toBeDisabled();
     await userEvent.selectOptions(screen.getByTestId(`transfer-discrepancy-${lineId}`), "ShortShipment");
+    expect(screen.getByTestId("transfer-receive-submit")).toBeEnabled();
     await userEvent.click(screen.getByTestId("transfer-receive-submit"));
     await userEvent.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
     await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
@@ -395,5 +399,28 @@ describe("Inventory Transfer React flow", () => {
         }),
       ],
     });
+  });
+
+  it("rejects received quantity above sent and disables receive", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    await userEvent.click(await screen.findByTestId("transfer-receive"));
+    const qty = await screen.findByTestId(`transfer-receive-qty-${lineId}`);
+    await userEvent.clear(qty);
+    await userEvent.type(qty, "25");
+    expect(await screen.findByTestId(`transfer-receive-qty-error-${lineId}`)).toHaveTextContent(
+      "Received quantity cannot exceed sent quantity (24)",
+    );
+    expect(screen.getByTestId("transfer-receive-submit")).toBeDisabled();
   });
 });

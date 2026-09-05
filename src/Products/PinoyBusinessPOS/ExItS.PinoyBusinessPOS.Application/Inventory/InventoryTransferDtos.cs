@@ -76,7 +76,11 @@ public sealed record InventoryTransferListItemDto(
     decimal TotalSentQty,
     decimal TotalReceivedQty,
     decimal TotalDifferenceQty,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    Guid CreatedBy,
+    Guid? DispatchedBy = null,
+    Guid? ReceivedBy = null,
+    Guid? CancelledBy = null);
 
 public sealed record InventoryTransferFilter(
     string? Status = null,

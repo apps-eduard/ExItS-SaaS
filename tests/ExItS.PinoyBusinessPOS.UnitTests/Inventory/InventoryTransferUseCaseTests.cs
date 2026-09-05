@@ -129,7 +129,9 @@ public sealed class InventoryTransferUseCaseTests
         var received = await fx.Receive.ExecuteAsync(
             OrgA,
             created.Value.Id.Value,
-            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 0m)]),
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(fx.CokeId, 0m, "LostInTransit")
+            ]),
             ActorB,
             BranchB);
         Assert.True(received.IsSuccess);
