@@ -558,49 +558,43 @@ export function InventoryTransferCreatePage() {
                 line.lotAvailableQuantity != null
                   ? Math.min(line.availableQuantity, line.lotAvailableQuantity)
                   : line.availableQuantity;
+              const canDecrease = line.quantity > 1;
+              const canIncrease = line.quantity < maxQty;
               return (
                 <li
                   key={line.key}
-                  className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+                  className="flex flex-wrap items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
                   data-testid={`transfer-line-${line.key}`}
                 >
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">{line.name}</p>
-                      <p
-                        className={cn(
-                          "m-0 text-[length:var(--exits-text-xs)]",
-                          maxQty <= 0 || issue ? "text-danger" : "text-muted",
-                        )}
-                        data-testid={`transfer-line-available-${line.key}`}
-                      >
-                        {maxQty <= 0
-                          ? t("transfer.outOfStock")
-                          : formatAvailable(maxQty, line.unitOfMeasure)}
-                        {line.lotNumber || line.expirationDate
-                          ? ` · ${t("transfer.lot")}: ${line.lotNumber ?? "—"} · ${t("transfer.expiry")}: ${line.expirationDate ?? "—"}`
-                          : ""}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0"
-                      aria-label={t("transfer.remove")}
-                      onClick={() => removeLine(line.key)}
-                      data-testid={`transfer-remove-${line.key}`}
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">{line.name}</p>
+                    <p
+                      className={cn(
+                        "m-0 text-[length:var(--exits-text-xs)]",
+                        maxQty <= 0 || issue ? "text-danger" : "text-muted",
+                      )}
+                      data-testid={`transfer-line-available-${line.key}`}
                     >
-                      <X className="size-4" aria-hidden />
-                    </Button>
+                      {maxQty <= 0
+                        ? t("transfer.outOfStock")
+                        : formatAvailable(maxQty, line.unitOfMeasure)}
+                      {line.lotNumber || line.expirationDate
+                        ? ` · ${t("transfer.lot")}: ${line.lotNumber ?? "—"} · ${t("transfer.expiry")}: ${line.expirationDate ?? "—"}`
+                        : ""}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <Button
                       type="button"
-                      variant="outline"
                       size="icon"
-                      className="shrink-0"
-                      disabled={line.quantity <= 1}
+                      variant="outline"
+                      className={cn(
+                        "size-9 shrink-0 rounded-full border-border text-foreground",
+                        canDecrease
+                          ? "hover:border-[var(--exits-border-strong)] hover:bg-[var(--exits-surface-muted)]"
+                          : "text-muted opacity-50",
+                      )}
+                      disabled={!canDecrease}
                       aria-label={t("transfer.decreaseQuantity")}
                       onClick={() => stepLineQuantity(line.key, -1)}
                       data-testid={`transfer-line-dec-${line.key}`}
@@ -612,7 +606,7 @@ export function InventoryTransferCreatePage() {
                       inputMode="decimal"
                       step="any"
                       min={0}
-                      className={cn(qtyFieldClassName, "w-[5.5rem] shrink-0 text-center")}
+                      className={cn(qtyFieldClassName, "w-[4.25rem] shrink-0 text-center")}
                       value={line.quantity > 0 ? String(line.quantity) : ""}
                       onChange={(e) => updateLineQuantity(line.key, e.target.value)}
                       data-testid={`transfer-line-qty-${line.key}`}
@@ -620,18 +614,31 @@ export function InventoryTransferCreatePage() {
                     />
                     <Button
                       type="button"
-                      variant="outline"
                       size="icon"
-                      className="shrink-0"
-                      disabled={line.quantity >= maxQty}
+                      variant={canIncrease ? "default" : "outline"}
+                      className={cn(
+                        "size-9 shrink-0 rounded-full",
+                        !canIncrease && "text-muted opacity-50",
+                      )}
+                      disabled={!canIncrease}
                       aria-label={t("transfer.increaseQuantity")}
                       onClick={() => stepLineQuantity(line.key, 1)}
                       data-testid={`transfer-line-inc-${line.key}`}
                     >
                       <Plus className="size-4" aria-hidden />
                     </Button>
-                    <span className="text-[length:var(--exits-text-xs)] text-muted">{line.unitOfMeasure}</span>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 rounded-full"
+                    aria-label={t("transfer.remove")}
+                    onClick={() => removeLine(line.key)}
+                    data-testid={`transfer-remove-${line.key}`}
+                  >
+                    <X className="size-4" aria-hidden />
+                  </Button>
                 </li>
               );
             })}
