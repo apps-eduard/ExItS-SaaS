@@ -95,6 +95,9 @@ export function ConfirmationDialog({
   cancelTone = "ghost",
   confirmIcon,
   cancelIcon,
+  busy = false,
+  confirmDisabled = false,
+  confirmPendingLabel,
   testId = "confirmation-dialog",
 }: {
   open: boolean;
@@ -110,6 +113,11 @@ export function ConfirmationDialog({
   cancelTone?: "ghost" | "danger-outline";
   confirmIcon?: ReactNode;
   cancelIcon?: ReactNode;
+  /** When true, actions are disabled and backdrop dismiss is ignored. */
+  busy?: boolean;
+  confirmDisabled?: boolean;
+  /** Shown on the confirm button while `busy` (falls back to confirmLabel). */
+  confirmPendingLabel?: string;
   testId?: string;
 }) {
   useBodyScrollLock(open);
@@ -120,11 +128,17 @@ export function ConfirmationDialog({
     return null;
   }
 
+  const confirmBlocked = busy || confirmDisabled;
+
   return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
       role="presentation"
-      onClick={onCancel}
+      onClick={() => {
+        if (!busy) {
+          onCancel();
+        }
+      }}
       data-testid={`${testId}-backdrop`}
     >
       <div
@@ -132,6 +146,7 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby={`${testId}-title`}
         aria-describedby={`${testId}-detail`}
+        aria-busy={busy || undefined}
         data-testid={testId}
         className="w-full max-w-md rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-lg"
         onClick={(event) => event.stopPropagation()}
@@ -154,9 +169,12 @@ export function ConfirmationDialog({
                 ? "border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
                 : undefined
             }
+            disabled={busy}
             onClick={(event) => {
               event.stopPropagation();
-              onCancel();
+              if (!busy) {
+                onCancel();
+              }
             }}
             data-testid={`${testId}-cancel`}
           >
@@ -166,14 +184,17 @@ export function ConfirmationDialog({
           <Button
             type="button"
             variant={confirmTone === "danger" ? "destructive" : "default"}
+            disabled={confirmBlocked}
             onClick={(event) => {
               event.stopPropagation();
-              onConfirm();
+              if (!confirmBlocked) {
+                onConfirm();
+              }
             }}
             data-testid={`${testId}-confirm`}
           >
-            {confirmIcon}
-            {confirmLabel}
+            {busy ? null : confirmIcon}
+            {busy ? (confirmPendingLabel ?? confirmLabel) : confirmLabel}
           </Button>
         </div>
       </div>

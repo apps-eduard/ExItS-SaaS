@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Ban, PackageCheck, Truck } from "lucide-react";
+import { AlertCircle, ArrowRight, Ban, PackageCheck, Truck } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -36,6 +36,24 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Mode = "detail" | "receive";
 type ConfirmKind = "dispatch" | "cancel" | "receive" | null;
+type LocalError = { title: string; detail: string };
+
+function resolveTransferActionError(err: unknown, fallback: string): string {
+  if (err instanceof PosApiError) {
+    const detail = err.problem.detail?.trim();
+    if (detail) {
+      return detail;
+    }
+    const title = err.problem.title?.trim();
+    if (title) {
+      return title;
+    }
+    if (err.message.trim()) {
+      return err.message.trim();
+    }
+  }
+  return fallback;
+}
 
 export function InventoryTransferDetailPage() {
   const { t } = useI18n();
@@ -48,8 +66,9 @@ export function InventoryTransferDetailPage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
 
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<LocalError | null>(null);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [mode, setMode] = useState<Mode>("detail");
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [receivedByLine, setReceivedByLine] = useState<Record<string, string>>({});
@@ -99,10 +118,12 @@ export function InventoryTransferDetailPage() {
   async function refreshAfter(
     mutation: () => Promise<InventoryTransferDto>,
     successMessage: string,
+    failureTitle: string,
   ) {
-    if (!workspace) {
+    if (!workspace || busyRef.current) {
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     setLocalError(null);
     try {
@@ -116,34 +137,33 @@ export function InventoryTransferDetailPage() {
       showToast(successMessage, "success");
       setMode("detail");
     } catch (err) {
-      setLocalError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("transfer.actionFailed"))
-          : t("transfer.actionFailed"),
-      );
+      const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
+      setLocalError({ title: failureTitle, detail });
+      showToast(detail, "error");
     } finally {
+      busyRef.current = false;
       setBusy(false);
+      setConfirmKind(null);
     }
   }
 
   async function onDispatch() {
-    if (!workspace || !transfer) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
     const { transferId: id, destinationBranchName, destinationBranchId } = transfer;
-    setConfirmKind(null);
     const dest = branchDisplayName(destinationBranchName, destinationBranchId);
     await refreshAfter(
       () => dispatchInventoryTransfer(workspace, id),
       t("transfer.dispatchedSuccess").replace("{destination}", dest),
+      t("transfer.dispatchFailedTitle"),
     );
   }
 
   async function onCancel() {
-    if (!workspace || !transfer) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
-    setConfirmKind(null);
     const successMessage =
       transfer.status === "InTransit"
         ? t("transfer.cancelledRestoredSuccess").replace(
@@ -151,14 +171,17 @@ export function InventoryTransferDetailPage() {
             branchDisplayName(transfer.sourceBranchName, transfer.sourceBranchId),
           )
         : t("transfer.cancelledSuccess");
-    await refreshAfter(() => cancelInventoryTransfer(workspace, transfer.transferId), successMessage);
+    await refreshAfter(
+      () => cancelInventoryTransfer(workspace, transfer.transferId),
+      successMessage,
+      t("transfer.cancelFailedTitle"),
+    );
   }
 
   async function onReceive() {
-    if (!workspace || !transfer) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
-    setConfirmKind(null);
     const lines: Array<{
       productId: string;
       receivedQty: number;
@@ -169,7 +192,11 @@ export function InventoryTransferDetailPage() {
     for (const line of transfer.lines) {
       const parsed = parseReceivedQuantity(receivedByLine[line.lineId] ?? "", line.sentQty);
       if (parsed === "empty" || parsed === "invalid") {
-        setLocalError(t("transfer.invalidReceivedQuantity"));
+        setLocalError({
+          title: t("transfer.receiveFailedTitle"),
+          detail: t("transfer.invalidReceivedQuantity"),
+        });
+        setConfirmKind(null);
         return;
       }
       const entry: (typeof lines)[number] = {
@@ -190,6 +217,7 @@ export function InventoryTransferDetailPage() {
       lines.push(entry);
     }
 
+    busyRef.current = true;
     setBusy(true);
     setLocalError(null);
     try {
@@ -209,13 +237,13 @@ export function InventoryTransferDetailPage() {
       );
       setMode("detail");
     } catch (err) {
-      setLocalError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("transfer.actionFailed"))
-          : t("transfer.actionFailed"),
-      );
+      const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
+      setLocalError({ title: t("transfer.receiveFailedTitle"), detail });
+      showToast(detail, "error");
     } finally {
+      busyRef.current = false;
       setBusy(false);
+      setConfirmKind(null);
     }
   }
 
@@ -258,6 +286,33 @@ export function InventoryTransferDetailPage() {
 
   const dialogCancelIcon = <Ban className="size-4 shrink-0" aria-hidden />;
 
+  const localErrorAlert = localError ? (
+    <div
+      className="exits-alert-surface exits-alert-surface--danger flex items-start gap-2 px-3 py-2.5"
+      role="alert"
+      data-testid="transfer-local-error"
+    >
+      <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-foreground">
+          {localError.title}
+        </p>
+        <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted wrap-break-word">
+          {localError.detail}
+        </p>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-auto min-h-0 shrink-0 px-1 py-0 text-[length:var(--exits-text-xs)] text-muted"
+        onClick={() => setLocalError(null)}
+        data-testid="transfer-local-error-dismiss"
+      >
+        {t("transfer.dialogCancel")}
+      </Button>
+    </div>
+  ) : null;
+
   const confirmDialog =
     confirmKind === "dispatch" ? (
       <ConfirmationDialog
@@ -268,12 +323,18 @@ export function InventoryTransferDetailPage() {
           .replace("{destination}", destName)
           .replace("{count}", String(transfer.lines.length))}
         confirmLabel={t("transfer.dispatch")}
+        confirmPendingLabel={t("transfer.dispatching")}
         confirmIcon={<Truck className="size-4 shrink-0" aria-hidden />}
         cancelLabel={t("transfer.dialogCancel")}
         cancelIcon={dialogCancelIcon}
         cancelTone="danger-outline"
+        busy={busy}
         testId="transfer-dispatch-confirm"
-        onCancel={() => setConfirmKind(null)}
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
         onConfirm={() => void onDispatch()}
       />
     ) : confirmKind === "cancel" ? (
@@ -286,13 +347,19 @@ export function InventoryTransferDetailPage() {
             : t("transfer.cancelDraftConfirmDetail")
         }
         confirmLabel={t("transfer.cancel")}
+        confirmPendingLabel={t("transfer.cancelling")}
         confirmIcon={<Ban className="size-4 shrink-0" aria-hidden />}
         cancelLabel={t("transfer.dialogCancel")}
         cancelIcon={dialogCancelIcon}
         cancelTone="danger-outline"
         confirmTone="danger"
+        busy={busy}
         testId="transfer-cancel-confirm"
-        onCancel={() => setConfirmKind(null)}
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
         onConfirm={() => void onCancel()}
       />
     ) : confirmKind === "receive" ? (
@@ -301,12 +368,18 @@ export function InventoryTransferDetailPage() {
         title={t("transfer.receiveConfirmTitle")}
         detail={t("transfer.receiveFinalConfirmDetail")}
         confirmLabel={t("transfer.receive")}
+        confirmPendingLabel={t("transfer.receiving")}
         confirmIcon={<PackageCheck className="size-4 shrink-0" aria-hidden />}
         cancelLabel={t("transfer.dialogCancel")}
         cancelIcon={dialogCancelIcon}
         cancelTone="danger-outline"
+        busy={busy}
         testId="transfer-receive-confirm"
-        onCancel={() => setConfirmKind(null)}
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
         onConfirm={() => void onReceive()}
       />
     ) : null;
@@ -325,11 +398,7 @@ export function InventoryTransferDetailPage() {
           backTestId="page-header-back-transfer"
         />
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.receiveFinalHint")}</p>
-        {localError ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
-            {localError}
-          </p>
-        ) : null}
+        {localErrorAlert}
 
         {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto" data-testid="transfer-receive-table">
@@ -490,7 +559,10 @@ export function InventoryTransferDetailPage() {
               type="button"
               className="flex-1"
               disabled={!canReceive}
-              onClick={() => setConfirmKind("receive")}
+              onClick={() => {
+                setLocalError(null);
+                setConfirmKind("receive");
+              }}
               data-testid="transfer-receive-submit"
             >
               {busy ? t("transfer.receiving") : t("transfer.receive")}
@@ -524,15 +596,7 @@ export function InventoryTransferDetailPage() {
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
-      {localError ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-danger"
-          role="alert"
-          data-testid="transfer-local-error"
-        >
-          {localError}
-        </p>
-      ) : null}
+      {localErrorAlert}
 
       <div
         className="flex min-w-0 flex-wrap items-center justify-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 sm:justify-start sm:gap-3"
@@ -661,7 +725,10 @@ export function InventoryTransferDetailPage() {
                 variant="outline"
                 className="border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
                 disabled={!canMutate}
-                onClick={() => setConfirmKind("cancel")}
+                onClick={() => {
+                  setLocalError(null);
+                  setConfirmKind("cancel");
+                }}
                 data-testid="transfer-cancel"
               >
                 <Ban className="size-4 shrink-0" aria-hidden />
@@ -686,7 +753,10 @@ export function InventoryTransferDetailPage() {
               <Button
                 type="button"
                 disabled={!canMutate}
-                onClick={() => setConfirmKind("dispatch")}
+                onClick={() => {
+                  setLocalError(null);
+                  setConfirmKind("dispatch");
+                }}
                 data-testid="transfer-dispatch"
               >
                 <Truck className="size-4 shrink-0" aria-hidden />

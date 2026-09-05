@@ -202,6 +202,8 @@ describe("Inventory Transfer React flow", () => {
     const dispatchSpy = vi
       .spyOn(transferClient, "dispatchInventoryTransfer")
       .mockResolvedValue(inTransitTransfer() as never);
+    const { QueryClient } = await import("@tanstack/react-query");
+    const invalidateSpy = vi.spyOn(QueryClient.prototype, "invalidateQueries");
 
     render(
       <AppProviders>
@@ -218,10 +220,92 @@ describe("Inventory Transfer React flow", () => {
     );
     expect(screen.getByTestId("transfer-dispatch")).toBeInTheDocument();
     expect(screen.queryByTestId("transfer-receive")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("transfer-dispatch"));
+    expect(dispatchSpy).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("transfer-dispatch-confirm")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("transfer-dispatch-confirm-cancel"));
+    expect(dispatchSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.queryByTestId("transfer-dispatch-confirm")).not.toBeInTheDocument();
+    });
+
     await userEvent.click(screen.getByTestId("transfer-dispatch"));
     await userEvent.click(await screen.findByTestId("transfer-dispatch-confirm-confirm"));
-    await waitFor(() => expect(dispatchSpy).toHaveBeenCalled());
+    await waitFor(() => expect(dispatchSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(screen.getByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+        "data-status",
+        "InTransit",
+      );
+    });
+    expect(await screen.findByText("TR-20260829-0001")).toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-dispatch")).not.toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["inventory-transfers"] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["inventory"] }),
+    );
   });
+
+  it("failed dispatch remains Draft and surfaces exact server detail", async () => {
+    const { PosApiError } = await import("@/api/pos/pos-http");
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(draftTransfer() as never);
+    let rejectDispatch!: (reason?: unknown) => void;
+    const pending = new Promise<never>((_resolve, reject) => {
+      rejectDispatch = reject;
+    });
+    const dispatchSpy = vi
+      .spyOn(transferClient, "dispatchInventoryTransfer")
+      .mockImplementation(() => pending);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+      "data-status",
+      "Draft",
+    );
+
+    await userEvent.click(screen.getByTestId("transfer-dispatch"));
+    const confirm = await screen.findByTestId("transfer-dispatch-confirm-confirm");
+    await userEvent.click(confirm);
+    await userEvent.click(confirm);
+    await waitFor(() => expect(dispatchSpy).toHaveBeenCalledTimes(1));
+    expect(confirm).toBeDisabled();
+    expect(confirm).toHaveTextContent("Dispatching");
+
+    rejectDispatch(
+      new PosApiError(409, {
+        errorCode: "pos.insufficient_stock",
+        detail: "Insufficient available stock to dispatch 'Bath Soap Bar'.",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("transfer-dispatch-confirm")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+      "data-status",
+      "Draft",
+    );
+    const alert = await screen.findByTestId("transfer-local-error");
+    expect(alert).toHaveTextContent("Cannot dispatch transfer");
+    expect(alert).toHaveTextContent("Insufficient available stock to dispatch 'Bath Soap Bar'.");
+    const toast = await screen.findByTestId("exits-toast");
+    expect(toast).toHaveAttribute("data-tone", "error");
+    expect(toast).toHaveTextContent("Insufficient available stock to dispatch 'Bath Soap Bar'.");
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
+  });
+
 
   it("source in-transit can cancel but not receive", async () => {
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
