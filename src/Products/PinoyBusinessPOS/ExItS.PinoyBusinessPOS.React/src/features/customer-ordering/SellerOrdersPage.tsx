@@ -67,84 +67,91 @@ export function SellerOrdersPage() {
 
   return (
     <div
-      className="customer-orders-page exits-page flex min-w-0 flex-col gap-3"
+      className="customer-orders-page exits-page flex h-full min-h-0 w-full min-w-0 flex-col gap-3 overflow-hidden"
       data-testid="seller-orders-page"
     >
-      <PageHeader
-        title={t("orders.sellerTitle")}
-        description={t("orders.sellerLede")}
-        backTo={pageBackNav.managerHome.to}
-        backLabel={t(pageBackNav.managerHome.labelKey)}
-        backTestId="page-header-back-customer-orders"
-      />
+      <div className="customer-orders-page__chrome shrink-0 flex min-w-0 flex-col gap-3">
+        <PageHeader
+          title={t("orders.sellerTitle")}
+          description={t("orders.sellerLede")}
+          backTo={pageBackNav.managerHome.to}
+          backLabel={t(pageBackNav.managerHome.labelKey)}
+          backTestId="page-header-back-customer-orders"
+        />
 
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("orders.filterLabel")}
-        testId="seller-orders-filters"
-        items={FILTERS.map((f) => ({
-          key: f,
-          label: t(`orders.filter${f}` as MessageKey),
-          state: filter === f ? "active" : "idle",
-          testId: `orders-filter-${f.toLowerCase()}`,
-          onSelect: () => setFilter(f),
-        }))}
-      />
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("orders.filterLabel")}
+          testId="seller-orders-filters"
+          items={FILTERS.map((f) => ({
+            key: f,
+            label: t(`orders.filter${f}` as MessageKey),
+            state: filter === f ? "active" : "idle",
+            testId: `orders-filter-${f.toLowerCase()}`,
+            onSelect: () => setFilter(f),
+          }))}
+        />
+      </div>
 
-      {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-      {query.isFetching && !query.isLoading && query.data ? (
-        <BackgroundRefreshIndicator active label={t("loading.updating")} />
-      ) : null}
+      <div className="customer-orders-page__results flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        {query.isFetching && !query.isLoading && query.data ? (
+          <BackgroundRefreshIndicator active label={t("loading.updating")} />
+        ) : null}
 
-      {query.isError ? (
-        <div className="flex min-w-0 flex-col gap-4">
-          <ErrorState
-            title={t("orders.error")}
-            detail={describePosApiError(query.error, t, "error.detail")}
-          />
-          <Button type="button" className="w-fit" onClick={() => void query.refetch()}>
-            {t("orders.retry")}
-          </Button>
-        </div>
-      ) : null}
+        {query.isError ? (
+          <div className="flex min-w-0 flex-col gap-4 overflow-y-auto">
+            <ErrorState
+              title={t("orders.error")}
+              detail={describePosApiError(query.error, t, "error.detail")}
+            />
+            <Button type="button" className="w-fit" onClick={() => void query.refetch()}>
+              {t("orders.retry")}
+            </Button>
+          </div>
+        ) : null}
 
-      {!query.isLoading && !query.isError ? (
-        items.length === 0 ? (
-          <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
-        ) : (
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="seller-orders-list">
-            {items.map((order) => (
-              <li key={order.orderId}>
-                <Link
-                  className="exits-list__card customer-order-row block min-w-0 text-foreground no-underline"
-                  to={`/orders/${order.orderId}`}
-                  data-testid="seller-order-card"
-                >
-                  <div className="customer-order-row__main min-w-0">
-                    <strong className="exits-list__name block truncate font-semibold">
-                      {order.customerDisplayName}
-                    </strong>
-                    <p className="customer-order-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      #{order.orderNumber} · {order.fulfillmentType} · {order.lineCount}{" "}
-                      {t("orders.items")}
-                    </p>
-                  </div>
-                  <div className="customer-order-row__aside">
-                    <span className="customer-order-row__total">{money(order.total)}</span>
-                    <StatusChip tone="info">
-                      {t(displayOrderStatusKey(order) as MessageKey)}
-                    </StatusChip>
-                    <ChevronRight
-                      className="customer-order-row__chevron size-4 shrink-0 text-muted"
-                      aria-hidden
-                    />
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : null}
+        {!query.isLoading && !query.isError ? (
+          items.length === 0 ? (
+            <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
+          ) : (
+            <ul
+              className="exits-list m-0 grid min-h-0 list-none gap-2 overflow-y-auto overscroll-y-contain p-0"
+              data-testid="seller-orders-list"
+            >
+              {items.map((order) => (
+                <li key={order.orderId}>
+                  <Link
+                    className="exits-list__card customer-order-row block min-w-0 text-foreground no-underline"
+                    to={`/orders/${order.orderId}`}
+                    data-testid="seller-order-card"
+                  >
+                    <div className="customer-order-row__main min-w-0">
+                      <strong className="exits-list__name block truncate font-semibold">
+                        {order.customerDisplayName}
+                      </strong>
+                      <p className="customer-order-row__meta mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
+                        #{order.orderNumber} · {order.fulfillmentType} · {order.lineCount}{" "}
+                        {t("orders.items")}
+                      </p>
+                    </div>
+                    <div className="customer-order-row__aside">
+                      <span className="customer-order-row__total">{money(order.total)}</span>
+                      <StatusChip tone="info">
+                        {t(displayOrderStatusKey(order) as MessageKey)}
+                      </StatusChip>
+                      <ChevronRight
+                        className="customer-order-row__chevron size-4 shrink-0 text-muted"
+                        aria-hidden
+                      />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+      </div>
     </div>
   );
 }

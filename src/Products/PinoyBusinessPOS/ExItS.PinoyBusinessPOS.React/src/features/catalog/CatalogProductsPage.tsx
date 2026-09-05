@@ -372,92 +372,129 @@ export function CatalogProductsPage() {
   ];
 
   return (
-    <div className="catalog-page exits-page flex min-w-0 flex-col gap-3" data-testid="catalog-products-page">
-      <PageHeader
-        title={t("catalog.productsTitle")}
-        description={t("catalog.productsLede")}
-        backTo={pageBackNav.managerHome.to}
-        backLabel={t(pageBackNav.managerHome.labelKey)}
-        backTestId="page-header-back-catalog"
-      />
+    <div
+      className="catalog-page catalog-page--products-scroll exits-page flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden"
+      data-testid="catalog-products-page"
+    >
+      <div className="catalog-page__chrome shrink-0 flex min-w-0 flex-col gap-3">
+        <PageHeader
+          title={t("catalog.productsTitle")}
+          description={t("catalog.productsLede")}
+          backTo={pageBackNav.managerHome.to}
+          backLabel={t(pageBackNav.managerHome.labelKey)}
+          backTestId="page-header-back-catalog"
+        />
 
-      <ExitsChipBar
-        variant="actions"
-        ariaLabel={t("catalog.productsTitle")}
-        testId="catalog-toolbar"
-        className="exits-animate-toolbar"
-        items={toolbarItems}
-      />
+        <ExitsChipBar
+          variant="actions"
+          ariaLabel={t("catalog.productsTitle")}
+          testId="catalog-toolbar"
+          className="exits-animate-toolbar"
+          items={toolbarItems}
+        />
 
-      <SearchField
-        label={t("catalog.searchProducts")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("catalog.searchProducts")}
-        data-testid="catalog-search"
-        containerClassName="catalog-page__search exits-page__search"
-      />
-
-      {isDesktopFilters ? (
-        <div className="catalog-page__filters-desktop flex min-w-0 flex-col gap-2.5">
-          <div className="catalog-page__taxonomy grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
-            <CatalogCategoryBrandSelects
-              categoryId={categoryId}
-              brandId={brandId}
-              categories={categoriesQuery.data?.items ?? []}
-              brands={brandsQuery.data?.items ?? []}
-              onCategoryChange={setCategoryId}
-              onBrandChange={setBrandId}
-              categoryLabel={t("catalog.category")}
-              brandLabel={t("catalog.brand")}
-              allCategoriesLabel={t("catalog.allCategories")}
-              allBrandsLabel={t("catalog.allBrands")}
-            />
-          </div>
-
-          <CatalogProductFilterChipBars
-            scopeFilter={scopeFilter}
-            status={status}
-            usageFilter={usageFilter}
-            onScopeChange={setScopeFilter}
-            onStatusChange={setStatus}
-            onUsageChange={setUsageFilter}
-            t={t}
-          />
-        </div>
-      ) : (
-        <div className="catalog-page__filters-mobile flex min-w-0 flex-col gap-2">
-          <div className="catalog-page__filters-mobile-toolbar flex min-w-0 items-center gap-2.5">
-            <FilterButton
-              activeCount={sheetFilterCount}
-              className="catalog-page__filter-open shrink-0"
-              data-testid="catalog-open-filters"
-              onClick={() => setFiltersSheetOpen(true)}
-            >
-              {t("catalog.filters")}
-            </FilterButton>
-            <div className="catalog-page__status-quick min-w-0 flex-1">
-              <CatalogFilterScrollRow
-                ariaLabel={t("catalog.filters.status")}
-                testId="catalog-status-filters-mobile"
-                items={STATUS_FILTERS.map((filter) => ({
-                  key: filter.key,
-                  label: t(filter.labelKey),
-                  active: (status || "all") === filter.key,
-                  testId: `catalog-status-${filter.key === "all" ? "all" : filter.key}`,
-                  onSelect: () => setStatus(filter.value),
-                }))}
+        {isDesktopFilters ? (
+          <div className="catalog-page__filters-desktop flex min-w-0 flex-col gap-2.5">
+            <div className="catalog-page__taxonomy grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+              <CatalogCategoryBrandSelects
+                categoryId={categoryId}
+                brandId={brandId}
+                categories={categoriesQuery.data?.items ?? []}
+                brands={brandsQuery.data?.items ?? []}
+                onCategoryChange={setCategoryId}
+                onBrandChange={setBrandId}
+                categoryLabel={t("catalog.category")}
+                brandLabel={t("catalog.brand")}
+                allCategoriesLabel={t("catalog.allCategories")}
+                allBrandsLabel={t("catalog.allBrands")}
               />
             </div>
+
+            <CatalogProductFilterChipBars
+              scopeFilter={scopeFilter}
+              status={status}
+              usageFilter={usageFilter}
+              onScopeChange={setScopeFilter}
+              onStatusChange={setStatus}
+              onUsageChange={setUsageFilter}
+              t={t}
+              includeUsage={false}
+            />
+
+            <div className="catalog-page__search-use-row">
+              <section className="catalog-page__filter-section catalog-page__filter-section--search min-w-0">
+                <p className="catalog-page__filter-section-label">{t("catalog.filters.search")}</p>
+                <SearchField
+                  label={t("catalog.filters.search")}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onClear={() => setSearch("")}
+                  placeholder={t("catalog.searchProducts")}
+                  data-testid="catalog-search"
+                  containerClassName="catalog-page__search exits-page__search min-w-0"
+                />
+              </section>
+              <section className="catalog-page__filter-section catalog-page__filter-section--usage min-w-0">
+                <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
+                <CatalogFilterScrollRow
+                  ariaLabel={t("catalog.filters.use")}
+                  testId="catalog-usage-filters"
+                  items={USAGE_FILTERS.map((filter) => ({
+                    key: filter.key,
+                    label: t(filter.labelKey),
+                    active: usageFilter === filter.value,
+                    testId: `catalog-usage-${filter.key}`,
+                    onSelect: () => setUsageFilter(filter.value),
+                  }))}
+                />
+              </section>
+            </div>
           </div>
-          <FilterChips
-            items={activeFilterChips}
-            listLabel={t("catalog.activeFilters")}
-            onRemove={removeActiveFilter}
-          />
-        </div>
-      )}
+        ) : (
+          <div className="catalog-page__filters-mobile flex min-w-0 flex-col gap-2">
+            <div className="catalog-page__filters-mobile-toolbar flex min-w-0 items-center gap-2.5">
+              <FilterButton
+                activeCount={sheetFilterCount}
+                className="catalog-page__filter-open shrink-0"
+                data-testid="catalog-open-filters"
+                onClick={() => setFiltersSheetOpen(true)}
+              >
+                {t("catalog.filters")}
+              </FilterButton>
+              <div className="catalog-page__status-quick min-w-0 flex-1">
+                <CatalogFilterScrollRow
+                  ariaLabel={t("catalog.filters.status")}
+                  testId="catalog-status-filters-mobile"
+                  items={STATUS_FILTERS.map((filter) => ({
+                    key: filter.key,
+                    label: t(filter.labelKey),
+                    active: (status || "all") === filter.key,
+                    testId: `catalog-status-${filter.key === "all" ? "all" : filter.key}`,
+                    onSelect: () => setStatus(filter.value),
+                  }))}
+                />
+              </div>
+            </div>
+            <FilterChips
+              items={activeFilterChips}
+              listLabel={t("catalog.activeFilters")}
+              onRemove={removeActiveFilter}
+            />
+            <section className="catalog-page__filter-section catalog-page__filter-section--search min-w-0">
+              <p className="catalog-page__filter-section-label">{t("catalog.filters.search")}</p>
+              <SearchField
+                label={t("catalog.filters.search")}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onClear={() => setSearch("")}
+                placeholder={t("catalog.searchProducts")}
+                data-testid="catalog-search"
+                containerClassName="catalog-page__search exits-page__search"
+              />
+            </section>
+          </div>
+        )}
+      </div>
 
       {!isDesktopFilters ? (
         <BottomSheet
@@ -520,18 +557,23 @@ export function CatalogProductsPage() {
         </BottomSheet>
       ) : null}
 
-      {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-      {query.isFetching && !query.isLoading && query.data ? (
-        <BackgroundRefreshIndicator active label={t("loading.updating")} />
-      ) : null}
-      {query.isError ? (
-        <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
-      ) : null}
-      {query.isSuccess && filteredItems.length === 0 ? (
-        <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
-      ) : null}
+      <div className="catalog-page__products flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div
+          className="catalog-page__products-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+          data-testid="catalog-products-scroll"
+        >
+          {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+          {query.isFetching && !query.isLoading && query.data ? (
+            <BackgroundRefreshIndicator active label={t("loading.updating")} />
+          ) : null}
+          {query.isError ? (
+            <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
+          ) : null}
+          {query.isSuccess && filteredItems.length === 0 ? (
+            <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
+          ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-products-list">
+          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-products-list">
         {filteredItems.map((product) => {
           const categoryName = product.categoryId
             ? categoryNameById.get(product.categoryId)
@@ -652,39 +694,41 @@ export function CatalogProductsPage() {
             </li>
           );
         })}
-      </ul>
-
-      {query.isSuccess && totalCount > 0 ? (
-        <div className="exits-pagination" data-testid="catalog-pagination">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("catalog.pageLabel")
-              .replace("{page}", String(page))
-              .replace("{totalPages}", String(totalPages))}
-          </p>
-          <div className="exits-pagination__actions flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-9"
-              data-testid="catalog-prev"
-              disabled={!canPrev}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              {t("catalog.prevPage")}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-9"
-              data-testid="catalog-next"
-              disabled={!canNext}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              {t("catalog.nextPage")}
-            </Button>
-          </div>
+          </ul>
         </div>
-      ) : null}
+
+        {query.isSuccess && totalCount > 0 ? (
+          <div className="exits-pagination shrink-0" data-testid="catalog-pagination">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("catalog.pageLabel")
+                .replace("{page}", String(page))
+                .replace("{totalPages}", String(totalPages))}
+            </p>
+            <div className="exits-pagination__actions flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-9"
+                data-testid="catalog-prev"
+                disabled={!canPrev}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                {t("catalog.prevPage")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-9"
+                data-testid="catalog-next"
+                disabled={!canNext}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                {t("catalog.nextPage")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -809,6 +853,7 @@ type CatalogProductFilterChipBarsProps = {
   onUsageChange: (value: UsageFilter) => void;
   t: (key: MessageKey) => string;
   includeStatus?: boolean;
+  includeUsage?: boolean;
   layout?: "inline" | "sheet";
 };
 
@@ -821,6 +866,7 @@ function CatalogProductFilterChipBars({
   onUsageChange,
   t,
   includeStatus = true,
+  includeUsage = true,
   layout = "inline",
 }: CatalogProductFilterChipBarsProps) {
   const scopeItems = SCOPE_FILTERS.map((filter) => ({
@@ -871,6 +917,43 @@ function CatalogProductFilterChipBars({
             />
           </section>
         ) : null}
+        {includeUsage ? (
+          <section className="catalog-page__filter-section catalog-page__filter-section--usage">
+            <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
+            <CatalogFilterScrollRow
+              ariaLabel={t("catalog.filters.use")}
+              testId="catalog-usage-filters"
+              items={usageItems}
+            />
+          </section>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="catalog-page__filter-groups flex min-w-0 flex-col gap-2" data-testid="catalog-filter-groups">
+      <div className="catalog-page__filter-row catalog-page__filter-row--scope-status">
+        <section className="catalog-page__filter-section catalog-page__filter-section--scope min-w-0">
+          <p className="catalog-page__filter-section-label">{t("catalog.filters.scope")}</p>
+          <CatalogFilterScrollRow
+            ariaLabel={t("catalog.filters.scope")}
+            testId="catalog-scope-filters"
+            items={scopeItems}
+          />
+        </section>
+        {includeStatus ? (
+          <section className="catalog-page__filter-section catalog-page__filter-section--status min-w-0">
+            <p className="catalog-page__filter-section-label">{t("catalog.filters.status")}</p>
+            <CatalogFilterScrollRow
+              ariaLabel={t("catalog.filters.status")}
+              testId="catalog-status-filters"
+              items={statusItems}
+            />
+          </section>
+        ) : null}
+      </div>
+      {includeUsage ? (
         <section className="catalog-page__filter-section catalog-page__filter-section--usage">
           <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
           <CatalogFilterScrollRow
@@ -879,38 +962,7 @@ function CatalogProductFilterChipBars({
             items={usageItems}
           />
         </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="catalog-page__filter-groups flex min-w-0 flex-col gap-2" data-testid="catalog-filter-groups">
-      <section className="catalog-page__filter-section catalog-page__filter-section--scope">
-        <p className="catalog-page__filter-section-label">{t("catalog.filters.scope")}</p>
-        <CatalogFilterScrollRow
-          ariaLabel={t("catalog.filters.scope")}
-          testId="catalog-scope-filters"
-          items={scopeItems}
-        />
-      </section>
-      {includeStatus ? (
-        <section className="catalog-page__filter-section catalog-page__filter-section--status">
-          <p className="catalog-page__filter-section-label">{t("catalog.filters.status")}</p>
-          <CatalogFilterScrollRow
-            ariaLabel={t("catalog.filters.status")}
-            testId="catalog-status-filters"
-            items={statusItems}
-          />
-        </section>
       ) : null}
-      <section className="catalog-page__filter-section catalog-page__filter-section--usage">
-        <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
-        <CatalogFilterScrollRow
-          ariaLabel={t("catalog.filters.use")}
-          testId="catalog-usage-filters"
-          items={usageItems}
-        />
-      </section>
     </div>
   );
 }

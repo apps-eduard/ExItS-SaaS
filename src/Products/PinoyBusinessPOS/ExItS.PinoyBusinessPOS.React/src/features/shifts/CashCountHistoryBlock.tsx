@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, ListCollapse } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDenominationValue } from "@/api/pos/pos-operational-setup-client";
 import type { CashCountDenominationLineDto } from "@/api/pos/pos-shifts-client";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { formatDenominationCurrency, formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 
 type Props = {
@@ -28,7 +29,7 @@ export function CashCountHistoryBlock({
 
   if (!counted) {
     return (
-      <div className="flex items-center justify-between gap-2" data-testid={testId}>
+      <div className="flex items-center justify-between gap-2 py-0.5" data-testid={testId}>
         <span className="text-[length:var(--exits-text-sm)] text-muted">{label}</span>
         <span
           className="text-[length:var(--exits-text-sm)] font-medium"
@@ -44,7 +45,7 @@ export function CashCountHistoryBlock({
 
   if (!hasLines) {
     return (
-      <div className="flex items-center justify-between gap-2" data-testid={testId}>
+      <div className="flex items-center justify-between gap-2 py-0.5" data-testid={testId}>
         <span className="text-[length:var(--exits-text-sm)] text-muted">{label}</span>
         <span className="tabular-nums text-[length:var(--exits-text-sm)] font-medium">
           <MoneyDisplay amount={displayAmount} testId={`${testId}-amount`} />
@@ -54,10 +55,10 @@ export function CashCountHistoryBlock({
   }
 
   return (
-    <div data-testid={testId} className="flex flex-col gap-2">
+    <div data-testid={testId} className="flex flex-col gap-1">
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 text-left shadow-sm transition-colors hover:bg-surface-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full items-center justify-between gap-2 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-expanded={expanded}
         data-testid={`${testId}-toggle`}
         onClick={() => setExpanded((value) => !value)}
@@ -68,16 +69,8 @@ export function CashCountHistoryBlock({
           }
         }}
       >
-        <span className="flex min-w-0 items-start gap-2">
-          <ListCollapse className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-          <span className="flex min-w-0 flex-col">
-            <span className="text-[length:var(--exits-text-sm)] font-medium">{label}</span>
-            <span className="text-[length:var(--exits-text-sm)] text-muted">
-              {t("shift.tapDenominationHint")}
-            </span>
-          </span>
-        </span>
-        <span className="flex shrink-0 items-center gap-2 tabular-nums text-[length:var(--exits-text-sm)] font-semibold">
+        <span className="text-[length:var(--exits-text-sm)] text-muted">{label}</span>
+        <span className="flex shrink-0 items-center gap-1.5 tabular-nums text-[length:var(--exits-text-sm)] font-medium">
           <MoneyDisplay amount={displayAmount} testId={`${testId}-amount`} />
           {expanded ? (
             <ChevronDown className="size-4 text-muted" aria-hidden />
@@ -88,7 +81,7 @@ export function CashCountHistoryBlock({
       </button>
       {expanded ? (
         <ul
-          className="m-0 flex list-none flex-col gap-1 p-0 sm:gap-1"
+          className="m-0 list-none p-0"
           aria-label={breakdownLabel}
           data-testid={`${testId}-breakdown`}
         >
@@ -97,14 +90,13 @@ export function CashCountHistoryBlock({
             return (
               <li
                 key={`${line.denominationValue}-${line.quantity}`}
-                className="grid grid-cols-1 gap-1 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 text-[length:var(--exits-text-sm)] tabular-nums sm:grid-cols-3 sm:gap-2"
+                className="cash-count-history__line"
                 data-testid={`${testId}-line-${formatDenominationValue(line.denominationValue)}`}
               >
-                <span>{formatDenominationValue(line.denominationValue)}</span>
-                <span className="sm:text-center">× {line.quantity}</span>
-                <span className="font-medium sm:text-right">
-                  <MoneyDisplay amount={lineTotal} />
+                <span className="text-muted">
+                  {formatDenominationCurrency(line.denominationValue)} ×{line.quantity}
                 </span>
+                <span className="font-medium">{formatPeso(lineTotal)}</span>
               </li>
             );
           })}

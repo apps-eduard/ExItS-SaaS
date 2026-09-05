@@ -28,13 +28,16 @@ export function ManagerMetricCard({
   label,
   value,
   hint,
+  badge,
   testId,
   tone,
   valueScale = "kpi",
 }: {
   label: string;
-  value: ReactNode;
+  value?: ReactNode;
   hint?: string;
+  /** Optional top-right status (e.g. Open chip on Shift). */
+  badge?: ReactNode;
   testId?: string;
   tone?: "default" | "attention" | "success";
   /** `kpi` = sales-scale; `restrained` = Shift/Register (~text-xl, weight 600). */
@@ -50,17 +53,22 @@ export function ManagerMetricCard({
       data-testid={testId}
       data-value-scale={valueScale}
     >
-      <span className="exits-type-label m-0 text-muted">{label}</span>
-      <span
-        className={cn(
-          "m-0 text-foreground",
-          valueScale === "restrained"
-            ? "manager-metric-value--restrained"
-            : "exits-type-kpi",
-        )}
-      >
-        {value}
-      </span>
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <span className="exits-type-label m-0 min-w-0 text-muted">{label}</span>
+        {badge ? <span className="shrink-0">{badge}</span> : null}
+      </div>
+      {value != null && value !== "" ? (
+        <span
+          className={cn(
+            "m-0 text-foreground",
+            valueScale === "restrained"
+              ? "manager-metric-value--restrained"
+              : "exits-type-kpi",
+          )}
+        >
+          {value}
+        </span>
+      ) : null}
       {hint ? (
         <span className="m-0 text-[length:var(--exits-text-sm)] font-normal text-muted">{hint}</span>
       ) : null}
@@ -181,14 +189,14 @@ export function ManagerSnapshotLink({
   return (
     <Link
       to={href}
-      className="exits-metric-surface manager-nav-row flex min-w-0 items-start justify-between gap-2 px-3 py-2.5 no-underline"
+      className="exits-metric-surface manager-nav-row flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 no-underline"
       data-testid={testId}
     >
       <span className="min-w-0">
         <span className="block font-medium text-foreground">{title}</span>
         <span className="block text-[length:var(--exits-text-sm)] text-muted">{detail}</span>
       </span>
-      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden />
+      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
     </Link>
   );
 }

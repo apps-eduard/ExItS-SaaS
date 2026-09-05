@@ -16,10 +16,14 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
 
     expect(css).toMatch(/--exits-section-gap:\s*0\.625rem/);
     expect(css).toMatch(/\[data-density="compact"\][\s\S]*?--exits-section-gap:\s*0\.5rem/);
-    expect(css).toMatch(/\[data-density="comfort"\][\s\S]*?--exits-section-gap:\s*0\.875rem/);
-    expect(css).toMatch(/\.checkout-cash-page\s*\{[\s\S]*?gap:\s*var\(--exits-section-gap\)/);
+    expect(css).toMatch(/\[data-density="comfort"\][\s\S]*?--exits-section-gap:\s*0\.75rem/);
     expect(css).toMatch(
-      /\.checkout-cash-page\s*>\s*\.checkout-sale-preview[\s\S]*?padding:\s*var\(--exits-list-card-padding-y\)\s+var\(--exits-list-card-padding-x\)/,
+      /\.checkout-cash-page__scroll\s*\{[\s\S]*?gap:\s*var\(--exits-section-gap\)/,
+    );
+    expect(css).toContain(".checkout-tender-dock");
+    expect(css).toMatch(/\.checkout-section-card\s*\{[\s\S]*?overflow:\s*visible/);
+    expect(css).toMatch(
+      /\.checkout-cash-page__scroll\s*>\s*\.checkout-sale-preview[\s\S]*?padding:\s*var\(--exits-list-card-padding-y\)\s+var\(--exits-list-card-padding-x\)/,
     );
     expect(css).toContain(".checkout-sale-preview__lines");
     expect(css).toMatch(
@@ -27,19 +31,27 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     );
   });
 
-  it("CheckoutCashPage root uses compact section gap class and keeps section order", () => {
+  it("CheckoutCashPage uses scroll region + tender dock and keeps section order", () => {
     const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
     expect(source).toContain('data-testid="checkout-cash-page" className="checkout-cash-page"');
+    expect(source).toContain('className="checkout-cash-page__scroll"');
+    expect(source).toContain('data-testid="checkout-tender-dock"');
     expect(source).toContain('className="checkout-sale-preview__lines"');
 
     const money = source.indexOf('data-testid="checkout-money-summary"');
     const payment = source.indexOf('data-testid="checkout-payment-method"');
     const discount = source.indexOf('data-testid="checkout-discount-panel"');
     const utang = source.indexOf('data-testid="checkout-utang-panel"');
+    const dock = source.indexOf('data-testid="checkout-tender-dock"');
+    const cash = source.indexOf('data-testid="checkout-cash-received"');
+    const confirm = source.indexOf('data-testid="checkout-confirm"');
     expect(money).toBeGreaterThan(-1);
     expect(payment).toBeGreaterThan(money);
     expect(discount).toBeGreaterThan(payment);
     expect(utang).toBeGreaterThan(discount);
+    expect(dock).toBeGreaterThan(utang);
+    expect(cash).toBeGreaterThan(dock);
+    expect(confirm).toBeGreaterThan(dock);
   });
 
   it("collapsed payment / discount toggles stay compact and expand on open", async () => {

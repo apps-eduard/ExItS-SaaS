@@ -44,7 +44,7 @@ export function CheckoutCollapsibleSection({
 
   return (
     <div
-      className={cn("checkout-collapsible exits-animate-panel", className)}
+      className={cn("checkout-collapsible", className)}
       data-testid={testId}
       data-open={open ? "true" : "false"}
     >

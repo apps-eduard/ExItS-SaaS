@@ -337,15 +337,16 @@ export function ManagerRetailHome() {
     transfersQuery.error;
 
   const registerName = currentShift?.registerName?.trim() || undefined;
-  const shiftStatusValue = hasOpenShift ? (
-    <StatusChip tone="success">{t("managerHome.shift.open")}</StatusChip>
-  ) : (
-    t("managerHome.shift.closed")
-  );
+  const registerCode = currentShift?.registerCode?.trim() || undefined;
+  const shiftNumber = currentShift?.shiftNumber?.trim() || undefined;
+  const registerLabel =
+    registerCode && registerName
+      ? `${registerCode} — ${registerName}`
+      : registerCode || registerName || t("managerHome.register.none");
 
   return (
     <div
-      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-4"
+      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-3"
       data-testid="manager-home"
       data-home-variant="retail"
     >
@@ -356,7 +357,7 @@ export function ManagerRetailHome() {
         descriptionCollapsible={false}
         trailing={
           <span data-testid="manager-home-badge">
-            <StatusChip tone="neutral">{t("role.managerBadge")}</StatusChip>
+            <StatusChip className="manager-home-role-chip">{t("role.managerBadge")}</StatusChip>
           </span>
         }
       />
@@ -388,9 +389,16 @@ export function ManagerRetailHome() {
               {canShifts ? (
                 <ManagerMetricCard
                   label={t("managerHome.today.shift")}
-                  value={shiftStatusValue}
-                  hint={hasOpenShift ? registerName : undefined}
-                  tone={hasOpenShift ? "success" : "default"}
+                  badge={
+                    hasOpenShift ? (
+                      <StatusChip tone="success">{t("managerHome.shift.open")}</StatusChip>
+                    ) : undefined
+                  }
+                  value={
+                    hasOpenShift
+                      ? (shiftNumber ?? t("managerHome.shift.open"))
+                      : t("managerHome.shift.closed")
+                  }
                   valueScale="restrained"
                   testId="manager-today-shift"
                 />
@@ -398,7 +406,7 @@ export function ManagerRetailHome() {
               {canShifts && hasOpenShift ? (
                 <ManagerMetricCard
                   label={t("managerHome.today.register")}
-                  value={registerName ?? t("managerHome.register.none")}
+                  value={registerLabel}
                   valueScale="restrained"
                   testId="manager-today-register"
                 />

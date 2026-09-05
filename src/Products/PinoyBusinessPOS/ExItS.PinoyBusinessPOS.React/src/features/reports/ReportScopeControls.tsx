@@ -1,6 +1,6 @@
 import { useId, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listOrganizationBranches } from "@/api/platform/platform-auth-client";
+import { listOrganizationBranches, resolvePlatformBranchId } from "@/api/platform/platform-auth-client";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import type {
@@ -43,12 +43,20 @@ export function ReportScopeControls({
       if (!result.ok) {
         throw new Error("branches");
       }
-      return result.branches.filter((b) => b.status.toLowerCase() !== "inactive");
+      return result.branches.filter((b) => {
+        const status = String(b.status ?? "").toLowerCase();
+        return status !== "inactive" && status !== "archived";
+      });
     },
     staleTime: 60_000,
   });
 
-  const branches = branchesQuery.data ?? [];
+  const branches = (branchesQuery.data ?? [])
+    .map((b) => {
+      const id = resolvePlatformBranchId(b);
+      return id ? { ...b, id } : null;
+    })
+    .filter((b): b is NonNullable<typeof b> => b != null);
   const singleBranch = branches.length <= 1;
 
   const displayName = useMemo(() => {

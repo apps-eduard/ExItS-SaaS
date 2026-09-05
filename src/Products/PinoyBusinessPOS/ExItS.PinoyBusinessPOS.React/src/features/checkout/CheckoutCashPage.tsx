@@ -793,6 +793,7 @@ export function CheckoutCashPage() {
 
   return (
     <div data-testid="checkout-cash-page" className="checkout-cash-page">
+      <div className="checkout-cash-page__scroll">
       <PageHeader
         title={t("checkout.title")}
         description={t("checkout.cashLede")}
@@ -999,39 +1000,6 @@ export function CheckoutCashPage() {
             </p>
           ) : null}
         </CheckoutCollapsibleSection>
-        {paymentChoice === "GCash" && !zeroTotal ? (
-          <div
-            data-testid="checkout-gcash-panel"
-            className="checkout-gcash-under-method exits-animate-panel"
-          >
-            <label
-              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-              htmlFor="checkout-gcash-reference"
-            >
-              <span className="inline-flex flex-wrap items-baseline gap-1">
-                {t("checkout.gcashReference")}
-                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
-                  {t("checkout.fieldRequired")}
-                </span>
-              </span>
-              <input
-                id="checkout-gcash-reference"
-                data-testid="checkout-gcash-reference"
-                type="text"
-                required
-                aria-required="true"
-                maxLength={GCASH_REFERENCE_MAX_LENGTH}
-                value={gcashReference}
-                disabled={saving}
-                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                onChange={(event) => setGcashReference(event.target.value)}
-              />
-            </label>
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.gcashReferenceHint")}
-            </p>
-          </div>
-        ) : null}
         {/* Prove Card / Debit / provider GCash are not offered */}
         <span data-testid="checkout-no-card" className="sr-only">
           no-card
@@ -1138,7 +1106,7 @@ export function CheckoutCashPage() {
                   type="text"
                   value={discountReason}
                   disabled={saving}
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => setDiscountReason(event.target.value)}
                 />
               </label>
@@ -1294,89 +1262,6 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      {paymentChoice === "Cash" ? (
-        !zeroTotal ? (
-          <Card className="checkout-detail-panel exits-animate-panel" key="checkout-cash-tender">
-            <label
-              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-              htmlFor="checkout-cash-received"
-            >
-              <span className="checkout-cash-received-label">
-                <span className="checkout-collapsible__icon" aria-hidden>
-                  <Banknote className="size-4" strokeWidth={2} />
-                </span>
-                {t("checkout.cashReceived")}
-              </span>
-              <span className="checkout-cash-received-row">
-                <input
-                  id="checkout-cash-received"
-                  data-testid="checkout-cash-received"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.01"
-                  value={cashReceived}
-                  disabled={saving}
-                  className="checkout-cash-received-row__input rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-                  onChange={(event) => {
-                    tenderEditedRef.current = true;
-                    setCashReceived(event.target.value);
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="checkout-cash-received-row__exact shrink-0"
-                  data-testid="checkout-cash-exact"
-                  disabled={saving}
-                  onClick={() => {
-                    tenderEditedRef.current = true;
-                    setCashReceived(amountToPay.toFixed(2));
-                  }}
-                >
-                  {t("checkout.cashExact")}
-                </Button>
-              </span>
-            </label>
-            <p
-              data-testid="checkout-change"
-              className="mb-0 mt-3 text-[length:var(--exits-text-sm)]"
-            >
-              {t("checkout.change")}:{" "}
-              {changeAdvisory === null ? (
-                <span className="text-muted">—</span>
-              ) : (
-                <MoneyDisplay amount={changeAdvisory} />
-              )}
-            </p>
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.changeAdvisory")}
-            </p>
-          </Card>
-        ) : (
-          <Card
-            data-testid="checkout-zero-tender"
-            className="checkout-detail-panel exits-animate-panel"
-            key="checkout-zero-tender"
-          >
-            <p className="checkout-cash-received-label m-0 text-[length:var(--exits-text-sm)] text-muted">
-              <span className="checkout-collapsible__icon" aria-hidden>
-                <Banknote className="size-4" strokeWidth={2} />
-              </span>
-              <span>
-                {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
-              </span>
-            </p>
-            <p
-              data-testid="checkout-change"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)]"
-            >
-              {t("checkout.change")}: <MoneyDisplay amount={0} />
-            </p>
-          </Card>
-        )
-      ) : null}
-
       {paymentChoice === "Utang" ? (
         <Card
           data-testid="checkout-utang-panel"
@@ -1454,6 +1339,126 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
+      </div>
+
+      <div className="checkout-tender-dock" data-testid="checkout-tender-dock">
+      {paymentChoice === "Cash" ? (
+        !zeroTotal ? (
+          <Card className="checkout-detail-panel exits-animate-panel" key="checkout-cash-tender">
+            <label
+              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="checkout-cash-received"
+            >
+              <span className="checkout-cash-received-label">
+                <span className="checkout-collapsible__icon" aria-hidden>
+                  <Banknote className="size-4" strokeWidth={2} />
+                </span>
+                {t("checkout.cashReceived")}
+              </span>
+              <span className="checkout-cash-received-row">
+                <input
+                  id="checkout-cash-received"
+                  data-testid="checkout-cash-received"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={cashReceived}
+                  disabled={saving}
+                  className="checkout-cash-received-row__input rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  onChange={(event) => {
+                    tenderEditedRef.current = true;
+                    setCashReceived(event.target.value);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="checkout-cash-received-row__exact shrink-0"
+                  data-testid="checkout-cash-exact"
+                  disabled={saving}
+                  onClick={() => {
+                    tenderEditedRef.current = true;
+                    setCashReceived(amountToPay.toFixed(2));
+                  }}
+                >
+                  {t("checkout.cashExact")}
+                </Button>
+              </span>
+            </label>
+            <p
+              data-testid="checkout-change"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)]"
+            >
+              {t("checkout.change")}:{" "}
+              {changeAdvisory === null ? (
+                <span className="text-muted">—</span>
+              ) : (
+                <MoneyDisplay amount={changeAdvisory} />
+              )}
+            </p>
+            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.changeAdvisory")}
+            </p>
+          </Card>
+        ) : (
+          <Card
+            data-testid="checkout-zero-tender"
+            className="checkout-detail-panel exits-animate-panel"
+            key="checkout-zero-tender"
+          >
+            <p className="checkout-cash-received-label m-0 text-[length:var(--exits-text-sm)] text-muted">
+              <span className="checkout-collapsible__icon" aria-hidden>
+                <Banknote className="size-4" strokeWidth={2} />
+              </span>
+              <span>
+                {t("checkout.cashReceived")}: <MoneyDisplay amount={0} />
+              </span>
+            </p>
+            <p
+              data-testid="checkout-change"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)]"
+            >
+              {t("checkout.change")}: <MoneyDisplay amount={0} />
+            </p>
+          </Card>
+        )
+      ) : null}
+
+      {paymentChoice === "GCash" && !zeroTotal ? (
+        <Card
+          data-testid="checkout-gcash-panel"
+          className="checkout-detail-panel checkout-gcash-under-method exits-animate-panel"
+        >
+          <label
+            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+            htmlFor="checkout-gcash-reference"
+          >
+            <span className="inline-flex flex-wrap items-baseline gap-1">
+              {t("checkout.gcashReference")}
+              <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                {t("checkout.fieldRequired")}
+              </span>
+            </span>
+            <input
+              id="checkout-gcash-reference"
+              data-testid="checkout-gcash-reference"
+              type="text"
+              required
+              aria-required="true"
+              maxLength={GCASH_REFERENCE_MAX_LENGTH}
+              value={gcashReference}
+              disabled={saving}
+              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              onChange={(event) => setGcashReference(event.target.value)}
+            />
+          </label>
+          <p className="mb-0 mt-1.5 text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.gcashReferenceHint")}
+          </p>
+        </Card>
+      ) : null}
+
       <div className="checkout-actions">
         <Button
           type="button"
@@ -1477,6 +1482,7 @@ export function CheckoutCashPage() {
             {t("checkout.backToCart")}
           </Link>
         </Button>
+      </div>
       </div>
     </div>
   );

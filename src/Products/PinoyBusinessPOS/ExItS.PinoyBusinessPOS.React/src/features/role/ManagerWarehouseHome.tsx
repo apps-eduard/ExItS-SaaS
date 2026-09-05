@@ -239,7 +239,7 @@ export function ManagerWarehouseHome({
 
   return (
     <div
-      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-4"
+      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-3"
       data-testid={homeTestId}
       data-home-variant="warehouse"
     >
@@ -250,7 +250,7 @@ export function ManagerWarehouseHome({
         descriptionCollapsible={false}
         trailing={
           <span data-testid="manager-home-badge">
-            <StatusChip tone="neutral">{t("role.managerBadge")}</StatusChip>
+            <StatusChip className="manager-home-role-chip">{t("role.managerBadge")}</StatusChip>
           </span>
         }
       />

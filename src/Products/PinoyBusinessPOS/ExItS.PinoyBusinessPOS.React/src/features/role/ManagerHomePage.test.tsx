@@ -21,6 +21,8 @@ const workspaceState = vi.hoisted(() => ({
   hasOpenShift: false,
   currentShift: null as null | {
     shiftId: string;
+    shiftNumber: string;
+    registerCode: string;
     registerName: string;
   },
 }));
@@ -239,6 +241,16 @@ describe("ManagerHomePage", () => {
     });
   });
 
+  it("highlights Manager role chip on retail home", async () => {
+    renderHome();
+    await waitFor(() => {
+      expect(screen.getByTestId("manager-home")).toBeInTheDocument();
+    });
+    const badge = screen.getByTestId("manager-home-badge");
+    expect(badge.querySelector(".manager-home-role-chip")).not.toBeNull();
+    expect(badge).toHaveTextContent("role.managerBadge");
+  });
+
   it("polishes retail action cards: neutral sell, chevrons, shift sixth action, insight cards", async () => {
     renderHome();
     await waitFor(() => {
@@ -275,6 +287,8 @@ describe("ManagerHomePage", () => {
     workspaceState.hasOpenShift = true;
     workspaceState.currentShift = {
       shiftId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      shiftNumber: "SHIFT-20260901-000001",
+      registerCode: "REG-000001",
       registerName: "PWA-0001",
     };
     renderHome();
@@ -290,12 +304,21 @@ describe("ManagerHomePage", () => {
 
     const shiftMetric = screen.getByTestId("manager-today-shift");
     expect(shiftMetric).toHaveAttribute("data-value-scale", "restrained");
+    expect(shiftMetric.className).not.toMatch(/exits-alert-surface/);
+    expect(shiftMetric).toHaveTextContent("SHIFT-20260901-000001");
     expect(shiftMetric.querySelector(".exits-type-kpi")).toBeNull();
+    expect(shiftMetric.querySelector(".manager-metric-value--restrained")).not.toBeNull();
     expect(screen.getByTestId("manager-today-register")).toHaveAttribute(
       "data-value-scale",
       "restrained",
     );
+    expect(screen.getByTestId("manager-today-register")).toHaveTextContent(
+      "REG-000001 — PWA-0001",
+    );
     expect(screen.getByTestId("manager-today-register").querySelector(".exits-type-kpi")).toBeNull();
+    expect(
+      screen.getByTestId("manager-today-register").querySelector(".manager-metric-value--restrained"),
+    ).not.toBeNull();
     expect(screen.getByTestId("manager-today-sales").querySelector(".exits-type-kpi")).toBeTruthy();
   });
 });
