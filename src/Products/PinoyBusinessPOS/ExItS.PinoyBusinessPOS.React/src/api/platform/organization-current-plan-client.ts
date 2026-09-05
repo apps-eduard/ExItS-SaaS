@@ -1,6 +1,6 @@
 import { platformRequest, PlatformApiError } from "@/api/platform/platform-http";
 import type { PlatformProblemDetails } from "@/api/platform/platform-problem";
-import { POS_PRODUCT_CODE } from "@/api/platform/pos-product";
+import { POS_PRODUCT_CODE } from "@/api/platform/browser-session";
 
 export type OrganizationCurrentPlanDto = {
   organizationId: string;
