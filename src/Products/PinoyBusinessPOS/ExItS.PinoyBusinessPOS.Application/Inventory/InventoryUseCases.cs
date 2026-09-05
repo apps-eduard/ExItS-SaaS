@@ -59,7 +59,14 @@ public sealed class InventoryQueryService
             .GetMovementSummaryAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
         var hasOpeningStock = await _inventory
-            .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+            .HasOpeningStockForBranchAsync(
+                orgId,
+                catalogProductId,
+                PosBranchId.From(context.BranchId),
+                context.PrimaryBranchId is Guid primary
+                    ? PosBranchId.From(primary)
+                    : null,
+                cancellationToken)
             .ConfigureAwait(false);
 
         decimal? sellable = null;
@@ -503,8 +510,19 @@ public sealed class EnableInventoryTracking
                 created = true;
             }
 
+            var primaryBranchGuid = _branches is null
+                ? (Guid?)null
+                : await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            var primaryBranch = primaryBranchGuid is Guid primary
+                ? PosBranchId.From(primary)
+                : null;
             var hadOpening = await _inventory
-                .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+                .HasOpeningStockForBranchAsync(
+                    orgId,
+                    catalogProductId,
+                    actingBranch,
+                    primaryBranch,
+                    cancellationToken)
                 .ConfigureAwait(false);
             var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.Enable(
@@ -683,9 +701,48 @@ public sealed class AddOpeningStock
                     "Inventory is not tracked for this product.");
             }
 
+            var primaryBranchGuid = _branches is null
+                ? (Guid?)null
+                : await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            var primaryBranch = primaryBranchGuid is Guid primary
+                ? PosBranchId.From(primary)
+                : null;
+
             var hadOpening = await _inventory
-                .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+                .HasOpeningStockForBranchAsync(
+                    orgId,
+                    catalogProductId,
+                    actingBranch,
+                    primaryBranch,
+                    cancellationToken)
                 .ConfigureAwait(false);
+            if (hadOpening)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryOpeningDuplicate,
+                    "Opening stock has already been recorded for this product at this location.");
+            }
+
+            var productBalances = await _branchBalances
+                .ListByProductIdsAsync(orgId, [catalogProductId], cancellationToken)
+                .ConfigureAwait(false);
+            var branchOnHand = BranchStockResolver.ResolveOnHand(
+                actingBranch,
+                primaryBranchGuid,
+                account.OnHandQuantity,
+                productBalances,
+                catalogProductId);
+            var branchReserved = BranchStockResolver.ResolveReserved(
+                actingBranch,
+                productBalances,
+                catalogProductId);
+            if (branchOnHand != 0m || branchReserved != 0m)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryOpeningRequiresZeroOnHand,
+                    "Opening stock can only be added when this location's on-hand and reserved quantities are zero.");
+            }
+
             var utcNow = _clock.UtcNow;
             var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.RecordOpeningStock(
@@ -693,7 +750,7 @@ public sealed class AddOpeningStock
                 product.UnitOfMeasure,
                 actorId,
                 utcNow,
-                hadOpening,
+                hasOpeningStockAlready: false,
                 product.SellingMode,
                 unitCost);
             opening = opening.WithBranch(actingBranch.Value);

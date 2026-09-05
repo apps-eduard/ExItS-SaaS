@@ -145,7 +145,13 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
 
         var productIds = rows.Select(r => CatalogProductId.From(r.ProductId)).ToList();
         var summaries = await LoadMovementSummariesAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
-        var openingFlags = await LoadOpeningFlagsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+        var openingFlags = await LoadOpeningFlagsAsync(
+                orgId,
+                productIds,
+                branchId,
+                primaryBranchId,
+                cancellationToken)
+            .ConfigureAwait(false);
 
         var items = rows.Select(row =>
         {
@@ -216,13 +222,17 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
     private async Task<Dictionary<Guid, bool>> LoadOpeningFlagsAsync(
         Guid organizationId,
         IReadOnlyList<CatalogProductId> productIds,
+        Guid branchId,
+        Guid? primaryBranchId,
         CancellationToken cancellationToken)
     {
         var ids = productIds.Select(p => p.Value).ToList();
+        var isPrimary = primaryBranchId is not null && primaryBranchId.Value == branchId;
         var withOpening = await _db.StockMovements.AsNoTracking()
             .Where(m => m.OrganizationId == organizationId
                 && ids.Contains(m.ProductId)
-                && m.MovementType == nameof(StockMovementType.OpeningStock))
+                && m.MovementType == nameof(StockMovementType.OpeningStock)
+                && (m.BranchId == branchId || (isPrimary && m.BranchId == null)))
             .Select(m => m.ProductId)
             .Distinct()
             .ToListAsync(cancellationToken)

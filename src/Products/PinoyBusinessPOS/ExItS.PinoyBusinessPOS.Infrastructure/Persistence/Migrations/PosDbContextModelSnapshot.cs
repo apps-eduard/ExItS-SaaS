@@ -4392,10 +4392,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "RecordedAtUtc")
                         .HasDatabaseName("ix_stock_movements_org_recorded");
 
+                    b.HasIndex("OrganizationId", "ProductId", "BranchId", "MovementType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_stock_movements_opening_stock_branch")
+                        .HasFilter("movement_type = 'OpeningStock' AND branch_id IS NOT NULL");
+
                     b.HasIndex("OrganizationId", "ProductId", "MovementType")
                         .IsUnique()
-                        .HasDatabaseName("ux_stock_movements_opening_stock")
-                        .HasFilter("movement_type = 'OpeningStock'");
+                        .HasDatabaseName("ux_stock_movements_opening_stock_legacy")
+                        .HasFilter("movement_type = 'OpeningStock' AND branch_id IS NULL");
 
                     b.HasIndex("OrganizationId", "ProductId", "RecordedAtUtc")
                         .HasDatabaseName("ix_stock_movements_org_product_recorded");

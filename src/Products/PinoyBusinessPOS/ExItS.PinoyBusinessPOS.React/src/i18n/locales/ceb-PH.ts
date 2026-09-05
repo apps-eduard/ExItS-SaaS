@@ -2858,9 +2858,13 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.addOpeningStock": "Add opening stock",
 
+  "inventory.addOpeningStockTitle": "Opening stock sa {location}",
+
+  "inventory.openingVsPurchaseHint": "Gamita ang opening stock para sa inventory nga anaa na. Para sa bag-ong palit, gamita ang Receive stock.",
+
   "inventory.addOpeningStockHint":
 
-    "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
+    "I-record ang stock nga anaa na niining location kung gi-set up.",
 
   "inventory.unitPurchaseCost": "Presyo sa pagpalit kada unit",
 

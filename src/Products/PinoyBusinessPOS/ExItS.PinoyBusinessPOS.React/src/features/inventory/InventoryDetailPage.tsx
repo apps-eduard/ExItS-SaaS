@@ -950,10 +950,16 @@ export function InventoryDetailPage() {
         <>
           <Card className="flex flex-col gap-3 p-3" data-testid="inventory-add-opening-stock">
             <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.addOpeningStock")}
+              {t("inventory.addOpeningStockTitle").replace("{location}", branchLabel)}
             </h2>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("inventory.addOpeningStockHint")}
+            </p>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="inventory-opening-vs-purchase-hint"
+            >
+              {t("inventory.openingVsPurchaseHint")}
             </p>
             <Input
               label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
@@ -975,7 +981,10 @@ export function InventoryDetailPage() {
               {t("openingStock.unitCostHelper")}
             </p>
             {openingStockValue !== null ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                data-testid="inventory-opening-stock-value"
+              >
                 {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
               </p>
             ) : null}
@@ -1002,6 +1011,7 @@ export function InventoryDetailPage() {
             ) : null}
             <Button
               type="button"
+              className="w-fit"
               disabled={addOpeningStockMutation.isPending}
               onClick={() => addOpeningStockMutation.mutate()}
               data-testid="inventory-add-opening-stock-submit"

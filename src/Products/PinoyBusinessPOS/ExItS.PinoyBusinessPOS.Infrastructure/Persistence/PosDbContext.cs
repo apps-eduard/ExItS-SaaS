@@ -2232,10 +2232,17 @@ public sealed class PosDbContext : DbContext
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL AND inventory_lot_id IS NOT NULL");
 
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.BranchId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_opening_stock_branch")
+                .HasFilter(
+                    $"movement_type = '{nameof(StockMovementType.OpeningStock)}' AND branch_id IS NOT NULL");
+
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()
-                .HasDatabaseName("ux_stock_movements_opening_stock")
-                .HasFilter($"movement_type = '{nameof(StockMovementType.OpeningStock)}'");
+                .HasDatabaseName("ux_stock_movements_opening_stock_legacy")
+                .HasFilter(
+                    $"movement_type = '{nameof(StockMovementType.OpeningStock)}' AND branch_id IS NULL");
 
             entity.HasOne<InventoryAccountRecord>()
                 .WithMany()

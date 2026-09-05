@@ -3055,8 +3055,11 @@ export const en = {
   "inventory.openingHint": "Leave 0 to enable at zero without an opening movement.",
   "inventory.enableTracking": "Enable inventory tracking",
   "inventory.addOpeningStock": "Add opening stock",
+  "inventory.addOpeningStockTitle": "Opening stock at {location}",
   "inventory.addOpeningStockHint":
-    "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
+    "Record stock already on hand when setting up this location.",
+  "inventory.openingVsPurchaseHint":
+    "Use opening stock for inventory already on hand when setting up this location. For new purchases, use Receive stock.",
   "inventory.unitPurchaseCost": "Unit purchase cost",
   "inventory.stockValue": "Stock value",
   "inventory.currentSellingPrice": "Current selling price",

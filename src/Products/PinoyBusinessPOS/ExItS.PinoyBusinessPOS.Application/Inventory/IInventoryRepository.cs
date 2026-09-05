@@ -73,6 +73,18 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Whether an OpeningStock movement already exists for this product at the given branch.
+    /// Legacy NULL-branch OpeningStock counts only for the structural primary branch.
+    /// </summary>
+    Task<bool> HasOpeningStockForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        PosBranchId? primaryBranchId = null,
+        CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException($"{nameof(HasOpeningStockForBranchAsync)} is not implemented.");
+
     Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> ListMovementsAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

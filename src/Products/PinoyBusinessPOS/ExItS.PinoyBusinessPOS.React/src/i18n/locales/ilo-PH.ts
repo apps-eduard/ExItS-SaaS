@@ -2858,9 +2858,13 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.addOpeningStock": "Add opening stock",
 
+  "inventory.addOpeningStockTitle": "Opening stock idiay {location}",
+
+  "inventory.openingVsPurchaseHint": "Usaren ti opening stock para iti inventory nga addaen. Para iti baro a gatangen, usaren ti Receive stock.",
+
   "inventory.addOpeningStockHint":
 
-    "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
+    "I-record ti stock nga addaen ditoy a location no mai-set up.",
 
   "inventory.unitPurchaseCost": "Presyo ti gumatang kada unit",
 

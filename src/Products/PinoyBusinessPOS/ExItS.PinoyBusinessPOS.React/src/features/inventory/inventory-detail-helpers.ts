@@ -20,8 +20,8 @@ export function canDisableExpirationTracking(account: PosInventoryAccountDto): b
 }
 
 /**
- * Tracked product with zero on-hand and no opening movement yet —
- * eligible for Inventory add-opening-stock (parity with domain RecordOpeningStock).
+ * Tracked product with zero on-hand at the current location and no opening
+ * movement for this location yet (hasOpeningStock is branch-scoped from the API).
  */
 export function canAddOpeningStock(account: PosInventoryAccountDto): boolean {
   return (

@@ -2858,9 +2858,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.addOpeningStock": "Add opening stock",
 
+  "inventory.addOpeningStockTitle": "Opening stock sa {location}",
+
+  "inventory.openingVsPurchaseHint": "Gamita ang opening stock para sa inventory nga ara na. Para sa bag-o nga palit, gamita ang Receive stock.",
+
   "inventory.addOpeningStockHint":
 
-    "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
+    "I-record ang stock nga ara na sa sini nga location kung gina-set up.",
 
   "inventory.unitPurchaseCost": "Presyo sang pagbakal kada unit",
 

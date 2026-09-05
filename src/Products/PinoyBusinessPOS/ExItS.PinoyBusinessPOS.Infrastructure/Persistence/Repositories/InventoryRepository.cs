@@ -338,6 +338,23 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.OpeningStock),
             cancellationToken);
 
+    public Task<bool> HasOpeningStockForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        PosBranchId? primaryBranchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var targetBranch = branchId.Value;
+        var isPrimary = primaryBranchId is not null && primaryBranchId.Value == targetBranch;
+        return _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.MovementType == nameof(StockMovementType.OpeningStock)
+                && (m.BranchId == targetBranch || (isPrimary && m.BranchId == null)),
+            cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListReorderSuggestionsAsync(
         PosOrganizationId organizationId,
         string? search,
