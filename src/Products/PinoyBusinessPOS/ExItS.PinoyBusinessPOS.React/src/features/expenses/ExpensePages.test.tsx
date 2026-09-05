@@ -233,8 +233,13 @@ describe("Expense React CRUD", () => {
 
     expect(await screen.findByTestId("expense-summary-net")).toBeInTheDocument();
     expect(screen.getByTestId("expense-summary-by-category")).toHaveTextContent("Rent");
+    expect(screen.getByTestId("expense-summary-by-category")).toHaveTextContent("71.4%");
     expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("Cash");
+    expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("71.4%");
     expect(screen.getByTestId(`expense-row-${expenseId}`)).toHaveTextContent("EXP-20260829-0001");
+    expect(screen.getByTestId("expense-org-scope-banner")).toHaveTextContent(
+      "Organization-wide — not limited to the current branch.",
+    );
   });
 
   it("passes list filters to the server client", async () => {

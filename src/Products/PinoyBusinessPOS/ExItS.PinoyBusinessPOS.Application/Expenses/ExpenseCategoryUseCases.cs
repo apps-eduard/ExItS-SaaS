@@ -7,11 +7,86 @@ using ExItS.PinoyBusinessPOS.Domain.Expenses;
 
 namespace ExItS.PinoyBusinessPOS.Application.Expenses;
 
+/// <summary>
+/// Idempotently seeds the standard starter expense categories for an organization
+/// (Rent, Utilities, Salaries, Supplies, Marketing). Safe to call on every list.
+/// </summary>
+public sealed class EnsureDefaultExpenseCategories
+{
+    public static readonly IReadOnlyList<string> DefaultNames =
+    [
+        "Rent",
+        "Utilities",
+        "Salaries",
+        "Supplies",
+        "Marketing"
+    ];
+
+    private readonly IExpenseCategoryRepository _categories;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public EnsureDefaultExpenseCategories(
+        IExpenseCategoryRepository categories,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _categories = categories;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task ExecuteAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var utcNow = _clock.UtcNow;
+        var added = false;
+
+        foreach (var name in DefaultNames)
+        {
+            var normalized = ExpenseCategory.NormalizeForLookup(name);
+            var existing = await _categories
+                .FindActiveByNormalizedNameAsync(orgId, normalized, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
+            {
+                continue;
+            }
+
+            await _categories
+                .AddAsync(ExpenseCategory.Create(orgId, name, utcNow), cancellationToken)
+                .ConfigureAwait(false);
+            added = true;
+        }
+
+        if (!added)
+        {
+            return;
+        }
+
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (PersistenceConflictException)
+        {
+            // Concurrent ensure / user create won the unique Active name race — list will still see it.
+        }
+    }
+}
+
 public sealed class ExpenseCategoryQueryService
 {
     private readonly IExpenseCategoryRepository _categories;
+    private readonly EnsureDefaultExpenseCategories _ensureDefaults;
 
-    public ExpenseCategoryQueryService(IExpenseCategoryRepository categories) => _categories = categories;
+    public ExpenseCategoryQueryService(
+        IExpenseCategoryRepository categories,
+        EnsureDefaultExpenseCategories ensureDefaults)
+    {
+        _categories = categories;
+        _ensureDefaults = ensureDefaults;
+    }
 
     public async Task<PosExpenseCategoryDto?> GetByIdAsync(
         Guid organizationId,
@@ -35,6 +110,8 @@ public sealed class ExpenseCategoryQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        await _ensureDefaults.ExecuteAsync(organizationId, cancellationToken).ConfigureAwait(false);
+
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var (items, total) = await _categories
             .ListAsync(PosOrganizationId.From(organizationId), status, search, skip, take, cancellationToken)

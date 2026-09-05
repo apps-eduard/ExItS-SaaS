@@ -1,12 +1,18 @@
 /** Shared receive-at-receipt payment helpers (ADR-023 supplier credit). */
 
+import {
+  formatMoneyAmountInput,
+  parseMoneyAmountInput,
+  roundMoneyAmount,
+} from "@/lib/money-input";
+
 export type ReceivePaymentMode = "paidInFull" | "supplierCredit";
 
 export const RECEIVE_PAYMENT_METHODS = ["Cash", "BankTransfer", "GCash", "Other"] as const;
 export type ReceivePaymentMethodCode = (typeof RECEIVE_PAYMENT_METHODS)[number];
 
 export function roundMoney(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+  return roundMoneyAmount(value);
 }
 
 export function remainingCredit(total: number, paidNow: number): number {
@@ -20,27 +26,11 @@ export function laterPaymentsAmount(paidAmount: number, paidAtReceiptAmount: num
 
 /** Parse a non-negative money input; empty → null. */
 export function parseMoneyInput(text: string): number | null {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const normalized = trimmed.replace(/,/g, "");
-  if (!/^\d+(\.\d{1,4})?$/.test(normalized)) {
-    return null;
-  }
-  const value = Number(normalized);
-  if (!Number.isFinite(value) || value < 0) {
-    return null;
-  }
-  return roundMoney(value);
+  return parseMoneyAmountInput(text);
 }
 
 export function formatMoneyInput(value: number): string {
-  if (!Number.isFinite(value)) {
-    return "0";
-  }
-  const rounded = roundMoney(value);
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  return formatMoneyAmountInput(value);
 }
 
 /**

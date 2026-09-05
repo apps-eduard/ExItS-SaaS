@@ -19,8 +19,9 @@ describe("receive-payment helpers", () => {
   });
 
   it("defaults paidNow formatting for whole and fractional amounts", () => {
-    expect(formatMoneyInput(120)).toBe("120");
+    expect(formatMoneyInput(120)).toBe("120.00");
     expect(formatMoneyInput(120.5)).toBe("120.50");
+    expect(formatMoneyInput(5000)).toBe("5,000.00");
     expect(roundMoney(10.005)).toBe(10.01);
   });
 

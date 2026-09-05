@@ -26,7 +26,20 @@ import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { expensePaymentLabelKey, todayExpenseDateInput } from "@/features/expenses/expense-labels";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import {
+  formatMoneyAmountInput,
+  normalizeMoneyAmountTyping,
+  parseMoneyAmountInput,
+} from "@/lib/money-input";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function initialAmountText(raw: string | null): string {
+  if (!raw?.trim()) {
+    return "";
+  }
+  const parsed = parseMoneyAmountInput(raw);
+  return parsed === null ? normalizeMoneyAmountTyping(raw) : formatMoneyAmountInput(parsed);
+}
 
 export function ExpenseCreatePage() {
   const { t } = useI18n();
@@ -50,7 +63,7 @@ export function ExpenseCreatePage() {
   });
 
   const [categoryId, setCategoryId] = useState(searchParams.get("categoryId") ?? "");
-  const [amountText, setAmountText] = useState(searchParams.get("amount") ?? "");
+  const [amountText, setAmountText] = useState(() => initialAmountText(searchParams.get("amount")));
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethodCode>(
     (searchParams.get("paymentMethod") as ExpensePaymentMethodCode) || "Cash",
   );
@@ -76,7 +89,7 @@ export function ExpenseCreatePage() {
   }
 
   const activeCategories = categoriesQuery.data?.items ?? [];
-  const amount = Number(amountText);
+  const amount = parseMoneyAmountInput(amountText);
 
   async function onSubmit() {
     if (!workspace || submitting || !online) {
@@ -87,7 +100,7 @@ export function ExpenseCreatePage() {
       setError(t("expense.validation.categoryRequired"));
       return;
     }
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (amount === null || amount <= 0) {
       setError(t("expense.validation.amountInvalid"));
       return;
     }
@@ -278,7 +291,7 @@ export function ExpenseCreatePage() {
               <span className="font-medium">{t("expense.expenseDate")}</span>
               <input
                 type="date"
-                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="exits-input"
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
                 data-testid="expense-date"
@@ -291,11 +304,18 @@ export function ExpenseCreatePage() {
               <span className="font-medium">{t("expense.amount")}</span>
               <input
                 inputMode="decimal"
-                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="exits-input tabular-nums"
                 value={amountText}
-                onChange={(e) => setAmountText(e.target.value)}
+                onChange={(e) => setAmountText(normalizeMoneyAmountTyping(e.target.value))}
+                onBlur={() => {
+                  const parsed = parseMoneyAmountInput(amountText);
+                  if (parsed !== null) {
+                    setAmountText(formatMoneyAmountInput(parsed));
+                  }
+                }}
                 placeholder="0.00"
                 data-testid="expense-amount"
+                autoComplete="off"
               />
             </label>
 
@@ -305,7 +325,7 @@ export function ExpenseCreatePage() {
                 <span className="font-normal text-muted">({t("expense.optional")})</span>
               </span>
               <input
-                className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                className="exits-input"
                 value={payee}
                 maxLength={EXPENSE_PAYEE_MAX}
                 onChange={(e) => setPayee(e.target.value)}
@@ -320,7 +340,7 @@ export function ExpenseCreatePage() {
                   <span className="font-normal text-muted">({t("expense.optional")})</span>
                 </span>
                 <input
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+                  className="exits-input"
                   value={gCashReference}
                   maxLength={EXPENSE_GCASH_REFERENCE_MAX}
                   onChange={(e) => setGCashReference(e.target.value)}
@@ -333,7 +353,7 @@ export function ExpenseCreatePage() {
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)] lg:col-span-2">
             <span className="font-medium">{t("expense.description")}</span>
             <textarea
-              className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 py-2"
+              className="exits-input min-h-24"
               value={description}
               maxLength={EXPENSE_DESCRIPTION_MAX}
               onChange={(e) => setDescription(e.target.value)}

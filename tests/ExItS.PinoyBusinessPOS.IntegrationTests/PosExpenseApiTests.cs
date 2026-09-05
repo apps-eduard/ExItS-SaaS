@@ -257,6 +257,32 @@ public sealed class PosExpenseApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(DomainErrorCodes.InvalidExpenseGCashReference, await ReadErrorCodeAsync(response));
     }
 
+    [Fact]
+    public async Task List_categories_seeds_five_defaults_for_new_organization()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var list = Scoped(HttpMethod.Get, $"{Categories}?status=Active&page=1&pageSize=50", org);
+        using var response = await client.SendAsync(list);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<PagedResult<PosExpenseCategoryDto>>(JsonOptions);
+        Assert.NotNull(page);
+        Assert.True(page!.TotalCount >= 5);
+        foreach (var name in EnsureDefaultExpenseCategories.DefaultNames)
+        {
+            Assert.Contains(page.Items, c =>
+                string.Equals(c.Name, name, StringComparison.Ordinal)
+                && string.Equals(c.Status, "Active", StringComparison.Ordinal));
+        }
+
+        using var listAgain = Scoped(HttpMethod.Get, $"{Categories}?status=Active&page=1&pageSize=50", org);
+        using var responseAgain = await client.SendAsync(listAgain);
+        var pageAgain = await responseAgain.Content.ReadFromJsonAsync<PagedResult<PosExpenseCategoryDto>>(JsonOptions);
+        Assert.Equal(page.TotalCount, pageAgain!.TotalCount);
+    }
+
     private static async Task<PosExpenseCategoryDto> CreateCategoryAsync(HttpClient client, Guid org, string name)
     {
         using var request = Scoped(HttpMethod.Post, Categories, org);

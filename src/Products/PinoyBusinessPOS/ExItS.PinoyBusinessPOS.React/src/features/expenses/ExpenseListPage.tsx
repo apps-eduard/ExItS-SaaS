@@ -24,9 +24,24 @@ import {
 } from "@/features/expenses/expense-labels";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE = 20;
+
+function expenseSharePercent(amount: number, total: number): number {
+  if (!(total > 0) || !(amount >= 0) || !Number.isFinite(amount) || !Number.isFinite(total)) {
+    return 0;
+  }
+  return Math.round((amount / total) * 1000) / 10;
+}
+
+function formatExpenseSharePercent(percent: number): string {
+  return percent.toLocaleString("en-PH", {
+    minimumFractionDigits: percent % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  });
+}
 
 export function ExpenseListPage() {
   const { t } = useI18n();
@@ -115,7 +130,7 @@ export function ExpenseListPage() {
       />
 
       <p
-        className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
+        className="m-0 rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
         data-testid="expense-org-scope-banner"
       >
         {t("expense.orgScopeBanner")}
@@ -172,7 +187,7 @@ export function ExpenseListPage() {
           className="grid gap-2 sm:grid-cols-3"
           data-testid="expense-summary-cards"
         >
-          <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-3">
+          <div className="rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] p-3">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("expense.summary.net")}
             </p>
@@ -180,7 +195,7 @@ export function ExpenseListPage() {
               <MoneyDisplay amount={summary.netTotal} />
             </p>
           </div>
-          <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-3">
+          <div className="rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] p-3">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("expense.summary.gross")}
             </p>
@@ -191,7 +206,7 @@ export function ExpenseListPage() {
               {t("expense.summary.recordedCount").replace("{count}", String(summary.recordedCount))}
             </p>
           </div>
-          <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface p-3">
+          <div className="rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] p-3">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("expense.summary.voided")}
             </p>
@@ -205,42 +220,109 @@ export function ExpenseListPage() {
         </div>
       ) : null}
 
-      {summary && summary.byCategory.length > 0 ? (
-        <section data-testid="expense-summary-by-category" className="flex flex-col gap-2">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-            {t("expense.summary.byCategory")}
-          </h2>
-          <ul className="m-0 grid list-none gap-1 p-0 sm:grid-cols-2">
-            {summary.byCategory.map((row) => (
-              <li
-                key={row.categoryId}
-                className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 text-[length:var(--exits-text-sm)]"
-              >
-                <span className="truncate">{row.categoryName ?? t("expense.category.unknown")}</span>
-                <MoneyDisplay amount={row.totalAmount} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {summary && (summary.byCategory.length > 0 || summary.byPaymentMethod.length > 0) ? (
+        <div
+          className="grid grid-cols-1 gap-3 lg:grid-cols-3"
+          data-testid="expense-summary-breakdowns"
+        >
+          {summary.byCategory.length > 0 ? (
+            <section
+              data-testid="expense-summary-by-category"
+              className="flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] p-3 lg:col-span-2"
+            >
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("expense.summary.byCategory")}
+              </h2>
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {summary.byCategory.map((row) => {
+                  const share = expenseSharePercent(row.totalAmount, summary.grossTotal);
+                  const label = row.categoryName ?? t("expense.category.unknown");
+                  return (
+                    <li key={row.categoryId} className="min-w-0">
+                      <div className="flex items-baseline justify-between gap-3 text-[length:var(--exits-text-sm)]">
+                        <span className="min-w-0 truncate font-medium">{label}</span>
+                        <span className="shrink-0 font-semibold tabular-nums">
+                          <MoneyDisplay amount={row.totalAmount} />
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div
+                          className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--exits-surface-muted)]"
+                          role="presentation"
+                        >
+                          <div
+                            className="h-full rounded-full bg-[var(--exits-primary)]"
+                            style={{ width: `${Math.min(100, Math.max(0, share))}%` }}
+                          />
+                        </div>
+                        <span
+                          className="w-12 shrink-0 text-right text-[length:var(--exits-text-xs)] tabular-nums text-muted"
+                          aria-label={t("expense.summary.shareOfTotal").replace(
+                            "{percent}",
+                            formatExpenseSharePercent(share),
+                          )}
+                        >
+                          {formatExpenseSharePercent(share)}%
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
 
-      {summary && summary.byPaymentMethod.length > 0 ? (
-        <section data-testid="expense-summary-by-payment" className="flex flex-col gap-2">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-            {t("expense.summary.byPayment")}
-          </h2>
-          <ul className="m-0 grid list-none gap-1 p-0 sm:grid-cols-2">
-            {summary.byPaymentMethod.map((row) => (
-              <li
-                key={row.paymentMethod}
-                className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2 text-[length:var(--exits-text-sm)]"
-              >
-                <span>{t(expensePaymentLabelKey(row.paymentMethod))}</span>
-                <MoneyDisplay amount={row.totalAmount} />
-              </li>
-            ))}
-          </ul>
-        </section>
+          {summary.byPaymentMethod.length > 0 ? (
+            <section
+              data-testid="expense-summary-by-payment"
+              className={cn(
+                "flex min-w-0 flex-col gap-3 rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] p-3",
+                summary.byCategory.length === 0 && "lg:col-span-3",
+              )}
+            >
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("expense.summary.byPayment")}
+              </h2>
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {summary.byPaymentMethod.map((row) => {
+                  const share = expenseSharePercent(row.totalAmount, summary.grossTotal);
+                  return (
+                    <li key={row.paymentMethod} className="min-w-0">
+                      <div className="flex items-baseline justify-between gap-3 text-[length:var(--exits-text-sm)]">
+                        <span className="min-w-0 truncate font-medium">
+                          {t(expensePaymentLabelKey(row.paymentMethod))}
+                        </span>
+                        <span className="shrink-0 font-semibold tabular-nums">
+                          <MoneyDisplay amount={row.totalAmount} />
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div
+                          className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--exits-surface-muted)]"
+                          role="presentation"
+                        >
+                          <div
+                            className="h-full rounded-full bg-[var(--exits-primary)]"
+                            style={{ width: `${Math.min(100, Math.max(0, share))}%` }}
+                          />
+                        </div>
+                        <span
+                          className="w-12 shrink-0 text-right text-[length:var(--exits-text-xs)] tabular-nums text-muted"
+                          aria-label={t("expense.summary.shareOfTotal").replace(
+                            "{percent}",
+                            formatExpenseSharePercent(share),
+                          )}
+                        >
+                          {formatExpenseSharePercent(share)}%
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
+        </div>
       ) : null}
 
       <div
@@ -282,7 +364,7 @@ export function ExpenseListPage() {
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
           <span className="text-muted">{t("expense.filter.expenseNumber")}</span>
           <input
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-input"
             value={expenseNumber}
             onChange={(e) => {
               setExpenseNumber(e.target.value);
@@ -296,7 +378,7 @@ export function ExpenseListPage() {
           <span className="text-muted">{t("expense.filter.fromDate")}</span>
           <input
             type="date"
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-input"
             value={fromDate}
             onChange={(e) => {
               setFromDate(e.target.value);
@@ -309,7 +391,7 @@ export function ExpenseListPage() {
           <span className="text-muted">{t("expense.filter.toDate")}</span>
           <input
             type="date"
-            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-input"
             value={toDate}
             onChange={(e) => {
               setToDate(e.target.value);
@@ -337,39 +419,45 @@ export function ExpenseListPage() {
         />
       ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="expense-list">
+      <ul
+        className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
+        data-testid="expense-list"
+      >
         {items.map((item) => {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.expenseId}>
               <Link
                 to={`/expenses/${item.expenseId}`}
-                className="exits-list__card block min-w-0 text-foreground no-underline"
+                className="exits-list__card expense-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
                 data-testid={`expense-row-${item.expenseId}`}
               >
-                <span className="min-w-0">
-                  <span className="exits-list__name block truncate font-semibold">
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="exits-list__name truncate font-semibold">
                     {item.expenseNumber}
                   </span>
-                  <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                  <span className="truncate text-[length:var(--exits-text-sm)] text-muted">
                     {[
                       formatExpenseDate(item.expenseDate),
                       item.categoryName ?? t("expense.category.unknown"),
                       t(expensePaymentLabelKey(item.paymentMethod)),
                     ].join(" · ")}
                   </span>
-                  <span className="mt-1 block truncate text-[length:var(--exits-text-sm)]">
+                  <span className="truncate text-[length:var(--exits-text-sm)]">
                     {item.description}
                   </span>
                 </span>
-                <span className="flex shrink-0 flex-col items-end gap-2">
-                  <MoneyDisplay amount={item.amount} />
-                  <span className="flex items-center gap-2">
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="flex flex-col items-end gap-1.5">
                     <StatusChip tone={isVoided ? "danger" : "success"}>
                       {t(expenseStatusLabelKey(item.status))}
                     </StatusChip>
-                    <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+                    <MoneyDisplay
+                      amount={item.amount}
+                      className="text-[length:var(--exits-text-md)]"
+                    />
                   </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
                 </span>
               </Link>
             </li>

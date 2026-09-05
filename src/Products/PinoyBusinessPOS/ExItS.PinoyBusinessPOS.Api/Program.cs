@@ -361,7 +361,7 @@ builder.Services.AddHttpClient<IOrganizationBranchDirectory, PosOrganizationBran
         client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     }
 
-    client.Timeout = TimeSpan.FromSeconds(3);
+    client.Timeout = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddHttpClient<IAuthorizedBranchGroupingDirectory, PosOrganizationBranchDirectory>((provider, client) =>
 {
@@ -371,13 +371,14 @@ builder.Services.AddHttpClient<IAuthorizedBranchGroupingDirectory, PosOrganizati
         client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     }
 
-    client.Timeout = TimeSpan.FromSeconds(3);
+    client.Timeout = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddScoped<CashierShiftQueryService>();
 builder.Services.AddScoped<OpenCashierShift>();
 builder.Services.AddScoped<CloseCashierShift>();
 builder.Services.AddScoped<CancelCashierShift>();
 builder.Services.AddScoped<RecordCashierShiftMovement>();
+builder.Services.AddScoped<EnsureDefaultExpenseCategories>();
 builder.Services.AddScoped<ExpenseCategoryQueryService>();
 builder.Services.AddScoped<CreateExpenseCategory>();
 builder.Services.AddScoped<UpdateExpenseCategory>();
