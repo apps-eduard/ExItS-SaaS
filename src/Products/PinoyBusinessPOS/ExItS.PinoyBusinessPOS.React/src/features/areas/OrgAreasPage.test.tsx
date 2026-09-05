@@ -204,4 +204,50 @@ describe("OrgAreaDetailPage", () => {
     await user.click(screen.getByTestId("org-area-edit"));
     expect(screen.getByTestId("org-area-save")).toHaveTextContent("areas.save");
   });
+
+  it("confirms assign for unassigned and transfer for already assigned locations", async () => {
+    const user = userEvent.setup();
+    const otherAreaId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    listBranchManagementSummaries.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          id: retailId,
+          organizationId: orgId,
+          code: "MAIN",
+          name: "Main Branch",
+          branchType: "Retail",
+          isPrimary: true,
+          status: "Active",
+          areaId: null,
+          areaName: null,
+        },
+        {
+          id: warehouseId,
+          organizationId: orgId,
+          code: "WH1",
+          name: "Iloilo Warehouse",
+          branchType: "Warehouse",
+          isPrimary: false,
+          status: "Active",
+          areaId: otherAreaId,
+          areaName: "Pasi Norte",
+        },
+      ],
+    });
+    renderDetail();
+
+    await user.click(await screen.findByTestId(`org-area-add-${retailId}`));
+    expect(screen.getByTestId("org-area-assign-confirm")).toBeInTheDocument();
+    await user.click(screen.getByTestId("org-area-assign-confirm-confirm"));
+    expect(setBranchArea).toHaveBeenCalledWith(orgId, retailId, areaId);
+
+    await user.click(await screen.findByTestId(`org-area-transfer-${warehouseId}`));
+    expect(screen.getByTestId("org-area-transfer-confirm")).toBeInTheDocument();
+    expect(screen.getByTestId("org-area-transfer-confirm")).toHaveTextContent(
+      "areas.detail.transferConfirmTitle",
+    );
+    await user.click(screen.getByTestId("org-area-transfer-confirm-confirm"));
+    expect(setBranchArea).toHaveBeenCalledWith(orgId, warehouseId, areaId);
+  });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
 import {
   branchIdsEqual,
+  countActiveLocationsInArea,
   formatStaffBranchAccessSummary,
   isImplicitAllBranchesMembershipRole,
   modeToScope,
@@ -17,6 +18,8 @@ const main: PlatformBranch = {
   name: "Main Branch",
   isPrimary: true,
   status: "Active",
+  branchType: "Retail",
+  areaId: "south",
 };
 
 const north: PlatformBranch = {
@@ -26,6 +29,8 @@ const north: PlatformBranch = {
   name: "North",
   isPrimary: false,
   status: "Active",
+  branchType: "Retail",
+  areaId: "north",
 };
 
 const south: PlatformBranch = {
@@ -35,7 +40,23 @@ const south: PlatformBranch = {
   name: "South",
   isPrimary: false,
   status: "Active",
+  branchType: "Retail",
+  areaId: "south",
 };
+
+const warehouse: PlatformBranch = {
+  id: "wh",
+  organizationId: "org",
+  code: "WH1",
+  name: "Iloilo Warehouse",
+  isPrimary: false,
+  status: "Active",
+  branchType: "Warehouse",
+  areaId: "south",
+};
+
+const formatCount = (count: number) => (count === 1 ? "1 location" : `${count} locations`);
+const formatArea = (name: string) => `${name} Area`;
 
 describe("staff-branch-access helpers", () => {
   it("detects owner/admin implicit all-branch access", () => {
@@ -71,34 +92,51 @@ describe("staff-branch-access helpers", () => {
     expect(shouldOfferAreaScope({ activeBranchCount: 4, activeAreaCount: 2 })).toBe(true);
   });
 
-  it("summarises area scope by area name", () => {
+  it("derives retail and warehouse counts for an area from location data", () => {
+    expect(countActiveLocationsInArea("south", [main, north, south, warehouse])).toEqual({
+      total: 3,
+      retail: 2,
+      warehouse: 1,
+    });
+    expect(countActiveLocationsInArea("north", [main, north, south, warehouse])).toEqual({
+      total: 1,
+      retail: 1,
+      warehouse: 0,
+    });
+  });
+
+  it("summarises area scope by area name and location count", () => {
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationMember",
         scope: "Areas",
-        activeBranches: [main, north, south],
-        assignedIds: [],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        activeBranches: [main, north, south, warehouse],
+        assignedIds: ["main", "south", "wh"],
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
-        areaNames: ["Metro North"],
+        areaNames: ["South"],
         areasLabel: "Areas",
+        formatLocationCount: formatCount,
+        formatSingleAreaName: formatArea,
       }),
-    ).toBe("Metro North");
+    ).toBe("South Area · 3 locations");
 
     expect(
       formatStaffBranchAccessSummary({
         membershipRole: "OrganizationMember",
         scope: "Areas",
-        activeBranches: [main, north, south],
-        assignedIds: [],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        activeBranches: [main, north, south, warehouse],
+        assignedIds: ["main", "north", "south", "wh"],
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
-        areaNames: ["Metro North", "Metro South"],
+        areaNames: ["North", "South"],
         areasLabel: "Areas",
+        formatLocationCount: formatCount,
+        formatSingleAreaName: formatArea,
       }),
-    ).toBe("Metro North + 1");
+    ).toBe("North + South · 4 locations");
   });
 
   it("formats manage-staff branch summaries from scope", () => {
@@ -108,11 +146,12 @@ describe("staff-branch-access helpers", () => {
         scope: null,
         activeBranches: [main, north],
         assignedIds: [],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
+        formatLocationCount: formatCount,
       }),
-    ).toBe("All branches");
+    ).toBe("All active locations");
 
     expect(
       formatStaffBranchAccessSummary({
@@ -120,11 +159,12 @@ describe("staff-branch-access helpers", () => {
         scope: "AllActive",
         activeBranches: [main, north],
         assignedIds: [],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
+        formatLocationCount: formatCount,
       }),
-    ).toBe("All branches");
+    ).toBe("All active locations");
 
     expect(
       formatStaffBranchAccessSummary({
@@ -132,11 +172,12 @@ describe("staff-branch-access helpers", () => {
         scope: "Explicit",
         activeBranches: [main],
         assignedIds: ["main"],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
+        formatLocationCount: formatCount,
       }),
-    ).toBe("Main Branch");
+    ).toBe("Main Branch · 1 location");
 
     expect(
       formatStaffBranchAccessSummary({
@@ -144,11 +185,12 @@ describe("staff-branch-access helpers", () => {
         scope: "Explicit",
         activeBranches: [main, north, south],
         assignedIds: ["main", "north", "south"],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
+        formatLocationCount: formatCount,
       }),
-    ).toBe("Main Branch + 2");
+    ).toBe("Main Branch + 2 · 3 locations");
 
     expect(
       formatStaffBranchAccessSummary({
@@ -156,10 +198,11 @@ describe("staff-branch-access helpers", () => {
         scope: "Explicit",
         activeBranches: [main, north],
         assignedIds: ["north"],
-        allActiveLabel: "All branches",
-        automaticAllLabel: "All branches",
+        allActiveLabel: "All active locations",
+        automaticAllLabel: "All active locations",
         unknownLabel: "Not assigned",
+        formatLocationCount: formatCount,
       }),
-    ).toBe("North");
+    ).toBe("North · 1 location");
   });
 });

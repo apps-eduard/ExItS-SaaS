@@ -25,13 +25,17 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useProductLocalRoleCatalog } from "@/features/staff/useProductLocalRoleCatalog";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   activeBranchIds,
   assignmentAreaIds,
   assignmentBranchIds,
   branchIdsEqual,
+  countActiveLocationsInArea,
+  formatStaffBranchAccessSummary,
   isImplicitAllBranchesMembershipRole,
   listActiveBranches,
   modeToScope,
@@ -41,9 +45,32 @@ import {
   type BranchScopeMode,
 } from "@/features/staff/staff-branch-access";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+function formatAreaLocationBreakdown(
+  counts: { total: number; retail: number; warehouse: number },
+  t: (key: MessageKey) => string,
+): string {
+  if (counts.total <= 0) {
+    return t("areas.branchCount").replace("{count}", "0");
+  }
+  if (counts.warehouse <= 0) {
+    return t("staffAssign.areaLocationBreakdownRetailOnly")
+      .replace("{count}", String(counts.total))
+      .replace("{retail}", String(counts.retail));
+  }
+  if (counts.retail <= 0) {
+    return t("staffAssign.areaLocationBreakdownWarehouseOnly")
+      .replace("{count}", String(counts.total))
+      .replace("{warehouse}", String(counts.warehouse));
+  }
+  return t("staffAssign.areaLocationBreakdown")
+    .replace("{count}", String(counts.total))
+    .replace("{retail}", String(counts.retail))
+    .replace("{warehouse}", String(counts.warehouse));
+}
 export function OrgStaffAssignPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -162,11 +189,14 @@ export function OrgStaffAssignPage() {
     },
   });
 
-  const activeBranches = branchesQuery.data ?? [];
+  const activeBranches = useMemo(
+    () => branchesQuery.data ?? [],
+    [branchesQuery.data],
+  );
   const allActiveIds = useMemo(() => activeBranchIds(activeBranches), [activeBranches]);
   const singleBranch = activeBranches.length === 1 ? resolvePrimaryOrOnlyBranch(activeBranches) : null;
   const singleBranchId = singleBranch ? resolvePlatformBranchId(singleBranch) : null;
-  const activeAreas = areasQuery.data ?? [];
+  const activeAreas = useMemo(() => areasQuery.data ?? [], [areasQuery.data]);
   const areasAvailable = shouldOfferAreaScope({
     activeBranchCount: activeBranches.length,
     activeAreaCount: activeAreas.length,
@@ -379,6 +409,59 @@ export function OrgStaffAssignPage() {
     const fromCatalog = catalogQuery.data?.find((role) => role.code === code);
     return fromCatalog?.displayName ?? friendlyPosRoleLabel(null, code);
   }, [catalogQuery.data, selectedRole, userQuery.data?.existingRoleCode]);
+
+  const locationAccessSummary = useMemo(() => {
+    if (!userQuery.data || userQuery.data.implicitAllBranches) {
+      return t("staffAssign.branchAutomaticAll");
+    }
+    if (activeBranches.length === 0) {
+      return t("staffAssign.branchNoneActive");
+    }
+    if (activeBranches.length === 1) {
+      return t("staffAssign.singleBranchAutomatic").replace(
+        "{branch}",
+        singleBranch?.name?.trim() || singleBranch?.code || t("staffAssign.mainBranch"),
+      );
+    }
+    const areaNames = activeAreas
+      .filter((area) => resolvedAreaIds.includes(area.id))
+      .map((area) => area.name);
+    const effectiveAssignedIds =
+      resolvedScope === "Areas"
+        ? activeBranches
+            .filter((branch) => resolvedAreaIds.includes((branch.areaId ?? "").trim()))
+            .map((branch) => resolvePlatformBranchId(branch))
+            .filter((id): id is string => Boolean(id))
+        : resolvedScope === "AllActive"
+          ? allActiveIds
+          : resolvedBranchIds;
+    return formatStaffBranchAccessSummary({
+      membershipRole: userQuery.data.membershipRole,
+      scope: resolvedScope,
+      activeBranches,
+      assignedIds: effectiveAssignedIds,
+      allActiveLabel: t("staffAssign.allBranches"),
+      automaticAllLabel: t("staffAssign.branchAutomaticAll"),
+      unknownLabel: t("staffManage.branchAccessUnknown"),
+      areaNames,
+      areasLabel: t("staffAssign.areasSummary"),
+      formatLocationCount: (count) =>
+        count === 1
+          ? t("workspace.locationCountOne")
+          : t("workspace.locationCountMany").replace("{count}", String(count)),
+      formatSingleAreaName: (name) => t("staffAssign.areaNameLabel").replace("{name}", name),
+    });
+  }, [
+    t,
+    userQuery.data,
+    activeBranches,
+    singleBranch,
+    activeAreas,
+    resolvedAreaIds,
+    resolvedScope,
+    allActiveIds,
+    resolvedBranchIds,
+  ]);
 
   function requestAssign() {
     if (!canSubmit) {
@@ -595,7 +678,7 @@ export function OrgStaffAssignPage() {
                   aria-checked={branchScope === "all"}
                   disabled={assignMutation.isPending || userQuery.data.membershipStatus !== "Active"}
                   className={cn(
-                    "staff-assign-role",
+                    "staff-assign-role staff-assign-role--compact",
                     branchScope === "all" && "staff-assign-role--selected",
                   )}
                   data-testid="org-staff-branch-scope-all"
@@ -624,7 +707,7 @@ export function OrgStaffAssignPage() {
                       assignMutation.isPending || userQuery.data.membershipStatus !== "Active"
                     }
                     className={cn(
-                      "staff-assign-role",
+                      "staff-assign-role staff-assign-role--compact",
                       branchScope === "areas" && "staff-assign-role--selected",
                     )}
                     data-testid="org-staff-branch-scope-areas"
@@ -653,7 +736,7 @@ export function OrgStaffAssignPage() {
                   aria-checked={branchScope === "specific"}
                   disabled={assignMutation.isPending || userQuery.data.membershipStatus !== "Active"}
                   className={cn(
-                    "staff-assign-role",
+                    "staff-assign-role staff-assign-role--compact",
                     branchScope === "specific" && "staff-assign-role--selected",
                   )}
                   data-testid="org-staff-branch-scope-specific"
@@ -684,42 +767,48 @@ export function OrgStaffAssignPage() {
               </div>
 
               {branchScope === "areas" ? (
-                <ul
-                  className="staff-assign-branch-list m-0 grid list-none gap-2 p-0"
-                  data-testid="org-staff-area-checklist"
-                >
-                  {activeAreas.map((area) => {
-                    const checked = selectedAreaIds.includes(area.id);
-                    return (
-                      <li key={area.id}>
-                        <label
-                          className={cn(
-                            "staff-assign-branch-option",
-                            checked && "staff-assign-branch-option--selected",
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            className="staff-assign-branch-option__input"
-                            checked={checked}
-                            disabled={
-                              assignMutation.isPending ||
-                              userQuery.data.membershipStatus !== "Active"
-                            }
-                            data-testid={`org-staff-area-${area.id}`}
-                            onChange={() => toggleArea(area.id)}
-                          />
-                          <span className="staff-assign-branch-option__copy">
-                            <span className="staff-assign-branch-option__name">{area.name}</span>
-                            <span className="staff-assign-branch-option__code">
-                              {t("areas.branchCount").replace("{count}", String(area.branchCount))}
+                <div className="flex flex-col gap-2" data-testid="org-staff-area-picker">
+                  <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                    {t("staffAssign.selectAreas")}
+                  </h3>
+                  <ul
+                    className="staff-assign-branch-list m-0 grid list-none gap-2 p-0"
+                    data-testid="org-staff-area-checklist"
+                  >
+                    {activeAreas.map((area) => {
+                      const checked = selectedAreaIds.includes(area.id);
+                      const counts = countActiveLocationsInArea(area.id, activeBranches);
+                      return (
+                        <li key={area.id}>
+                          <label
+                            className={cn(
+                              "staff-assign-branch-option",
+                              checked && "staff-assign-branch-option--selected",
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              className="staff-assign-branch-option__input"
+                              checked={checked}
+                              disabled={
+                                assignMutation.isPending ||
+                                userQuery.data.membershipStatus !== "Active"
+                              }
+                              data-testid={`org-staff-area-${area.id}`}
+                              onChange={() => toggleArea(area.id)}
+                            />
+                            <span className="staff-assign-branch-option__copy">
+                              <span className="staff-assign-branch-option__name">{area.name}</span>
+                              <span className="staff-assign-branch-option__code">
+                                {formatAreaLocationBreakdown(counts, t)}
+                              </span>
                             </span>
-                          </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               ) : null}
 
               {branchScope === "specific" ? (
@@ -733,6 +822,7 @@ export function OrgStaffAssignPage() {
                       return null;
                     }
                     const checked = selectedBranchIds.includes(id);
+                    const warehouse = isWarehouseBranch(branch.branchType);
                     return (
                       <li key={id}>
                         <label
@@ -753,13 +843,17 @@ export function OrgStaffAssignPage() {
                             onChange={() => toggleBranch(id)}
                           />
                           <span className="staff-assign-branch-option__copy">
-                            <span className="staff-assign-branch-option__name">
-                              {branch.name}
-                              {branch.isPrimary ? ` (${t("staffAssign.mainBranch")})` : ""}
+                            <span className="staff-assign-branch-option__name">{branch.name}</span>
+                            <span className="staff-assign-branch-option__meta">
+                              <StatusChip tone={warehouse ? "warning" : "info"}>
+                                {warehouse
+                                  ? t("branches.type.warehouse")
+                                  : t("branches.type.retail")}
+                              </StatusChip>
+                              {!warehouse && branch.isPrimary ? (
+                                <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
+                              ) : null}
                             </span>
-                            {branch.code ? (
-                              <span className="staff-assign-branch-option__code">{branch.code}</span>
-                            ) : null}
                           </span>
                         </label>
                       </li>
@@ -772,6 +866,34 @@ export function OrgStaffAssignPage() {
         </section>
       ) : null}
 
+      {userQuery.isSuccess &&
+      branchesQuery.isSuccess &&
+      !pageLoading &&
+      !userQuery.data.implicitAllBranches &&
+      activeBranches.length > 1 &&
+      canSubmit ? (
+        <section
+          className="catalog-form-section exits-animate-panel gap-2"
+          data-testid="org-staff-assign-save-summary"
+        >
+          <div className="staff-assign-save-summary">
+            <div className="staff-assign-save-summary__row">
+              <span className="staff-assign-save-summary__label">
+                {t("staffAssign.saveSummaryRole")}
+              </span>
+              <span className="staff-assign-save-summary__value">
+                {selectedRoleLabel || t("staffManage.noPosRoles")}
+              </span>
+            </div>
+            <div className="staff-assign-save-summary__row">
+              <span className="staff-assign-save-summary__label">
+                {t("staffAssign.saveSummaryAccess")}
+              </span>
+              <span className="staff-assign-save-summary__value">{locationAccessSummary}</span>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {submitError ? (
         <div className="exits-alert exits-alert--error" role="alert">
           <p className="m-0 text-[length:var(--exits-text-sm)]">{submitError}</p>

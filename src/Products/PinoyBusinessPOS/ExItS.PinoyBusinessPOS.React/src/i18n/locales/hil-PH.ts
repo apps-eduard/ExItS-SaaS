@@ -10198,9 +10198,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "staffAssign.manageTitle": "Manage staff access",
 
-  "staffAssign.manageLede": "Update this member's POS role and branch access.",
+  "staffAssign.manageLede": "I-update ang POS role kag location access sining miyembro.",
 
-  "staffAssign.manageConfirmAction": "Save access",
+  "staffAssign.manageConfirmAction": "I-save ang mga pagbag-o",
 
   "staffAssign.changeConfirmTitle": "Change POS role?",
 
@@ -10220,45 +10220,79 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "staffAssign.roleReportingUserDesc": "Views reports and business information without operational changes.",
 
-  "staffAssign.branchSection": "Branch access",
+  "staffAssign.branchSection": "Location access",
 
-  "staffAssign.allBranches": "All branches",
+  "staffAssign.allBranches": "Tanan nga active locations",
 
-  "staffAssign.allBranchesHint": "Dynamically includes every current and newly activated branch.",
+  "staffAssign.allBranchesHint": "Access sa tanan nga current kag future active locations sa sini nga organisasyon.",
 
-  "staffAssign.areaScope": "Mga area",
+  "staffAssign.areaScope": "Area(s)",
 
   "staffAssign.areaScopeHint":
 
-    "Ang access nagasunod sa mga sanga sang napili nga area, lakip ang idugang sa ulihi.",
+    "Access sa tanan nga locations sang ginpili nga Areas.",
 
   "staffAssign.areaRequired": "Magpili sang bisan isa ka area.",
 
+  "staffAssign.selectAreas": "Pili sang areas",
+
+  "staffAssign.areaLocationBreakdown": "{count} locations · {retail} Retail · {warehouse} Warehouse",
+
+  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations · {retail} Retail",
+
+  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations · {warehouse} Warehouse",
+
+  "staffAssign.areaNameLabel": "{name} Area",
+
+  "staffAssign.saveSummaryRole": "Role",
+
+  "staffAssign.saveSummaryAccess": "Location access",
+
+  "areas.detail.transfer": "Isaylo",
+
+  "areas.detail.assignConfirmTitle": "I-assign ang location nga ini?",
+
+  "areas.detail.assignConfirmDetail": "I-assign si {location} sa {area}.",
+
+  "areas.detail.assignConfirmAction": "I-assign",
+
+  "areas.detail.transferConfirmTitle": "Isaylo ang location nga ini?",
+
+  "areas.detail.transferConfirmDetail": "Isaylo si {location} hali sa {fromArea} padulong sa {area}.",
+
+  "areas.detail.transferConfirmAction": "Isaylo",
+
+  "areas.detail.removeConfirmTitle": "Kuhaon ang location nga ini?",
+
+  "areas.detail.removeConfirmDetail": "Kuhaon si {location} hali sa {area}. Magapabilin nga active kag unassigned ang location.",
+
+  "areas.detail.removeConfirmAction": "Kuhaon",
+
   "staffAssign.areasSummary": "Mga area",
 
-  "staffAssign.specificBranches": "Specific branches",
+  "staffAssign.specificBranches": "Espesipiko nga locations",
 
-  "staffAssign.specificBranchesHint": "Only the selected branches. Future branches are not included automatically.",
+  "staffAssign.specificBranchesHint": "Pili sang indibidwal nga Retail kag Warehouse locations.",
 
-  "staffAssign.singleBranchAutomatic": "Main Branch / Automatic: {branch}",
+  "staffAssign.singleBranchAutomatic": "Awtomatiko: {branch}",
 
   "staffAssign.mainBranch": "Main",
 
   "staffAssign.branchAutomaticAll":
 
-    "Organization Owner and Administrator already have access to all active branches.",
+    "Ang Organization Owner kag Administrator may access na sa tanan nga active locations.",
 
-  "staffAssign.branchNoneActive": "No active branches are available to assign.",
+  "staffAssign.branchNoneActive": "Wala sing available nga active locations nga i-assign.",
 
-  "staffAssign.branchRequired": "Select at least one branch.",
+  "staffAssign.branchRequired": "Pili sang bisan isa ka location.",
 
-  "staffAssign.branchSaveError": "POS role was saved, but branch access could not be updated.",
+  "staffAssign.branchSaveError": "Na-save ang POS role, pero wala na-update ang location access.",
 
-  "staffManage.branchAccess": "Branch access",
+  "staffManage.branchAccess": "Location access",
 
-  "staffManage.branchAccessAll": "All branches",
+  "staffManage.branchAccessAll": "Tanan nga active locations",
 
-  "staffManage.branchAccessAutomatic": "All branches",
+  "staffManage.branchAccessAutomatic": "Tanan nga active locations",
 
   "staffManage.branchAccessUnknown": "Not assigned",
 

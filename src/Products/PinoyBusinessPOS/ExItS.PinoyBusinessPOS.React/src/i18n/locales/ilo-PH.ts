@@ -10198,9 +10198,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "staffAssign.manageTitle": "Manage staff access",
 
-  "staffAssign.manageLede": "Update this member's POS role and branch access.",
+  "staffAssign.manageLede": "I-update ti POS role ken location access daytoy a miembro.",
 
-  "staffAssign.manageConfirmAction": "Save access",
+  "staffAssign.manageConfirmAction": "I-save dagiti panagbalbaliw",
 
   "staffAssign.changeConfirmTitle": "Change POS role?",
 
@@ -10220,45 +10220,79 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "staffAssign.roleReportingUserDesc": "Views reports and business information without operational changes.",
 
-  "staffAssign.branchSection": "Branch access",
+  "staffAssign.branchSection": "Location access",
 
-  "staffAssign.allBranches": "All branches",
+  "staffAssign.allBranches": "Amin nga active locations",
 
-  "staffAssign.allBranchesHint": "Dynamically includes every current and newly activated branch.",
+  "staffAssign.allBranchesHint": "Access iti amin a current ken future active locations iti daytoy nga organisasion.",
 
-  "staffAssign.areaScope": "Dagiti area",
+  "staffAssign.areaScope": "Area(s)",
 
   "staffAssign.areaScopeHint":
 
-    "Sumurot ti access kadagiti sanga ti napili nga area, agraman dagiti manayon iti masakbayan.",
+    "Access iti amin a locations dagiti napili nga Areas.",
 
   "staffAssign.areaRequired": "Agpili iti uray maysa nga area.",
 
+  "staffAssign.selectAreas": "Agpili kadagiti areas",
+
+  "staffAssign.areaLocationBreakdown": "{count} locations · {retail} Retail · {warehouse} Warehouse",
+
+  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations · {retail} Retail",
+
+  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations · {warehouse} Warehouse",
+
+  "staffAssign.areaNameLabel": "{name} Area",
+
+  "staffAssign.saveSummaryRole": "Role",
+
+  "staffAssign.saveSummaryAccess": "Location access",
+
+  "areas.detail.transfer": "Iyalis",
+
+  "areas.detail.assignConfirmTitle": "I-assign daytoy a location?",
+
+  "areas.detail.assignConfirmDetail": "I-assign ni {location} iti {area}.",
+
+  "areas.detail.assignConfirmAction": "I-assign",
+
+  "areas.detail.transferConfirmTitle": "Iyalis daytoy a location?",
+
+  "areas.detail.transferConfirmDetail": "Iyalis ni {location} manipud {fromArea} agingga iti {area}.",
+
+  "areas.detail.transferConfirmAction": "Iyalis",
+
+  "areas.detail.removeConfirmTitle": "Ikkat daytoy a location?",
+
+  "areas.detail.removeConfirmDetail": "Ikkat ni {location} manipud iti {area}. Agtalinaed a active ken unassigned ti location.",
+
+  "areas.detail.removeConfirmAction": "Ikkat",
+
   "staffAssign.areasSummary": "Dagiti area",
 
-  "staffAssign.specificBranches": "Specific branches",
+  "staffAssign.specificBranches": "Espesipiko a locations",
 
-  "staffAssign.specificBranchesHint": "Only the selected branches. Future branches are not included automatically.",
+  "staffAssign.specificBranchesHint": "Agpili kadagiti indibidual a Retail ken Warehouse locations.",
 
-  "staffAssign.singleBranchAutomatic": "Main Branch / Automatic: {branch}",
+  "staffAssign.singleBranchAutomatic": "Automatiko: {branch}",
 
   "staffAssign.mainBranch": "Main",
 
   "staffAssign.branchAutomaticAll":
 
-    "Organization Owner and Administrator already have access to all active branches.",
+    "Adda metten access ti Organization Owner ken Administrator iti amin nga active locations.",
 
-  "staffAssign.branchNoneActive": "No active branches are available to assign.",
+  "staffAssign.branchNoneActive": "Awan ti available nga active locations a ma-assign.",
 
-  "staffAssign.branchRequired": "Select at least one branch.",
+  "staffAssign.branchRequired": "Agpili iti uray maysa a location.",
 
-  "staffAssign.branchSaveError": "POS role was saved, but branch access could not be updated.",
+  "staffAssign.branchSaveError": "Na-save ti POS role, ngem saan a na-update ti location access.",
 
-  "staffManage.branchAccess": "Branch access",
+  "staffManage.branchAccess": "Location access",
 
-  "staffManage.branchAccessAll": "All branches",
+  "staffManage.branchAccessAll": "Amin nga active locations",
 
-  "staffManage.branchAccessAutomatic": "All branches",
+  "staffManage.branchAccessAutomatic": "Amin nga active locations",
 
   "staffManage.branchAccessUnknown": "Not assigned",
 

@@ -5,8 +5,15 @@ import type {
 } from "@/api/platform/membership-branch-assignments-client";
 import type { PlatformBranch } from "@/api/platform/platform-auth-client";
 import { resolvePlatformBranchId } from "@/api/platform/platform-auth-client";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 
 export type BranchScopeMode = "all" | "areas" | "specific";
+
+export type AreaLocationCounts = {
+  total: number;
+  retail: number;
+  warehouse: number;
+};
 
 export function isImplicitAllBranchesMembershipRole(role: string): boolean {
   const normalized = role.trim();
@@ -82,6 +89,52 @@ export function shouldOfferAreaScope(input: {
   return input.activeBranchCount > 1;
 }
 
+export function countActiveLocationsInArea(
+  areaId: string,
+  branches: readonly PlatformBranch[],
+): AreaLocationCounts {
+  const target = areaId.trim();
+  let retail = 0;
+  let warehouse = 0;
+  for (const branch of branches) {
+    if (!isActiveBranch(branch)) {
+      continue;
+    }
+    if ((branch.areaId ?? "").trim() !== target) {
+      continue;
+    }
+    if (isWarehouseBranch(branch.branchType)) {
+      warehouse += 1;
+    } else {
+      retail += 1;
+    }
+  }
+  return { total: retail + warehouse, retail, warehouse };
+}
+
+function joinAreaNames(
+  names: readonly string[],
+  formatSingleAreaName: (name: string) => string,
+): string {
+  if (names.length === 0) {
+    return "";
+  }
+  if (names.length === 1) {
+    return formatSingleAreaName(names[0]!);
+  }
+  if (names.length <= 3) {
+    return names.join(" + ");
+  }
+  return `${names[0]} + ${names.length - 1}`;
+}
+
+function withLocationCount(label: string, count: number, formatLocationCount: (count: number) => string): string {
+  if (count <= 0) {
+    return label;
+  }
+  return `${label} · ${formatLocationCount(count)}`;
+}
+
 export function formatStaffBranchAccessSummary(input: {
   membershipRole: string;
   scope: BranchAccessScopeDto | null;
@@ -92,6 +145,8 @@ export function formatStaffBranchAccessSummary(input: {
   unknownLabel: string;
   areaNames?: readonly string[];
   areasLabel?: string;
+  formatLocationCount?: (count: number) => string;
+  formatSingleAreaName?: (name: string) => string;
 }): string {
   if (isImplicitAllBranchesMembershipRole(input.membershipRole)) {
     return input.automaticAllLabel;
@@ -103,6 +158,10 @@ export function formatStaffBranchAccessSummary(input: {
     return input.unknownLabel;
   }
 
+  const formatCount = input.formatLocationCount ?? ((count: number) => String(count));
+  const formatArea =
+    input.formatSingleAreaName ?? ((name: string) => name);
+
   if (input.scope === "AllActive") {
     return input.allActiveLabel;
   }
@@ -112,12 +171,17 @@ export function formatStaffBranchAccessSummary(input: {
     if (names.length === 0) {
       return input.areasLabel ?? input.unknownLabel;
     }
-    return names.length === 1 ? names[0]! : `${names[0]} + ${names.length - 1}`;
+    return withLocationCount(
+      joinAreaNames(names, formatArea),
+      input.assignedIds.length,
+      formatCount,
+    );
   }
 
   if (activeIds.length === 1) {
     const only = resolvePrimaryOrOnlyBranch(active);
-    return only?.name?.trim() || only?.code?.trim() || input.unknownLabel;
+    const name = only?.name?.trim() || only?.code?.trim() || input.unknownLabel;
+    return withLocationCount(name, 1, formatCount);
   }
 
   if (input.assignedIds.length === 0) {
@@ -134,8 +198,8 @@ export function formatStaffBranchAccessSummary(input: {
   }
 
   if (names.length === 1) {
-    return names[0]!;
+    return withLocationCount(names[0]!, 1, formatCount);
   }
 
-  return `${names[0]} + ${names.length - 1}`;
+  return withLocationCount(`${names[0]} + ${names.length - 1}`, names.length, formatCount);
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRightLeft, Plus, X } from "lucide-react";
 import { canInviteOrganizationStaff } from "@/access/pos-capabilities";
 import {
   archiveOrganizationArea,
@@ -8,7 +9,10 @@ import {
   setBranchArea,
   updateOrganizationArea,
 } from "@/api/platform/organization-areas-client";
-import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
+import {
+  listBranchManagementSummaries,
+  type BranchManagementSummaryItemDto,
+} from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -19,6 +23,11 @@ import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+type PendingLocationAction =
+  | { kind: "assign" | "transfer"; branch: BranchManagementSummaryItemDto }
+  | { kind: "remove"; branch: BranchManagementSummaryItemDto }
+  | null;
 
 export function OrgAreaDetailPage() {
   const { t } = useI18n();
@@ -34,6 +43,7 @@ export function OrgAreaDetailPage() {
   const [formReady, setFormReady] = useState(false);
   const [editing, setEditing] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingLocationAction>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const areasQuery = useQuery({
@@ -128,10 +138,14 @@ export function OrgAreaDetailPage() {
       }
     },
     onSuccess: async () => {
+      setPendingAction(null);
       setActionError(null);
       await refresh();
     },
-    onError: (error: Error) => setActionError(error.message),
+    onError: (error: Error) => {
+      setPendingAction(null);
+      setActionError(error.message);
+    },
   });
 
   const archiveMutation = useMutation({
@@ -155,6 +169,51 @@ export function OrgAreaDetailPage() {
       setActionError(error.message);
     },
   });
+
+  function confirmPendingAction() {
+    if (!pendingAction) {
+      return;
+    }
+    if (pendingAction.kind === "remove") {
+      branchMutation.mutate({ branchId: pendingAction.branch.id, target: null });
+      return;
+    }
+    branchMutation.mutate({
+      branchId: pendingAction.branch.id,
+      target: areaId ?? null,
+    });
+  }
+
+  const pendingConfirm =
+    pendingAction == null || !area
+      ? null
+      : pendingAction.kind === "remove"
+        ? {
+            title: t("areas.detail.removeConfirmTitle"),
+            detail: t("areas.detail.removeConfirmDetail")
+              .replace("{location}", pendingAction.branch.name)
+              .replace("{area}", area.name),
+            confirmLabel: t("areas.detail.removeConfirmAction"),
+            testId: "org-area-remove-confirm",
+          }
+        : pendingAction.kind === "transfer"
+          ? {
+              title: t("areas.detail.transferConfirmTitle"),
+              detail: t("areas.detail.transferConfirmDetail")
+                .replace("{location}", pendingAction.branch.name)
+                .replace("{fromArea}", pendingAction.branch.areaName ?? t("areas.unassigned"))
+                .replace("{area}", area.name),
+              confirmLabel: t("areas.detail.transferConfirmAction"),
+              testId: "org-area-transfer-confirm",
+            }
+          : {
+              title: t("areas.detail.assignConfirmTitle"),
+              detail: t("areas.detail.assignConfirmDetail")
+                .replace("{location}", pendingAction.branch.name)
+                .replace("{area}", area.name),
+              confirmLabel: t("areas.detail.assignConfirmAction"),
+              testId: "org-area-assign-confirm",
+            };
 
   if (!canManage) {
     return (
@@ -281,7 +340,9 @@ export function OrgAreaDetailPage() {
           <section className="catalog-form-section exits-animate-panel gap-3" data-testid="org-area-branches">
             <h2 className="catalog-form-section__title">{t("areas.detail.assigned")}</h2>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("areas.locationCount").replace("{count}", String(inArea.length))}
+              {inArea.length === 1
+                ? t("workspace.locationCountOne")
+                : t("areas.locationCount").replace("{count}", String(inArea.length))}
             </p>
             {inArea.length === 0 ? (
               <p className="m-0 text-muted" data-testid="org-area-no-branches">
@@ -316,10 +377,9 @@ export function OrgAreaDetailPage() {
                           variant="outline"
                           disabled={busy}
                           data-testid={`org-area-remove-${branch.id}`}
-                          onClick={() =>
-                            branchMutation.mutate({ branchId: branch.id, target: null })
-                          }
+                          onClick={() => setPendingAction({ kind: "remove", branch })}
                         >
+                          <X className="size-4 shrink-0" aria-hidden />
                           {t("areas.detail.remove")}
                         </Button>
                       </div>
@@ -339,6 +399,7 @@ export function OrgAreaDetailPage() {
               <ul className="m-0 grid list-none gap-2 p-0" data-testid="org-area-available-list">
                 {outsideArea.map((branch) => {
                   const warehouse = isWarehouseBranch(branch.branchType);
+                  const transfer = Boolean(branch.areaId);
                   return (
                     <li
                       key={branch.id}
@@ -366,15 +427,24 @@ export function OrgAreaDetailPage() {
                           type="button"
                           variant="outline"
                           disabled={busy}
-                          data-testid={`org-area-add-${branch.id}`}
+                          data-testid={
+                            transfer
+                              ? `org-area-transfer-${branch.id}`
+                              : `org-area-add-${branch.id}`
+                          }
                           onClick={() =>
-                            branchMutation.mutate({
-                              branchId: branch.id,
-                              target: areaId ?? null,
+                            setPendingAction({
+                              kind: transfer ? "transfer" : "assign",
+                              branch,
                             })
                           }
                         >
-                          {t("areas.detail.assign")}
+                          {transfer ? (
+                            <ArrowRightLeft className="size-4 shrink-0" aria-hidden />
+                          ) : (
+                            <Plus className="size-4 shrink-0" aria-hidden />
+                          )}
+                          {transfer ? t("areas.detail.transfer") : t("areas.detail.assign")}
                         </Button>
                       </div>
                     </li>
@@ -414,8 +484,23 @@ export function OrgAreaDetailPage() {
         cancelLabel={t("areas.cancel")}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={() => archiveMutation.mutate()}
+        busy={archiveMutation.isPending}
         testId="org-area-archive-confirm"
       />
+
+      {pendingConfirm ? (
+        <ConfirmationDialog
+          open
+          title={pendingConfirm.title}
+          detail={pendingConfirm.detail}
+          confirmLabel={pendingConfirm.confirmLabel}
+          cancelLabel={t("areas.cancel")}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={confirmPendingAction}
+          busy={branchMutation.isPending}
+          testId={pendingConfirm.testId}
+        />
+      ) : null}
     </div>
   );
 }

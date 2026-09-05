@@ -626,6 +626,11 @@ function StaffMemberRow({
     unknownLabel: t("staffManage.branchAccessUnknown"),
     areaNames: row.assignedAreaNames,
     areasLabel: t("staffAssign.areasSummary"),
+    formatLocationCount: (count) =>
+      count === 1
+        ? t("workspace.locationCountOne")
+        : t("workspace.locationCountMany").replace("{count}", String(count)),
+    formatSingleAreaName: (name) => t("staffAssign.areaNameLabel").replace("{name}", name),
   });
 
   return (
