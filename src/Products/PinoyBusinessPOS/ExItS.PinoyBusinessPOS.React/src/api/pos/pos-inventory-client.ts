@@ -205,6 +205,8 @@ export function listInventory(
     pageSize?: number;
     /** When set, server filters tracked/untracked inventory accounts. */
     tracked?: boolean;
+    /** When true, server returns only low-stock tracked accounts. */
+    lowStock?: boolean;
   } = {},
   signal?: AbortSignal,
 ): Promise<PosInventoryPagedResult> {
@@ -217,6 +219,7 @@ export function listInventory(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
       tracked: options.tracked,
+      lowStock: options.lowStock,
     }),
   });
 }

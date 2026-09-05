@@ -62,7 +62,7 @@ import { MyOrderDetailPage } from "@/features/customer-ordering/MyOrderDetailPag
 import { SellerOrdersPage } from "@/features/customer-ordering/SellerOrdersPage";
 import { SellerOrderDetailPage } from "@/features/customer-ordering/SellerOrderDetailPage";
 import { ClassicReportPage } from "@/features/reports/ClassicReportPage";
-import { ManagementDashboardPage } from "@/features/reports/ManagementDashboardPage";
+import { DashboardRoutePage } from "@/features/reports/DashboardRoutePage";
 import { OperationalReportPage } from "@/features/reports/OperationalReportPage";
 import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
@@ -1064,7 +1064,7 @@ export const appRoutes = [
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
                   <RequireViewDashboard>
-                    <ManagementDashboardPage />
+                    <DashboardRoutePage />
                   </RequireViewDashboard>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>

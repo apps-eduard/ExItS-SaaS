@@ -522,28 +522,8 @@ export function buildOperationsSidebarGroups(input: {
         items: control,
       });
     }
-  } else {
-    const control: OperationsSidebarItem[] = [];
-    pushItem(
-      control,
-      {
-        id: "adjustments",
-        to: "/inventory/stock-use",
-        labelKey: "org.more.stockMovements",
-        icon: RefreshCw,
-        testId: "ops-sidebar-adjustments",
-        matchPrefixes: ["/inventory/stock-use"],
-      },
-      canViewInventory(grant),
-    );
-    if (control.length > 0) {
-      groups.push({
-        id: "control",
-        titleKey: "operations.nav.group.control",
-        items: control,
-      });
-    }
   }
+  /* Warehouse: Stock movements stays under STOCK only — no duplicate CONTROL group. */
 
   const insights: OperationsSidebarItem[] = [];
   pushItem(

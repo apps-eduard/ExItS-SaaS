@@ -169,6 +169,20 @@ describe("operations navigation", () => {
     expect(paths).not.toContain("/sell");
   });
 
+  it("Warehouse sidebar has a single Stock movements entry and no CONTROL group", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    expect(groups.some((g) => g.id === "control")).toBe(false);
+    const movementItems = flattenOperationsSidebarItems(groups).filter(
+      (i) => i.to === "/inventory/stock-use",
+    );
+    expect(movementItems).toHaveLength(1);
+    expect(groups.some((g) => g.id === "stock")).toBe(true);
+  });
+
   it("Manager More excludes Admin configuration links", () => {
     const sections = buildOrgMoreSections(owner, {
       branchType: "Retail",
