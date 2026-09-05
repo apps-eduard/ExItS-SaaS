@@ -13,6 +13,7 @@ const supplierId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
 const listSuppliers = vi.fn();
 const listCatalogProducts = vi.fn();
+const listCatalogCategories = vi.fn();
 const createDirectPurchaseReceipt = vi.fn();
 
 const workspaceMock = {
@@ -60,6 +61,7 @@ vi.mock("@/api/pos/pos-catalog-client", async (importOriginal) => {
   return {
     ...actual,
     listCatalogProducts: (...args: unknown[]) => listCatalogProducts(...args),
+    listCatalogCategories: (...args: unknown[]) => listCatalogCategories(...args),
   };
 });
 
@@ -95,12 +97,14 @@ async function addLine(user: ReturnType<typeof userEvent.setup>) {
   await waitFor(() => {
     expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
   });
-  await user.click(screen.getByTestId(`direct-product-${productId}`));
-  await user.clear(screen.getByTestId("direct-line-qty"));
-  await user.type(screen.getByTestId("direct-line-qty"), "10");
-  await user.clear(screen.getByTestId("direct-line-cost"));
-  await user.type(screen.getByTestId("direct-line-cost"), "100");
-  await user.click(screen.getByTestId("direct-save-line"));
+  await user.clear(screen.getByTestId(`direct-line-qty-${productId}`));
+  await user.type(screen.getByTestId(`direct-line-qty-${productId}`), "10");
+  await user.clear(screen.getByTestId(`direct-line-cost-${productId}`));
+  await user.type(screen.getByTestId(`direct-line-cost-${productId}`), "100");
+  await user.click(screen.getByTestId(`direct-add-${productId}`));
+  await waitFor(() => {
+    expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
+  });
 }
 
 describe("ReceiveStockPage payment at receipt", () => {
@@ -121,6 +125,12 @@ describe("ReceiveStockPage payment at receipt", () => {
       totalCount: 1,
       page: 1,
       pageSize: 100,
+    });
+    listCatalogCategories.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
     });
     listCatalogProducts.mockResolvedValue({
       items: [productDto()],
@@ -162,11 +172,12 @@ describe("ReceiveStockPage payment at receipt", () => {
     const user = userEvent.setup();
     renderPage();
     await addLine(user);
+    expect(screen.queryByTestId("receive-payment-section")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("direct-review"));
     await waitFor(() => {
       expect(screen.getByTestId("receive-payment-section")).toBeInTheDocument();
     });
     expect(screen.queryByTestId("receive-payment-mode-credit")).not.toBeInTheDocument();
-    await user.click(screen.getByTestId("direct-review"));
     await user.click(screen.getByTestId("direct-confirm"));
     await waitFor(() => {
       expect(createDirectPurchaseReceipt).toHaveBeenCalled();
@@ -182,6 +193,7 @@ describe("ReceiveStockPage payment at receipt", () => {
     const user = userEvent.setup();
     renderPage();
     await addLine(user);
+    await user.click(screen.getByTestId("direct-review"));
     await waitFor(() => {
       expect(screen.getByTestId("receive-payment-section")).toBeInTheDocument();
     });
@@ -196,6 +208,7 @@ describe("ReceiveStockPage payment at receipt", () => {
     });
     await user.selectOptions(screen.getByTestId("direct-supplier"), supplierId);
     await addLine(user);
+    await user.click(screen.getByTestId("direct-review"));
     await waitFor(() => {
       expect(screen.getByTestId("receive-payment-mode-credit")).toBeInTheDocument();
     });
@@ -205,7 +218,6 @@ describe("ReceiveStockPage payment at receipt", () => {
     await user.type(paidInput, "400");
     await user.type(screen.getByTestId("receive-payment-due-date"), "2026-10-01");
     await user.selectOptions(screen.getByTestId("receive-payment-method"), "GCash");
-    await user.click(screen.getByTestId("direct-review"));
     await user.click(screen.getByTestId("direct-confirm"));
     await waitFor(() => {
       expect(createDirectPurchaseReceipt).toHaveBeenCalled();
@@ -215,5 +227,57 @@ describe("ReceiveStockPage payment at receipt", () => {
     expect(body.dueDate).toBe("2026-10-01");
     expect(body.paymentMethodAtReceipt).toBe("GCash");
     expect(JSON.stringify(body)).not.toMatch(/SupplierPayablePayment/i);
+  });
+});
+
+describe("ReceiveStockPage compact layout", () => {
+  beforeEach(() => {
+    listSuppliers.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+    });
+    listCatalogCategories.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    listCatalogProducts.mockResolvedValue({
+      items: [productDto()],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows branch as subtitle, compact details, and hides source until other source", async () => {
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/purchasing/receive-stock"]}>
+          <Routes>
+            <Route path="/purchasing/receive-stock" element={<ReceiveStockPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("page-header-subtitle")).toHaveTextContent("Main Branch");
+    expect(screen.getByTestId("direct-purchase-details")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
+    expect(screen.queryByTestId("direct-source-name")).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByTestId("direct-supplier"), "__other__");
+    expect(screen.getByTestId("direct-source-name")).toBeInTheDocument();
+
+    const review = screen.getByTestId("direct-review");
+    expect(review).toBeDisabled();
+    expect(review.className).not.toMatch(/w-full/);
   });
 });
