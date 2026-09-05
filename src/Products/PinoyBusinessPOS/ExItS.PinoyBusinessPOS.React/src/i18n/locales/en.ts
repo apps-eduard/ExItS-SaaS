@@ -4842,7 +4842,8 @@ export const en = {
   "branches.type.retail": "Retail",
   "branches.type.warehouse": "Warehouse",
   "branches.type.retailHelp": "Selling and inventory location.",
-  "branches.type.warehouseHelp": "Inventory, purchasing, and transfers only — no retail sales.",
+  "branches.type.warehouseHelp":
+    "Warehouse branches are for receiving, storing, and transferring stock. Selling is disabled.",
   "branches.contactPhone": "Contact phone",
   "branches.timeZone": "Time zone",
   "branches.addressTitle": "Address",

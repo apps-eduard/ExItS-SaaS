@@ -16,7 +16,6 @@ import {
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
 import {
-  normalizeBranchType,
   type OrganizationBranchType,
 } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -184,19 +183,28 @@ export function BranchCreatePage() {
                 required
               />
             </label>
-            <label className="exits-type-label flex flex-col gap-1.5">
-              {t("branches.type")}
-              <select
-                className="catalog-form-select"
-                value={branchType}
-                onChange={(e) => setBranchType(normalizeBranchType(e.target.value))}
-                data-testid="branch-create-type"
-              >
-                <option value="Retail">{t("branches.type.retail")}</option>
+            <fieldset className="exits-type-label flex flex-col gap-1.5" data-testid="branch-create-type">
+              <legend className="px-0">{t("branches.type")}</legend>
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t("branches.type")}>
+                <Button
+                  type="button"
+                  variant={branchType === "Retail" ? "default" : "secondary"}
+                  onClick={() => setBranchType("Retail")}
+                  data-testid="branch-create-type-retail"
+                >
+                  {t("branches.type.retail")}
+                </Button>
                 {warehouseAllowed ? (
-                  <option value="Warehouse">{t("branches.type.warehouse")}</option>
+                  <Button
+                    type="button"
+                    variant={branchType === "Warehouse" ? "default" : "secondary"}
+                    onClick={() => setBranchType("Warehouse")}
+                    data-testid="branch-create-type-warehouse"
+                  >
+                    {t("branches.type.warehouse")}
+                  </Button>
                 ) : null}
-              </select>
+              </div>
               {warehouseAllowed ? (
                 <span className="branch-create-field-helper">
                   {branchType === "Warehouse"
@@ -212,7 +220,7 @@ export function BranchCreatePage() {
                   <span>{t("branches.type.warehouseLocked")}</span>
                 </p>
               )}
-            </label>
+            </fieldset>
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.timeZone")}
               <input

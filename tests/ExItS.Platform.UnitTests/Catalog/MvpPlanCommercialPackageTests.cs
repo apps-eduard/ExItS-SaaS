@@ -84,6 +84,16 @@ public sealed class MvpPlanCommercialPackageTests
     }
 
     [Fact]
+    public void Growth_excludes_area_and_warehouse()
+    {
+        var growth = EnsureMvpPosPlans.BuildGrants(
+            MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Growth));
+        Assert.False(growth.Single(g => g.FeatureCode.Value == FeatureCode.StoreAreaManagement).Enabled);
+        Assert.False(growth.Single(g => g.FeatureCode.Value == FeatureCode.StoreWarehouse).Enabled);
+        Assert.Equal(0, growth.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxAreas).NumericLimit);
+    }
+
+    [Fact]
     public void Pro_and_pro_plus_include_area_warehouse_and_advanced_reports()
     {
         var pro = EnsureMvpPosPlans.BuildGrants(MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Pro));
@@ -94,6 +104,7 @@ public sealed class MvpPlanCommercialPackageTests
         Assert.True(pro.Single(g => g.FeatureCode.Value == FeatureCode.StoreAreaManagement).Enabled);
         Assert.Equal(3, pro.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxAreas).NumericLimit);
         Assert.True(proPlus.Single(g => g.FeatureCode.Value == FeatureCode.StoreWarehouse).Enabled);
+        Assert.True(proPlus.Single(g => g.FeatureCode.Value == FeatureCode.StoreAreaManagement).Enabled);
         Assert.Equal(10, proPlus.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxAreas).NumericLimit);
         Assert.Equal(25, proPlus.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxBranches).NumericLimit);
     }

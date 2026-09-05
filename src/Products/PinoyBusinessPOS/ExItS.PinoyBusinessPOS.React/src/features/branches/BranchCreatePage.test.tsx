@@ -67,7 +67,8 @@ describe("BranchCreatePage", () => {
     expect(screen.getByTestId("branch-create-country")).toHaveValue(BRANCH_DEFAULT_COUNTRY_CODE);
     expect(screen.getByTestId("branch-create-timezone")).toHaveAttribute("readonly");
     expect(screen.getByTestId("branch-create-timezone")).toHaveValue(BRANCH_DEFAULT_TIME_ZONE);
-    expect(screen.getByTestId("branch-create-type")).toHaveValue("Retail");
+    expect(screen.getByTestId("branch-create-type-retail")).toBeInTheDocument();
+    expect(screen.queryByTestId("branch-create-type-warehouse")).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-create-phone")).toBeInTheDocument();
     expect(screen.getByTestId("branch-create-address1")).toBeInTheDocument();
     expect(screen.getByTestId("branch-create-address2")).toBeInTheDocument();
@@ -124,13 +125,10 @@ describe("BranchCreatePage", () => {
     expect(screen.getByTestId("branch-create-code")).toHaveValue("");
     expect(screen.getByTestId("branch-create-phone")).toHaveValue("");
     expect(screen.getByTestId("branch-create-city")).toHaveValue("");
-    expect(screen.getByTestId("branch-create-type")).toHaveValue("Retail");
+    expect(screen.getByTestId("branch-create-type-retail")).toBeInTheDocument();
   });
 
-  it("consumes global density control height for catalog selects", () => {
-    expect(globalsCss).toMatch(
-      /\.catalog-form-select\s*\{[\s\S]*?min-height:\s*var\(--exits-control-height\)/,
-    );
+  it("keeps branch create form width constraint in globals", () => {
     expect(globalsCss).toContain(".branch-create-form");
     expect(globalsCss).toMatch(/\.branch-create-form[\s\S]*?max-width:\s*64rem/);
   });

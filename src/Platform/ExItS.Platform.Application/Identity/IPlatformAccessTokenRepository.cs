@@ -77,7 +77,9 @@ public sealed record PlatformAccessTokenIssueDto(
     string? ProductLocalRoleCode = null,
     string? MappedPosRoleCode = null,
     string? MembershipRole = null,
-    bool OrganizationManagementAuthority = false);
+    bool OrganizationManagementAuthority = false,
+    /// <summary>Enabled commercial feature codes from the active entitlement snapshot.</summary>
+    IReadOnlyList<string>? EnabledFeatureCodes = null);
 
 public sealed record PlatformAccessTokenIntrospectionDto(
     bool Active,

@@ -15,11 +15,12 @@ import {
   AUTH_TOKEN_PATH,
   type BrowserSessionSnapshot,
 } from "@/api/platform/browser-session";
-import { clearPosAccessToken } from "@/api/platform/pos-access-token";
-import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
+import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
+import { clearPosSessionGrant, getPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
 import {
   bindOrganizationManagementGrant,
   bindWorkspaceWithSessionGrant,
+  issueSessionGrant,
   listEligibleOrganizations,
   listOrganizationBranches,
   probeOrganizationSessionGrant,
@@ -109,6 +110,8 @@ type WorkspaceContextValue = {
   bindDestination: (destination: WorkspaceDestination) => Promise<boolean>;
   ensureOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
   retryOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
+  /** Re-issue org session grant so commercial feature codes stay current after plan changes. */
+  refreshSessionGrant: () => Promise<SessionGrantResponse | null>;
   refreshWorkspaces: () => Promise<void>;
   clearBoundWorkspace: () => void;
 };
@@ -650,6 +653,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [ensureOrganizationGrantHint],
   );
 
+  const refreshSessionGrant = useCallback(async () => {
+    const organizationId = boundWorkspace?.organizationId;
+    if (!organizationId) {
+      return null;
+    }
+    const result = await issueSessionGrant(organizationId);
+    if (!result.ok) {
+      return null;
+    }
+    setPosAccessToken(result.grant.accessToken);
+    setPosSessionGrant(result.grant);
+    setSessionGrantState(result.grant);
+    setGrantByOrganizationId((prev) => {
+      const next = new Map(prev);
+      next.set(organizationId, result.grant);
+      return next;
+    });
+    return result.grant;
+  }, [boundWorkspace?.organizationId]);
+
   const bindDestination = useCallback(
     async (destination: WorkspaceDestination) => {
       if (isOrganizationContextLocked(session)) {
@@ -1032,6 +1055,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bindDestination,
       ensureOrganizationGrantHint,
       retryOrganizationGrantHint,
+      refreshSessionGrant,
       refreshWorkspaces,
       clearBoundWorkspace,
     }),
@@ -1049,6 +1073,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       grantProbeFailureByOrganizationId,
       posDevice,
       refreshPosDevice,
+      refreshSessionGrant,
       refreshWorkspaces,
       retryOrganizationGrantHint,
       routingPlan,

@@ -419,6 +419,13 @@ export function BranchManagementDetailPage() {
 
       <div className="branch-mgmt-card__badges flex flex-wrap gap-2">
         <span data-testid="branch-detail-code">{branch.code}</span>
+        <span data-testid="branch-detail-type-chip">
+          <StatusChip tone={branch.branchType === "Warehouse" ? "warning" : "info"}>
+            {branch.branchType === "Warehouse"
+              ? t("branches.type.warehouse")
+              : t("branches.type.retail")}
+          </StatusChip>
+        </span>
         {branch.isPrimary ? (
           <span data-testid="branch-detail-primary-badge">
             <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>

@@ -273,6 +273,13 @@ export function BranchManagementListPage() {
                       ) : null}
                     </div>
                     <div className="exits-entity-card__badges">
+                      <span data-testid={`branch-mgmt-type-${branch.id}`}>
+                        <StatusChip tone={branch.branchType === "Warehouse" ? "warning" : "info"}>
+                          {branch.branchType === "Warehouse"
+                            ? t("branches.type.warehouse")
+                            : t("branches.type.retail")}
+                        </StatusChip>
+                      </span>
                       {branch.isPrimary ? (
                         <span data-testid={`branch-mgmt-primary-${branch.id}`}>
                           <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>

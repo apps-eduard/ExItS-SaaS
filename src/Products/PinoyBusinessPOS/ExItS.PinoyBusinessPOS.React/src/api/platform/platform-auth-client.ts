@@ -418,6 +418,15 @@ function normalizeSessionGrantResponse(
   const productAccessAllowed =
     raw.productAccessAllowed === true || raw.ProductAccessAllowed === true;
 
+  const featureCodes = normalizeFeatureCodeList(
+    raw.featureCodes ??
+      raw.enabledFeatureCodes ??
+      raw.FeatureCodes ??
+      raw.EnabledFeatureCodes ??
+      raw.grantedFeatureCodes ??
+      raw.GrantedFeatureCodes,
+  );
+
   return {
     ...raw,
     accessToken: String(raw.accessToken ?? raw.AccessToken ?? ""),
@@ -427,7 +436,19 @@ function normalizeSessionGrantResponse(
     mappedPosRoleCode,
     productLocalRoleCode,
     membershipRole,
+    featureCodes: featureCodes.length > 0 ? featureCodes : null,
+    grantedFeatureCodes: featureCodes.length > 0 ? featureCodes : null,
   };
+}
+
+function normalizeFeatureCodeList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 }
 
 export async function bindWorkspaceWithSessionGrant(

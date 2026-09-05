@@ -67,6 +67,7 @@ describe("BranchManagementListPage", () => {
           organizationId: "11111111-1111-1111-1111-111111111111",
           code: "MAIN",
           name: "Main Branch",
+          branchType: "Retail",
           isPrimary: true,
           status: "Active",
           city: "Bacolod",
@@ -98,6 +99,9 @@ describe("BranchManagementListPage", () => {
     );
     expect(screen.getByTestId(`branch-mgmt-primary-${branchId}`)).toHaveTextContent(
       "branches.mgmt.primary",
+    );
+    expect(screen.getByTestId(`branch-mgmt-type-${branchId}`)).toHaveTextContent(
+      "branches.type.retail",
     );
     expect(screen.queryByText(/Delete/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-mgmt-add")).toBeInTheDocument();
@@ -161,5 +165,42 @@ describe("BranchManagementListPage", () => {
 
     await user.click(screen.getByTestId(`branch-mgmt-more-${branchId}`));
     expect(screen.getByTestId("branch-mgmt-more-panel")).toBeInTheDocument();
+  });
+
+  it("shows Warehouse type chip for warehouse branches", async () => {
+    listBranchManagementSummaries.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          id: branchId,
+          organizationId: "11111111-1111-1111-1111-111111111111",
+          code: "WH1",
+          name: "Main Warehouse",
+          branchType: "Warehouse",
+          isPrimary: false,
+          status: "Active",
+          city: null,
+          region: null,
+          addressLine1: null,
+          areaName: null,
+          areaId: null,
+          pickupEnabled: false,
+          deliveryEnabled: false,
+          customerOrderingEnabled: false,
+          assignedStaffCount: 1,
+          activeDeviceCount: 0,
+          pickupSectionsComplete: 0,
+          pickupSectionsTotal: 0,
+          deliverySectionsComplete: 0,
+          deliverySectionsTotal: 0,
+        },
+      ],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId(`branch-mgmt-type-${branchId}`)).toHaveTextContent(
+        "branches.type.warehouse",
+      );
+    });
   });
 });

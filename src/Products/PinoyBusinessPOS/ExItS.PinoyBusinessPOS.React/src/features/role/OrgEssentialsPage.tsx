@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
@@ -27,6 +27,7 @@ import {
   getBranchCapacity,
   listBranchManagementSummaries,
 } from "@/api/platform/organization-branches-client";
+import { getOrganizationCurrentPlan } from "@/api/platform/organization-current-plan-client";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import { listOrganizationMembers } from "@/api/platform/organization-members-client";
 import { getPosDeviceCapacity } from "@/api/platform/pos-devices-client";
@@ -34,6 +35,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { AdminUsageMeter } from "@/features/admin/AdminUsageMeter";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -68,13 +70,20 @@ export function OrgEssentialsPage() {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const reduceMotion = useReducedMotion();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, refreshSessionGrant } = useWorkspace();
   const canDashboard = canViewDashboard(sessionGrant);
   const canReports = canAccessReportsHub(sessionGrant);
   const canInvite = canInviteOrganizationStaff(sessionGrant);
   const canAdmin = hasOrganizationManagementAuthority(sessionGrant);
   const areasEntitled = canManageStoreAreas(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
+
+  useEffect(() => {
+    if (!organizationId || !online || !canInvite) {
+      return;
+    }
+    void refreshSessionGrant();
+  }, [organizationId, online, canInvite, refreshSessionGrant]);
 
   const workspace = useMemo(
     () =>
@@ -143,6 +152,17 @@ export function OrgEssentialsPage() {
     queryFn: async ({ signal }) => {
       const result = await getPosDeviceCapacity(organizationId!, signal);
       if (!result.ok) throw new Error(result.body?.detail ?? "devices");
+      return result.value;
+    },
+    staleTime: 60_000,
+  });
+
+  const currentPlanQuery = useQuery({
+    queryKey: ["org-home-current-plan", organizationId],
+    enabled: Boolean(organizationId && canInvite && online),
+    queryFn: async ({ signal }) => {
+      const result = await getOrganizationCurrentPlan(organizationId!, signal);
+      if (!result.ok) throw new Error(result.body?.detail ?? "plan");
       return result.value;
     },
     staleTime: 60_000,
@@ -312,8 +332,9 @@ export function OrgEssentialsPage() {
     : { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 } };
 
   const showPlanSection = Boolean(
-    branchCapacityQuery.data ||
-      (areasQuery.data && areasQuery.data.maxAreas > 0) ||
+    currentPlanQuery.data?.planDisplayName ||
+      branchCapacityQuery.data ||
+      (areasEntitled && areasQuery.data && areasQuery.data.maxAreas > 0) ||
       deviceCapacityQuery.data,
   );
 
@@ -416,7 +437,14 @@ export function OrgEssentialsPage() {
 
             {showPlanSection ? (
               <section className="admin-command__section" data-testid="org-group-plan">
-                <h2 className="admin-command__title m-0">{t("org.group.plan")}</h2>
+                <div className="admin-plan-header flex min-w-0 items-center justify-between gap-2">
+                  <h2 className="admin-command__title m-0">{t("org.group.plan")}</h2>
+                  {currentPlanQuery.data?.planDisplayName ? (
+                    <span data-testid="org-plan-chip">
+                      <StatusChip tone="info">{currentPlanQuery.data.planDisplayName}</StatusChip>
+                    </span>
+                  ) : null}
+                </div>
                 <div className="admin-plan-usage" data-testid="org-plan-usage">
                   <h3 className="admin-plan-usage__title m-0">{t("org.plan.usageTitle")}</h3>
                   <ul className="admin-plan-usage__meters m-0 list-none p-0">
@@ -428,7 +456,7 @@ export function OrgEssentialsPage() {
                         testId="org-plan-capacity-branches"
                       />
                     ) : null}
-                    {areasQuery.data && areasQuery.data.maxAreas > 0 ? (
+                    {areasEntitled && areasQuery.data && areasQuery.data.maxAreas > 0 ? (
                       <AdminUsageMeter
                         label={t("admin.context.areas")}
                         used={areasQuery.data.activeAreaCount}

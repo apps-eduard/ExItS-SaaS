@@ -37,7 +37,21 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       featureCodes: ["store-area-management", "store-warehouse"],
       grantedFeatureCodes: [],
     },
+    refreshSessionGrant: async () => null,
   }),
+}));
+
+vi.mock("@/api/platform/organization-current-plan-client", () => ({
+  getOrganizationCurrentPlan: vi.fn(async () => ({
+    ok: true as const,
+    value: {
+      organizationId: TEST_ORG_A_ID,
+      productCode: "pinoy-business-pos",
+      planDisplayName: "Pro",
+      planKey: "pro",
+      subscriptionStatus: "Active",
+    },
+  })),
 }));
 
 vi.mock("@/connectivity/browser-online", async (importOriginal) => {
