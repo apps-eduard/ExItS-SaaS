@@ -1,81 +1,69 @@
-import type { ReactNode } from "react";
-import { LayoutDashboard } from "lucide-react";
-import { canViewDashboard, canViewReports } from "@/access/pos-capabilities";
-import { PageHeader } from "@/components/exits/PageHeader";
-import { pageBackNav } from "@/navigation/page-back-nav";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { LayoutDashboard, Search } from "lucide-react";
 import {
-  buildOperationalReportGroups,
-  type ClassicReportKind,
-} from "@/features/reports/report-access";
+  canViewDashboard,
+  hasOrganizationManagementAuthority,
+} from "@/access/pos-capabilities";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { Button } from "@/components/ui/button";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportHubCard, ReportHubCardGrid } from "@/features/reports/ReportHubCard";
 import {
-  iconForClassicReport,
-  iconForOperationalReport,
-} from "@/features/reports/report-hub-icons";
+  buildReportHubCatalog,
+  filterReportHubEntries,
+  REPORT_HUB_CATEGORY_LABEL_KEYS,
+  type ReportHubCategoryId,
+} from "@/features/reports/report-hub-catalog";
 import { useI18n } from "@/i18n/I18nProvider";
-import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-const CLASSIC_REPORT_LINKS: ReadonlyArray<{
-  kind: ClassicReportKind;
-  path: string;
-  titleKey: MessageKey;
-  detailKey: MessageKey;
-  testId: string;
-}> = [
-  {
-    kind: "sales",
-    path: "/reports/sales",
-    titleKey: "reports.hub.salesTitle",
-    detailKey: "reports.hub.salesDetail",
-    testId: "report-link-sales",
-  },
-  {
-    kind: "utang",
-    path: "/reports/utang",
-    titleKey: "reports.hub.utangTitle",
-    detailKey: "reports.hub.utangDetail",
-    testId: "report-link-utang",
-  },
-  {
-    kind: "inventory",
-    path: "/reports/inventory",
-    titleKey: "reports.hub.inventoryTitle",
-    detailKey: "reports.hub.inventoryDetail",
-    testId: "report-link-inventory",
-  },
-  {
-    kind: "expenses",
-    path: "/reports/expenses",
-    titleKey: "reports.hub.expensesTitle",
-    detailKey: "reports.hub.expensesDetail",
-    testId: "report-link-expenses",
-  },
-];
-
-function HubSection({
-  title,
-  children,
-  testId,
-}: {
-  title: string;
-  children: ReactNode;
-  testId?: string;
-}) {
-  return (
-    <section className="reports-hub-section" data-testid={testId}>
-      <h2 className="reports-hub-section__title exits-type-section-title m-0">{title}</h2>
-      {children}
-    </section>
-  );
-}
+import { cn } from "@/lib/cn";
 
 export function ReportsHubPage() {
   const { t } = useI18n();
-  const { sessionGrant } = useWorkspace();
-  const groups = buildOperationalReportGroups(sessionGrant);
+  const { sessionGrant, boundWorkspace } = useWorkspace();
   const showDashboard = canViewDashboard(sessionGrant);
-  const showClassic = canViewReports(sessionGrant);
+  const canViewPlan = hasOrganizationManagementAuthority(sessionGrant);
+
+  const catalog = useMemo(
+    () =>
+      buildReportHubCatalog(sessionGrant, {
+        branchType: boundWorkspace?.branchType,
+      }),
+    [sessionGrant, boundWorkspace?.branchType],
+  );
+
+  const [category, setCategory] = useState<ReportHubCategoryId>("overview");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (catalog.categories.length === 0) {
+      return;
+    }
+    if (!catalog.categories.includes(category)) {
+      setCategory(catalog.categories[0]!);
+    }
+  }, [catalog.categories, category]);
+
+  const activeCategory = catalog.categories.includes(category)
+    ? category
+    : (catalog.categories[0] ?? "overview");
+
+  const searching = search.trim().length > 0;
+
+  const visibleEntries = useMemo(
+    () =>
+      filterReportHubEntries(
+        catalog.entries,
+        activeCategory,
+        search,
+        (entry) => ({
+          title: t(entry.titleKey),
+          description: t(entry.descriptionKey),
+        }),
+      ),
+    [catalog.entries, activeCategory, search, t],
+  );
 
   return (
     <div className="reports-hub-page exits-page" data-testid="reports-hub-page">
@@ -88,8 +76,8 @@ export function ReportsHubPage() {
       />
 
       {showDashboard ? (
-        <HubSection title={t("reports.overview")} testId="reports-group-overview">
-          <ReportHubCardGrid testId="reports-overview-grid" className="reports-hub-grid--featured">
+        <section className="reports-hub-section" data-testid="reports-dashboard-section">
+          <ReportHubCardGrid testId="reports-dashboard-grid" className="reports-hub-grid--featured">
             <ReportHubCard
               to="/dashboard"
               title={t("dashboard.open")}
@@ -99,45 +87,102 @@ export function ReportsHubPage() {
               featured
             />
           </ReportHubCardGrid>
-        </HubSection>
+        </section>
       ) : null}
 
-      {showClassic ? (
-        <HubSection title={t("reports.classicSection")} testId="reports-group-classic">
-          <ReportHubCardGrid testId="reports-classic-grid">
-            {CLASSIC_REPORT_LINKS.map((item) => (
+      <div className="reports-hub-toolbar" data-testid="reports-hub-toolbar">
+        <label className="reports-hub-search">
+          <Search className="reports-hub-search__icon size-4 shrink-0" aria-hidden />
+          <span className="sr-only">{t("reports.hub.searchLabel")}</span>
+          <input
+            type="search"
+            className="reports-hub-search__input exits-input"
+            placeholder={t("reports.hub.searchPlaceholder")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            data-testid="reports-hub-search"
+            autoComplete="off"
+          />
+        </label>
+
+        {!searching && catalog.categories.length > 0 ? (
+          <div
+            className="reports-hub-categories"
+            role="tablist"
+            aria-label={t("reports.hub.categoriesLabel")}
+            data-testid="reports-hub-categories"
+          >
+            {catalog.categories.map((id) => {
+              const selected = id === activeCategory;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  className={cn(
+                    "reports-hub-category",
+                    selected && "reports-hub-category--active",
+                  )}
+                  data-testid={`reports-hub-category-${id}`}
+                  onClick={() => setCategory(id)}
+                >
+                  {t(REPORT_HUB_CATEGORY_LABEL_KEYS[id])}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+
+      {catalog.showAdvancedUpgrade ? (
+        <aside className="reports-hub-upgrade" data-testid="reports-hub-upgrade">
+          <div className="reports-hub-upgrade__copy">
+            <p className="reports-hub-upgrade__title m-0">{t("reports.hub.upgradeTitle")}</p>
+            <p className="reports-hub-upgrade__detail m-0">{t("reports.hub.upgradeDetail")}</p>
+          </div>
+          {canViewPlan ? (
+            <Button asChild variant="outline" data-testid="reports-hub-view-plan">
+              <Link to="/org">{t("reports.hub.viewPlan")}</Link>
+            </Button>
+          ) : null}
+        </aside>
+      ) : null}
+
+      <section
+        className="reports-hub-section"
+        data-testid={searching ? "reports-hub-search-results" : `reports-group-${activeCategory}`}
+      >
+        {searching ? (
+          <h2 className="reports-hub-section__title exits-type-section-title m-0">
+            {t("reports.hub.searchResults")}
+          </h2>
+        ) : null}
+
+        {visibleEntries.length === 0 ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="reports-hub-empty"
+          >
+            {searching ? t("reports.hub.searchEmpty") : t("reports.hub.categoryEmpty")}
+          </p>
+        ) : (
+          <ReportHubCardGrid
+            testId={searching ? "reports-search-grid" : `reports-grid-${activeCategory}`}
+          >
+            {visibleEntries.map((entry) => (
               <ReportHubCard
-                key={item.kind}
-                to={item.path}
-                title={t(item.titleKey)}
-                description={t(item.detailKey)}
-                icon={iconForClassicReport(item.kind)}
-                testId={item.testId}
+                key={entry.id}
+                to={entry.path}
+                title={t(entry.titleKey)}
+                description={t(entry.descriptionKey)}
+                icon={entry.icon}
+                testId={entry.testId}
               />
             ))}
           </ReportHubCardGrid>
-        </HubSection>
-      ) : null}
-
-      {groups.map((group) => (
-        <HubSection
-          key={group.id}
-          title={t(group.titleKey as MessageKey)}
-          testId={`reports-group-${group.id}`}
-        >
-          <ReportHubCardGrid testId={`reports-grid-${group.id}`}>
-            {group.items.map((item) => (
-              <ReportHubCard
-                key={item.kind}
-                to={item.path}
-                title={t(item.titleKey as MessageKey)}
-                icon={iconForOperationalReport(item.kind)}
-                testId={`report-link-${item.kind}`}
-              />
-            ))}
-          </ReportHubCardGrid>
-        </HubSection>
-      ))}
+        )}
+      </section>
     </div>
   );
 }

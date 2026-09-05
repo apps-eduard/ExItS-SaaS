@@ -10209,11 +10209,116 @@ a.exits-chip--primary:hover {
 .reports-hub-page {
   display: flex;
   width: 100%;
-  max-width: 68rem;
+  max-width: 56rem;
   min-width: 0;
   margin-inline: auto;
   flex-direction: column;
-  gap: calc(var(--exits-toolbar-gap) + 0.55rem);
+  gap: calc(var(--exits-toolbar-gap) + 0.35rem);
+}
+
+.reports-hub-toolbar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--exits-toolbar-gap);
+}
+
+.reports-hub-search {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline: 0.65rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+.reports-hub-search__icon {
+  color: var(--exits-text-subtle);
+}
+
+.reports-hub-search__input {
+  flex: 1;
+  min-width: 0;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: var(--exits-control-height);
+}
+
+.reports-hub-categories {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reports-hub-category {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: var(--exits-leading-tight);
+  cursor: pointer;
+}
+
+.reports-hub-category:hover {
+  border-color: var(--exits-border-strong);
+  color: var(--exits-text);
+}
+
+.reports-hub-category--active {
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-text);
+}
+
+.reports-hub-category:focus-visible {
+  outline: 2px solid var(--exits-ring);
+  outline-offset: 2px;
+}
+
+.reports-hub-upgrade {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
+}
+
+.reports-hub-upgrade__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.reports-hub-upgrade__title {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  color: var(--exits-text);
+}
+
+.reports-hub-upgrade__detail {
+  font-size: var(--exits-text-xs);
+  color: var(--exits-text-muted);
 }
 
 .reports-hub-section {
@@ -10230,7 +10335,7 @@ a.exits-chip--primary:hover {
 .reports-hub-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--exits-toolbar-gap);
+  gap: 0.55rem;
 }
 
 @media (min-width: 640px) {
@@ -10245,7 +10350,7 @@ a.exits-chip--primary:hover {
 
 @media (min-width: 1024px) {
   .reports-hub-grid--featured {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .reports-hub-grid--featured > .reports-hub-card {
@@ -10258,23 +10363,23 @@ a.exits-chip--primary:hover {
   display: flex;
   min-width: 0;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: var(--exits-list-card-padding-y) var(--exits-list-card-padding-x);
+  gap: 0.65rem;
+  padding: 0.7rem 0.8rem;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
   color: var(--exits-text);
   text-decoration: none;
-  box-shadow: var(--exits-shadow-sm);
+  box-shadow: none;
   transition:
     border-color var(--exits-motion-fast) var(--exits-ease-standard),
-    background-color var(--exits-motion-fast) var(--exits-ease-standard),
-    box-shadow var(--exits-motion-fast) var(--exits-ease-standard);
+    background-color var(--exits-motion-fast) var(--exits-ease-standard);
 }
 
 .reports-hub-card:hover {
   border-color: var(--exits-border-strong);
-  box-shadow: var(--exits-shadow-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 45%, var(--exits-surface));
+  box-shadow: none;
 }
 
 .reports-hub-card:hover .reports-hub-card__chevron {

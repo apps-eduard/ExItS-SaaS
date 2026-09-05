@@ -165,7 +165,14 @@ export function ReportFilters({
             {t("reports.apply")}
           </Button>
         </>
-      ) : null}
+      ) : (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="report-as-of-note"
+        >
+          {t("reports.asOfSnapshot")}
+        </p>
+      )}
     </section>
   );
 }

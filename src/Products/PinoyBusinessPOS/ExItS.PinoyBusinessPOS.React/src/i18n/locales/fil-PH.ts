@@ -8390,6 +8390,78 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "reports.hub.expensesDetail": "Business spending and expense activity",
 
+  "reports.hub.salesOverviewTitle": "Sales overview",
+
+  "reports.hub.salesOverviewDetail": "Revenue, payments and sales activity",
+
+  "reports.hub.inventoryOverviewTitle": "Inventory overview",
+
+  "reports.hub.inventoryOverviewDetail": "Stock levels, movement and expiry",
+
+  "reports.hub.expensesOverviewTitle": "Expenses overview",
+
+  "reports.hub.expensesOverviewDetail": "Business spending and expense activity",
+
+  "reports.hub.utangOverviewTitle": "Utang overview",
+
+  "reports.hub.utangOverviewDetail": "Customer credit and outstanding balances",
+
+  "reports.hub.category.overview": "Overview",
+
+  "reports.hub.categoriesLabel": "Report categories",
+
+  "reports.hub.searchLabel": "Search reports",
+
+  "reports.hub.searchPlaceholder": "Search reports...",
+
+  "reports.hub.searchResults": "Matching reports",
+
+  "reports.hub.searchEmpty": "No reports match your search.",
+
+  "reports.hub.categoryEmpty": "No reports in this category.",
+
+  "reports.hub.upgradeTitle": "Advanced reporting",
+
+  "reports.hub.upgradeDetail": "More profitability, purchasing and inventory analysis is available on Pro.",
+
+  "reports.hub.viewPlan": "View plan",
+
+  "reports.hub.desc.salesSummary": "Sales totals and transaction performance",
+
+  "reports.hub.desc.salesByPayment": "Breakdown of sales by payment method",
+
+  "reports.hub.desc.salesByProduct": "Sales performance by product",
+
+  "reports.hub.desc.returns": "Returned items and refund activity",
+
+  "reports.hub.desc.profitability": "Gross profit and margin for the period",
+
+  "reports.hub.desc.productProfitability": "Rank products by profit, sales, or margin",
+
+  "reports.hub.desc.inventoryStatus": "Current stock levels by location",
+
+  "reports.hub.desc.inventoryMovements": "Stock in, out, and transfer activity",
+
+  "reports.hub.desc.stockCountVariance": "Differences between counted and system stock",
+
+  "reports.hub.desc.purchasingSummary": "Purchase activity for the selected period",
+
+  "reports.hub.desc.purchaseOutstanding": "Open purchase orders and receipts",
+
+  "reports.hub.desc.supplierPurchasing": "Purchasing totals by supplier",
+
+  "reports.hub.desc.supplierPayables": "Balances owed to suppliers",
+
+  "reports.hub.desc.expenseSummary": "Expense totals for the selected period",
+
+  "reports.hub.desc.utangByProduct": "Customer credit balances by product",
+
+  "reports.hub.desc.shiftSummary": "Shift activity and register performance",
+
+  "reports.hub.desc.cashVariance": "Cash drawer expected vs counted differences",
+
+  "reports.asOfSnapshot": "This report is a point-in-time snapshot (as of now).",
+
   "reports.commercialDiscountUnavailable": "Kasama na ang commercial discount totals sa sales reports.",
 
   "reports.datePresets": "Date range",
@@ -8432,7 +8504,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "reports.inventoryStatus": "Inventory status",
 
-  "reports.lede": "View sales, inventory, Utang, expenses, and business performance.",
+  "reports.lede": "Analyze your business across the locations you can access.",
 
   "reports.loadError": "Could not load this report.",
 
@@ -10530,7 +10602,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.create.details.retail": "Retail branch details",
   "branches.create.details.warehouse": "Warehouse details",
   "branches.create.submit.retail": "Create retail branch",
-  "branches.create.submit.warehouse": "Create warehouse"  "branches.mgmt.openWarehouse": "Open warehouse",
+  "branches.create.submit.warehouse": "Create warehouse",
+  "branches.mgmt.openWarehouse": "Open warehouse",
   "branches.mgmt.devicesShort": "Devices",
   "branches.create.name.warehouse": "Warehouse name",
   "branches.create.code.warehouse": "Warehouse code",
