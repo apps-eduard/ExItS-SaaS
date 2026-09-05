@@ -175,8 +175,192 @@ public sealed class InventoryTransferUseCaseTests
             new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 6m)]),
             ActorA,
             BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, created.ErrorCode);
+        Assert.Null(created.Value);
+        Assert.Empty(fx.Transfers.Items);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferOut);
+    }
+
+    [Fact]
+    public async Task Create_rejects_zero_stock_exact_overstock_and_allows_exact_stock()
+    {
+        var fx = await SeedAsync(cokeOnHand: 5m);
+        var over = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 6m)]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, over.ErrorCode);
+        Assert.Contains("only 5", over.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+
+        var exact = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 5m)]),
+            ActorA,
+            BranchA);
+        Assert.True(exact.IsSuccess);
+        Assert.Equal(5m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferOut);
+
+        var fxZero = await SeedAsync(cokeOnHand: 0m);
+        var zeroStock = await fxZero.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fxZero.CokeId, 1m)]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, zeroStock.ErrorCode);
+        Assert.Contains("out of stock", zeroStock.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Create_rejects_when_org_total_ok_but_source_branch_insufficient()
+    {
+        var fx = await SeedAsync(cokeOnHand: 2m, extraBranchB: 98m);
+        Assert.Equal(100m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.True(fx.Balances.OnHand(BranchB, fx.CokeId) >= 98m);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, created.ErrorCode);
+        Assert.Null(created.Value);
+    }
+
+    [Fact]
+    public async Task Create_rejects_untracked_product()
+    {
+        var fx = await SeedAsync(cokeOnHand: 5m);
+        var untrackedId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var product = CatalogProduct.Create(
+            PosOrganizationId.From(OrgA),
+            "Snack",
+            UnitOfMeasure.Piece,
+            10m,
+            Utc,
+            id: CatalogProductId.From(untrackedId));
+        fx.Products.Items.Add(product);
+        fx.Inventory.Accounts.Add(
+            InventoryAccount.CreateUntracked(PosOrganizationId.From(OrgA), CatalogProductId.From(untrackedId), Utc));
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(untrackedId, 1m)]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InventoryTransferProductNotTracked, created.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Dispatch_still_revalidates_stock_after_create()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+
+        var adjust = new AdjustInventoryStock(
+            fx.Inventory,
+            fx.Products,
+            new EmptyProductUnits(),
+            fx.Balances,
+            fx.Lots,
+            new InventoryLotStockService(fx.Lots),
+            fx.UnitOfWork,
+            fx.Clock,
+            fx.Branches);
+        Assert.True((await adjust.ExecuteAsync(OrgA, fx.CokeId, "Out", 6m, "Sold", ActorA, branchId: BranchA)).IsSuccess);
+
         var dispatch = await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA);
         Assert.Equal(ApplicationErrorCodes.InsufficientStock, dispatch.ErrorCode);
+        Assert.Equal(InventoryTransferStatus.Draft, created.Value.Status);
+    }
+
+    [Fact]
+    public async Task Create_rejects_duplicate_product_lines_that_collectively_exceed_stock()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var lotA = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2027, 1, 1),
+            7m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-A");
+        var lotB = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2027, 6, 1),
+            7m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-B");
+        fx.Lots.Items.Add(lotA);
+        fx.Lots.Items.Add(lotB);
+
+        var over = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 7m, lotA.Id.Value),
+                    new InventoryTransferLineRequest(fx.CokeId, 7m, lotB.Id.Value)
+                ]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, over.ErrorCode);
+        Assert.Empty(fx.Transfers.Items);
+
+        var within = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 4m, lotA.Id.Value),
+                    new InventoryTransferLineRequest(fx.CokeId, 5m, lotB.Id.Value)
+                ]),
+            ActorA,
+            BranchA);
+        Assert.True(within.IsSuccess);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferOut);
+    }
+
+    [Fact]
+    public async Task Create_rejects_when_source_lot_quantity_exceeded()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var lotA = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2027, 1, 1),
+            3m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-A");
+        fx.Lots.Items.Add(lotA);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m, lotA.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, created.ErrorCode);
+        Assert.Contains("lot", created.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(fx.Transfers.Items);
+        Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferOut);
     }
 
     [Fact]
@@ -286,9 +470,10 @@ public sealed class InventoryTransferUseCaseTests
                 fx.Lots,
                 new InventoryLotStockService(fx.Lots),
                 fx.UnitOfWork,
-                fx.Clock);
+                fx.Clock,
+                fx.Branches);
             var result = await adjust.ExecuteAsync(OrgA, fx.CokeId, "In", extraBranchB, "Branch B opening", ActorA, branchId: BranchB);
-            Assert.True(result.IsSuccess);
+            Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
         }
 
         return fx;
@@ -307,6 +492,7 @@ public sealed class InventoryTransferUseCaseTests
         public CapturingAlerts Alerts { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
+        public FakeBranches Branches { get; } = new();
         public CreateInventoryTransfer Create { get; }
         public DispatchInventoryTransfer Dispatch { get; }
         public ReceiveInventoryTransfer Receive { get; }
@@ -315,13 +501,12 @@ public sealed class InventoryTransferUseCaseTests
 
         public Fixture()
         {
-            var branches = new FakeBranches();
             var lotStock = new InventoryLotStockService(Lots);
-            Create = new CreateInventoryTransfer(Transfers, Products, Lots, branches, UnitOfWork, Clock);
-            Dispatch = new DispatchInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, branches, Alerts, UnitOfWork, Clock);
-            Receive = new ReceiveInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, branches, Alerts, UnitOfWork, Clock);
-            Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, branches, UnitOfWork, Clock);
-            Queries = new InventoryTransferQueryService(Transfers, branches);
+            Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, Branches, UnitOfWork, Clock);
+            Dispatch = new DispatchInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, Branches, Alerts, UnitOfWork, Clock);
+            Receive = new ReceiveInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, Branches, Alerts, UnitOfWork, Clock);
+            Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
+            Queries = new InventoryTransferQueryService(Transfers, Branches);
         }
 
         public async Task EnableAsync(Guid productId, string name, decimal opening)
@@ -341,6 +526,19 @@ public sealed class InventoryTransferUseCaseTests
             {
                 Inventory.Movements.Add(movement);
             }
+
+            // Opening stock lives at structural primary (Branch A) until transferred.
+            if (opening > 0m)
+            {
+                Balances.Items.Add(
+                    InventoryBranchBalance.Create(
+                        PosOrganizationId.From(OrgA),
+                        PosBranchId.From(BranchA),
+                        CatalogProductId.From(productId),
+                        opening,
+                        Utc));
+            }
+
             await Task.CompletedTask;
         }
     }
@@ -371,6 +569,9 @@ public sealed class InventoryTransferUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
                 branchIds.ToDictionary(id => id, id => id == BranchA ? "Branch A" : "Branch B"));
+
+        public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<Guid?>(organizationId == OrgA ? BranchA : null);
     }
 
     private sealed class CapturingAlerts : IInventoryTransferAlertSink
@@ -602,6 +803,8 @@ public sealed class InventoryTransferUseCaseTests
     {
         private readonly List<InventoryTransfer> _items = [];
         private long _sequence = 0;
+
+        public IReadOnlyList<InventoryTransfer> Items => _items;
 
         public Task<InventoryTransfer?> GetByIdAsync(PosOrganizationId organizationId, InventoryTransferId transferId, CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.FirstOrDefault(t => t.OrganizationId == organizationId && t.Id == transferId));

@@ -126,6 +126,8 @@ public sealed class InventoryTransferQueryService
 public sealed class CreateInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
     private readonly IOrganizationBranchDirectory _branches;
@@ -134,6 +136,8 @@ public sealed class CreateInventoryTransfer
 
     public CreateInventoryTransfer(
         IInventoryTransferRepository transfers,
+        IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
         IOrganizationBranchDirectory branches,
@@ -141,6 +145,8 @@ public sealed class CreateInventoryTransfer
         IClock clock)
     {
         _transfers = transfers;
+        _inventory = inventory;
+        _balances = balances;
         _products = products;
         _lots = lots;
         _branches = branches;
@@ -189,6 +195,53 @@ public sealed class CreateInventoryTransfer
                 actorId,
                 _clock.UtcNow,
                 request.Notes);
+
+            var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
+            var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
+                .ToDictionary(a => a.ProductId.Value);
+            var balances = (await _balances.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
+                .ToList();
+            var lotIds = transfer.Lines
+                .Where(l => l.SourceLotId is not null)
+                .Select(l => l.SourceLotId!)
+                .Distinct()
+                .ToList();
+            var lotsById = new Dictionary<Guid, InventoryLot>();
+            foreach (var lotId in lotIds)
+            {
+                var lot = await _lots.GetByIdAsync(orgId, lotId, cancellationToken).ConfigureAwait(false);
+                if (lot is not null)
+                {
+                    lotsById[lot.Id.Value] = lot;
+                }
+            }
+
+            var branchNames = await _branches
+                .GetNamesAsync(organizationId, [request.SourceBranchId], cancellationToken)
+                .ConfigureAwait(false);
+            var sourceBranchName = branchNames.TryGetValue(request.SourceBranchId, out var name) && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : "source branch";
+
+            var stockGuard = InventoryTransferStock.ValidateSourceAvailability(
+                orgId,
+                transfer.SourceBranchId,
+                sourceBranchName,
+                transfer.Lines.Select(l => new InventoryTransferStockDemand(
+                    l.ProductId,
+                    l.SentQty,
+                    l.NameSnapshot,
+                    l.UnitOfMeasure,
+                    l.SourceLotId)).ToList(),
+                accounts,
+                balances,
+                lotsById,
+                _clock.UtcNow);
+            if (stockGuard is not null)
+            {
+                return stockGuard;
+            }
+
             await _transfers.AddAsync(transfer, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -290,28 +343,46 @@ public sealed class DispatchInventoryTransfer
         try
         {
             var utcNow = _clock.UtcNow;
-            foreach (var line in transfer.Lines)
+            var lotIds = transfer.Lines
+                .Where(l => l.SourceLotId is not null)
+                .Select(l => l.SourceLotId!)
+                .Distinct()
+                .ToList();
+            var lotsById = new Dictionary<Guid, InventoryLot>();
+            foreach (var lotId in lotIds)
             {
-                if (!accounts.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                var lot = await _lotRepository.GetByIdAsync(orgId, lotId, ct).ConfigureAwait(false);
+                if (lot is not null)
                 {
-                    return ApplicationResult<InventoryTransfer>.Failure(
-                        ApplicationErrorCodes.InventoryTransferProductNotTracked,
-                        $"Inventory is not tracked for '{line.NameSnapshot}'.");
+                    lotsById[lot.Id.Value] = lot;
                 }
+            }
 
-                var sourceBalance = InventoryTransferStock.EnsureSourceBalance(
-                    orgId,
-                    transfer.SourceBranchId,
-                    line.ProductId,
-                    account.OnHandQuantity,
-                    balances,
-                    utcNow);
-                if (sourceBalance.OnHandQuantity < line.SentQty || account.OnHandQuantity < line.SentQty)
-                {
-                    return ApplicationResult<InventoryTransfer>.Failure(
-                        ApplicationErrorCodes.InsufficientStock,
-                        $"Insufficient available stock to dispatch '{line.NameSnapshot}'.");
-                }
+            var branchNames = await _branches
+                .GetNamesAsync(organizationId, [transfer.SourceBranchId.Value], ct)
+                .ConfigureAwait(false);
+            var sourceBranchName = branchNames.TryGetValue(transfer.SourceBranchId.Value, out var name)
+                && !string.IsNullOrWhiteSpace(name)
+                    ? name
+                    : "source branch";
+
+            var stockGuard = InventoryTransferStock.ValidateSourceAvailability(
+                orgId,
+                transfer.SourceBranchId,
+                sourceBranchName,
+                transfer.Lines.Select(l => new InventoryTransferStockDemand(
+                    l.ProductId,
+                    l.SentQty,
+                    l.NameSnapshot,
+                    l.UnitOfMeasure,
+                    l.SourceLotId)).ToList(),
+                accounts,
+                balances,
+                lotsById,
+                utcNow);
+            if (stockGuard is not null)
+            {
+                return stockGuard;
             }
 
             var number = await _transfers
@@ -973,8 +1044,100 @@ internal static class InventoryTransferLineFactory
     }
 }
 
+internal readonly record struct InventoryTransferStockDemand(
+    CatalogProductId ProductId,
+    decimal SentQty,
+    string NameSnapshot,
+    UnitOfMeasure UnitOfMeasure,
+    InventoryLotId? SourceLotId);
+
 internal static class InventoryTransferStock
 {
+    public static ApplicationResult<InventoryTransfer>? ValidateSourceAvailability(
+        PosOrganizationId organizationId,
+        PosBranchId sourceBranchId,
+        string sourceBranchName,
+        IReadOnlyList<InventoryTransferStockDemand> lines,
+        IReadOnlyDictionary<Guid, InventoryAccount> accounts,
+        List<InventoryBranchBalance> balances,
+        IReadOnlyDictionary<Guid, InventoryLot> lotsById,
+        DateTimeOffset utcNow)
+    {
+        foreach (var productGroup in lines.GroupBy(l => l.ProductId.Value))
+        {
+            var sample = productGroup.First();
+            if (!accounts.TryGetValue(productGroup.Key, out var account) || !account.IsTracked)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InventoryTransferProductNotTracked,
+                    $"Inventory is not tracked for '{sample.NameSnapshot}'.");
+            }
+
+            var requested = productGroup.Sum(l => l.SentQty);
+            var sourceBalance = EnsureSourceBalance(
+                organizationId,
+                sourceBranchId,
+                sample.ProductId,
+                account.OnHandQuantity,
+                balances,
+                utcNow);
+            var available = Math.Min(sourceBalance.OnHandQuantity, account.OnHandQuantity);
+            var unit = UnitOfMeasures.ToCode(sample.UnitOfMeasure);
+            if (available <= 0m)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} is out of stock at {sourceBranchName}.");
+            }
+
+            if (available < requested)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} has only {available:0.####} {unit} available at {sourceBranchName}. Requested: {requested:0.####}.");
+            }
+        }
+
+        foreach (var lotGroup in lines
+                     .Where(l => l.SourceLotId is not null)
+                     .GroupBy(l => l.SourceLotId!.Value))
+        {
+            var sample = lotGroup.First();
+            var requested = lotGroup.Sum(l => l.SentQty);
+            if (!lotsById.TryGetValue(lotGroup.Key, out var lot))
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InventoryLotMismatch,
+                    $"Lot was not found for '{sample.NameSnapshot}'.");
+            }
+
+            if (lot.BranchId is not null && lot.BranchId != sourceBranchId)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InventoryLotMismatch,
+                    $"Lot for '{sample.NameSnapshot}' does not belong to {sourceBranchName}.");
+            }
+
+            if (lot.QuantityOnHand < requested)
+            {
+                var unit = UnitOfMeasures.ToCode(sample.UnitOfMeasure);
+                var lotLabel = string.IsNullOrWhiteSpace(lot.LotNumber) ? "selected lot" : lot.LotNumber;
+                if (lot.QuantityOnHand <= 0m)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InsufficientStock,
+                        $"{sample.NameSnapshot} lot '{lotLabel}' is out of stock at {sourceBranchName}.");
+                }
+
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} lot '{lotLabel}' has only {lot.QuantityOnHand:0.####} {unit} available at {sourceBranchName}. Requested: {requested:0.####}.");
+            }
+        }
+
+        return null;
+    }
+
     public static InventoryBranchBalance EnsureSourceBalance(
         PosOrganizationId organizationId,
         PosBranchId sourceBranchId,
