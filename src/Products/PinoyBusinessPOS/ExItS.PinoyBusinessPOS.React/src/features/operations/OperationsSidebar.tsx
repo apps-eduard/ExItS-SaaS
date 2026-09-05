@@ -32,24 +32,6 @@ export function OperationsSidebar() {
       data-testid="operations-sidebar"
       aria-label={t("operations.nav.aria")}
     >
-      <div className="admin-sidebar__brand">
-        <p className="admin-sidebar__product m-0">{t("operations.shell.productName")}</p>
-        <p className="admin-sidebar__experience m-0">{t("operations.shell.operations")}</p>
-        {boundWorkspace?.organizationDisplayName ? (
-          <p
-            className="admin-sidebar__org m-0 truncate"
-            title={
-              boundWorkspace.branchName
-                ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-                : boundWorkspace.organizationDisplayName
-            }
-          >
-            {boundWorkspace.organizationDisplayName}
-            {boundWorkspace.branchName ? ` · ${boundWorkspace.branchName}` : ""}
-          </p>
-        ) : null}
-      </div>
-
       <nav className="admin-sidebar__nav">
         {groups.map((group) => (
           <div key={group.id} className="admin-sidebar__group">

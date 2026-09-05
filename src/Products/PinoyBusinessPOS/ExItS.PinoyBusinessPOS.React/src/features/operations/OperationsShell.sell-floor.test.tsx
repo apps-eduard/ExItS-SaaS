@@ -33,8 +33,8 @@ vi.mock("@/features/operations/OperationsBottomNav", () => ({
   OperationsBottomNav: () => <div data-testid="operations-bottom-nav-stub" />,
 }));
 
-describe("OperationsShell sell-floor viewport containment", () => {
-  it("applies sell-floor class and min-h-0 content chain without body overflow lock", () => {
+describe("OperationsShell viewport containment", () => {
+  it("always viewport-locks; sell floor hides mobile header and keeps content overflow hidden", () => {
     const { rerender } = render(
       <MemoryRouter>
         <OperationsShell sellFloor>
@@ -44,9 +44,11 @@ describe("OperationsShell sell-floor viewport containment", () => {
     );
 
     const shell = screen.getByTestId("operations-shell");
+    expect(shell.className).toContain("operations-shell--viewport-lock");
     expect(shell.className).toContain("operations-shell--sell-floor");
     expect(screen.queryByTestId("operations-mobile-header")).not.toBeInTheDocument();
     expect(document.getElementById("main-content")?.className).toMatch(/min-h-0/);
+    expect(document.getElementById("main-content")?.className).toMatch(/overflow-hidden/);
     expect(document.body.style.overflow).not.toBe("hidden");
 
     rerender(
@@ -57,9 +59,13 @@ describe("OperationsShell sell-floor viewport containment", () => {
       </MemoryRouter>,
     );
 
+    expect(screen.getByTestId("operations-shell").className).toContain(
+      "operations-shell--viewport-lock",
+    );
     expect(screen.getByTestId("operations-shell").className).not.toContain(
       "operations-shell--sell-floor",
     );
     expect(screen.getByTestId("operations-mobile-header")).toBeInTheDocument();
+    expect(document.getElementById("main-content")?.className).toMatch(/overflow-y-auto/);
   });
 });

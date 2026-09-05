@@ -28,7 +28,7 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
   return (
     <div
       className={cn(
-        "admin-shell flex min-h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden",
+        "admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
         "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         // Bottom nav remains through tablet (< lg); reserve space until desktop sidebar.
         "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
@@ -44,7 +44,7 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       {header}
 
       <header
-        className="admin-shell__header lg:hidden mt-2"
+        className="admin-shell__header shrink-0 lg:hidden mt-2"
         data-testid="admin-mobile-header"
       >
         <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
@@ -55,19 +55,23 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
         </h1>
       </header>
 
-      <div className="admin-shell__body mt-3 flex min-w-0 flex-1 gap-4 lg:gap-6">
-        <div className="hidden lg:block" data-testid="admin-desktop-sidebar">
+      <div className="admin-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden lg:gap-6">
+        <div className="hidden min-h-0 lg:block" data-testid="admin-desktop-sidebar">
           <AdminSidebar />
         </div>
 
-        <div className="admin-shell__main flex min-w-0 flex-1 flex-col gap-4">
-          <main id="main-content" className="admin-shell__content min-w-0 flex-1" tabIndex={-1}>
+        <div className="admin-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
+          <main
+            id="main-content"
+            className="admin-shell__content min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
+            tabIndex={-1}
+          >
             {children}
           </main>
         </div>
 
         {showContextPanel ? (
-          <div className="hidden xl:block" data-testid="admin-xl-context">
+          <div className="hidden min-h-0 xl:block" data-testid="admin-xl-context">
             <AdminContextPanel />
           </div>
         ) : null}

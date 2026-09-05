@@ -11243,53 +11243,106 @@ a.exits-chip--primary:hover {
   margin-inline: auto;
 }
 
-/* Sell floor: lock workspace to viewport; only product/cart/sidebar panes scroll. */
-.operations-shell--sell-floor {
+/* Operations: always viewport-locked; main content scrolls when needed. */
+.operations-shell--viewport-lock {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
 }
 
-.operations-shell--sell-floor .operations-shell__body {
-  max-width: min(100%, 100rem);
+.operations-shell--viewport-lock .operations-shell__body,
+.operations-shell--viewport-lock .operations-shell__main {
   min-height: 0;
   overflow: hidden;
 }
 
-.operations-shell--sell-floor .operations-shell__main {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.operations-shell--sell-floor .operations-shell__content {
+.operations-shell--viewport-lock .operations-shell__content {
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
+}
+
+.operations-shell--sell-floor .operations-shell__body {
+  max-width: min(100%, 100rem);
+}
+
+.operations-shell--sell-floor .operations-shell__content {
   overflow: hidden;
 }
 
-.operations-shell--sell-floor .operations-sidebar.admin-sidebar {
+/* Ops sidebar: stretch to locked shell height with internal nav scroll. */
+.operations-shell .operations-sidebar.admin-sidebar {
   position: relative;
   top: auto;
   align-self: stretch;
   height: 100%;
   max-height: 100%;
+  overflow: hidden;
+}
+
+.operations-shell .operations-sidebar .admin-sidebar__nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Pages that manage their own list scroll fill the content pane. */
+.operations-shell--viewport-lock .customer-orders-page,
+.operations-shell--viewport-lock .catalog-page--products-scroll,
+.operations-shell--viewport-lock .inventory-list-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.operations-shell--viewport-lock .manager-ops-home {
+  width: 100%;
+  max-width: 72rem;
+  min-width: 0;
+}
+
+.admin-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .admin-shell__body {
   width: 100%;
   max-width: 1600px;
   margin-inline: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-shell__main {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-shell__content {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .admin-sidebar {
-  position: sticky;
-  top: 0.75rem;
-  align-self: flex-start;
+  position: relative;
+  top: auto;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 1.5rem);
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
@@ -11404,10 +11457,6 @@ a.exits-chip--primary:hover {
   color: var(--exits-primary, #0f766e);
 }
 
-.admin-shell__content {
-  width: 100%;
-  max-width: 1200px;
-}
 
 .admin-context-panel {
   width: 18.5rem;

@@ -9,7 +9,7 @@ import { isWarehouseBranch } from "@/features/branches/branch-type";
 type OperationsShellProps = {
   children: ReactNode;
   header?: ReactNode;
-  /** Sell floor uses near-fullscreen content width. */
+  /** Sell floor uses near-fullscreen content width and pane-managed scroll. */
   sellFloor?: boolean;
   /** Hide bottom nav (e.g. sell transaction chrome). */
   hideBottomNav?: boolean;
@@ -17,6 +17,7 @@ type OperationsShellProps = {
 
 /**
  * Manager / Operations responsive shell.
+ * Always viewport-locked; main content scrolls when needed.
  * <1024: bottom nav (Retail or Warehouse).
  * >=1024: persistent left sidebar (no tablet rail).
  * Completely separate IA from AdminManagementShell.
@@ -34,7 +35,7 @@ export function OperationsShell({
   return (
     <div
       className={cn(
-        "operations-shell flex min-h-[100dvh] w-full min-w-0 flex-col overflow-x-hidden",
+        "operations-shell operations-shell--viewport-lock flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
         "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         hideBottomNav
           ? "pb-[max(2rem,env(safe-area-inset-bottom))]"
@@ -53,7 +54,7 @@ export function OperationsShell({
       {header}
 
       {!sellFloor ? (
-        <header className="operations-shell__header lg:hidden mt-2" data-testid="operations-mobile-header">
+        <header className="operations-shell__header shrink-0 lg:hidden mt-2" data-testid="operations-mobile-header">
           <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
             {t("operations.shell.operations")}
           </p>
@@ -69,27 +70,17 @@ export function OperationsShell({
         </header>
       ) : null}
 
-      <div
-        className={cn(
-          "operations-shell__body flex min-h-0 min-w-0 flex-1 gap-4 lg:gap-6",
-          sellFloor ? "mt-2" : "mt-3",
-        )}
-      >
+      <div className="operations-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-4 overflow-hidden lg:gap-6">
         <div className="hidden min-h-0 lg:block" data-testid="operations-desktop-sidebar">
           <OperationsSidebar />
         </div>
 
-        <div
-          className={cn(
-            "operations-shell__main flex min-h-0 min-w-0 flex-1 flex-col",
-            sellFloor ? "gap-0" : "gap-4",
-          )}
-        >
+        <div className="operations-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
           <main
             id="main-content"
             className={cn(
-              "operations-shell__content min-h-0 min-w-0 flex-1",
-              !sellFloor && "pt-1",
+              "operations-shell__content flex min-h-0 min-w-0 flex-1 flex-col",
+              sellFloor ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto overscroll-y-contain",
             )}
             tabIndex={-1}
           >
