@@ -11017,6 +11017,58 @@ a.exits-chip--primary:hover {
   color: var(--exits-text-muted);
 }
 
+.branch-mgmt-capacity__breakdown {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-regular);
+  color: var(--exits-text-muted);
+}
+
+.branch-mgmt-warehouse-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--exits-warning) 28%, var(--exits-border));
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-warning) 6%, var(--exits-surface));
+}
+
+.branch-mgmt-warehouse-hint__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.branch-mgmt-warehouse-hint__title {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.branch-mgmt-warehouse-hint__detail {
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+  line-height: var(--exits-leading-relaxed);
+}
+
+.branch-mgmt-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+}
+
+.branch-mgmt-filter-group__label {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+  min-width: 3.25rem;
+}
+
 .branch-mgmt-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -11825,10 +11877,40 @@ a.exits-chip--primary:hover {
   align-items: start;
 }
 
+.admin-overview-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.admin-overview-column__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 1.35rem;
+}
+
+.admin-overview-column__header .admin-command__title {
+  margin-bottom: 0;
+}
+
 @media (min-width: 1024px) {
   .admin-overview-top {
     grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr);
-    gap: 1rem 1.25rem;
+    grid-template-rows: auto auto;
+    column-gap: 1.25rem;
+    row-gap: 0.55rem;
+    align-items: start;
+  }
+
+  /* Subgrid: shared header row + shared card row so Today/Plan tops match. */
+  .admin-overview-top > .admin-overview-column {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    gap: 0;
   }
 }
 
@@ -11851,11 +11933,64 @@ a.exits-chip--primary:hover {
   box-shadow: var(--exits-shadow-sm);
 }
 
+.admin-plan-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 1.35rem;
+  min-height: 1.35rem;
+  max-height: 1.35rem;
+  padding: 0 0.45rem;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
+}
+
+.admin-plan-chip--starter {
+  color: #334155;
+  border-color: color-mix(in srgb, #64748b 45%, transparent);
+  background: color-mix(in srgb, #94a3b8 22%, #ffffff);
+}
+
+.admin-plan-chip--growth {
+  color: #0c4a6e;
+  border-color: color-mix(in srgb, #0284c7 42%, transparent);
+  background: color-mix(in srgb, #38bdf8 24%, #ffffff);
+}
+
+.admin-plan-chip--pro {
+  color: #065f46;
+  border-color: color-mix(in srgb, #059669 48%, transparent);
+  background: color-mix(in srgb, #34d399 28%, #ffffff);
+}
+
+.admin-plan-chip--pro-plus {
+  color: #92400e;
+  border-color: color-mix(in srgb, #d97706 50%, transparent);
+  background: color-mix(in srgb, #fbbf24 32%, #ffffff);
+}
+
+.admin-plan-chip--other {
+  color: #1e3a5f;
+  border-color: color-mix(in srgb, #3b82f6 40%, transparent);
+  background: color-mix(in srgb, #93c5fd 22%, #ffffff);
+}
+
 .admin-plan-usage {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
+  gap: 1rem;
+  padding: 1.15rem 1.2rem;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface-elevated);
@@ -11872,7 +12007,7 @@ a.exits-chip--primary:hover {
 .admin-plan-usage__meters {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .admin-today__hero {

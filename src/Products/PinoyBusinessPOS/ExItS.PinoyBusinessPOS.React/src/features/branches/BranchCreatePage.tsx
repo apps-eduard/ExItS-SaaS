@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { LockKeyhole, Plus, RotateCcw, X } from "lucide-react";
 import {
@@ -21,19 +21,37 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+function resolveInitialBranchType(
+  typeParam: string | null,
+  warehouseAllowed: boolean,
+): OrganizationBranchType {
+  const normalized = (typeParam ?? "").trim().toLowerCase();
+  if (normalized === "warehouse") {
+    return warehouseAllowed ? "Warehouse" : "Retail";
+  }
+  return "Retail";
+}
+
 export function BranchCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const typeParam = searchParams.get("type");
+
+  const initialType = useMemo(
+    () => resolveInitialBranchType(typeParam, warehouseAllowed),
+    [typeParam, warehouseAllowed],
+  );
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [codeTouched, setCodeTouched] = useState(false);
-  const [branchType, setBranchType] = useState<OrganizationBranchType>("Retail");
+  const [branchType, setBranchType] = useState<OrganizationBranchType>(initialType);
   const [contactPhone, setContactPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -41,6 +59,10 @@ export function BranchCreatePage() {
   const [region, setRegion] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBranchType(resolveInitialBranchType(typeParam, warehouseAllowed));
+  }, [typeParam, warehouseAllowed]);
 
   useEffect(() => {
     if (!codeTouched) {
@@ -52,7 +74,7 @@ export function BranchCreatePage() {
     setName("");
     setCode("");
     setCodeTouched(false);
-    setBranchType("Retail");
+    setBranchType(resolveInitialBranchType(typeParam, warehouseAllowed));
     setContactPhone("");
     setAddressLine1("");
     setAddressLine2("");
@@ -114,6 +136,19 @@ export function BranchCreatePage() {
     },
   });
 
+  const pageTitle =
+    branchType === "Warehouse"
+      ? t("branches.create.title.warehouse")
+      : t("branches.create.title.retail");
+  const detailsTitle =
+    branchType === "Warehouse"
+      ? t("branches.create.details.warehouse")
+      : t("branches.create.details.retail");
+  const submitLabel =
+    branchType === "Warehouse"
+      ? t("branches.create.submit.warehouse")
+      : t("branches.create.submit.retail");
+
   if (!canManage || !canCreate) {
     return (
       <div
@@ -121,7 +156,7 @@ export function BranchCreatePage() {
         data-testid="branch-create-denied"
       >
         <PageHeader
-          title={t("branches.create.title")}
+          title={pageTitle}
           description={t("branches.mgmt.denied")}
           backTo="/org/branches"
           backLabel={t("branches.backList")}
@@ -135,9 +170,10 @@ export function BranchCreatePage() {
     <div
       className="branch-mgmt-page branch-create-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="branch-create-page"
+      data-branch-type={branchType}
     >
       <PageHeader
-        title={t("branches.create.title")}
+        title={pageTitle}
         description={t("branches.create.lede")}
         backTo="/org/branches"
         backLabel={t("branches.backList")}
@@ -157,7 +193,7 @@ export function BranchCreatePage() {
           data-testid="branch-create-details"
         >
           <h2 className="catalog-form-section__title exits-type-section-title">
-            {t("branches.detailsTitle")}
+            {detailsTitle}
           </h2>
           <div className="catalog-form-section__grid">
             <label className="exits-type-label flex flex-col gap-1.5">
@@ -326,9 +362,7 @@ export function BranchCreatePage() {
             data-testid="branch-create-submit"
           >
             <Plus className="size-4 shrink-0" aria-hidden />
-            {createMutation.isPending
-              ? t("branches.create.creating")
-              : t("branches.create.submit")}
+            {createMutation.isPending ? t("branches.create.creating") : submitLabel}
           </Button>
           <Button
             type="button"

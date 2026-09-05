@@ -202,7 +202,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.addressTitle": "Address",
 
-  "branches.backList": "Balik sa mga branch",
+  "branches.backList": "Back to Branches & Warehouses",
 
   "branches.backOrg": "Balik sa organisasyon",
 
@@ -10216,7 +10216,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "staffInvite.posOwnerWarning": "staffInvite.posOwnerWarning",
 
-  "branches.create.capacityExceeded": "Branch limit reached",
+  "branches.create.capacityExceeded": "Location limit reached",
 
   "branches.create.warehouseEntitlement": "Your plan does not include Warehouse branches. Upgrade to Pro or Pro+.",
 
@@ -10232,7 +10232,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.create.failed": "Could not create branch.",
 
-  "branches.create.lede": "Create a new business location. Fulfillment stays off until you configure it.",
+  "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
 
   "branches.create.name": "Branch name",
 
@@ -10242,7 +10242,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.create.success": "Branch created",
 
-  "branches.create.title": "Add branch",
+  "branches.create.title": "Add location",
 
   "branches.detail.archive": "Archive branch",
 
@@ -10320,13 +10320,13 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.devices.manage": "Manage devices",
 
-  "branches.mgmt.add": "Add branch",
+  "branches.mgmt.add": "Add location",
 
-  "branches.mgmt.capacity": "Branch capacity",
+  "branches.mgmt.capacity": "Location capacity",
 
-  "branches.mgmt.capacityLimit": "Your current plan supports up to {allowed} branches.",
+  "branches.mgmt.capacityLimit": "Your current plan supports up to {allowed} locations.",
 
-  "branches.mgmt.capacityOf": "{used} of {allowed} active branches",
+  "branches.mgmt.capacityOf": "{used} of {allowed} active locations",
 
   "branches.mgmt.delivery": "Delivery",
 
@@ -10434,21 +10434,21 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.mgmt.devicesActive": "{count} active",
 
-  "branches.mgmt.emptyDetail": "Add a branch to manage locations and staff access.",
+  "branches.mgmt.emptyDetail": "Add a retail branch or warehouse to manage locations and staff access.",
 
-  "branches.mgmt.emptyTitle": "No branches",
+  "branches.mgmt.emptyTitle": "No locations",
 
   "branches.mgmt.filter.active": "Active",
 
-  "branches.mgmt.filter.all": "All branches",
+  "branches.mgmt.filter.all": "All",
 
   "branches.mgmt.filter.archived": "Archived",
 
   "branches.mgmt.filter.suspended": "Suspended",
 
-  "branches.mgmt.filterLabel": "Branch status filters",
+  "branches.mgmt.filterLabel": "Branch filters",
 
-  "branches.mgmt.lede": "Manage your business locations and branch access.",
+  "branches.mgmt.lede": "Manage retail branches and warehouses for your business.",
 
   "branches.mgmt.loadError": "Could not load branches.",
 
@@ -10476,7 +10476,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.mgmt.status.suspended": "Suspended",
 
-  "branches.mgmt.title": "Branches",
+  "branches.mgmt.title": "Branches & Warehouses",
 
   "branches.staff.add": "Add staff",
 
@@ -10503,6 +10503,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.staff.search": "Search staff",
 
   "org.more.branches": "Branches",
-
+  "branches.mgmt.addRetail": "Add retail branch",
+  "branches.mgmt.addWarehouse": "Add warehouse",
+  "branches.mgmt.addWarehouseLocked": "Available on Pro",
+  "branches.mgmt.addMenuLabel": "Add location options",
+  "branches.mgmt.capacityBreakdown": "{retail} Retail · {warehouse} Warehouses",
+  "branches.mgmt.filter.typeLabel": "Type",
+  "branches.mgmt.filter.statusLabel": "Status",
+  "branches.mgmt.filter.retail": "Retail",
+  "branches.mgmt.filter.warehouse": "Warehouse",
+  "branches.mgmt.warehouseHintTitle": "No warehouses yet",
+  "branches.mgmt.warehouseHintDetail": "Warehouses can receive and store stock, then transfer it to your retail branches.",
+  "branches.mgmt.warehouseHintAdd": "Add warehouse",
+  "branches.create.title.retail": "Add retail branch",
+  "branches.create.title.warehouse": "Add warehouse",
+  "branches.create.details.retail": "Retail branch details",
+  "branches.create.details.warehouse": "Warehouse details",
+  "branches.create.submit.retail": "Create retail branch",
+  "branches.create.submit.warehouse": "Create warehouse"
 };
-

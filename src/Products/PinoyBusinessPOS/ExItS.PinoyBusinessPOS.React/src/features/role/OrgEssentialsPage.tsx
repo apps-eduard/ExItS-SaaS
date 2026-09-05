@@ -7,7 +7,7 @@ import {
   BarChart3,
   LayoutDashboard,
   Map,
-  MapPin,
+  MapPinned,
   MonitorSmartphone,
   Package,
   ShieldAlert,
@@ -35,8 +35,8 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { AdminUsageMeter } from "@/features/admin/AdminUsageMeter";
+import { PlanSubscriptionChip } from "@/features/admin/PlanSubscriptionChip";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -56,7 +56,7 @@ type QuickAction = {
   id: string;
   to: string;
   label: string;
-  icon: typeof MapPin;
+  icon: typeof MapPinned;
   testId: string;
   locked?: boolean;
   lockedHint?: string;
@@ -276,7 +276,7 @@ export function OrgEssentialsPage() {
         id: "branches",
         to: "/org/branches",
         label: t("admin.nav.branchesWarehouses"),
-        icon: MapPin,
+        icon: MapPinned,
         testId: "org-action-branches",
       });
       actions.push({
@@ -357,8 +357,10 @@ export function OrgEssentialsPage() {
         {canDashboard || showPlanSection ? (
           <div className="admin-overview-top" data-testid="org-overview-top">
             {canDashboard ? (
-              <section className="admin-command__section" data-testid="org-group-today">
-                <h2 className="admin-command__title m-0">{t("org.group.today")}</h2>
+              <section className="admin-command__section admin-overview-column" data-testid="org-group-today">
+                <div className="admin-overview-column__header">
+                  <h2 className="admin-command__title m-0">{t("org.group.today")}</h2>
+                </div>
                 {!online ? (
                   <p
                     className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -436,13 +438,14 @@ export function OrgEssentialsPage() {
             ) : null}
 
             {showPlanSection ? (
-              <section className="admin-command__section" data-testid="org-group-plan">
-                <div className="admin-plan-header flex min-w-0 items-center justify-between gap-2">
+              <section className="admin-command__section admin-overview-column" data-testid="org-group-plan">
+                <div className="admin-overview-column__header">
                   <h2 className="admin-command__title m-0">{t("org.group.plan")}</h2>
                   {currentPlanQuery.data?.planDisplayName ? (
-                    <span data-testid="org-plan-chip">
-                      <StatusChip tone="info">{currentPlanQuery.data.planDisplayName}</StatusChip>
-                    </span>
+                    <PlanSubscriptionChip
+                      planKey={currentPlanQuery.data.planKey}
+                      planDisplayName={currentPlanQuery.data.planDisplayName}
+                    />
                   ) : null}
                 </div>
                 <div className="admin-plan-usage" data-testid="org-plan-usage">

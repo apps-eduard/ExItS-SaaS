@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, MapPin, Plus } from "lucide-react";
+import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Warehouse } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
+  canUseWarehouseBranches,
 } from "@/access/pos-capabilities";
 import {
   getBranchCapacity,
@@ -20,13 +21,16 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BottomSheet } from "@/components/exits/SheetDialog";
+import { DropdownMenu, MenuItem } from "@/components/ui/dropdown-menu";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StatusFilter = "all" | "active" | "suspended" | "archived";
+type TypeFilter = "all" | "retail" | "warehouse";
 
 function statusTone(status: string): "success" | "warning" | "info" | "danger" {
   switch (normalizeBranchStatusFilter(status)) {
@@ -54,7 +58,7 @@ function statusLabel(status: string, t: (key: MessageKey) => string): string {
   }
 }
 
-function matchesFilter(branch: BranchManagementSummaryItemDto, filter: StatusFilter): boolean {
+function matchesStatusFilter(branch: BranchManagementSummaryItemDto, filter: StatusFilter): boolean {
   if (filter === "all") {
     return true;
   }
@@ -62,13 +66,27 @@ function matchesFilter(branch: BranchManagementSummaryItemDto, filter: StatusFil
   return normalized === filter;
 }
 
+function matchesTypeFilter(branch: BranchManagementSummaryItemDto, filter: TypeFilter): boolean {
+  if (filter === "all") {
+    return true;
+  }
+  if (filter === "warehouse") {
+    return isWarehouseBranch(branch.branchType);
+  }
+  return !isWarehouseBranch(branch.branchType);
+}
+
 export function BranchManagementListPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
-  const [filter, setFilter] = useState<StatusFilter>("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [menuBranch, setMenuBranch] = useState<BranchManagementSummaryItemDto | null>(null);
 
   const summaryQuery = useQuery({
@@ -95,20 +113,35 @@ export function BranchManagementListPage() {
     },
   });
 
+  const locationCounts = useMemo(() => {
+    const items = summaryQuery.data ?? [];
+    const live = items.filter(
+      (branch) => normalizeBranchStatusFilter(branch.status) !== "Archived",
+    );
+    const retail = live.filter((branch) => !isWarehouseBranch(branch.branchType)).length;
+    const warehouse = live.filter((branch) => isWarehouseBranch(branch.branchType)).length;
+    return { retail, warehouse, live: live.length };
+  }, [summaryQuery.data]);
+
   const branches = useMemo(() => {
     const items = summaryQuery.data ?? [];
     return [...items]
-      .filter((branch) => matchesFilter(branch, filter))
+      .filter(
+        (branch) =>
+          matchesStatusFilter(branch, statusFilter) && matchesTypeFilter(branch, typeFilter),
+      )
       .sort((a, b) => {
         if (a.isPrimary !== b.isPrimary) {
           return a.isPrimary ? -1 : 1;
         }
         return a.name.localeCompare(b.name);
       });
-  }, [summaryQuery.data, filter]);
+  }, [summaryQuery.data, statusFilter, typeFilter]);
 
   const capacity = capacityQuery.data;
   const atLimit = capacity != null && capacity.allowed > 0 && capacity.used >= capacity.allowed;
+  const showWarehouseHint =
+    warehouseAllowed && summaryQuery.isSuccess && locationCounts.warehouse === 0;
 
   const areasQuery = useQuery({
     queryKey: ["organization-areas", organizationId],
@@ -122,12 +155,81 @@ export function BranchManagementListPage() {
     },
   });
 
-  // Single-branch shops with no areas keep the simple UX: no area setup is ever required.
-  const liveBranchCount = (summaryQuery.data ?? []).filter(
-    (branch) => normalizeBranchStatusFilter(branch.status) !== "Archived",
-  ).length;
+  const liveBranchCount = locationCounts.live;
   const showAreasLink =
     canCreate && (liveBranchCount > 1 || (areasQuery.data?.areas.length ?? 0) > 0);
+
+  function goCreate(type: "retail" | "warehouse") {
+    setAddMenuOpen(false);
+    navigate(`/org/branches/new?type=${type}`);
+  }
+
+  const addLocationControl =
+    canCreate ? (
+      atLimit ? (
+        <Button type="button" className="branch-mgmt-add" disabled data-testid="branch-mgmt-add">
+          <Plus className="size-4" aria-hidden />
+          {t("branches.mgmt.add")}
+          <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+        </Button>
+      ) : (
+        <DropdownMenu
+          open={addMenuOpen}
+          onOpenChange={setAddMenuOpen}
+          align="end"
+          menuLabel={t("branches.mgmt.addMenuLabel")}
+          className="branch-mgmt-add-menu"
+          trigger={({ id, expanded, controls, onClick, onKeyDown }) => (
+            <Button
+              type="button"
+              id={id}
+              className="branch-mgmt-add"
+              data-testid="branch-mgmt-add"
+              aria-haspopup="menu"
+              aria-expanded={expanded}
+              aria-controls={controls}
+              onClick={onClick}
+              onKeyDown={onKeyDown}
+            >
+              <Plus className="size-4" aria-hidden />
+              {t("branches.mgmt.add")}
+              <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+            </Button>
+          )}
+        >
+          <MenuItem
+            data-testid="branch-mgmt-add-retail"
+            onSelect={() => goCreate("retail")}
+          >
+            <MapPin className="size-4 shrink-0" aria-hidden />
+            {t("branches.mgmt.addRetail")}
+          </MenuItem>
+          {warehouseAllowed ? (
+            <MenuItem
+              data-testid="branch-mgmt-add-warehouse"
+              onSelect={() => goCreate("warehouse")}
+            >
+              <Warehouse className="size-4 shrink-0" aria-hidden />
+              {t("branches.mgmt.addWarehouse")}
+            </MenuItem>
+          ) : (
+            <MenuItem
+              data-testid="branch-mgmt-add-warehouse-locked"
+              disabled
+              onSelect={() => undefined}
+            >
+              <LockKeyhole className="size-4 shrink-0" aria-hidden />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span>{t("branches.mgmt.addWarehouse")}</span>
+                <span className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+                  {t("branches.mgmt.addWarehouseLocked")}
+                </span>
+              </span>
+            </MenuItem>
+          )}
+        </DropdownMenu>
+      )
+    ) : null;
 
   if (!canManage) {
     return (
@@ -151,6 +253,7 @@ export function BranchManagementListPage() {
         backTo={pageBackNav.org.to}
         backLabel={t(pageBackNav.org.labelKey)}
         backTestId="page-header-back-org"
+        trailing={addLocationControl}
       />
 
       {capacity ? (
@@ -161,6 +264,14 @@ export function BranchManagementListPage() {
               .replace("{used}", String(capacity.used))
               .replace("{allowed}", String(capacity.allowed))}
           </p>
+          <p
+            className="branch-mgmt-capacity__breakdown m-0"
+            data-testid="branch-mgmt-capacity-breakdown"
+          >
+            {t("branches.mgmt.capacityBreakdown")
+              .replace("{retail}", String(locationCounts.retail))
+              .replace("{warehouse}", String(locationCounts.warehouse))}
+          </p>
           {atLimit ? (
             <p className="branch-mgmt-capacity__limit m-0" data-testid="branch-mgmt-capacity-limit">
               {t("branches.mgmt.capacityLimit").replace("{allowed}", String(capacity.allowed))}
@@ -169,42 +280,101 @@ export function BranchManagementListPage() {
         </div>
       ) : null}
 
+      {showWarehouseHint ? (
+        <div className="branch-mgmt-warehouse-hint" data-testid="branch-mgmt-warehouse-hint">
+          <div className="branch-mgmt-warehouse-hint__copy">
+            <p className="branch-mgmt-warehouse-hint__title m-0">
+              {t("branches.mgmt.warehouseHintTitle")}
+            </p>
+            <p className="branch-mgmt-warehouse-hint__detail m-0">
+              {t("branches.mgmt.warehouseHintDetail")}
+            </p>
+          </div>
+          {canCreate && !atLimit ? (
+            <Button asChild variant="outline" data-testid="branch-mgmt-warehouse-hint-add">
+              <Link to="/org/branches/new?type=warehouse">
+                <Plus className="size-4" aria-hidden />
+                {t("branches.mgmt.warehouseHintAdd")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="branch-mgmt-toolbar">
-        <ExitsChipBar
-          ariaLabel={t("branches.mgmt.filterLabel")}
-          testId="branch-mgmt-filters"
-          variant="filter"
-          items={[
-            {
-              key: "active",
-              label: t("branches.mgmt.filter.active"),
-              state: filter === "active" ? "active" : "idle",
-              testId: "branch-mgmt-filter-active",
-              onSelect: () => setFilter("active"),
-            },
-            {
-              key: "suspended",
-              label: t("branches.mgmt.filter.suspended"),
-              state: filter === "suspended" ? "active" : "idle",
-              testId: "branch-mgmt-filter-suspended",
-              onSelect: () => setFilter("suspended"),
-            },
-            {
-              key: "archived",
-              label: t("branches.mgmt.filter.archived"),
-              state: filter === "archived" ? "active" : "idle",
-              testId: "branch-mgmt-filter-archived",
-              onSelect: () => setFilter("archived"),
-            },
-            {
-              key: "all",
-              label: t("branches.mgmt.filter.all"),
-              state: filter === "all" ? "active" : "idle",
-              testId: "branch-mgmt-filter-all",
-              onSelect: () => setFilter("all"),
-            },
-          ]}
-        />
+        <div className="branch-mgmt-filters flex min-w-0 flex-col gap-2">
+          <div className="branch-mgmt-filter-group">
+            <span className="branch-mgmt-filter-group__label">{t("branches.mgmt.filter.typeLabel")}</span>
+            <ExitsChipBar
+              ariaLabel={t("branches.mgmt.filter.typeLabel")}
+              testId="branch-mgmt-type-filters"
+              variant="filter"
+              items={[
+                {
+                  key: "all",
+                  label: t("branches.mgmt.filter.all"),
+                  state: typeFilter === "all" ? "active" : "idle",
+                  testId: "branch-mgmt-type-all",
+                  onSelect: () => setTypeFilter("all"),
+                },
+                {
+                  key: "retail",
+                  label: t("branches.mgmt.filter.retail"),
+                  state: typeFilter === "retail" ? "active" : "idle",
+                  testId: "branch-mgmt-type-retail",
+                  onSelect: () => setTypeFilter("retail"),
+                },
+                {
+                  key: "warehouse",
+                  label: t("branches.mgmt.filter.warehouse"),
+                  state: typeFilter === "warehouse" ? "active" : "idle",
+                  testId: "branch-mgmt-type-warehouse",
+                  onSelect: () => setTypeFilter("warehouse"),
+                },
+              ]}
+            />
+          </div>
+          <div className="branch-mgmt-filter-group">
+            <span className="branch-mgmt-filter-group__label">
+              {t("branches.mgmt.filter.statusLabel")}
+            </span>
+            <ExitsChipBar
+              ariaLabel={t("branches.mgmt.filter.statusLabel")}
+              testId="branch-mgmt-status-filters"
+              variant="filter"
+              items={[
+                {
+                  key: "all",
+                  label: t("branches.mgmt.filter.all"),
+                  state: statusFilter === "all" ? "active" : "idle",
+                  testId: "branch-mgmt-filter-all",
+                  onSelect: () => setStatusFilter("all"),
+                },
+                {
+                  key: "active",
+                  label: t("branches.mgmt.filter.active"),
+                  state: statusFilter === "active" ? "active" : "idle",
+                  testId: "branch-mgmt-filter-active",
+                  onSelect: () => setStatusFilter("active"),
+                },
+                {
+                  key: "suspended",
+                  label: t("branches.mgmt.filter.suspended"),
+                  state: statusFilter === "suspended" ? "active" : "idle",
+                  testId: "branch-mgmt-filter-suspended",
+                  onSelect: () => setStatusFilter("suspended"),
+                },
+                {
+                  key: "archived",
+                  label: t("branches.mgmt.filter.archived"),
+                  state: statusFilter === "archived" ? "active" : "idle",
+                  testId: "branch-mgmt-filter-archived",
+                  onSelect: () => setStatusFilter("archived"),
+                },
+              ]}
+            />
+          </div>
+        </div>
         {showAreasLink ? (
           <Button asChild variant="outline" data-testid="branch-mgmt-areas">
             <Link to="/org/areas">
@@ -212,21 +382,6 @@ export function BranchManagementListPage() {
               {t("areas.title")}
             </Link>
           </Button>
-        ) : null}
-        {canCreate ? (
-          atLimit ? (
-            <Button type="button" className="branch-mgmt-add" disabled data-testid="branch-mgmt-add">
-              <Plus className="size-4" aria-hidden />
-              {t("branches.mgmt.add")}
-            </Button>
-          ) : (
-            <Button asChild className="branch-mgmt-add" data-testid="branch-mgmt-add">
-              <Link to="/org/branches/new">
-                <Plus className="size-4" aria-hidden />
-                {t("branches.mgmt.add")}
-              </Link>
-            </Button>
-          )
         ) : null}
       </div>
 
@@ -253,6 +408,7 @@ export function BranchManagementListPage() {
         <ul className="branch-mgmt-list m-0 grid list-none p-0" data-testid="branch-mgmt-items">
           {branches.map((branch) => {
             const location = [branch.city, branch.region].filter(Boolean).join(", ");
+            const warehouse = isWarehouseBranch(branch.branchType);
             return (
               <li key={branch.id}>
                 <article
@@ -274,10 +430,8 @@ export function BranchManagementListPage() {
                     </div>
                     <div className="exits-entity-card__badges">
                       <span data-testid={`branch-mgmt-type-${branch.id}`}>
-                        <StatusChip tone={branch.branchType === "Warehouse" ? "warning" : "info"}>
-                          {branch.branchType === "Warehouse"
-                            ? t("branches.type.warehouse")
-                            : t("branches.type.retail")}
+                        <StatusChip tone={warehouse ? "warning" : "info"}>
+                          {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
                         </StatusChip>
                       </span>
                       {branch.isPrimary ? (
@@ -315,33 +469,39 @@ export function BranchManagementListPage() {
                         </dd>
                       </div>
                     ) : null}
-                    <div className="exits-entity-card__meta-item">
-                      <dt>{t("branches.mgmt.pickup")}</dt>
-                      <dd data-testid={`branch-mgmt-pickup-${branch.id}`}>
-                        {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
-                      </dd>
-                    </div>
-                    <div className="exits-entity-card__meta-item">
-                      <dt>{t("branches.mgmt.delivery")}</dt>
-                      <dd data-testid={`branch-mgmt-delivery-${branch.id}`}>
-                        {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
-                      </dd>
-                    </div>
+                    {!warehouse ? (
+                      <>
+                        <div className="exits-entity-card__meta-item">
+                          <dt>{t("branches.mgmt.pickup")}</dt>
+                          <dd data-testid={`branch-mgmt-pickup-${branch.id}`}>
+                            {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                          </dd>
+                        </div>
+                        <div className="exits-entity-card__meta-item">
+                          <dt>{t("branches.mgmt.delivery")}</dt>
+                          <dd data-testid={`branch-mgmt-delivery-${branch.id}`}>
+                            {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                          </dd>
+                        </div>
+                      </>
+                    ) : null}
                   </dl>
 
                   <div className="exits-entity-card__actions">
                     <Button asChild variant="outline" data-testid={`branch-mgmt-open-${branch.id}`}>
                       <Link to={`/org/branches/${branch.id}`}>{t("branches.mgmt.open")}</Link>
                     </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      data-testid={`branch-mgmt-view-qr-${branch.id}`}
-                    >
-                      <Link to={`/org/branches/${branch.id}?focus=qr#branch-storefront-qr`}>
-                        {t("branches.mgmt.viewQr")}
-                      </Link>
-                    </Button>
+                    {!warehouse ? (
+                      <Button
+                        asChild
+                        variant="outline"
+                        data-testid={`branch-mgmt-view-qr-${branch.id}`}
+                      >
+                        <Link to={`/org/branches/${branch.id}?focus=qr#branch-storefront-qr`}>
+                          {t("branches.mgmt.viewQr")}
+                        </Link>
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       variant="ghost"
@@ -375,23 +535,26 @@ export function BranchManagementListPage() {
                 {t("branches.mgmt.open")}
               </Link>
             </Button>
-            <Button asChild variant="outline" className="justify-start">
-              <Link
-                to={`/org/branches/${menuBranch.id}?focus=qr#branch-storefront-qr`}
-                onClick={() => setMenuBranch(null)}
-              >
-                {t("branches.mgmt.viewQr")}
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="justify-start">
-              <Link
-                to={`/org/branches/${menuBranch.id}/fulfillment`}
-                onClick={() => setMenuBranch(null)}
-              >
-                {t("branches.detail.configureFulfillment")}
-              </Link>
-            </Button>
-            {/* Explicitly no Delete action — archive is lifecycle-only on detail. */}
+            {!isWarehouseBranch(menuBranch.branchType) ? (
+              <Button asChild variant="outline" className="justify-start">
+                <Link
+                  to={`/org/branches/${menuBranch.id}?focus=qr#branch-storefront-qr`}
+                  onClick={() => setMenuBranch(null)}
+                >
+                  {t("branches.mgmt.viewQr")}
+                </Link>
+              </Button>
+            ) : null}
+            {!isWarehouseBranch(menuBranch.branchType) ? (
+              <Button asChild variant="outline" className="justify-start">
+                <Link
+                  to={`/org/branches/${menuBranch.id}/fulfillment`}
+                  onClick={() => setMenuBranch(null)}
+                >
+                  {t("branches.detail.configureFulfillment")}
+                </Link>
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </BottomSheet>

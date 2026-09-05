@@ -5,7 +5,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Map,
-  MapPin,
+  MapPinned,
   MonitorSmartphone,
   QrCode,
   Settings,
@@ -137,8 +137,7 @@ export function buildAdminNavGroups(
       id: "branches",
       to: "/org/branches",
       labelKey: "admin.nav.branchesWarehouses",
-      icon: MapPin,
-      testId: "admin-nav-branches",
+      icon: MapPinned,
       matchPrefixes: ["/org/branches"],
     });
     organizationItems.push({

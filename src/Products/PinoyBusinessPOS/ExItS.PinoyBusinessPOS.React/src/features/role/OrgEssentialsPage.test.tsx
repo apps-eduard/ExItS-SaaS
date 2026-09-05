@@ -182,6 +182,8 @@ describe("POS-ADMIN-OVERVIEW-V2", () => {
 
     expect(screen.getByTestId("org-group-today")).toHaveTextContent("Today");
     expect(screen.getByTestId("org-group-plan")).toHaveTextContent("Plan");
+    expect(screen.getByTestId("org-plan-chip")).toHaveTextContent("Pro");
+    expect(screen.getByTestId("org-plan-chip")).toHaveAttribute("data-plan", "pro");
     expect(screen.getByTestId("org-plan-usage")).toHaveTextContent("Usage");
     expect(screen.getByTestId("org-plan-usage")).not.toHaveTextContent("Plan usage");
     expect(screen.queryByTestId("org-plan-usage-mobile")).not.toBeInTheDocument();

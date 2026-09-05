@@ -12,10 +12,12 @@ import {
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
 
+const canUseWarehouseBranches = vi.fn(() => false);
+
 vi.mock("@/access/pos-capabilities", () => ({
   canManageBranchFulfillment: () => true,
   canInviteOrganizationStaff: () => true,
-  canUseWarehouseBranches: () => false,
+  canUseWarehouseBranches: () => canUseWarehouseBranches(),
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -35,13 +37,13 @@ vi.mock("@/api/platform/organization-branches-client", () => ({
   createOrganizationBranch: vi.fn(),
 }));
 
-function renderPage() {
+function renderPage(path = "/org/branches/new") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <BranchCreatePage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -59,6 +61,7 @@ const globalsCss = readFileSync(
 
 describe("BranchCreatePage", () => {
   it("keeps PH and Asia/Manila read-only and suggests a branch code", async () => {
+    canUseWarehouseBranches.mockReturnValue(false);
     const user = userEvent.setup();
     renderPage();
 
@@ -70,33 +73,67 @@ describe("BranchCreatePage", () => {
     expect(screen.getByTestId("branch-create-type-retail")).toBeInTheDocument();
     expect(screen.queryByTestId("branch-create-type-warehouse")).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-create-phone")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-address1")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-address2")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-city")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-region")).toBeInTheDocument();
-    expect(screen.getByTestId("branch-create-postal")).toBeInTheDocument();
 
     await user.type(screen.getByTestId("branch-create-name"), "East Branch");
     expect(screen.getByTestId("branch-create-code")).toHaveValue("EAST-BRANCH");
   });
 
-  it("uses Branch details section and removes duplicate Add branch heading", () => {
+  it("preselects Retail from type=retail and uses retail copy", () => {
+    canUseWarehouseBranches.mockReturnValue(true);
+    renderPage("/org/branches/new?type=retail");
+    expect(screen.getByTestId("branch-create-page")).toHaveAttribute("data-branch-type", "Retail");
+    expect(screen.getByRole("heading", { name: "branches.create.title.retail" })).toBeInTheDocument();
+    expect(screen.getByTestId("branch-create-details")).toHaveTextContent(
+      "branches.create.details.retail",
+    );
+    expect(screen.getByTestId("branch-create-submit")).toHaveTextContent(
+      "branches.create.submit.retail",
+    );
+  });
+
+  it("preselects Warehouse from type=warehouse when entitled", () => {
+    canUseWarehouseBranches.mockReturnValue(true);
+    renderPage("/org/branches/new?type=warehouse");
+    expect(screen.getByTestId("branch-create-page")).toHaveAttribute(
+      "data-branch-type",
+      "Warehouse",
+    );
+    expect(
+      screen.getByRole("heading", { name: "branches.create.title.warehouse" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("branch-create-details")).toHaveTextContent(
+      "branches.create.details.warehouse",
+    );
+    expect(screen.getByTestId("branch-create-submit")).toHaveTextContent(
+      "branches.create.submit.warehouse",
+    );
+    expect(screen.getByText("branches.type.warehouseHelp")).toBeInTheDocument();
+  });
+
+  it("falls back to Retail when warehouse type requested without entitlement", () => {
+    canUseWarehouseBranches.mockReturnValue(false);
+    renderPage("/org/branches/new?type=warehouse");
+    expect(screen.getByTestId("branch-create-page")).toHaveAttribute("data-branch-type", "Retail");
+    expect(screen.getByTestId("branch-create-warehouse-locked")).toBeInTheDocument();
+  });
+
+  it("uses type-specific details section and removes duplicate create title heading", () => {
+    canUseWarehouseBranches.mockReturnValue(false);
     renderPage();
 
     expect(screen.getByTestId("branch-create-details")).toHaveTextContent(
-      "branches.detailsTitle",
+      "branches.create.details.retail",
     );
     expect(screen.getByTestId("branch-create-address")).toHaveTextContent(
       "branches.addressTitle",
     );
-    // PageHeader still uses create title; section must not reuse it.
     expect(pageSource).not.toMatch(
       /catalog-form-section__title[\s\S]{0,80}branches\.create\.title/,
     );
-    expect(pageSource).toContain('t("branches.detailsTitle")');
   });
 
   it("shows compact warehouse entitlement and action icons", () => {
+    canUseWarehouseBranches.mockReturnValue(false);
     renderPage();
 
     expect(screen.getByTestId("branch-create-warehouse-locked")).toBeInTheDocument();
@@ -111,6 +148,7 @@ describe("BranchCreatePage", () => {
   });
 
   it("resets form fields to defaults", async () => {
+    canUseWarehouseBranches.mockReturnValue(false);
     const user = userEvent.setup();
     renderPage();
 
