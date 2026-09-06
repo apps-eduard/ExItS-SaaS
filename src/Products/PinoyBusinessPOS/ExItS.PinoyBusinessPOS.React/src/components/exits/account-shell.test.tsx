@@ -100,10 +100,10 @@ describe("account shell", () => {
 
     const trigger = screen.getByTestId("account-menu-trigger");
     expect(trigger).toHaveTextContent("OM");
-    expect(screen.getByTestId("workspace-context")).toHaveTextContent("Kizy Store");
+    expect(screen.getByTestId("workspace-context")).toHaveTextContent("Main Branch");
     const mobileContext = screen.getByTestId("workspace-context-mobile");
-    expect(mobileContext).toHaveTextContent("Kizy Store");
     expect(mobileContext).toHaveTextContent("Main Branch");
+    expect(mobileContext).not.toHaveTextContent("Kizy Store");
     expect(screen.queryByRole("button", { name: "Preferences" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
@@ -168,7 +168,7 @@ describe("account shell", () => {
     );
     expect(screen.getByTestId("workspace-context")).toHaveAttribute(
       "title",
-      expect.stringContaining("Very Long Organization"),
+      expect.stringContaining("Main Branch"),
     );
   });
 

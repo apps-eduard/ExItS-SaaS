@@ -177,7 +177,13 @@ describe("workspace destinations", () => {
 
     expect(warehouseOps).toHaveLength(1);
     expect(warehouseOps[0]?.labelKey).toBe("experience.warehouseOperations");
+    expect(warehouseOps[0]?.route).toBe("/warehouse");
     expect(warehouseSell).toHaveLength(0);
     expect(retailSell).toHaveLength(1);
+    expect(retailSell[0]?.route).toBe("/sell");
+    const retailOps = destinations.filter(
+      (d) => d.branchId === "b1" && d.experience === "operations",
+    );
+    expect(retailOps[0]?.route).toBe("/role/manager");
   });
 });

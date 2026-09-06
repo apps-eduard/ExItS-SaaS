@@ -10149,6 +10149,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Indi na available ang dati nga napilian nga workspace. Pilia liwat.",
 
   "workspace.switch": "Islan ang workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
 
   "workspace.switchExperience": "Islan ang experience",
 

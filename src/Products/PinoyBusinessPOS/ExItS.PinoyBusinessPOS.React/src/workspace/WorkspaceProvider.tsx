@@ -159,6 +159,8 @@ function findBranchLabel(
   organizationDisplayName: string;
   branchName: string;
   branchType: import("@/features/branches/branch-type").OrganizationBranchType;
+  areaId: string | null;
+  areaName: string | null;
 } | null {
   const organization = workspaces.find((item) => item.organizationId === organizationId);
   const branch = organization?.branches.find((item) => item.branchId === branchId);
@@ -169,6 +171,8 @@ function findBranchLabel(
     organizationDisplayName: organization.displayName,
     branchName: branch.name,
     branchType: branch.branchType ?? "Retail",
+    areaId: branch.areaId ?? null,
+    areaName: branch.areaName ?? null,
   };
 }
 
@@ -195,6 +199,8 @@ function boundFromDestination(
       branchId: destination.branchId,
       branchName: labels?.branchName ?? destination.branchName ?? destination.branchId,
       branchType: branchTypeOverride ?? labels?.branchType ?? "Retail",
+      areaId: labels?.areaId ?? null,
+      areaName: labels?.areaName ?? null,
       experience: destination.experience,
     };
   }
@@ -204,6 +210,8 @@ function boundFromDestination(
     branchId: null,
     branchName: null,
     branchType: null,
+    areaId: null,
+    areaName: null,
     experience: destination.experience,
   };
 }

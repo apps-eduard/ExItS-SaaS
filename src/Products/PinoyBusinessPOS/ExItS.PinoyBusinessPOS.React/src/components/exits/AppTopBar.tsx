@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, ChevronDown } from "lucide-react";
+import { ChevronDown, MapPin, Store, Warehouse } from "lucide-react";
 import { listOrganizationNotifications } from "@/api/platform/organization-notifications-client";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
@@ -14,6 +14,10 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
+import {
+  isWorkspaceChooserPath,
+  resolveWorkspaceLocationIndicator,
+} from "@/workspace/workspace-location-indicator";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
 
@@ -54,6 +58,30 @@ export function AppTopBar() {
   const unreadCount = countUnreadOrganizationNotifications(notificationsQuery.data);
   const badge = formatUnreadNotificationBadge(unreadCount);
 
+  const indicator = useMemo(
+    () =>
+      resolveWorkspaceLocationIndicator({
+        boundWorkspace,
+        workspaces,
+        chooseWorkspaceLabel: t("workspace.title"),
+        retailLabel: t("branches.type.retail"),
+        warehouseLabel: t("branches.type.warehouse"),
+      }),
+    [boundWorkspace, t, workspaces],
+  );
+
+  const LocationIcon =
+    indicator.typeLabel === "Warehouse"
+      ? Warehouse
+      : indicator.typeLabel === "Retail"
+        ? Store
+        : MapPin;
+
+  const showWorkspaceControl = Boolean(boundWorkspace) || canSwitchWorkspace;
+  const ariaLabel = canSwitchWorkspace
+    ? t("workspace.changeLocationAria").replace("{details}", indicator.detailsForAria)
+    : indicator.detailsForAria;
+
   async function handleSignOut() {
     if (signingOut) {
       return;
@@ -74,16 +102,47 @@ export function AppTopBar() {
     navigate(result.nextRoute, { replace: true });
   }
 
-  const workspaceLabel = boundWorkspace
-    ? boundWorkspace.branchName
-      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-      : boundWorkspace.organizationDisplayName
-    : null;
-
   function openWorkspaceSwitcher() {
-    if (canSwitchWorkspace) {
-      navigate("/workspace");
-    }
+    if (!canSwitchWorkspace) return;
+    if (isWorkspaceChooserPath(location.pathname)) return;
+    navigate("/workspace");
+  }
+
+  function renderWorkspaceButton(testId: string, stacked: boolean) {
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        data-has-location={indicator.hasBoundLocation ? "true" : "false"}
+        data-location-type={indicator.typeLabel ?? "none"}
+        className={cn(
+          "app-top-bar__workspace",
+          stacked && "app-top-bar__workspace--stacked",
+          canSwitchWorkspace
+            ? "app-top-bar__workspace--interactive"
+            : "app-top-bar__workspace--static",
+        )}
+        title={indicator.title}
+        aria-label={ariaLabel}
+        onClick={openWorkspaceSwitcher}
+        disabled={!canSwitchWorkspace}
+      >
+        <LocationIcon className="app-top-bar__workspace-icon" aria-hidden />
+        <span className="app-top-bar__workspace-text app-top-bar__workspace-text--stacked">
+          <span className="app-top-bar__workspace-primary" data-testid={`${testId}-primary`}>
+            {indicator.primary}
+          </span>
+          {indicator.secondary ? (
+            <span className="app-top-bar__workspace-secondary" data-testid={`${testId}-secondary`}>
+              {indicator.secondary}
+            </span>
+          ) : null}
+        </span>
+        {canSwitchWorkspace ? (
+          <ChevronDown className="app-top-bar__workspace-chevron" aria-hidden />
+        ) : null}
+      </button>
+    );
   }
 
   return (
@@ -94,32 +153,8 @@ export function AppTopBar() {
             E
           </span>
           <div className="app-top-bar__brand-copy md:hidden">
-            {boundWorkspace ? (
-              <button
-                type="button"
-                data-testid="workspace-context-mobile"
-                className={cn(
-                  "app-top-bar__workspace app-top-bar__workspace--stacked",
-                  canSwitchWorkspace
-                    ? "app-top-bar__workspace--interactive"
-                    : "app-top-bar__workspace--static",
-                )}
-                title={workspaceLabel ?? undefined}
-                aria-label={
-                  canSwitchWorkspace
-                    ? `${t("workspace.switch")}: ${workspaceLabel}`
-                    : (workspaceLabel ?? undefined)
-                }
-                onClick={openWorkspaceSwitcher}
-                disabled={!canSwitchWorkspace}
-              >
-                <span className="app-top-bar__workspace-org">
-                  {boundWorkspace.organizationDisplayName}
-                </span>
-                <span className="app-top-bar__workspace-branch">
-                  {boundWorkspace.branchName ?? t("experience.manageBusiness")}
-                </span>
-              </button>
+            {showWorkspaceControl ? (
+              renderWorkspaceButton("workspace-context-mobile", true)
             ) : (
               <p className="app-top-bar__app-name">{t("app.name")}</p>
             )}
@@ -130,45 +165,8 @@ export function AppTopBar() {
         </div>
 
         <div className="app-top-bar__center hidden md:flex">
-          {boundWorkspace ? (
-            <button
-              type="button"
-              data-testid="workspace-context"
-              className={cn(
-                "app-top-bar__workspace",
-                canSwitchWorkspace
-                  ? "app-top-bar__workspace--interactive"
-                  : "app-top-bar__workspace--static",
-              )}
-              title={workspaceLabel ?? undefined}
-              aria-label={
-                canSwitchWorkspace
-                  ? `${t("workspace.switch")}: ${workspaceLabel}`
-                  : (workspaceLabel ?? undefined)
-              }
-              onClick={openWorkspaceSwitcher}
-              disabled={!canSwitchWorkspace}
-            >
-              <Building2 className="app-top-bar__workspace-icon" aria-hidden />
-              <span className="app-top-bar__workspace-text">
-                <span className="app-top-bar__workspace-org">
-                  {boundWorkspace.organizationDisplayName}
-                </span>
-                {boundWorkspace.branchName ? (
-                  <>
-                    <span className="app-top-bar__workspace-sep" aria-hidden>
-                      ·
-                    </span>
-                    <span className="app-top-bar__workspace-branch">
-                      {boundWorkspace.branchName}
-                    </span>
-                  </>
-                ) : null}
-              </span>
-              {canSwitchWorkspace ? (
-                <ChevronDown className="app-top-bar__workspace-chevron" aria-hidden />
-              ) : null}
-            </button>
+          {showWorkspaceControl ? (
+            renderWorkspaceButton("workspace-context", false)
           ) : (
             <span className="sr-only">{t("topbar.workspacePending")}</span>
           )}

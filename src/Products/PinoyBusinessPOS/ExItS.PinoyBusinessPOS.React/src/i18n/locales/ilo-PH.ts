@@ -10149,6 +10149,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Saanen a magun-od ti dati a napili a workspace. Agpili manen.",
 
   "workspace.switch": "Sukatan ti workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
 
   "workspace.switchExperience": "Sukatan ti experience",
 

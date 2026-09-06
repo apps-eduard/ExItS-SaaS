@@ -64,7 +64,8 @@ export function buildOrganizationDestinations(input: {
         branchId: branch.branchId,
         branchName: branch.name,
         experience: "operations",
-        route: workingExperienceRoute("operations"),
+        // Warehouse Operations lands on canonical warehouse home; retail ops keep role/manager.
+        route: warehouse ? "/warehouse" : workingExperienceRoute("operations"),
         labelKey: warehouse ? "experience.warehouseOperations" : "experience.operations",
       });
     }

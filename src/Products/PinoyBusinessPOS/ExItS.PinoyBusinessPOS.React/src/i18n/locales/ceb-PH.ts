@@ -10149,6 +10149,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Dili na available ang miaging napili nga workspace. Pilia pag-usab.",
 
   "workspace.switch": "Ilisan ang workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
 
   "workspace.switchExperience": "Ilisan ang experience",
 

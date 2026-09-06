@@ -10147,6 +10147,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "workspace.previousWorkspaceInaccessible": "Hindi na available ang dating napiling workspace. Pumili muli.",
 
   "workspace.switch": "Magpalit ng workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
 
   "workspace.switchExperience": "Magpalit ng experience",
 

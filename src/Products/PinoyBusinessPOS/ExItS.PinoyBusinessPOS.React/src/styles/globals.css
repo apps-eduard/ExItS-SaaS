@@ -7849,17 +7849,25 @@ a.dashboard-metric-card:focus-visible {
 .app-top-bar__center {
   min-width: 0;
   justify-content: center;
+  max-width: min(22rem, 42vw);
+}
+
+@media (min-width: 1024px) {
+  .app-top-bar__center {
+    max-width: min(23.75rem, 38vw);
+  }
 }
 
 .app-top-bar__workspace {
   display: inline-flex;
   max-width: 100%;
   min-width: 0;
+  min-height: 2.5rem;
   align-items: center;
   gap: 0.45rem;
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--exits-border);
-  border-radius: 9999px;
+  border-radius: var(--exits-radius-md);
   background: color-mix(in srgb, var(--exits-surface) 92%, transparent);
   color: var(--exits-text);
   text-align: left;
@@ -7876,12 +7884,13 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .app-top-bar__workspace--stacked {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.05rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
   max-width: 100%;
-  padding: 0.2rem 0.45rem;
+  min-height: 0;
+  padding: 0.15rem 0.35rem;
   border: none;
   background: transparent;
   border-radius: var(--exits-radius-md);
@@ -7926,6 +7935,37 @@ a.dashboard-metric-card:focus-visible {
   white-space: nowrap;
 }
 
+.app-top-bar__workspace-text--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  white-space: normal;
+}
+
+.app-top-bar__workspace-primary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--exits-text);
+}
+
+.app-top-bar__workspace-secondary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--exits-text-xs);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--exits-text-muted);
+}
+
 .app-top-bar__workspace-org {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7950,6 +7990,16 @@ a.dashboard-metric-card:focus-visible {
 
 .app-top-bar__workspace--stacked .app-top-bar__workspace-branch {
   font-size: var(--exits-text-xs);
+}
+
+.app-top-bar__workspace--stacked .app-top-bar__workspace-secondary {
+  display: block;
+}
+
+@media (max-width: 379px) {
+  .app-top-bar__workspace--stacked .app-top-bar__workspace-secondary {
+    display: none;
+  }
 }
 
 .app-top-bar__actions {

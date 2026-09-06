@@ -155,6 +155,7 @@ export function WorkspaceChooserPage() {
   const {
     status,
     workspaces,
+    boundWorkspace,
     accessDeniedDetail,
     bindFailureKind,
     failureDiagnostic,
@@ -164,6 +165,7 @@ export function WorkspaceChooserPage() {
     ensureOrganizationGrantHint,
     retryOrganizationGrantHint,
   } = useWorkspace();
+  const currentBranchId = boundWorkspace?.branchId ?? null;
   const canCollapseOrgs = workspaces.length > 1;
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(() =>
     workspaces.length === 1 ? (workspaces[0]?.organizationId ?? null) : null,
@@ -349,6 +351,7 @@ export function WorkspaceChooserPage() {
           grantResolved
           staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
           bindingKey={bindingKey}
+          currentBranchId={currentBranchId}
           onSelectDestination={(destination) => void selectDestination(destination)}
           t={t}
         />
@@ -449,6 +452,7 @@ export function WorkspaceChooserPage() {
               grantResolved={Boolean(grantState.grant)}
               staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
               bindingKey={bindingKey}
+              currentBranchId={currentBranchId}
               onSelectDestination={(destination) => void selectDestination(destination)}
               t={t}
             />
@@ -495,6 +499,7 @@ function OrganizationWorkspaceCard({
   grantResolved,
   staffCountByBranch,
   bindingKey,
+  currentBranchId,
   onSelectDestination,
   t,
 }: {
@@ -506,6 +511,7 @@ function OrganizationWorkspaceCard({
   grantResolved: boolean;
   staffCountByBranch: Map<string, number> | null;
   bindingKey: string | null;
+  currentBranchId: string | null;
   onSelectDestination: (destination: WorkspaceDestination) => void;
   t: (key: MessageKey) => string;
 }) {
@@ -531,6 +537,7 @@ function OrganizationWorkspaceCard({
 
   function renderBranchTile(branch: AccessibleWorkspaceBranch) {
     const warehouse = isWarehouseBranch(branch.branchType);
+    const isCurrent = Boolean(currentBranchId && currentBranchId === branch.branchId);
     const branchDestinations = destinations.filter((d) => d.branchId === branch.branchId);
     const meta = branchCardMetaLine({
       grant,
@@ -543,6 +550,7 @@ function OrganizationWorkspaceCard({
         className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
         data-testid={`workspace-branch-${branch.branchId}`}
         data-branch-type={warehouse ? "Warehouse" : "Retail"}
+        data-current={isCurrent ? "true" : "false"}
       >
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
           <p className="m-0 min-w-0 flex-1 truncate font-semibold">{branch.name}</p>
@@ -550,6 +558,11 @@ function OrganizationWorkspaceCard({
             <StatusChip tone={warehouse ? "warning" : "info"}>
               {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
             </StatusChip>
+            {isCurrent ? (
+              <span data-testid={`workspace-branch-current-${branch.branchId}`}>
+                <StatusChip tone="success">{t("workspace.current")}</StatusChip>
+              </span>
+            ) : null}
             {!warehouse && branch.isPrimary ? (
               <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
             ) : null}

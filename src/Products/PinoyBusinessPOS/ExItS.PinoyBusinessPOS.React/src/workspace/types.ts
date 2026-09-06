@@ -35,5 +35,8 @@ export type BoundWorkspace = {
   branchName: string | null;
   /** Null when no branch is bound (Manage Business). Defaults to Retail when bound. */
   branchType?: import("@/features/branches/branch-type").OrganizationBranchType | null;
+  /** Grouping context only — never an operational workspace. */
+  areaId?: string | null;
+  areaName?: string | null;
   experience: import("@/workspace/working-experience").WorkingExperience;
 };

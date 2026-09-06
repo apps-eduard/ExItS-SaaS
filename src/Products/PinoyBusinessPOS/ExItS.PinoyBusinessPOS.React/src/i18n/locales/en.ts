@@ -830,6 +830,8 @@ export const en = {
   "workspace.managementTeam": "Management team",
   "workspace.noActiveBranches": "No active branches yet. Manage business is still available.",
   "workspace.switch": "Switch workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
   "workspace.switchExperience": "Switch experience",
   "workspace.branchRequiredTitle": "Choose a branch",
   "workspace.branchRequiredDetail":
