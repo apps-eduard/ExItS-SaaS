@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { RetailWarehouseRequestStockPage } from "@/features/warehouse/RetailWarehouseRequestStockPage";
@@ -11,6 +11,7 @@ import { TEST_BRANCH_A_ID, TEST_ORG_A_ID } from "@/test/session-context";
 const WH_A = "11111111-1111-1111-1111-111111111111";
 const PRODUCT_A = "33333333-3333-3333-3333-333333333333";
 const PRODUCT_B = "44444444-4444-4444-4444-444444444444";
+const PRODUCT_W = "55555555-5555-5555-5555-555555555555";
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
@@ -119,6 +120,9 @@ describe("RetailWarehouseRequestStockPage basket", () => {
           warehouseAvailableQuantity: 40,
           isLowStock: true,
           isTracked: true,
+          sellingMode: "PerItem",
+          warehouseUnitCost: 12.5,
+          branchEffectiveSellingPrice: 18,
         },
         {
           productId: PRODUCT_B,
@@ -126,12 +130,28 @@ describe("RetailWarehouseRequestStockPage basket", () => {
           sku: "NOO-1",
           unitOfMeasure: "pcs",
           branchOnHandQuantity: 8,
-          warehouseAvailableQuantity: 100,
+          warehouseAvailableQuantity: 0,
           isLowStock: false,
           isTracked: true,
+          sellingMode: "PerItem",
+          warehouseUnitCost: 8,
+          branchEffectiveSellingPrice: 12,
+        },
+        {
+          productId: PRODUCT_W,
+          name: "Tilapia",
+          sku: "TIL-1",
+          unitOfMeasure: "Kilogram",
+          branchOnHandQuantity: 1.2,
+          warehouseAvailableQuantity: 15,
+          isLowStock: false,
+          isTracked: true,
+          sellingMode: "ByWeight",
+          warehouseUnitCost: 80,
+          branchEffectiveSellingPrice: 120,
         },
       ],
-      totalCount: 2,
+      totalCount: 3,
       page: 1,
       pageSize: 40,
       supplyWarehouseBranchId: WH_A,
@@ -161,6 +181,53 @@ describe("RetailWarehouseRequestStockPage basket", () => {
     fireEvent.click(screen.getByTestId(`retail-warehouse-basket-remove-${PRODUCT_A}`));
     expect(screen.queryByTestId(`retail-warehouse-basket-line-${PRODUCT_A}`)).not.toBeInTheDocument();
     expect(screen.getByTestId("retail-warehouse-submit")).toBeDisabled();
+  });
+
+  it("shows warehouse cost, branch price, and out-of-stock label without blocking add", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
+
+    expect(screen.getByTestId(`retail-warehouse-cost-${PRODUCT_A}`)).toHaveTextContent(/12\.50/);
+    expect(screen.getByTestId(`retail-warehouse-price-${PRODUCT_A}`)).toHaveTextContent(/18\.00/);
+    expect(screen.getByTestId(`retail-warehouse-oos-${PRODUCT_B}`)).toHaveTextContent(
+      /Out of stock at warehouse/i,
+    );
+    expect(screen.getByTestId(`retail-warehouse-add-${PRODUCT_B}`)).not.toBeDisabled();
+  });
+
+  it("opens weight dialog for ByWeight and adds kilograms to basket", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_W}`);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_W}`));
+    expect(await screen.findByTestId("sell-weight-entry")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("sell-weight-input"), { target: { value: "1.5" } });
+    fireEvent.click(screen.getByTestId("sell-weight-confirm"));
+
+    const line = await screen.findByTestId(`retail-warehouse-basket-line-${PRODUCT_W}`);
+    expect(
+      within(line).getByTestId(`retail-warehouse-edit-weight-${PRODUCT_W}`),
+    ).toHaveTextContent(/1\.5\s*kg/i);
+    expect(screen.getByTestId(`retail-warehouse-line-cost-${PRODUCT_W}`)).toHaveTextContent(/120/);
+  });
+
+  it("footer shows products count and money totals without mixed physical qty sum", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_A}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_B}`));
+
+    const footer = screen.getByTestId("retail-warehouse-basket-footer");
+    expect(within(footer).getByTestId("retail-warehouse-products-count")).toHaveTextContent(
+      /2 products/i,
+    );
+    expect(footer).not.toHaveTextContent(/16\.50\s*units/i);
+    expect(footer).not.toHaveTextContent(/\d+\s*qty/i);
+    expect(screen.getByTestId("retail-warehouse-estimated-cost")).toHaveTextContent(/20\.50/);
+    expect(screen.getByTestId("retail-warehouse-potential-retail")).toHaveTextContent(/30\.00/);
+    expect(screen.getByTestId("retail-warehouse-potential-gross")).toHaveTextContent(/9\.50/);
   });
 
   it("shows mobile view-request control", async () => {

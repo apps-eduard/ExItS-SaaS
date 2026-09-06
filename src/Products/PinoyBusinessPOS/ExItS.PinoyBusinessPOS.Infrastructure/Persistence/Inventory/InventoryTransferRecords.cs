@@ -99,6 +99,7 @@ internal sealed class InventoryTransferLineRecord
     public Guid? SourceLotId { get; set; }
     public string? LotNumber { get; set; }
     public DateOnly? ExpirationDate { get; set; }
+    public decimal? UnitCostSnapshot { get; set; }
 }
 
 internal sealed class InventoryTransferNumberSequenceRecord

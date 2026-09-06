@@ -60,6 +60,7 @@ public sealed class ReplenishmentCatalogPersistenceTests(PosPostgreSqlFixture fi
         Assert.Equal(rice.Id.Value, byName[0].ProductId);
         Assert.Equal(3m, byName[0].BranchOnHandQuantity);
         Assert.Equal(50m, byName[0].WarehouseAvailableQuantity);
+        Assert.Equal("PerItem", byName[0].SellingMode);
 
         var (bySku, skuTotal) = await repo.ListReplenishmentCatalogAsync(
             context,

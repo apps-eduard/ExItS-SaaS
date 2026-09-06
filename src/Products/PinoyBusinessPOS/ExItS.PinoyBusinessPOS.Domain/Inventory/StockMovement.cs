@@ -493,12 +493,16 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
         EnsureTransferId(transferId);
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: true);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -511,7 +515,8 @@ public sealed class StockMovement
             transferId,
             utcNow,
             actorId,
-            branchId.Value);
+            branchId.Value,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement TransferIn(
@@ -526,12 +531,16 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        decimal? unitCost = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
         EnsureTransferId(transferId);
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var normalizedCost = unitCost is null
+            ? null
+            : NormalizeAcquisitionUnitCost(unitCost, allowZero: true);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -544,7 +553,8 @@ public sealed class StockMovement
             transferId,
             utcNow,
             actorId,
-            branchId.Value);
+            branchId.Value,
+            unitCost: normalizedCost);
     }
 
     public static StockMovement TransferCancelRestore(

@@ -318,6 +318,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 CategoryId = p.CategoryId,
                 CategoryName = cat != null ? cat.Name : null,
                 UnitOfMeasure = p.UnitOfMeasure,
+                SellingMode = p.SellingMode,
                 BranchOnHand = branchOnHand,
                 OrgOnHand = orgOnHand,
                 ReorderLevel = reorderLevel,
@@ -399,7 +400,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.BranchOnHand,
                 warehouseAvailable,
                 isLow,
-                row.IsTracked);
+                row.IsTracked,
+                row.SellingMode);
         }).ToList();
 
         return (items, total);

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -13,7 +14,8 @@ public sealed record InventoryTransferLineDraft(
     SellingMode SellingMode = SellingMode.PerItem,
     InventoryLotId? SourceLotId = null,
     string? LotNumber = null,
-    DateOnly? ExpirationDate = null);
+    DateOnly? ExpirationDate = null,
+    decimal? UnitCostSnapshot = null);
 
 public sealed record InventoryTransferReceiveLineDraft(
     CatalogProductId ProductId,
@@ -42,6 +44,11 @@ public sealed class InventoryTransferLine
     public InventoryLotId? SourceLotId { get; }
     public string? LotNumber { get; }
     public DateOnly? ExpirationDate { get; }
+    /// <summary>
+    /// Optional acquisition cost per base unit from InventoryCostResolver at create/dispatch.
+    /// Dispatch-time value is authoritative for TransferOut/TransferIn movements.
+    /// </summary>
+    public decimal? UnitCostSnapshot { get; private set; }
 
     public decimal DifferenceQty => SentQty - ReceivedQty;
 
@@ -66,7 +73,8 @@ public sealed class InventoryTransferLine
         string? discrepancyNote,
         InventoryLotId? sourceLotId = null,
         string? lotNumber = null,
-        DateOnly? expirationDate = null)
+        DateOnly? expirationDate = null,
+        decimal? unitCostSnapshot = null)
     {
         Id = id;
         TransferId = transferId;
@@ -82,6 +90,7 @@ public sealed class InventoryTransferLine
         SourceLotId = sourceLotId;
         LotNumber = lotNumber;
         ExpirationDate = expirationDate;
+        UnitCostSnapshot = unitCostSnapshot;
     }
 
     internal static InventoryTransferLine CreateDraft(
@@ -115,7 +124,8 @@ public sealed class InventoryTransferLine
             discrepancyNote: null,
             draft.SourceLotId,
             draft.LotNumber,
-            draft.ExpirationDate);
+            draft.ExpirationDate,
+            NormalizeOptionalUnitCost(draft.UnitCostSnapshot));
     }
 
     internal void ReplaceDraftQuantity(decimal quantity, SellingMode sellingMode)
@@ -131,6 +141,10 @@ public sealed class InventoryTransferLine
 
         SentQty = qty;
     }
+
+    /// <summary>Refreshes acquisition cost snapshot (dispatch-time is authoritative).</summary>
+    internal void SetUnitCostSnapshot(decimal? unitCostSnapshot) =>
+        UnitCostSnapshot = NormalizeOptionalUnitCost(unitCostSnapshot);
 
     internal void ApplyReceipt(InventoryTransferReceiveLineDraft receive)
     {
@@ -179,7 +193,8 @@ public sealed class InventoryTransferLine
         string? discrepancyNote,
         InventoryLotId? sourceLotId = null,
         string? lotNumber = null,
-        DateOnly? expirationDate = null) =>
+        DateOnly? expirationDate = null,
+        decimal? unitCostSnapshot = null) =>
         new(
             id,
             transferId,
@@ -194,7 +209,32 @@ public sealed class InventoryTransferLine
             discrepancyNote,
             sourceLotId,
             lotNumber,
-            expirationDate);
+            expirationDate,
+            unitCostSnapshot);
+
+    private static decimal? NormalizeOptionalUnitCost(decimal? unitCost)
+    {
+        if (unitCost is null)
+        {
+            return null;
+        }
+
+        if (unitCost.Value < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseUnitCost,
+                "Transfer unit cost snapshot cannot be negative.");
+        }
+
+        if (unitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseUnitCost,
+                "Transfer unit cost snapshot is too large.");
+        }
+
+        return SaleMoney.RoundMoney(unitCost.Value);
+    }
 
     private static string NormalizeName(string name)
     {

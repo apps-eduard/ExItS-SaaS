@@ -2651,6 +2651,9 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("lot_number")
                 .HasMaxLength(InventoryLot.LotNumberMaxLength);
             entity.Property(e => e.ExpirationDate).HasColumnName("expiration_date");
+            entity.Property(e => e.UnitCostSnapshot)
+                .HasColumnName("unit_cost_snapshot")
+                .HasPrecision(18, 2);
 
             entity.HasIndex(e => new { e.TransferId, e.LineNumber })
                 .IsUnique()
@@ -3977,6 +3980,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.SupplierBranchNameSnapshot)
                 .HasColumnName("supplier_branch_name_snapshot")
                 .HasMaxLength(128);
+            entity.Property(e => e.IntendedReceivingBranchId)
+                .HasColumnName("intended_receiving_branch_id");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

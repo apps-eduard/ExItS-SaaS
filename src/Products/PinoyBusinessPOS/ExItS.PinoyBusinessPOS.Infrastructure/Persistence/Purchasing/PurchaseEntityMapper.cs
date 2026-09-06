@@ -53,7 +53,8 @@ internal static class PurchaseEntityMapper
             lines,
             (ConnectedPoPaymentTerm)record.PaymentTerm,
             record.SupplierBranchId,
-            record.SupplierBranchNameSnapshot);
+            record.SupplierBranchNameSnapshot,
+            record.IntendedReceivingBranchId);
     }
 
     public static PurchaseOrderRecord ToRecord(PurchaseOrder po) =>
@@ -74,7 +75,8 @@ internal static class PurchaseEntityMapper
             UpdatedAtUtc = po.UpdatedAtUtc,
             PaymentTerm = (int)po.PaymentTerm,
             SupplierBranchId = po.SupplierBranchId,
-            SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot
+            SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot,
+            IntendedReceivingBranchId = po.IntendedReceivingBranchId
         };
 
     public static void ApplyToRecord(PurchaseOrder po, PurchaseOrderRecord record)
@@ -92,6 +94,7 @@ internal static class PurchaseEntityMapper
         record.PaymentTerm = (int)po.PaymentTerm;
         record.SupplierBranchId = po.SupplierBranchId;
         record.SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot;
+        record.IntendedReceivingBranchId = po.IntendedReceivingBranchId;
     }
 
     public static PurchaseOrderLineRecord ToRecord(PurchaseOrderLine line) =>

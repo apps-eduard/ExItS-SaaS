@@ -151,6 +151,20 @@ public sealed class InventoryTransfer
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Refreshes per-line acquisition cost snapshots while the transfer is still draft.
+    /// Dispatch-time refresh is authoritative for TransferOut/TransferIn movements.
+    /// </summary>
+    public void RefreshLineUnitCosts(IReadOnlyDictionary<Guid, decimal?> costsByProductId)
+    {
+        EnsureDraft();
+        foreach (var line in _lines)
+        {
+            costsByProductId.TryGetValue(line.ProductId.Value, out var cost);
+            line.SetUnitCostSnapshot(cost);
+        }
+    }
+
     public void Receive(
         IReadOnlyList<InventoryTransferReceiveLineDraft> receiveLines,
         Guid actorId,

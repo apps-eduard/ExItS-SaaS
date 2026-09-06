@@ -41,6 +41,11 @@ public sealed class PurchaseOrder
     public Guid? SupplierBranchId { get; private set; }
     /// <summary>Display name for <see cref="SupplierBranchId"/> at snapshot time.</summary>
     public string? SupplierBranchNameSnapshot { get; private set; }
+    /// <summary>
+    /// Buyer branch expected to receive goods for this PO. When set, goods receipts must use the same branch.
+    /// Null preserves legacy / connected-supplier behavior (receive at acting branch).
+    /// </summary>
+    public Guid? IntendedReceivingBranchId { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -61,7 +66,8 @@ public sealed class PurchaseOrder
         List<PurchaseOrderLine> lines,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null)
+        string? supplierBranchNameSnapshot = null,
+        Guid? intendedReceivingBranchId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -79,6 +85,7 @@ public sealed class PurchaseOrder
         PaymentTerm = paymentTerm;
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchNameSnapshot);
+        IntendedReceivingBranchId = NormalizeBranchId(intendedReceivingBranchId);
         _lines = lines;
     }
 
@@ -95,7 +102,8 @@ public sealed class PurchaseOrder
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
         Guid? createdBy = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchName = null)
+        string? supplierBranchName = null,
+        Guid? intendedReceivingBranchId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
@@ -129,7 +137,8 @@ public sealed class PurchaseOrder
             poLines,
             paymentTerm,
             supplierBranchId,
-            supplierBranchName);
+            supplierBranchName,
+            intendedReceivingBranchId);
     }
 
     public void UpdateDraft(
@@ -441,7 +450,8 @@ public sealed class PurchaseOrder
         IReadOnlyList<PurchaseOrderLine> lines,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null) =>
+        string? supplierBranchNameSnapshot = null,
+        Guid? intendedReceivingBranchId = null) =>
         new(
             id,
             organizationId,
@@ -459,7 +469,8 @@ public sealed class PurchaseOrder
             lines.ToList(),
             paymentTerm,
             supplierBranchId,
-            supplierBranchNameSnapshot);
+            supplierBranchNameSnapshot,
+            intendedReceivingBranchId);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

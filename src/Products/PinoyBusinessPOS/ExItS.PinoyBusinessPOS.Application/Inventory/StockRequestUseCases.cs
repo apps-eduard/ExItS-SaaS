@@ -539,15 +539,25 @@ public sealed class ListReplenishmentCatalog
     private readonly IBranchInventoryQueryRepository _branchInventory;
     private readonly ISupplyRouteRepository _routes;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly ICatalogProductRepository _products;
+    private readonly IEffectivePriceResolver _effectivePrices;
+    private readonly InventoryCostResolver _costs;
 
     public ListReplenishmentCatalog(
         IBranchInventoryQueryRepository branchInventory,
         ISupplyRouteRepository routes,
-        IOrganizationBranchDirectory branches)
+        IOrganizationBranchDirectory branches,
+        IInventoryRepository inventory,
+        ICatalogProductRepository products,
+        IEffectivePriceResolver effectivePrices,
+        InventoryCostResolver? costs = null)
     {
         _branchInventory = branchInventory;
         _routes = routes;
         _branches = branches;
+        _products = products;
+        _effectivePrices = effectivePrices;
+        _costs = costs ?? new InventoryCostResolver(inventory);
     }
 
     public async Task<ApplicationResult<ReplenishmentCatalogResultDto>> ExecuteAsync(
@@ -635,20 +645,42 @@ public sealed class ListReplenishmentCatalog
             .GetNamesAsync(retailContext.OrganizationId, [supplyWarehouseBranchId], cancellationToken)
             .ConfigureAwait(false);
 
+        IReadOnlyDictionary<Guid, decimal?> costs = new Dictionary<Guid, decimal?>();
+        IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult> prices =
+            new Dictionary<EffectivePriceKey, EffectivePriceResult>();
+        if (rows.Count > 0)
+        {
+            var orgId = PosOrganizationId.From(retailContext.OrganizationId);
+            var productIds = rows.Select(r => CatalogProductId.From(r.ProductId)).ToList();
+            costs = await _costs.ResolveUnitCostsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+            var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+            prices = await _effectivePrices
+                .ResolveAsync(orgId, PosBranchId.From(retailContext.BranchId), products, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         return ApplicationResult<ReplenishmentCatalogResultDto>.Success(
             new ReplenishmentCatalogResultDto(
-                rows.Select(r => new ReplenishmentCatalogItemDto(
-                    r.ProductId,
-                    r.Name,
-                    r.Sku,
-                    r.Barcode,
-                    r.CategoryId,
-                    r.CategoryName,
-                    r.UnitOfMeasure,
-                    r.BranchOnHandQuantity,
-                    r.WarehouseAvailableQuantity,
-                    r.IsLowStock,
-                    r.IsTracked)).ToList(),
+                rows.Select(r =>
+                {
+                    var priceKey = EffectivePriceKeys.ForBaseProduct(r.ProductId);
+                    prices.TryGetValue(priceKey, out var price);
+                    return new ReplenishmentCatalogItemDto(
+                        r.ProductId,
+                        r.Name,
+                        r.Sku,
+                        r.Barcode,
+                        r.CategoryId,
+                        r.CategoryName,
+                        r.UnitOfMeasure,
+                        r.BranchOnHandQuantity,
+                        r.WarehouseAvailableQuantity,
+                        r.IsLowStock,
+                        r.IsTracked,
+                        r.SellingMode,
+                        costs.GetValueOrDefault(r.ProductId),
+                        price?.EffectivePrice);
+                }).ToList(),
                 total,
                 Math.Max(page ?? 1, 1),
                 take,

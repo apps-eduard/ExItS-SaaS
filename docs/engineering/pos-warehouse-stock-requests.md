@@ -96,6 +96,10 @@ Approved quantities on the request only constrain what the dispatch step puts on
 
 DTO fields used by the detail UI include `approvedQuantity` on lines, `approvedBy` / `approvedAtUtc`, `preparingStartedBy` / `preparingStartedAtUtc`, `dispatchedBy` / `dispatchedAtUtc`, and `linkedInventoryTransferId`.
 
+### Replenishment catalog cost / price (request UX)
+
+`GET .../replenishment-catalog` items may include `sellingMode`, nullable `warehouseUnitCost`, and nullable `branchEffectiveSellingPrice`. The retail request UI uses these for **request-time estimates only** (line and footer estimated cost, potential retail, potential gross). They are **not** persisted on `StockRequest`. Authoritative transfer cost is captured later as `UnitCostSnapshot` on inventory transfer lines at **dispatch**. Branch selling price is a preview of destination retail value and is likewise not stored on the stock request.
+
 ## Prerequisites
 
 - Destination branch has at least one **active warehouse** supply route.

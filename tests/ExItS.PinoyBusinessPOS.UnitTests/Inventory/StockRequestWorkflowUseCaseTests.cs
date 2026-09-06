@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -37,6 +38,49 @@ public sealed class StockRequestWorkflowUseCaseTests
             fx.Notifications.Items,
             n => n.RelatedType == StockRequestNotificationTypes.Submitted
                  && n.TargetBranchId == Warehouse);
+    }
+
+    [Fact]
+    public async Task Create_accepts_decimal_quantity_for_by_weight_product()
+    {
+        var fx = await Fixture.CreateAsync();
+        var weight = CatalogProduct.Create(
+            PosOrganizationId.From(Org),
+            "Bulk Rice",
+            UnitOfMeasure.Kilogram,
+            80m,
+            Utc,
+            sellingMode: SellingMode.ByWeight);
+        fx.Products.Items.Add(weight);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(
+                Branch,
+                Warehouse,
+                [new StockRequestLineRequest(weight.Id.Value, 1.25m)]),
+            Actor,
+            Branch);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1.25m, result.Value!.Lines[0].RequestedQuantity);
+    }
+
+    [Fact]
+    public async Task Create_rejects_decimal_quantity_for_per_item_product()
+    {
+        var fx = await Fixture.CreateAsync();
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(
+                Branch,
+                Warehouse,
+                [new StockRequestLineRequest(fx.ProductId, 1.5m)]),
+            Actor,
+            Branch);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidSaleLineQuantity, result.ErrorCode);
     }
 
     [Fact]

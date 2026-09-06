@@ -34,6 +34,7 @@ internal sealed class PurchaseOrderRecord
     public int PaymentTerm { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
+    public Guid? IntendedReceivingBranchId { get; set; }
     public uint Xmin { get; set; }
 }
 

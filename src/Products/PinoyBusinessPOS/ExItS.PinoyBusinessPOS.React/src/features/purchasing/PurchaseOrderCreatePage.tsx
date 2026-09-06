@@ -409,6 +409,7 @@ export function PurchaseOrderCreatePage() {
         supplierId,
         orderDate,
         notes: notes.trim() || null,
+        intendedReceivingBranchId: workspace.branchId ?? null,
         lines: activeLines.map((l) => ({
           productId: l.productId,
           orderedQty: l.orderedQty,

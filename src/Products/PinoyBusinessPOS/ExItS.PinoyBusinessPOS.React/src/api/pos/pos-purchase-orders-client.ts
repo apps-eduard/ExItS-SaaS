@@ -173,6 +173,8 @@ export type CreatePurchaseOrderRequest = {
   notes?: string | null;
   paymentTerm?: string | null;
   purchaseOrderId?: string | null;
+  /** Workspace branch that will receive goods when the PO is fulfilled. */
+  intendedReceivingBranchId?: string | null;
 };
 
 export type UpdatePurchaseOrderRequest = CreatePurchaseOrderRequest & {
@@ -274,6 +276,9 @@ function serializeCreateBody(body: CreatePurchaseOrderRequest): Record<string, u
   }
   if (body.purchaseOrderId) {
     payload.purchaseOrderId = body.purchaseOrderId;
+  }
+  if (body.intendedReceivingBranchId) {
+    payload.intendedReceivingBranchId = body.intendedReceivingBranchId;
   }
   return payload;
 }

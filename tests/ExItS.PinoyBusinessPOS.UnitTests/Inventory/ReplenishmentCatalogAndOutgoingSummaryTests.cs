@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -6,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
@@ -22,10 +24,11 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
     public async Task Catalog_search_by_name_and_sku_is_forwarded_and_returns_warehouse_stock()
     {
         var fx = await Fixture.CreateAsync();
+        var productId = Guid.Parse("99999999-9999-9999-9999-999999999901");
         fx.Catalog.Rows =
         [
             new ReplenishmentCatalogRow(
-                Guid.Parse("99999999-9999-9999-9999-999999999901"),
+                productId,
                 "Rice 5kg",
                 "SKU-RICE",
                 "480001",
@@ -35,8 +38,11 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
                 BranchOnHandQuantity: 2m,
                 WarehouseAvailableQuantity: 40m,
                 IsLowStock: true,
-                IsTracked: true)
+                IsTracked: true,
+                SellingMode: "PerItem")
         ];
+        fx.Inventory.Costs[productId] = 33.25m;
+        fx.Prices.Prices[productId] = 55m;
 
         var byName = await fx.CatalogUseCase.ExecuteAsync(
             fx.RetailContext,
@@ -50,6 +56,9 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
         Assert.Equal("Rice", fx.Catalog.LastFilter!.Search);
         Assert.Equal(40m, byName.Value!.Items[0].WarehouseAvailableQuantity);
         Assert.Equal(2m, byName.Value.Items[0].BranchOnHandQuantity);
+        Assert.Equal("PerItem", byName.Value.Items[0].SellingMode);
+        Assert.Equal(33.25m, byName.Value.Items[0].WarehouseUnitCost);
+        Assert.Equal(55m, byName.Value.Items[0].BranchEffectiveSellingPrice);
 
         var bySku = await fx.CatalogUseCase.ExecuteAsync(
             fx.RetailContext,
@@ -221,6 +230,9 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
         public InMemoryStockRequests Requests { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
         public FakeBranches Branches { get; } = new();
+        public FakeInventory Inventory { get; } = new();
+        public FakeProducts Products { get; } = new();
+        public FakeEffectivePrices Prices { get; } = new();
         public ListReplenishmentCatalog CatalogUseCase { get; private set; } = null!;
         public StockRequestQueryService Queries { get; private set; } = null!;
 
@@ -234,7 +246,13 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
                     PosBranchId.From(Branch),
                     Utc,
                     isPreferred: true));
-            fx.CatalogUseCase = new ListReplenishmentCatalog(fx.Catalog, fx.Routes, fx.Branches);
+            fx.CatalogUseCase = new ListReplenishmentCatalog(
+                fx.Catalog,
+                fx.Routes,
+                fx.Branches,
+                fx.Inventory,
+                fx.Products,
+                fx.Prices);
             fx.Queries = new StockRequestQueryService(fx.Requests, fx.Transfers, fx.Branches);
             return fx;
         }
@@ -450,5 +468,68 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             DateOnly businessDateUtc,
             CancellationToken cancellationToken = default) =>
             Task.FromResult("IT-20260906-000001");
+    }
+
+    private sealed class FakeInventory : CostResolverInventoryStub;
+
+    private sealed class FakeProducts : ICatalogProductRepository
+    {
+        public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<CatalogProduct?> GetByIdAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProduct?>(null);
+        public Task<IReadOnlyList<CatalogProduct>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CatalogProduct>>(
+                productIds.Select(id => CatalogProduct.Create(
+                    organizationId,
+                    $"P-{id.Value:N}",
+                    UnitOfMeasure.Piece,
+                    10m,
+                    Utc,
+                    id: id)).ToList());
+        public Task<CatalogProduct?> FindByNormalizedSkuAsync(PosOrganizationId organizationId, string normalizedSku, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProduct?>(null);
+        public Task<CatalogProduct?> FindByBarcodeAsync(PosOrganizationId organizationId, string barcode, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProduct?>(null);
+        public Task<(IReadOnlyList<CatalogProduct> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, CatalogProductFilter filter, int skip, int take, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+        public Task<CatalogProduct?> FindByPlatformGlobalProductIdAsync(PosOrganizationId organizationId, Guid platformGlobalProductId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProduct?>(null);
+        public Task<IReadOnlyList<Guid>> ListIdsAsync(PosOrganizationId organizationId, CatalogProductFilter filter, int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Guid>>([]);
+        public Task<(int TotalCount, int AvailableCount, int NotAvailableCount)> CountConnectedBuyerAvailabilityAsync(PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult((0, 0, 0));
+        public Task<IReadOnlyList<(Guid? CategoryId, int Count)>> ListConnectedBuyerAvailabilityCategoryFacetsAsync(PosOrganizationId organizationId, CatalogProductFilter filter, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<(Guid? CategoryId, int Count)>>([]);
+        public Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(PosOrganizationId organizationId, IReadOnlyCollection<Guid> platformGlobalProductIds, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
+    }
+
+    private sealed class FakeEffectivePrices : IEffectivePriceResolver
+    {
+        public Dictionary<Guid, decimal> Prices { get; } = new();
+
+        public Task<IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>> ResolveAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            IReadOnlyList<CatalogProduct> products,
+            IReadOnlyDictionary<CatalogProductId, IReadOnlyList<CatalogProductUnit>>? unitsByProduct = null,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new Dictionary<EffectivePriceKey, EffectivePriceResult>();
+            foreach (var product in products)
+            {
+                var price = Prices.TryGetValue(product.Id.Value, out var overridePrice)
+                    ? overridePrice
+                    : product.SellingPrice;
+                result[EffectivePriceKeys.ForBaseProduct(product.Id.Value)] =
+                    new EffectivePriceResult(product.SellingPrice, null, price, false);
+            }
+
+            return Task.FromResult<IReadOnlyDictionary<EffectivePriceKey, EffectivePriceResult>>(result);
+        }
     }
 }

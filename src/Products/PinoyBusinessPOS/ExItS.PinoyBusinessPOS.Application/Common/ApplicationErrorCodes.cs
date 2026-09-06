@@ -147,6 +147,7 @@ public static class ApplicationErrorCodes
     public const string PurchaseOrderNumberConflict = "pos.purchase_order.number.conflict";
     public const string GoodsReceiptNumberConflict = "pos.goods_receipt.number.conflict";
     public const string PurchaseOrderConcurrencyConflict = "pos.purchase_order.concurrency_conflict";
+    public const string PurchasingReceivingBranchMismatch = "pos.purchasing.receiving_branch_mismatch";
     public const string PurchaseSupplierNotActive = "pos.purchase_order.supplier.not_active";
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";

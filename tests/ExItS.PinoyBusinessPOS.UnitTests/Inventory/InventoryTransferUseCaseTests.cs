@@ -67,6 +67,71 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Transfer_create_and_dispatch_snapshot_warehouse_unit_cost_onto_lines_and_movements()
+    {
+        var fx = await SeedAsync(cokeOnHand: 50m);
+        fx.Inventory.AcquisitionCosts[fx.CokeId] = 12.5m;
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+        Assert.Equal(12.5m, created.Value!.Lines.Single().UnitCostSnapshot);
+
+        fx.Inventory.AcquisitionCosts[fx.CokeId] = 14m;
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, created.Value.Id.Value, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess);
+        Assert.Equal(14m, dispatched.Value!.Lines.Single().UnitCostSnapshot);
+
+        var transferOut = Assert.Single(
+            fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferOut));
+        Assert.Equal(14m, transferOut.UnitCost);
+
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 4m, "ShortShipment")]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, received.Value!.Status);
+
+        var transferIn = Assert.Single(
+            fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferIn));
+        Assert.Equal(14m, transferIn.UnitCost);
+        Assert.Equal(4m, transferIn.QuantityEffect);
+    }
+
+    [Fact]
+    public async Task Retail_to_retail_transfer_allows_null_unit_cost_when_no_acquisition()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 5m)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+        Assert.Null(created.Value!.Lines.Single().UnitCostSnapshot);
+
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, created.Value.Id.Value, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess);
+        Assert.Null(dispatched.Value!.Lines.Single().UnitCostSnapshot);
+        Assert.Null(Assert.Single(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferOut).UnitCost);
+
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 5m)]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess);
+        Assert.Null(Assert.Single(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferIn).UnitCost);
+    }
+
+    [Fact]
     public async Task Partial_receive_credits_only_received_qty_and_records_shortage()
     {
         var fx = await SeedAsync(cokeOnHand: 20m, spriteOnHand: 10m, waterOnHand: 30m);
@@ -757,6 +822,7 @@ public sealed class InventoryTransferUseCaseTests
     {
         public List<InventoryAccount> Accounts { get; } = [];
         public List<StockMovement> Movements { get; } = [];
+        public Dictionary<Guid, decimal?> AcquisitionCosts { get; } = new();
 
         public decimal GetOnHand(Guid productId) =>
             Accounts.FirstOrDefault(a => a.ProductId.Value == productId)?.OnHandQuantity ?? 0m;
@@ -877,7 +943,7 @@ public sealed class InventoryTransferUseCaseTests
 
 
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<decimal?>(null);
+            Task.FromResult(AcquisitionCosts.TryGetValue(productId.Value, out var cost) ? cost : null);
         public Task<bool> HasSaleReturnRestockAsync(PosOrganizationId organizationId, SaleReturnId saleReturnId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<IReadOnlyDictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> GetMovementSummariesAsync(PosOrganizationId organizationId, IReadOnlyCollection<CatalogProductId> productIds, CancellationToken cancellationToken = default) => throw new NotSupportedException();

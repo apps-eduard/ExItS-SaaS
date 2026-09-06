@@ -105,7 +105,8 @@ public sealed class InventoryTransferQueryService
                 l.DiscrepancyNote,
                 l.SourceLotId?.Value,
                 l.LotNumber,
-                l.ExpirationDate)).ToList());
+                l.ExpirationDate,
+                l.UnitCostSnapshot)).ToList());
 
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,
@@ -138,6 +139,7 @@ public sealed class CreateInventoryTransfer
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -149,7 +151,8 @@ public sealed class CreateInventoryTransfer
         IInventoryLotRepository lots,
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
         _inventory = inventory;
@@ -157,6 +160,7 @@ public sealed class CreateInventoryTransfer
         _products = products;
         _lots = lots;
         _branches = branches;
+        _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -192,13 +196,20 @@ public sealed class CreateInventoryTransfer
             return ApplicationResult<InventoryTransfer>.Failure(drafts.ErrorCode!, drafts.ErrorMessage!);
         }
 
+        var costByProduct = await _costs
+            .ResolveUnitCostsAsync(orgId, drafts.Value!.Select(d => d.ProductId), cancellationToken)
+            .ConfigureAwait(false);
+        var draftsWithCosts = drafts.Value!
+            .Select(d => d with { UnitCostSnapshot = costByProduct.GetValueOrDefault(d.ProductId.Value) })
+            .ToList();
+
         try
         {
             var transfer = InventoryTransfer.CreateDraft(
                 orgId,
                 PosBranchId.From(request.SourceBranchId),
                 PosBranchId.From(request.DestinationBranchId),
-                drafts.Value!,
+                draftsWithCosts,
                 actorId,
                 _clock.UtcNow,
                 request.Notes,
@@ -273,6 +284,7 @@ public sealed class DispatchInventoryTransfer
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
+    private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -286,7 +298,8 @@ public sealed class DispatchInventoryTransfer
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
         _inventory = inventory;
@@ -296,6 +309,7 @@ public sealed class DispatchInventoryTransfer
         _lots = lots;
         _branches = branches;
         _alerts = alerts;
+        _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -399,6 +413,12 @@ public sealed class DispatchInventoryTransfer
                 .AllocateNextNumberAsync(orgId, InventoryTransferNumbers.BusinessDateOf(utcNow), ct)
                 .ConfigureAwait(false);
 
+            // Dispatch-time acquisition costs are authoritative (draft may have sat).
+            var dispatchCosts = await _costs
+                .ResolveUnitCostsAsync(orgId, productIds, ct)
+                .ConfigureAwait(false);
+            transfer.RefreshLineUnitCosts(dispatchCosts);
+
             foreach (var line in transfer.Lines)
             {
                 var account = accounts[line.ProductId.Value];
@@ -431,7 +451,8 @@ public sealed class DispatchInventoryTransfer
                     number,
                     actorId,
                     utcNow,
-                    sellingMode: sellingMode);
+                    sellingMode: sellingMode,
+                    unitCost: line.UnitCostSnapshot);
                 if (line.SourceLotId is not null)
                 {
                     var lot = await _lotRepository
@@ -689,7 +710,8 @@ public sealed class ReceiveInventoryTransfer
                     transfer.TransferNumber!,
                     actorId,
                     utcNow,
-                    sellingMode: product.SellingMode);
+                    sellingMode: product.SellingMode,
+                    unitCost: line.UnitCostSnapshot);
                 DateOnly? expiry = line.ExpirationDate;
                 var lotNumber = line.LotNumber;
                 if (line.SourceLotId is not null && expiry is null)

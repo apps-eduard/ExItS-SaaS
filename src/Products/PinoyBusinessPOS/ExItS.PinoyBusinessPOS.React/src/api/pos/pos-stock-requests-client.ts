@@ -120,6 +120,9 @@ export const replenishmentCatalogItemDtoSchema = z.object({
   warehouseAvailableQuantity: z.number(),
   isLowStock: z.boolean(),
   isTracked: z.boolean(),
+  sellingMode: z.string().default("PerItem"),
+  warehouseUnitCost: z.number().nullable().optional(),
+  branchEffectiveSellingPrice: z.number().nullable().optional(),
 });
 
 export const replenishmentCatalogResultDtoSchema = z.object({

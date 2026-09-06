@@ -71,12 +71,13 @@ internal static class PurchaseOrderEndpoints
             }
 
             PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
+            PosOrganizationScope.TryGetBranchId(request, out var actingBranchId, out _);
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
                     OfflineOperationTypes.PurchaseOrderCreate,
                     idempotency,
-                    ct2 => useCase.ExecuteAsync(organizationId, body, ct2, actorId),
+                    ct2 => useCase.ExecuteAsync(organizationId, body, ct2, actorId, actingBranchId),
                     dto => dto,
                     dto => Results.Created($"/api/v1/pos/purchase-orders/{dto.PurchaseOrderId:D}", dto),
                     ct)

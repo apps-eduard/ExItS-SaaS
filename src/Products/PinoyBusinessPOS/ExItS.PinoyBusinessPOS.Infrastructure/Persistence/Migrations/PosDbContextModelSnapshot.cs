@@ -3523,6 +3523,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("transfer_id");
 
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_cost_snapshot");
+
                     b.Property<string>("UnitOfMeasure")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -6307,6 +6312,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("ExpectedDeliveryDate")
                         .HasColumnType("date")
                         .HasColumnName("expected_delivery_date");
+
+                    b.Property<Guid?>("IntendedReceivingBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("intended_receiving_branch_id");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(512)

@@ -47,7 +47,8 @@ internal static class InventoryTransferEntityMapper
             record.DiscrepancyNote,
             record.SourceLotId is null ? null : InventoryLotId.From(record.SourceLotId.Value),
             record.LotNumber,
-            record.ExpirationDate);
+            record.ExpirationDate,
+            record.UnitCostSnapshot);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
@@ -104,7 +105,8 @@ internal static class InventoryTransferEntityMapper
             DiscrepancyNote = line.DiscrepancyNote,
             SourceLotId = line.SourceLotId?.Value,
             LotNumber = line.LotNumber,
-            ExpirationDate = line.ExpirationDate
+            ExpirationDate = line.ExpirationDate,
+            UnitCostSnapshot = line.UnitCostSnapshot
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>

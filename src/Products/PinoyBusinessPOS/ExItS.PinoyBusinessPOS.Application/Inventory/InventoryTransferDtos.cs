@@ -39,7 +39,8 @@ public sealed record InventoryTransferLineDto(
     string? DiscrepancyNote,
     Guid? SourceLotId = null,
     string? LotNumber = null,
-    DateOnly? ExpirationDate = null);
+    DateOnly? ExpirationDate = null,
+    decimal? UnitCostSnapshot = null);
 
 public sealed record InventoryTransferDto(
     Guid TransferId,

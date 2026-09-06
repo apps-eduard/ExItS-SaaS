@@ -121,7 +121,10 @@ public sealed record ReplenishmentCatalogItemDto(
     decimal BranchOnHandQuantity,
     decimal WarehouseAvailableQuantity,
     bool IsLowStock,
-    bool IsTracked);
+    bool IsTracked,
+    string SellingMode = "PerItem",
+    decimal? WarehouseUnitCost = null,
+    decimal? BranchEffectiveSellingPrice = null);
 
 public sealed record ReplenishmentCatalogResultDto(
     IReadOnlyList<ReplenishmentCatalogItemDto> Items,

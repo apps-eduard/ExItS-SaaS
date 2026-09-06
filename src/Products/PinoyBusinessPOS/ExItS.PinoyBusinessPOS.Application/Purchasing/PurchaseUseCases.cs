@@ -76,7 +76,8 @@ public sealed record PosPurchaseOrderDto(
     bool NeedsProductSetup = false,
     int ProductSetupRequiredCount = 0,
     Guid? SupplierBranchId = null,
-    string? SupplierBranchName = null);
+    string? SupplierBranchName = null,
+    Guid? IntendedReceivingBranchId = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -139,7 +140,8 @@ public sealed record CreatePurchaseOrderRequest(
     string? SupplierReference = null,
     string? Notes = null,
     string? PaymentTerm = null,
-    Guid? PurchaseOrderId = null);
+    Guid? PurchaseOrderId = null,
+    Guid? IntendedReceivingBranchId = null);
 
 public sealed record UpdatePurchaseOrderRequest(
     Guid SupplierId,
@@ -224,7 +226,8 @@ public static class PurchaseMapper
             NeedsProductSetup: po.Lines.Any(l => l.NeedsBuyerProductSetup),
             ProductSetupRequiredCount: po.Lines.Count(l => l.NeedsBuyerProductSetup),
             SupplierBranchId: po.SupplierBranchId,
-            SupplierBranchName: po.SupplierBranchNameSnapshot);
+            SupplierBranchName: po.SupplierBranchNameSnapshot,
+            IntendedReceivingBranchId: po.IntendedReceivingBranchId);
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -822,7 +825,8 @@ public sealed class CreatePurchaseOrder
         Guid organizationId,
         CreatePurchaseOrderRequest request,
         CancellationToken cancellationToken = default,
-        Guid actorId = default)
+        Guid actorId = default,
+        Guid actingBranchId = default)
     {
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
         if (!gate.IsSuccess)
@@ -1034,6 +1038,13 @@ public sealed class CreatePurchaseOrder
                 }
             }
 
+            var intendedReceivingBranchId =
+                request.IntendedReceivingBranchId is Guid intended && intended != Guid.Empty
+                    ? intended
+                    : actingBranchId != Guid.Empty
+                        ? actingBranchId
+                        : (Guid?)null;
+
             var po = PurchaseOrder.CreateDraft(
                 org,
                 supplierId,
@@ -1049,7 +1060,8 @@ public sealed class CreatePurchaseOrder
                 paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
                 createdBy: actorId == Guid.Empty ? null : actorId,
                 supplierBranchId: connectedEligibility?.Value?.Relationship.SupplierBranchId,
-                supplierBranchName: connectedEligibility?.Value?.Relationship.SupplierBranchNameSnapshot);
+                supplierBranchName: connectedEligibility?.Value?.Relationship.SupplierBranchNameSnapshot,
+                intendedReceivingBranchId: intendedReceivingBranchId);
 
             await _orders.AddAsync(po, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -1923,6 +1935,14 @@ public sealed class ReceivePurchaseOrder
                 return ApplicationResult<PosGoodsReceiptDto>.Failure(
                     ApplicationErrorCodes.PurchaseOrderNotFound,
                     "Purchase order was not found in this organization.");
+            }
+
+            if (existing.IntendedReceivingBranchId is Guid intendedBranch
+                && intendedBranch != receivingBranchId)
+            {
+                return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                    ApplicationErrorCodes.PurchasingReceivingBranchMismatch,
+                    "Goods must be received at the purchase order's intended receiving branch.");
             }
 
             var connected = await _connectedOrders
