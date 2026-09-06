@@ -360,6 +360,7 @@ builder.Services.AddScoped<DeactivateNonWarehouseSupplySources>();
 builder.Services.AddScoped<SetPreferredSupplyRoute>();
 builder.Services.AddScoped<DisableSupplyRoute>();
 builder.Services.AddScoped<StockRequestQueryService>();
+builder.Services.AddScoped<ListReplenishmentCatalog>();
 builder.Services.AddScoped<CreateStockRequest>();
 builder.Services.AddScoped<ApproveStockRequest>();
 builder.Services.AddScoped<StartPreparingStockRequest>();

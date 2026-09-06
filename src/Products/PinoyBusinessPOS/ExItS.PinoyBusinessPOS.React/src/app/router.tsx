@@ -22,7 +22,15 @@ import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
-import { WarehouseDashboardPage } from "@/features/warehouse/WarehouseDashboardPage";
+import { WarehouseIndexPage } from "@/features/warehouse/WarehouseIndexPage";
+import { RetailWarehouseShell } from "@/features/warehouse/RetailWarehouseShell";
+import { RetailWarehouseRequestStockPage } from "@/features/warehouse/RetailWarehouseRequestStockPage";
+import {
+  RetailWarehouseHistoryPage,
+  RetailWarehouseIncomingPage,
+  RetailWarehouseRequestsPage,
+} from "@/features/warehouse/RetailWarehouseRequestsPages";
+
 import { ExpenseCategoriesPage } from "@/features/expenses/ExpenseCategoriesPage";
 import { ExpenseCreatePage } from "@/features/expenses/ExpenseCreatePage";
 import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
@@ -73,7 +81,6 @@ import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage
 import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
 import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
 import { SupplyRoutesPage } from "@/features/replenishment/SupplyRoutesPage";
-import { StockRequestCreatePage } from "@/features/replenishment/StockRequestCreatePage";
 import { StockRequestDetailPage } from "@/features/replenishment/StockRequestDetailPage";
 import { StockRequestListPage } from "@/features/replenishment/StockRequestListPage";
 import { OrgAreaDetailPage } from "@/features/areas/OrgAreaDetailPage";
@@ -440,10 +447,26 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <RequireBranchBound>
-                  <WarehouseDashboardPage />
+                  <Outlet />
                 </RequireBranchBound>
               </RequireOrganizationSession>
             ),
+            children: [
+              { index: true, element: <WarehouseIndexPage /> },
+              {
+                element: <RetailWarehouseShell />,
+                children: [
+                  { path: "request-stock", element: <RetailWarehouseRequestStockPage /> },
+                  { path: "my-requests", element: <RetailWarehouseRequestsPage /> },
+                  { path: "incoming", element: <RetailWarehouseIncomingPage /> },
+                  { path: "history", element: <RetailWarehouseHistoryPage /> },
+                  {
+                    path: "requests/:stockRequestId",
+                    element: <StockRequestDetailPage />,
+                  },
+                ],
+              },
+            ],
           },
           {
             path: "role/warehouse",
@@ -684,7 +707,10 @@ export const appRoutes = [
               { path: "transfers/new", element: <InventoryTransferCreatePage /> },
               { path: "transfers/:transferId", element: <InventoryTransferDetailPage /> },
               { path: "stock-requests", element: <StockRequestListPage /> },
-              { path: "stock-requests/new", element: <StockRequestCreatePage /> },
+              {
+                path: "stock-requests/new",
+                element: <Navigate to="/warehouse/request-stock" replace />,
+              },
               { path: "stock-requests/:stockRequestId", element: <StockRequestDetailPage /> },
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },

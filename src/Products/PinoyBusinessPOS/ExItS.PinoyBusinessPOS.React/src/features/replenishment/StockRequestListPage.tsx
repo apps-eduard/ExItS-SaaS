@@ -112,7 +112,7 @@ export function StockRequestListPage() {
         trailing={
           !isWarehouse && allowManage ? (
             <Button asChild data-testid="stock-request-create-cta">
-              <Link to="/inventory/stock-requests/new">
+              <Link to="/warehouse/request-stock">
                 <Plus className="size-4" aria-hidden />
                 {t("stockRequest.requestStock")}
               </Link>

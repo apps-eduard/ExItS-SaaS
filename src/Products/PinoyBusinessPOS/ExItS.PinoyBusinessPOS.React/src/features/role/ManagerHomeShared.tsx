@@ -82,6 +82,7 @@ export type ManagerActionCardProps = {
   testId?: string;
   /** Quieter styling for secondary Insights cards. */
   quiet?: boolean;
+  badge?: ReactNode;
 } & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
 
 /**
@@ -89,7 +90,7 @@ export type ManagerActionCardProps = {
  * Start selling uses the same family (no solid primary fill).
  */
 export function ManagerActionCard(props: ManagerActionCardProps) {
-  const { label, icon: Icon, testId, quiet = false } = props;
+  const { label, icon: Icon, testId, quiet = false, badge } = props;
   const classes = cn(
     "manager-action-card inline-flex w-full min-w-0 items-center gap-2 border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 py-2.5 text-left no-underline text-foreground",
     "rounded-[var(--exits-radius-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -107,6 +108,14 @@ export function ManagerActionCard(props: ManagerActionCardProps) {
       <span className="manager-action-card__label min-w-0 flex-1 wrap-break-word text-[length:var(--exits-text-sm)] font-medium">
         {label}
       </span>
+      {badge != null ? (
+        <span
+          className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-[var(--exits-primary)] px-1.5 text-[length:var(--exits-text-xs)] font-semibold text-primary-foreground"
+          data-testid={testId ? `${testId}-badge` : undefined}
+        >
+          {badge}
+        </span>
+      ) : null}
       <ChevronRight
         className="manager-action-card__chevron size-4 shrink-0 text-muted"
         aria-hidden

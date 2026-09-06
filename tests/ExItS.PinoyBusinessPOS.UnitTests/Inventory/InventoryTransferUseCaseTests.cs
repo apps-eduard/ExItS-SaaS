@@ -1124,6 +1124,7 @@ public sealed class InventoryTransferUseCaseTests
             PosBranchId destinationLocationId,
             int skip,
             int take,
+            IReadOnlyCollection<StockRequestStatus>? statuses = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
 
@@ -1134,6 +1135,19 @@ public sealed class InventoryTransferUseCaseTests
             int take,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
+
+        public Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
+            PosOrganizationId organizationId,
+            PosBranchId destinationLocationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, int>>(new Dictionary<string, int>());
+
+        public Task<IReadOnlyList<StockRequest>> ListRecentByDestinationAsync(
+            PosOrganizationId organizationId,
+            PosBranchId destinationLocationId,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<StockRequest>>([]);
 
         public Task AddAsync(StockRequest stockRequest, CancellationToken cancellationToken = default)
         {

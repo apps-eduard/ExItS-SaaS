@@ -66,7 +66,59 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       experience: "operations",
     },
     sessionGrant: workspaceState.grant,
+    workspaces: [
+      {
+        organizationId: "11111111-1111-1111-1111-111111111111",
+        displayName: "Test Org",
+        branches: [
+          {
+            branchId: workspaceState.branchId,
+            name: workspaceState.branchName,
+            secondaryLine: "",
+            isPrimary: true,
+            isActive: true,
+            branchType: workspaceState.branchType,
+          },
+          {
+            branchId: "33333333-3333-3333-3333-333333333333",
+            name: "Supply WH",
+            secondaryLine: "",
+            isPrimary: false,
+            isActive: true,
+            branchType: "Warehouse",
+          },
+        ],
+      },
+    ],
   }),
+}));
+
+vi.mock("@/api/pos/pos-supply-routes-client", () => ({
+  listSupplyRoutesByDestination: vi.fn(async () => [
+    {
+      routeId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      sourceLocationId: "33333333-3333-3333-3333-333333333333",
+      destinationLocationId: "22222222-2222-2222-2222-222222222222",
+      isPreferred: true,
+      isActive: true,
+      createdAtUtc: "2026-01-01T00:00:00Z",
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    },
+  ]),
+}));
+
+vi.mock("@/api/pos/pos-stock-requests-client", () => ({
+  getOutgoingStockRequestSummary: vi.fn(async () => ({
+    submittedCount: 0,
+    inProgressCount: 0,
+    inTransitCount: 0,
+    recent: [],
+  })),
+}));
+
+vi.mock("@/components/exits/ToastProvider", () => ({
+  useToast: () => ({ showToast: vi.fn() }),
 }));
 
 vi.mock("@/api/pos/pos-reporting-client", () => ({

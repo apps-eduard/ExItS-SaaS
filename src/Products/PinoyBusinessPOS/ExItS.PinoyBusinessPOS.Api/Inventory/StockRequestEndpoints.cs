@@ -4,6 +4,8 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Api.Inventory;
 
@@ -18,6 +20,8 @@ internal static class StockRequestEndpoints
         group.MapPost("/supply-routes/by-destination/{destinationLocationId:guid}/preferred", SetPreferredRoute);
         group.MapPost("/supply-routes/{routeId:guid}/disable", DisableRoute);
 
+        group.MapGet("/stock-requests/replenishment-catalog", GetReplenishmentCatalog);
+        group.MapGet("/stock-requests/outgoing/summary", GetOutgoingSummary);
         group.MapGet("/stock-requests/outgoing", ListOutgoing);
         group.MapGet("/stock-requests/incoming", ListIncoming);
         group.MapGet("/stock-requests/{stockRequestId:guid}", GetStockRequest);
@@ -130,6 +134,71 @@ internal static class StockRequestEndpoints
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
+    private static async Task<IResult> GetReplenishmentCatalog(
+        HttpRequest request,
+        Guid supplyWarehouseBranchId,
+        string? search,
+        string? stockFilter,
+        Guid? categoryId,
+        int? page,
+        int? pageSize,
+        ListReplenishmentCatalog useCase,
+        BranchInventoryContextResolver branchResolver,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId) || branchId is null)
+        {
+            return PosApiResults.Problem(
+                ApplicationErrorCodes.InventoryBranchRequired,
+                "Header 'X-Pos-Branch-Id' is required for branch inventory.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var resolved = await branchResolver.ResolveAsync(organizationId, branchId.Value, ct).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
+        {
+            return PosApiResults.Problem(
+                resolved.ErrorCode!,
+                resolved.ErrorMessage!,
+                PosApiResults.MapStatusCode(resolved.ErrorCode!));
+        }
+
+        var result = await useCase
+            .ExecuteAsync(
+                resolved.Value!,
+                supplyWarehouseBranchId,
+                search,
+                stockFilter,
+                categoryId,
+                page,
+                pageSize,
+                ct)
+            .ConfigureAwait(false);
+        return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetOutgoingSummary(
+        HttpRequest request,
+        StockRequestQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries.GetOutgoingSummaryAsync(organizationId, branchId, ct).ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> ListOutgoing(
         HttpRequest request,
         int? page,
@@ -144,7 +213,35 @@ internal static class StockRequestEndpoints
             return problem!;
         }
 
-        var result = await queries.ListOutgoingAsync(organizationId, branchId, page, pageSize, ct).ConfigureAwait(false);
+        var statusTokens = request.Query["statuses"]
+            .SelectMany(v => (v ?? string.Empty).Split(
+                ',',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToList();
+
+        IReadOnlyList<StockRequestStatus>? statuses = null;
+        if (statusTokens.Count > 0)
+        {
+            var parsed = new List<StockRequestStatus>(statusTokens.Count);
+            foreach (var token in statusTokens)
+            {
+                if (!StockRequestStatuses.TryParse(token, out var status))
+                {
+                    return PosApiResults.Problem(
+                        DomainErrorCodes.InvalidStockRequestStatus,
+                        $"Invalid stock request status '{token}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                parsed.Add(status);
+            }
+
+            statuses = parsed;
+        }
+
+        var result = await queries
+            .ListOutgoingAsync(organizationId, branchId, page, pageSize, statuses, ct)
+            .ConfigureAwait(false);
         return Results.Ok(result);
     }
 

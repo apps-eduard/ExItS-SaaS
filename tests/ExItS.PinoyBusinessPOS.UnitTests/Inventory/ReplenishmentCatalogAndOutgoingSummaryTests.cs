@@ -1,150 +1,232 @@
-using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
-using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Inventory;
 
-public sealed class StockRequestWorkflowUseCaseTests
+public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
 {
     private static readonly Guid Org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid Warehouse = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Branch = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid RetailOnly = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
-    private static readonly DateTimeOffset Utc = new(2026, 9, 6, 10, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Utc = new(2026, 9, 6, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Submit_publishes_notification_to_warehouse()
+    public async Task Catalog_search_by_name_and_sku_is_forwarded_and_returns_warehouse_stock()
     {
         var fx = await Fixture.CreateAsync();
-        var result = await fx.Create.ExecuteAsync(
-            Org,
-            new CreateStockRequestRequest(
-                Branch,
-                Warehouse,
-                [new StockRequestLineRequest(fx.ProductId, 10m)]),
-            Actor,
-            Branch);
+        fx.Catalog.Rows =
+        [
+            new ReplenishmentCatalogRow(
+                Guid.Parse("99999999-9999-9999-9999-999999999901"),
+                "Rice 5kg",
+                "SKU-RICE",
+                "480001",
+                null,
+                null,
+                "Piece",
+                BranchOnHandQuantity: 2m,
+                WarehouseAvailableQuantity: 40m,
+                IsLowStock: true,
+                IsTracked: true)
+        ];
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("Pending", result.Value!.Status);
-        Assert.Contains(
-            fx.Notifications.Items,
-            n => n.RelatedType == StockRequestNotificationTypes.Submitted
-                 && n.TargetBranchId == Warehouse);
+        var byName = await fx.CatalogUseCase.ExecuteAsync(
+            fx.RetailContext,
+            Warehouse,
+            search: "Rice",
+            stockFilter: "all",
+            categoryId: null,
+            page: 1,
+            pageSize: 40);
+        Assert.True(byName.IsSuccess);
+        Assert.Equal("Rice", fx.Catalog.LastFilter!.Search);
+        Assert.Equal(40m, byName.Value!.Items[0].WarehouseAvailableQuantity);
+        Assert.Equal(2m, byName.Value.Items[0].BranchOnHandQuantity);
+
+        var bySku = await fx.CatalogUseCase.ExecuteAsync(
+            fx.RetailContext,
+            Warehouse,
+            search: "SKU-RICE",
+            stockFilter: null,
+            categoryId: null,
+            page: 1,
+            pageSize: 40);
+        Assert.True(bySku.IsSuccess);
+        Assert.Equal("SKU-RICE", fx.Catalog.LastFilter!.Search);
+        Assert.Equal(Warehouse, bySku.Value!.SupplyWarehouseBranchId);
+        Assert.Equal("Main Warehouse", bySku.Value.SupplyWarehouseName);
     }
 
     [Fact]
-    public async Task Approve_lower_qty_keeps_requested_and_notifies_destination()
+    public async Task Catalog_rejects_invalid_warehouse_no_route_and_cross_org()
     {
         var fx = await Fixture.CreateAsync();
-        var created = await fx.Create.ExecuteAsync(
-            Org,
-            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 10m)]),
-            Actor,
-            Branch);
-        Assert.True(created.IsSuccess);
 
-        var approved = await fx.Approve.ExecuteAsync(
-            Org,
-            created.Value!.StockRequestId,
-            new ApproveStockRequestRequest([new ApproveStockRequestLineRequest(fx.ProductId, 6m)]),
-            Actor,
-            Warehouse);
+        var notWarehouse = await fx.CatalogUseCase.ExecuteAsync(
+            fx.RetailContext,
+            RetailOnly,
+            search: null,
+            stockFilter: "all",
+            categoryId: null,
+            page: 1,
+            pageSize: 40);
+        Assert.False(notWarehouse.IsSuccess);
+        Assert.Equal(DomainErrorCodes.StockRequestSourceMustBeWarehouse, notWarehouse.ErrorCode);
 
-        Assert.True(approved.IsSuccess);
-        Assert.Equal("Approved", approved.Value!.Status);
-        Assert.Equal(6m, approved.Value.Lines[0].ApprovedQuantity);
-        Assert.Equal(10m, approved.Value.Lines[0].RequestedQuantity);
-        Assert.Contains(
-            fx.Notifications.Items,
-            n => n.RelatedType == StockRequestNotificationTypes.Approved && n.TargetBranchId == Branch);
+        fx.Routes.Items.Clear();
+        var noRoute = await fx.CatalogUseCase.ExecuteAsync(
+            fx.RetailContext,
+            Warehouse,
+            search: null,
+            stockFilter: "all",
+            categoryId: null,
+            page: 1,
+            pageSize: 40);
+        Assert.False(noRoute.IsSuccess);
+        Assert.Equal(DomainErrorCodes.StockRequestRouteRequired, noRoute.ErrorCode);
+
+        await fx.Routes.AddAsync(
+            SupplyRoute.Create(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(Warehouse),
+                PosBranchId.From(Branch),
+                Utc,
+                isPreferred: true));
+
+        var crossOrg = await fx.CatalogUseCase.ExecuteAsync(
+            fx.RetailContext,
+            Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+            search: null,
+            stockFilter: "all",
+            categoryId: null,
+            page: 1,
+            pageSize: 40);
+        Assert.False(crossOrg.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InventoryTransferBranchNotFound, crossOrg.ErrorCode);
     }
 
     [Fact]
-    public async Task Decline_notifies_destination()
+    public async Task Outgoing_summary_counts_and_recent_top_five()
     {
         var fx = await Fixture.CreateAsync();
-        var created = await fx.Create.ExecuteAsync(
-            Org,
-            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 4m)]),
-            Actor,
-            Branch);
+        var productId = CatalogProductId.From(Guid.Parse("99999999-9999-9999-9999-999999999902"));
+        var draft = new StockRequestLineDraft(productId, 5m, "Item", UnitOfMeasure.Piece, SellingMode.PerItem);
 
-        var declined = await fx.Reject.ExecuteAsync(
-            Org,
-            created.Value!.StockRequestId,
-            new RejectStockRequestRequest("No stock"),
-            Actor,
-            Warehouse);
+        async Task<StockRequest> AddAsync(StockRequestStatus target, int minutes)
+        {
+            var request = StockRequest.Create(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(Branch),
+                PosBranchId.From(Warehouse),
+                [draft],
+                Actor,
+                Utc.AddMinutes(minutes),
+                requestNumber: StockRequestNumbers.Format(StockRequestNumbers.BusinessDateOf(Utc), minutes));
+            if (target is StockRequestStatus.Approved or StockRequestStatus.Preparing or StockRequestStatus.InTransit)
+            {
+                request.Approve(Actor, Utc.AddMinutes(minutes).AddSeconds(1), new Dictionary<Guid, decimal> { [productId.Value] = 5m });
+            }
 
-        Assert.True(declined.IsSuccess);
-        Assert.Equal("Rejected", declined.Value!.Status);
-        Assert.Contains(
-            fx.Notifications.Items,
-            n => n.RelatedType == StockRequestNotificationTypes.Declined && n.TargetBranchId == Branch);
+            if (target is StockRequestStatus.Preparing or StockRequestStatus.InTransit)
+            {
+                request.StartPreparing(Actor, Utc.AddMinutes(minutes).AddSeconds(2));
+            }
+
+            if (target == StockRequestStatus.InTransit)
+            {
+                request.MarkDispatched(Actor, Utc.AddMinutes(minutes).AddSeconds(3), Guid.NewGuid());
+            }
+
+            await fx.Requests.AddAsync(request);
+            return request;
+        }
+
+        await AddAsync(StockRequestStatus.Pending, 1);
+        await AddAsync(StockRequestStatus.Pending, 2);
+        await AddAsync(StockRequestStatus.Approved, 3);
+        await AddAsync(StockRequestStatus.Preparing, 4);
+        await AddAsync(StockRequestStatus.InTransit, 5);
+        await AddAsync(StockRequestStatus.InTransit, 6);
+        var latest = await AddAsync(StockRequestStatus.Pending, 7);
+
+        var summary = await fx.Queries.GetOutgoingSummaryAsync(Org, Branch);
+        Assert.Equal(3, summary.SubmittedCount);
+        Assert.Equal(2, summary.InProgressCount);
+        Assert.Equal(2, summary.InTransitCount);
+        Assert.Equal(5, summary.Recent.Count);
+        Assert.Equal(latest.RequestNumber, summary.Recent[0].RequestNumber);
     }
 
     [Fact]
-    public async Task Transfer_alert_sink_skips_stock_request_linked_alerts()
+    public async Task Outgoing_list_filters_by_status()
     {
-        var notifications = new CapturingNotifications();
-        var sink = new OrganizationBusinessInventoryTransferAlertSink(notifications);
+        var fx = await Fixture.CreateAsync();
+        var productId = CatalogProductId.From(Guid.Parse("99999999-9999-9999-9999-999999999903"));
+        var draft = new StockRequestLineDraft(productId, 3m, "Item", UnitOfMeasure.Piece, SellingMode.PerItem);
 
-        await sink.PublishAsync(
-            new InventoryTransferAlert(
-                "dispatched",
-                Org,
-                Branch,
-                Guid.NewGuid(),
-                "TR-1",
-                "on the way",
-                StockRequestId: Guid.NewGuid()));
-        Assert.Empty(notifications.Items);
+        var pending = StockRequest.Create(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Branch),
+            PosBranchId.From(Warehouse),
+            [draft],
+            Actor,
+            Utc,
+            StockRequestNumbers.Format(StockRequestNumbers.BusinessDateOf(Utc), 1));
+        var approved = StockRequest.Create(
+            PosOrganizationId.From(Org),
+            PosBranchId.From(Branch),
+            PosBranchId.From(Warehouse),
+            [draft],
+            Actor,
+            Utc.AddMinutes(1),
+            StockRequestNumbers.Format(StockRequestNumbers.BusinessDateOf(Utc), 2));
+        approved.Approve(Actor, Utc.AddMinutes(2), new Dictionary<Guid, decimal> { [productId.Value] = 3m });
+        await fx.Requests.AddAsync(pending);
+        await fx.Requests.AddAsync(approved);
 
-        await sink.PublishAsync(
-            new InventoryTransferAlert(
-                "dispatched",
-                Org,
-                Branch,
-                Guid.NewGuid(),
-                "TR-2",
-                "on the way"));
-        Assert.Contains(notifications.Items, n => n.RelatedType == InventoryTransferNotificationTypes.Dispatched);
+        var filtered = await fx.Queries.ListOutgoingAsync(
+            Org,
+            Branch,
+            page: 1,
+            pageSize: 20,
+            statuses: [StockRequestStatus.Pending]);
+        Assert.Equal(1, filtered.TotalCount);
+        Assert.Equal("Pending", filtered.Items[0].Status);
+
+        var approvedOnly = await fx.Queries.ListOutgoingAsync(
+            Org,
+            Branch,
+            page: 1,
+            pageSize: 20,
+            statuses: [StockRequestStatus.Approved]);
+        Assert.Equal(1, approvedOnly.TotalCount);
+        Assert.Equal("Approved", approvedOnly.Items[0].Status);
     }
 
     private sealed class Fixture
     {
-        public Guid ProductId { get; private set; }
-        public InMemoryCatalog Products { get; } = new();
-        public InMemoryStockRequests Requests { get; } = new();
+        public BranchInventoryContext RetailContext { get; } =
+            new(Org, Branch, Warehouse, OrganizationGovernance: true);
+
+        public FakeCatalogQuery Catalog { get; } = new();
         public InMemoryRoutes Routes { get; } = new();
+        public InMemoryStockRequests Requests { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
-        public CapturingNotifications Notifications { get; } = new();
-        public ImmediateUnitOfWork UnitOfWork { get; } = new();
-        public FixedClock Clock { get; } = new(Utc);
         public FakeBranches Branches { get; } = new();
-        public CreateStockRequest Create { get; private set; } = null!;
-        public ApproveStockRequest Approve { get; private set; } = null!;
-        public RejectStockRequest Reject { get; private set; } = null!;
+        public ListReplenishmentCatalog CatalogUseCase { get; private set; } = null!;
+        public StockRequestQueryService Queries { get; private set; } = null!;
 
         public static async Task<Fixture> CreateAsync()
         {
             var fx = new Fixture();
-            var product = CatalogProduct.Create(
-                PosOrganizationId.From(Org),
-                "Rice 5kg",
-                UnitOfMeasure.Piece,
-                50m,
-                Utc);
-            fx.ProductId = product.Id.Value;
-            fx.Products.Items.Add(product);
-
             await fx.Routes.AddAsync(
                 SupplyRoute.Create(
                     PosOrganizationId.From(Org),
@@ -152,37 +234,43 @@ public sealed class StockRequestWorkflowUseCaseTests
                     PosBranchId.From(Branch),
                     Utc,
                     isPreferred: true));
-
-            var queries = new StockRequestQueryService(fx.Requests, fx.Transfers, fx.Branches);
-            fx.Create = new CreateStockRequest(
-                fx.Requests, fx.Routes, fx.Products, fx.Branches, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
-            fx.Approve = new ApproveStockRequest(
-                fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
-            fx.Reject = new RejectStockRequest(
-                fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
+            fx.CatalogUseCase = new ListReplenishmentCatalog(fx.Catalog, fx.Routes, fx.Branches);
+            fx.Queries = new StockRequestQueryService(fx.Requests, fx.Transfers, fx.Branches);
             return fx;
         }
     }
 
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    private sealed class FakeCatalogQuery : IBranchInventoryQueryRepository
     {
-        public DateTimeOffset UtcNow { get; } = utcNow;
-    }
+        public ReplenishmentCatalogFilter? LastFilter { get; private set; }
+        public IReadOnlyList<ReplenishmentCatalogRow> Rows { get; set; } = [];
 
-    private sealed class ImmediateUnitOfWork : IPosUnitOfWork
-    {
-        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task<T> ExecuteInSerializableTransactionAsync<T>(
-            Func<CancellationToken, Task<T>> action,
+        public Task<(IReadOnlyList<BranchInventoryListRow> Items, int TotalCount)> ListAsync(
+            BranchInventoryContext context,
+            BranchInventoryListFilter filter,
+            int skip,
+            int take,
             CancellationToken cancellationToken = default) =>
-            action(cancellationToken);
+            throw new NotSupportedException();
+
+        public Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(
+            BranchInventoryContext retailContext,
+            ReplenishmentCatalogFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            LastFilter = filter;
+            return Task.FromResult<(IReadOnlyList<ReplenishmentCatalogRow>, int)>((Rows, Rows.Count));
+        }
     }
 
     private sealed class FakeBranches : IOrganizationBranchDirectory
     {
         public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(organizationId == Org && (branchId == Warehouse || branchId == Branch));
+            Task.FromResult(
+                organizationId == Org
+                && (branchId == Warehouse || branchId == Branch || branchId == RetailOnly));
 
         public Task<bool> IsActiveInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
             ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
@@ -195,36 +283,12 @@ public sealed class StockRequestWorkflowUseCaseTests
             IReadOnlyCollection<Guid> branchIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
-                branchIds.ToDictionary(id => id, id => id == Warehouse ? "Warehouse" : "Branch"));
+                branchIds.ToDictionary(
+                    id => id,
+                    id => id == Warehouse ? "Main Warehouse" : id == Branch ? "Retail" : "Other"));
 
         public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Guid?>(Warehouse);
-    }
-
-    private sealed class CapturingNotifications : IOrganizationBusinessNotificationPublisher
-    {
-        public List<(string RelatedType, Guid? TargetBranchId, string RelatedId)> Items { get; } = [];
-
-        public Task PublishAsync(
-            Guid sourceOrganizationId,
-            Guid recipientOrganizationId,
-            string relatedType,
-            string relatedId,
-            string title,
-            string preview,
-            CancellationToken cancellationToken = default,
-            Guid? targetBranchId = null)
-        {
-            Items.Add((relatedType, targetBranchId, relatedId));
-            return Task.CompletedTask;
-        }
-
-        public Task MarkRelatedReadAsync(
-            Guid organizationId,
-            string relatedType,
-            string relatedId,
-            CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
     }
 
     private sealed class InMemoryRoutes : ISupplyRouteRepository
@@ -386,69 +450,5 @@ public sealed class StockRequestWorkflowUseCaseTests
             DateOnly businessDateUtc,
             CancellationToken cancellationToken = default) =>
             Task.FromResult("IT-20260906-000001");
-    }
-
-    private sealed class InMemoryCatalog : ICatalogProductRepository
-    {
-        public List<CatalogProduct> Items { get; } = [];
-
-        public Task<CatalogProduct?> GetByIdAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Items.FirstOrDefault(p => p.OrganizationId == organizationId && p.Id == productId));
-
-        public Task<CatalogProduct?> FindByNormalizedSkuAsync(PosOrganizationId organizationId, string normalizedSku, CancellationToken cancellationToken = default) =>
-            Task.FromResult<CatalogProduct?>(null);
-
-        public Task<CatalogProduct?> FindByBarcodeAsync(PosOrganizationId organizationId, string barcode, CancellationToken cancellationToken = default) =>
-            Task.FromResult<CatalogProduct?>(null);
-
-        public Task<IReadOnlyList<CatalogProduct>> ListByIdsAsync(
-            PosOrganizationId organizationId,
-            IReadOnlyCollection<CatalogProductId> productIds,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CatalogProduct>>(
-                Items.Where(p => p.OrganizationId == organizationId && productIds.Any(id => id == p.Id)).ToList());
-
-        public Task<(IReadOnlyList<CatalogProduct> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId,
-            CatalogProductFilter filter,
-            int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task<CatalogProduct?> FindByPlatformGlobalProductIdAsync(
-            PosOrganizationId organizationId,
-            Guid platformGlobalProductId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<CatalogProduct?>(null);
-
-        public Task<IReadOnlyList<Guid>> ListIdsAsync(
-            PosOrganizationId organizationId,
-            CatalogProductFilter filter,
-            int skip,
-            int take,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<Guid>>([]);
-
-        public Task<(int TotalCount, int AvailableCount, int NotAvailableCount)> CountConnectedBuyerAvailabilityAsync(
-            PosOrganizationId organizationId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult((0, 0, 0));
-
-        public Task<IReadOnlyList<(Guid? CategoryId, int Count)>> ListConnectedBuyerAvailabilityCategoryFacetsAsync(
-            PosOrganizationId organizationId,
-            CatalogProductFilter filter,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<(Guid? CategoryId, int Count)>>([]);
-
-        public Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(
-            PosOrganizationId organizationId,
-            IReadOnlyCollection<Guid> platformGlobalProductIds,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
-
-        public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-
-        public Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

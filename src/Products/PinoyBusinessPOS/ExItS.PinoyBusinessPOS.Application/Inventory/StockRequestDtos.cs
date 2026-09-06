@@ -103,3 +103,30 @@ public sealed record StockRequestListItemDto(
     string? RequestedSourceLocationName,
     int LineCount,
     DateTimeOffset UpdatedAtUtc);
+
+public sealed record StockRequestOutgoingSummaryDto(
+    int SubmittedCount,
+    int InProgressCount,
+    int InTransitCount,
+    IReadOnlyList<StockRequestListItemDto> Recent);
+
+public sealed record ReplenishmentCatalogItemDto(
+    Guid ProductId,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    Guid? CategoryId,
+    string? CategoryName,
+    string UnitOfMeasure,
+    decimal BranchOnHandQuantity,
+    decimal WarehouseAvailableQuantity,
+    bool IsLowStock,
+    bool IsTracked);
+
+public sealed record ReplenishmentCatalogResultDto(
+    IReadOnlyList<ReplenishmentCatalogItemDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    Guid SupplyWarehouseBranchId,
+    string? SupplyWarehouseName);

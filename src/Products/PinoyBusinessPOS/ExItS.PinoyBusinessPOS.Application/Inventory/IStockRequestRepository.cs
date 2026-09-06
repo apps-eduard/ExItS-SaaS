@@ -15,12 +15,24 @@ public interface IStockRequestRepository
         PosBranchId destinationLocationId,
         int skip,
         int take,
+        IReadOnlyCollection<StockRequestStatus>? statuses = null,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<StockRequest> Items, int TotalCount)> ListBySourceAsync(
         PosOrganizationId organizationId,
         PosBranchId sourceLocationId,
         int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
+        PosOrganizationId organizationId,
+        PosBranchId destinationLocationId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<StockRequest>> ListRecentByDestinationAsync(
+        PosOrganizationId organizationId,
+        PosBranchId destinationLocationId,
         int take,
         CancellationToken cancellationToken = default);
 

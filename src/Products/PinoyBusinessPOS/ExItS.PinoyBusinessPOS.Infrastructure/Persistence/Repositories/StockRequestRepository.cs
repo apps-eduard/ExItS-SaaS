@@ -121,10 +121,17 @@ internal sealed class StockRequestRepository : IStockRequestRepository
         PosBranchId destinationLocationId,
         int skip,
         int take,
+        IReadOnlyCollection<StockRequestStatus>? statuses = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.StockRequests.AsNoTracking()
             .Where(r => r.OrganizationId == organizationId.Value && r.DestinationLocationId == destinationLocationId.Value);
+        if (statuses is { Count: > 0 })
+        {
+            var codes = ToStatusFilterCodes(statuses);
+            query = query.Where(r => codes.Contains(r.Status));
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
             .OrderByDescending(r => r.UpdatedAtUtc)
@@ -140,6 +147,61 @@ internal sealed class StockRequestRepository : IStockRequestRepository
         var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
             .ConfigureAwait(false);
         return (records.Select(r => StockRequestEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : [])).ToList(), total);
+    }
+
+    public async Task<IReadOnlyDictionary<string, int>> CountByDestinationStatusAsync(
+        PosOrganizationId organizationId,
+        PosBranchId destinationLocationId,
+        CancellationToken cancellationToken = default)
+    {
+        var groups = await _db.StockRequests.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && r.DestinationLocationId == destinationLocationId.Value)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return groups.ToDictionary(g => g.Status, g => g.Count, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<IReadOnlyList<StockRequest>> ListRecentByDestinationAsync(
+        PosOrganizationId organizationId,
+        PosBranchId destinationLocationId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.StockRequests.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && r.DestinationLocationId == destinationLocationId.Value)
+            .OrderByDescending(r => r.UpdatedAtUtc)
+            .Take(Math.Clamp(take, 1, 50))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count == 0)
+        {
+            return [];
+        }
+
+        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return records
+            .Select(r => StockRequestEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .ToList();
+    }
+
+    private static List<string> ToStatusFilterCodes(IReadOnlyCollection<StockRequestStatus> statuses)
+    {
+        var codes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var status in statuses)
+        {
+            codes.Add(StockRequestStatuses.ToCode(status));
+            if (status is StockRequestStatus.Preparing or StockRequestStatus.InProgress)
+            {
+                codes.Add(nameof(StockRequestStatus.Preparing));
+                codes.Add(nameof(StockRequestStatus.InProgress));
+            }
+        }
+
+        return codes.ToList();
     }
 
     public async Task<(IReadOnlyList<StockRequest> Items, int TotalCount)> ListBySourceAsync(

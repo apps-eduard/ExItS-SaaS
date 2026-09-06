@@ -239,4 +239,169 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             .ConfigureAwait(false);
         return ids.ToDictionary(id => id, id => withOpening.Contains(id));
     }
+
+    public async Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(
+        BranchInventoryContext retailContext,
+        ReplenishmentCatalogFilter filter,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = retailContext.OrganizationId;
+        var branchId = retailContext.BranchId;
+        var primaryBranchId = retailContext.PrimaryBranchId;
+        var warehouseBranchId = filter.SupplyWarehouseBranchId;
+        var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
+        var activeStatus = nameof(CatalogProductStatus.Active);
+
+        var products = _db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == orgId && p.Status == activeStatus);
+
+        if (!retailContext.OrganizationGovernance)
+        {
+            products = products.Where(p => p.Scope != localScope || p.OriginBranchId == branchId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim().ToLowerInvariant();
+            products = products.Where(p =>
+                p.Name.ToLower().Contains(term)
+                || (p.Sku != null && p.Sku.ToLower().Contains(term))
+                || (p.Barcode != null && p.Barcode.Contains(term)));
+        }
+
+        if (filter.CategoryId is Guid categoryId)
+        {
+            products = products.Where(p => p.CategoryId == categoryId);
+        }
+
+        var explicitBalances = _db.InventoryBranchBalances.AsNoTracking()
+            .Where(b => b.OrganizationId == orgId && b.BranchId == branchId);
+
+        var branchReorder = _db.InventoryBranchReorderSettings.AsNoTracking()
+            .Where(r => r.OrganizationId == orgId && r.BranchId == branchId);
+
+        var query =
+            from p in products
+            join a in _db.InventoryAccounts.AsNoTracking()
+                on new { p.OrganizationId, ProductId = p.Id }
+                equals new { a.OrganizationId, a.ProductId }
+                into accountJoin
+            from a in accountJoin.DefaultIfEmpty()
+            join explicitBal in explicitBalances on p.Id equals explicitBal.ProductId into explicitJoin
+            from explicitBal in explicitJoin.DefaultIfEmpty()
+            join reorder in branchReorder on p.Id equals reorder.ProductId into reorderJoin
+            from reorder in reorderJoin.DefaultIfEmpty()
+            join cat in _db.ProductCategories.AsNoTracking() on p.CategoryId equals cat.Id into catJoin
+            from cat in catJoin.DefaultIfEmpty()
+            let orgOnHand = a != null ? a.OnHandQuantity : 0m
+            let otherSum = _db.InventoryBranchBalances
+                .Where(b => b.OrganizationId == orgId && b.BranchId != branchId && b.ProductId == p.Id)
+                .Select(b => (decimal?)b.OnHandQuantity)
+                .Sum() ?? 0m
+            let unallocated = orgOnHand - otherSum < 0m ? 0m : orgOnHand - otherSum
+            let branchOnHand = explicitBal != null
+                ? explicitBal.OnHandQuantity
+                : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
+            let reorderLevel = reorder != null
+                ? reorder.ReorderLevel
+                : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderLevel : null)
+            let isTracked = a != null && a.IsTracked
+            where isTracked
+            select new
+            {
+                ProductId = p.Id,
+                Name = p.Name,
+                Sku = p.Sku,
+                Barcode = p.Barcode,
+                CategoryId = p.CategoryId,
+                CategoryName = cat != null ? cat.Name : null,
+                UnitOfMeasure = p.UnitOfMeasure,
+                BranchOnHand = branchOnHand,
+                OrgOnHand = orgOnHand,
+                ReorderLevel = reorderLevel,
+                IsTracked = isTracked,
+            };
+
+        if (filter.StockFilter == ReplenishmentStockFilters.Low)
+        {
+            query = query.Where(x =>
+                x.ReorderLevel != null
+                && x.BranchOnHand > 0m
+                && x.BranchOnHand <= x.ReorderLevel);
+        }
+        else if (filter.StockFilter == ReplenishmentStockFilters.Out)
+        {
+            query = query.Where(x => x.BranchOnHand <= 0m);
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await query
+            .OrderBy(x => x.Name)
+            .ThenBy(x => x.ProductId)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (rows.Count == 0)
+        {
+            return ([], total);
+        }
+
+        var productIds = rows.Select(r => r.ProductId).ToList();
+        // One query: all branch balances for page products (warehouse available + primary unallocated).
+        var balances = await _db.InventoryBranchBalances.AsNoTracking()
+            .Where(b => b.OrganizationId == orgId && productIds.Contains(b.ProductId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var balancesByProduct = balances
+            .GroupBy(b => b.ProductId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var items = rows.Select(row =>
+        {
+            balancesByProduct.TryGetValue(row.ProductId, out var productBalances);
+            productBalances ??= [];
+            var explicitWarehouse = productBalances.FirstOrDefault(b => b.BranchId == warehouseBranchId);
+            decimal warehouseOnHand;
+            if (explicitWarehouse is not null)
+            {
+                warehouseOnHand = explicitWarehouse.OnHandQuantity;
+            }
+            else
+            {
+                var otherSum = productBalances
+                    .Where(b => b.BranchId != warehouseBranchId)
+                    .Sum(b => b.OnHandQuantity);
+                var unallocated = Math.Max(0m, row.OrgOnHand - otherSum);
+                warehouseOnHand = primaryBranchId is not null && primaryBranchId.Value == warehouseBranchId
+                    ? unallocated
+                    : 0m;
+            }
+
+            var warehouseReserved = explicitWarehouse?.ReservedQuantity ?? 0m;
+            var warehouseAvailable = Math.Max(0m, warehouseOnHand - warehouseReserved);
+            var isLow = row.IsTracked
+                && row.ReorderLevel is not null
+                && row.BranchOnHand > 0m
+                && row.BranchOnHand <= row.ReorderLevel.Value;
+
+            return new ReplenishmentCatalogRow(
+                row.ProductId,
+                row.Name,
+                row.Sku,
+                row.Barcode,
+                row.CategoryId,
+                row.CategoryName,
+                row.UnitOfMeasure,
+                row.BranchOnHand,
+                warehouseAvailable,
+                isLow,
+                row.IsTracked);
+        }).ToList();
+
+        return (items, total);
+    }
 }

@@ -8,4 +8,15 @@ public interface IBranchInventoryQueryRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tracked products for retail→warehouse replenishment, with warehouse available qty
+    /// batch-loaded for the current page only.
+    /// </summary>
+    Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(
+        BranchInventoryContext retailContext,
+        ReplenishmentCatalogFilter filter,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
 }

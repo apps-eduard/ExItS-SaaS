@@ -77,5 +77,19 @@ export function resolveOrganizationNotificationHref(
     return "/orders";
   }
 
+  if (type.startsWith("StockRequest") && relatedId) {
+    return `/warehouse/requests/${relatedId}`;
+  }
+  if (type.startsWith("StockRequest")) {
+    return "/warehouse/my-requests";
+  }
+
+  if (type.startsWith("InventoryTransfer") && relatedId) {
+    return `/inventory/transfers/${relatedId}`;
+  }
+  if (type.startsWith("InventoryTransfer")) {
+    return "/inventory/transfers";
+  }
+
   return null;
 }

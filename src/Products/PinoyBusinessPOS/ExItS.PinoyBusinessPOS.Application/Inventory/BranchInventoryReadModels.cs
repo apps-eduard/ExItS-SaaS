@@ -27,6 +27,51 @@ public sealed record BranchInventoryListFilter(
     bool? ReorderSuggestedOnly = null,
     string? ProductStatus = null);
 
+/// <summary>Stock filter for replenishment catalog: <c>all</c>, <c>low</c>, or <c>out</c>.</summary>
+public static class ReplenishmentStockFilters
+{
+    public const string All = "all";
+    public const string Low = "low";
+    public const string Out = "out";
+
+    public static bool TryNormalize(string? value, out string normalized)
+    {
+        normalized = All;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        var trimmed = value.Trim().ToLowerInvariant();
+        if (trimmed is All or Low or Out)
+        {
+            normalized = trimmed;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+public sealed record ReplenishmentCatalogFilter(
+    Guid SupplyWarehouseBranchId,
+    string? Search = null,
+    string StockFilter = ReplenishmentStockFilters.All,
+    Guid? CategoryId = null);
+
+public sealed record ReplenishmentCatalogRow(
+    Guid ProductId,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    Guid? CategoryId,
+    string? CategoryName,
+    string UnitOfMeasure,
+    decimal BranchOnHandQuantity,
+    decimal WarehouseAvailableQuantity,
+    bool IsLowStock,
+    bool IsTracked);
+
 public sealed record BranchInventoryListRow(
     Guid ProductId,
     Guid OrganizationId,

@@ -10,11 +10,13 @@ import {
   PackagePlus,
   Receipt,
   ShoppingCart,
+  Warehouse,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   canAccessReportsHub,
   canCreateSale,
+  canInviteOrganizationStaff,
   canManageExpenses,
   canManageInventory,
   canManagePurchasing,
@@ -25,6 +27,7 @@ import {
   canViewInventory,
   canViewPurchasing,
   canViewShifts,
+  hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
@@ -36,10 +39,13 @@ import {
   getDashboard,
   getManagementOverview,
 } from "@/api/pos/pos-reporting-client";
+import { getOutgoingStockRequestSummary } from "@/api/pos/pos-stock-requests-client";
+import { listSupplyRoutesByDestination } from "@/api/pos/pos-supply-routes-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import {
   buildManagerAttentionItems,
   buildRetailSnapshotModules,
@@ -57,6 +63,8 @@ import {
 } from "@/features/role/ManagerHomeShared";
 import { resolveReportDatePreset } from "@/features/reports/report-date-range";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
+import { resolveRetailWarehouseNavigation } from "@/features/warehouse/retail-warehouse-gate";
+import { resolveRetailWarehouseSupply } from "@/features/warehouse/retail-warehouse-resolve";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
@@ -115,13 +123,15 @@ type QuickAction = {
   testId: string;
   to?: string;
   onClick?: () => void;
+  badge?: number;
 };
 
 export function ManagerRetailHome() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { enter } = useSellingMode();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const { currentShift, hasOpenShift } = useShiftContext();
 
   const workspace = useMemo(
@@ -138,6 +148,11 @@ export function ManagerRetailHome() {
   const branchId = boundWorkspace?.branchId ?? null;
   const todayRange = useMemo(() => resolveReportDatePreset("today"), []);
 
+  const orgBranches = useMemo(() => {
+    const org = workspaces.find((w) => w.organizationId === boundWorkspace?.organizationId);
+    return org?.branches ?? [];
+  }, [workspaces, boundWorkspace?.organizationId]);
+
   const canSell = canCreateSale(sessionGrant, boundWorkspace?.branchType);
   const canInventory = canViewInventory(sessionGrant);
   const canManageInv = canManageInventory(sessionGrant);
@@ -150,6 +165,33 @@ export function ManagerRetailHome() {
   const canExpenses = canManageExpenses(sessionGrant);
   const canDashboard = canViewDashboard(sessionGrant);
   const canReports = canAccessReportsHub(sessionGrant);
+  const canManageOrg = hasOrganizationManagementAuthority(sessionGrant);
+  const canInvite = canInviteOrganizationStaff(sessionGrant);
+
+  const supplyRoutesQuery = useQuery({
+    queryKey: ["supply-routes-dest", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace?.branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listSupplyRoutesByDestination(workspace!, workspace!.branchId!, signal),
+  });
+
+  const outgoingSummaryQuery = useQuery({
+    queryKey: ["stock-requests-outgoing-summary", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace?.branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => getOutgoingStockRequestSummary(workspace!, signal),
+  });
+
+  const warehouseResolve = useMemo(() => {
+    if (!workspace?.branchId || supplyRoutesQuery.isPending) return null;
+    return resolveRetailWarehouseSupply(
+      orgBranches,
+      supplyRoutesQuery.data ?? [],
+      workspace.branchId,
+    );
+  }, [workspace?.branchId, orgBranches, supplyRoutesQuery.data, supplyRoutesQuery.isPending]);
+
+  const inTransitBadge = outgoingSummaryQuery.data?.inTransitCount ?? 0;
 
   const dashboardQuery = useQuery({
     queryKey: [
@@ -288,11 +330,29 @@ export function ManagerRetailHome() {
       to: "/inventory/transfers",
     });
     quickActions.push({
-      key: "request-stock",
-      label: t("inventory.openRequestStock"),
-      icon: PackagePlus,
-      testId: "manager-action-request-stock",
-      to: "/inventory/stock-requests/new",
+      key: "warehouse",
+      label: t("retailWarehouse.title"),
+      icon: Warehouse,
+      testId: "manager-action-warehouse",
+      badge: inTransitBadge > 0 ? inTransitBadge : undefined,
+      onClick: () => {
+        if (!warehouseResolve) return;
+        const gate = resolveRetailWarehouseNavigation(
+          warehouseResolve,
+          {
+            canManageOrganization: canManageOrg,
+            canInvite,
+            canManageInventory: canManageInv,
+          },
+          t,
+          { branchName: boundWorkspace?.branchName ?? undefined },
+        );
+        if (gate.kind === "navigate") {
+          navigate(gate.to);
+          return;
+        }
+        showToast(gate.toast);
+      },
     });
   }
   if (canExpenses) {
@@ -327,6 +387,14 @@ export function ManagerRetailHome() {
         to: "/shifts/open",
       });
     }
+  }
+
+  // Prefer shift over trailing expense when capping quick actions at 6.
+  const expenseIdx = quickActions.findIndex((a) => a.key === "expense");
+  const shiftIdx = quickActions.findIndex((a) => a.key === "shift");
+  if (expenseIdx >= 0 && shiftIdx > expenseIdx) {
+    const [expense] = quickActions.splice(expenseIdx, 1);
+    quickActions.push(expense!);
   }
 
   const salesTotal = dashboard?.completedSalesTotal ?? 0;
@@ -460,6 +528,7 @@ export function ManagerRetailHome() {
                       icon={action.icon}
                       testId={action.testId}
                       to={action.to}
+                      badge={action.badge}
                     />
                   ) : (
                     <ManagerActionCard
@@ -468,6 +537,7 @@ export function ManagerRetailHome() {
                       icon={action.icon}
                       testId={action.testId}
                       onClick={action.onClick!}
+                      badge={action.badge}
                     />
                   ),
                 )}

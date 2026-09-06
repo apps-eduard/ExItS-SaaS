@@ -7351,6 +7351,28 @@ a.dashboard-metric-card:focus-visible {
   animation: exits-toast-in var(--exits-motion-fast) ease both;
 }
 
+.exits-toast--interactive {
+  pointer-events: auto;
+}
+
+.exits-toast__title {
+  font-weight: 600;
+}
+
+.exits-toast__description {
+  margin-top: 0.25rem;
+  color: var(--exits-muted, var(--muted-foreground));
+}
+
+.exits-toast__action {
+  display: inline-flex;
+  margin-top: 0.5rem;
+  font-weight: 600;
+  color: var(--exits-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .exits-toast--success {
   border-color: color-mix(in srgb, var(--exits-success) 45%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-success) 12%, var(--exits-surface));

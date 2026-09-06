@@ -354,6 +354,7 @@ public sealed class StockRequestQueryService
         Guid actingBranchId,
         int? page,
         int? pageSize,
+        IReadOnlyCollection<StockRequestStatus>? statuses = null,
         CancellationToken cancellationToken = default)
     {
         var (skip, take) = PosPagination.Normalize(page, pageSize);
@@ -363,6 +364,7 @@ public sealed class StockRequestQueryService
                 PosBranchId.From(actingBranchId),
                 skip,
                 take,
+                statuses,
                 cancellationToken)
             .ConfigureAwait(false);
         var branchIds = items
@@ -375,6 +377,54 @@ public sealed class StockRequestQueryService
             total,
             Math.Max(page ?? 1, 1),
             take);
+    }
+
+    public async Task<StockRequestOutgoingSummaryDto> GetOutgoingSummaryAsync(
+        Guid organizationId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var destination = PosBranchId.From(actingBranchId);
+        var counts = await _requests
+            .CountByDestinationStatusAsync(orgId, destination, cancellationToken)
+            .ConfigureAwait(false);
+        var recent = await _requests
+            .ListRecentByDestinationAsync(orgId, destination, take: 5, cancellationToken)
+            .ConfigureAwait(false);
+
+        static int CountOf(IReadOnlyDictionary<string, int> map, params string[] codes)
+        {
+            var total = 0;
+            foreach (var code in codes)
+            {
+                if (map.TryGetValue(code, out var c))
+                {
+                    total += c;
+                }
+            }
+
+            return total;
+        }
+
+        var submitted = CountOf(counts, nameof(StockRequestStatus.Pending));
+        var inProgress = CountOf(
+            counts,
+            nameof(StockRequestStatus.Approved),
+            nameof(StockRequestStatus.Preparing),
+            nameof(StockRequestStatus.InProgress));
+        var inTransit = CountOf(counts, nameof(StockRequestStatus.InTransit));
+
+        var branchIds = recent
+            .SelectMany(r => new[] { r.DestinationLocationId.Value, r.RequestedSourceLocationId.Value })
+            .Distinct()
+            .ToList();
+        var names = await _branches.GetNamesAsync(organizationId, branchIds, cancellationToken).ConfigureAwait(false);
+        return new StockRequestOutgoingSummaryDto(
+            submitted,
+            inProgress,
+            inTransit,
+            recent.Select(r => MapList(r, names)).ToList());
     }
 
     public async Task<PagedResult<StockRequestListItemDto>> ListIncomingAsync(
@@ -480,6 +530,131 @@ public sealed class StockRequestQueryService
             names.GetValueOrDefault(request.RequestedSourceLocationId.Value),
             request.Lines.Count,
             request.UpdatedAtUtc);
+}
+
+public sealed class ListReplenishmentCatalog
+{
+    public const int DefaultPageSize = 40;
+
+    private readonly IBranchInventoryQueryRepository _branchInventory;
+    private readonly ISupplyRouteRepository _routes;
+    private readonly IOrganizationBranchDirectory _branches;
+
+    public ListReplenishmentCatalog(
+        IBranchInventoryQueryRepository branchInventory,
+        ISupplyRouteRepository routes,
+        IOrganizationBranchDirectory branches)
+    {
+        _branchInventory = branchInventory;
+        _routes = routes;
+        _branches = branches;
+    }
+
+    public async Task<ApplicationResult<ReplenishmentCatalogResultDto>> ExecuteAsync(
+        BranchInventoryContext retailContext,
+        Guid supplyWarehouseBranchId,
+        string? search,
+        string? stockFilter,
+        Guid? categoryId,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        if (supplyWarehouseBranchId == Guid.Empty)
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchNotFound,
+                "Supply warehouse branch id is required.");
+        }
+
+        if (!ReplenishmentStockFilters.TryNormalize(stockFilter, out var normalizedStockFilter))
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                ApplicationErrorCodes.DomainViolation,
+                "stockFilter must be one of: all, low, out.");
+        }
+
+        if (!await _branches
+                .ExistsInOrganizationAsync(retailContext.OrganizationId, supplyWarehouseBranchId, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchNotFound,
+                "Supply warehouse was not found in this organization.");
+        }
+
+        if (!await _branches
+                .IsActiveInOrganizationAsync(retailContext.OrganizationId, supplyWarehouseBranchId, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                DomainErrorCodes.SupplyRouteSourceInactive,
+                "Supply warehouse must be an active location.");
+        }
+
+        var sourceType = await _branches
+            .GetBranchTypeAsync(retailContext.OrganizationId, supplyWarehouseBranchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!SupplyRouteSourceRules.IsWarehouseBranchType(sourceType))
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                DomainErrorCodes.StockRequestSourceMustBeWarehouse,
+                "Only Warehouse locations may be replenishment supply sources.");
+        }
+
+        var routes = await _routes
+            .ListByDestinationAsync(
+                PosOrganizationId.From(retailContext.OrganizationId),
+                PosBranchId.From(retailContext.BranchId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        var hasActiveRoute = routes.Any(r =>
+            r.SourceLocationId.Value == supplyWarehouseBranchId && r.IsActive);
+        if (!hasActiveRoute)
+        {
+            return ApplicationResult<ReplenishmentCatalogResultDto>.Failure(
+                DomainErrorCodes.StockRequestRouteRequired,
+                "An active supply route is required from the warehouse to this retail branch.");
+        }
+
+        var (skip, take) = PosPagination.Normalize(page, pageSize ?? DefaultPageSize);
+        var (rows, total) = await _branchInventory
+            .ListReplenishmentCatalogAsync(
+                retailContext,
+                new ReplenishmentCatalogFilter(
+                    supplyWarehouseBranchId,
+                    search,
+                    normalizedStockFilter,
+                    categoryId),
+                skip,
+                take,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        var names = await _branches
+            .GetNamesAsync(retailContext.OrganizationId, [supplyWarehouseBranchId], cancellationToken)
+            .ConfigureAwait(false);
+
+        return ApplicationResult<ReplenishmentCatalogResultDto>.Success(
+            new ReplenishmentCatalogResultDto(
+                rows.Select(r => new ReplenishmentCatalogItemDto(
+                    r.ProductId,
+                    r.Name,
+                    r.Sku,
+                    r.Barcode,
+                    r.CategoryId,
+                    r.CategoryName,
+                    r.UnitOfMeasure,
+                    r.BranchOnHandQuantity,
+                    r.WarehouseAvailableQuantity,
+                    r.IsLowStock,
+                    r.IsTracked)).ToList(),
+                total,
+                Math.Max(page ?? 1, 1),
+                take,
+                supplyWarehouseBranchId,
+                names.GetValueOrDefault(supplyWarehouseBranchId)));
+    }
 }
 
 public sealed class CreateStockRequest

@@ -2,6 +2,29 @@
 
 Retail branches request replenishment from a configured supply warehouse. The stock request is a workflow document only — it never mutates on-hand quantities by itself.
 
+## Retail warehouse workspace (V2)
+
+Retail branches open a dedicated workspace under `/warehouse`:
+
+| Route | Purpose |
+|---|---|
+| `/warehouse` | Overview (supply warehouse card, needs-attention metrics, recent requests). Warehouse branch type still renders warehouse home. |
+| `/warehouse/request-stock` | Product browser + request basket (replenishment catalog). |
+| `/warehouse/my-requests` | Outgoing requests (`?tab=submitted\|inProgress\|inTransit\|completed\|all`). |
+| `/warehouse/incoming` | In-transit requests awaiting receive. |
+| `/warehouse/history` | Completed / rejected / cancelled history. |
+| `/warehouse/requests/:id` | Request detail (same page as inventory path). |
+
+Legacy `/inventory/stock-requests/new` redirects to `/warehouse/request-stock`. Warehouse-branch users on nested retail routes are sent to `/inventory/stock-requests`.
+
+Additional read APIs used by the retail workspace:
+
+| Method | Path |
+|---|---|
+| GET | `/api/v1/pos/inventory/stock-requests/replenishment-catalog` |
+| GET | `/api/v1/pos/inventory/stock-requests/outgoing/summary` |
+| GET | `/api/v1/pos/inventory/stock-requests/outgoing?statuses=` |
+
 ## Flow
 
 ```text

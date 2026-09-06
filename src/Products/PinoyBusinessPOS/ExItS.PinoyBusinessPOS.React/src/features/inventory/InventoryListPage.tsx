@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Trash2 } from "lucide-react";
-import { canManageCatalog, canManageInventory } from "@/access/pos-capabilities";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Trash2, Warehouse } from "lucide-react";
+import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -33,8 +33,10 @@ const TRACKING_FILTERS: Array<{
 export function InventoryListPage() {
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
+  const allowView = canViewInventory(sessionGrant);
   const allowManage = canManageInventory(sessionGrant);
   const allowManageCatalog = canManageCatalog(sessionGrant);
+  const isWarehouse = isWarehouseBranch(boundWorkspace?.branchType);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>("all");
@@ -91,22 +93,31 @@ export function InventoryListPage() {
         href: "/inventory/transfers",
         testId: "open-transfers",
       });
+      if (!isWarehouse && allowView) {
+        items.push({
+          key: "warehouse",
+          label: t("retailWarehouse.title"),
+          icon: <Warehouse />,
+          href: "/warehouse",
+          testId: "open-warehouse-workspace",
+          emphasis: "primary",
+        });
+      }
+      if (!isWarehouse && allowManage) {
+        items.push({
+          key: "request-stock",
+          label: t("inventory.openRequestStock"),
+          icon: <PackagePlus />,
+          href: "/warehouse/request-stock",
+          testId: "open-request-stock",
+        });
+      }
       if (allowManage) {
-        const warehouse = isWarehouseBranch(boundWorkspace?.branchType);
-        if (!warehouse) {
-          items.push({
-            key: "request-stock",
-            label: t("inventory.openRequestStock"),
-            icon: <PackagePlus />,
-            href: "/inventory/stock-requests/new",
-            testId: "open-request-stock",
-          });
-        }
         items.push({
           key: "stock-requests",
           label: t("inventory.openStockRequests"),
           icon: <ClipboardList />,
-          href: "/inventory/stock-requests",
+          href: isWarehouse ? "/inventory/stock-requests" : "/warehouse/my-requests",
           testId: "open-stock-requests",
         });
       }
@@ -135,7 +146,7 @@ export function InventoryListPage() {
       },
     );
     return items;
-  }, [multiBranch, allowManage, boundWorkspace?.branchType, t]);
+  }, [multiBranch, allowView, allowManage, isWarehouse, t]);
 
   const query = useQuery({
     queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],

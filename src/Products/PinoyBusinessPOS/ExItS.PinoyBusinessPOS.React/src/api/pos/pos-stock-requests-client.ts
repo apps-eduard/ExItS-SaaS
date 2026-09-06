@@ -101,19 +101,121 @@ export type FulfillStockRequestBody = {
   notes?: string | null;
 };
 
+export const stockRequestOutgoingSummaryDtoSchema = z.object({
+  submittedCount: z.number(),
+  inProgressCount: z.number(),
+  inTransitCount: z.number(),
+  recent: z.array(stockRequestListItemDtoSchema),
+});
+
+export const replenishmentCatalogItemDtoSchema = z.object({
+  productId: guidSchema,
+  name: z.string(),
+  sku: z.string().nullable().optional(),
+  barcode: z.string().nullable().optional(),
+  categoryId: guidSchema.nullable().optional(),
+  categoryName: z.string().nullable().optional(),
+  unitOfMeasure: z.string(),
+  branchOnHandQuantity: z.number(),
+  warehouseAvailableQuantity: z.number(),
+  isLowStock: z.boolean(),
+  isTracked: z.boolean(),
+});
+
+export const replenishmentCatalogResultDtoSchema = z.object({
+  items: z.array(replenishmentCatalogItemDtoSchema),
+  totalCount: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  supplyWarehouseBranchId: guidSchema,
+  supplyWarehouseName: z.string().nullable().optional(),
+});
+
+export type StockRequestOutgoingSummaryDto = z.infer<typeof stockRequestOutgoingSummaryDtoSchema>;
+export type ReplenishmentCatalogItemDto = z.infer<typeof replenishmentCatalogItemDtoSchema>;
+export type ReplenishmentCatalogResultDto = z.infer<typeof replenishmentCatalogResultDtoSchema>;
+
+export type ListOutgoingStockRequestsOptions = {
+  page?: number;
+  pageSize?: number;
+  statuses?: readonly string[];
+  signal?: AbortSignal;
+};
+
+export type ReplenishmentCatalogOptions = {
+  supplyWarehouseBranchId: string;
+  search?: string;
+  stockFilter?: "all" | "low" | "out";
+  categoryId?: string | null;
+  page?: number;
+  pageSize?: number;
+  signal?: AbortSignal;
+};
+
 export async function listOutgoingStockRequests(
   workspace: PosWorkspaceScope,
-  page = 1,
+  pageOrOptions: number | ListOutgoingStockRequestsOptions = 1,
   pageSize = 20,
   signal?: AbortSignal,
 ) {
+  const options: ListOutgoingStockRequestsOptions =
+    typeof pageOrOptions === "number"
+      ? { page: pageOrOptions, pageSize, signal }
+      : pageOrOptions;
+  const page = options.page ?? 1;
+  const size = options.pageSize ?? 20;
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(size),
+  });
+  if (options.statuses && options.statuses.length > 0) {
+    params.set("statuses", options.statuses.join(","));
+  }
   const data = await posRequest<unknown>({
     method: "GET",
-    path: `${PATH}/outgoing?page=${page}&pageSize=${pageSize}`,
+    path: `${PATH}/outgoing?${params.toString()}`,
+    workspace,
+    signal: options.signal,
+  });
+  return stockRequestPagedResultSchema.parse(data);
+}
+
+export async function getOutgoingStockRequestSummary(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<StockRequestOutgoingSummaryDto> {
+  const data = await posRequest<unknown>({
+    method: "GET",
+    path: `${PATH}/outgoing/summary`,
     workspace,
     signal,
   });
-  return stockRequestPagedResultSchema.parse(data);
+  return stockRequestOutgoingSummaryDtoSchema.parse(data);
+}
+
+export async function listReplenishmentCatalog(
+  workspace: PosWorkspaceScope,
+  options: ReplenishmentCatalogOptions,
+): Promise<ReplenishmentCatalogResultDto> {
+  const params = new URLSearchParams({
+    supplyWarehouseBranchId: options.supplyWarehouseBranchId,
+    page: String(options.page ?? 1),
+    pageSize: String(options.pageSize ?? 40),
+    stockFilter: options.stockFilter ?? "all",
+  });
+  if (options.search?.trim()) {
+    params.set("search", options.search.trim());
+  }
+  if (options.categoryId) {
+    params.set("categoryId", options.categoryId);
+  }
+  const data = await posRequest<unknown>({
+    method: "GET",
+    path: `${PATH}/replenishment-catalog?${params.toString()}`,
+    workspace,
+    signal: options.signal,
+  });
+  return replenishmentCatalogResultDtoSchema.parse(data);
 }
 
 export async function listIncomingStockRequests(
