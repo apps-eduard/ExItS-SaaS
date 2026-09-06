@@ -9,6 +9,7 @@ import { TEST_BRANCH_A_ID, TEST_ORG_A_ID } from "@/test/session-context";
 
 const WH_A = "11111111-1111-1111-1111-111111111111";
 const RETAIL_B = "22222222-2222-2222-2222-222222222222";
+const PRODUCT_ID = "33333333-3333-3333-3333-333333333333";
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
@@ -64,11 +65,42 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
 describe("StockRequestCreatePage warehouse-only sources", () => {
   beforeEach(() => {
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
-      items: [],
+      items: [
+        {
+          productId: PRODUCT_ID,
+          organizationId: TEST_ORG_A_ID,
+          name: "Sardines",
+          unitOfMeasure: "pcs",
+          productStatus: "Active",
+          isTracked: true,
+          onHandQuantity: 2,
+          stockStatus: "Low",
+          isLowStock: true,
+          createdAtUtc: "2026-01-01T00:00:00Z",
+          updatedAtUtc: "2026-01-01T00:00:00Z",
+        },
+      ],
       page: 1,
       pageSize: 100,
-      totalCount: 0,
-    } as never);
+      totalCount: 1,
+    });
+
+    vi.spyOn(inventoryClient, "getOrganizationInventorySummary").mockResolvedValue({
+      productId: PRODUCT_ID,
+      productName: "Sardines",
+      unitOfMeasure: "pcs",
+      organizationOnHandQuantity: 50,
+      organizationReservedQuantity: 0,
+      organizationAvailableQuantity: 50,
+      branches: [
+        {
+          branchId: WH_A,
+          onHandQuantity: 40,
+          reservedQuantity: 0,
+          availableQuantity: 40,
+        },
+      ],
+    });
 
     vi.spyOn(supplyRoutesClient, "listSupplyRoutesByDestination").mockResolvedValue([
       {
@@ -111,5 +143,25 @@ describe("StockRequestCreatePage warehouse-only sources", () => {
     ).map((o) => o.textContent ?? "");
     expect(options.some((t) => t.includes("Panay Warehouse"))).toBe(true);
     expect(options.some((t) => t.includes("Other Retail"))).toBe(false);
+  });
+
+  it("renders compact qty inputs and desktop grid headers", async () => {
+    render(
+      <AppProviders>
+        <MemoryRouter>
+          <StockRequestCreatePage />
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("stock-request-grid-headers")).toBeInTheDocument());
+    expect(screen.getByTestId("stock-request-grid-headers").textContent).toMatch(/Product/i);
+    expect(screen.getByTestId("stock-request-grid-headers").textContent).toMatch(/Branch stock/i);
+    expect(screen.getByTestId("stock-request-grid-headers").textContent).toMatch(/Warehouse available/i);
+    expect(screen.getByTestId("stock-request-grid-headers").textContent).toMatch(/Request qty/i);
+
+    const qty = await screen.findByTestId(`stock-request-qty-${PRODUCT_ID}`);
+    expect(qty.className).toMatch(/w-24/);
+    expect(qty.className).toMatch(/max-w-\[6rem\]/);
   });
 });

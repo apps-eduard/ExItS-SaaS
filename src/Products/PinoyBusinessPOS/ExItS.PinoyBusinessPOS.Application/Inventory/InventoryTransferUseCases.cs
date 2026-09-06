@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -477,7 +478,8 @@ public sealed class DispatchInventoryTransfer
                         transfer.DestinationBranchId.Value,
                         transfer.Id.Value,
                         transfer.TransferNumber!,
-                        $"Inventory transfer {transfer.TransferNumber} is on the way."),
+                        $"Inventory transfer {transfer.TransferNumber} is on the way.",
+                        transfer.StockRequestId?.Value),
                     ct)
                 .ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -520,6 +522,7 @@ public sealed class ReceiveInventoryTransfer
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
     private readonly IStockRequestRepository _stockRequests;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -533,6 +536,7 @@ public sealed class ReceiveInventoryTransfer
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IStockRequestRepository stockRequests,
+        IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -545,6 +549,7 @@ public sealed class ReceiveInventoryTransfer
         _branches = branches;
         _alerts = alerts;
         _stockRequests = stockRequests;
+        _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -754,6 +759,30 @@ public sealed class ReceiveInventoryTransfer
 
                     stockRequest.RecalculateStatusFromReceivedQuantities(receivedByProduct, utcNow);
                     await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
+
+                    if (stockRequest.Status is StockRequestStatus.Fulfilled or StockRequestStatus.PartiallyFulfilled)
+                    {
+                        var relatedType = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? StockRequestNotificationTypes.Received
+                            : StockRequestNotificationTypes.PartiallyReceived;
+                        var title = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? "Stock request received"
+                            : "Stock request partially received";
+                        var preview = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} was fully received."
+                            : $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} was partially received.";
+                        await _notifications
+                            .PublishAsync(
+                                organizationId,
+                                organizationId,
+                                relatedType,
+                                stockRequest.Id.Value.ToString("D"),
+                                title,
+                                preview,
+                                ct,
+                                stockRequest.RequestedSourceLocationId.Value)
+                            .ConfigureAwait(false);
+                    }
                 }
             }
 
@@ -770,7 +799,8 @@ public sealed class ReceiveInventoryTransfer
                         transfer.SourceBranchId.Value,
                         transfer.Id.Value,
                         transfer.TransferNumber!,
-                        message),
+                        message,
+                        transfer.StockRequestId?.Value),
                     ct)
                 .ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -1223,4 +1253,49 @@ public sealed class NoOpInventoryTransferAlertSink : IInventoryTransferAlertSink
 {
     public Task PublishAsync(InventoryTransferAlert alert, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+}
+
+/// <summary>
+/// Publishes non-stock-request transfer alerts into the organization inbox.
+/// Stock-request-linked transfers skip here; those use <see cref="StockRequestNotificationTypes"/> instead.
+/// </summary>
+public sealed class OrganizationBusinessInventoryTransferAlertSink : IInventoryTransferAlertSink
+{
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+
+    public OrganizationBusinessInventoryTransferAlertSink(IOrganizationBusinessNotificationPublisher notifications) =>
+        _notifications = notifications;
+
+    public async Task PublishAsync(InventoryTransferAlert alert, CancellationToken cancellationToken = default)
+    {
+        if (alert.StockRequestId is not null)
+        {
+            return;
+        }
+
+        var relatedType = alert.Kind switch
+        {
+            "dispatched" => InventoryTransferNotificationTypes.Dispatched,
+            "partially-received" => InventoryTransferNotificationTypes.PartiallyReceived,
+            _ => InventoryTransferNotificationTypes.Received
+        };
+        var title = alert.Kind switch
+        {
+            "dispatched" => "Inventory transfer dispatched",
+            "partially-received" => "Inventory transfer partially received",
+            _ => "Inventory transfer received"
+        };
+
+        await _notifications
+            .PublishAsync(
+                alert.OrganizationId,
+                alert.OrganizationId,
+                relatedType,
+                alert.TransferId.ToString("D"),
+                title,
+                alert.Message,
+                cancellationToken,
+                alert.TargetBranchId)
+            .ConfigureAwait(false);
+    }
 }

@@ -65,13 +65,97 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             "SR-20260905-000001");
         Assert.Equal(StockRequestStatus.Pending, request.Status);
         Assert.Equal(10m, request.Lines[0].RequestedQuantity);
+        Assert.Null(request.Lines[0].ApprovedQuantity);
         Assert.Equal("SR-20260905-000001", request.RequestNumber);
     }
 
     [Fact]
-    public void Fulfilled_quantity_is_derived_from_received_not_draft_sent()
+    public void Approve_sets_approved_quantity_without_changing_requested()
     {
-        var request = StockRequest.Create(
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 7m });
+        Assert.Equal(StockRequestStatus.Approved, request.Status);
+        Assert.Equal(10m, request.Lines[0].RequestedQuantity);
+        Assert.Equal(7m, request.Lines[0].ApprovedQuantity);
+        Assert.Equal(Actor, request.ApprovedBy);
+    }
+
+    [Fact]
+    public void Approve_rejects_quantity_above_requested()
+    {
+        var request = CreatePending();
+        var ex = Assert.Throws<DomainException>(() =>
+            request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 11m }));
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestQuantity, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Preparing_and_dispatch_lifecycle()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        Assert.Equal(StockRequestStatus.Preparing, request.Status);
+
+        var transferId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), transferId);
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+        Assert.Equal(transferId, request.LinkedInventoryTransferId);
+
+        request.MarkDispatched(Actor, Utc.AddMinutes(4), transferId);
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+    }
+
+    [Fact]
+    public void Fulfilled_quantity_compares_against_approved_quantity()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 6m });
+        request.StartPreparing(Actor, Utc.AddMinutes(2));
+        request.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"));
+
+        request.RecalculateStatusFromReceivedQuantities(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 0m },
+            Utc.AddMinutes(4));
+        Assert.Equal(StockRequestStatus.InTransit, request.Status);
+
+        request.RecalculateStatusFromReceivedQuantities(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 4m },
+            Utc.AddMinutes(5));
+        Assert.Equal(StockRequestStatus.PartiallyFulfilled, request.Status);
+
+        request.RecalculateStatusFromReceivedQuantities(
+            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
+            Utc.AddMinutes(6));
+        Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
+    }
+
+    [Fact]
+    public void Cancel_and_reject_only_before_in_transit()
+    {
+        var request = CreatePending();
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        request.Reject(Actor, Utc.AddMinutes(2), "Out of stock");
+        Assert.Equal(StockRequestStatus.Rejected, request.Status);
+
+        var again = CreatePending();
+        again.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Rice.Value] = 10m });
+        again.StartPreparing(Actor, Utc.AddMinutes(2));
+        again.MarkDispatched(Actor, Utc.AddMinutes(3), Guid.NewGuid());
+        var cancelEx = Assert.Throws<DomainException>(() => again.Cancel(Actor, Utc.AddMinutes(4)));
+        Assert.Equal(DomainErrorCodes.InvalidStockRequestStatusTransition, cancelEx.ErrorCode);
+    }
+
+    [Fact]
+    public void InProgress_code_parses_as_Preparing()
+    {
+        Assert.True(StockRequestStatuses.TryParse("InProgress", out var status));
+        Assert.Equal(StockRequestStatus.Preparing, status);
+        Assert.Equal("Preparing", StockRequestStatuses.ToCode(StockRequestStatus.InProgress));
+    }
+
+    private static StockRequest CreatePending() =>
+        StockRequest.Create(
             Org,
             BranchA,
             Warehouse,
@@ -79,41 +163,4 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             Actor,
             Utc,
             "SR-20260905-000002");
-
-        request.MarkInProgress(Utc.AddMinutes(1));
-        Assert.Equal(StockRequestStatus.InProgress, request.Status);
-
-        request.RecalculateStatusFromReceivedQuantities(
-            new Dictionary<Guid, decimal> { [Rice.Value] = 0m },
-            Utc.AddMinutes(2));
-        Assert.Equal(StockRequestStatus.InProgress, request.Status);
-
-        request.RecalculateStatusFromReceivedQuantities(
-            new Dictionary<Guid, decimal> { [Rice.Value] = 6m },
-            Utc.AddMinutes(3));
-        Assert.Equal(StockRequestStatus.PartiallyFulfilled, request.Status);
-
-        request.RecalculateStatusFromReceivedQuantities(
-            new Dictionary<Guid, decimal> { [Rice.Value] = 10m },
-            Utc.AddMinutes(4));
-        Assert.Equal(StockRequestStatus.Fulfilled, request.Status);
-    }
-
-    [Fact]
-    public void Reject_and_cancel_are_terminal()
-    {
-        var request = StockRequest.Create(
-            Org,
-            BranchA,
-            Warehouse,
-            [new StockRequestLineDraft(Rice, 4m, "Rice 5kg", UnitOfMeasure.Piece)],
-            Actor,
-            Utc,
-            "SR-20260905-000003");
-        request.Reject(Actor, Utc.AddMinutes(1), "Out of stock");
-        Assert.Equal(StockRequestStatus.Rejected, request.Status);
-
-        var again = Assert.Throws<DomainException>(() => request.Cancel(Actor, Utc.AddMinutes(2)));
-        Assert.Equal(DomainErrorCodes.InvalidStockRequestStatusTransition, again.ErrorCode);
-    }
 }

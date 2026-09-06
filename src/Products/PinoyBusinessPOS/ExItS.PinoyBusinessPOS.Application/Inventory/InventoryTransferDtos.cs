@@ -99,4 +99,5 @@ public sealed record InventoryTransferAlert(
     Guid TargetBranchId,
     Guid TransferId,
     string TransferNumber,
-    string Message);
+    string Message,
+    Guid? StockRequestId = null);

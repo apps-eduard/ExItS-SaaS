@@ -36,6 +36,10 @@ public sealed record CreateStockRequestRequest(
     IReadOnlyList<StockRequestLineRequest> Lines,
     string? Notes = null);
 
+public sealed record ApproveStockRequestLineRequest(Guid ProductId, decimal ApprovedQuantity);
+
+public sealed record ApproveStockRequestRequest(IReadOnlyList<ApproveStockRequestLineRequest> LineApprovals);
+
 public sealed record RejectStockRequestRequest(string Reason);
 
 public sealed record FulfillStockRequestLineRequest(Guid ProductId, decimal Quantity, Guid? SourceLotId = null);
@@ -47,6 +51,7 @@ public sealed record StockRequestLineDto(
     Guid ProductId,
     int LineNumber,
     decimal RequestedQuantity,
+    decimal? ApprovedQuantity,
     decimal FulfilledQuantity,
     decimal InProgressQuantity,
     string NameSnapshot,
@@ -73,6 +78,13 @@ public sealed record StockRequestDto(
     Guid RequestedBy,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
+    Guid? ApprovedBy,
+    DateTimeOffset? ApprovedAtUtc,
+    Guid? PreparingStartedBy,
+    DateTimeOffset? PreparingStartedAtUtc,
+    Guid? DispatchedBy,
+    DateTimeOffset? DispatchedAtUtc,
+    Guid? LinkedInventoryTransferId,
     Guid? RejectedBy,
     DateTimeOffset? RejectedAtUtc,
     string? RejectionReason,

@@ -255,8 +255,7 @@ export function WarehouseManagementDashboardPage() {
   );
   const stockReqItems = stockReqQ.data?.items ?? [];
   const stockReqCounts = stockRequestStatusCounts(stockReqItems);
-  const pendingRequests =
-    stockReqCounts.pending + stockReqCounts.inProgress + stockReqCounts.partiallyFulfilled;
+  const pendingRequests = stockReqCounts.pending;
 
   const attention = buildWarehouseAttentionItems({
     lowStock: canInventory ? lowStockCount : 0,

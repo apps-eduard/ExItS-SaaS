@@ -205,7 +205,9 @@ public static class OrganizationBusinessNotificationTypes
     public static bool IsPublishable(string? relatedType) =>
         SupplierConnectionNotificationTypes.IsKnown(relatedType)
         || CustomerOrderNotificationTypes.IsKnown(relatedType)
-        || ConnectedPurchaseOrderNotificationTypes.IsKnown(relatedType);
+        || ConnectedPurchaseOrderNotificationTypes.IsKnown(relatedType)
+        || StockRequestNotificationTypes.IsKnown(relatedType)
+        || InventoryTransferNotificationTypes.IsKnown(relatedType);
 
     /// <summary>
     /// Same-organization publish is allowed for supplier local confirmations and seller-facing
@@ -213,14 +215,18 @@ public static class OrganizationBusinessNotificationTypes
     /// </summary>
     public static bool AllowsSameOrganization(string? relatedType) =>
         SupplierConnectionNotificationTypes.IsLocalActivity(relatedType)
-        || CustomerOrderNotificationTypes.IsKnown(relatedType);
+        || CustomerOrderNotificationTypes.IsKnown(relatedType)
+        || StockRequestNotificationTypes.IsKnown(relatedType)
+        || InventoryTransferNotificationTypes.IsKnown(relatedType);
 
     /// <summary>
     /// Types that may be addressed to a single operational branch. Everything else stays
     /// organization-wide even when a caller supplies a target branch.
     /// </summary>
     public static bool IsBranchTargetable(string? relatedType) =>
-        string.Equals(relatedType, SupplierConnectionNotificationTypes.Requested, StringComparison.Ordinal);
+        string.Equals(relatedType, SupplierConnectionNotificationTypes.Requested, StringComparison.Ordinal)
+        || StockRequestNotificationTypes.IsKnown(relatedType)
+        || InventoryTransferNotificationTypes.IsKnown(relatedType);
 }
 
 /// <summary>Branch-workspace visibility rule for organization inbox reads and counts.</summary>
@@ -318,4 +324,36 @@ public static class ConnectedPurchaseOrderNotificationTypes
         || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
+}
+
+/// <summary>RelatedType values for warehouse stock-request lifecycle organization inbox events.</summary>
+public static class StockRequestNotificationTypes
+{
+    public const string Submitted = "StockRequestSubmitted";
+    public const string Approved = "StockRequestApproved";
+    public const string Declined = "StockRequestDeclined";
+    public const string Dispatched = "StockRequestDispatched";
+    public const string Received = "StockRequestReceived";
+    public const string PartiallyReceived = "StockRequestPartiallyReceived";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Submitted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Approved, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Dispatched, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal);
+}
+
+/// <summary>RelatedType values for standalone inventory-transfer alerts (non-stock-request).</summary>
+public static class InventoryTransferNotificationTypes
+{
+    public const string Dispatched = "InventoryTransferDispatched";
+    public const string Received = "InventoryTransferReceived";
+    public const string PartiallyReceived = "InventoryTransferPartiallyReceived";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Dispatched, StringComparison.Ordinal)
+        || string.Equals(relatedType, Received, StringComparison.Ordinal)
+        || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal);
 }

@@ -3688,6 +3688,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<decimal?>("ApprovedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("approved_quantity");
+
                     b.Property<int>("LineNumber")
                         .HasColumnType("integer")
                         .HasColumnName("line_number");
@@ -3731,6 +3736,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("stock_request_lines", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_stock_request_lines_approved_range", "approved_quantity IS NULL OR (approved_quantity > 0 AND approved_quantity <= requested_quantity)");
                             t.HasCheckConstraint("ck_stock_request_lines_requested_positive", "requested_quantity > 0");
                         });
                 });
@@ -3765,6 +3771,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at_utc");
+
+                    b.Property<Guid?>("ApprovedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by");
+
                     b.Property<DateTimeOffset?>("CancelledAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at_utc");
@@ -3781,6 +3795,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("destination_location_id");
 
+                    b.Property<DateTimeOffset?>("DispatchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dispatched_at_utc");
+
+                    b.Property<Guid?>("DispatchedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dispatched_by");
+
+                    b.Property<Guid?>("LinkedInventoryTransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_inventory_transfer_id");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
@@ -3789,6 +3815,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
+
+                    b.Property<DateTimeOffset?>("PreparingStartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preparing_started_at_utc");
+
+                    b.Property<Guid?>("PreparingStartedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("preparing_started_by");
 
                     b.Property<DateTimeOffset?>("RejectedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -3834,6 +3868,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("LinkedInventoryTransferId")
+                        .HasDatabaseName("ix_stock_requests_linked_transfer");
+
                     b.HasIndex("OrganizationId", "DestinationLocationId")
                         .HasDatabaseName("ix_stock_requests_org_destination");
 
@@ -3851,7 +3888,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("stock_requests", "pos", t =>
                         {
                             t.HasCheckConstraint("ck_stock_requests_distinct_locations", "requested_source_location_id <> destination_location_id");
-                            t.HasCheckConstraint("ck_stock_requests_status", "status IN ('Pending', 'InProgress', 'PartiallyFulfilled', 'Fulfilled', 'Rejected', 'Cancelled')");
+                            t.HasCheckConstraint("ck_stock_requests_status", "status IN ('Pending', 'Approved', 'Preparing', 'InTransit', 'PartiallyFulfilled', 'Fulfilled', 'Rejected', 'Cancelled', 'InProgress')");
                         });
                 });
 

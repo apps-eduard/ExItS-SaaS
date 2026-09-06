@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -432,6 +433,13 @@ public sealed class StockRequestQueryService
             request.RequestedBy,
             request.CreatedAtUtc,
             request.UpdatedAtUtc,
+            request.ApprovedBy,
+            request.ApprovedAtUtc,
+            request.PreparingStartedBy,
+            request.PreparingStartedAtUtc,
+            request.DispatchedBy,
+            request.DispatchedAtUtc,
+            request.LinkedInventoryTransferId,
             request.RejectedBy,
             request.RejectedAtUtc,
             request.RejectionReason,
@@ -442,6 +450,7 @@ public sealed class StockRequestQueryService
                 line.ProductId.Value,
                 line.LineNumber,
                 line.RequestedQuantity,
+                line.ApprovedQuantity,
                 fulfilledByProduct.GetValueOrDefault(line.ProductId.Value),
                 inProgressByProduct.GetValueOrDefault(line.ProductId.Value),
                 line.NameSnapshot,
@@ -480,6 +489,7 @@ public sealed class CreateStockRequest
     private readonly ICatalogProductRepository _products;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly StockRequestQueryService _queries;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -489,6 +499,7 @@ public sealed class CreateStockRequest
         ICatalogProductRepository products,
         IOrganizationBranchDirectory branches,
         StockRequestQueryService queries,
+        IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -497,6 +508,7 @@ public sealed class CreateStockRequest
         _products = products;
         _branches = branches;
         _queries = queries;
+        _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -613,6 +625,19 @@ public sealed class CreateStockRequest
 
             await _requests.AddAsync(stockRequest, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await StockRequestNotificationHelper
+                .PublishAsync(
+                    _notifications,
+                    organizationId,
+                    StockRequestNotificationTypes.Submitted,
+                    stockRequest,
+                    stockRequest.RequestedSourceLocationId.Value,
+                    "Stock request submitted",
+                    $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} awaiting warehouse review.",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var dto = await _queries.GetByIdAsync(organizationId, stockRequest.Id.Value, cancellationToken).ConfigureAwait(false);
             return dto is null
                 ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
@@ -625,14 +650,103 @@ public sealed class CreateStockRequest
     }
 }
 
-public sealed class RejectStockRequest
+public sealed class ApproveStockRequest
+{
+    private readonly IStockRequestRepository _requests;
+    private readonly StockRequestQueryService _queries;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ApproveStockRequest(
+        IStockRequestRepository requests,
+        StockRequestQueryService queries,
+        IOrganizationBusinessNotificationPublisher notifications,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _requests = requests;
+        _queries = queries;
+        _notifications = notifications;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<StockRequestDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid stockRequestId,
+        ApproveStockRequestRequest body,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        var request = await _requests
+            .GetByIdAsync(PosOrganizationId.From(organizationId), StockRequestId.From(stockRequestId), cancellationToken)
+            .ConfigureAwait(false);
+        if (request is null)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                "pos.inventory.stock_request.not_found",
+                "Stock request was not found.");
+        }
+
+        if (actingBranchId != request.RequestedSourceLocationId.Value)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                "Only the requested source warehouse can approve this stock request.");
+        }
+
+        if (body.LineApprovals is null || body.LineApprovals.Count == 0)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                DomainErrorCodes.StockRequestRequiresLines,
+                "At least one line approval is required.");
+        }
+
+        try
+        {
+            var approvals = body.LineApprovals.ToDictionary(l => l.ProductId, l => l.ApprovedQuantity);
+            request.Approve(actorId, _clock.UtcNow, approvals);
+            await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await StockRequestNotificationHelper
+                .PublishAsync(
+                    _notifications,
+                    organizationId,
+                    StockRequestNotificationTypes.Approved,
+                    request,
+                    request.DestinationLocationId.Value,
+                    "Stock request approved",
+                    $"{request.RequestNumber ?? request.Id.Value.ToString("D")} was approved.",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
+            return dto is null
+                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
+                : ApplicationResult<StockRequestDto>.Success(dto);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class StartPreparingStockRequest
 {
     private readonly IStockRequestRepository _requests;
     private readonly StockRequestQueryService _queries;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public RejectStockRequest(
+    public StartPreparingStockRequest(
         IStockRequestRepository requests,
         StockRequestQueryService queries,
         IPosUnitOfWork unitOfWork,
@@ -640,6 +754,261 @@ public sealed class RejectStockRequest
     {
         _requests = requests;
         _queries = queries;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<StockRequestDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid stockRequestId,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        var request = await _requests
+            .GetByIdAsync(PosOrganizationId.From(organizationId), StockRequestId.From(stockRequestId), cancellationToken)
+            .ConfigureAwait(false);
+        if (request is null)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                "pos.inventory.stock_request.not_found",
+                "Stock request was not found.");
+        }
+
+        if (actingBranchId != request.RequestedSourceLocationId.Value)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                "Only the requested source warehouse can prepare this stock request.");
+        }
+
+        try
+        {
+            request.StartPreparing(actorId, _clock.UtcNow);
+            await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
+            return dto is null
+                ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
+                : ApplicationResult<StockRequestDto>.Success(dto);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class DispatchStockRequest
+{
+    private readonly IStockRequestRepository _requests;
+    private readonly IInventoryTransferRepository _transfers;
+    private readonly CreateInventoryTransfer _createTransfer;
+    private readonly DispatchInventoryTransfer _dispatchTransfer;
+    private readonly InventoryTransferQueryService _transferQueries;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public DispatchStockRequest(
+        IStockRequestRepository requests,
+        IInventoryTransferRepository transfers,
+        CreateInventoryTransfer createTransfer,
+        DispatchInventoryTransfer dispatchTransfer,
+        InventoryTransferQueryService transferQueries,
+        IOrganizationBusinessNotificationPublisher notifications,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _requests = requests;
+        _transfers = transfers;
+        _createTransfer = createTransfer;
+        _dispatchTransfer = dispatchTransfer;
+        _transferQueries = transferQueries;
+        _notifications = notifications;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<InventoryTransferDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid stockRequestId,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var stockRequest = await _requests
+            .GetByIdAsync(orgId, StockRequestId.From(stockRequestId), cancellationToken)
+            .ConfigureAwait(false);
+        if (stockRequest is null)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                "pos.inventory.stock_request.not_found",
+                "Stock request was not found.");
+        }
+
+        if (actingBranchId != stockRequest.RequestedSourceLocationId.Value)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                "Only the requested source warehouse can dispatch this stock request.");
+        }
+
+        try
+        {
+            if (stockRequest.Status == StockRequestStatus.Approved)
+            {
+                stockRequest.StartPreparing(actorId, _clock.UtcNow);
+                await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (stockRequest.Status is not (StockRequestStatus.Approved or StockRequestStatus.Preparing or StockRequestStatus.InTransit))
+            {
+                return ApplicationResult<InventoryTransferDto>.Failure(
+                    DomainErrorCodes.InvalidStockRequestStatusTransition,
+                    "Stock request is not open for dispatch.");
+            }
+
+            InventoryTransfer? transfer = null;
+            if (stockRequest.LinkedInventoryTransferId is Guid linkedId)
+            {
+                transfer = await _transfers
+                    .GetByIdAsync(orgId, InventoryTransferId.From(linkedId), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (transfer is null)
+            {
+                var linked = await _transfers
+                    .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                transfer = linked
+                    .Where(t => t.Status != InventoryTransferStatus.Cancelled)
+                    .OrderByDescending(t => t.UpdatedAtUtc)
+                    .FirstOrDefault();
+            }
+
+            if (transfer is null)
+            {
+                if (stockRequest.Status is not (StockRequestStatus.Approved or StockRequestStatus.Preparing))
+                {
+                    return ApplicationResult<InventoryTransferDto>.Failure(
+                        DomainErrorCodes.InvalidStockRequestStatusTransition,
+                        "Stock request is not open for dispatch.");
+                }
+
+                var lines = stockRequest.Lines
+                    .Select(line => new InventoryTransferLineRequest(
+                        line.ProductId.Value,
+                        line.FulfillmentTargetQuantity))
+                    .ToList();
+                var createRequest = new CreateInventoryTransferRequest(
+                    stockRequest.RequestedSourceLocationId.Value,
+                    stockRequest.DestinationLocationId.Value,
+                    lines,
+                    stockRequest.Notes,
+                    stockRequest.Id.Value);
+                var created = await _createTransfer
+                    .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!created.IsSuccess)
+                {
+                    return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
+                }
+
+                transfer = created.Value!;
+            }
+
+            if (transfer.Status == InventoryTransferStatus.Draft)
+            {
+                var dispatched = await _dispatchTransfer
+                    .ExecuteAsync(organizationId, transfer.Id.Value, actorId, actingBranchId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!dispatched.IsSuccess)
+                {
+                    return ApplicationResult<InventoryTransferDto>.Failure(dispatched.ErrorCode!, dispatched.ErrorMessage!);
+                }
+
+                transfer = dispatched.Value!;
+            }
+            else if (transfer.Status is not (
+                InventoryTransferStatus.InTransit
+                or InventoryTransferStatus.Received
+                or InventoryTransferStatus.PartiallyReceived))
+            {
+                return ApplicationResult<InventoryTransferDto>.Failure(
+                    DomainErrorCodes.InvalidStockRequestStatusTransition,
+                    $"Linked transfer status '{InventoryTransferStatuses.ToCode(transfer.Status)}' cannot fulfill dispatch.");
+            }
+
+            var wasAlreadyLinked = stockRequest.LinkedInventoryTransferId == transfer.Id.Value
+                && stockRequest.Status == StockRequestStatus.InTransit;
+            if (stockRequest.Status is StockRequestStatus.Approved or StockRequestStatus.Preparing)
+            {
+                stockRequest.MarkDispatched(actorId, _clock.UtcNow, transfer.Id.Value);
+                await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (!wasAlreadyLinked)
+            {
+                await StockRequestNotificationHelper
+                    .PublishAsync(
+                        _notifications,
+                        organizationId,
+                        StockRequestNotificationTypes.Dispatched,
+                        stockRequest,
+                        stockRequest.DestinationLocationId.Value,
+                        "Stock request dispatched",
+                        $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} is in transit.",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            var dto = await _transferQueries
+                .GetByIdAsync(organizationId, transfer.Id.Value, cancellationToken)
+                .ConfigureAwait(false);
+            return dto is null
+                ? ApplicationResult<InventoryTransferDto>.Failure(
+                    ApplicationErrorCodes.InventoryTransferNotFound,
+                    "Inventory transfer was not found.")
+                : ApplicationResult<InventoryTransferDto>.Success(dto);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class RejectStockRequest
+{
+    private readonly IStockRequestRepository _requests;
+    private readonly StockRequestQueryService _queries;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public RejectStockRequest(
+        IStockRequestRepository requests,
+        StockRequestQueryService queries,
+        IOrganizationBusinessNotificationPublisher notifications,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _requests = requests;
+        _queries = queries;
+        _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -674,12 +1043,29 @@ public sealed class RejectStockRequest
             request.Reject(actorId, _clock.UtcNow, body.Reason);
             await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            await StockRequestNotificationHelper
+                .PublishAsync(
+                    _notifications,
+                    organizationId,
+                    StockRequestNotificationTypes.Declined,
+                    request,
+                    request.DestinationLocationId.Value,
+                    "Stock request declined",
+                    $"{request.RequestNumber ?? request.Id.Value.ToString("D")}: {request.RejectionReason}",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var dto = await _queries.GetByIdAsync(organizationId, request.Id.Value, cancellationToken).ConfigureAwait(false);
             return dto is null
                 ? ApplicationResult<StockRequestDto>.Failure("pos.inventory.stock_request.not_found", "Stock request was not found.")
                 : ApplicationResult<StockRequestDto>.Success(dto);
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<StockRequestDto>.Failure(ex.ErrorCode, ex.Message);
         }
@@ -748,133 +1134,43 @@ public sealed class CancelStockRequest
 
 public sealed class FulfillStockRequestViaTransfer
 {
-    private readonly IStockRequestRepository _requests;
-    private readonly IInventoryTransferRepository _transfers;
-    private readonly CreateInventoryTransfer _createTransfer;
-    private readonly IPosUnitOfWork _unitOfWork;
-    private readonly IClock _clock;
+    private readonly DispatchStockRequest _dispatch;
 
-    public FulfillStockRequestViaTransfer(
-        IStockRequestRepository requests,
-        IInventoryTransferRepository transfers,
-        CreateInventoryTransfer createTransfer,
-        IPosUnitOfWork unitOfWork,
-        IClock clock)
-    {
-        _requests = requests;
-        _transfers = transfers;
-        _createTransfer = createTransfer;
-        _unitOfWork = unitOfWork;
-        _clock = clock;
-    }
+    public FulfillStockRequestViaTransfer(DispatchStockRequest dispatch) => _dispatch = dispatch;
 
-    public async Task<ApplicationResult<InventoryTransferDto>> ExecuteAsync(
+    /// <summary>
+    /// Legacy endpoint: delegates to <see cref="DispatchStockRequest"/> (create + dispatch using approved quantities).
+    /// Custom line quantities on the request body are ignored.
+    /// </summary>
+    public Task<ApplicationResult<InventoryTransferDto>> ExecuteAsync(
         Guid organizationId,
         Guid stockRequestId,
         FulfillStockRequestViaTransferRequest request,
         Guid actorId,
         Guid actingBranchId,
         InventoryTransferQueryService transferQueries,
-        CancellationToken cancellationToken = default)
-    {
-        var orgId = PosOrganizationId.From(organizationId);
-        var stockRequest = await _requests
-            .GetByIdAsync(orgId, StockRequestId.From(stockRequestId), cancellationToken)
-            .ConfigureAwait(false);
-        if (stockRequest is null)
-        {
-            return ApplicationResult<InventoryTransferDto>.Failure(
-                "pos.inventory.stock_request.not_found",
-                "Stock request was not found.");
-        }
+        CancellationToken cancellationToken = default) =>
+        _dispatch.ExecuteAsync(organizationId, stockRequestId, actorId, actingBranchId, cancellationToken);
+}
 
-        if (actingBranchId != stockRequest.RequestedSourceLocationId.Value)
-        {
-            return ApplicationResult<InventoryTransferDto>.Failure(
-                ApplicationErrorCodes.InventoryTransferBranchForbidden,
-                "Only the requested source branch can fulfill this stock request.");
-        }
-
-        if (stockRequest.Status is StockRequestStatus.Rejected or StockRequestStatus.Cancelled or StockRequestStatus.Fulfilled)
-        {
-            return ApplicationResult<InventoryTransferDto>.Failure(
-                DomainErrorCodes.InvalidStockRequestStatusTransition,
-                "Stock request is not open for fulfillment.");
-        }
-
-        if (request.Lines is null || request.Lines.Count == 0)
-        {
-            return ApplicationResult<InventoryTransferDto>.Failure(
-                DomainErrorCodes.StockRequestRequiresLines,
-                "At least one fulfillment line is required.");
-        }
-
-        var linkedTransfers = await _transfers
-            .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
-            .ConfigureAwait(false);
-        var allocatedByProduct = linkedTransfers
-            .Where(t => t.Status != InventoryTransferStatus.Cancelled)
-            .SelectMany(t => t.Lines)
-            .GroupBy(l => l.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.SentQty));
-
-        var requestLines = stockRequest.Lines.ToDictionary(l => l.ProductId.Value);
-        var seen = new HashSet<Guid>();
-        foreach (var line in request.Lines)
-        {
-            if (!seen.Add(line.ProductId))
-            {
-                return ApplicationResult<InventoryTransferDto>.Failure(
-                    DomainErrorCodes.StockRequestDuplicateProduct,
-                    "Fulfillment lines cannot contain duplicate products.");
-            }
-
-            if (line.Quantity <= 0m)
-            {
-                return ApplicationResult<InventoryTransferDto>.Failure(
-                    DomainErrorCodes.InvalidStockRequestQuantity,
-                    "Fulfillment quantity must be greater than zero.");
-            }
-
-            if (!requestLines.TryGetValue(line.ProductId, out var stockLine))
-            {
-                return ApplicationResult<InventoryTransferDto>.Failure(
-                    DomainErrorCodes.InvalidStockRequestLine,
-                    "Fulfillment product is not part of the stock request.");
-            }
-
-            var allocated = allocatedByProduct.GetValueOrDefault(line.ProductId);
-            var remaining = stockLine.RequestedQuantity - allocated;
-            if (line.Quantity > remaining)
-            {
-                return ApplicationResult<InventoryTransferDto>.Failure(
-                    DomainErrorCodes.InvalidStockRequestQuantity,
-                    $"Requested transfer quantity exceeds remaining requested quantity for '{stockLine.NameSnapshot}'.");
-            }
-        }
-
-        var transferRequest = new CreateInventoryTransferRequest(
-            stockRequest.RequestedSourceLocationId.Value,
-            stockRequest.DestinationLocationId.Value,
-            request.Lines.Select(line => new InventoryTransferLineRequest(line.ProductId, line.Quantity, line.SourceLotId)).ToList(),
-            request.Notes,
-            stockRequest.Id.Value);
-        var created = await _createTransfer
-            .ExecuteAsync(organizationId, transferRequest, actorId, actingBranchId, cancellationToken)
-            .ConfigureAwait(false);
-        if (!created.IsSuccess)
-        {
-            return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
-        }
-
-        var utcNow = _clock.UtcNow;
-        stockRequest.MarkInProgress(utcNow);
-        await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        var dto = await transferQueries.GetByIdAsync(organizationId, created.Value!.Id.Value, cancellationToken).ConfigureAwait(false);
-        return dto is null
-            ? ApplicationResult<InventoryTransferDto>.Failure(ApplicationErrorCodes.InventoryTransferNotFound, "Inventory transfer was not found.")
-            : ApplicationResult<InventoryTransferDto>.Success(dto);
-    }
+internal static class StockRequestNotificationHelper
+{
+    public static Task PublishAsync(
+        IOrganizationBusinessNotificationPublisher notifications,
+        Guid organizationId,
+        string relatedType,
+        StockRequest request,
+        Guid targetBranchId,
+        string title,
+        string preview,
+        CancellationToken cancellationToken) =>
+        notifications.PublishAsync(
+            organizationId,
+            organizationId,
+            relatedType,
+            request.Id.Value.ToString("D"),
+            title,
+            preview,
+            cancellationToken,
+            targetBranchId);
 }

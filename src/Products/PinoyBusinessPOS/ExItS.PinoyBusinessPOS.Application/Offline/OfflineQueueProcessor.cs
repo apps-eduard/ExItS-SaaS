@@ -508,6 +508,15 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for stock request create. Online-only.</summary>
     public const string StockRequestCreate = "stock_request.create";
 
+    /// <summary>Server-side idempotency for stock request approve. Online-only.</summary>
+    public const string StockRequestApprove = "stock_request.approve";
+
+    /// <summary>Server-side idempotency for stock request prepare. Online-only.</summary>
+    public const string StockRequestPrepare = "stock_request.prepare";
+
+    /// <summary>Server-side idempotency for stock request dispatch. Online-only.</summary>
+    public const string StockRequestDispatch = "stock_request.dispatch";
+
     /// <summary>Server-side idempotency for stock request reject. Online-only.</summary>
     public const string StockRequestReject = "stock_request.reject";
 

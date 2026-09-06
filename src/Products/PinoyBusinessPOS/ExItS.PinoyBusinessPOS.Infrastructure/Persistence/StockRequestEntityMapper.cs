@@ -60,7 +60,14 @@ internal static class StockRequestEntityMapper
             record.RejectionReason,
             record.CancelledBy,
             record.CancelledAtUtc,
-            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList());
+            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
+            record.ApprovedBy,
+            record.ApprovedAtUtc,
+            record.PreparingStartedBy,
+            record.PreparingStartedAtUtc,
+            record.DispatchedBy,
+            record.DispatchedAtUtc,
+            record.LinkedInventoryTransferId);
 
     public static StockRequestLine ToDomain(StockRequestLineRecord record) =>
         StockRequestLine.Rehydrate(
@@ -70,7 +77,8 @@ internal static class StockRequestEntityMapper
             record.LineNumber,
             record.RequestedQuantity,
             record.NameSnapshot,
-            UnitOfMeasures.Parse(record.UnitOfMeasure));
+            UnitOfMeasures.Parse(record.UnitOfMeasure),
+            record.ApprovedQuantity);
 
     public static StockRequestRecord ToRecord(StockRequest request) =>
         new()
@@ -85,6 +93,13 @@ internal static class StockRequestEntityMapper
             RequestedBy = request.RequestedBy,
             CreatedAtUtc = request.CreatedAtUtc,
             UpdatedAtUtc = request.UpdatedAtUtc,
+            ApprovedBy = request.ApprovedBy,
+            ApprovedAtUtc = request.ApprovedAtUtc,
+            PreparingStartedBy = request.PreparingStartedBy,
+            PreparingStartedAtUtc = request.PreparingStartedAtUtc,
+            DispatchedBy = request.DispatchedBy,
+            DispatchedAtUtc = request.DispatchedAtUtc,
+            LinkedInventoryTransferId = request.LinkedInventoryTransferId,
             RejectedBy = request.RejectedBy,
             RejectedAtUtc = request.RejectedAtUtc,
             RejectionReason = request.RejectionReason,
@@ -98,6 +113,13 @@ internal static class StockRequestEntityMapper
         record.Status = StockRequestStatuses.ToCode(request.Status);
         record.Notes = request.Notes;
         record.UpdatedAtUtc = request.UpdatedAtUtc;
+        record.ApprovedBy = request.ApprovedBy;
+        record.ApprovedAtUtc = request.ApprovedAtUtc;
+        record.PreparingStartedBy = request.PreparingStartedBy;
+        record.PreparingStartedAtUtc = request.PreparingStartedAtUtc;
+        record.DispatchedBy = request.DispatchedBy;
+        record.DispatchedAtUtc = request.DispatchedAtUtc;
+        record.LinkedInventoryTransferId = request.LinkedInventoryTransferId;
         record.RejectedBy = request.RejectedBy;
         record.RejectedAtUtc = request.RejectedAtUtc;
         record.RejectionReason = request.RejectionReason;
@@ -114,6 +136,7 @@ internal static class StockRequestEntityMapper
             ProductId = line.ProductId.Value,
             LineNumber = line.LineNumber,
             RequestedQuantity = line.RequestedQuantity,
+            ApprovedQuantity = line.ApprovedQuantity,
             NameSnapshot = line.NameSnapshot,
             UnitOfMeasure = line.UnitOfMeasure.ToString()
         };

@@ -2455,6 +2455,13 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.RequestedBy).HasColumnName("requested_by").IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ApprovedBy).HasColumnName("approved_by");
+            entity.Property(e => e.ApprovedAtUtc).HasColumnName("approved_at_utc");
+            entity.Property(e => e.PreparingStartedBy).HasColumnName("preparing_started_by");
+            entity.Property(e => e.PreparingStartedAtUtc).HasColumnName("preparing_started_at_utc");
+            entity.Property(e => e.DispatchedBy).HasColumnName("dispatched_by");
+            entity.Property(e => e.DispatchedAtUtc).HasColumnName("dispatched_at_utc");
+            entity.Property(e => e.LinkedInventoryTransferId).HasColumnName("linked_inventory_transfer_id");
             entity.Property(e => e.RejectedBy).HasColumnName("rejected_by");
             entity.Property(e => e.RejectedAtUtc).HasColumnName("rejected_at_utc");
             entity.Property(e => e.RejectionReason)
@@ -2478,6 +2485,8 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_stock_requests_org_source");
             entity.HasIndex(e => new { e.OrganizationId, e.Status })
                 .HasDatabaseName("ix_stock_requests_org_status");
+            entity.HasIndex(e => e.LinkedInventoryTransferId)
+                .HasDatabaseName("ix_stock_requests_linked_transfer");
         });
 
         modelBuilder.Entity<StockRequestLineRecord>(entity =>
@@ -2487,6 +2496,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_stock_request_lines_requested_positive",
                     "requested_quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_stock_request_lines_approved_range",
+                    "approved_quantity IS NULL OR (approved_quantity > 0 AND approved_quantity <= requested_quantity)");
             });
 
             entity.HasKey(e => e.Id);
@@ -2496,6 +2508,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
             entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
             entity.Property(e => e.RequestedQuantity).HasColumnName("requested_quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ApprovedQuantity).HasColumnName("approved_quantity").HasPrecision(18, 3);
             entity.Property(e => e.NameSnapshot)
                 .HasColumnName("name_snapshot")
                 .HasMaxLength(StockRequestLine.NameSnapshotMaxLength)

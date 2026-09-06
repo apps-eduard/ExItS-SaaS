@@ -5,6 +5,7 @@ import {
   buildPosMutationIdempotencyHeaders,
   OFFLINE_OPERATION_TYPES,
 } from "@/api/pos/pos-mutation-idempotency";
+import { inventoryTransferDtoSchema } from "@/api/pos/pos-inventory-transfer-client";
 
 const PATH = "/api/v1/pos/inventory/stock-requests";
 
@@ -17,6 +18,7 @@ export const stockRequestLineDtoSchema = z.object({
   productId: guidSchema,
   lineNumber: z.number(),
   requestedQuantity: z.number(),
+  approvedQuantity: z.number().nullable().optional(),
   fulfilledQuantity: z.number(),
   inProgressQuantity: z.number(),
   nameSnapshot: z.string(),
@@ -45,6 +47,13 @@ export const stockRequestDtoSchema = z.object({
   requestedBy: guidSchema,
   createdAtUtc: z.string(),
   updatedAtUtc: z.string(),
+  approvedBy: guidSchema.nullable().optional(),
+  approvedAtUtc: z.string().nullable().optional(),
+  preparingStartedBy: guidSchema.nullable().optional(),
+  preparingStartedAtUtc: z.string().nullable().optional(),
+  dispatchedBy: guidSchema.nullable().optional(),
+  dispatchedAtUtc: z.string().nullable().optional(),
+  linkedInventoryTransferId: guidSchema.nullable().optional(),
   rejectedBy: guidSchema.nullable().optional(),
   rejectedAtUtc: z.string().nullable().optional(),
   rejectionReason: z.string().nullable().optional(),
@@ -81,6 +90,10 @@ export type CreateStockRequestBody = {
   requestedSourceLocationId: string;
   lines: { productId: string; requestedQuantity: number }[];
   notes?: string | null;
+};
+
+export type ApproveStockRequestBody = {
+  lineApprovals: { productId: string; approvedQuantity: number }[];
 };
 
 export type FulfillStockRequestBody = {
@@ -154,6 +167,72 @@ export async function createStockRequest(
   return stockRequestDtoSchema.parse(data);
 }
 
+export async function approveStockRequest(
+  workspace: PosWorkspaceScope,
+  stockRequestId: string,
+  body: ApproveStockRequestBody,
+  signal?: AbortSignal,
+) {
+  const headers = await buildPosMutationIdempotencyHeaders(
+    crypto.randomUUID(),
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.StockRequestApprove,
+  );
+  const data = await posRequest<unknown>({
+    method: "POST",
+    path: `${PATH}/${stockRequestId}/approve`,
+    workspace,
+    signal,
+    headers,
+    body,
+  });
+  return stockRequestDtoSchema.parse(data);
+}
+
+export async function prepareStockRequest(
+  workspace: PosWorkspaceScope,
+  stockRequestId: string,
+  signal?: AbortSignal,
+) {
+  const body = {};
+  const headers = await buildPosMutationIdempotencyHeaders(
+    crypto.randomUUID(),
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.StockRequestPrepare,
+  );
+  const data = await posRequest<unknown>({
+    method: "POST",
+    path: `${PATH}/${stockRequestId}/prepare`,
+    workspace,
+    signal,
+    headers,
+    body,
+  });
+  return stockRequestDtoSchema.parse(data);
+}
+
+export async function dispatchStockRequest(
+  workspace: PosWorkspaceScope,
+  stockRequestId: string,
+  signal?: AbortSignal,
+) {
+  const body = {};
+  const headers = await buildPosMutationIdempotencyHeaders(
+    crypto.randomUUID(),
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.StockRequestDispatch,
+  );
+  const data = await posRequest<unknown>({
+    method: "POST",
+    path: `${PATH}/${stockRequestId}/dispatch`,
+    workspace,
+    signal,
+    headers,
+    body,
+  });
+  return inventoryTransferDtoSchema.parse(data);
+}
+
 export async function rejectStockRequest(
   workspace: PosWorkspaceScope,
   stockRequestId: string,
@@ -199,6 +278,7 @@ export async function cancelStockRequest(
   return stockRequestDtoSchema.parse(data);
 }
 
+/** @deprecated Prefer dispatchStockRequest — legacy endpoint delegates to dispatch. */
 export async function fulfillStockRequestViaTransfer(
   workspace: PosWorkspaceScope,
   stockRequestId: string,
@@ -218,13 +298,5 @@ export async function fulfillStockRequestViaTransfer(
     headers,
     body,
   });
-  return z
-    .object({
-      transferId: guidSchema,
-      stockRequestId: guidSchema.nullable().optional(),
-      transferNumber: z.string().nullable().optional(),
-      status: z.string(),
-    })
-    .passthrough()
-    .parse(data);
+  return inventoryTransferDtoSchema.passthrough().parse(data);
 }

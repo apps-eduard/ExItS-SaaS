@@ -5,11 +5,15 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 public enum StockRequestStatus
 {
     Pending = 0,
+    /// <summary>Deprecated: prefer <see cref="Preparing"/>. Kept for legacy rows / parsing.</summary>
     InProgress = 1,
     PartiallyFulfilled = 2,
     Fulfilled = 3,
     Rejected = 4,
-    Cancelled = 5
+    Cancelled = 5,
+    Approved = 6,
+    Preparing = 7,
+    InTransit = 8
 }
 
 public static class StockRequestStatuses
@@ -19,14 +23,21 @@ public static class StockRequestStatuses
     public static IReadOnlyList<string> Codes { get; } =
     [
         nameof(StockRequestStatus.Pending),
-        nameof(StockRequestStatus.InProgress),
+        nameof(StockRequestStatus.Approved),
+        nameof(StockRequestStatus.Preparing),
+        nameof(StockRequestStatus.InTransit),
         nameof(StockRequestStatus.PartiallyFulfilled),
         nameof(StockRequestStatus.Fulfilled),
         nameof(StockRequestStatus.Rejected),
-        nameof(StockRequestStatus.Cancelled)
+        nameof(StockRequestStatus.Cancelled),
+        // Legacy code retained for parse/compat; new writes should use Preparing.
+        nameof(StockRequestStatus.InProgress)
     ];
 
-    public static string ToCode(StockRequestStatus status) => status.ToString();
+    public static string ToCode(StockRequestStatus status) =>
+        status == StockRequestStatus.InProgress
+            ? nameof(StockRequestStatus.Preparing)
+            : status.ToString();
 
     public static bool TryParse(string? code, out StockRequestStatus status)
     {
@@ -37,6 +48,12 @@ public static class StockRequestStatuses
         }
 
         var trimmed = code.Trim();
+        if (string.Equals(trimmed, nameof(StockRequestStatus.InProgress), StringComparison.OrdinalIgnoreCase))
+        {
+            status = StockRequestStatus.Preparing;
+            return true;
+        }
+
         var match = Codes.FirstOrDefault(c => string.Equals(c, trimmed, StringComparison.OrdinalIgnoreCase));
         if (match is null)
         {

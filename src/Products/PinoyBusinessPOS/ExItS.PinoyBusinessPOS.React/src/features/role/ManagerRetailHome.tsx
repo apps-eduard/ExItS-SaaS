@@ -287,6 +287,13 @@ export function ManagerRetailHome() {
       testId: "manager-action-transfer",
       to: "/inventory/transfers",
     });
+    quickActions.push({
+      key: "request-stock",
+      label: t("inventory.openRequestStock"),
+      icon: PackagePlus,
+      testId: "manager-action-request-stock",
+      to: "/inventory/stock-requests/new",
+    });
   }
   if (canExpenses) {
     quickActions.push({

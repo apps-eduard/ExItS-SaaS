@@ -222,6 +222,13 @@ export function ManagerWarehouseHome({
       to: "/inventory/transfers",
     });
     quickActions.push({
+      key: "stock-requests",
+      label: t("inventory.openStockRequests"),
+      icon: ClipboardList,
+      testId: "manager-action-stock-requests",
+      to: "/inventory/stock-requests",
+    });
+    quickActions.push({
       key: "inventory",
       label: t("warehouse.action.inventory"),
       icon: Boxes,

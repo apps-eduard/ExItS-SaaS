@@ -10,6 +10,7 @@ import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBa
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -91,19 +92,22 @@ export function InventoryListPage() {
         testId: "open-transfers",
       });
       if (allowManage) {
+        const warehouse = isWarehouseBranch(boundWorkspace?.branchType);
+        if (!warehouse) {
+          items.push({
+            key: "request-stock",
+            label: t("inventory.openRequestStock"),
+            icon: <PackagePlus />,
+            href: "/inventory/stock-requests/new",
+            testId: "open-request-stock",
+          });
+        }
         items.push({
-          key: "request-stock",
-          label: t("inventory.openRequestStock"),
-          icon: <PackagePlus />,
-          href: "/inventory/stock-requests/new",
-          testId: "open-request-stock",
-        });
-        items.push({
-          key: "incoming-stock-requests",
-          label: t("inventory.openIncomingStockRequests"),
+          key: "stock-requests",
+          label: t("inventory.openStockRequests"),
           icon: <ClipboardList />,
           href: "/inventory/stock-requests",
-          testId: "open-incoming-stock-requests",
+          testId: "open-stock-requests",
         });
       }
     }
@@ -131,7 +135,7 @@ export function InventoryListPage() {
       },
     );
     return items;
-  }, [multiBranch, allowManage, t]);
+  }, [multiBranch, allowManage, boundWorkspace?.branchType, t]);
 
   const query = useQuery({
     queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],

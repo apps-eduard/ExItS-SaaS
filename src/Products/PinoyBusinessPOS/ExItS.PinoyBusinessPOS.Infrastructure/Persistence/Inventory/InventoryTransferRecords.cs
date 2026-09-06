@@ -48,6 +48,13 @@ internal sealed class StockRequestRecord
     public Guid RequestedBy { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+    public Guid? ApprovedBy { get; set; }
+    public DateTimeOffset? ApprovedAtUtc { get; set; }
+    public Guid? PreparingStartedBy { get; set; }
+    public DateTimeOffset? PreparingStartedAtUtc { get; set; }
+    public Guid? DispatchedBy { get; set; }
+    public DateTimeOffset? DispatchedAtUtc { get; set; }
+    public Guid? LinkedInventoryTransferId { get; set; }
     public Guid? RejectedBy { get; set; }
     public DateTimeOffset? RejectedAtUtc { get; set; }
     public string? RejectionReason { get; set; }
@@ -64,6 +71,7 @@ internal sealed class StockRequestLineRecord
     public Guid ProductId { get; set; }
     public int LineNumber { get; set; }
     public decimal RequestedQuantity { get; set; }
+    public decimal? ApprovedQuantity { get; set; }
     public string NameSnapshot { get; set; } = string.Empty;
     public string UnitOfMeasure { get; set; } = string.Empty;
 }

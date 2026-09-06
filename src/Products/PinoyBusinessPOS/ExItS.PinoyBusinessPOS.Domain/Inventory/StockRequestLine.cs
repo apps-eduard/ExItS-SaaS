@@ -20,6 +20,8 @@ public sealed class StockRequestLine
     public CatalogProductId ProductId { get; }
     public int LineNumber { get; }
     public decimal RequestedQuantity { get; }
+    /// <summary>Null until the warehouse approves the request.</summary>
+    public decimal? ApprovedQuantity { get; private set; }
     public string NameSnapshot { get; }
     public UnitOfMeasure UnitOfMeasure { get; }
 
@@ -29,6 +31,7 @@ public sealed class StockRequestLine
         CatalogProductId productId,
         int lineNumber,
         decimal requestedQuantity,
+        decimal? approvedQuantity,
         string nameSnapshot,
         UnitOfMeasure unitOfMeasure)
     {
@@ -37,6 +40,7 @@ public sealed class StockRequestLine
         ProductId = productId;
         LineNumber = lineNumber;
         RequestedQuantity = requestedQuantity;
+        ApprovedQuantity = approvedQuantity;
         NameSnapshot = nameSnapshot;
         UnitOfMeasure = unitOfMeasure;
     }
@@ -62,9 +66,34 @@ public sealed class StockRequestLine
             draft.ProductId,
             lineNumber,
             normalizedQty,
+            approvedQuantity: null,
             name,
             draft.UnitOfMeasure);
     }
+
+    /// <summary>Sets approved quantity without changing <see cref="RequestedQuantity"/>.</summary>
+    internal void SetApprovedQuantity(decimal approvedQuantity, SellingMode sellingMode = SellingMode.PerItem)
+    {
+        if (approvedQuantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockRequestQuantity,
+                "Approved quantity must be greater than zero.");
+        }
+
+        var normalized = SaleLine.NormalizeQuantity(approvedQuantity, UnitOfMeasure, sellingMode);
+        if (normalized > RequestedQuantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockRequestQuantity,
+                $"Approved quantity cannot exceed requested quantity for '{NameSnapshot}'.");
+        }
+
+        ApprovedQuantity = normalized;
+    }
+
+    /// <summary>Quantity used for fulfillment comparisons (approved when set, else requested).</summary>
+    public decimal FulfillmentTargetQuantity => ApprovedQuantity ?? RequestedQuantity;
 
     public static StockRequestLine Rehydrate(
         StockRequestLineId id,
@@ -73,13 +102,15 @@ public sealed class StockRequestLine
         int lineNumber,
         decimal requestedQuantity,
         string nameSnapshot,
-        UnitOfMeasure unitOfMeasure) =>
+        UnitOfMeasure unitOfMeasure,
+        decimal? approvedQuantity = null) =>
         new(
             id,
             stockRequestId,
             productId,
             lineNumber,
             requestedQuantity,
+            approvedQuantity,
             nameSnapshot,
             unitOfMeasure);
 

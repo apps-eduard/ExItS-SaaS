@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -444,6 +445,50 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Equal(12m, fx.Balances.OnHand(BranchB, fx.CokeId));
     }
 
+    [Fact]
+    public async Task Stock_request_dispatch_is_idempotent_and_receive_syncs_status()
+    {
+        var fx = await SeedAsync(cokeOnHand: 40m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-20260906-000001");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 8m });
+        await fx.StockRequests.AddAsync(request);
+
+        var first = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(first.IsSuccess);
+        Assert.Equal("InTransit", first.Value!.Status);
+        Assert.Equal(8m, first.Value.TotalSentQty);
+        Assert.Single(fx.Transfers.Items.Where(t => t.Status != InventoryTransferStatus.Cancelled));
+        Assert.Contains(fx.Notifications.Items, n => n.RelatedType == StockRequestNotificationTypes.Dispatched);
+
+        var before = fx.Notifications.Items.Count(n => n.RelatedType == StockRequestNotificationTypes.Dispatched);
+        var second = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Value.TransferId, second.Value!.TransferId);
+        Assert.Single(fx.Transfers.Items.Where(t => t.Status != InventoryTransferStatus.Cancelled));
+        Assert.Equal(before, fx.Notifications.Items.Count(n => n.RelatedType == StockRequestNotificationTypes.Dispatched));
+
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            first.Value.TransferId,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 8m)]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess);
+
+        var refreshed = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.Fulfilled, refreshed!.Status);
+        Assert.Contains(
+            fx.Notifications.Items,
+            n => n.RelatedType == StockRequestNotificationTypes.Received && n.TargetBranchId == BranchA);
+    }
+
     private static async Task<Fixture> SeedAsync(
         decimal cokeOnHand,
         decimal spriteOnHand = 0m,
@@ -492,6 +537,8 @@ public sealed class InventoryTransferUseCaseTests
         public InMemoryBalances Balances { get; } = new();
         public InMemoryLots Lots { get; } = new();
         public CapturingAlerts Alerts { get; } = new();
+        public CapturingNotifications Notifications { get; } = new();
+        public InMemoryStockRequests StockRequests { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
         public FakeBranches Branches { get; } = new();
@@ -500,6 +547,7 @@ public sealed class InventoryTransferUseCaseTests
         public ReceiveInventoryTransfer Receive { get; }
         public CancelInventoryTransfer Cancel { get; }
         public InventoryTransferQueryService Queries { get; }
+        public DispatchStockRequest DispatchStockRequest { get; }
 
         public Fixture()
         {
@@ -515,11 +563,21 @@ public sealed class InventoryTransferUseCaseTests
                 lotStock,
                 Branches,
                 Alerts,
-                new InMemoryStockRequests(),
+                StockRequests,
+                Notifications,
                 UnitOfWork,
                 Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
             Queries = new InventoryTransferQueryService(Transfers, Branches);
+            DispatchStockRequest = new DispatchStockRequest(
+                StockRequests,
+                Transfers,
+                Create,
+                Dispatch,
+                Queries,
+                Notifications,
+                UnitOfWork,
+                Clock);
         }
 
         public async Task EnableAsync(Guid productId, string name, decimal opening)
@@ -576,6 +634,12 @@ public sealed class InventoryTransferUseCaseTests
         public Task<bool> ExistsInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
             Task.FromResult(organizationId == OrgA && (branchId == BranchA || branchId == BranchB));
 
+        public Task<bool> IsActiveInOrganizationAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
+
+        public Task<string> GetBranchTypeAsync(Guid organizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(branchId == BranchA ? "Warehouse" : "Retail");
+
         public Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(
             Guid organizationId,
             IReadOnlyCollection<Guid> branchIds,
@@ -596,6 +660,32 @@ public sealed class InventoryTransferUseCaseTests
             Items.Add(alert);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class CapturingNotifications : IOrganizationBusinessNotificationPublisher
+    {
+        public List<(string RelatedType, Guid? TargetBranchId)> Items { get; } = [];
+
+        public Task PublishAsync(
+            Guid sourceOrganizationId,
+            Guid recipientOrganizationId,
+            string relatedType,
+            string relatedId,
+            string title,
+            string preview,
+            CancellationToken cancellationToken = default,
+            Guid? targetBranchId = null)
+        {
+            Items.Add((relatedType, targetBranchId));
+            return Task.CompletedTask;
+        }
+
+        public Task MarkRelatedReadAsync(
+            Guid organizationId,
+            string relatedType,
+            string relatedId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class InMemoryCatalog : ICatalogProductRepository
@@ -1021,11 +1111,13 @@ public sealed class InventoryTransferUseCaseTests
 
     private sealed class InMemoryStockRequests : IStockRequestRepository
     {
+        public List<StockRequest> Items { get; } = [];
+
         public Task<StockRequest?> GetByIdAsync(
             PosOrganizationId organizationId,
             StockRequestId stockRequestId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<StockRequest?>(null);
+            Task.FromResult(Items.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == stockRequestId));
 
         public Task<(IReadOnlyList<StockRequest> Items, int TotalCount)> ListByDestinationAsync(
             PosOrganizationId organizationId,
@@ -1043,11 +1135,22 @@ public sealed class InventoryTransferUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<StockRequest>, int)>(([], 0));
 
-        public Task AddAsync(StockRequest stockRequest, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+        public Task AddAsync(StockRequest stockRequest, CancellationToken cancellationToken = default)
+        {
+            Items.Add(stockRequest);
+            return Task.CompletedTask;
+        }
 
-        public Task UpdateAsync(StockRequest stockRequest, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+        public Task UpdateAsync(StockRequest stockRequest, CancellationToken cancellationToken = default)
+        {
+            var idx = Items.FindIndex(r => r.Id == stockRequest.Id);
+            if (idx >= 0)
+            {
+                Items[idx] = stockRequest;
+            }
+
+            return Task.CompletedTask;
+        }
 
         public Task<string> AllocateNextNumberAsync(
             PosOrganizationId organizationId,

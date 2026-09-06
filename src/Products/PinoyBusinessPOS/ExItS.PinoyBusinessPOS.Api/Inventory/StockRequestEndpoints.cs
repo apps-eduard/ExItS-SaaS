@@ -22,6 +22,9 @@ internal static class StockRequestEndpoints
         group.MapGet("/stock-requests/incoming", ListIncoming);
         group.MapGet("/stock-requests/{stockRequestId:guid}", GetStockRequest);
         group.MapPost("/stock-requests", CreateStockRequest);
+        group.MapPost("/stock-requests/{stockRequestId:guid}/approve", ApproveStockRequest);
+        group.MapPost("/stock-requests/{stockRequestId:guid}/prepare", PrepareStockRequest);
+        group.MapPost("/stock-requests/{stockRequestId:guid}/dispatch", DispatchStockRequest);
         group.MapPost("/stock-requests/{stockRequestId:guid}/reject", RejectStockRequest);
         group.MapPost("/stock-requests/{stockRequestId:guid}/cancel", CancelStockRequest);
         group.MapPost("/stock-requests/{stockRequestId:guid}/fulfill-transfer", FulfillViaTransfer);
@@ -207,6 +210,88 @@ internal static class StockRequestEndpoints
                 ct2 => useCase.ExecuteAsync(organizationId, body, actorId, branchId, ct2),
                 dto => dto,
                 dto => Results.Created($"/api/v1/pos/inventory/stock-requests/{dto.StockRequestId:D}", dto),
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> ApproveStockRequest(
+        HttpRequest request,
+        Guid stockRequestId,
+        ApproveStockRequestRequest body,
+        ApproveStockRequest useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.StockRequestApprove,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, stockRequestId, body, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> PrepareStockRequest(
+        HttpRequest request,
+        Guid stockRequestId,
+        StartPreparingStockRequest useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.StockRequestPrepare,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, stockRequestId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> DispatchStockRequest(
+        HttpRequest request,
+        Guid stockRequestId,
+        DispatchStockRequest useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.StockRequestDispatch,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, stockRequestId, actorId, branchId, ct2),
+                dto => dto,
+                dto => Results.Ok(dto),
                 ct)
             .ConfigureAwait(false);
     }
