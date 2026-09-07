@@ -1,9 +1,21 @@
 /**
- * Local Validation supervisor client (loopback only).
+ * Local Validation supervisor client (loopback / Vite same-origin proxy).
  * Destructive controls require browser on localhost/127.0.0.1.
  */
 
+/** Direct loopback origin (tests / non-browser). */
 export const LOCAL_VALIDATION_SUPERVISOR_ORIGIN = "http://127.0.0.1:8099";
+
+/** Dev same-origin proxy prefix (avoids CORS; Vite → 127.0.0.1:8099). */
+export const LOCAL_VALIDATION_SUPERVISOR_PROXY_PREFIX = "/__dev__/lv-supervisor";
+
+export function resolveSupervisorBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return LOCAL_VALIDATION_SUPERVISOR_ORIGIN;
+  }
+  // Prefer Vite proxy when served by React POS so login controls work same-origin.
+  return LOCAL_VALIDATION_SUPERVISOR_PROXY_PREFIX;
+}
 
 export type LocalValidationServiceStatus =
   | "Up"
@@ -41,11 +53,17 @@ async function readJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+function supervisorUrl(path: string): string {
+  const base = resolveSupervisorBaseUrl().replace(/\/$/, "");
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${suffix}`;
+}
+
 export async function fetchSupervisorHealth(
   signal?: AbortSignal,
 ): Promise<LocalValidationHealthResponse | null> {
   try {
-    const response = await fetch(`${LOCAL_VALIDATION_SUPERVISOR_ORIGIN}/health/services`, {
+    const response = await fetch(supervisorUrl("/health/services"), {
       method: "GET",
       cache: "no-store",
       signal,
@@ -63,13 +81,37 @@ export async function fetchSupervisorHealth(
   }
 }
 
+export async function fetchSupervisorOperation(signal?: AbortSignal): Promise<{
+  busy: boolean;
+  operation?: string | null;
+  progress?: string | null;
+} | null> {
+  try {
+    const response = await fetch(supervisorUrl("/operation"), {
+      method: "GET",
+      cache: "no-store",
+      signal,
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as {
+      busy: boolean;
+      operation?: string | null;
+      progress?: string | null;
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function restartSupervisorService(serviceKey: string): Promise<{
   ok: boolean;
   message: string;
   status: number;
 }> {
   const response = await fetch(
-    `${LOCAL_VALIDATION_SUPERVISOR_ORIGIN}/services/${encodeURIComponent(serviceKey)}/restart`,
+    supervisorUrl(`/services/${encodeURIComponent(serviceKey)}/restart`),
     { method: "POST", cache: "no-store" },
   );
   const body = await response.json().catch(() => ({}));
@@ -99,7 +141,7 @@ export async function restartAllSupervisorApps(): Promise<{
   message: string;
   status: number;
 }> {
-  const response = await fetch(`${LOCAL_VALIDATION_SUPERVISOR_ORIGIN}/services/restart-all`, {
+  const response = await fetch(supervisorUrl("/services/restart-all"), {
     method: "POST",
     cache: "no-store",
   });
@@ -130,7 +172,7 @@ export async function resetLocalValidationData(): Promise<{
   message: string;
   status: number;
 }> {
-  const response = await fetch(`${LOCAL_VALIDATION_SUPERVISOR_ORIGIN}/reset`, {
+  const response = await fetch(supervisorUrl("/reset"), {
     method: "POST",
     cache: "no-store",
   });

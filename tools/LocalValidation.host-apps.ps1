@@ -219,18 +219,93 @@ function Assert-LocalValidationControlNotProduction {
     }
 }
 
+function Stop-LocalValidationSupervisorHost {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [int]$Port = 0,
+        [switch]$KeepSupervisor
+    )
+
+    if ($KeepSupervisor) {
+        return 0
+    }
+
+    if ($Port -le 0) { $Port = [int]$LocalValidationStack.DefaultSupervisorPort }
+    $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
+    $stopped = 0
+    $assembly = [string]$LocalValidationStack.SupervisorAssembly
+
+    foreach ($process in Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue) {
+        $cmd = [string]$process.CommandLine
+        if ([string]::IsNullOrWhiteSpace($cmd)) { continue }
+        if ($cmd.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+        if ($cmd.IndexOf($assembly, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+        Write-Host ("[local-validation] Stopping supervisor dotnet PID {0}" -f $process.ProcessId) -ForegroundColor Cyan
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+        $stopped++
+    }
+
+    $exeName = "$assembly.exe"
+    foreach ($process in Get-CimInstance Win32_Process -Filter "Name = '$exeName'" -ErrorAction SilentlyContinue) {
+        $haystack = ("{0}|{1}" -f $process.CommandLine, $process.ExecutablePath).Replace('/', '\')
+        if ($haystack.IndexOf($rootNorm, [StringComparison]::OrdinalIgnoreCase) -lt 0) { continue }
+        Write-Host ("[local-validation] Stopping supervisor apphost PID {0}" -f $process.ProcessId) -ForegroundColor Cyan
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+        $stopped++
+    }
+
+    # PowerShell launcher windows titled for supervisor (state WindowPids also cover this).
+    foreach ($proc in Get-Process -Name powershell, pwsh -ErrorAction SilentlyContinue) {
+        try {
+            if ($proc.MainWindowTitle -and $proc.MainWindowTitle.IndexOf('LocalValidation - Supervisor', [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                Write-Host ("[local-validation] Stopping supervisor window PID {0}" -f $proc.Id) -ForegroundColor Cyan
+                Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                $stopped++
+            }
+        } catch { }
+    }
+
+    $owner = Get-LocalValidationListeningOwner -Port $Port
+    if ($null -ne $owner) {
+        $hay = ("{0}|{1}" -f $owner.ProcessName, $owner.CommandLine)
+        if ($hay.IndexOf($assembly, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+            $hay.IndexOf('local-validation-supervisor', [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            Write-Host ("[local-validation] Freeing supervisor port {0} (PID {1})" -f $Port, $owner.ProcessId) -ForegroundColor Cyan
+            Stop-Process -Id $owner.ProcessId -Force -ErrorAction SilentlyContinue
+            $stopped++
+        }
+    }
+
+    if ($stopped -gt 0) { Start-Sleep -Seconds 1 }
+    return $stopped
+}
+
 function Start-LocalValidationSupervisorHost {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [int]$Port = 0,
-        [int]$WaitSeconds = 60
+        [int]$WaitSeconds = 90,
+        [switch]$ForceRestart
     )
 
     if ($Port -le 0) { $Port = [int]$LocalValidationStack.DefaultSupervisorPort }
     $healthUrl = "http://127.0.0.1:$Port/health"
-    if (Test-LocalValidationHttpReady -Uri $healthUrl -TimeoutSeconds 2) {
-        Write-Host "[local-validation] Supervisor already healthy on :$Port" -ForegroundColor Green
-        return $null
+    $servicesUrl = "http://127.0.0.1:$Port/health/services"
+
+    if ($ForceRestart) {
+        $null = Stop-LocalValidationSupervisorHost -RepoRoot $RepoRoot -Port $Port
+    }
+    elseif (Test-LocalValidationHttpReady -Uri $healthUrl -TimeoutSec 2) {
+        if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 5) {
+            Write-Host ("[local-validation] Local Validation Supervisor :{0} UP (already running)" -f $Port) -ForegroundColor Green
+            return $null
+        }
+        Write-Host "[local-validation] Supervisor /health OK but /health/services failed - restarting..." -ForegroundColor Yellow
+        $null = Stop-LocalValidationSupervisorHost -RepoRoot $RepoRoot -Port $Port
+    }
+    else {
+        # Clear stale listeners/processes before start.
+        $null = Stop-LocalValidationSupervisorHost -RepoRoot $RepoRoot -Port $Port
     }
 
     $project = Join-Path $RepoRoot 'tools\ExItS.LocalValidation.Supervisor\ExItS.LocalValidation.Supervisor.csproj'
@@ -241,6 +316,7 @@ function Start-LocalValidationSupervisorHost {
     $null = Invoke-LocalValidationDotnetBuild -Label 'Local Validation Supervisor' -ProjectPath $project
     $envMap = @{
         ASPNETCORE_ENVIRONMENT = 'Development'
+        DOTNET_ENVIRONMENT = 'Development'
         ASPNETCORE_URLS = "http://127.0.0.1:$Port"
         LocalValidation__Enabled = 'true'
         LocalValidation__Supervisor__Enabled = 'true'
@@ -255,12 +331,31 @@ function Start-LocalValidationSupervisorHost {
         -EnvMap $envMap `
         -Mode 'Run' `
         -ServiceKey 'local-validation-supervisor'
-    $ready = Wait-LocalServiceReady `
-        -ServiceName 'Local Validation Supervisor' `
-        -HealthUri $healthUrl `
-        -TimeoutSeconds $WaitSeconds `
-        -WindowProcessId $launch.WindowProcessId `
-        -ExitMarkerPath $launch.ExitMarkerPath
-    Write-Host ("[local-validation] Supervisor READY ({0}s) on 127.0.0.1:{1}" -f $ready.ReadyInSeconds, $Port) -ForegroundColor Green
-    return $launch
+    try {
+        $ready = Wait-LocalServiceReady `
+            -ServiceName 'Local Validation Supervisor' `
+            -HealthUri $healthUrl `
+            -TimeoutSeconds $WaitSeconds `
+            -WindowProcessId $launch.WindowProcessId `
+            -ExitMarkerPath $launch.ExitMarkerPath
+        $deadline = (Get-Date).AddSeconds([Math]::Max(15, [Math]::Min(60, $WaitSeconds)))
+        $servicesReady = $false
+        while ((Get-Date) -lt $deadline) {
+            if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 3) {
+                $servicesReady = $true
+                break
+            }
+            Start-Sleep -Milliseconds 500
+        }
+        if (-not $servicesReady) {
+            throw "Local Validation Supervisor :$Port /health OK but /health/services did not become ready."
+        }
+        Write-Host ("[local-validation] Local Validation Supervisor :{0} UP ({1}s)" -f $Port, $ready.ReadyInSeconds) -ForegroundColor Green
+        return $launch
+    }
+    catch {
+        Write-Host "[local-validation] FAIL Local Validation Supervisor did not become ready on 127.0.0.1:$Port" -ForegroundColor Red
+        Write-Host "[local-validation] FAIL Check the 'ExItS LocalValidation - Supervisor' window and exit marker $($launch.ExitMarkerPath)" -ForegroundColor Red
+        throw
+    }
 }

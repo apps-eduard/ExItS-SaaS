@@ -8,6 +8,7 @@ import { createPlatformApiProxy } from "./vite.platform-api-proxy";
 import { createPosApiProxy } from "./vite.pos-api-proxy";
 import { blockServiceWorkerScriptsInDev } from "./vite.block-sw-in-dev";
 import { createDevPortHealthPlugin } from "./vite.dev-port-health";
+import { createLvSupervisorProxy } from "./vite.lv-supervisor-proxy";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -83,6 +84,7 @@ export default defineConfig({
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
+      ...createLvSupervisorProxy(),
     },
   },
   preview: {
@@ -100,6 +102,7 @@ export default defineConfig({
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
+      ...createLvSupervisorProxy(),
     },
   },
   test: {
@@ -114,6 +117,7 @@ export default defineConfig({
       "vite.proxy-cookie.test.ts",
       "vite.block-sw-in-dev.test.ts",
       "vite.dev-port-health.test.ts",
+      "vite.lv-supervisor-proxy.test.ts",
       "scripts/emulator-port-forward.test.mjs",
     ],
   },

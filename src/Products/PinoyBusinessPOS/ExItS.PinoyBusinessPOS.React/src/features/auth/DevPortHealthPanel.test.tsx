@@ -4,6 +4,7 @@ import { AppProviders } from "@/app/providers";
 import { DevPortHealthPanel } from "@/features/auth/DevPortHealthPanel";
 
 const fetchSupervisorHealth = vi.fn();
+const fetchSupervisorOperation = vi.fn();
 const restartSupervisorService = vi.fn();
 const restartAllSupervisorApps = vi.fn();
 const resetLocalValidationData = vi.fn();
@@ -14,8 +15,11 @@ vi.mock("@/api/platform/local-validation-gate", () => ({
 
 vi.mock("@/api/local-validation-supervisor-client", () => ({
   LOCAL_VALIDATION_SUPERVISOR_ORIGIN: "http://127.0.0.1:8099",
+  LOCAL_VALIDATION_SUPERVISOR_PROXY_PREFIX: "/__dev__/lv-supervisor",
+  resolveSupervisorBaseUrl: () => "/__dev__/lv-supervisor",
   isLocalValidationControlHost: () => true,
   fetchSupervisorHealth: (...args: unknown[]) => fetchSupervisorHealth(...args),
+  fetchSupervisorOperation: (...args: unknown[]) => fetchSupervisorOperation(...args),
   restartSupervisorService: (...args: unknown[]) => restartSupervisorService(...args),
   restartAllSupervisorApps: (...args: unknown[]) => restartAllSupervisorApps(...args),
   resetLocalValidationData: (...args: unknown[]) => resetLocalValidationData(...args),
@@ -24,9 +28,11 @@ vi.mock("@/api/local-validation-supervisor-client", () => ({
 describe("DevPortHealthPanel", () => {
   beforeEach(() => {
     fetchSupervisorHealth.mockReset();
+    fetchSupervisorOperation.mockReset();
     restartSupervisorService.mockReset();
     restartAllSupervisorApps.mockReset();
     resetLocalValidationData.mockReset();
+    fetchSupervisorOperation.mockResolvedValue({ busy: false, operation: null, progress: null });
   });
 
   it("renders supervisor services with restart controls and reset confirmation", async () => {
@@ -74,7 +80,8 @@ describe("DevPortHealthPanel", () => {
     });
 
     expect(screen.getByTestId("dev-port-health")).toHaveTextContent("Local Validation");
-    expect(screen.getByTestId("dev-lv-restart-pos-api")).toBeInTheDocument();
+    expect(screen.getByTestId("dev-lv-restart-pos-api")).toHaveTextContent(/Start/i);
+    expect(screen.getByTestId("dev-lv-restart-platform-api")).toHaveTextContent(/Restart/i);
     expect(screen.queryByTestId("dev-lv-restart-platform-db")).not.toBeInTheDocument();
     expect(screen.getByTestId("dev-lv-restart-apps")).toBeInTheDocument();
     expect(screen.getByTestId("dev-lv-reset-open")).toBeInTheDocument();

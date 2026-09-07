@@ -27,6 +27,7 @@ export default defineConfig({
       "vite.proxy-cookie.test.ts",
       "vite.block-sw-in-dev.test.ts",
       "vite.dev-port-health.test.ts",
+      "vite.lv-supervisor-proxy.test.ts",
       "scripts/emulator-port-forward.test.mjs",
     ],
   },

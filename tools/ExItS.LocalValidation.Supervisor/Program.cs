@@ -37,6 +37,27 @@ internal static class Program
 
         var app = builder.Build();
 
+        // Browser React POS (:5177) calls supervisor via Vite proxy; allow direct loopback CORS as fallback.
+        app.Use(async (context, next) =>
+        {
+            var origin = context.Request.Headers.Origin.ToString();
+            if (IsAllowedLoopbackOrigin(origin))
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+                context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+                context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+                context.Response.Headers["Vary"] = "Origin";
+            }
+
+            if (HttpMethods.IsOptions(context.Request.Method))
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return;
+            }
+
+            await next().ConfigureAwait(false);
+        });
+
         app.MapGet("/health", () => Results.Json(new
         {
             status = "ok",
@@ -301,6 +322,26 @@ internal static class Program
         }
 
         throw new InvalidOperationException("Could not resolve ExItS repo root for Local Validation supervisor.");
+    }
+
+    private static bool IsAllowedLoopbackOrigin(string? origin)
+    {
+        if (string.IsNullOrWhiteSpace(origin))
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        if (uri.Scheme is not ("http" or "https"))
+        {
+            return false;
+        }
+
+        return uri.Host is "127.0.0.1" or "localhost";
     }
 
     private static bool IsProductionEnvironment()

@@ -9583,6 +9583,8 @@ export const hilPH: Record<keyof typeof en, string> = {
     "signIn.portHealthDown": "down",
   "signIn.localValidationPanel": "Local Validation",
   "signIn.localValidationRestartService": "Restart",
+  "signIn.localValidationStartService": "Start",
+  "signIn.localValidationRestartAppsDone": "Local Validation applications restarted.",
   "signIn.localValidationRestartApps": "Restart apps",
   "signIn.localValidationReset": "Reset test data",
   "signIn.localValidationResetCancel": "Cancel",
@@ -10987,4 +10989,5 @@ export const hilPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.inbound": "Inbound",
   "nav.backToWarehouseHome": "Back to Warehouse home",
 };
+
 

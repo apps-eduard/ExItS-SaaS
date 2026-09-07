@@ -584,6 +584,15 @@ $timing = @{
     PosReadySeconds = $null
 }
 
+if (-not $SkipSupervisorStart) {
+    Write-Step 'Starting Local Validation Supervisor (control plane on 127.0.0.1:8099)...'
+    $supervisorLaunch = Start-LocalValidationSupervisorHost -RepoRoot $repoRoot -WaitSeconds ([Math]::Max(60, [Math]::Min(120, $PortWaitSeconds)))
+    if ($null -ne $supervisorLaunch -and $null -ne $supervisorLaunch.WindowProcessId) {
+        $windowPids += $supervisorLaunch.WindowProcessId
+    }
+    Write-Ok 'Local Validation Supervisor :8099 UP'
+}
+
 Write-Host ''
 Write-Host ("BACKEND MODE: {0}" -f $BackendMode.ToUpperInvariant()) -ForegroundColor Cyan
 if ($BackendMode -eq 'Watch') {
@@ -908,11 +917,11 @@ if ($partialStart -and (Test-ShouldStartLocalValidationService 'mailpit')) {
     Write-Ok "Mailpit UI: http://localhost:$mailpitUiPort"
 }
 
+# Supervisor was started before apps (unless -SkipSupervisorStart). Re-assert for partial starts.
 if (-not $SkipSupervisorStart) {
-    Write-Step 'Starting Local Validation Supervisor...'
-    $supervisorLaunch = Start-LocalValidationSupervisorHost -RepoRoot $repoRoot
-    if ($null -ne $supervisorLaunch -and $null -ne $supervisorLaunch.WindowProcessId) {
-        $windowPids += $supervisorLaunch.WindowProcessId
+    $ensure = Start-LocalValidationSupervisorHost -RepoRoot $repoRoot -WaitSeconds 30
+    if ($null -ne $ensure -and $null -ne $ensure.WindowProcessId -and ($windowPids -notcontains $ensure.WindowProcessId)) {
+        $windowPids += $ensure.WindowProcessId
     }
 }
 
@@ -1013,6 +1022,7 @@ if ($partialStart -and (Test-ShouldStartLocalValidationService 'mailpit')) {
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
 Write-Host ("  BackendMode:  {0}" -f $BackendMode)
+Write-Host '  Supervisor:   http://127.0.0.1:8099  (Local Validation controls)'
 if ($null -ne $timing.PlatformBuildSeconds) {
     Write-Host ("  Platform build: {0}s | POS build: {1}s" -f $timing.PlatformBuildSeconds, $timing.PosBuildSeconds)
 }

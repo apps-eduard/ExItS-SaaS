@@ -26,6 +26,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
+. (Join-Path $PSScriptRoot 'LocalValidation.host-apps.ps1')
 
 function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
 function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
@@ -88,6 +89,11 @@ if (Test-Path -LiteralPath $stateFile) {
 }
 
 $null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot -KeepSupervisor:$KeepSupervisor
+
+if (-not $KeepSupervisor) {
+    Write-Step 'Stopping Local Validation Supervisor (if running)...'
+    $null = Stop-LocalValidationSupervisorHost -RepoRoot $repoRoot -Port ([int]$LocalValidationStack.DefaultSupervisorPort)
+}
 
 Write-Step 'Stopping React POS Vite listeners on :5177 (if any)...'
 $null = Stop-LocalValidationPortListeners -Port ([int]$LocalValidationStack.DefaultReactPosPort) -Label 'React POS'
