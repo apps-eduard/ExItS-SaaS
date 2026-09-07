@@ -10863,6 +10863,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.decrease": "Bawasan ang dami",
   "retailWarehouse.request.productsCount": "{count} produkto",
   "retailWarehouse.request.estimatedCost": "Tinatayang gastos",
+  "retailWarehouse.request.estimatedWarehouseCost": "Tinatayang gastos sa warehouse",
   "retailWarehouse.request.potentialRetail": "Posibleng retail",
   "retailWarehouse.request.potentialGross": "Posibleng kita",
   "retailWarehouse.request.warehouseCost": "Gastos sa warehouse {amount}/{uom}",

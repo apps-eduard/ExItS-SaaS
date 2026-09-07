@@ -10865,6 +10865,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.decrease": "Bawasan ang kadamuon",
   "retailWarehouse.request.productsCount": "{count} ka produkto",
   "retailWarehouse.request.estimatedCost": "Banabana nga gasto",
+  "retailWarehouse.request.estimatedWarehouseCost": "Banabana nga gasto sa bodega",
   "retailWarehouse.request.potentialRetail": "Posibleng retail",
   "retailWarehouse.request.potentialGross": "Posibleng kita",
   "retailWarehouse.request.warehouseCost": "Gasto sa warehouse {amount}/{uom}",

@@ -10865,6 +10865,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.decrease": "Kubsi ang gidaghanon",
   "retailWarehouse.request.productsCount": "{count} ka produkto",
   "retailWarehouse.request.estimatedCost": "Gibanag-anang gasto",
+  "retailWarehouse.request.estimatedWarehouseCost": "Gibanag-anang gasto sa bodega",
   "retailWarehouse.request.potentialRetail": "Posibleng retail",
   "retailWarehouse.request.potentialGross": "Posibleng kita",
   "retailWarehouse.request.warehouseCost": "Gasto sa warehouse {amount}/{uom}",

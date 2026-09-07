@@ -89,7 +89,7 @@ function renderPage() {
   );
 }
 
-describe("RetailWarehouseRequestStockPage basket", () => {
+describe("RetailWarehouseRequestStockPage Sell-like basket", () => {
   beforeEach(() => {
     vi.spyOn(catalogClient, "listCatalogCategories").mockResolvedValue({
       items: [],
@@ -159,16 +159,17 @@ describe("RetailWarehouseRequestStockPage basket", () => {
     });
   });
 
-  it("adds once, prevents duplicate, keeps basket across search, disables empty submit", async () => {
+  it("tap-to-add uses Sell cart line pattern and keeps basket across search", async () => {
     renderPage();
     await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
 
     expect(screen.getByTestId("retail-warehouse-submit")).toBeDisabled();
 
-    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_A}`));
-    expect(screen.getByTestId(`retail-warehouse-basket-line-${PRODUCT_A}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`retail-warehouse-add-${PRODUCT_A}`)).toBeDisabled();
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    const line = screen.getByTestId(`retail-warehouse-basket-line-${PRODUCT_A}`);
+    expect(line).toHaveClass("sell-cart-line");
     expect(screen.getByTestId("retail-warehouse-submit")).not.toBeDisabled();
+    expect(screen.queryByTestId(`retail-warehouse-add-${PRODUCT_A}`)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("retail-warehouse-search"), {
       target: { value: "zzz-no-match" },
@@ -183,41 +184,42 @@ describe("RetailWarehouseRequestStockPage basket", () => {
     expect(screen.getByTestId("retail-warehouse-submit")).toBeDisabled();
   });
 
-  it("shows warehouse cost, branch price, and out-of-stock label without blocking add", async () => {
+  it("shows warehouse cost and OOS without branch selling price on product cards", async () => {
     renderPage();
     await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
 
     expect(screen.getByTestId(`retail-warehouse-cost-${PRODUCT_A}`)).toHaveTextContent(/12\.50/);
-    expect(screen.getByTestId(`retail-warehouse-price-${PRODUCT_A}`)).toHaveTextContent(/18\.00/);
+    expect(screen.queryByTestId(`retail-warehouse-price-${PRODUCT_A}`)).not.toBeInTheDocument();
     expect(screen.getByTestId(`retail-warehouse-oos-${PRODUCT_B}`)).toHaveTextContent(
       /Out of stock at warehouse/i,
     );
-    expect(screen.getByTestId(`retail-warehouse-add-${PRODUCT_B}`)).not.toBeDisabled();
   });
 
-  it("opens weight dialog for ByWeight and adds kilograms to basket", async () => {
+  it("opens weight dialog on tap for ByWeight and shows Sell-like weight edit control", async () => {
     renderPage();
     await screen.findByTestId(`retail-warehouse-product-${PRODUCT_W}`);
 
-    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_W}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_W}`));
     expect(await screen.findByTestId("sell-weight-entry")).toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("sell-weight-input"), { target: { value: "1.5" } });
     fireEvent.click(screen.getByTestId("sell-weight-confirm"));
 
     const line = await screen.findByTestId(`retail-warehouse-basket-line-${PRODUCT_W}`);
+    expect(line).toHaveClass("sell-cart-line");
     expect(
       within(line).getByTestId(`retail-warehouse-edit-weight-${PRODUCT_W}`),
     ).toHaveTextContent(/1\.5\s*kg/i);
     expect(screen.getByTestId(`retail-warehouse-line-cost-${PRODUCT_W}`)).toHaveTextContent(/120/);
+    expect(within(line).queryByText(/Potential retail/i)).not.toBeInTheDocument();
   });
 
-  it("footer shows products count and money totals without mixed physical qty sum", async () => {
+  it("footer shows products count and estimated warehouse cost only", async () => {
     renderPage();
     await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
 
-    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_A}`));
-    fireEvent.click(screen.getByTestId(`retail-warehouse-add-${PRODUCT_B}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_B}`));
 
     const footer = screen.getByTestId("retail-warehouse-basket-footer");
     expect(within(footer).getByTestId("retail-warehouse-products-count")).toHaveTextContent(
@@ -226,8 +228,8 @@ describe("RetailWarehouseRequestStockPage basket", () => {
     expect(footer).not.toHaveTextContent(/16\.50\s*units/i);
     expect(footer).not.toHaveTextContent(/\d+\s*qty/i);
     expect(screen.getByTestId("retail-warehouse-estimated-cost")).toHaveTextContent(/20\.50/);
-    expect(screen.getByTestId("retail-warehouse-potential-retail")).toHaveTextContent(/30\.00/);
-    expect(screen.getByTestId("retail-warehouse-potential-gross")).toHaveTextContent(/9\.50/);
+    expect(screen.queryByTestId("retail-warehouse-potential-retail")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("retail-warehouse-potential-gross")).not.toBeInTheDocument();
   });
 
   it("shows mobile view-request control", async () => {

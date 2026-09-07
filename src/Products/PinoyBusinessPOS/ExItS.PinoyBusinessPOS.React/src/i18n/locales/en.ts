@@ -5799,6 +5799,7 @@ export const en = {
   "retailWarehouse.request.decrease": "Decrease quantity",
   "retailWarehouse.request.productsCount": "{count} products",
   "retailWarehouse.request.estimatedCost": "Estimated cost",
+  "retailWarehouse.request.estimatedWarehouseCost": "Estimated warehouse cost",
   "retailWarehouse.request.potentialRetail": "Potential retail",
   "retailWarehouse.request.potentialGross": "Potential gross",
   "retailWarehouse.request.warehouseCost": "Warehouse cost {amount}/{uom}",

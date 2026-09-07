@@ -98,7 +98,7 @@ DTO fields used by the detail UI include `approvedQuantity` on lines, `approvedB
 
 ### Replenishment catalog cost / price (request UX)
 
-`GET .../replenishment-catalog` items may include `sellingMode`, nullable `warehouseUnitCost`, and nullable `branchEffectiveSellingPrice`. The retail request UI uses these for **request-time estimates only** (line and footer estimated cost, potential retail, potential gross). They are **not** persisted on `StockRequest`. Authoritative transfer cost is captured later as `UnitCostSnapshot` on inventory transfer lines at **dispatch**. Branch selling price is a preview of destination retail value and is likewise not stored on the stock request.
+`GET .../replenishment-catalog` items may include `sellingMode`, nullable `warehouseUnitCost`, and nullable `branchEffectiveSellingPrice`. The retail **Request stock** UI shows **warehouse cost only** on product tiles and the Sell-like request basket (line estimated cost + footer estimated warehouse cost). Branch selling price / SRP / potential retail are **not** shown on the request screen (reserved for later fulfillment/receiving). Request-time cost is an **estimate only** and is **not** persisted on `StockRequest`. Authoritative transfer cost is captured later as `UnitCostSnapshot` on inventory transfer lines at **dispatch**.
 
 ## Prerequisites
 

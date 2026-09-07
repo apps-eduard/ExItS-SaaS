@@ -10865,6 +10865,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.decrease": "Pabassiten ti bilang",
   "retailWarehouse.request.productsCount": "{count} a produkto",
   "retailWarehouse.request.estimatedCost": "Nakarkulo a gastos",
+  "retailWarehouse.request.estimatedWarehouseCost": "Nakarkulo a gastos ti bodega",
   "retailWarehouse.request.potentialRetail": "Mabalin a retail",
   "retailWarehouse.request.potentialGross": "Mabalin a kita",
   "retailWarehouse.request.warehouseCost": "Gastos ti warehouse {amount}/{uom}",

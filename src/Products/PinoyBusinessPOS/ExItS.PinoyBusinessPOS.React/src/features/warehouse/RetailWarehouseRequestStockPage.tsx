@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   createStockRequest,
@@ -28,7 +28,7 @@ import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
 import type { RetailWarehouseResolveState } from "@/features/warehouse/retail-warehouse-resolve";
 import {
-  estimateRequestLine,
+  estimateLineCost,
   summarizeRequestBasket,
 } from "@/features/warehouse/retail-warehouse-request-math";
 import { useRetailWarehouseResolve } from "@/features/warehouse/useRetailWarehouseResolve";
@@ -49,7 +49,6 @@ type BasketLine = {
   branchOnHandQuantity: number;
   warehouseAvailableQuantity: number;
   warehouseUnitCost: number | null;
-  branchEffectiveSellingPrice: number | null;
 };
 
 type WeightEntryTarget = {
@@ -71,13 +70,18 @@ function displayUom(sellingMode: string, unitOfMeasure: string): string {
   return trimmed || "pc";
 }
 
+function cartLineInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
+}
+
+/** Weight dialog preview uses warehouse cost (request estimate), never branch SRP. */
 function toWeightDialogProduct(
   item: ReplenishmentCatalogItemDto | BasketLine,
 ): PosCatalogProductDto {
-  // Weight dialog previews branch effective selling price (not acquisition cost).
-  const retail =
-    item.branchEffectiveSellingPrice != null && Number.isFinite(item.branchEffectiveSellingPrice)
-      ? item.branchEffectiveSellingPrice
+  const cost =
+    item.warehouseUnitCost != null && Number.isFinite(item.warehouseUnitCost)
+      ? item.warehouseUnitCost
       : 0;
   return {
     productId: item.productId,
@@ -86,8 +90,8 @@ function toWeightDialogProduct(
     sku: item.sku,
     unitOfMeasure: item.unitOfMeasure,
     sellingMode: item.sellingMode || "PerItem",
-    sellingPrice: retail,
-    effectiveSellingPrice: retail,
+    sellingPrice: cost,
+    effectiveSellingPrice: cost,
     status: "Active",
     createdAtUtc: "",
     updatedAtUtc: "",
@@ -163,7 +167,11 @@ export function RetailWarehouseRequestStockPage() {
       }),
   });
 
-  const basketIds = useMemo(() => new Set(basket.map((l) => l.productId)), [basket]);
+  const basketById = useMemo(() => {
+    const map = new Map<string, BasketLine>();
+    for (const line of basket) map.set(line.productId, line);
+    return map;
+  }, [basket]);
   const basketTotals = useMemo(() => summarizeRequestBasket(basket), [basket]);
 
   const mutation = useMutation({
@@ -212,11 +220,6 @@ export function RetailWarehouseRequestStockPage() {
           product.warehouseUnitCost != null && Number.isFinite(product.warehouseUnitCost)
             ? product.warehouseUnitCost
             : null,
-        branchEffectiveSellingPrice:
-          product.branchEffectiveSellingPrice != null &&
-          Number.isFinite(product.branchEffectiveSellingPrice)
-            ? product.branchEffectiveSellingPrice
-            : null,
       };
       if (existing) {
         return prev.map((l) => (l.productId === product.productId ? next : l));
@@ -225,19 +228,23 @@ export function RetailWarehouseRequestStockPage() {
     });
   }
 
-  function addProduct(product: ReplenishmentCatalogItemDto) {
-    if (basketIds.has(product.productId)) {
-      return;
-    }
+  /** Sell-like tap: weight opens dialog; per-item adds or increments. */
+  function selectProduct(product: ReplenishmentCatalogItemDto) {
     if (isByWeightSellingMode(product.sellingMode)) {
-      setWeightEntry({ product, mode: "add", initialKilograms: null });
+      const existing = basketById.get(product.productId);
+      setWeightEntry({
+        product: existing ?? product,
+        mode: existing ? "edit" : "add",
+        initialKilograms: existing?.quantity ?? null,
+      });
       return;
     }
-    upsertLine(product, 1);
+    const existing = basketById.get(product.productId);
+    upsertLine(product, (existing?.quantity ?? 0) + 1);
   }
 
   function updateQty(productId: string, quantity: number) {
-    const line = basket.find((l) => l.productId === productId);
+    const line = basketById.get(productId);
     if (!line) return;
     upsertLine(line, quantity);
   }
@@ -259,159 +266,129 @@ export function RetailWarehouseRequestStockPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const categories = categoriesQuery.data?.items ?? [];
 
-  const footerBlock = (
-    <div
-      className="flex flex-col gap-1 border-t border-border pt-2 text-[length:var(--exits-text-sm)]"
-      data-testid="retail-warehouse-basket-footer"
-    >
-      <div className="flex justify-between gap-2 font-medium" data-testid="retail-warehouse-products-count">
-        <span>{t("retailWarehouse.request.productsCount").replace("{count}", String(basketTotals.productCount))}</span>
-      </div>
-      <div className="flex justify-between gap-2 text-muted">
-        <span>{t("retailWarehouse.request.estimatedCost")}</span>
-        <span data-testid="retail-warehouse-estimated-cost">
-          {basketTotals.estimatedCostTotal != null ? (
-            <MoneyDisplay amount={basketTotals.estimatedCostTotal} />
-          ) : (
-            "—"
-          )}
-        </span>
-      </div>
-      <div className="flex justify-between gap-2 text-muted">
-        <span>{t("retailWarehouse.request.potentialRetail")}</span>
-        <span data-testid="retail-warehouse-potential-retail">
-          {basketTotals.potentialRetailTotal != null ? (
-            <MoneyDisplay amount={basketTotals.potentialRetailTotal} />
-          ) : (
-            "—"
-          )}
-        </span>
-      </div>
-      {basketTotals.potentialGross != null ? (
-        <div className="flex justify-between gap-2 font-semibold">
-          <span>{t("retailWarehouse.request.potentialGross")}</span>
-          <span data-testid="retail-warehouse-potential-gross">
-            <MoneyDisplay amount={basketTotals.potentialGross} />
-          </span>
-        </div>
-      ) : null}
-    </div>
-  );
-
   const basketPanel = (
-    <div className="flex h-full min-h-0 flex-col gap-2" data-testid="retail-warehouse-basket">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("retailWarehouse.request.basket")}
-        </h2>
-        <span
-          className="text-[length:var(--exits-text-xs)] text-muted"
-          data-testid="retail-warehouse-basket-summary"
-        >
-          {t("retailWarehouse.request.productsCount").replace(
-            "{count}",
-            String(basketTotals.productCount),
-          )}
-        </span>
+    <div
+      className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden"
+      data-testid="retail-warehouse-basket"
+    >
+      <div
+        className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2"
+        data-testid="retail-warehouse-basket-header"
+      >
+        <div className="sell-cart-panel__title min-w-0">
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+            {t("retailWarehouse.request.basket")}
+          </h2>
+          {basket.length > 0 ? (
+            <p
+              className="sell-cart-panel__meta m-0 text-[length:var(--exits-text-xs)] text-muted"
+              data-testid="retail-warehouse-basket-summary"
+            >
+              {t("retailWarehouse.request.productsCount").replace(
+                "{count}",
+                String(basketTotals.productCount),
+              )}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {basket.length === 0 ? (
-        <EmptyState
-          title={t("retailWarehouse.request.basketEmpty")}
-          detail={t("retailWarehouse.request.basketEmptyDetail")}
-        />
+        <div className="sell-cart-empty flex flex-1 flex-col items-center justify-center gap-1 px-2 py-6 text-center">
+          <ShoppingCart className="size-5 text-muted" strokeWidth={1.75} aria-hidden />
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {t("retailWarehouse.request.basketEmptyDetail")}
+          </p>
+        </div>
       ) : (
-        <ul className="m-0 flex min-h-0 flex-1 list-none flex-col gap-2 overflow-y-auto p-0">
+        <ul
+          className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0"
+          data-testid="retail-warehouse-basket-lines"
+        >
           {basket.map((line) => {
             const byWeight = isByWeightSellingMode(line.sellingMode);
             const uom = displayUom(line.sellingMode, line.unitOfMeasure);
             const qtyLabel = formatQuantityDisplay(line.quantity);
-            const estimates = estimateRequestLine(line);
+            const lineCost = estimateLineCost(line.quantity, line.warehouseUnitCost);
             return (
               <li
                 key={line.productId}
-                className="rounded-[var(--exits-radius-md)] border border-border p-2"
+                className="sell-cart-line sell-cart-line--enter"
                 data-testid={`retail-warehouse-basket-line-${line.productId}`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{line.name}</div>
-                    <div className="text-[length:var(--exits-text-xs)] text-muted">
-                      {qtyLabel} {uom}
-                      {line.warehouseUnitCost != null ? (
-                        <>
-                          {" · "}
-                          {t("retailWarehouse.request.costPerUom")
-                            .replace("{amount}", formatPeso(line.warehouseUnitCost))
-                            .replace("{uom}", uom)}
-                        </>
-                      ) : null}
+                <div className="sell-cart-line__media" aria-hidden>
+                  <span className="sell-cart-line__initial">{cartLineInitial(line.name)}</span>
+                </div>
+                <div className="sell-cart-line__body">
+                  <div className="sell-cart-line__top">
+                    <p className="sell-cart-line__name">{line.name}</p>
+                    <div className="sell-cart-line__price-actions">
+                      {lineCost != null ? (
+                        <MoneyDisplay
+                          amount={lineCost}
+                          className="sell-cart-line__amount"
+                          testId={`retail-warehouse-line-cost-${line.productId}`}
+                        />
+                      ) : (
+                        <span className="sell-cart-line__amount text-muted">—</span>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="sell-cart-line__remove"
+                        aria-label={t("retailWarehouse.request.remove")}
+                        data-testid={`retail-warehouse-basket-remove-${line.productId}`}
+                        onClick={() => removeLine(line.productId)}
+                      >
+                        <Trash2 className="size-4" aria-hidden strokeWidth={2} />
+                      </Button>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="text-muted"
-                    aria-label={t("retailWarehouse.request.remove")}
-                    onClick={() => removeLine(line.productId)}
-                    data-testid={`retail-warehouse-basket-remove-${line.productId}`}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
 
-                <div className="mt-1 flex flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                  {estimates.estimatedCost != null ? (
-                    <span data-testid={`retail-warehouse-line-cost-${line.productId}`}>
-                      {t("retailWarehouse.request.lineEstimatedCost")}:{" "}
-                      <MoneyDisplay amount={estimates.estimatedCost} className="text-[length:var(--exits-text-xs)]" />
-                    </span>
-                  ) : null}
-                  {line.branchEffectiveSellingPrice != null ? (
-                    <span>
-                      {t("retailWarehouse.request.retailPerUom")
-                        .replace("{amount}", formatPeso(line.branchEffectiveSellingPrice))
-                        .replace("{uom}", uom)}
-                    </span>
-                  ) : null}
-                  {estimates.potentialRetail != null ? (
-                    <span data-testid={`retail-warehouse-line-retail-${line.productId}`}>
-                      {t("retailWarehouse.request.linePotentialRetail")}:{" "}
-                      <MoneyDisplay
-                        amount={estimates.potentialRetail}
-                        className="text-[length:var(--exits-text-xs)]"
-                      />
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-2">
-                  {byWeight ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="min-h-8 px-2 text-[length:var(--exits-text-xs)]"
-                      data-testid={`retail-warehouse-edit-weight-${line.productId}`}
-                      onClick={() =>
-                        setWeightEntry({
-                          product: line,
-                          mode: "edit",
-                          initialKilograms: line.quantity,
-                        })
-                      }
-                    >
+                  <div className="sell-cart-line__bottom">
+                    <span className="sell-cart-line__meta">
                       {qtyLabel} {uom}
-                    </Button>
-                  ) : (
-                    <QuantityStepper
-                      compact
-                      value={formatQuantityDisplay(line.quantity)}
-                      decreaseLabel={t("retailWarehouse.request.decrease")}
-                      increaseLabel={t("retailWarehouse.request.increase")}
-                      onDecrement={() => updateQty(line.productId, Math.max(1, line.quantity - 1))}
-                      onIncrement={() => updateQty(line.productId, line.quantity + 1)}
-                      decrementDisabled={line.quantity <= 1}
-                    />
-                  )}
+                      {line.warehouseUnitCost != null ? (
+                        <span className="sell-cart-line__unit-price">
+                          {" · "}
+                          {t("retailWarehouse.request.warehouseCost")
+                            .replace("{amount}", formatPeso(line.warehouseUnitCost))
+                            .replace("{uom}", uom)}
+                        </span>
+                      ) : null}
+                    </span>
+
+                    {byWeight ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="sell-cart-line__edit"
+                        data-testid={`retail-warehouse-edit-weight-${line.productId}`}
+                        onClick={() =>
+                          setWeightEntry({
+                            product: line,
+                            mode: "edit",
+                            initialKilograms: line.quantity,
+                          })
+                        }
+                      >
+                        {qtyLabel} {uom}
+                      </Button>
+                    ) : (
+                      <div className="sell-cart-line__qty">
+                        <QuantityStepper
+                          compact
+                          value={qtyLabel}
+                          valueTestId={`retail-warehouse-qty-${line.productId}`}
+                          decreaseLabel={t("retailWarehouse.request.decrease")}
+                          increaseLabel={t("retailWarehouse.request.increase")}
+                          onDecrement={() => updateQty(line.productId, Math.max(1, line.quantity - 1))}
+                          onIncrement={() => updateQty(line.productId, line.quantity + 1)}
+                          decrementDisabled={line.quantity <= 1}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </li>
             );
@@ -419,30 +396,58 @@ export function RetailWarehouseRequestStockPage() {
         </ul>
       )}
 
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        <span>{t("stockRequest.notes")}</span>
-        <textarea
-          className="exits-input min-h-[2.75rem] resize-y"
-          rows={2}
-          value={requestNotes}
-          onChange={(e) => setRequestNotes(e.target.value)}
-          data-testid="retail-warehouse-request-notes"
-        />
-      </label>
-
-      {footerBlock}
-
-      <Button
-        type="button"
-        disabled={mutation.isPending || basket.length === 0}
-        onClick={() => mutation.mutate()}
-        data-testid="retail-warehouse-submit"
+      <div
+        className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-2"
+        data-testid="retail-warehouse-basket-footer"
       >
-        {t("stockRequest.submit")}
-      </Button>
-      {mutation.isError ? (
-        <p className="text-danger text-[length:var(--exits-text-sm)]">{t("stockRequest.submitError")}</p>
-      ) : null}
+        <div
+          className="flex justify-between gap-2 text-[length:var(--exits-text-sm)] font-medium"
+          data-testid="retail-warehouse-products-count"
+        >
+          <span>
+            {t("retailWarehouse.request.productsCount").replace(
+              "{count}",
+              String(basketTotals.productCount),
+            )}
+          </span>
+        </div>
+        <div className="flex justify-between gap-2 text-[length:var(--exits-text-sm)]">
+          <span className="text-muted">{t("retailWarehouse.request.estimatedWarehouseCost")}</span>
+          <span data-testid="retail-warehouse-estimated-cost">
+            {basketTotals.estimatedCostTotal != null ? (
+              <MoneyDisplay amount={basketTotals.estimatedCostTotal} />
+            ) : (
+              "—"
+            )}
+          </span>
+        </div>
+
+        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <span>{t("stockRequest.notes")}</span>
+          <textarea
+            className="exits-input min-h-[2.75rem] resize-y"
+            rows={2}
+            value={requestNotes}
+            onChange={(e) => setRequestNotes(e.target.value)}
+            data-testid="retail-warehouse-request-notes"
+          />
+        </label>
+
+        <Button
+          type="button"
+          className="w-full"
+          disabled={mutation.isPending || basket.length === 0}
+          onClick={() => mutation.mutate()}
+          data-testid="retail-warehouse-submit"
+        >
+          {t("stockRequest.submit")}
+        </Button>
+        {mutation.isError ? (
+          <p className="text-danger text-[length:var(--exits-text-sm)]">
+            {t("stockRequest.submitError")}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 
@@ -453,7 +458,7 @@ export function RetailWarehouseRequestStockPage() {
       </div>
 
       <div className="grid min-h-0 gap-3 md:grid-cols-[minmax(0,1.65fr)_minmax(16rem,0.35fr)]">
-        <div className="flex min-w-0 flex-col gap-2" data-testid="retail-warehouse-browser">
+        <div className="sell-floor-browse flex min-w-0 flex-col gap-2" data-testid="retail-warehouse-browser">
           <SearchField
             label={t("stockRequest.search")}
             value={search}
@@ -513,81 +518,65 @@ export function RetailWarehouseRequestStockPage() {
             />
           ) : null}
 
-          <ul className="sell-floor-browse m-0 grid list-none gap-2 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="sell-product-grid m-0 list-none p-0">
             {items.map((product) => {
-              const added = basketIds.has(product.productId);
+              const inBasket = basketById.has(product.productId);
               const uom = displayUom(product.sellingMode, product.unitOfMeasure);
               const warehouseOut = product.warehouseAvailableQuantity <= 0;
               const byWeight = isByWeightSellingMode(product.sellingMode);
               return (
-                <li
-                  key={product.productId}
-                  className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
-                  data-testid={`retail-warehouse-product-${product.productId}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{product.name}</div>
-                    {product.sku ? (
-                      <div className="text-[length:var(--exits-text-xs)] text-muted">{product.sku}</div>
-                    ) : null}
-                    <div className="mt-1 flex flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                      <span>
-                        {t("stockRequest.col.branchStock")}:{" "}
-                        {formatQuantityDisplay(product.branchOnHandQuantity)} {uom}
-                      </span>
-                      {warehouseOut ? (
-                        <span
-                          className="text-[var(--exits-danger)]"
-                          data-testid={`retail-warehouse-oos-${product.productId}`}
-                        >
-                          {t("retailWarehouse.request.warehouseOutOfStock")}
-                        </span>
-                      ) : (
-                        <span>
-                          {t("stockRequest.col.warehouseAvailable")}:{" "}
-                          {formatQuantityDisplay(product.warehouseAvailableQuantity)} {uom}
-                        </span>
-                      )}
-                      {product.warehouseUnitCost != null ? (
-                        <span data-testid={`retail-warehouse-cost-${product.productId}`}>
-                          {t("retailWarehouse.request.warehouseCost")
-                            .replace("{amount}", formatPeso(product.warehouseUnitCost))
-                            .replace("{uom}", uom)}
-                        </span>
-                      ) : null}
-                      {product.branchEffectiveSellingPrice != null ? (
-                        <span data-testid={`retail-warehouse-price-${product.productId}`}>
-                          {t("retailWarehouse.request.branchPrice")
-                            .replace("{amount}", formatPeso(product.branchEffectiveSellingPrice))
-                            .replace("{uom}", uom)}
-                        </span>
-                      ) : null}
-                      {byWeight ? (
-                        <span className="text-[length:var(--exits-text-xs)]">
-                          {t("sell.tileByWeight")}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <Button
+                <li key={product.productId} className="min-w-0">
+                  <button
                     type="button"
-                    variant={added ? "outline" : "default"}
-                    disabled={added}
-                    onClick={() => addProduct(product)}
-                    data-testid={`retail-warehouse-add-${product.productId}`}
-                  >
-                    {added ? (
-                      <>
-                        <Check className="size-4" aria-hidden />
-                        {t("retailWarehouse.request.added")}
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="size-4" aria-hidden />
-                        {t("retailWarehouse.request.add")}
-                      </>
+                    className={cn(
+                      "sell-product-card w-full text-left",
+                      inBasket && "sell-product-card--selected",
                     )}
-                  </Button>
+                    data-testid={`retail-warehouse-product-${product.productId}`}
+                    aria-pressed={inBasket}
+                    onClick={() => selectProduct(product)}
+                  >
+                    <span className="sell-cart-line__initial" aria-hidden>
+                      {cartLineInitial(product.name)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{product.name}</span>
+                      {product.sku ? (
+                        <span className="block truncate text-[length:var(--exits-text-xs)] text-muted">
+                          {product.sku}
+                        </span>
+                      ) : null}
+                      <span className="mt-1 flex flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                        <span>
+                          {t("stockRequest.col.branchStock")}:{" "}
+                          {formatQuantityDisplay(product.branchOnHandQuantity)} {uom}
+                        </span>
+                        {warehouseOut ? (
+                          <span
+                            className="text-[var(--exits-danger)]"
+                            data-testid={`retail-warehouse-oos-${product.productId}`}
+                          >
+                            {t("retailWarehouse.request.warehouseOutOfStock")}
+                          </span>
+                        ) : (
+                          <span>
+                            {t("stockRequest.col.warehouseAvailable")}:{" "}
+                            {formatQuantityDisplay(product.warehouseAvailableQuantity)} {uom}
+                          </span>
+                        )}
+                        {product.warehouseUnitCost != null ? (
+                          <span data-testid={`retail-warehouse-cost-${product.productId}`}>
+                            {t("retailWarehouse.request.warehouseCost")
+                              .replace("{amount}", formatPeso(product.warehouseUnitCost))
+                              .replace("{uom}", uom)}
+                          </span>
+                        ) : null}
+                        {byWeight ? (
+                          <span>{t("sell.tileByWeight")}</span>
+                        ) : null}
+                      </span>
+                    </span>
+                  </button>
                 </li>
               );
             })}
@@ -622,7 +611,7 @@ export function RetailWarehouseRequestStockPage() {
 
         <aside
           className={cn(
-            "hidden min-h-[20rem] rounded-[var(--exits-radius-md)] border border-border p-3 md:sticky md:top-3 md:block md:self-start",
+            "hidden min-h-[20rem] overflow-hidden rounded-[var(--exits-radius-md)] border border-border p-3 md:sticky md:top-3 md:flex md:min-h-[28rem] md:flex-col md:self-start",
           )}
           data-testid="retail-warehouse-basket-desktop"
         >
@@ -651,7 +640,7 @@ export function RetailWarehouseRequestStockPage() {
           title={t("retailWarehouse.request.basket")}
           closeLabel={t("branches.cancel")}
         >
-          {basketPanel}
+          <div className="flex min-h-[50vh] flex-col">{basketPanel}</div>
         </BottomSheet>
       </div>
 
