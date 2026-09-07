@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, ChevronDown, Plus, RotateCcw } from "lucide-react";
 import { canProcessReturn, canVoidSale, canViewReports } from "@/access/pos-capabilities";
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { BottomSheet } from "@/components/exits/SheetDialog";
+import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
@@ -31,13 +31,16 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
  */
 export function TransactionSummaryPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { saleId } = useParams<{ saleId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
   const [voidReason, setVoidReason] = useState("");
   const [voidError, setVoidError] = useState<string | null>(null);
   const [voiding, setVoiding] = useState(false);
+  const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
   const [voidSheetOpen, setVoidSheetOpen] = useState(false);
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   const workspaceScope =
@@ -144,7 +147,7 @@ export function TransactionSummaryPage() {
               className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
               data-testid="summary-void-trigger"
               aria-haspopup="dialog"
-              onClick={() => setVoidSheetOpen(true)}
+              onClick={() => setVoidConfirmOpen(true)}
             >
               <Ban className="size-4 shrink-0" aria-hidden />
               {t("summary.voidSection")}
@@ -385,56 +388,74 @@ export function TransactionSummaryPage() {
       </Card>
 
       {!isVoided && allowVoid ? (
-        <BottomSheet
-          open={voidSheetOpen}
-          onClose={() => {
-            if (voiding) {
-              return;
-            }
-            setVoidSheetOpen(false);
-            setVoidError(null);
-          }}
-          title={t("summary.voidSection")}
-          panelId="summary-void-sheet"
-          testId="summary-void-panel"
-          closeLabel={t("sell.cancel")}
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("summary.voidLede")}</p>
-          <label
-            className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor="summary-void-reason"
+        <>
+          <ConfirmationDialog
+            open={voidConfirmOpen}
+            title={t("summary.voidConfirmTitle")}
+            detail={t("summary.voidConfirmDetail")}
+            confirmLabel={t("summary.voidConfirmContinue")}
+            cancelLabel={t("sell.cancel")}
+            confirmTone="danger"
+            confirmIcon={<Ban className="size-4 shrink-0" aria-hidden />}
+            testId="summary-void-confirm-dialog"
+            onCancel={() => setVoidConfirmOpen(false)}
+            onConfirm={() => {
+              setVoidConfirmOpen(false);
+              setVoidError(null);
+              setVoidSheetOpen(true);
+            }}
+          />
+          <BottomSheet
+            open={voidSheetOpen}
+            onClose={() => {
+              if (voiding) {
+                return;
+              }
+              setVoidSheetOpen(false);
+              setVoidError(null);
+            }}
+            title={t("summary.voidSection")}
+            panelId="summary-void-sheet"
+            testId="summary-void-panel"
+            closeLabel={t("sell.cancel")}
           >
-            {t("summary.voidReason")}
-            <input
-              id="summary-void-reason"
-              data-testid="summary-void-reason"
-              type="text"
-              maxLength={VOID_REASON_MAX_LENGTH}
-              value={voidReason}
-              disabled={voiding}
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setVoidReason(event.target.value)}
-            />
-          </label>
-          {voidError ? (
-            <p
-              data-testid="summary-void-error"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("summary.voidLede")}</p>
+            <label
+              className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="summary-void-reason"
             >
-              {voidError}
-            </p>
-          ) : null}
-          <Button
-            type="button"
-            variant="destructive"
-            className="mt-3 w-full"
-            data-testid="summary-void-confirm"
-            disabled={voiding}
-            onClick={() => void onVoid()}
-          >
-            {voiding ? t("summary.voiding") : t("summary.voidConfirm")}
-          </Button>
-        </BottomSheet>
+              {t("summary.voidReason")}
+              <input
+                id="summary-void-reason"
+                data-testid="summary-void-reason"
+                type="text"
+                maxLength={VOID_REASON_MAX_LENGTH}
+                value={voidReason}
+                disabled={voiding}
+                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                onChange={(event) => setVoidReason(event.target.value)}
+              />
+            </label>
+            {voidError ? (
+              <p
+                data-testid="summary-void-error"
+                className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+              >
+                {voidError}
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="destructive"
+              className="mt-3 w-full"
+              data-testid="summary-void-confirm"
+              disabled={voiding}
+              onClick={() => void onVoid()}
+            >
+              {voiding ? t("summary.voiding") : t("summary.voidConfirm")}
+            </Button>
+          </BottomSheet>
+        </>
       ) : null}
 
       {!isVoided && !allowVoid ? (
@@ -444,6 +465,23 @@ export function TransactionSummaryPage() {
         >
           {t("summary.voidDenied")}
         </p>
+      ) : null}
+
+      {showReturnAction ? (
+        <ConfirmationDialog
+          open={returnConfirmOpen}
+          title={t("summary.returnConfirmTitle")}
+          detail={t("summary.returnConfirmDetail")}
+          confirmLabel={t("returns.returnItems")}
+          cancelLabel={t("sell.cancel")}
+          confirmIcon={<RotateCcw className="size-4 shrink-0" aria-hidden />}
+          testId="summary-return-confirm-dialog"
+          onCancel={() => setReturnConfirmOpen(false)}
+          onConfirm={() => {
+            setReturnConfirmOpen(false);
+            navigate(`/returns/sale/${sale.saleId}`);
+          }}
+        />
       ) : null}
 
       <div
@@ -458,15 +496,15 @@ export function TransactionSummaryPage() {
         </Button>
         {showReturnAction ? (
           <Button
-            asChild
+            type="button"
             variant="outline"
             className="w-full gap-2"
             data-testid="summary-return-items"
+            aria-haspopup="dialog"
+            onClick={() => setReturnConfirmOpen(true)}
           >
-            <Link to={`/returns/sale/${sale.saleId}`}>
-              <RotateCcw className="size-4 shrink-0" aria-hidden />
-              {t("returns.returnItems")}
-            </Link>
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+            {t("returns.returnItems")}
           </Button>
         ) : null}
       </div>
