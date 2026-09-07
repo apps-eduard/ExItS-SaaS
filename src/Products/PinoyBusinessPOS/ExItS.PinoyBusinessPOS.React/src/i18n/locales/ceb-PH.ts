@@ -10879,6 +10879,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.onlyAvailableAtWarehouse":
     "Only {qty} {uom} is currently available at {warehouse}.",
   "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.remainingCompact": "Nahabilin: {qty} {uom}",
+  "retailWarehouse.request.remainingTooltip": "Available human niini nga request selection.",
+
   "retailWarehouse.request.fixAvailabilityBeforeSubmit":
     "Nausab ang warehouse stock. Usba ang kantidad sa dili pa mag-submit.",
   "retailWarehouse.request.revalidateFailed": "Dili ma-refresh ang warehouse availability. Sulayi pag-usab.",

@@ -5816,6 +5816,8 @@ export const en = {
   "retailWarehouse.request.onlyAvailableAtWarehouse":
     "Only {qty} {uom} is currently available at {warehouse}.",
   "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.remainingCompact": "Remaining: {qty} {uom}",
+  "retailWarehouse.request.remainingTooltip": "Available after this request selection.",
   "retailWarehouse.request.fixAvailabilityBeforeSubmit":
     "Warehouse stock changed. Adjust quantities before submitting.",
   "retailWarehouse.request.revalidateFailed": "Could not refresh warehouse availability. Try again.",

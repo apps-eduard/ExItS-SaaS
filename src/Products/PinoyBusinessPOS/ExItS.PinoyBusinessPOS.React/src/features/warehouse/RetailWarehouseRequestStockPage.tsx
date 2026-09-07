@@ -189,6 +189,30 @@ export function RetailWarehouseRequestStockPage() {
       }),
   });
 
+  // Keep basket actual-availability in sync when catalog refreshes (UI remaining only).
+  useEffect(() => {
+    const catalogItems = catalogQuery.data?.items;
+    if (!catalogItems?.length) return;
+    const byId = new Map(catalogItems.map((item) => [item.productId, item]));
+    setBasket((prev) => {
+      let changed = false;
+      const next = prev.map((line) => {
+        const match = byId.get(line.productId);
+        if (!match) return line;
+        if (match.warehouseAvailableQuantity === line.warehouseAvailableQuantity) {
+          return line;
+        }
+        changed = true;
+        return {
+          ...line,
+          warehouseAvailableQuantity: match.warehouseAvailableQuantity,
+          branchOnHandQuantity: match.branchOnHandQuantity,
+        };
+      });
+      return changed ? next : prev;
+    });
+  }, [catalogQuery.data?.items]);
+
   const basketById = useMemo(() => {
     const map = new Map<string, RequestStockBasketLine>();
     for (const line of basket) map.set(line.productId, line);
@@ -550,6 +574,7 @@ export function RetailWarehouseRequestStockPage() {
               <RequestStockProductCard
                 key={product.productId}
                 product={product}
+                requestedQtyInBasket={basketById.get(product.productId)?.quantity ?? 0}
                 inBasket={basketById.has(product.productId)}
                 addedFlash={flashedProductId === product.productId}
                 onSelect={selectProduct}

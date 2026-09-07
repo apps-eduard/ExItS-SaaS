@@ -348,6 +348,8 @@ describe("RetailWarehouseRequestStockPage Sell UI parity", () => {
       totalCount: 1,
       page: 1,
       pageSize: 20,
+      supplyWarehouseBranchId: WH_A,
+      supplyWarehouseName: "Panay Warehouse",
     });
 
     fireEvent.click(screen.getByTestId("retail-warehouse-submit"));
@@ -360,6 +362,115 @@ describe("RetailWarehouseRequestStockPage Sell UI parity", () => {
         `retail-warehouse-edit-weight-${PRODUCT_W}`,
       ),
     ).toHaveTextContent(/50/);
+    expect(stockRequestsClient.createStockRequest).not.toHaveBeenCalled();
+  });
+
+  it("shows remaining warehouse availability on card and cart as basket qty changes", async () => {
+    renderPage();
+    const cardStock = await screen.findByTestId(`retail-warehouse-wh-stock-${PRODUCT_A}`);
+    expect(cardStock).toHaveTextContent(/40\s*pcs/i);
+    expect(cardStock).toHaveAttribute("data-warehouse-actual", "40");
+    expect(cardStock).toHaveAttribute("data-warehouse-remaining", "40");
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    expect(cardStock).toHaveTextContent(/39\s*pcs/i);
+    expect(cardStock).toHaveAttribute("data-warehouse-remaining", "39");
+    const remainingHint = screen.getByTestId(`retail-warehouse-line-remaining-${PRODUCT_A}`);
+    expect(remainingHint).toHaveTextContent(/Remaining:\s*39\s*pcs/i);
+
+    fireEvent.click(screen.getByLabelText(/Increase quantity/i));
+    expect(cardStock).toHaveTextContent(/38\s*pcs/i);
+    expect(remainingHint).toHaveTextContent(/Remaining:\s*38\s*pcs/i);
+
+    fireEvent.click(screen.getByLabelText(/Decrease quantity/i));
+    expect(cardStock).toHaveTextContent(/39\s*pcs/i);
+    expect(remainingHint).toHaveTextContent(/Remaining:\s*39\s*pcs/i);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-basket-remove-${PRODUCT_A}`));
+    expect(screen.queryByTestId(`retail-warehouse-basket-line-${PRODUCT_A}`)).not.toBeInTheDocument();
+    expect(cardStock).toHaveTextContent(/40\s*pcs/i);
+    expect(cardStock).toHaveAttribute("data-warehouse-remaining", "40");
+    expect(cardStock).toHaveAttribute("data-warehouse-actual", "40");
+  });
+
+  it("reduces remaining for weighted products and reaches zero at max without going negative", async () => {
+    renderPage();
+    const cardStock = await screen.findByTestId(`retail-warehouse-wh-stock-${PRODUCT_W}`);
+    expect(cardStock).toHaveTextContent(/55\s*kg/i);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_W}`));
+    fireEvent.change(await screen.findByTestId("sell-weight-input"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByTestId("sell-weight-confirm"));
+    expect(cardStock).toHaveTextContent(/45\s*kg/i);
+    expect(screen.getByTestId(`retail-warehouse-line-remaining-${PRODUCT_W}`)).toHaveTextContent(
+      /Remaining:\s*45\s*kg/i,
+    );
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-edit-weight-${PRODUCT_W}`));
+    fireEvent.change(await screen.findByTestId("sell-weight-input"), {
+      target: { value: "20" },
+    });
+    fireEvent.click(screen.getByTestId("sell-weight-confirm"));
+    expect(cardStock).toHaveTextContent(/35\s*kg/i);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-edit-weight-${PRODUCT_W}`));
+    fireEvent.change(await screen.findByTestId("sell-weight-input"), {
+      target: { value: "55" },
+    });
+    fireEvent.click(screen.getByTestId("sell-weight-confirm"));
+    expect(cardStock).toHaveTextContent(/^0\s*kg$/i);
+    expect(cardStock).toHaveAttribute("data-warehouse-remaining", "0");
+    expect(Number(cardStock.getAttribute("data-warehouse-remaining"))).toBeGreaterThanOrEqual(0);
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_B}`));
+    expect(screen.getByTestId(`retail-warehouse-wh-stock-${PRODUCT_B}`)).toHaveTextContent(
+      /1\s*Pack/i,
+    );
+    expect(cardStock).toHaveTextContent(/^0\s*kg$/i);
+  });
+
+  it("recalculates remaining when stale warehouse availability is refreshed on submit", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_A}`);
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_A}`));
+    expect(screen.getByTestId(`retail-warehouse-qty-${PRODUCT_A}`)).toHaveTextContent("3");
+    expect(screen.getByTestId(`retail-warehouse-line-remaining-${PRODUCT_A}`)).toHaveTextContent(
+      /Remaining:\s*37\s*pcs/i,
+    );
+
+    vi.mocked(stockRequestsClient.listReplenishmentCatalog).mockResolvedValue({
+      items: [
+        {
+          productId: PRODUCT_A,
+          name: "Sardines",
+          sku: "SAR-1",
+          unitOfMeasure: "pcs",
+          branchOnHandQuantity: 2,
+          warehouseAvailableQuantity: 2,
+          isLowStock: true,
+          isTracked: true,
+          sellingMode: "PerItem",
+          warehouseUnitCost: 12.5,
+          branchEffectiveSellingPrice: 18,
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+      supplyWarehouseBranchId: WH_A,
+      supplyWarehouseName: "Panay Warehouse",
+    });
+
+    fireEvent.click(screen.getByTestId("retail-warehouse-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("retail-warehouse-submit")).toBeDisabled();
+    });
+    expect(screen.getByText(/Warehouse stock changed\. Only 2 pcs is now available/i)).toBeInTheDocument();
+    expect(screen.getByTestId(`retail-warehouse-qty-${PRODUCT_A}`)).toHaveTextContent("3");
     expect(stockRequestsClient.createStockRequest).not.toHaveBeenCalled();
   });
 });

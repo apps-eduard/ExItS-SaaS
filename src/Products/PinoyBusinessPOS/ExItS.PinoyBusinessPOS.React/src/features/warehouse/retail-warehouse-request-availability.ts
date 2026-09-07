@@ -8,6 +8,25 @@ export type RequestAvailabilityLine = {
   unitOfMeasure: string;
 };
 
+/**
+ * UI-only projected warehouse remaining after basket selection.
+ * Never mutates inventory; never returns negative.
+ */
+export function remainingWarehouseAvailable(
+  warehouseAvailable: number,
+  requestedInBasket: number,
+): number {
+  const available = roundQuantity(Math.max(0, warehouseAvailable));
+  const requested = roundQuantity(Math.max(0, requestedInBasket));
+  if (!Number.isFinite(available)) {
+    return 0;
+  }
+  if (!Number.isFinite(requested) || requested <= 0) {
+    return available;
+  }
+  return roundQuantity(Math.max(0, available - requested));
+}
+
 /** True when 0 < qty <= available (3-dp aware). */
 export function isRequestQuantityAllowed(
   quantity: number,

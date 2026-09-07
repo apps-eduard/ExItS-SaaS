@@ -3,6 +3,7 @@ import {
   clampRequestQuantityToAvailable,
   findRequestAvailabilityIssues,
   isRequestQuantityAllowed,
+  remainingWarehouseAvailable,
 } from "@/features/warehouse/retail-warehouse-request-availability";
 
 describe("retail-warehouse-request-availability", () => {
@@ -35,5 +36,20 @@ describe("retail-warehouse-request-availability", () => {
     );
     expect(issues).toHaveLength(1);
     expect(issues[0]?.message).toMatch(/Only 40 kg is now available/i);
+  });
+
+  it("projects remaining warehouse availability without going negative", () => {
+    expect(remainingWarehouseAvailable(300, 0)).toBe(300);
+    expect(remainingWarehouseAvailable(300, 6)).toBe(294);
+    expect(remainingWarehouseAvailable(55, 10)).toBe(45);
+    expect(remainingWarehouseAvailable(55, 20)).toBe(35);
+    expect(remainingWarehouseAvailable(55, 55)).toBe(0);
+    expect(remainingWarehouseAvailable(55, 56)).toBe(0);
+    expect(remainingWarehouseAvailable(250, 6)).toBe(244);
+  });
+
+  it("tracks remaining per product independently (no mixed UOM aggregate)", () => {
+    expect(remainingWarehouseAvailable(55, 10)).toBe(45);
+    expect(remainingWarehouseAvailable(300, 6)).toBe(294);
   });
 });

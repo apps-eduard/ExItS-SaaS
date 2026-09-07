@@ -10879,6 +10879,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.onlyAvailableAtWarehouse":
     "Only {qty} {uom} is currently available at {warehouse}.",
   "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.remainingCompact": "Nabati: {qty} {uom}",
+  "retailWarehouse.request.remainingTooltip": "Available kalpasan ti daytoy a request selection.",
+
   "retailWarehouse.request.fixAvailabilityBeforeSubmit":
     "Nagbaliw ti warehouse stock. Baliwen ti kaadu sakbay ag-submit.",
   "retailWarehouse.request.revalidateFailed": "Saan a ma-refresh ti warehouse availability. Padasen manen.",

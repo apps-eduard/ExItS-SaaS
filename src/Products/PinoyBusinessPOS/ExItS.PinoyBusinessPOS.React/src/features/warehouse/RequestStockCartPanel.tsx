@@ -7,6 +7,7 @@ import {
 } from "@/cart/sell-cart-helpers";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { estimateLineCost } from "@/features/warehouse/retail-warehouse-request-math";
+import { remainingWarehouseAvailable } from "@/features/warehouse/retail-warehouse-request-availability";
 import { requestStockDisplayUom } from "@/features/warehouse/RequestStockProductCard";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
@@ -69,7 +70,7 @@ export function RequestStockCartPanel({
   submitError = false,
   submitBlocked = false,
   lineWarnings,
-  warehouseName,
+  warehouseName: _warehouseName,
   showClose = false,
   onClose,
   panelId = "request-cart",
@@ -143,6 +144,10 @@ export function RequestStockCartPanel({
                 : null;
             const atMax = line.quantity >= line.warehouseAvailableQuantity - 1e-9;
             const warning = lineWarnings?.get(line.productId) ?? null;
+            const remaining = remainingWarehouseAvailable(
+              line.warehouseAvailableQuantity,
+              line.quantity,
+            );
 
             return (
               <li
@@ -225,12 +230,17 @@ export function RequestStockCartPanel({
                     >
                       {warning}
                     </p>
-                  ) : warehouseName && line.warehouseAvailableQuantity > 0 ? (
-                    <p className="sell-cart-line__stock m-0 text-[length:var(--exits-text-xs)] text-muted">
-                      {t("retailWarehouse.request.warehouseAvailableHint")
-                        .replace("{qty}", formatQuantityDisplay(line.warehouseAvailableQuantity))
-                        .replace("{uom}", uom)
-                        .replace("{warehouse}", warehouseName)}
+                  ) : line.warehouseAvailableQuantity > 0 ? (
+                    <p
+                      className="sell-cart-line__stock m-0 text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid={`retail-warehouse-line-remaining-${line.productId}`}
+                      data-warehouse-actual={line.warehouseAvailableQuantity}
+                      data-warehouse-remaining={remaining}
+                      title={t("retailWarehouse.request.remainingTooltip")}
+                    >
+                      {t("retailWarehouse.request.remainingCompact")
+                        .replace("{qty}", formatQuantityDisplay(remaining))
+                        .replace("{uom}", uom)}
                     </p>
                   ) : null}
                 </div>

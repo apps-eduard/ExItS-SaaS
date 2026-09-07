@@ -10877,6 +10877,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.onlyAvailableAtWarehouse":
     "Only {qty} {uom} is currently available at {warehouse}.",
   "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.remainingCompact": "Natitira: {qty} {uom}",
+  "retailWarehouse.request.remainingTooltip": "Available pagkatapos ng napiling request.",
+
   "retailWarehouse.request.fixAvailabilityBeforeSubmit":
     "Nagbago ang warehouse stock. Ayusin ang dami bago mag-submit.",
   "retailWarehouse.request.revalidateFailed": "Hindi ma-refresh ang warehouse availability. Subukan ulit.",
