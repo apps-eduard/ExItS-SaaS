@@ -10858,6 +10858,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto aron idugang niining hangyo.",
   "retailWarehouse.request.addNote": "+ Pagdugang og nota",
   "retailWarehouse.request.weightAdd": "Idugang sa hangyo",
+  "retailWarehouse.request.maximumAvailable": "Maximum available: {qty} {uom}",
+  "retailWarehouse.request.onlyAvailable": "Only {qty} {uom} is available.",
+  "retailWarehouse.request.onlyAvailableAtWarehouse":
+    "Only {qty} {uom} is currently available at {warehouse}.",
+  "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.fixAvailabilityBeforeSubmit":
+    "Nausab ang warehouse stock. Usba ang kantidad sa dili pa mag-submit.",
+  "retailWarehouse.request.revalidateFailed": "Dili ma-refresh ang warehouse availability. Sulayi pag-usab.",
+  "retailWarehouse.request.supplyWarehouse": "ang supply warehouse",
   "retailWarehouse.request.cardBranch": "Sangay",
   "retailWarehouse.request.cardWarehouse": "Bodega",
   "retailWarehouse.request.cardCost": "Gasto",

@@ -140,7 +140,7 @@ describe("RetailWarehouseRequestStockPage Sell UI parity", () => {
           sku: "BAT-AA",
           unitOfMeasure: "Pack",
           branchOnHandQuantity: 0,
-          warehouseAvailableQuantity: 300,
+          warehouseAvailableQuantity: 2,
           isLowStock: false,
           isTracked: true,
           sellingMode: "PerItem",
@@ -153,20 +153,36 @@ describe("RetailWarehouseRequestStockPage Sell UI parity", () => {
           sku: "PH-FRU-BANANA",
           unitOfMeasure: "Kilogram",
           branchOnHandQuantity: 1.2,
-          warehouseAvailableQuantity: 15,
+          warehouseAvailableQuantity: 55,
           isLowStock: false,
           isTracked: true,
           sellingMode: "ByWeight",
           warehouseUnitCost: 100,
           branchEffectiveSellingPrice: 140,
         },
+        {
+          productId: "66666666-6666-6666-6666-666666666666",
+          name: "Empty Stock Item",
+          sku: "EMPTY-1",
+          unitOfMeasure: "pcs",
+          branchOnHandQuantity: 0,
+          warehouseAvailableQuantity: 0,
+          isLowStock: true,
+          isTracked: true,
+          sellingMode: "PerItem",
+          warehouseUnitCost: 1,
+          branchEffectiveSellingPrice: 2,
+        },
       ],
-      totalCount: 3,
+      totalCount: 4,
       page: 1,
       pageSize: 40,
       supplyWarehouseBranchId: WH_A,
       supplyWarehouseName: "Panay Warehouse",
     });
+    vi.spyOn(stockRequestsClient, "createStockRequest").mockResolvedValue({
+      stockRequestId: "sr-1",
+    } as never);
   });
 
   it("uses Sell floor layout classes and Sell search placeholder", async () => {
@@ -270,5 +286,80 @@ describe("RetailWarehouseRequestStockPage Sell UI parity", () => {
     expect(screen.getByTestId(`retail-warehouse-cost-${PRODUCT_B}`)).toHaveTextContent(/Pack/);
     const line = screen.getByTestId(`retail-warehouse-basket-line-${PRODUCT_B}`);
     expect(line).toHaveTextContent(/Pack/);
+  });
+
+  it("blocks zero warehouse stock and caps per-item increments", async () => {
+    const OOS = "66666666-6666-6666-6666-666666666666";
+    renderPage();
+    const oos = await screen.findByTestId(`retail-warehouse-product-${OOS}`);
+    expect(oos).toBeDisabled();
+    fireEvent.click(oos);
+    expect(screen.queryByTestId(`retail-warehouse-basket-line-${OOS}`)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_B}`));
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_B}`));
+    expect(screen.getByTestId(`retail-warehouse-qty-${PRODUCT_B}`)).toHaveTextContent("2");
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_B}`));
+    expect(screen.getByTestId(`retail-warehouse-qty-${PRODUCT_B}`)).toHaveTextContent("2");
+  });
+
+  it("rejects weight above warehouse available", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_W}`);
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_W}`));
+    expect(await screen.findByTestId("sell-weight-max-available")).toHaveTextContent(
+      /Maximum available:\s*55\s*kg/i,
+    );
+    fireEvent.change(screen.getByTestId("sell-weight-input"), { target: { value: "60" } });
+    expect(screen.getByTestId("sell-weight-confirm")).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/Only 55 kg is available/i);
+  });
+
+  it("blocks submit when warehouse availability drops without rewriting qty", async () => {
+    renderPage();
+    await screen.findByTestId(`retail-warehouse-product-${PRODUCT_W}`);
+    fireEvent.click(screen.getByTestId(`retail-warehouse-product-${PRODUCT_W}`));
+    fireEvent.change(await screen.findByTestId("sell-weight-input"), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByTestId("sell-weight-confirm"));
+    expect(
+      within(await screen.findByTestId(`retail-warehouse-basket-line-${PRODUCT_W}`)).getByTestId(
+        `retail-warehouse-edit-weight-${PRODUCT_W}`,
+      ),
+    ).toHaveTextContent(/50/);
+
+    vi.mocked(stockRequestsClient.listReplenishmentCatalog).mockResolvedValue({
+      items: [
+        {
+          productId: PRODUCT_W,
+          name: "Banana Lakatan",
+          sku: "PH-FRU-BANANA",
+          unitOfMeasure: "Kilogram",
+          branchOnHandQuantity: 1.2,
+          warehouseAvailableQuantity: 40,
+          isLowStock: false,
+          isTracked: true,
+          sellingMode: "ByWeight",
+          warehouseUnitCost: 100,
+          branchEffectiveSellingPrice: 140,
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    fireEvent.click(screen.getByTestId("retail-warehouse-submit"));
+    await waitFor(() => {
+      expect(screen.getByTestId("retail-warehouse-submit")).toBeDisabled();
+    });
+    expect(screen.getByText(/Warehouse stock changed\. Only 40 kg is now available/i)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId(`retail-warehouse-basket-line-${PRODUCT_W}`)).getByTestId(
+        `retail-warehouse-edit-weight-${PRODUCT_W}`,
+      ),
+    ).toHaveTextContent(/50/);
+    expect(stockRequestsClient.createStockRequest).not.toHaveBeenCalled();
   });
 });

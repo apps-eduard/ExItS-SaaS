@@ -10858,6 +10858,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto para idugang sa sini nga hangyo.",
   "retailWarehouse.request.addNote": "+ Magdugang sang nota",
   "retailWarehouse.request.weightAdd": "Idugang sa hangyo",
+  "retailWarehouse.request.maximumAvailable": "Maximum available: {qty} {uom}",
+  "retailWarehouse.request.onlyAvailable": "Only {qty} {uom} is available.",
+  "retailWarehouse.request.onlyAvailableAtWarehouse":
+    "Only {qty} {uom} is currently available at {warehouse}.",
+  "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.fixAvailabilityBeforeSubmit":
+    "Naglain ang warehouse stock. Ilain ang kantidad antes mag-submit.",
+  "retailWarehouse.request.revalidateFailed": "Indi ma-refresh ang warehouse availability. Tilawi liwat.",
+  "retailWarehouse.request.supplyWarehouse": "ang supply warehouse",
   "retailWarehouse.request.cardBranch": "Sangay",
   "retailWarehouse.request.cardWarehouse": "Bodega",
   "retailWarehouse.request.cardCost": "Gasto",

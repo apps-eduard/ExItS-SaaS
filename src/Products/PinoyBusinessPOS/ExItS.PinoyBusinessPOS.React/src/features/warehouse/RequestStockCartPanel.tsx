@@ -37,6 +37,9 @@ type RequestStockCartPanelProps = {
   onSubmit: () => void;
   submitPending?: boolean;
   submitError?: boolean;
+  submitBlocked?: boolean;
+  lineWarnings?: ReadonlyMap<string, string>;
+  warehouseName?: string;
   showClose?: boolean;
   onClose?: () => void;
   panelId?: string;
@@ -64,13 +67,16 @@ export function RequestStockCartPanel({
   onSubmit,
   submitPending = false,
   submitError = false,
+  submitBlocked = false,
+  lineWarnings,
+  warehouseName,
   showClose = false,
   onClose,
   panelId = "request-cart",
 }: RequestStockCartPanelProps) {
   const { t } = useI18n();
   const [notesOpen, setNotesOpen] = useState(() => requestNotes.trim().length > 0);
-  const submitEnabled = lines.length > 0 && !submitPending;
+  const submitEnabled = lines.length > 0 && !submitPending && !submitBlocked;
   const costAmount = estimatedCostTotal ?? 0;
 
   return (
@@ -135,12 +141,15 @@ export function RequestStockCartPanel({
               line.warehouseUnitCost != null
                 ? `${formatPeso(line.warehouseUnitCost)}/${uom}`
                 : null;
+            const atMax = line.quantity >= line.warehouseAvailableQuantity - 1e-9;
+            const warning = lineWarnings?.get(line.productId) ?? null;
 
             return (
               <li
                 key={line.productId}
                 className="sell-cart-line sell-cart-line--enter"
                 data-testid={`retail-warehouse-basket-line-${line.productId}`}
+                data-stock-invalid={warning ? "true" : undefined}
               >
                 <div className="sell-cart-line__media" aria-hidden>
                   <span className="sell-cart-line__initial">{cartLineInitial(line.name)}</span>
@@ -203,10 +212,27 @@ export function RequestStockCartPanel({
                           onDecrement={() => onDecrement(line.productId)}
                           onIncrement={() => onIncrement(line.productId)}
                           decrementDisabled={line.quantity <= 1}
+                          incrementDisabled={atMax}
                         />
                       </div>
                     )}
                   </div>
+                  {warning ? (
+                    <p
+                      role="alert"
+                      className="sell-cart-line__stock"
+                      data-testid={`retail-warehouse-line-warning-${line.productId}`}
+                    >
+                      {warning}
+                    </p>
+                  ) : warehouseName && line.warehouseAvailableQuantity > 0 ? (
+                    <p className="sell-cart-line__stock m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("retailWarehouse.request.warehouseAvailableHint")
+                        .replace("{qty}", formatQuantityDisplay(line.warehouseAvailableQuantity))
+                        .replace("{uom}", uom)
+                        .replace("{warehouse}", warehouseName)}
+                    </p>
+                  ) : null}
                 </div>
               </li>
             );

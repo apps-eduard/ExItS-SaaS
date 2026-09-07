@@ -695,6 +695,7 @@ public sealed class CreateStockRequest
     private readonly ISupplyRouteRepository _routes;
     private readonly ICatalogProductRepository _products;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly IInventoryBranchBalanceRepository _balances;
     private readonly StockRequestQueryService _queries;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -705,6 +706,7 @@ public sealed class CreateStockRequest
         ISupplyRouteRepository routes,
         ICatalogProductRepository products,
         IOrganizationBranchDirectory branches,
+        IInventoryBranchBalanceRepository balances,
         StockRequestQueryService queries,
         IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
@@ -714,6 +716,7 @@ public sealed class CreateStockRequest
         _routes = routes;
         _products = products;
         _branches = branches;
+        _balances = balances;
         _queries = queries;
         _notifications = notifications;
         _unitOfWork = unitOfWork;
@@ -812,6 +815,44 @@ public sealed class CreateStockRequest
                 product.Name,
                 product.UnitOfMeasure,
                 product.SellingMode));
+        }
+
+        var sourceBranchId = PosBranchId.From(request.RequestedSourceLocationId);
+        var warehouseBalances = (await _balances
+                .ListByBranchAndProductIdsAsync(orgId, sourceBranchId, productIds, cancellationToken)
+                .ConfigureAwait(false))
+            .ToDictionary(b => b.ProductId.Value);
+        var warehouseNames = await _branches
+            .GetNamesAsync(organizationId, [request.RequestedSourceLocationId], cancellationToken)
+            .ConfigureAwait(false);
+        var warehouseName = warehouseNames.TryGetValue(request.RequestedSourceLocationId, out var name)
+            && !string.IsNullOrWhiteSpace(name)
+            ? name.Trim()
+            : "the supply warehouse";
+
+        foreach (var draft in drafts)
+        {
+            var available = warehouseBalances.TryGetValue(draft.ProductId.Value, out var balance)
+                ? Math.Max(0m, balance.AvailableQuantity)
+                : 0m;
+            var unit = UnitOfMeasures.ToCode(draft.UnitOfMeasure);
+            var displayUnit = string.Equals(unit, "Kilogram", StringComparison.OrdinalIgnoreCase)
+                ? "kg"
+                : unit;
+
+            if (available <= 0m)
+            {
+                return ApplicationResult<StockRequestDto>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{draft.NameSnapshot} is out of stock at {warehouseName}.");
+            }
+
+            if (draft.RequestedQuantity > available)
+            {
+                return ApplicationResult<StockRequestDto>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{draft.NameSnapshot} requested {draft.RequestedQuantity:0.###} {displayUnit}, but only {available:0.###} {displayUnit} is available at {warehouseName}.");
+            }
         }
 
         try

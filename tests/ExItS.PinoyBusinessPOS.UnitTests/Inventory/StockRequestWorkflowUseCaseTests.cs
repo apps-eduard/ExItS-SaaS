@@ -52,6 +52,7 @@ public sealed class StockRequestWorkflowUseCaseTests
             Utc,
             sellingMode: SellingMode.ByWeight);
         fx.Products.Items.Add(weight);
+        fx.SeedWarehouseStock(weight.Id.Value, 1_000m);
 
         var result = await fx.Create.ExecuteAsync(
             Org,
@@ -81,6 +82,135 @@ public sealed class StockRequestWorkflowUseCaseTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidSaleLineQuantity, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Create_accepts_request_at_warehouse_available()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 10m);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 10m)]),
+            Actor,
+            Branch);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Single(fx.Requests.Items);
+    }
+
+    [Fact]
+    public async Task Create_rejects_when_requested_exceeds_warehouse_available()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 55m);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 60m)]),
+            Actor,
+            Branch);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Contains("55", result.ErrorMessage);
+        Assert.Contains("60", result.ErrorMessage);
+        Assert.Contains("Iloilo Jaro Warehouse", result.ErrorMessage);
+        Assert.Empty(fx.Requests.Items);
+    }
+
+    [Fact]
+    public async Task Create_rejects_when_warehouse_available_is_zero()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 0m);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 1m)]),
+            Actor,
+            Branch);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Contains("out of stock", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Create_rejects_weighted_over_available()
+    {
+        var fx = await Fixture.CreateAsync();
+        var weight = CatalogProduct.Create(
+            PosOrganizationId.From(Org),
+            "Banana Lakatan",
+            UnitOfMeasure.Kilogram,
+            100m,
+            Utc,
+            sellingMode: SellingMode.ByWeight);
+        fx.Products.Items.Add(weight);
+        fx.SeedWarehouseStock(weight.Id.Value, 55m);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(weight.Id.Value, 55.001m)]),
+            Actor,
+            Branch);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Contains("Banana Lakatan", result.ErrorMessage);
+        Assert.Contains("55", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Create_does_not_use_other_warehouse_or_org_stock_to_bypass()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 2m);
+        // Extra stock at retail branch must not authorize warehouse request qty.
+        fx.Balances.Items.Add(
+            InventoryBranchBalance.Create(
+                PosOrganizationId.From(Org),
+                PosBranchId.From(Branch),
+                CatalogProductId.From(fx.ProductId),
+                500m,
+                Utc));
+        // Extra stock at a different warehouse must not authorize either.
+        var otherWarehouse = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        fx.SeedWarehouseStock(fx.ProductId, 900m, PosBranchId.From(otherWarehouse));
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 10m)]),
+            Actor,
+            Branch);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Contains("2", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Create_does_not_move_or_reserve_stock()
+    {
+        var fx = await Fixture.CreateAsync();
+        fx.SeedWarehouseStock(fx.ProductId, 100m);
+        var before = fx.Balances.Items.Single(b =>
+            b.ProductId.Value == fx.ProductId && b.BranchId.Value == Warehouse);
+
+        var result = await fx.Create.ExecuteAsync(
+            Org,
+            new CreateStockRequestRequest(Branch, Warehouse, [new StockRequestLineRequest(fx.ProductId, 25m)]),
+            Actor,
+            Branch);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        var after = fx.Balances.Items.Single(b =>
+            b.ProductId.Value == fx.ProductId && b.BranchId.Value == Warehouse);
+        Assert.Equal(before.OnHandQuantity, after.OnHandQuantity);
+        Assert.Equal(before.AvailableQuantity, after.AvailableQuantity);
+        Assert.Empty(fx.Transfers.Items);
     }
 
     [Fact]
@@ -169,6 +299,7 @@ public sealed class StockRequestWorkflowUseCaseTests
         public InMemoryStockRequests Requests { get; } = new();
         public InMemoryRoutes Routes { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
+        public InMemoryBalances Balances { get; } = new();
         public CapturingNotifications Notifications { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
@@ -176,6 +307,16 @@ public sealed class StockRequestWorkflowUseCaseTests
         public CreateStockRequest Create { get; private set; } = null!;
         public ApproveStockRequest Approve { get; private set; } = null!;
         public RejectStockRequest Reject { get; private set; } = null!;
+
+        public void SeedWarehouseStock(Guid productId, decimal available, PosBranchId? branchId = null)
+        {
+            var orgId = PosOrganizationId.From(Org);
+            var product = CatalogProductId.From(productId);
+            var warehouseBranch = branchId ?? PosBranchId.From(Warehouse);
+            Balances.Items.RemoveAll(b => b.ProductId == product && b.BranchId == warehouseBranch);
+            Balances.Items.Add(
+                InventoryBranchBalance.Create(orgId, warehouseBranch, product, Math.Max(0m, available), Utc));
+        }
 
         public static async Task<Fixture> CreateAsync()
         {
@@ -188,6 +329,7 @@ public sealed class StockRequestWorkflowUseCaseTests
                 Utc);
             fx.ProductId = product.Id.Value;
             fx.Products.Items.Add(product);
+            fx.SeedWarehouseStock(fx.ProductId, 1_000m);
 
             await fx.Routes.AddAsync(
                 SupplyRoute.Create(
@@ -199,7 +341,15 @@ public sealed class StockRequestWorkflowUseCaseTests
 
             var queries = new StockRequestQueryService(fx.Requests, fx.Transfers, fx.Branches);
             fx.Create = new CreateStockRequest(
-                fx.Requests, fx.Routes, fx.Products, fx.Branches, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
+                fx.Requests,
+                fx.Routes,
+                fx.Products,
+                fx.Branches,
+                fx.Balances,
+                queries,
+                fx.Notifications,
+                fx.UnitOfWork,
+                fx.Clock);
             fx.Approve = new ApproveStockRequest(
                 fx.Requests, queries, fx.Notifications, fx.UnitOfWork, fx.Clock);
             fx.Reject = new RejectStockRequest(
@@ -239,7 +389,7 @@ public sealed class StockRequestWorkflowUseCaseTests
             IReadOnlyCollection<Guid> branchIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, string>>(
-                branchIds.ToDictionary(id => id, id => id == Warehouse ? "Warehouse" : "Branch"));
+                branchIds.ToDictionary(id => id, id => id == Warehouse ? "Iloilo Jaro Warehouse" : "Pac Passi"));
 
         public Task<Guid?> GetPrimaryBranchIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Guid?>(Warehouse);
@@ -401,11 +551,13 @@ public sealed class StockRequestWorkflowUseCaseTests
 
     private sealed class InMemoryTransfers : IInventoryTransferRepository
     {
+        public List<InventoryTransfer> Items { get; } = [];
+
         public Task<InventoryTransfer?> GetByIdAsync(
             PosOrganizationId organizationId,
             InventoryTransferId transferId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<InventoryTransfer?>(null);
+            Task.FromResult(Items.FirstOrDefault(t => t.Id == transferId));
 
         public Task<(IReadOnlyList<InventoryTransfer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
@@ -413,15 +565,20 @@ public sealed class StockRequestWorkflowUseCaseTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<(IReadOnlyList<InventoryTransfer>, int)>(([], 0));
+            Task.FromResult<(IReadOnlyList<InventoryTransfer>, int)>((Items, Items.Count));
 
         public Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdAsync(
             PosOrganizationId organizationId,
             StockRequestId stockRequestId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InventoryTransfer>>([]);
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                Items.Where(t => t.StockRequestId == stockRequestId).ToList());
 
-        public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
+        {
+            Items.Add(transfer);
+            return Task.CompletedTask;
+        }
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
@@ -430,6 +587,36 @@ public sealed class StockRequestWorkflowUseCaseTests
             DateOnly businessDateUtc,
             CancellationToken cancellationToken = default) =>
             Task.FromResult("IT-20260906-000001");
+    }
+
+    private sealed class InMemoryBalances : IInventoryBranchBalanceRepository
+    {
+        public List<InventoryBranchBalance> Items { get; } = [];
+
+        public Task<InventoryBranchBalance?> GetAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(b =>
+                b.OrganizationId == organizationId && b.BranchId == branchId && b.ProductId == productId));
+
+        public Task<IReadOnlyList<InventoryBranchBalance>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>(
+                Items.Where(b => b.OrganizationId == organizationId && productIds.Any(id => id == b.ProductId)).ToList());
+
+        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
+        {
+            Items.RemoveAll(b =>
+                b.OrganizationId == balance.OrganizationId
+                && b.BranchId == balance.BranchId
+                && b.ProductId == balance.ProductId);
+            Items.Add(balance);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryCatalog : ICatalogProductRepository

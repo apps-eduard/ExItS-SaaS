@@ -18,6 +18,7 @@ import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { SearchField } from "@/components/exits/SearchField";
 import { useToast } from "@/components/exits/ToastProvider";
 import {
+  formatQuantityDisplay,
   isByWeightSellingMode,
   roundQuantity,
 } from "@/cart/sell-cart-helpers";
@@ -27,10 +28,17 @@ import { setOrgBottomNavHidden } from "@/features/sell/sell-org-bottom-nav-chrom
 import type { RetailWarehouseResolveState } from "@/features/warehouse/retail-warehouse-resolve";
 import { summarizeRequestBasket } from "@/features/warehouse/retail-warehouse-request-math";
 import {
+  findRequestAvailabilityIssues,
+  isRequestQuantityAllowed,
+} from "@/features/warehouse/retail-warehouse-request-availability";
+import {
   RequestStockCartPanel,
   type RequestStockBasketLine,
 } from "@/features/warehouse/RequestStockCartPanel";
-import { RequestStockProductCard } from "@/features/warehouse/RequestStockProductCard";
+import {
+  RequestStockProductCard,
+  requestStockDisplayUom,
+} from "@/features/warehouse/RequestStockProductCard";
 import { useRetailWarehouseResolve } from "@/features/warehouse/useRetailWarehouseResolve";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -98,6 +106,8 @@ export function RetailWarehouseRequestStockPage() {
   const [sideCartLayout, setSideCartLayout] = useState(false);
   const [weightEntry, setWeightEntry] = useState<WeightEntryTarget | null>(null);
   const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
+  const [lineWarnings, setLineWarnings] = useState<Map<string, string>>(new Map());
+  const [submitGuardMessage, setSubmitGuardMessage] = useState<string | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
 
   const flashProduct = useCallback((productId: string) => {
@@ -185,6 +195,29 @@ export function RetailWarehouseRequestStockPage() {
     return map;
   }, [basket]);
   const basketTotals = useMemo(() => summarizeRequestBasket(basket), [basket]);
+  const warehouseLabel =
+    supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse");
+  const availabilityIssues = useMemo(
+    () =>
+      findRequestAvailabilityIssues(
+        basket.map((line) => ({
+          ...line,
+          unitOfMeasure: requestStockDisplayUom(line.sellingMode, line.unitOfMeasure),
+        })),
+        warehouseLabel,
+      ),
+    [basket, warehouseLabel],
+  );
+  const mergedWarnings = useMemo(() => {
+    const map = new Map(lineWarnings);
+    for (const issue of availabilityIssues) {
+      if (!map.has(issue.productId)) {
+        map.set(issue.productId, issue.message);
+      }
+    }
+    return map;
+  }, [lineWarnings, availabilityIssues]);
+  const submitBlocked = mergedWarnings.size > 0;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -203,6 +236,8 @@ export function RetailWarehouseRequestStockPage() {
     onSuccess: (dto) => {
       setBasket([]);
       setRequestNotes("");
+      setLineWarnings(new Map());
+      setSubmitGuardMessage(null);
       setCartSheetOpen(false);
       showToast(t("retailWarehouse.request.submitted"), "success");
       navigate(`/warehouse/requests/${dto.stockRequestId}`);
@@ -213,11 +248,30 @@ export function RetailWarehouseRequestStockPage() {
     product: ReplenishmentCatalogItemDto | RequestStockBasketLine,
     quantity: number,
   ) {
+    const available = product.warehouseAvailableQuantity;
     const qty = roundQuantity(quantity);
     if (!Number.isFinite(qty) || qty <= 0) {
       removeLine(product.productId);
       return;
     }
+    if (!isRequestQuantityAllowed(qty, available)) {
+      const uom = requestStockDisplayUom(product.sellingMode || "PerItem", product.unitOfMeasure);
+      showToast(
+        t("retailWarehouse.request.onlyAvailableAtWarehouse")
+          .replace("{qty}", formatQuantityDisplay(Math.max(0, available)))
+          .replace("{uom}", uom)
+          .replace("{warehouse}", supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse")),
+        "error",
+      );
+      return;
+    }
+    setLineWarnings((prev) => {
+      if (!prev.has(product.productId)) return prev;
+      const next = new Map(prev);
+      next.delete(product.productId);
+      return next;
+    });
+    setSubmitGuardMessage(null);
     setBasket((prev) => {
       const existing = prev.find((l) => l.productId === product.productId);
       const next: RequestStockBasketLine = {
@@ -243,6 +297,9 @@ export function RetailWarehouseRequestStockPage() {
   }
 
   function selectProduct(product: ReplenishmentCatalogItemDto) {
+    if (product.warehouseAvailableQuantity <= 0) {
+      return;
+    }
     if (isByWeightSellingMode(product.sellingMode)) {
       const existing = basketById.get(product.productId);
       setWeightEntry({
@@ -253,17 +310,86 @@ export function RetailWarehouseRequestStockPage() {
       return;
     }
     const existing = basketById.get(product.productId);
-    upsertLine(product, (existing?.quantity ?? 0) + 1);
+    const nextQty = (existing?.quantity ?? 0) + 1;
+    if (!isRequestQuantityAllowed(nextQty, product.warehouseAvailableQuantity)) {
+      const uom = requestStockDisplayUom(product.sellingMode, product.unitOfMeasure);
+      showToast(
+        t("retailWarehouse.request.onlyAvailableAtWarehouse")
+          .replace("{qty}", formatQuantityDisplay(product.warehouseAvailableQuantity))
+          .replace("{uom}", uom)
+          .replace("{warehouse}", supply?.supplyWarehouseName ?? t("retailWarehouse.request.supplyWarehouse")),
+        "error",
+      );
+      return;
+    }
+    upsertLine(product, nextQty);
   }
 
   function removeLine(productId: string) {
     setBasket((prev) => prev.filter((l) => l.productId !== productId));
+    setLineWarnings((prev) => {
+      if (!prev.has(productId)) return prev;
+      const next = new Map(prev);
+      next.delete(productId);
+      return next;
+    });
   }
 
   function updateQty(productId: string, quantity: number) {
     const line = basketById.get(productId);
     if (!line) return;
     upsertLine(line, quantity);
+  }
+
+  async function revalidateAndSubmit() {
+    if (!workspace || !supply || basket.length === 0) return;
+    setSubmitGuardMessage(null);
+    try {
+      const freshById = new Map<string, number>();
+      await Promise.all(
+        basket.map(async (line) => {
+          const page = await listReplenishmentCatalog(workspace, {
+            supplyWarehouseBranchId: supply.supplyWarehouseId,
+            search: line.sku?.trim() || line.name,
+            stockFilter: "all",
+            page: 1,
+            pageSize: 20,
+          });
+          const match = page.items.find((item) => item.productId === line.productId);
+          if (match) {
+            freshById.set(line.productId, match.warehouseAvailableQuantity);
+          }
+        }),
+      );
+
+      setBasket((prev) =>
+        prev.map((line) => {
+          const fresh = freshById.get(line.productId);
+          if (fresh == null) return line;
+          return { ...line, warehouseAvailableQuantity: fresh };
+        }),
+      );
+
+      const refreshed = basket.map((line) => ({
+        ...line,
+        warehouseAvailableQuantity:
+          freshById.get(line.productId) ?? line.warehouseAvailableQuantity,
+        unitOfMeasure: requestStockDisplayUom(line.sellingMode, line.unitOfMeasure),
+      }));
+      const issues = findRequestAvailabilityIssues(
+        refreshed,
+        supply.supplyWarehouseName,
+      );
+      if (issues.length > 0) {
+        setLineWarnings(new Map(issues.map((i) => [i.productId, i.message])));
+        setSubmitGuardMessage(t("retailWarehouse.request.fixAvailabilityBeforeSubmit"));
+        return;
+      }
+      setLineWarnings(new Map());
+      mutation.mutate();
+    } catch {
+      setSubmitGuardMessage(t("retailWarehouse.request.revalidateFailed"));
+    }
   }
 
   if (!allowManage) {
@@ -308,9 +434,14 @@ export function RetailWarehouseRequestStockPage() {
         mode: "edit",
         initialKilograms: line.quantity,
       }),
-    onSubmit: () => mutation.mutate(),
+    onSubmit: () => {
+      void revalidateAndSubmit();
+    },
     submitPending: mutation.isPending,
     submitError: mutation.isError,
+    submitBlocked,
+    lineWarnings: mergedWarnings,
+    warehouseName: supply.supplyWarehouseName,
   };
 
   return (
@@ -560,6 +691,17 @@ export function RetailWarehouseRequestStockPage() {
           isTracked: true,
           onHandQuantity: weightEntry?.product.warehouseAvailableQuantity ?? null,
         }}
+        maxKilograms={weightEntry?.product.warehouseAvailableQuantity ?? null}
+        maxAvailableLabel={
+          weightEntry
+            ? t("retailWarehouse.request.maximumAvailable")
+                .replace(
+                  "{qty}",
+                  formatQuantityDisplay(Math.max(0, weightEntry.product.warehouseAvailableQuantity)),
+                )
+                .replace("{uom}", "kg")
+            : null
+        }
         confirmAddLabel={t("retailWarehouse.request.weightAdd")}
         onConfirm={(kilograms) => {
           if (!weightEntry) return;
@@ -576,6 +718,15 @@ export function RetailWarehouseRequestStockPage() {
         }
         onCancel={() => setWeightEntry(null)}
       />
+      {submitGuardMessage ? (
+        <p
+          role="alert"
+          className="m-0 text-center text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+          data-testid="retail-warehouse-submit-guard"
+        >
+          {submitGuardMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

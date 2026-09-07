@@ -5792,6 +5792,15 @@ export const en = {
   "retailWarehouse.request.cartEmptyDetail": "Tap products to add them to this request.",
   "retailWarehouse.request.addNote": "+ Add note",
   "retailWarehouse.request.weightAdd": "Add to request",
+  "retailWarehouse.request.maximumAvailable": "Maximum available: {qty} {uom}",
+  "retailWarehouse.request.onlyAvailable": "Only {qty} {uom} is available.",
+  "retailWarehouse.request.onlyAvailableAtWarehouse":
+    "Only {qty} {uom} is currently available at {warehouse}.",
+  "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.fixAvailabilityBeforeSubmit":
+    "Warehouse stock changed. Adjust quantities before submitting.",
+  "retailWarehouse.request.revalidateFailed": "Could not refresh warehouse availability. Try again.",
+  "retailWarehouse.request.supplyWarehouse": "the supply warehouse",
   "retailWarehouse.request.cardBranch": "Branch",
   "retailWarehouse.request.cardWarehouse": "Warehouse",
   "retailWarehouse.request.cardCost": "Cost",

@@ -48,9 +48,16 @@ export function RequestStockProductCard({
         "sell-product-card sell-product-card--request",
         inBasket && "sell-product-card--selected",
         addedFlash && "sell-product-card--added",
+        warehouseOut && "sell-product-card--unavailable",
       )}
       aria-pressed={inBasket}
-      onClick={() => onSelect(product)}
+      disabled={warehouseOut}
+      aria-disabled={warehouseOut}
+      onClick={() => {
+        if (!warehouseOut) {
+          onSelect(product);
+        }
+      }}
     >
       <div className="sell-product-card__body">
         <span className="sell-product-card__name">{product.name}</span>

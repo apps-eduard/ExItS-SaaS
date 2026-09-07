@@ -27,6 +27,9 @@ type SellWeightEntryDialogProps = {
     isLowStock?: boolean | null;
   } | null;
   stockError?: string | null;
+  /** When set, weight above this (kg) cannot be confirmed. */
+  maxKilograms?: number | null;
+  maxAvailableLabel?: string | null;
   /** Override "Add to cart" when reused outside Sell (e.g. Request stock). */
   confirmAddLabel?: string;
   onConfirm: (kilograms: number) => void;
@@ -41,6 +44,8 @@ export function SellWeightEntryDialog({
   initialKilograms = null,
   stockHint,
   stockError = null,
+  maxKilograms = null,
+  maxAvailableLabel = null,
   confirmAddLabel,
   onConfirm,
   onRemove,
@@ -76,6 +81,12 @@ export function SellWeightEntryDialog({
   const kilograms = parsed && "kilograms" in parsed ? parsed.kilograms : null;
   const errorCode = parsed && "error" in parsed ? parsed.error : null;
   const preview = kilograms != null ? roundMoney(unitPrice * kilograms) : null;
+  const maxKg =
+    maxKilograms != null && Number.isFinite(maxKilograms) && maxKilograms >= 0
+      ? maxKilograms
+      : null;
+  const overMax =
+    kilograms != null && maxKg != null && kilograms > maxKg + 1e-9;
 
   const stock = product
     ? resolveSellCardStock({
@@ -100,7 +111,11 @@ export function SellWeightEntryDialog({
         ? t("sell.weightErrorPrecision")
         : errorCode === "invalid" || errorCode === "unit"
           ? t("sell.weightErrorInvalid")
-          : null;
+          : overMax && maxKg != null
+            ? t("retailWarehouse.request.onlyAvailable")
+                .replace("{qty}", formatQuantityDisplay(maxKg))
+                .replace("{uom}", "kg")
+            : null;
 
   return (
     <div
@@ -135,6 +150,14 @@ export function SellWeightEntryDialog({
             className={`m-0 text-[length:var(--exits-text-xs)] text-muted sell-product-card__stock--${stock.tone}`}
           >
             {sellStockCaption(t, stock)}
+          </p>
+        ) : null}
+        {maxAvailableLabel ? (
+          <p
+            data-testid="sell-weight-max-available"
+            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+          >
+            {maxAvailableLabel}
           </p>
         ) : null}
 
@@ -228,9 +251,9 @@ export function SellWeightEntryDialog({
           <Button
             type="button"
             data-testid="sell-weight-confirm"
-            disabled={kilograms == null}
+            disabled={kilograms == null || overMax}
             onClick={() => {
-              if (kilograms != null) {
+              if (kilograms != null && !overMax) {
                 onConfirm(kilograms);
               }
             }}

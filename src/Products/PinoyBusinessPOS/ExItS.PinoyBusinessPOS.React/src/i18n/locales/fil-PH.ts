@@ -10856,6 +10856,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto para idagdag sa hiling na ito.",
   "retailWarehouse.request.addNote": "+ Magdagdag ng tala",
   "retailWarehouse.request.weightAdd": "Idagdag sa hiling",
+  "retailWarehouse.request.maximumAvailable": "Maximum available: {qty} {uom}",
+  "retailWarehouse.request.onlyAvailable": "Only {qty} {uom} is available.",
+  "retailWarehouse.request.onlyAvailableAtWarehouse":
+    "Only {qty} {uom} is currently available at {warehouse}.",
+  "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.fixAvailabilityBeforeSubmit":
+    "Nagbago ang warehouse stock. Ayusin ang dami bago mag-submit.",
+  "retailWarehouse.request.revalidateFailed": "Hindi ma-refresh ang warehouse availability. Subukan ulit.",
+  "retailWarehouse.request.supplyWarehouse": "ang supply warehouse",
   "retailWarehouse.request.cardBranch": "Sangay",
   "retailWarehouse.request.cardWarehouse": "Bodega",
   "retailWarehouse.request.cardCost": "Gastos",
