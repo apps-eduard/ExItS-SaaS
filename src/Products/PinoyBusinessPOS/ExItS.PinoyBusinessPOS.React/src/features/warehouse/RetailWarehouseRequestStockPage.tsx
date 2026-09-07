@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { Package, ShoppingCart } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   createStockRequest,
@@ -14,70 +14,41 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
-import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { SearchField } from "@/components/exits/SearchField";
-import { BottomSheet } from "@/components/exits/SheetDialog";
 import { useToast } from "@/components/exits/ToastProvider";
 import {
-  formatQuantityDisplay,
   isByWeightSellingMode,
   roundQuantity,
 } from "@/cart/sell-cart-helpers";
 import { SellCategoryFilter } from "@/features/sell/SellCategoryFilter";
 import { SellWeightEntryDialog } from "@/features/sell/SellWeightEntryDialog";
+import { setOrgBottomNavHidden } from "@/features/sell/sell-org-bottom-nav-chrome";
 import type { RetailWarehouseResolveState } from "@/features/warehouse/retail-warehouse-resolve";
+import { summarizeRequestBasket } from "@/features/warehouse/retail-warehouse-request-math";
 import {
-  estimateLineCost,
-  summarizeRequestBasket,
-} from "@/features/warehouse/retail-warehouse-request-math";
+  RequestStockCartPanel,
+  type RequestStockBasketLine,
+} from "@/features/warehouse/RequestStockCartPanel";
+import { RequestStockProductCard } from "@/features/warehouse/RequestStockProductCard";
 import { useRetailWarehouseResolve } from "@/features/warehouse/useRetailWarehouseResolve";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StockFilter = "all" | "low" | "out";
 
-type BasketLine = {
-  productId: string;
-  name: string;
-  sku?: string | null;
-  unitOfMeasure: string;
-  sellingMode: string;
-  quantity: number;
-  branchOnHandQuantity: number;
-  warehouseAvailableQuantity: number;
-  warehouseUnitCost: number | null;
-};
-
 type WeightEntryTarget = {
-  product: ReplenishmentCatalogItemDto | BasketLine;
+  product: ReplenishmentCatalogItemDto | RequestStockBasketLine;
   initialKilograms?: number | null;
   mode: "add" | "edit";
 };
 
 const PAGE_SIZE = 40;
 
-function displayUom(sellingMode: string, unitOfMeasure: string): string {
-  if (isByWeightSellingMode(sellingMode)) {
-    return "kg";
-  }
-  const trimmed = unitOfMeasure.trim();
-  if (trimmed.toLowerCase() === "kilogram") {
-    return "kg";
-  }
-  return trimmed || "pc";
-}
-
-function cartLineInitial(name: string): string {
-  const trimmed = name.trim();
-  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
-}
-
 /** Weight dialog preview uses warehouse cost (request estimate), never branch SRP. */
 function toWeightDialogProduct(
-  item: ReplenishmentCatalogItemDto | BasketLine,
+  item: ReplenishmentCatalogItemDto | RequestStockBasketLine,
 ): PosCatalogProductDto {
   const cost =
     item.warehouseUnitCost != null && Number.isFinite(item.warehouseUnitCost)
@@ -121,10 +92,51 @@ export function RetailWarehouseRequestStockPage() {
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [categoryId, setCategoryId] = useState<string>("");
   const [page, setPage] = useState(1);
-  const [basket, setBasket] = useState<BasketLine[]>([]);
+  const [basket, setBasket] = useState<RequestStockBasketLine[]>([]);
   const [requestNotes, setRequestNotes] = useState("");
-  const [mobileBasketOpen, setMobileBasketOpen] = useState(false);
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
+  const [sideCartLayout, setSideCartLayout] = useState(false);
   const [weightEntry, setWeightEntry] = useState<WeightEntryTarget | null>(null);
+  const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
+  const flashTimeoutRef = useRef<number | null>(null);
+
+  const flashProduct = useCallback((productId: string) => {
+    setFlashedProductId(productId);
+    if (flashTimeoutRef.current != null) {
+      window.clearTimeout(flashTimeoutRef.current);
+    }
+    flashTimeoutRef.current = window.setTimeout(() => {
+      flashTimeoutRef.current = null;
+      setFlashedProductId((current) => (current === productId ? null : current));
+    }, 450);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current != null) {
+        window.clearTimeout(flashTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const media = window.matchMedia("(min-width: 900px)");
+    const sync = () => setSideCartLayout(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const hideNav = cartSheetOpen && !sideCartLayout;
+    setOrgBottomNavHidden(hideNav);
+    return () => {
+      setOrgBottomNavHidden(false);
+    };
+  }, [cartSheetOpen, sideCartLayout]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -168,7 +180,7 @@ export function RetailWarehouseRequestStockPage() {
   });
 
   const basketById = useMemo(() => {
-    const map = new Map<string, BasketLine>();
+    const map = new Map<string, RequestStockBasketLine>();
     for (const line of basket) map.set(line.productId, line);
     return map;
   }, [basket]);
@@ -191,13 +203,14 @@ export function RetailWarehouseRequestStockPage() {
     onSuccess: (dto) => {
       setBasket([]);
       setRequestNotes("");
+      setCartSheetOpen(false);
       showToast(t("retailWarehouse.request.submitted"), "success");
       navigate(`/warehouse/requests/${dto.stockRequestId}`);
     },
   });
 
   function upsertLine(
-    product: ReplenishmentCatalogItemDto | BasketLine,
+    product: ReplenishmentCatalogItemDto | RequestStockBasketLine,
     quantity: number,
   ) {
     const qty = roundQuantity(quantity);
@@ -207,7 +220,7 @@ export function RetailWarehouseRequestStockPage() {
     }
     setBasket((prev) => {
       const existing = prev.find((l) => l.productId === product.productId);
-      const next: BasketLine = {
+      const next: RequestStockBasketLine = {
         productId: product.productId,
         name: product.name,
         sku: product.sku,
@@ -226,9 +239,9 @@ export function RetailWarehouseRequestStockPage() {
       }
       return [...prev, next];
     });
+    flashProduct(product.productId);
   }
 
-  /** Sell-like tap: weight opens dialog; per-item adds or increments. */
   function selectProduct(product: ReplenishmentCatalogItemDto) {
     if (isByWeightSellingMode(product.sellingMode)) {
       const existing = basketById.get(product.productId);
@@ -243,14 +256,14 @@ export function RetailWarehouseRequestStockPage() {
     upsertLine(product, (existing?.quantity ?? 0) + 1);
   }
 
+  function removeLine(productId: string) {
+    setBasket((prev) => prev.filter((l) => l.productId !== productId));
+  }
+
   function updateQty(productId: string, quantity: number) {
     const line = basketById.get(productId);
     if (!line) return;
     upsertLine(line, quantity);
-  }
-
-  function removeLine(productId: string) {
-    setBasket((prev) => prev.filter((l) => l.productId !== productId));
   }
 
   if (!allowManage) {
@@ -258,391 +271,286 @@ export function RetailWarehouseRequestStockPage() {
   }
 
   if (!workspace || !supply) {
-    return <LoadingState label={t("retailWarehouse.loading")} />;
+    return (
+      <div className="p-4">
+        <LoadingSkeleton count={4} />
+      </div>
+    );
   }
 
   const items = catalogQuery.data?.items ?? [];
   const totalCount = catalogQuery.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const categories = categoriesQuery.data?.items ?? [];
+  const showMobileCartBar = !sideCartLayout && !cartSheetOpen;
+  const showFloatingCart = showMobileCartBar && basket.length > 0;
+  const showEmptyMobileCartBar = showMobileCartBar && basket.length === 0;
+  const estimatedDisplay = basketTotals.estimatedCostTotal ?? 0;
 
-  const basketPanel = (
-    <div
-      className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden"
-      data-testid="retail-warehouse-basket"
-    >
-      <div
-        className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2"
-        data-testid="retail-warehouse-basket-header"
-      >
-        <div className="sell-cart-panel__title min-w-0">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("retailWarehouse.request.basket")}
-          </h2>
-          {basket.length > 0 ? (
-            <p
-              className="sell-cart-panel__meta m-0 text-[length:var(--exits-text-xs)] text-muted"
-              data-testid="retail-warehouse-basket-summary"
-            >
-              {t("retailWarehouse.request.productsCount").replace(
-                "{count}",
-                String(basketTotals.productCount),
-              )}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {basket.length === 0 ? (
-        <div className="sell-cart-empty flex flex-1 flex-col items-center justify-center gap-1 px-2 py-6 text-center">
-          <ShoppingCart className="size-5 text-muted" strokeWidth={1.75} aria-hidden />
-          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("retailWarehouse.request.basketEmptyDetail")}
-          </p>
-        </div>
-      ) : (
-        <ul
-          className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0"
-          data-testid="retail-warehouse-basket-lines"
-        >
-          {basket.map((line) => {
-            const byWeight = isByWeightSellingMode(line.sellingMode);
-            const uom = displayUom(line.sellingMode, line.unitOfMeasure);
-            const qtyLabel = formatQuantityDisplay(line.quantity);
-            const lineCost = estimateLineCost(line.quantity, line.warehouseUnitCost);
-            return (
-              <li
-                key={line.productId}
-                className="sell-cart-line sell-cart-line--enter"
-                data-testid={`retail-warehouse-basket-line-${line.productId}`}
-              >
-                <div className="sell-cart-line__media" aria-hidden>
-                  <span className="sell-cart-line__initial">{cartLineInitial(line.name)}</span>
-                </div>
-                <div className="sell-cart-line__body">
-                  <div className="sell-cart-line__top">
-                    <p className="sell-cart-line__name">{line.name}</p>
-                    <div className="sell-cart-line__price-actions">
-                      {lineCost != null ? (
-                        <MoneyDisplay
-                          amount={lineCost}
-                          className="sell-cart-line__amount"
-                          testId={`retail-warehouse-line-cost-${line.productId}`}
-                        />
-                      ) : (
-                        <span className="sell-cart-line__amount text-muted">—</span>
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="sell-cart-line__remove"
-                        aria-label={t("retailWarehouse.request.remove")}
-                        data-testid={`retail-warehouse-basket-remove-${line.productId}`}
-                        onClick={() => removeLine(line.productId)}
-                      >
-                        <Trash2 className="size-4" aria-hidden strokeWidth={2} />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="sell-cart-line__bottom">
-                    <span className="sell-cart-line__meta">
-                      {qtyLabel} {uom}
-                      {line.warehouseUnitCost != null ? (
-                        <span className="sell-cart-line__unit-price">
-                          {" · "}
-                          {t("retailWarehouse.request.warehouseCost")
-                            .replace("{amount}", formatPeso(line.warehouseUnitCost))
-                            .replace("{uom}", uom)}
-                        </span>
-                      ) : null}
-                    </span>
-
-                    {byWeight ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="sell-cart-line__edit"
-                        data-testid={`retail-warehouse-edit-weight-${line.productId}`}
-                        onClick={() =>
-                          setWeightEntry({
-                            product: line,
-                            mode: "edit",
-                            initialKilograms: line.quantity,
-                          })
-                        }
-                      >
-                        {qtyLabel} {uom}
-                      </Button>
-                    ) : (
-                      <div className="sell-cart-line__qty">
-                        <QuantityStepper
-                          compact
-                          value={qtyLabel}
-                          valueTestId={`retail-warehouse-qty-${line.productId}`}
-                          decreaseLabel={t("retailWarehouse.request.decrease")}
-                          increaseLabel={t("retailWarehouse.request.increase")}
-                          onDecrement={() => updateQty(line.productId, Math.max(1, line.quantity - 1))}
-                          onIncrement={() => updateQty(line.productId, line.quantity + 1)}
-                          decrementDisabled={line.quantity <= 1}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <div
-        className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-2"
-        data-testid="retail-warehouse-basket-footer"
-      >
-        <div
-          className="flex justify-between gap-2 text-[length:var(--exits-text-sm)] font-medium"
-          data-testid="retail-warehouse-products-count"
-        >
-          <span>
-            {t("retailWarehouse.request.productsCount").replace(
-              "{count}",
-              String(basketTotals.productCount),
-            )}
-          </span>
-        </div>
-        <div className="flex justify-between gap-2 text-[length:var(--exits-text-sm)]">
-          <span className="text-muted">{t("retailWarehouse.request.estimatedWarehouseCost")}</span>
-          <span data-testid="retail-warehouse-estimated-cost">
-            {basketTotals.estimatedCostTotal != null ? (
-              <MoneyDisplay amount={basketTotals.estimatedCostTotal} />
-            ) : (
-              "—"
-            )}
-          </span>
-        </div>
-
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          <span>{t("stockRequest.notes")}</span>
-          <textarea
-            className="exits-input min-h-[2.75rem] resize-y"
-            rows={2}
-            value={requestNotes}
-            onChange={(e) => setRequestNotes(e.target.value)}
-            data-testid="retail-warehouse-request-notes"
-          />
-        </label>
-
-        <Button
-          type="button"
-          className="w-full"
-          disabled={mutation.isPending || basket.length === 0}
-          onClick={() => mutation.mutate()}
-          data-testid="retail-warehouse-submit"
-        >
-          {t("stockRequest.submit")}
-        </Button>
-        {mutation.isError ? (
-          <p className="text-danger text-[length:var(--exits-text-sm)]">
-            {t("stockRequest.submitError")}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
+  const cartPanelProps = {
+    lines: basket,
+    productCount: basketTotals.productCount,
+    estimatedCostTotal: basketTotals.estimatedCostTotal,
+    requestNotes,
+    onRequestNotesChange: setRequestNotes,
+    onIncrement: (productId: string) => {
+      const line = basketById.get(productId);
+      if (line) updateQty(productId, line.quantity + 1);
+    },
+    onDecrement: (productId: string) => {
+      const line = basketById.get(productId);
+      if (line) updateQty(productId, Math.max(1, line.quantity - 1));
+    },
+    onRemove: removeLine,
+    onEditWeight: (line: RequestStockBasketLine) =>
+      setWeightEntry({
+        product: line,
+        mode: "edit",
+        initialKilograms: line.quantity,
+      }),
+    onSubmit: () => mutation.mutate(),
+    submitPending: mutation.isPending,
+    submitError: mutation.isError,
+  };
 
   return (
-    <div className="flex min-h-0 flex-col gap-3" data-testid="retail-warehouse-request-stock">
-      <div className="text-[length:var(--exits-text-sm)] text-muted">
+    <div
+      className="request-stock-floor sell-floor-root flex min-h-0 min-w-0 flex-1 flex-col"
+      data-testid="retail-warehouse-request-stock"
+    >
+      <p
+        className="m-0 mb-2 shrink-0 text-[length:var(--exits-text-xs)] text-muted"
+        data-testid="retail-warehouse-supply-from"
+      >
         {t("retailWarehouse.request.supplyFrom").replace("{name}", supply.supplyWarehouseName)}
-      </div>
+      </p>
 
-      <div className="grid min-h-0 gap-3 md:grid-cols-[minmax(0,1.65fr)_minmax(16rem,0.35fr)]">
-        <div className="sell-floor-browse flex min-w-0 flex-col gap-2" data-testid="retail-warehouse-browser">
-          <SearchField
-            label={t("stockRequest.search")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("stockRequest.search")}
-            data-testid="retail-warehouse-search"
-            onClear={() => setSearch("")}
-          />
+      <div className="sell-floor-layout flex min-h-0 min-w-0 flex-1 flex-col">
+        <section
+          data-testid="retail-warehouse-browser"
+          className={cn(
+            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-1 flex-col",
+            (showFloatingCart || showEmptyMobileCartBar) &&
+              "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
+          )}
+        >
+          <div className="sell-floor-workspace__search">
+            <SearchField
+              label={t("sell.searchLabel")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("sell.searchPlaceholder")}
+              data-testid="retail-warehouse-search"
+              onClear={() => setSearch("")}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
 
-          <ExitsChipBar
-            ariaLabel={t("stockRequest.filterLabel")}
-            variant="filter"
-            items={[
-              {
-                key: "all",
-                label: t("stockRequest.filter.all"),
-                state: stockFilter === "all" ? "active" : "idle",
-                onSelect: () => setStockFilter("all"),
-              },
-              {
-                key: "low",
-                label: t("stockRequest.filter.lowStock"),
-                state: stockFilter === "low" ? "active" : "idle",
-                onSelect: () => setStockFilter("low"),
-              },
-              {
-                key: "out",
-                label: t("stockRequest.filter.outOfStock"),
-                state: stockFilter === "out" ? "active" : "idle",
-                onSelect: () => setStockFilter("out"),
-              },
-            ]}
-          />
+          <div className="sell-floor-workspace__filters px-3 pb-0 pt-2">
+            <ExitsChipBar
+              ariaLabel={t("stockRequest.filterLabel")}
+              variant="filter"
+              items={[
+                {
+                  key: "all",
+                  label: t("stockRequest.filter.all"),
+                  state: stockFilter === "all" ? "active" : "idle",
+                  onSelect: () => setStockFilter("all"),
+                },
+                {
+                  key: "low",
+                  label: t("stockRequest.filter.lowStock"),
+                  state: stockFilter === "low" ? "active" : "idle",
+                  onSelect: () => setStockFilter("low"),
+                },
+                {
+                  key: "out",
+                  label: t("stockRequest.filter.outOfStock"),
+                  state: stockFilter === "out" ? "active" : "idle",
+                  onSelect: () => setStockFilter("out"),
+                },
+              ]}
+            />
+          </div>
 
-          {categories.length > 0 ? (
+          <div className="sell-floor-workspace__categories">
             <SellCategoryFilter
               categories={categories.map((cat) => ({
                 categoryId: cat.categoryId,
                 name: cat.name,
               }))}
               activeCategoryId={categoryId || "all"}
-              allLabel={t("retailWarehouse.request.categoryAll")}
-              listLabel={t("retailWarehouse.request.category")}
+              allLabel={t("sell.categoryAll")}
+              listLabel={t("sell.categoriesLabel")}
               onSelect={(id) => setCategoryId(id === "all" ? "" : id)}
             />
-          ) : null}
+          </div>
 
-          {catalogQuery.isLoading ? <LoadingState label={t("retailWarehouse.loading")} /> : null}
-          {catalogQuery.isError ? (
-            <ErrorState title={t("retailWarehouse.loadError")} detail={t("retailWarehouse.loadError")} />
-          ) : null}
+          <div
+            data-testid="retail-warehouse-products"
+            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto overscroll-contain"
+            aria-label={t("stockRequest.search")}
+          >
+            {catalogQuery.isLoading ? (
+              <div className="col-span-full">
+                <LoadingSkeleton count={8} className="sell-product-grid__skeleton gap-[0.375rem]" />
+              </div>
+            ) : null}
 
-          {!catalogQuery.isLoading && !catalogQuery.isError && items.length === 0 ? (
-            <EmptyState
-              title={t("stockRequest.emptyProducts")}
-              detail={t("stockRequest.emptyProductsDetail")}
-            />
-          ) : null}
+            {catalogQuery.isError ? (
+              <div className="col-span-full">
+                <ErrorState
+                  title={t("retailWarehouse.loadError")}
+                  detail={t("retailWarehouse.loadError")}
+                />
+              </div>
+            ) : null}
 
-          <ul className="sell-product-grid m-0 list-none p-0">
-            {items.map((product) => {
-              const inBasket = basketById.has(product.productId);
-              const uom = displayUom(product.sellingMode, product.unitOfMeasure);
-              const warehouseOut = product.warehouseAvailableQuantity <= 0;
-              const byWeight = isByWeightSellingMode(product.sellingMode);
-              return (
-                <li key={product.productId} className="min-w-0">
-                  <button
-                    type="button"
-                    className={cn(
-                      "sell-product-card w-full text-left",
-                      inBasket && "sell-product-card--selected",
-                    )}
-                    data-testid={`retail-warehouse-product-${product.productId}`}
-                    aria-pressed={inBasket}
-                    onClick={() => selectProduct(product)}
-                  >
-                    <span className="sell-cart-line__initial" aria-hidden>
-                      {cartLineInitial(product.name)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{product.name}</span>
-                      {product.sku ? (
-                        <span className="block truncate text-[length:var(--exits-text-xs)] text-muted">
-                          {product.sku}
-                        </span>
-                      ) : null}
-                      <span className="mt-1 flex flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                        <span>
-                          {t("stockRequest.col.branchStock")}:{" "}
-                          {formatQuantityDisplay(product.branchOnHandQuantity)} {uom}
-                        </span>
-                        {warehouseOut ? (
-                          <span
-                            className="text-[var(--exits-danger)]"
-                            data-testid={`retail-warehouse-oos-${product.productId}`}
-                          >
-                            {t("retailWarehouse.request.warehouseOutOfStock")}
-                          </span>
-                        ) : (
-                          <span>
-                            {t("stockRequest.col.warehouseAvailable")}:{" "}
-                            {formatQuantityDisplay(product.warehouseAvailableQuantity)} {uom}
-                          </span>
-                        )}
-                        {product.warehouseUnitCost != null ? (
-                          <span data-testid={`retail-warehouse-cost-${product.productId}`}>
-                            {t("retailWarehouse.request.warehouseCost")
-                              .replace("{amount}", formatPeso(product.warehouseUnitCost))
-                              .replace("{uom}", uom)}
-                          </span>
-                        ) : null}
-                        {byWeight ? (
-                          <span>{t("sell.tileByWeight")}</span>
-                        ) : null}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+            {!catalogQuery.isLoading && !catalogQuery.isError && items.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center gap-2 py-6 text-center">
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("stockRequest.emptyProducts")}
+                </p>
+              </div>
+            ) : null}
 
-          {totalCount > PAGE_SIZE ? (
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={page <= 1 || catalogQuery.isFetching}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                data-testid="retail-warehouse-page-prev"
-              >
-                {t("retailWarehouse.request.prev")}
-              </Button>
-              <span className="text-[length:var(--exits-text-sm)] text-muted">
-                {page} / {totalPages}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={page >= totalPages || catalogQuery.isFetching}
-                onClick={() => setPage((p) => p + 1)}
-                data-testid="retail-warehouse-page-next"
-              >
-                {t("retailWarehouse.request.next")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+            {items.map((product) => (
+              <RequestStockProductCard
+                key={product.productId}
+                product={product}
+                inBasket={basketById.has(product.productId)}
+                addedFlash={flashedProductId === product.productId}
+                onSelect={selectProduct}
+              />
+            ))}
+
+            {totalCount > PAGE_SIZE ? (
+              <div className="col-span-full flex items-center justify-between gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={page <= 1 || catalogQuery.isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  data-testid="retail-warehouse-page-prev"
+                >
+                  {t("retailWarehouse.request.prev")}
+                </Button>
+                <span className="text-[length:var(--exits-text-sm)] text-muted">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={page >= totalPages || catalogQuery.isFetching}
+                  onClick={() => setPage((p) => p + 1)}
+                  data-testid="retail-warehouse-page-next"
+                >
+                  {t("retailWarehouse.request.next")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </section>
 
         <aside
-          className={cn(
-            "hidden min-h-[20rem] overflow-hidden rounded-[var(--exits-radius-md)] border border-border p-3 md:sticky md:top-3 md:flex md:min-h-[28rem] md:flex-col md:self-start",
-          )}
           data-testid="retail-warehouse-basket-desktop"
+          className={cn(
+            "sell-cart-landscape sell-cart-shell min-h-0 min-w-0 flex-col overflow-hidden",
+            !sideCartLayout && "hidden",
+          )}
+          aria-label={t("retailWarehouse.request.cartLabel")}
+          aria-hidden={!sideCartLayout}
         >
-          {basketPanel}
+          {sideCartLayout ? (
+            <RequestStockCartPanel {...cartPanelProps} panelId="landscape" />
+          ) : null}
         </aside>
       </div>
 
-      <div className="md:hidden">
-        <Button
+      {showFloatingCart ? (
+        <button
           type="button"
-          className="w-full"
-          variant="outline"
-          onClick={() => setMobileBasketOpen(true)}
           data-testid="retail-warehouse-view-request"
-        >
-          {t("retailWarehouse.request.viewRequest").replace(
+          className="sell-cart-floating sell-cart-bar sell-cart-bar--filled"
+          onClick={() => setCartSheetOpen(true)}
+          aria-expanded={cartSheetOpen}
+          aria-controls="retail-warehouse-cart-sheet-panel"
+          aria-label={t("retailWarehouse.request.viewRequest").replace(
             "{count}",
             String(basketTotals.productCount),
           )}
-        </Button>
-        <BottomSheet
-          open={mobileBasketOpen}
-          onClose={() => setMobileBasketOpen(false)}
-          panelId="retail-warehouse-basket-sheet"
-          testId="retail-warehouse-basket-sheet"
-          title={t("retailWarehouse.request.basket")}
-          closeLabel={t("branches.cancel")}
         >
-          <div className="flex min-h-[50vh] flex-col">{basketPanel}</div>
-        </BottomSheet>
-      </div>
+          <span className="sell-cart-bar__summary">
+            <span className="sell-cart-bar__icon" aria-hidden>
+              <Package className="size-5" strokeWidth={2} />
+            </span>
+            <span className="sell-cart-bar__copy">
+              <span className="sell-cart-bar__count">
+                {t("retailWarehouse.request.productsCount").replace(
+                  "{count}",
+                  String(basketTotals.productCount),
+                )}
+              </span>
+              <span className="sell-cart-bar__total">₱{estimatedDisplay.toFixed(2)}</span>
+            </span>
+          </span>
+          <span className="sell-cart-bar__action" aria-hidden>
+            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
+            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
+          </span>
+        </button>
+      ) : null}
+
+      {showEmptyMobileCartBar ? (
+        <button
+          type="button"
+          data-testid="retail-warehouse-view-request"
+          className="sell-cart-floating sell-cart-bar sell-cart-bar--empty"
+          onClick={() => setCartSheetOpen(true)}
+          aria-expanded={cartSheetOpen}
+          aria-controls="retail-warehouse-cart-sheet-panel"
+          aria-label={t("retailWarehouse.request.viewRequest").replace("{count}", "0")}
+        >
+          <span className="sell-cart-bar__summary">
+            <span className="sell-cart-bar__icon" aria-hidden>
+              <Package className="size-5" strokeWidth={2} />
+            </span>
+            <span className="sell-cart-bar__copy sell-cart-bar__copy--amount-only">
+              <span className="sell-cart-bar__total">₱0.00</span>
+            </span>
+          </span>
+          <span className="sell-cart-bar__action" aria-hidden>
+            <span className="sell-cart-bar__action-label">{t("sell.floatingCartViewLabel")}</span>
+            <ShoppingCart className="size-4 shrink-0" strokeWidth={2} />
+          </span>
+        </button>
+      ) : null}
+
+      {!sideCartLayout && cartSheetOpen ? (
+        <>
+          <div
+            className="sell-cart-sheet-backdrop fixed inset-0 z-30 bg-black/40"
+            role="presentation"
+            onClick={() => setCartSheetOpen(false)}
+          />
+          <div
+            id="retail-warehouse-cart-sheet-panel"
+            data-testid="retail-warehouse-basket-sheet"
+            className="sell-cart-sheet fixed inset-x-0 bottom-0 z-40 flex h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)))] flex-col gap-2 overflow-hidden border border-border border-b-0 bg-surface px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] shadow-[0_-8px_32px_rgba(0,0,0,0.18)]"
+          >
+            <div className="sell-cart-sheet__handle" aria-hidden>
+              <span className="sell-cart-sheet__handle-bar" />
+            </div>
+            <RequestStockCartPanel
+              {...cartPanelProps}
+              panelId="sheet"
+              showClose
+              onClose={() => setCartSheetOpen(false)}
+            />
+          </div>
+        </>
+      ) : null}
 
       <SellWeightEntryDialog
         open={weightEntry != null}
@@ -652,6 +560,7 @@ export function RetailWarehouseRequestStockPage() {
           isTracked: true,
           onHandQuantity: weightEntry?.product.warehouseAvailableQuantity ?? null,
         }}
+        confirmAddLabel={t("retailWarehouse.request.weightAdd")}
         onConfirm={(kilograms) => {
           if (!weightEntry) return;
           upsertLine(weightEntry.product, kilograms);

@@ -78,10 +78,17 @@ export function RetailWarehouseShell({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="retail-warehouse-shell">
+    <div
+      className={cn(
+        "exits-page flex min-w-0 flex-col gap-3",
+        location.pathname.includes("/request-stock") &&
+          "exits-page--request-stock min-h-0 flex-1 overflow-hidden",
+      )}
+      data-testid="retail-warehouse-shell"
+    >
       <PageHeader title={t("retailWarehouse.title")} description={t("retailWarehouse.lede")} />
       <nav
-        className="flex min-w-0 gap-1 overflow-x-auto pb-0.5"
+        className="flex min-w-0 shrink-0 gap-1 overflow-x-auto pb-0.5"
         aria-label={t("retailWarehouse.navLabel")}
         data-testid="retail-warehouse-nav"
       >
@@ -104,7 +111,13 @@ export function RetailWarehouseShell({ children }: { children?: ReactNode }) {
           </NavLink>
         ))}
       </nav>
-      {children ?? <Outlet context={resolveState} />}
+      <div
+        className={cn(
+          location.pathname.includes("/request-stock") && "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+        )}
+      >
+        {children ?? <Outlet context={resolveState} />}
+      </div>
     </div>
   );
 }

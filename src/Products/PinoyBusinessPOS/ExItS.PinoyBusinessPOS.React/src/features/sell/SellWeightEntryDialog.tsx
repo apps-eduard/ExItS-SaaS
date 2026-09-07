@@ -27,6 +27,8 @@ type SellWeightEntryDialogProps = {
     isLowStock?: boolean | null;
   } | null;
   stockError?: string | null;
+  /** Override "Add to cart" when reused outside Sell (e.g. Request stock). */
+  confirmAddLabel?: string;
   onConfirm: (kilograms: number) => void;
   onRemove?: () => void;
   onCancel: () => void;
@@ -39,6 +41,7 @@ export function SellWeightEntryDialog({
   initialKilograms = null,
   stockHint,
   stockError = null,
+  confirmAddLabel,
   onConfirm,
   onRemove,
   onCancel,
@@ -232,7 +235,7 @@ export function SellWeightEntryDialog({
               }
             }}
           >
-            {editing ? t("sell.weightUpdate") : t("sell.weightAdd")}
+            {editing ? t("sell.weightUpdate") : (confirmAddLabel ?? t("sell.weightAdd"))}
           </Button>
         </div>
       </div>
