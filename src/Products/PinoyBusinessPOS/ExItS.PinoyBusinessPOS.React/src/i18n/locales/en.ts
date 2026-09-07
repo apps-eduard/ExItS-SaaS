@@ -506,6 +506,23 @@ export const en = {
   "signIn.portHealthUnavailable": "Port health unavailable (restart Vite dev server).",
   "signIn.portHealthUp": "up",
   "signIn.portHealthDown": "down",
+  "signIn.localValidationPanel": "Local Validation",
+  "signIn.localValidationRestartService": "Restart",
+  "signIn.localValidationRestartApps": "Restart apps",
+  "signIn.localValidationReset": "Reset test data",
+  "signIn.localValidationResetCancel": "Cancel",
+  "signIn.localValidationResetTitle": "Reset Local Validation?",
+  "signIn.localValidationResetBody": "This will:",
+  "signIn.localValidationResetBullet1": "delete Local Validation transactional data",
+  "signIn.localValidationResetBullet2": "reset Platform/POS Local Validation databases",
+  "signIn.localValidationResetBullet3": "migrate and reseed",
+  "signIn.localValidationResetBullet4":
+    "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
+  "signIn.localValidationResetCannotUndo": "This cannot be undone.",
+  "signIn.localValidationSupervisorOffline":
+    "Supervisor offline — start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationControlsLocalhostOnly":
+    "Restart and Reset are available only when browsing via localhost.",
   "signIn.localValidation": "Local validation users",
   "signIn.localValidationHint":
     "Choose a seeded user to fill the username. Enter the password yourself.",

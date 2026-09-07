@@ -40,7 +40,49 @@ $script:LocalValidationStack = [pscustomobject]@{
     # React Platform Admin (Vite) — owns Mailpit activation/reset pages (/admin/activate-account, etc.)
     DefaultReactAdminPort  = 8095
     DefaultAdminWebReactPort    = 8095
+    DefaultSupervisorPort  = 8099
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
+    SupervisorAssembly     = 'ExItS.LocalValidation.Supervisor'
+}
+
+# Authoritative Local Validation control-plane catalog (UI + supervisor allowlist).
+# Restartable=false means health-only (no ordinary Restart action).
+function Get-LocalValidationServiceCatalog {
+    return @(
+        [pscustomobject]@{ Key = 'platform-admin'; Label = 'Platform Admin'; Port = [int]$LocalValidationStack.DefaultAdminPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Platform.Admin'; HealthPath = '/admin/login'; RestartOrder = 30 }
+        [pscustomobject]@{ Key = 'platform-api'; Label = 'Platform API'; Port = [int]$LocalValidationStack.DefaultPlatformApiPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Platform.Api'; HealthPath = '/health'; RestartOrder = 10 }
+        [pscustomobject]@{ Key = 'pos-api'; Label = 'POS API'; Port = [int]$LocalValidationStack.DefaultPosApiPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.PinoyBusinessPOS.Api'; HealthPath = '/health'; RestartOrder = 20 }
+        [pscustomobject]@{ Key = 'org-web'; Label = 'Organization Web'; Port = [int]$LocalValidationStack.DefaultOrgWebPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.PinoyBusinessPOS.Web'; HealthPath = '/health'; RestartOrder = 40 }
+        [pscustomobject]@{ Key = 'personal-web'; Label = 'Personal Web'; Port = [int]$LocalValidationStack.DefaultPersonalWebPort; Restartable = $true; Kind = 'dotnet'; Marker = 'ExItS.Personal.Web'; HealthPath = '/health'; RestartOrder = 50 }
+        [pscustomobject]@{ Key = 'react-admin'; Label = 'React Admin'; Port = [int]$LocalValidationStack.DefaultReactAdminPort; Restartable = $true; Kind = 'docker'; Marker = 'admin-web-react'; HealthPath = '/health'; RestartOrder = 60 }
+        [pscustomobject]@{ Key = 'react-pos'; Label = 'React POS'; Port = [int]$LocalValidationStack.DefaultReactPosPort; Restartable = $true; Kind = 'npm'; Marker = 'ExItS.PinoyBusinessPOS.React'; HealthPath = '/'; RestartOrder = 70 }
+        [pscustomobject]@{ Key = 'mailpit'; Label = 'Mailpit'; Port = 8025; Restartable = $true; Kind = 'docker'; Marker = 'mailpit'; HealthPath = '/'; RestartOrder = 80 }
+        [pscustomobject]@{ Key = 'platform-db'; Label = 'Platform DB'; Port = [int]$LocalValidationStack.DefaultPlatformDbPort; Restartable = $false; Kind = 'infra'; Marker = 'platform-db'; HealthPath = $null; RestartOrder = 90 }
+        [pscustomobject]@{ Key = 'pos-db'; Label = 'POS DB'; Port = [int]$LocalValidationStack.DefaultPosDbPort; Restartable = $false; Kind = 'infra'; Marker = 'pos-db'; HealthPath = $null; RestartOrder = 100 }
+    )
+}
+
+function Get-LocalValidationRestartableServiceKeys {
+    return @(Get-LocalValidationServiceCatalog | Where-Object { $_.Restartable } | Sort-Object RestartOrder | ForEach-Object { $_.Key })
+}
+
+function Resolve-LocalValidationCatalogService {
+    param([Parameter(Mandatory)][string]$ServiceKey)
+
+    $key = $ServiceKey.Trim().ToLowerInvariant()
+    $match = @(Get-LocalValidationServiceCatalog | Where-Object { $_.Key -eq $key })
+    if ($match.Count -ne 1) {
+        throw "Unknown Local Validation service '$ServiceKey'. Allowed: $((Get-LocalValidationServiceCatalog | ForEach-Object { $_.Key }) -join ', ')."
+    }
+    return $match[0]
+}
+
+function Test-LocalValidationIsSupervisorProcess {
+    param($Process)
+
+    if ($null -eq $Process) { return $false }
+    $haystack = ("{0}|{1}|{2}" -f $Process.Name, $Process.CommandLine, $Process.ExecutablePath)
+    return $haystack.IndexOf([string]$LocalValidationStack.SupervisorAssembly, [StringComparison]::OrdinalIgnoreCase) -ge 0
 }
 
 function Resolve-LocalValidationAuthPublicBaseUrl {
@@ -322,9 +364,12 @@ function Get-LocalValidationRepoScopedAppProcesses {
 }
 
 function Stop-LocalValidationRepoScopedHostApps {
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$KeepSupervisor
+    )
 
-    return Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $RepoRoot
+    return Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $RepoRoot -KeepSupervisor:$KeepSupervisor
 }
 
 function Report-LocalValidationPortConflicts {
@@ -832,7 +877,10 @@ function Assert-LocalValidationPortsOwnedByExpectedWorktree {
 }
 
 function Stop-LocalValidationCrossWorktreeHostApps {
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$KeepSupervisor
+    )
 
     $stateFile = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation\launcher-state.json'
     if (Test-Path -LiteralPath $stateFile) {
@@ -840,10 +888,22 @@ function Stop-LocalValidationCrossWorktreeHostApps {
             $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
             if ([string]$state.Mode -ne 'DockerApps') {
                 foreach ($windowPid in @($state.WindowPids)) {
-                    if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
-                        Write-Host "[local-validation] Stopping host launcher window PID $windowPid" -ForegroundColor Cyan
-                        Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
+                    if (-not $windowPid) { continue }
+                    $proc = Get-Process -Id $windowPid -ErrorAction SilentlyContinue
+                    if (-not $proc) { continue }
+                    if ($KeepSupervisor) {
+                        $cim = Get-CimInstance Win32_Process -Filter "ProcessId = $windowPid" -ErrorAction SilentlyContinue
+                        if (Test-LocalValidationIsSupervisorProcess -Process ([pscustomobject]@{
+                                    Name = $proc.ProcessName
+                                    CommandLine = [string]$cim.CommandLine
+                                    ExecutablePath = [string]$cim.ExecutablePath
+                                })) {
+                            Write-Host "[local-validation] Keeping Local Validation supervisor window PID $windowPid" -ForegroundColor Yellow
+                            continue
+                        }
                     }
+                    Write-Host "[local-validation] Stopping host launcher window PID $windowPid" -ForegroundColor Cyan
+                    Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
                 }
             }
         }
@@ -852,6 +912,9 @@ function Stop-LocalValidationCrossWorktreeHostApps {
 
     $processes = @(Get-LocalValidationCrossWorktreeHostProcesses -RepoRoot $RepoRoot)
     foreach ($process in $processes) {
+        if ($KeepSupervisor -and (Test-LocalValidationIsSupervisorProcess -Process $process)) {
+            continue
+        }
         $snippet = [string]$process.CommandLine
         if ($snippet.Length -gt 120) { $snippet = $snippet.Substring(0, 120) }
         Write-Host ("[local-validation] Stopping cross-worktree host PID {0}: {1}" -f $process.ProcessId, $snippet) -ForegroundColor Cyan

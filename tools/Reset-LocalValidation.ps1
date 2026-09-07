@@ -29,6 +29,7 @@
 param(
     [switch]$ConfirmReset,
     [switch]$SkipStart,
+    [switch]$KeepSupervisor,
     [int]$VerifySeconds = 180,
     [string]$PublicHost = ''
 )
@@ -168,7 +169,11 @@ Write-Note ("POS product DB resets via volume wipe of {0} (product-owned contain
 Write-Step 'Stopping Local Validation apps and database containers...'
 $previousEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-& $stopScript -StopDatabases
+if ($KeepSupervisor) {
+    & $stopScript -StopDatabases -KeepSupervisor
+} else {
+    & $stopScript -StopDatabases
+}
 $stopExit = $LASTEXITCODE
 $ErrorActionPreference = $previousEap
 if ($stopExit -ne 0) { throw "Stop-LocalValidation.ps1 failed ($stopExit)." }

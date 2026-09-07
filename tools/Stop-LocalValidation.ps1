@@ -19,7 +19,8 @@
 #>
 [CmdletBinding()]
 param(
-    [switch]$StopDatabases
+    [switch]$StopDatabases,
+    [switch]$KeepSupervisor
 )
 
 Set-StrictMode -Version Latest
@@ -55,16 +56,30 @@ $composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
 Write-Step "Repository: $repoRoot"
 
 $stateMode = ''
+$keptSupervisorPids = @()
 if (Test-Path -LiteralPath $stateFile) {
     try {
         $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
         $stateMode = [string]$state.Mode
         if ($stateMode -ne 'DockerApps') {
             foreach ($windowPid in @($state.WindowPids)) {
-                if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
-                    Write-Step "Stopping launcher window PID $windowPid"
-                    Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
+                if (-not $windowPid) { continue }
+                $proc = Get-Process -Id $windowPid -ErrorAction SilentlyContinue
+                if (-not $proc) { continue }
+                if ($KeepSupervisor) {
+                    $cim = Get-CimInstance Win32_Process -Filter "ProcessId = $windowPid" -ErrorAction SilentlyContinue
+                    if (Test-LocalValidationIsSupervisorProcess -Process ([pscustomobject]@{
+                                Name = $proc.ProcessName
+                                CommandLine = [string]$cim.CommandLine
+                                ExecutablePath = [string]$cim.ExecutablePath
+                            })) {
+                        Write-Step "Keeping Local Validation supervisor window PID $windowPid"
+                        $keptSupervisorPids += $windowPid
+                        continue
+                    }
                 }
+                Write-Step "Stopping launcher window PID $windowPid"
+                Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
             }
         }
     } catch {
@@ -72,7 +87,7 @@ if (Test-Path -LiteralPath $stateFile) {
     }
 }
 
-$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
+$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot -KeepSupervisor:$KeepSupervisor
 
 Write-Step 'Stopping React POS Vite listeners on :5177 (if any)...'
 $null = Stop-LocalValidationPortListeners -Port ([int]$LocalValidationStack.DefaultReactPosPort) -Label 'React POS'
@@ -87,7 +102,17 @@ if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $envFile) -and (Tes
 }
 
 if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $stateFile)) {
-    Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
+    if ($KeepSupervisor -and $keptSupervisorPids.Count -gt 0) {
+        try {
+            $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+            $state.WindowPids = @($keptSupervisorPids)
+            $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $stateFile -Encoding UTF8
+        } catch {
+            Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
+        }
+    } else {
+        Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Write-Ok 'Local Local Validation app processes stopped (DBs left running by default).'

@@ -13,8 +13,10 @@ function loginValueForIdentity(identity: QuickLoginIdentity): string {
 /** Dev/test helper only — hidden in production builds. Fills username; never passwords. */
 export function TestUserSelector({
   onSelectIdentity,
+  refreshToken = 0,
 }: {
   onSelectIdentity: (usernameOrEmail: string) => void;
+  refreshToken?: number;
 }) {
   const { t } = useI18n();
   const [identities, setIdentities] = useState<QuickLoginIdentity[] | null>(null);
@@ -33,7 +35,7 @@ export function TestUserSelector({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshToken]);
 
   if (!isFrontendLocalValidationMode() || !identities || identities.length === 0) {
     return null;

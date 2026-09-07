@@ -68,9 +68,11 @@
     <Project Path="tests/ExItS.Personal.Web.Tests/ExItS.Personal.Web.Tests.csproj" />
     <Project Path="tests/ExItS.BackupRestore.Tests/ExItS.BackupRestore.Tests.csproj" />
     <Project Path="tests/ExItS.Deployment.Tests/ExItS.Deployment.Tests.csproj" />
+    <Project Path="tests/ExItS.LocalValidation.Supervisor.Tests/ExItS.LocalValidation.Supervisor.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/ExItS.BackupRestore.Cli/ExItS.BackupRestore.Cli.csproj" />
     <Project Path="tools/ExItS.Deployment.Cli/ExItS.Deployment.Cli.csproj" />
+    <Project Path="tools/ExItS.LocalValidation.Supervisor/ExItS.LocalValidation.Supervisor.csproj" />
   </Folder>
 </Solution>

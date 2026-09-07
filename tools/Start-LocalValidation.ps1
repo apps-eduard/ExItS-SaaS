@@ -63,12 +63,51 @@ param(
     [switch]$PurgeTransactional,
     [string]$PublicHost = '',
     [ValidateSet('Run', 'Watch')]
-    [string]$BackendMode = 'Run'
+    [string]$BackendMode = 'Run',
+    [string[]]$OnlyServices = @(),
+    [switch]$SkipSupervisorStart
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'LocalValidation.stack.ps1')
+. (Join-Path $PSScriptRoot 'LocalValidation.host-apps.ps1')
+
+# Compatibility wrappers (aliases do not forward named parameters reliably).
+function Start-AppWindow {
+    param(
+        [string]$Title,
+        [string]$RepoRoot,
+        [string]$Project,
+        [hashtable]$EnvMap,
+        [ValidateSet('Run', 'Watch')]
+        [string]$Mode = 'Run',
+        [string]$ServiceKey = '',
+        [string]$Configuration = 'Debug'
+    )
+    Start-LocalValidationAppWindow @PSBoundParameters
+}
+
+function Start-NpmDevWindow {
+    param(
+        [string]$Title,
+        [string]$WorkingDirectory,
+        [hashtable]$EnvMap,
+        [string]$NpmScript = 'dev',
+        [string]$ExtraNpmArgs = ''
+    )
+    Start-LocalValidationNpmDevWindow @PSBoundParameters
+}
+
+function ConvertTo-EnvAssignments($EnvMap) {
+    ConvertTo-LocalValidationEnvAssignments -EnvMap $EnvMap
+}
+
+function Test-ShouldStartLocalValidationService([string]$Key) {
+    if ($null -eq $OnlyServices -or @($OnlyServices).Count -eq 0) { return $true }
+    $normalized = @($OnlyServices | ForEach-Object { ([string]$_).Trim().ToLowerInvariant() })
+    return $normalized -contains $Key.ToLowerInvariant()
+}
 
 function Write-Step([string]$Message) { Write-Host "[local-validation] $Message" -ForegroundColor Cyan }
 function Write-Ok([string]$Message) { Write-Host "[local-validation] OK  $Message" -ForegroundColor Green }
@@ -226,13 +265,6 @@ function Invoke-HttpCheck([string]$Label, [string]$Url) {
     }
 }
 
-function ConvertTo-EnvAssignments($EnvMap) {
-    ($EnvMap.GetEnumerator() | ForEach-Object {
-        $escaped = ([string]$_.Value) -replace "'", "''"
-        "`$env:$($_.Key) = '$escaped'; "
-    }) -join ''
-}
-
 function Resolve-PublicHost([string]$Value) {
     if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
     $hostName = $Value.Trim()
@@ -339,99 +371,6 @@ function Show-LocalValidationFirewallGuidance {
 '@
 }
 
-function Start-AppWindow {
-    param(
-        [string]$Title,
-        [string]$RepoRoot,
-        [string]$Project,
-        [hashtable]$EnvMap,
-        [ValidateSet('Run', 'Watch')]
-        [string]$Mode = 'Run',
-        [string]$ServiceKey = '',
-        [string]$Configuration = 'Debug'
-    )
-    $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
-    $key = if ([string]::IsNullOrWhiteSpace($ServiceKey)) {
-        [IO.Path]::GetFileNameWithoutExtension($Project)
-    } else {
-        $ServiceKey
-    }
-    $exitMarker = Clear-LocalValidationExitMarker -ServiceKey $key
-    $escapedMarker = $exitMarker -replace "'", "''"
-    if ($Mode -eq 'Run') {
-        $dotnetCmd = "dotnet run --project '$Project' --no-build --no-launch-profile --configuration $Configuration"
-    } else {
-        $dotnetCmd = "dotnet watch --project '$Project' run --no-launch-profile --non-interactive"
-    }
-    $run = @"
-`$Host.UI.RawUI.WindowTitle = '$Title';
-# Parent shells often leave DOTNET_ENVIRONMENT=Testing (integration tests) or Staging.
-# Clear both so ASPNETCORE_ENVIRONMENT from EnvMap is authoritative for the child host.
-Remove-Item Env:DOTNET_ENVIRONMENT -ErrorAction SilentlyContinue;
-Remove-Item Env:ASPNETCORE_ENVIRONMENT -ErrorAction SilentlyContinue;
-# Prevent a polluted parent shell from breaking MapStaticAssets package/_framework resolution.
-Remove-Item Env:ReloadStaticAssetsAtRuntime -ErrorAction SilentlyContinue;
-$prefix
-# Keep DOTNET_ENVIRONMENT aligned with ASPNETCORE_ENVIRONMENT when the latter is set.
-if (-not [string]::IsNullOrWhiteSpace(`$env:ASPNETCORE_ENVIRONMENT)) { `$env:DOTNET_ENVIRONMENT = `$env:ASPNETCORE_ENVIRONMENT }
-Set-Location '$RepoRoot';
-Write-Host ('=== {0} (ASPNETCORE_ENVIRONMENT={1}; BackendMode={2}) ===' -f '$Title', `$env:ASPNETCORE_ENVIRONMENT, '$Mode') -ForegroundColor Cyan;
-`$exitCode = 1
-try {
-  $dotnetCmd
-  if (`$null -ne `$LASTEXITCODE) { `$exitCode = [int]`$LASTEXITCODE } else { `$exitCode = 0 }
-} catch {
-  Write-Host `$_ -ForegroundColor Red
-  `$exitCode = 1
-}
-Set-Content -LiteralPath '$escapedMarker' -Value ([string]`$exitCode) -Encoding ascii
-Write-Host ('Process exited with code {0}. Window stays open for inspection. Marker={1}' -f `$exitCode, '$escapedMarker') -ForegroundColor Yellow
-"@
-    $proc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList @(
-        '-NoExit',
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-Command', $run
-    )
-    return [pscustomobject]@{
-        WindowProcessId = $proc.Id
-        ServiceKey = $key
-        ExitMarkerPath = $exitMarker
-        Mode = $Mode
-    }
-}
-
-function Start-NpmDevWindow {
-    param(
-        [string]$Title,
-        [string]$WorkingDirectory,
-        [hashtable]$EnvMap,
-        [string]$NpmScript = 'dev',
-        [string]$ExtraNpmArgs = ''
-    )
-    $prefix = ConvertTo-EnvAssignments -EnvMap $EnvMap
-    $extra = if ([string]::IsNullOrWhiteSpace($ExtraNpmArgs)) { '' } else { " -- $ExtraNpmArgs" }
-    $run = @"
-`$Host.UI.RawUI.WindowTitle = '$Title';
-$prefix
-Set-Location '$WorkingDirectory';
-Write-Host ('=== {0} ===' -f '$Title') -ForegroundColor Cyan;
-if (-not (Test-Path -LiteralPath 'node_modules')) {
-    Write-Host 'node_modules missing - running npm ci...' -ForegroundColor Yellow;
-    npm ci;
-    if (`$LASTEXITCODE -ne 0) { throw 'npm ci failed for $Title' }
-}
-npm run $NpmScript$extra
-"@
-    $proc = Start-Process -FilePath 'powershell.exe' -PassThru -ArgumentList @(
-        '-NoExit',
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-Command', $run
-    )
-    return $proc.Id
-}
-
 # --- main ---
 $repoRoot = Get-LocalValidationRepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
@@ -488,39 +427,47 @@ $appPortLabels = @{
 Write-Step 'Inspecting Local Validation port/runtime provenance (all ExItS worktrees)...'
 Write-LocalValidationRuntimeProvenanceTable -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot
 
-Write-Step 'Stopping Docker app services before host mode (infrastructure and volumes preserved)...'
-$null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
+$partialStart = @($OnlyServices).Count -gt 0
+if ($partialStart) {
+    foreach ($onlyKey in @($OnlyServices)) {
+        $null = Resolve-LocalValidationCatalogService -ServiceKey $onlyKey
+    }
+    Write-Step ("Partial start OnlyServices=[{0}] (infra preserved; other apps untouched)." -f ($OnlyServices -join ', '))
+} else {
+    Write-Step 'Stopping Docker app services before host mode (infrastructure and volumes preserved)...'
+    $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
 
-Write-Step 'Stopping stale cross-worktree ExItS host apps (DBs untouched)...'
-$null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot
+    Write-Step 'Stopping stale cross-worktree ExItS host apps (DBs untouched)...'
+    $null = Stop-LocalValidationCrossWorktreeHostApps -RepoRoot $repoRoot -KeepSupervisor:$SkipSupervisorStart
 
-# React POS is Vite/node (not dotnet AppMarkers). Free :5177 so restart is reliable.
-Write-Step "Freeing React POS port $reactPosPortEarly if still held by Vite/node..."
-$null = Stop-LocalValidationPortListeners -Port $reactPosPortEarly -Label 'React POS'
+    # React POS is Vite/node (not dotnet AppMarkers). Free :5177 so restart is reliable.
+    Write-Step "Freeing React POS port $reactPosPortEarly if still held by Vite/node..."
+    $null = Stop-LocalValidationPortListeners -Port $reactPosPortEarly -Label 'React POS'
 
-# Apphosts (ExItS.*.Api.exe) can survive after parent dotnet.exe exits and keep ports/DLLs locked.
-Write-Step 'Freeing Local Validation host app ports if still held by leftover apphosts...'
-foreach ($port in @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort, $adminWebReactPort)) {
-    $owner = Get-LocalValidationListeningOwner -Port $port
-    if ($null -eq $owner) { continue }
-    $name = [string]$owner.ProcessName
-    $isAppMarker = $false
-    foreach ($marker in $LocalValidationStack.AppMarkers) {
-        if ($name.Equals($marker, [StringComparison]::OrdinalIgnoreCase)) {
-            $isAppMarker = $true
-            break
+    # Apphosts (ExItS.*.Api.exe) can survive after parent dotnet.exe exits and keep ports/DLLs locked.
+    Write-Step 'Freeing Local Validation host app ports if still held by leftover apphosts...'
+    foreach ($port in @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort, $adminWebReactPort)) {
+        $owner = Get-LocalValidationListeningOwner -Port $port
+        if ($null -eq $owner) { continue }
+        $name = [string]$owner.ProcessName
+        $isAppMarker = $false
+        foreach ($marker in $LocalValidationStack.AppMarkers) {
+            if ($name.Equals($marker, [StringComparison]::OrdinalIgnoreCase)) {
+                $isAppMarker = $true
+                break
+            }
+        }
+        if ($isAppMarker -or $name.Equals('dotnet', [StringComparison]::OrdinalIgnoreCase)) {
+            $null = Stop-LocalValidationPortListeners -Port $port -Label $appPortLabels[$port]
         }
     }
-    if ($isAppMarker -or $name.Equals('dotnet', [StringComparison]::OrdinalIgnoreCase)) {
-        $null = Stop-LocalValidationPortListeners -Port $port -Label $appPortLabels[$port]
-    }
-}
 
-$conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
-if ($conflicts.Count -gt 0) {
-    throw 'Ports 8090/8091/8092/8093/8094/8095/5177 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
+    $conflicts = @(Report-LocalValidationPortConflictsWithProvenance -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot)
+    if ($conflicts.Count -gt 0) {
+        throw 'Ports 8090/8091/8092/8093/8094/8095/5177 still occupied after stopping cross-worktree apps and Docker app services. Free them and retry.'
+    }
+    Write-Ok 'App ports 8090/8091/8092/8093/8094/8095/5177 are free'
 }
-Write-Ok 'App ports 8090/8091/8092/8093/8094/8095/5177 are free'
 
 Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved)...'
 Start-LocalValidationInfrastructure -ComposeFile $composeFile -EnvFile $envFile
@@ -646,15 +593,28 @@ Write-Note ("PortWaitSeconds={0} is an application readiness safety timeout (not
 
 if ($BackendMode -eq 'Run') {
     Write-Host ''
-    Write-Host '[build] Prebuilding backends (once) before process start...' -ForegroundColor Cyan
-    $timing.PlatformBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'Platform API' -ProjectPath $platformProject
-    $timing.PosBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'POS API' -ProjectPath $posProject
-    $null = Invoke-LocalValidationDotnetBuild -Label 'Platform Admin' -ProjectPath $adminProject
-    $null = Invoke-LocalValidationDotnetBuild -Label 'Organization Web' -ProjectPath $orgWebProject
-    $null = Invoke-LocalValidationDotnetBuild -Label 'Personal Web' -ProjectPath $personalWebProject
+    if ($partialStart) {
+        Write-Host '[build] Prebuilding selected backends before process start...' -ForegroundColor Cyan
+    } else {
+        Write-Host '[build] Prebuilding backends (once) before process start...' -ForegroundColor Cyan
+    }
+    if (Test-ShouldStartLocalValidationService 'platform-api') {
+        $timing.PlatformBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'Platform API' -ProjectPath $platformProject
+    }
+    if (Test-ShouldStartLocalValidationService 'pos-api') {
+        $timing.PosBuildSeconds = Invoke-LocalValidationDotnetBuild -Label 'POS API' -ProjectPath $posProject
+    }
+    if (Test-ShouldStartLocalValidationService 'platform-admin') {
+        $null = Invoke-LocalValidationDotnetBuild -Label 'Platform Admin' -ProjectPath $adminProject
+    }
+    if (Test-ShouldStartLocalValidationService 'org-web') {
+        $null = Invoke-LocalValidationDotnetBuild -Label 'Organization Web' -ProjectPath $orgWebProject
+    }
+    if (Test-ShouldStartLocalValidationService 'personal-web') {
+        $null = Invoke-LocalValidationDotnetBuild -Label 'Personal Web' -ProjectPath $personalWebProject
+    }
 }
 
-Write-Step 'Starting Platform API...'
 # -SeedScope parameter is authoritative. Do not let a polluted parent shell (e.g. leftover Full)
 # override the default PlatformAdministratorsOnly baseline after Reset.
 $seedScopeValue = $SeedScope
@@ -664,257 +624,317 @@ if (-not [string]::IsNullOrWhiteSpace($inheritedSeedScope) -and $inheritedSeedSc
 }
 $purgeTransactional = [bool]$PurgeTransactional
 Write-Ok "LocalValidation SeedScope=$seedScopeValue PurgeTransactionalOnSeed=$purgeTransactional"
-Write-LocalValidationStartupDiagnostics `
-    -AspNetCoreEnvironment 'Staging' `
-    -SeedScope $seedScopeValue `
-    -PlatformCsSummary $platformCsSummary `
-    -PosCsSummary $posCsSummary `
-    -ComposeProjectName $LocalValidationStack.ComposeProjectName `
-    -PlatformDbContainer $LocalValidationStack.PlatformDbContainer `
-    -PosDbContainer $LocalValidationStack.PosDbContainer `
-    -PlatformDbVolume $LocalValidationStack.PlatformDbVolume `
-    -PosDbVolume $LocalValidationStack.PosDbVolume `
-    -WindowPids @()
-$platformEnv = @{
-    ASPNETCORE_ENVIRONMENT = 'Staging'
-    ASPNETCORE_URLS = $bindPlatformApiUrl
-    ConnectionStrings__PlatformDatabase = $platformCs
-    AllowedHosts = $allowedHosts
-    Security__EnforceHttps = 'false'
-    LocalValidation__Enabled = 'true'
-    LocalValidation__SeedScope = $seedScopeValue
-    LocalValidation__PurgeTransactionalOnSeed = $(if ($purgeTransactional) { 'true' } else { 'false' })
-    LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
-    # Local Validation only: allow weak passwords (e.g. 123) for registration/activation testing.
-    PlatformAuthentication__Password__MinimumLength = '1'
-    PlatformAuthentication__Password__MaximumLength = '128'
-    PlatformAuthentication__Password__RequireUppercase = 'false'
-    PlatformAuthentication__Password__RequireLowercase = 'false'
-    PlatformAuthentication__Password__RequireDigit = 'false'
-    PlatformAuthentication__Password__RequireNonAlphanumeric = 'false'
-    PlatformEmail__SmtpHost = '127.0.0.1'
-    PlatformEmail__SmtpPort = "$mailpitSmtpPort"
-    PlatformEmail__UseSsl = 'false'
-    PlatformEmail__FromAddress = 'noreply@exits.local'
-    PlatformEmail__FromDisplayName = 'ExItS Local Validation'
-    # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
-    PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
-    PlatformEmail__PinoyLoanManagerPublicBaseUrl = 'http://localhost:4176'
-    # Personal/POS React Vite (:5177) hosts /activate-account and /reset-password.
-    PlatformEmail__PinoyBusinessPosPublicBaseUrl = "http://localhost:$reactPosPort"
-    PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
-    DataProtection__KeysPath = $dpKeys
-}
-for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
-    $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
-}
-$platformLaunch = Start-AppWindow `
-    -Title 'ExItS LocalValidation - Platform API' `
-    -RepoRoot $repoRoot `
-    -Project $platformProject `
-    -EnvMap $platformEnv `
-    -Mode $BackendMode `
-    -ServiceKey 'platform-api'
-$windowPids += $platformLaunch.WindowProcessId
-try {
-    $seedBaseUrl = $loopbackPlatformApiUrl
-    # Capture the helper as a variable before GetNewClosure(). Closure modules do not
-    # reliably resolve script-scoped functions from Start-LocalValidation.ps1, which
-    # previously surfaced as: Test-LocalValidationSeedIdentitiesReady is not recognized.
-    $seedIdentitiesProbe = ${function:Test-LocalValidationSeedIdentitiesReady}
-    if ($null -eq $seedIdentitiesProbe) {
-        throw 'Local Validation stack is missing Test-LocalValidationSeedIdentitiesReady (expected in LocalValidation.stack.ps1).'
-    }
-    $platformReady = Wait-LocalServiceReady `
-        -ServiceName 'Platform API' `
-        -HealthUri "$loopbackPlatformApiUrl/health" `
-        -TimeoutSeconds $PortWaitSeconds `
-        -WindowProcessId $platformLaunch.WindowProcessId `
-        -ExitMarkerPath $platformLaunch.ExitMarkerPath `
-        -OptionalDependencyName 'local-validation seed-identities' `
-        -OptionalDependencyProbe ({ & $seedIdentitiesProbe -PlatformApiBaseUrl $seedBaseUrl }.GetNewClosure())
-    $timing.PlatformReadySeconds = $platformReady.ReadyInSeconds
-    Write-Ok ("Platform API health READY ({0}s)" -f $platformReady.ReadyInSeconds)
-    Write-Ok 'Platform local-validation seed-identities READY'
-}
-catch {
-    Write-Fail 'Platform API did not become ready. Check the "ExItS LocalValidation - Platform API" window.'
-    Write-Fail "Project: $platformProject"
-    Write-Fail "Exit marker: $($platformLaunch.ExitMarkerPath)"
-    throw
-}
 
-Write-Step 'Starting POS API (after Platform seed-identities)...'
-$posEnv = @{
-    ASPNETCORE_ENVIRONMENT = 'Staging'
-    ASPNETCORE_URLS = $bindPosApiUrl
-    ConnectionStrings__PosDatabase = $posCs
-    AllowedHosts = $allowedHosts
-    Security__EnforceHttps = 'false'
-    LocalValidation__Enabled = 'true'
-    # Server-to-server on the same host: keep loopback (DB also stays on localhost).
-    LocalValidation__PlatformApiBaseUrl = $loopbackPlatformApiUrl
-    PlatformAuth__BaseUrl = $loopbackPlatformApiUrl
-    # Temporary React PWA preview: pause installation-device transaction gate (re-enable for Capacitor).
-    PosDeviceAuthorization__EnforcementEnabled = 'false'
-}
-for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
-    $posEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
-}
-$posLaunch = Start-AppWindow `
-    -Title 'ExItS LocalValidation - POS API' `
-    -RepoRoot $repoRoot `
-    -Project $posProject `
-    -EnvMap $posEnv `
-    -Mode $BackendMode `
-    -ServiceKey 'pos-api'
-$windowPids += $posLaunch.WindowProcessId
-try {
-    $posReady = Wait-LocalServiceReady `
-        -ServiceName 'POS API' `
-        -HealthUri "$loopbackPosApiUrl/health" `
-        -TimeoutSeconds $PortWaitSeconds `
-        -WindowProcessId $posLaunch.WindowProcessId `
-        -ExitMarkerPath $posLaunch.ExitMarkerPath
-    $timing.PosReadySeconds = $posReady.ReadyInSeconds
-    Write-Ok ("POS API health READY ({0}s)" -f $posReady.ReadyInSeconds)
-}
-catch {
-    Write-Fail 'POS API did not become ready. Check the "ExItS LocalValidation - POS API" window for migrate/startup errors (DB localhost:15534).'
-    Write-Fail "Project: $posProject"
-    Write-Fail "Exit marker: $($posLaunch.ExitMarkerPath)"
-    throw
-}
-
-Write-Step 'Starting Platform Admin...'
-# Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
-# Local Validation identity dropdown uses normal Platform /auth/login server-side
-# (SharedPassword stays in Admin process env - never sent to the browser).
-# PlatformApi__BaseUrl is browser-visible (OAuth challenge links) and server HttpClient base.
-$adminEnv = @{
-    ASPNETCORE_ENVIRONMENT = 'Development'
-    ASPNETCORE_URLS = $bindAdminUrl
-    AllowedHosts = $allowedHosts
-    PlatformApi__BaseUrl = $publicPlatformApiUrl
-    PlatformApi__TimeoutSeconds = '30'
-    LocalValidation__Enabled = 'true'
-    LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
-    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
-    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
-    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
-}
-$adminLaunch = Start-AppWindow `
-    -Title 'ExItS LocalValidation - Admin' `
-    -RepoRoot $repoRoot `
-    -Project $adminProject `
-    -EnvMap $adminEnv `
-    -Mode $BackendMode `
-    -ServiceKey 'platform-admin'
-$windowPids += $adminLaunch.WindowProcessId
-Wait-LocalServiceReady `
-    -ServiceName 'Platform Admin' `
-    -HealthUri "$loopbackAdminUrl/admin/login" `
-    -TimeoutSeconds $PortWaitSeconds `
-    -WindowProcessId $adminLaunch.WindowProcessId `
-    -ExitMarkerPath $adminLaunch.ExitMarkerPath | Out-Null
-Write-Ok 'Platform Admin READY'
-
-Write-Step 'Starting Organization Web Admin...'
-$orgWebEnv = @{
-    ASPNETCORE_ENVIRONMENT = 'Development'
-    ASPNETCORE_URLS = $bindOrgWebUrl
-    AllowedHosts = $allowedHosts
-    LocalValidation__Enabled = 'true'
-    Security__RequireHttpsApiUrls = 'false'
-    PosApi__BaseUrl = $loopbackPlatformApiUrl
-    PosBusinessApi__BaseUrl = $loopbackPosApiUrl
-    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
-    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
-    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
-}
-$orgLaunch = Start-AppWindow `
-    -Title 'ExItS LocalValidation - Org Web' `
-    -RepoRoot $repoRoot `
-    -Project $orgWebProject `
-    -EnvMap $orgWebEnv `
-    -Mode $BackendMode `
-    -ServiceKey 'org-web'
-$windowPids += $orgLaunch.WindowProcessId
-Wait-LocalServiceReady `
-    -ServiceName 'Organization Web' `
-    -HealthUri "$loopbackOrgWebUrl/health" `
-    -TimeoutSeconds $PortWaitSeconds `
-    -WindowProcessId $orgLaunch.WindowProcessId `
-    -ExitMarkerPath $orgLaunch.ExitMarkerPath | Out-Null
-Write-Ok 'Organization Web READY'
-
-Write-Step 'Starting Personal Web...'
-$personalWebEnv = @{
-    ASPNETCORE_ENVIRONMENT = 'Development'
-    ASPNETCORE_URLS = $bindPersonalWebUrl
-    AllowedHosts = $allowedHosts
-    LocalValidation__Enabled = 'true'
-    PlatformApi__BaseUrl = $loopbackPlatformApiUrl
-    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
-    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
-    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
-}
-$personalLaunch = Start-AppWindow `
-    -Title 'ExItS LocalValidation - Personal Web' `
-    -RepoRoot $repoRoot `
-    -Project $personalWebProject `
-    -EnvMap $personalWebEnv `
-    -Mode $BackendMode `
-    -ServiceKey 'personal-web'
-$windowPids += $personalLaunch.WindowProcessId
-Wait-LocalServiceReady `
-    -ServiceName 'Personal Web' `
-    -HealthUri "$loopbackPersonalWebUrl/health" `
-    -TimeoutSeconds $PortWaitSeconds `
-    -WindowProcessId $personalLaunch.WindowProcessId `
-    -ExitMarkerPath $personalLaunch.ExitMarkerPath | Out-Null
-Write-Ok 'Personal Web READY'
-
-Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
 $gitSha = Get-LocalValidationGitSha -RepoRoot $repoRoot
 $reactApiProxyTarget = "http://host.docker.internal:$platformApiPort"
-Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
-Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
-Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
-Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
-Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
-$reactUpArgs = @(
-    'compose', '-p', $LocalValidationStack.ComposeProjectName,
-    '-f', $composeFile, '--env-file', $envFile,
-    '--profile', 'apps', 'up', '-d', 'admin-web-react'
-)
-$reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
-if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
-Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 
-$reactPosClientDir = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.React'
-if (-not (Test-Path -LiteralPath (Join-Path $reactPosClientDir 'package.json'))) {
-    throw "Missing canonical React POS client: $reactPosClientDir"
+if (Test-ShouldStartLocalValidationService 'platform-api') {
+    Write-Step 'Starting Platform API...'
+    Write-LocalValidationStartupDiagnostics `
+        -AspNetCoreEnvironment 'Staging' `
+        -SeedScope $seedScopeValue `
+        -PlatformCsSummary $platformCsSummary `
+        -PosCsSummary $posCsSummary `
+        -ComposeProjectName $LocalValidationStack.ComposeProjectName `
+        -PlatformDbContainer $LocalValidationStack.PlatformDbContainer `
+        -PosDbContainer $LocalValidationStack.PosDbContainer `
+        -PlatformDbVolume $LocalValidationStack.PlatformDbVolume `
+        -PosDbVolume $LocalValidationStack.PosDbVolume `
+        -WindowPids @()
+    $platformEnv = @{
+        ASPNETCORE_ENVIRONMENT = 'Staging'
+        ASPNETCORE_URLS = $bindPlatformApiUrl
+        ConnectionStrings__PlatformDatabase = $platformCs
+        AllowedHosts = $allowedHosts
+        Security__EnforceHttps = 'false'
+        LocalValidation__Enabled = 'true'
+        LocalValidation__SeedScope = $seedScopeValue
+        LocalValidation__PurgeTransactionalOnSeed = $(if ($purgeTransactional) { 'true' } else { 'false' })
+        LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
+        # Local Validation only: allow weak passwords (e.g. 123) for registration/activation testing.
+        PlatformAuthentication__Password__MinimumLength = '1'
+        PlatformAuthentication__Password__MaximumLength = '128'
+        PlatformAuthentication__Password__RequireUppercase = 'false'
+        PlatformAuthentication__Password__RequireLowercase = 'false'
+        PlatformAuthentication__Password__RequireDigit = 'false'
+        PlatformAuthentication__Password__RequireNonAlphanumeric = 'false'
+        PlatformEmail__SmtpHost = '127.0.0.1'
+        PlatformEmail__SmtpPort = "$mailpitSmtpPort"
+        PlatformEmail__UseSsl = 'false'
+        PlatformEmail__FromAddress = 'noreply@exits.local'
+        PlatformEmail__FromDisplayName = 'ExItS Local Validation'
+        # Must match React Admin (:8095) - hosts /admin/activate-account and /admin/reset-password.
+        PlatformEmail__AdminPublicBaseUrl = $authPublicBaseUrl
+        PlatformEmail__PinoyLoanManagerPublicBaseUrl = 'http://localhost:4176'
+        # Personal/POS React Vite (:5177) hosts /activate-account and /reset-password.
+        PlatformEmail__PinoyBusinessPosPublicBaseUrl = "http://localhost:$reactPosPort"
+        PlatformEmail__AllowHttpLoopbackPublicUrls = 'true'
+        DataProtection__KeysPath = $dpKeys
+    }
+    for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
+        $platformEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
+    }
+    $platformLaunch = Start-AppWindow `
+        -Title 'ExItS LocalValidation - Platform API' `
+        -RepoRoot $repoRoot `
+        -Project $platformProject `
+        -EnvMap $platformEnv `
+        -Mode $BackendMode `
+        -ServiceKey 'platform-api'
+    $windowPids += $platformLaunch.WindowProcessId
+    try {
+        $seedBaseUrl = $loopbackPlatformApiUrl
+        # Capture the helper as a variable before GetNewClosure(). Closure modules do not
+        # reliably resolve script-scoped functions from Start-LocalValidation.ps1, which
+        # previously surfaced as: Test-LocalValidationSeedIdentitiesReady is not recognized.
+        $seedIdentitiesProbe = ${function:Test-LocalValidationSeedIdentitiesReady}
+        if ($null -eq $seedIdentitiesProbe) {
+            throw 'Local Validation stack is missing Test-LocalValidationSeedIdentitiesReady (expected in LocalValidation.stack.ps1).'
+        }
+        $platformReady = Wait-LocalServiceReady `
+            -ServiceName 'Platform API' `
+            -HealthUri "$loopbackPlatformApiUrl/health" `
+            -TimeoutSeconds $PortWaitSeconds `
+            -WindowProcessId $platformLaunch.WindowProcessId `
+            -ExitMarkerPath $platformLaunch.ExitMarkerPath `
+            -OptionalDependencyName 'local-validation seed-identities' `
+            -OptionalDependencyProbe ({ & $seedIdentitiesProbe -PlatformApiBaseUrl $seedBaseUrl }.GetNewClosure())
+        $timing.PlatformReadySeconds = $platformReady.ReadyInSeconds
+        Write-Ok ("Platform API health READY ({0}s)" -f $platformReady.ReadyInSeconds)
+        Write-Ok 'Platform local-validation seed-identities READY'
+    }
+    catch {
+        Write-Fail 'Platform API did not become ready. Check the "ExItS LocalValidation - Platform API" window.'
+        Write-Fail "Project: $platformProject"
+        Write-Fail "Exit marker: $($platformLaunch.ExitMarkerPath)"
+        throw
+    }
 }
-Write-Step "Starting React POS Vite on :$reactPosPort (after POS API healthy; canonical ExItS.PinoyBusinessPOS.React)..."
-$reactPosEnv = @{
-    VITE_POS_BUILD_SHA = $gitSha
-    EXITS_PLATFORM_API_PROXY_TARGET = $loopbackPlatformApiUrl
-    EXITS_POS_API_PROXY_TARGET = $loopbackPosApiUrl
-    # DEV-only: Offline PIN on Tailscale/LAN HTTP (crypto.subtle unavailable). Never for production builds.
-    VITE_ALLOW_INSECURE_OFFLINE_PIN = 'true'
+
+if (Test-ShouldStartLocalValidationService 'pos-api') {
+    Write-Step 'Starting POS API (after Platform seed-identities)...'
+    $posEnv = @{
+        ASPNETCORE_ENVIRONMENT = 'Staging'
+        ASPNETCORE_URLS = $bindPosApiUrl
+        ConnectionStrings__PosDatabase = $posCs
+        AllowedHosts = $allowedHosts
+        Security__EnforceHttps = 'false'
+        LocalValidation__Enabled = 'true'
+        # Server-to-server on the same host: keep loopback (DB also stays on localhost).
+        LocalValidation__PlatformApiBaseUrl = $loopbackPlatformApiUrl
+        PlatformAuth__BaseUrl = $loopbackPlatformApiUrl
+        # Temporary React PWA preview: pause installation-device transaction gate (re-enable for Capacitor).
+        PosDeviceAuthorization__EnforcementEnabled = 'false'
+    }
+    for ($i = 0; $i -lt $corsOrigins.Count; $i++) {
+        $posEnv["Cors__AllowedOrigins__$i"] = $corsOrigins[$i]
+    }
+    $posLaunch = Start-AppWindow `
+        -Title 'ExItS LocalValidation - POS API' `
+        -RepoRoot $repoRoot `
+        -Project $posProject `
+        -EnvMap $posEnv `
+        -Mode $BackendMode `
+        -ServiceKey 'pos-api'
+    $windowPids += $posLaunch.WindowProcessId
+    try {
+        $posReady = Wait-LocalServiceReady `
+            -ServiceName 'POS API' `
+            -HealthUri "$loopbackPosApiUrl/health" `
+            -TimeoutSeconds $PortWaitSeconds `
+            -WindowProcessId $posLaunch.WindowProcessId `
+            -ExitMarkerPath $posLaunch.ExitMarkerPath
+        $timing.PosReadySeconds = $posReady.ReadyInSeconds
+        Write-Ok ("POS API health READY ({0}s)" -f $posReady.ReadyInSeconds)
+    }
+    catch {
+        Write-Fail 'POS API did not become ready. Check the "ExItS LocalValidation - POS API" window for migrate/startup errors (DB localhost:15534).'
+        Write-Fail "Project: $posProject"
+        Write-Fail "Exit marker: $($posLaunch.ExitMarkerPath)"
+        throw
+    }
 }
-if ($resolvedPublicHost) {
-    $reactPosEnv['POS_DEV_HOST'] = '0.0.0.0'
-    $reactPosEnv['POS_DEV_PUBLIC_HOST'] = $resolvedPublicHost
+
+if (Test-ShouldStartLocalValidationService 'platform-admin') {
+    Write-Step 'Starting Platform Admin...'
+    # Admin runs Development so Ant Design / Blazor static assets load without Staging SWA hacks.
+    # Local Validation identity dropdown uses normal Platform /auth/login server-side
+    # (SharedPassword stays in Admin process env - never sent to the browser).
+    # PlatformApi__BaseUrl is browser-visible (OAuth challenge links) and server HttpClient base.
+    $adminEnv = @{
+        ASPNETCORE_ENVIRONMENT = 'Development'
+        ASPNETCORE_URLS = $bindAdminUrl
+        AllowedHosts = $allowedHosts
+        PlatformApi__BaseUrl = $publicPlatformApiUrl
+        PlatformApi__TimeoutSeconds = '30'
+        LocalValidation__Enabled = 'true'
+        LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
+        ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+        ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+        ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
+    }
+    $adminLaunch = Start-AppWindow `
+        -Title 'ExItS LocalValidation - Admin' `
+        -RepoRoot $repoRoot `
+        -Project $adminProject `
+        -EnvMap $adminEnv `
+        -Mode $BackendMode `
+        -ServiceKey 'platform-admin'
+    $windowPids += $adminLaunch.WindowProcessId
+    Wait-LocalServiceReady `
+        -ServiceName 'Platform Admin' `
+        -HealthUri "$loopbackAdminUrl/admin/login" `
+        -TimeoutSeconds $PortWaitSeconds `
+        -WindowProcessId $adminLaunch.WindowProcessId `
+        -ExitMarkerPath $adminLaunch.ExitMarkerPath | Out-Null
+    Write-Ok 'Platform Admin READY'
 }
-$windowPids += Start-NpmDevWindow `
-    -Title 'ExItS LocalValidation - React POS' `
-    -WorkingDirectory $reactPosClientDir `
-    -EnvMap $reactPosEnv `
-    -NpmScript 'dev'
-Wait-TcpPort -Label 'React POS' -HostName '127.0.0.1' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
-Write-Ok 'React POS Vite READY (HMR preserved)'
+
+if (Test-ShouldStartLocalValidationService 'org-web') {
+    Write-Step 'Starting Organization Web Admin...'
+    $orgWebEnv = @{
+        ASPNETCORE_ENVIRONMENT = 'Development'
+        ASPNETCORE_URLS = $bindOrgWebUrl
+        AllowedHosts = $allowedHosts
+        LocalValidation__Enabled = 'true'
+        Security__RequireHttpsApiUrls = 'false'
+        PosApi__BaseUrl = $loopbackPlatformApiUrl
+        PosBusinessApi__BaseUrl = $loopbackPosApiUrl
+        ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+        ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+        ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
+    }
+    $orgLaunch = Start-AppWindow `
+        -Title 'ExItS LocalValidation - Org Web' `
+        -RepoRoot $repoRoot `
+        -Project $orgWebProject `
+        -EnvMap $orgWebEnv `
+        -Mode $BackendMode `
+        -ServiceKey 'org-web'
+    $windowPids += $orgLaunch.WindowProcessId
+    Wait-LocalServiceReady `
+        -ServiceName 'Organization Web' `
+        -HealthUri "$loopbackOrgWebUrl/health" `
+        -TimeoutSeconds $PortWaitSeconds `
+        -WindowProcessId $orgLaunch.WindowProcessId `
+        -ExitMarkerPath $orgLaunch.ExitMarkerPath | Out-Null
+    Write-Ok 'Organization Web READY'
+}
+
+if (Test-ShouldStartLocalValidationService 'personal-web') {
+    Write-Step 'Starting Personal Web...'
+    $personalWebEnv = @{
+        ASPNETCORE_ENVIRONMENT = 'Development'
+        ASPNETCORE_URLS = $bindPersonalWebUrl
+        AllowedHosts = $allowedHosts
+        LocalValidation__Enabled = 'true'
+        PlatformApi__BaseUrl = $loopbackPlatformApiUrl
+        ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+        ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+        ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
+    }
+    $personalLaunch = Start-AppWindow `
+        -Title 'ExItS LocalValidation - Personal Web' `
+        -RepoRoot $repoRoot `
+        -Project $personalWebProject `
+        -EnvMap $personalWebEnv `
+        -Mode $BackendMode `
+        -ServiceKey 'personal-web'
+    $windowPids += $personalLaunch.WindowProcessId
+    Wait-LocalServiceReady `
+        -ServiceName 'Personal Web' `
+        -HealthUri "$loopbackPersonalWebUrl/health" `
+        -TimeoutSeconds $PortWaitSeconds `
+        -WindowProcessId $personalLaunch.WindowProcessId `
+        -ExitMarkerPath $personalLaunch.ExitMarkerPath | Out-Null
+    Write-Ok 'Personal Web READY'
+}
+
+if (Test-ShouldStartLocalValidationService 'react-admin') {
+    Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
+    Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
+    $reactUpArgs = @(
+        'compose', '-p', $LocalValidationStack.ComposeProjectName,
+        '-f', $composeFile, '--env-file', $envFile,
+        '--profile', 'apps', 'up', '-d', 'admin-web-react'
+    )
+    $reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
+    if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
+    Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
+}
+
+if (Test-ShouldStartLocalValidationService 'react-pos') {
+    $reactPosClientDir = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.React'
+    if (-not (Test-Path -LiteralPath (Join-Path $reactPosClientDir 'package.json'))) {
+        throw "Missing canonical React POS client: $reactPosClientDir"
+    }
+    Write-Step "Starting React POS Vite on :$reactPosPort (after POS API healthy; canonical ExItS.PinoyBusinessPOS.React)..."
+    $reactPosEnv = @{
+        VITE_POS_BUILD_SHA = $gitSha
+        EXITS_PLATFORM_API_PROXY_TARGET = $loopbackPlatformApiUrl
+        EXITS_POS_API_PROXY_TARGET = $loopbackPosApiUrl
+        # DEV-only: Offline PIN on Tailscale/LAN HTTP (crypto.subtle unavailable). Never for production builds.
+        VITE_ALLOW_INSECURE_OFFLINE_PIN = 'true'
+    }
+    if ($resolvedPublicHost) {
+        $reactPosEnv['POS_DEV_HOST'] = '0.0.0.0'
+        $reactPosEnv['POS_DEV_PUBLIC_HOST'] = $resolvedPublicHost
+    }
+    $windowPids += Start-NpmDevWindow `
+        -Title 'ExItS LocalValidation - React POS' `
+        -WorkingDirectory $reactPosClientDir `
+        -EnvMap $reactPosEnv `
+        -NpmScript 'dev'
+    Wait-TcpPort -Label 'React POS' -HostName '127.0.0.1' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
+    Write-Ok 'React POS Vite READY (HMR preserved)'
+}
+
+# Mailpit is part of infra up; explicit start covers OnlyServices=mailpit restarts.
+if ($partialStart -and (Test-ShouldStartLocalValidationService 'mailpit')) {
+    Write-Step 'Starting Mailpit (docker compose start)...'
+    $mailpitStartArgs = @(
+        'compose', '-p', $LocalValidationStack.ComposeProjectName,
+        '-f', $composeFile, '--env-file', $envFile,
+        'start', 'mailpit'
+    )
+    $mailpitExit = Invoke-LocalValidationDocker -DockerArgs $mailpitStartArgs
+    if ($mailpitExit -ne 0) { throw "Mailpit docker compose start failed ($mailpitExit)." }
+    Wait-TcpPort -Label 'Mailpit SMTP' -HostName '127.0.0.1' -Port $mailpitSmtpPort -TimeoutSeconds 30
+    Wait-TcpPort -Label 'Mailpit UI' -HostName '127.0.0.1' -Port $mailpitUiPort -TimeoutSeconds 30
+    Write-Ok "Mailpit UI: http://localhost:$mailpitUiPort"
+}
+
+if (-not $SkipSupervisorStart) {
+    Write-Step 'Starting Local Validation Supervisor...'
+    $supervisorLaunch = Start-LocalValidationSupervisorHost -RepoRoot $repoRoot
+    if ($null -ne $supervisorLaunch -and $null -ne $supervisorLaunch.WindowProcessId) {
+        $windowPids += $supervisorLaunch.WindowProcessId
+    }
+}
+
+if ($partialStart -and (Test-Path -LiteralPath $stateFile)) {
+    try {
+        $existingState = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+        $existingPids = @($existingState.WindowPids | Where-Object { $_ })
+        $seenPid = @{}
+        $mergedPids = @()
+        foreach ($pidValue in ($existingPids + @($windowPids))) {
+            if ($null -eq $pidValue) { continue }
+            $pidKey = [string]$pidValue
+            if ($seenPid.ContainsKey($pidKey)) { continue }
+            $seenPid[$pidKey] = $true
+            $mergedPids += $pidValue
+        }
+        $windowPids = $mergedPids
+        Write-Ok ("Merged WindowPids into existing launcher-state ({0} total)." -f $windowPids.Count)
+    } catch {
+        Write-Note "Could not merge existing launcher-state WindowPids; writing new PIDs only. $($_.Exception.Message)"
+    }
+}
 
 $state = @{
     Mode = 'HostApps'
@@ -963,15 +983,32 @@ Write-LocalValidationStartupDiagnostics `
     -WindowPids $windowPids
 
 $healthOk = $true
-$healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$loopbackPlatformApiUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$loopbackPosApiUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$loopbackAdminUrl/admin/login") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'Organization Web /health' -Url "$loopbackOrgWebUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPersonalWebUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'React Admin /health' -Url "$loopbackAdminWebReactUrl/health") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'React Admin /admin' -Url "$loopbackAdminWebReactUrl/admin") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'React POS /' -Url "http://127.0.0.1:$reactPosPort/") -and $healthOk
-$healthOk = (Invoke-HttpCheck -Label 'React POS /sign-in' -Url "http://127.0.0.1:$reactPosPort/sign-in") -and $healthOk
+if (Test-ShouldStartLocalValidationService 'platform-api') {
+    $healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$loopbackPlatformApiUrl/health") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'pos-api') {
+    $healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$loopbackPosApiUrl/health") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'platform-admin') {
+    $healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$loopbackAdminUrl/admin/login") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'org-web') {
+    $healthOk = (Invoke-HttpCheck -Label 'Organization Web /health' -Url "$loopbackOrgWebUrl/health") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'personal-web') {
+    $healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPersonalWebUrl/health") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'react-admin') {
+    $healthOk = (Invoke-HttpCheck -Label 'React Admin /health' -Url "$loopbackAdminWebReactUrl/health") -and $healthOk
+    $healthOk = (Invoke-HttpCheck -Label 'React Admin /admin' -Url "$loopbackAdminWebReactUrl/admin") -and $healthOk
+}
+if (Test-ShouldStartLocalValidationService 'react-pos') {
+    $healthOk = (Invoke-HttpCheck -Label 'React POS /' -Url "http://127.0.0.1:$reactPosPort/") -and $healthOk
+    $healthOk = (Invoke-HttpCheck -Label 'React POS /sign-in' -Url "http://127.0.0.1:$reactPosPort/sign-in") -and $healthOk
+}
+if ($partialStart -and (Test-ShouldStartLocalValidationService 'mailpit')) {
+    $healthOk = (Invoke-HttpCheck -Label 'Mailpit UI /' -Url "http://127.0.0.1:$mailpitUiPort/") -and $healthOk
+}
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
@@ -1013,8 +1050,34 @@ if (-not $healthOk) {
     exit 1
 }
 
-Write-LocalValidationRuntimeSummary -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot -Mode 'HostApps'
-Assert-LocalValidationPortsOwnedByExpectedWorktree -PortLabels $appPortLabels -ExpectedRepoRoot $repoRoot
+$assertPortLabels = @{}
+if (-not $partialStart) {
+    $assertPortLabels = $appPortLabels
+} else {
+    $servicePortMap = @{
+        'platform-admin' = $adminPort
+        'platform-api'   = $platformApiPort
+        'pos-api'        = $posApiPort
+        'org-web'        = $orgWebPort
+        'personal-web'   = $personalWebPort
+        'react-admin'    = $adminWebReactPort
+        'react-pos'      = $reactPosPort
+    }
+    foreach ($serviceKey in @($servicePortMap.Keys)) {
+        if (-not (Test-ShouldStartLocalValidationService $serviceKey)) { continue }
+        $port = [int]$servicePortMap[$serviceKey]
+        if ($appPortLabels.ContainsKey($port)) {
+            $assertPortLabels[$port] = $appPortLabels[$port]
+        }
+    }
+}
+
+if ($assertPortLabels.Count -gt 0) {
+    Write-LocalValidationRuntimeSummary -PortLabels $assertPortLabels -ExpectedRepoRoot $repoRoot -Mode 'HostApps'
+    Assert-LocalValidationPortsOwnedByExpectedWorktree -PortLabels $assertPortLabels -ExpectedRepoRoot $repoRoot
+} elseif ($partialStart) {
+    Write-Note 'Partial start touched no app ports; skipping worktree port ownership assert.'
+}
 
 Write-Ok 'All health checks passed.'
 exit 0

@@ -106,6 +106,7 @@ export function SignInPage() {
   const [canUsePin, setCanUsePin] = useState(false);
   const [pinNoEnrollment, setPinNoEnrollment] = useState(false);
   const [pinGrantExpired, setPinGrantExpired] = useState(false);
+  const [identitiesRefreshToken, setIdentitiesRefreshToken] = useState(0);
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
   const notice = (location.state as { notice?: string } | null)?.notice;
   const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
@@ -273,6 +274,7 @@ export function SignInPage() {
         import.meta.env.MODE !== "production" ? (
           <div className="flex flex-col gap-0">
             <TestUserSelector
+              refreshToken={identitiesRefreshToken}
               onSelectIdentity={(value) => {
                 setUsernameOrEmail(value);
                 setPassword("");
@@ -281,7 +283,9 @@ export function SignInPage() {
                 setActiveTab("sign-in");
               }}
             />
-            <DevPortHealthPanel />
+            <DevPortHealthPanel
+              onIdentitiesRefresh={() => setIdentitiesRefreshToken((value) => value + 1)}
+            />
           </div>
         ) : null
       }
