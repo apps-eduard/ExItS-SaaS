@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 
 namespace ExItS.PinoyBusinessPOS.Api.Branches;
 
@@ -36,12 +37,27 @@ internal static class OperationalBranchEndpoints
                     body.BranchId,
                     currentSelectedBranchId,
                     deviceBoundBranchId,
-                    ct)
+                    ct,
+                    allowSwitchWithOpenShift: AllowsBranchSwitchWithOpenShift())
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Owners/admins manage multiple locations; do not force them to close a cashier shift
+    /// before switching operational context. Cashiers remain subject to the open-shift guard.
+    /// </summary>
+    private static bool AllowsBranchSwitchWithOpenShift()
+    {
+        if (PosRoleRequestContext.OrganizationManagementAuthority)
+        {
+            return true;
+        }
+
+        return PosRoleRequestContext.CurrentRole is PosRole.Owner or PosRole.Admin;
     }
 
     private static bool TryAuthorize(

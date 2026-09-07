@@ -62,6 +62,45 @@ public sealed class SelectOperationalBranchTests
     }
 
     [Fact]
+    public async Task Owner_may_switch_with_open_shift_when_bypass_allowed()
+    {
+        var shift = CashierShift.Rehydrate(
+            CashierShiftId.New(),
+            PosOrganizationId.From(Org),
+            "S-1",
+            Actor,
+            RegisterId.New(),
+            CashierShiftStatus.Open,
+            DateOnly.FromDateTime(T0.UtcDateTime),
+            100m,
+            T0,
+            Actor,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            T0,
+            T0);
+        var sut = new SelectOperationalBranch(new FakeShifts(shift), new FakeBranches());
+
+        var result = await sut.ExecuteAsync(
+            Org,
+            Actor,
+            BranchB,
+            Main,
+            Main,
+            allowSwitchWithOpenShift: true);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(BranchB, result.Value!.BranchId);
+        Assert.True(result.Value.OpenCashierShiftPresent);
+    }
+
+    [Fact]
     public async Task Foreign_or_unknown_branch_is_rejected()
     {
         var sut = new SelectOperationalBranch(new FakeShifts(), new FakeBranches());

@@ -24,6 +24,8 @@ public sealed record OperationalBranchContextDto(
 /// <summary>
 /// Server-side operational branch switch: org-scoped Active branch plus open-shift guard.
 /// Does not rebind the POS device and does not grant CreateSale.
+/// Owner/Administrator may switch with an open cashier shift still present
+/// (<paramref name="allowSwitchWithOpenShift"/>); cashiers remain blocked.
 /// </summary>
 public sealed class SelectOperationalBranch(
     ICashierShiftRepository shifts,
@@ -35,7 +37,8 @@ public sealed class SelectOperationalBranch(
         Guid requestedBranchId,
         Guid? currentSelectedBranchId,
         Guid? deviceBoundBranchId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool allowSwitchWithOpenShift = false)
     {
         if (requestedBranchId == Guid.Empty)
         {
@@ -58,7 +61,7 @@ public sealed class SelectOperationalBranch(
         var hasOpenShift = await shifts
             .HasOpenShiftForActorAsync(orgId, actorId, cancellationToken)
             .ConfigureAwait(false);
-        if (hasOpenShift)
+        if (hasOpenShift && !allowSwitchWithOpenShift)
         {
             var operational = currentSelectedBranchId ?? deviceBoundBranchId;
             if (operational is Guid current && current != requestedBranchId)
