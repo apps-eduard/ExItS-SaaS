@@ -9908,6 +9908,10 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "summary.loadError": "Dili ma-load kini nga transaction summary.",
 
+  "summary.backToSell": "Balik sa Sell",
+  "summary.printSummary": "I-print ang summary",
+  "summary.paidSuccess": "Narekord ang bayad. Nahuman ang sale.",
+  "summary.paidSuccessHint": "Pagsugod og bag-ong sale, i-print ang summary, o mag-return kung kinahanglan.",
   "summary.missingSale": "Walay gipili nga sale.",
 
   "summary.newSale": "Bag-ong sale",

@@ -9908,6 +9908,10 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "summary.loadError": "Indi ma-load ini nga transaction summary.",
 
+  "summary.backToSell": "Balik sa Sell",
+  "summary.printSummary": "I-print ang summary",
+  "summary.paidSuccess": "Narekord ang bayad. Natapos ang sale.",
+  "summary.paidSuccessHint": "Magsugod sang bag-o nga sale, i-print ang summary, ukon mag-return kung kinahanglan.",
   "summary.missingSale": "Wala sing gipili nga sale.",
 
   "summary.newSale": "Bag-ong sale",

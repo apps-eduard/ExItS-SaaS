@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, ChevronDown, Plus, RotateCcw } from "lucide-react";
+import { Ban, ChevronDown, Plus, Printer, RotateCcw } from "lucide-react";
 import { canProcessReturn, canVoidSale, canViewReports } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog";
-import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { LoadingSkeleton, StickyActionBar } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
@@ -23,6 +23,8 @@ import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+type PostPayPlacement = "top" | "sticky";
 
 /**
  * Transaction Summary — never labeled Invoice.
@@ -41,7 +43,8 @@ export function TransactionSummaryPage() {
   const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
   const [voidSheetOpen, setVoidSheetOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
-  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
+  // Collapsed by default so post-pay actions stay above the fold.
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const workspaceScope =
     boundWorkspace?.branchId && boundWorkspace.organizationId
@@ -102,6 +105,8 @@ export function TransactionSummaryPage() {
       sale.totalCostSnapshot != null ||
       sale.grossProfit != null ||
       sale.lines.some((line) => line.lineCostSnapshot != null || line.unitCostSnapshot != null));
+  const showReturnAction = !isVoided && allowProcessReturn;
+  const showVoidAction = !isVoided && allowVoid;
 
   async function onVoid() {
     if (!workspaceScope || !saleId || voiding || isVoided) {
@@ -132,25 +137,111 @@ export function TransactionSummaryPage() {
     }
   }
 
-  const showReturnAction = !isVoided && allowProcessReturn;
+  function renderPostPayActions(placement: PostPayPlacement) {
+    const id =
+      placement === "top"
+        ? {
+            group: "summary-postpay-actions-top",
+            newSale: "summary-new-sale",
+            print: "summary-print",
+            returnItems: "summary-return-items",
+            voidTrigger: "summary-void-trigger-top",
+          }
+        : {
+            group: "summary-postpay-actions",
+            newSale: "summary-new-sale-sticky",
+            print: "summary-print-sticky",
+            returnItems: "summary-return-items-sticky",
+            voidTrigger: "summary-void-trigger",
+          };
+
+    const actions = (
+      <div
+        className={cn(
+          "flex w-full min-w-0 flex-wrap items-stretch gap-2",
+          placement === "sticky" && "sm:justify-end",
+        )}
+        data-testid={id.group}
+        data-placement={placement}
+      >
+        <Button asChild className="min-w-0 flex-1 gap-2 sm:flex-none" data-testid={id.newSale}>
+          <Link to="/sell">
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {t("summary.newSale")}
+          </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-w-0 flex-1 gap-2 sm:flex-none"
+          data-testid={id.print}
+          onClick={() => window.print()}
+        >
+          <Printer className="size-4 shrink-0" aria-hidden />
+          {t("summary.printSummary")}
+        </Button>
+        {showReturnAction ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-w-0 flex-1 gap-2 sm:flex-none"
+            data-testid={id.returnItems}
+            aria-haspopup="dialog"
+            onClick={() => setReturnConfirmOpen(true)}
+          >
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+            {t("returns.returnItems")}
+          </Button>
+        ) : null}
+        {showVoidAction && placement === "sticky" ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-w-0 flex-1 gap-1.5 border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)] sm:flex-none"
+            data-testid={id.voidTrigger}
+            aria-haspopup="dialog"
+            onClick={() => setVoidConfirmOpen(true)}
+          >
+            <Ban className="size-4 shrink-0" aria-hidden />
+            {t("summary.voidSection")}
+          </Button>
+        ) : null}
+      </div>
+    );
+
+    if (placement === "sticky") {
+      return (
+        <StickyActionBar className="print:hidden flex-col items-stretch gap-2 shadow-[0_-4px_24px_color-mix(in_srgb,var(--exits-foreground)_8%,transparent)] sm:flex-row sm:items-center sm:justify-end">
+          {actions}
+        </StickyActionBar>
+      );
+    }
+
+    return actions;
+  }
 
   return (
-    <div data-testid="transaction-summary-page" className="flex min-w-0 flex-col gap-4">
+    <div
+      data-testid="transaction-summary-page"
+      className="flex min-w-0 flex-col gap-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] print:pb-0"
+    >
       <PageHeader
         title={t("summary.title")}
         description={`${t("summary.subtitle")} · ${sale.saleNumber}`}
+        backTo="/sell"
+        backLabel={t("summary.backToSell")}
+        backTestId="summary-back-to-sell"
         trailing={
-          !isVoided && allowVoid ? (
+          !isVoided ? (
             <Button
-              type="button"
-              variant="destructive"
-              className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
-              data-testid="summary-void-trigger"
-              aria-haspopup="dialog"
-              onClick={() => setVoidConfirmOpen(true)}
+              asChild
+              className="hidden h-9 min-h-9 shrink-0 gap-1.5 px-2.5 sm:inline-flex"
+              data-testid="summary-new-sale-header"
             >
-              <Ban className="size-4 shrink-0" aria-hidden />
-              {t("summary.voidSection")}
+              <Link to="/sell">
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("summary.newSale")}
+              </Link>
             </Button>
           ) : undefined
         }
@@ -167,7 +258,32 @@ export function TransactionSummaryPage() {
             </p>
           ) : null}
         </Card>
-      ) : null}
+      ) : (
+        <Card
+          data-testid="summary-success-banner"
+          className="border-[color-mix(in_srgb,var(--exits-success)_35%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-success)_8%,var(--exits-surface))]"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+            {t("summary.paidSuccess")}
+          </p>
+          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {t("summary.paidSuccessHint")}
+          </p>
+        </Card>
+      )}
+
+      {!isVoided ? (
+        <div className="print:hidden">{renderPostPayActions("top")}</div>
+      ) : (
+        <div className="print:hidden" data-testid="summary-postpay-actions-top" data-placement="top">
+          <Button asChild className="w-full gap-2 sm:w-auto" data-testid="summary-new-sale">
+            <Link to="/sell">
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {t("summary.newSale")}
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2">
         <button
@@ -387,7 +503,7 @@ export function TransactionSummaryPage() {
         ) : null}
       </Card>
 
-      {!isVoided && allowVoid ? (
+      {showVoidAction ? (
         <>
           <ConfirmationDialog
             open={voidConfirmOpen}
@@ -484,30 +600,7 @@ export function TransactionSummaryPage() {
         />
       ) : null}
 
-      <div
-        className={cn("grid gap-2", showReturnAction ? "grid-cols-2" : "grid-cols-1")}
-        data-testid="summary-footer-actions"
-      >
-        <Button asChild className="w-full gap-2" data-testid="summary-new-sale">
-          <Link to="/sell">
-            <Plus className="size-4 shrink-0" aria-hidden />
-            {t("summary.newSale")}
-          </Link>
-        </Button>
-        {showReturnAction ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-2"
-            data-testid="summary-return-items"
-            aria-haspopup="dialog"
-            onClick={() => setReturnConfirmOpen(true)}
-          >
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-            {t("returns.returnItems")}
-          </Button>
-        ) : null}
-      </div>
+      {renderPostPayActions("sticky")}
     </div>
   );
 }

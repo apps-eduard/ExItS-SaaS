@@ -9908,6 +9908,10 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "summary.loadError": "Saan a ma-load daytoy a transaction summary.",
 
+  "summary.backToSell": "Agsubli iti Sell",
+  "summary.printSummary": "I-print ti summary",
+  "summary.paidSuccess": "Nairekord ti bayad. Nalpas ti sale.",
+  "summary.paidSuccessHint": "Mangrugi iti baro a sale, i-print ti summary, wenno ag-return no masapul.",
   "summary.missingSale": "Awan ti gipili a sale.",
 
   "summary.newSale": "Bag-ong sale",
