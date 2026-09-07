@@ -819,7 +819,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           clearPosSessionGrant();
           setSessionGrantState(null);
         }
-        setBoundWorkspace(null);
+        // Keep the current bound location when an open shift blocks switching —
+        // clearing would orphan the user with no workspace while a shift is still open.
+        if (classified.kind !== "open_shift_blocks_branch_switch") {
+          setBoundWorkspace(null);
+        }
         denyBind(
           classified.kind,
           classified.technicalDetail,
@@ -846,6 +850,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             status: operational.status,
             errorCode: operational.errorCode,
             traceId: operational.traceId,
+            friendlyMessage:
+              classified.kind === "open_shift_blocks_branch_switch"
+                ? (operational.detail ??
+                  "Close or cancel your open cashier shift before switching to another branch.")
+                : operational.detail ?? undefined,
           }),
         );
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");

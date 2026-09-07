@@ -103,6 +103,7 @@ describe("workspace bind error classification", () => {
     });
     expect(failure.kind).toBe("open_shift_blocks_branch_switch");
     expect(failure.detailKey).toBe("accessDenied.openShiftBlocksBranchSwitch");
+    expect(workspaceBindFailureTitleKey(failure.kind)).toBe("accessDenied.openShiftTitle");
   });
 
   it("internal server error maps to service unavailable", () => {

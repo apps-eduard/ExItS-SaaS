@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   canUseAdminExperience,
   isOrganizationAdministratorMembership,
@@ -254,7 +254,7 @@ export function WorkspaceChooserPage() {
     const ok = await bindDestination(destination);
     setBindingKey(null);
     if (!ok) {
-      setLocalErrorKey("accessDenied.generic");
+      // denyBind already set a classified detail key; do not overwrite with generic.
       return;
     }
     navigate(destination.route, { replace: true });
@@ -264,6 +264,27 @@ export function WorkspaceChooserPage() {
     ? workspaceBindFailureTitleKey(bindFailureKind)
     : "accessDenied.title";
   const failureDetailKey = (accessDeniedDetail as MessageKey | null) ?? localErrorKey;
+  const openShiftBlocksSwitch = bindFailureKind === "open_shift_blocks_branch_switch";
+
+  function renderBindFailure() {
+    if (!failureDetailKey) {
+      return null;
+    }
+    return (
+      <div className="flex flex-col gap-3" data-testid="workspace-bind-failure">
+        <ErrorState
+          title={t(failureTitleKey)}
+          detail={t(failureDetailKey)}
+          diagnostic={failureDiagnostic ?? undefined}
+        />
+        {openShiftBlocksSwitch ? (
+          <Button asChild variant="outline" className="w-full sm:w-auto" data-testid="workspace-open-shift-cta">
+            <Link to="/shifts">{t("accessDenied.openShiftGoToShifts")}</Link>
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
 
   if (workspaces.length === 1) {
     const organization = workspaces[0];
@@ -335,13 +356,7 @@ export function WorkspaceChooserPage() {
     return (
       <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
         <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
-        {failureDetailKey ? (
-          <ErrorState
-            title={t(failureTitleKey)}
-            detail={t(failureDetailKey)}
-            diagnostic={failureDiagnostic ?? undefined}
-          />
-        ) : null}
+        {renderBindFailure()}
         <OrganizationWorkspaceCard
           organization={organization}
           expanded
@@ -362,13 +377,7 @@ export function WorkspaceChooserPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
-      {failureDetailKey ? (
-        <ErrorState
-          title={t(failureTitleKey)}
-          detail={t(failureDetailKey)}
-          diagnostic={failureDiagnostic ?? undefined}
-        />
-      ) : null}
+      {renderBindFailure()}
       <div className="flex flex-col gap-3" role="list">
         {workspaces.map((organization) => {
           const expanded = canCollapseOrgs
