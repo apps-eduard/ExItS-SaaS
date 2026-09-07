@@ -186,7 +186,37 @@ public sealed class CreateProductionRun
                             .GroupBy(o => o.MaterialProductId)
                             .ToDictionary(g => g.Key, g => g.Last());
 
-                        var materialProductIds = definition.Components.Select(c => c.MaterialProductId).ToList();
+                        var extras = (request.ExtraMaterials ?? [])
+                            .GroupBy(e => e.MaterialProductId)
+                            .Select(g => g.Last())
+                            .ToList();
+
+                        var componentProductIds = definition.Components
+                            .Select(c => c.MaterialProductId)
+                            .ToHashSet();
+
+                        foreach (var extra in extras)
+                        {
+                            if (componentProductIds.Contains(CatalogProductId.From(extra.MaterialProductId)))
+                            {
+                                return ApplicationResult<ProductionRunDto>.Failure(
+                                    DomainErrorCodes.InvalidProductionQuantity,
+                                    "Extra materials must not duplicate recipe components. Adjust the recipe line actual quantity instead.");
+                            }
+
+                            if (extra.MaterialProductId == definition.OutputProductId.Value)
+                            {
+                                return ApplicationResult<ProductionRunDto>.Failure(
+                                    DomainErrorCodes.ProductionSelfComponentForbidden,
+                                    "A production run cannot consume its output product as an extra material.");
+                            }
+                        }
+
+                        var materialProductIds = definition.Components
+                            .Select(c => c.MaterialProductId)
+                            .Concat(extras.Select(e => CatalogProductId.From(e.MaterialProductId)))
+                            .Distinct()
+                            .ToList();
                         var allProductIds = materialProductIds.Append(definition.OutputProductId).Distinct().ToList();
                         var products = await _products.ListByIdsAsync(orgId, allProductIds, ct).ConfigureAwait(false);
                         var productsById = products.ToDictionary(p => p.Id.Value);
@@ -205,6 +235,20 @@ public sealed class CreateProductionRun
                             return ApplicationResult<ProductionRunDto>.Failure(
                                 DomainErrorCodes.InventoryExpirationRequired,
                                 "Expiration date is required for expiration-tracked produced items.");
+                        }
+
+                        PosBranchId? branchEarly = request.BranchId is Guid branchGuidEarly && branchGuidEarly != Guid.Empty
+                            ? PosBranchId.From(branchGuidEarly)
+                            : null;
+
+                        IReadOnlyDictionary<Guid, InventoryBranchBalance> branchBalancesByProduct =
+                            new Dictionary<Guid, InventoryBranchBalance>();
+                        if (branchEarly is PosBranchId branchForBalances)
+                        {
+                            var balances = await _branchBalances
+                                .ListByBranchAndProductIdsAsync(orgId, branchForBalances, materialProductIds, ct)
+                                .ConfigureAwait(false);
+                            branchBalancesByProduct = balances.ToDictionary(b => b.ProductId.Value);
                         }
 
                         ApplicationResult<ProductionRunDto>? failure = null;
@@ -227,7 +271,49 @@ public sealed class CreateProductionRun
                                         }
                                     }
 
-                                    var materialDrafts = new List<ProductionRunMaterialDraft>(definition.Components.Count);
+                                    var shortages = new List<string>();
+                                    var materialDrafts = new List<ProductionRunMaterialDraft>(
+                                        definition.Components.Count + extras.Count);
+
+                                    async Task<bool> TryAddMaterialDraftAsync(
+                                        CatalogProduct material,
+                                        decimal expectedEntered,
+                                        decimal actualEntered,
+                                        decimal multiplier,
+                                        ProductUnitId? unitId,
+                                        string unitLabel)
+                                    {
+                                        var actualBase = ProductUnitConversion.ToBaseQuantity(actualEntered, multiplier);
+                                        var account = accountsByProduct[material.Id.Value];
+                                        var available = ResolveAvailableQuantity(
+                                            material,
+                                            account,
+                                            branchEarly,
+                                            branchBalancesByProduct);
+
+                                        if (!material.TracksExpiration && available < actualBase)
+                                        {
+                                            shortages.Add(
+                                                $"'{material.Name}' required {actualBase}, available {available}.");
+                                            return false;
+                                        }
+
+                                        var unitCost = await _inventory
+                                            .GetLatestAcquisitionUnitCostAsync(orgId, material.Id, lockCt)
+                                            .ConfigureAwait(false);
+
+                                        materialDrafts.Add(new ProductionRunMaterialDraft(
+                                            material.Id,
+                                            expectedEntered,
+                                            actualEntered,
+                                            multiplier,
+                                            material.Name,
+                                            unitLabel,
+                                            unitId,
+                                            unitCost));
+                                        return true;
+                                    }
+
                                     foreach (var component in definition.Components)
                                     {
                                         if (!productsById.TryGetValue(component.MaterialProductId.Value, out var material)
@@ -278,29 +364,73 @@ public sealed class CreateProductionRun
                                             }
                                         }
 
-                                        var actualBase = ProductUnitConversion.ToBaseQuantity(actualEntered, multiplier);
-                                        var account = accountsByProduct[component.MaterialProductId.Value];
-                                        if (!material.TracksExpiration && account.AvailableQuantity < actualBase)
+                                        await TryAddMaterialDraftAsync(
+                                                material,
+                                                expectedEntered,
+                                                actualEntered,
+                                                multiplier,
+                                                unitId,
+                                                unitLabel)
+                                            .ConfigureAwait(false);
+                                        if (failure is not null)
+                                        {
+                                            return;
+                                        }
+                                    }
+
+                                    foreach (var extra in extras)
+                                    {
+                                        if (!productsById.TryGetValue(extra.MaterialProductId, out var material)
+                                            || !material.CanBeUsedAsIngredient
+                                            || material.Status != CatalogProductStatus.Active)
                                         {
                                             failure = ApplicationResult<ProductionRunDto>.Failure(
-                                                ApplicationErrorCodes.InsufficientStock,
-                                                $"Insufficient stock for '{material.Name}'. Available: {account.AvailableQuantity}, required: {actualBase}.");
+                                                DomainErrorCodes.ProductionComponentNotEligible,
+                                                "One or more extra materials are not eligible for production.");
                                             return;
                                         }
 
-                                        var unitCost = await _inventory
-                                            .GetLatestAcquisitionUnitCostAsync(orgId, material.Id, lockCt)
-                                            .ConfigureAwait(false);
+                                        decimal multiplier = 1m;
+                                        ProductUnitId? unitId = null;
+                                        var unitLabel = UnitOfMeasures.ToCode(material.UnitOfMeasure);
+                                        if (extra.ProductUnitId is Guid euid && euid != Guid.Empty)
+                                        {
+                                            var unit = await _units
+                                                .GetByIdAsync(orgId, ProductUnitId.From(euid), lockCt)
+                                                .ConfigureAwait(false);
+                                            if (unit is null || !unit.IsActive || unit.ProductId != material.Id)
+                                            {
+                                                failure = ApplicationResult<ProductionRunDto>.Failure(
+                                                    DomainErrorCodes.InvalidProductUnitId,
+                                                    "Product unit was not found for this extra material.");
+                                                return;
+                                            }
 
-                                        materialDrafts.Add(new ProductionRunMaterialDraft(
-                                            material.Id,
-                                            expectedEntered,
-                                            actualEntered,
-                                            multiplier,
-                                            material.Name,
-                                            unitLabel,
-                                            unitId,
-                                            unitCost));
+                                            multiplier = unit.MultiplierToBase;
+                                            unitId = unit.Id;
+                                            unitLabel = unit.ShortLabel;
+                                        }
+
+                                        await TryAddMaterialDraftAsync(
+                                                material,
+                                                expectedEntered: 0m,
+                                                actualEntered: extra.ActualQuantity,
+                                                multiplier,
+                                                unitId,
+                                                unitLabel)
+                                            .ConfigureAwait(false);
+                                        if (failure is not null)
+                                        {
+                                            return;
+                                        }
+                                    }
+
+                                    if (shortages.Count > 0)
+                                    {
+                                        failure = ApplicationResult<ProductionRunDto>.Failure(
+                                            ApplicationErrorCodes.InsufficientStock,
+                                            "Insufficient stock: " + string.Join(" ", shortages));
+                                        return;
                                     }
 
                                     if (failure is not null)
@@ -314,9 +444,7 @@ public sealed class CreateProductionRun
                                         .AllocateNextNumberAsync(orgId, businessDate, lockCt)
                                         .ConfigureAwait(false);
 
-                                    PosBranchId? branch = request.BranchId is Guid branchGuid && branchGuid != Guid.Empty
-                                        ? PosBranchId.From(branchGuid)
-                                        : null;
+                                    PosBranchId? branch = branchEarly;
 
                                     ProductionRunId? clientRunId = request.ProductionRunId is Guid rid && rid != Guid.Empty
                                         ? ProductionRunId.From(rid)
@@ -399,11 +527,15 @@ public sealed class CreateProductionRun
                                                 return;
                                             }
                                         }
-                                        else if (account.AvailableQuantity < line.ActualBaseQuantity)
+                                        else if (ResolveAvailableQuantity(
+                                                     material,
+                                                     account,
+                                                     branch,
+                                                     branchBalancesByProduct) < line.ActualBaseQuantity)
                                         {
                                             failure = ApplicationResult<ProductionRunDto>.Failure(
                                                 ApplicationErrorCodes.InsufficientStock,
-                                                $"Insufficient stock for '{material.Name}'. Available: {account.AvailableQuantity}, required: {line.ActualBaseQuantity}.");
+                                                $"Insufficient stock for '{material.Name}'. Required: {line.ActualBaseQuantity}.");
                                             return;
                                         }
 
@@ -558,6 +690,29 @@ public sealed class CreateProductionRun
 
     internal static decimal ScaleQuantity(decimal value, decimal scale) =>
         Math.Round(value * scale, SaleMoney.MeasuredQuantityDecimals, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// When a branch is in scope, available stock is branch-local (missing balance = 0).
+    /// Without branch context, fall back to organization inventory account availability.
+    /// </summary>
+    internal static decimal ResolveAvailableQuantity(
+        CatalogProduct material,
+        InventoryAccount account,
+        PosBranchId? branch,
+        IReadOnlyDictionary<Guid, InventoryBranchBalance> branchBalancesByProduct)
+    {
+        if (branch is null)
+        {
+            return account.AvailableQuantity;
+        }
+
+        if (branchBalancesByProduct.TryGetValue(material.Id.Value, out var balance))
+        {
+            return balance.AvailableQuantity;
+        }
+
+        return 0m;
+    }
 
     private static bool IsNumberConflict(Exception ex)
     {

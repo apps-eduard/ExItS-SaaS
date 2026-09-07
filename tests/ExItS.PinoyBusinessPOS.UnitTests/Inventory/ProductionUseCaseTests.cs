@@ -83,6 +83,175 @@ public sealed class ProductionUseCaseTests
     }
 
     [Fact]
+    public async Task Produce_50_percent_scales_materials_half()
+    {
+        var fx = await SeedAsync();
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+
+        var result = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(definition.ProductionDefinitionId, OutputQuantity: 50m),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
+        Assert.Equal(5m, result.Value!.Materials[0].ExpectedQuantityEntered);
+        Assert.Equal(5m, result.Value.Materials[0].ActualQuantityEntered);
+        Assert.Equal(45m, fx.Inventory.GetOnHand(fx.FlourId));
+        Assert.Equal(50m, fx.Inventory.GetOnHand(fx.BreadId));
+    }
+
+    [Fact]
+    public async Task Multiple_shortages_reported_without_partial_mutation()
+    {
+        var fx = await SeedAsync(flourOnHand: 5m);
+        await fx.AddProductAsync(fx.SugarId, "Sugar", 1m, track: true, openingUnitCost: 2m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.SugarId)
+            .UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+
+        var created = await fx.CreateDefinition.ExecuteAsync(
+            OrgA,
+            new CreateProductionDefinitionRequest(
+                "Batch",
+                fx.BreadId,
+                100m,
+                [
+                    new CreateProductionComponentRequest(fx.FlourId, 10m),
+                    new CreateProductionComponentRequest(fx.SugarId, 2m)
+                ]),
+            Actor);
+        Assert.True(created.IsSuccess, created.ErrorCode + ": " + created.ErrorMessage);
+
+        var beforeFlour = fx.Inventory.GetOnHand(fx.FlourId);
+        var beforeSugar = fx.Inventory.GetOnHand(fx.SugarId);
+        var beforeBread = fx.Inventory.GetOnHand(fx.BreadId);
+
+        var result = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(created.Value!.ProductionDefinitionId, OutputQuantity: 100m),
+            Actor);
+
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Contains("Flour", result.ErrorMessage!, StringComparison.Ordinal);
+        Assert.Contains("Sugar", result.ErrorMessage!, StringComparison.Ordinal);
+        Assert.Equal(beforeFlour, fx.Inventory.GetOnHand(fx.FlourId));
+        Assert.Equal(beforeSugar, fx.Inventory.GetOnHand(fx.SugarId));
+        Assert.Equal(beforeBread, fx.Inventory.GetOnHand(fx.BreadId));
+        Assert.Empty(fx.Runs.Items);
+    }
+
+    [Fact]
+    public async Task Extra_material_is_run_only_and_consumed()
+    {
+        var fx = await SeedAsync();
+        await fx.AddProductAsync(fx.SugarId, "Sugar", 20m, track: true, openingUnitCost: 2m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.SugarId)
+            .UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+
+        var result = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(
+                definition.ProductionDefinitionId,
+                OutputQuantity: 100m,
+                ExtraMaterials: [new CreateProductionRunExtraMaterialRequest(fx.SugarId, 3m)]),
+            Actor);
+
+        Assert.True(result.IsSuccess, result.ErrorCode + ": " + result.ErrorMessage);
+        Assert.Equal(2, result.Value!.Materials.Count);
+        var extra = Assert.Single(result.Value.Materials, m => m.MaterialProductId == fx.SugarId);
+        Assert.Equal(0m, extra.ExpectedQuantityEntered);
+        Assert.Equal(3m, extra.ActualQuantityEntered);
+        Assert.Equal(17m, fx.Inventory.GetOnHand(fx.SugarId));
+        Assert.Equal(40m, fx.Inventory.GetOnHand(fx.FlourId));
+
+        var defAfter = fx.Definitions.Items.Single(d => d.Id.Value == definition.ProductionDefinitionId);
+        Assert.DoesNotContain(defAfter.Components, c => c.MaterialProductId.Value == fx.SugarId);
+    }
+
+    [Fact]
+    public async Task Extra_material_insufficient_blocks_entire_run()
+    {
+        var fx = await SeedAsync();
+        await fx.AddProductAsync(fx.SugarId, "Sugar", 1m, track: true, openingUnitCost: 2m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.SugarId)
+            .UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+        var beforeFlour = fx.Inventory.GetOnHand(fx.FlourId);
+
+        var result = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(
+                definition.ProductionDefinitionId,
+                OutputQuantity: 100m,
+                ExtraMaterials: [new CreateProductionRunExtraMaterialRequest(fx.SugarId, 5m)]),
+            Actor);
+
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Equal(beforeFlour, fx.Inventory.GetOnHand(fx.FlourId));
+        Assert.Equal(1m, fx.Inventory.GetOnHand(fx.SugarId));
+        Assert.Empty(fx.Runs.Items);
+    }
+
+    [Fact]
+    public async Task Definition_edit_does_not_alter_posted_run_snapshot()
+    {
+        var fx = await SeedAsync();
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+        var run = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(definition.ProductionDefinitionId, OutputQuantity: 100m),
+            Actor);
+        Assert.True(run.IsSuccess, run.ErrorCode + ": " + run.ErrorMessage);
+        Assert.Equal(1, run.Value!.ProductionDefinitionRevision);
+        Assert.Equal(10m, run.Value.Materials[0].ExpectedQuantityEntered);
+
+        var updated = await fx.UpdateDefinition.ExecuteAsync(
+            OrgA,
+            definition.ProductionDefinitionId,
+            new UpdateProductionDefinitionRequest(
+                "Standard batch",
+                fx.BreadId,
+                100m,
+                [new CreateProductionComponentRequest(fx.FlourId, 7m)]),
+            Actor);
+        Assert.True(updated.IsSuccess, updated.ErrorCode + ": " + updated.ErrorMessage);
+        Assert.Equal(2, updated.Value!.Revision);
+        Assert.Equal(7m, updated.Value.Components[0].QuantityEntered);
+
+        var stored = fx.Runs.Items.Single(r => r.Id.Value == run.Value.ProductionRunId);
+        Assert.Equal(1, stored.ProductionDefinitionRevision);
+        Assert.Equal(10m, stored.Materials[0].ExpectedQuantityEntered);
+        Assert.Equal(10m, stored.Materials[0].ActualQuantityEntered);
+    }
+
+    [Fact]
+    public async Task Branch_stock_shortage_ignores_org_on_hand()
+    {
+        var fx = await SeedAsync(flourOnHand: 50m);
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+        var branchId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        fx.Branches.Items.Add(InventoryBranchBalance.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(branchId),
+            CatalogProductId.From(fx.FlourId),
+            onHandQuantity: 4m,
+            Utc));
+
+        var beforeFlour = fx.Inventory.GetOnHand(fx.FlourId);
+        var result = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(
+                definition.ProductionDefinitionId,
+                OutputQuantity: 100m,
+                BranchId: branchId),
+            Actor);
+
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, result.ErrorCode);
+        Assert.Equal(beforeFlour, fx.Inventory.GetOnHand(fx.FlourId));
+        Assert.Empty(fx.Runs.Items);
+    }
+
+    [Fact]
     public async Task Unit_conversion_uses_multiplier_to_base()
     {
         var fx = await SeedAsync(flourOnHand: 100m);
@@ -356,6 +525,7 @@ public sealed class ProductionUseCaseTests
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
         public CreateProductionDefinition CreateDefinition { get; }
+        public UpdateProductionDefinition UpdateDefinition { get; }
         public CreateProductionRun CreateRun { get; }
         public VoidProductionRun VoidRun { get; }
 
@@ -363,6 +533,7 @@ public sealed class ProductionUseCaseTests
         {
             var lots = new InventoryLotStockService(Lots);
             CreateDefinition = new CreateProductionDefinition(Definitions, Products, Units, UnitOfWork, Clock);
+            UpdateDefinition = new UpdateProductionDefinition(Definitions, CreateDefinition, UnitOfWork, Clock);
             CreateRun = new CreateProductionRun(
                 Runs, Definitions, Products, Units, Inventory, Branches, lots, UnitOfWork, Clock);
             VoidRun = new VoidProductionRun(Runs, Products, Inventory, Branches, lots, UnitOfWork, Clock);
@@ -578,13 +749,33 @@ public sealed class ProductionUseCaseTests
 
     private sealed class InMemoryBranchBalances : IInventoryBranchBalanceRepository
     {
+        public List<InventoryBranchBalance> Items { get; } = [];
+
         public Task<InventoryBranchBalance?> GetAsync(PosOrganizationId organizationId, PosBranchId branchId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<InventoryBranchBalance?>(null);
+            Task.FromResult(Items.FirstOrDefault(b =>
+                b.OrganizationId == organizationId && b.BranchId == branchId && b.ProductId == productId));
 
         public Task<IReadOnlyList<InventoryBranchBalance>> ListByProductIdsAsync(PosOrganizationId organizationId, IReadOnlyCollection<CatalogProductId> productIds, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>([]);
+            Task.FromResult<IReadOnlyList<InventoryBranchBalance>>(
+                Items.Where(b => b.OrganizationId == organizationId && productIds.Any(id => id == b.ProductId)).ToList());
 
-        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
+        {
+            var idx = Items.FindIndex(b =>
+                b.OrganizationId == balance.OrganizationId
+                && b.BranchId == balance.BranchId
+                && b.ProductId == balance.ProductId);
+            if (idx >= 0)
+            {
+                Items[idx] = balance;
+            }
+            else
+            {
+                Items.Add(balance);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryInventory : IInventoryRepository

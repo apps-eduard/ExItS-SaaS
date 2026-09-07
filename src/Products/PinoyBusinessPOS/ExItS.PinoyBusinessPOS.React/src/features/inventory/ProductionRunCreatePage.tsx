@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { getCatalogProduct } from "@/api/pos/pos-catalog-client";
+import { getCatalogProduct, listCatalogProducts } from "@/api/pos/pos-catalog-client";
+import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -18,12 +19,22 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { SearchField } from "@/components/exits/SearchField";
+import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import {
+  maxProducibleFromStock,
   productionScaleFactor,
   scaleProductionQuantity,
 } from "@/features/inventory/production-labels";
+import {
+  findProduceShortages,
+  hasProduceShortage,
+} from "@/features/inventory/production-run-stock";
+import { materialBaseUomLabel } from "@/features/inventory/production-material-uom";
+import { ProductionMaterialQuantitySheet } from "@/features/inventory/ProductionMaterialQuantitySheet";
+import type { ProductionMaterialDraft } from "@/features/inventory/production-material-uom";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -35,11 +46,15 @@ type MaterialPreview = {
   expected: number;
   actual: number;
   available: number | null;
+  isExtra: boolean;
+  productUnitId?: string | null;
 };
 
 export function ProductionRunCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const preselectDefinitionId = searchParams.get("definitionId")?.trim() || null;
   const online = useBrowserOnline();
@@ -49,6 +64,12 @@ export function ProductionRunCreatePage() {
   const [definitionId, setDefinitionId] = useState<string | null>(preselectDefinitionId);
   const [outputQuantity, setOutputQuantity] = useState("");
   const [actualByProduct, setActualByProduct] = useState<Record<string, string>>({});
+  const [extraMaterials, setExtraMaterials] = useState<ProductionMaterialDraft[]>([]);
+  const [extraAvailable, setExtraAvailable] = useState<Record<string, number | null>>({});
+  const [addIngredientOpen, setAddIngredientOpen] = useState(false);
+  const [ingredientSearch, setIngredientSearch] = useState("");
+  const [debouncedIngredientSearch, setDebouncedIngredientSearch] = useState("");
+  const [qtySheetProduct, setQtySheetProduct] = useState<PosCatalogProductDto | null>(null);
   const [notes, setNotes] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
@@ -65,6 +86,14 @@ export function ProductionRunCreatePage() {
         : null,
     [boundWorkspace],
   );
+
+  useEffect(() => {
+    const handle = window.setTimeout(
+      () => setDebouncedIngredientSearch(ingredientSearch.trim()),
+      250,
+    );
+    return () => window.clearTimeout(handle);
+  }, [ingredientSearch]);
 
   const definitionsQuery = useQuery({
     queryKey: ["production-definitions", "active", workspace?.organizationId],
@@ -95,6 +124,9 @@ export function ProductionRunCreatePage() {
       next[component.materialProductId] = String(component.quantityEntered);
     }
     setActualByProduct(next);
+    setExtraMaterials([]);
+    setExtraAvailable({});
+    setAddIngredientOpen(false);
   }, [definition?.productionDefinitionId]);
 
   const outputProductQuery = useQuery({
@@ -107,6 +139,7 @@ export function ProductionRunCreatePage() {
     queryKey: [
       "production-run-preview",
       workspace?.organizationId,
+      workspace?.branchId,
       definition?.productionDefinitionId,
       outputQuantity,
     ],
@@ -122,6 +155,7 @@ export function ProductionRunCreatePage() {
           uom: string;
           expected: number;
           available: number | null;
+          productUnitId: string | null;
         }>;
       }
       const rows: Array<{
@@ -130,6 +164,7 @@ export function ProductionRunCreatePage() {
         uom: string;
         expected: number;
         available: number | null;
+        productUnitId: string | null;
       }> = [];
       for (const component of def.components) {
         let name = component.materialProductId;
@@ -141,8 +176,12 @@ export function ProductionRunCreatePage() {
             getInventoryProduct(workspace!, component.materialProductId, signal).catch(() => null),
           ]);
           name = product.name;
-          uom = product.unitOfMeasure;
-          available = inventory?.onHandQuantity ?? null;
+          const unit = (product.units ?? []).find((u) => u.unitId === component.productUnitId);
+          uom = unit?.shortLabel || unit?.displayName || materialBaseUomLabel(product);
+          available =
+            inventory?.sellableQuantity ??
+            inventory?.onHandQuantity ??
+            null;
         } catch {
           // keep id fallback
         }
@@ -152,30 +191,126 @@ export function ProductionRunCreatePage() {
           uom,
           expected: scaleProductionQuantity(component.quantityEntered, scale),
           available,
+          productUnitId: component.productUnitId ?? null,
         });
       }
       return rows;
     },
   });
 
+  const recipeProductIds = useMemo(
+    () => new Set((definition?.components ?? []).map((c) => c.materialProductId)),
+    [definition?.components],
+  );
+
+  const extraPickerQuery = useQuery({
+    queryKey: [
+      "catalog-products",
+      "production-run-extra-picker",
+      workspace?.organizationId,
+      workspace?.branchId,
+      debouncedIngredientSearch,
+    ],
+    enabled: Boolean(workspace) && online && allowManage && addIngredientOpen,
+    queryFn: ({ signal }) =>
+      listCatalogProducts(
+        workspace!,
+        {
+          search: debouncedIngredientSearch || undefined,
+          status: "Active",
+          canBeUsedAsIngredient: true,
+          pageSize: 40,
+        },
+        signal,
+      ),
+  });
+
   const materials: MaterialPreview[] = useMemo(() => {
-    return (materialPreviewQuery.data ?? []).map((row) => {
+    const recipeRows = (materialPreviewQuery.data ?? []).map((row) => {
       const actualRaw = actualByProduct[row.materialProductId];
       const actualParsed = actualRaw != null ? Number(actualRaw) : row.expected;
       return {
         ...row,
         actual: Number.isFinite(actualParsed) ? actualParsed : row.expected,
+        isExtra: false as const,
       };
     });
-  }, [materialPreviewQuery.data, actualByProduct]);
+    const extras: MaterialPreview[] = extraMaterials.map((extra) => ({
+      materialProductId: extra.materialProductId,
+      name: extra.name,
+      uom: extra.displayUom,
+      expected: 0,
+      actual: extra.quantity,
+      available: extraAvailable[extra.materialProductId] ?? null,
+      isExtra: true,
+      productUnitId: extra.productUnitId ?? null,
+    }));
+    return [...recipeRows, ...extras];
+  }, [materialPreviewQuery.data, actualByProduct, extraMaterials, extraAvailable]);
+
+  const shortageRows = useMemo(
+    () =>
+      materials.map((row) => ({
+        materialProductId: row.materialProductId,
+        name: row.name,
+        uom: row.uom,
+        required: row.actual,
+        available: row.available,
+        isExtra: row.isExtra,
+      })),
+    [materials],
+  );
+  const shortages = useMemo(() => findProduceShortages(shortageRows), [shortageRows]);
+  const produceBlocked = hasProduceShortage(shortageRows);
+
+  const maxProducible = useMemo(() => {
+    if (!definition) {
+      return null;
+    }
+    return maxProducibleFromStock({
+      definitionOutputQuantity: definition.outputQuantityEntered,
+      components: (materialPreviewQuery.data ?? []).map((row) => ({
+        quantityEntered:
+          definition.components.find((c) => c.materialProductId === row.materialProductId)
+            ?.quantityEntered ?? row.expected,
+        available: row.available,
+      })),
+    });
+  }, [definition, materialPreviewQuery.data]);
+
   const tracksExpiration = outputProductQuery.data?.tracksExpiration === true;
+  const outputUom =
+    outputProductQuery.data != null
+      ? materialBaseUomLabel(outputProductQuery.data)
+      : "";
+
+  const extraCandidates = useMemo(() => {
+    const selectedExtras = new Set(extraMaterials.map((m) => m.materialProductId));
+    return (extraPickerQuery.data?.items ?? []).filter((product) => {
+      if (product.canBeUsedAsIngredient !== true) {
+        return false;
+      }
+      if (product.productId === definition?.outputProductId) {
+        return false;
+      }
+      if (recipeProductIds.has(product.productId) || selectedExtras.has(product.productId)) {
+        return false;
+      }
+      return true;
+    });
+  }, [
+    extraPickerQuery.data?.items,
+    extraMaterials,
+    definition?.outputProductId,
+    recipeProductIds,
+  ]);
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
   function onSelectDefinition(id: string) {
-    setDefinitionId(id);
+    setDefinitionId(id || null);
     setError(null);
     setStatusLocked(false);
     runIdRef.current = null;
@@ -195,8 +330,44 @@ export function ProductionRunCreatePage() {
     setActualByProduct(next);
   }
 
+  async function openExtraSheet(product: PosCatalogProductDto) {
+    let available: number | null = null;
+    try {
+      const inventory = await getInventoryProduct(workspace!, product.productId);
+      available = inventory.sellableQuantity ?? inventory.onHandQuantity ?? null;
+    } catch {
+      available = null;
+    }
+    setExtraAvailable((prev) => ({ ...prev, [product.productId]: available }));
+    setQtySheetProduct(product);
+  }
+
+  function confirmExtra(draft: ProductionMaterialDraft) {
+    const available = extraAvailable[draft.materialProductId];
+    if (available != null && draft.quantity > available + 1e-9) {
+      setError(
+        t("production.produce.extraExceedsAvailable")
+          .replace("{name}", draft.name)
+          .replace("{available}", `${available} ${draft.displayUom}`),
+      );
+      return;
+    }
+    setExtraMaterials((prev) => [
+      ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
+      draft,
+    ]);
+    setQtySheetProduct(null);
+    setAddIngredientOpen(false);
+    setIngredientSearch("");
+    setError(null);
+  }
+
   async function submit() {
     if (!workspace || !allowManage || !online || saving || statusLocked || !definitionId || !definition) {
+      return;
+    }
+    if (produceBlocked) {
+      setError(t("production.produce.cannotProduceShortage"));
       return;
     }
     const outQty = Number(outputQuantity);
@@ -228,13 +399,20 @@ export function ProductionRunCreatePage() {
     setError(null);
 
     const overrides = materials
-      .filter((row) => {
-        const expected = row.expected;
-        return Math.abs(row.actual - expected) > 1e-9;
-      })
+      .filter((row) => !row.isExtra)
+      .filter((row) => Math.abs(row.actual - row.expected) > 1e-9)
       .map((row) => ({
         materialProductId: row.materialProductId,
         actualQuantity: row.actual,
+        productUnitId: row.productUnitId ?? null,
+      }));
+
+    const extrasPayload = materials
+      .filter((row) => row.isExtra)
+      .map((row) => ({
+        materialProductId: row.materialProductId,
+        actualQuantity: row.actual,
+        productUnitId: row.productUnitId ?? null,
       }));
 
     const body = {
@@ -245,12 +423,21 @@ export function ProductionRunCreatePage() {
       outputExpirationDate: expirationDate.trim() || null,
       outputLotNumber: lotNumber.trim() || null,
       materialOverrides: overrides.length > 0 ? overrides : null,
+      extraMaterials: extrasPayload.length > 0 ? extrasPayload : null,
       productionRunId,
     };
 
     try {
       const created = await createProductionRun(workspace, body);
       runIdRef.current = null;
+      await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      await queryClient.invalidateQueries({ queryKey: ["production"] });
+      showToast(
+        t("production.produce.successToast")
+          .replace("{qty}", String(outQty))
+          .replace("{name}", created.outputNameSnapshot || definition.name),
+        "success",
+      );
       navigate(`/inventory/production/runs/${created.productionRunId}`, { replace: true });
     } catch (err) {
       if (isLikelyNetworkFailure(err)) {
@@ -324,7 +511,8 @@ export function ProductionRunCreatePage() {
           <option value="">{t("production.produce.chooseSetup")}</option>
           {activeDefinitions.map((item) => (
             <option key={item.productionDefinitionId} value={item.productionDefinitionId}>
-              {item.name}
+              {item.name} — {item.outputQuantityEntered} · {item.componentCount}{" "}
+              {t("production.produce.ingredientsCountLabel")}
             </option>
           ))}
         </select>
@@ -339,31 +527,57 @@ export function ProductionRunCreatePage() {
 
       {definition ? (
         <>
+          <Card className="flex flex-col gap-1 p-3" data-testid="production-run-recipe-summary">
+            <div className="font-medium">{definition.name}</div>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("production.setups.revision").replace("{revision}", String(definition.revision))}
+              {" · "}
+              {t("production.produce.standardOutput")}: {definition.outputQuantityEntered}
+              {outputUom ? ` ${outputUom}` : ""}
+            </p>
+          </Card>
+
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("production.produce.outputQuantity")}
-            <input
-              type="number"
-              min={0}
-              step="any"
-              className="rounded-md border border-border bg-background px-3"
-              value={outputQuantity}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setOutputQuantity(raw);
-                const qty = Number(raw);
-                if (Number.isFinite(qty) && qty > 0) {
-                  syncActualsToExpected(definition, qty);
-                }
-              }}
-              disabled={!allowManage || statusLocked}
-              data-testid="production-run-output-qty"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                step="any"
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3"
+                value={outputQuantity}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setOutputQuantity(raw);
+                  const qty = Number(raw);
+                  if (Number.isFinite(qty) && qty > 0) {
+                    syncActualsToExpected(definition, qty);
+                  }
+                }}
+                disabled={!allowManage || statusLocked}
+                data-testid="production-run-output-qty"
+              />
+              {outputUom ? (
+                <span className="text-[length:var(--exits-text-sm)] text-muted">{outputUom}</span>
+              ) : null}
+            </div>
           </label>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("production.produce.scaleHint")}
           </p>
+          {maxProducible != null ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="production-run-max-producible"
+            >
+              {t("production.produce.maxProducible").replace(
+                "{qty}",
+                `${maxProducible}${outputUom ? ` ${outputUom}` : ""}`,
+              )}
+            </p>
+          ) : null}
 
-          <section className="flex flex-col gap-2">
+          <section className="flex flex-col gap-2" data-testid="production-run-materials">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
               {t("production.produce.materials")}
             </h2>
@@ -373,57 +587,155 @@ export function ProductionRunCreatePage() {
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {materials.map((row) => {
                 const short =
-                  row.available != null && row.actual > row.available;
+                  row.available != null && row.actual > row.available + 1e-9;
                 return (
-                  <li key={row.materialProductId}>
-                    <Card className="flex flex-col gap-2 p-3">
-                      <div className="font-medium">{row.name}</div>
-                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                        {t("production.produce.expected")}: {row.expected} {row.uom}
-                        {row.available != null
-                          ? ` · ${t("production.produce.available")}: ${row.available} ${row.uom}`
-                          : ""}
+                  <li key={`${row.isExtra ? "extra" : "recipe"}-${row.materialProductId}`}>
+                    <Card
+                      className="flex flex-col gap-2 p-3"
+                      data-testid={`production-run-material-${row.materialProductId}`}
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <div className="font-medium">{row.name}</div>
+                        {row.isExtra ? (
+                          <span className="text-[length:var(--exits-text-xs)] text-muted">
+                            {t("production.produce.extraBadge")}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="m-0 text-[length:var(--exits-text-sm)]">
+                        {t("production.produce.required")}: {row.actual} {row.uom}
                       </p>
+                      {row.available != null ? (
+                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                          {t("production.produce.available")}: {row.available} {row.uom}
+                        </p>
+                      ) : null}
                       {short ? (
                         <p
                           className="m-0 text-[length:var(--exits-text-sm)] text-destructive"
                           data-testid={`production-availability-short-${row.materialProductId}`}
                         >
-                          {t("production.produce.availabilityShort").replace(
+                          {t("production.produce.shortBy").replace(
                             "{quantity}",
-                            `${row.available} ${row.uom}`.trim(),
+                            `${Math.round((row.actual - (row.available ?? 0)) * 1000) / 1000} ${row.uom}`,
                           )}
                         </p>
                       ) : row.available != null ? (
-                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`production-availability-ok-${row.materialProductId}`}
+                        >
                           {t("production.produce.availabilityOk")}
                         </p>
                       ) : null}
-                      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                        {t("production.produce.actual")}
-                        <input
-                          type="number"
-                          min={0}
-                          step="any"
-                          className="rounded-md border border-border bg-background px-3"
-                          value={
-                            actualByProduct[row.materialProductId] ?? String(row.actual)
-                          }
-                          onChange={(e) =>
-                            setActualByProduct((prev) => ({
-                              ...prev,
-                              [row.materialProductId]: e.target.value,
-                            }))
-                          }
+                      {!row.isExtra ? (
+                        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                          {t("production.produce.actual")}
+                          <input
+                            type="number"
+                            min={0}
+                            step="any"
+                            className="rounded-md border border-border bg-background px-3"
+                            value={
+                              actualByProduct[row.materialProductId] ?? String(row.actual)
+                            }
+                            onChange={(e) =>
+                              setActualByProduct((prev) => ({
+                                ...prev,
+                                [row.materialProductId]: e.target.value,
+                              }))
+                            }
+                            disabled={!allowManage || statusLocked}
+                            data-testid={`production-run-actual-${row.materialProductId}`}
+                          />
+                        </label>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-fit"
                           disabled={!allowManage || statusLocked}
-                          data-testid={`production-run-actual-${row.materialProductId}`}
-                        />
-                      </label>
+                          onClick={() =>
+                            setExtraMaterials((prev) =>
+                              prev.filter((m) => m.materialProductId !== row.materialProductId),
+                            )
+                          }
+                        >
+                          {t("production.setups.removeMaterial")}
+                        </Button>
+                      )}
                     </Card>
                   </li>
                 );
               })}
             </ul>
+
+            {shortages.length > 0 ? (
+              <Card
+                className="flex flex-col gap-2 border-destructive/40 p-3"
+                data-testid="production-run-shortage-summary"
+              >
+                <p className="m-0 font-medium text-destructive">
+                  {t("production.produce.cannotProduce").replace(
+                    "{qty}",
+                    `${outputQuantity}${outputUom ? ` ${outputUom}` : ""}`,
+                  )}
+                </p>
+                <ul className="m-0 list-disc pl-5 text-[length:var(--exits-text-sm)]">
+                  {shortages.map((item) => (
+                    <li key={item.materialProductId}>
+                      {item.name}: {t("production.produce.required")} {item.required} {item.uom},{" "}
+                      {t("production.produce.available")} {item.available} {item.uom},{" "}
+                      {t("production.produce.shortBy").replace(
+                        "{quantity}",
+                        `${item.shortBy} ${item.uom}`,
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              disabled={!allowManage || statusLocked}
+              data-testid="production-run-add-ingredient"
+              onClick={() => setAddIngredientOpen((open) => !open)}
+            >
+              {t("production.produce.addIngredient")}
+            </Button>
+
+            {addIngredientOpen ? (
+              <Card className="flex flex-col gap-2 p-3" data-testid="production-run-extra-picker">
+                <SearchField
+                  label={t("production.setups.searchMaterial")}
+                  value={ingredientSearch}
+                  onChange={(e) => setIngredientSearch(e.target.value)}
+                  onClear={() => setIngredientSearch("")}
+                  placeholder={t("production.setups.searchMaterialPlaceholder")}
+                  data-testid="production-run-extra-search"
+                />
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {extraCandidates.map((product) => (
+                    <li key={product.productId}>
+                      <button
+                        type="button"
+                        className="flex w-full flex-col gap-0.5 rounded-md border border-border p-3 text-left"
+                        data-testid={`production-run-extra-candidate-${product.productId}`}
+                        onClick={() => void openExtraSheet(product)}
+                      >
+                        <span className="font-medium">{product.name}</span>
+                        <span className="text-[length:var(--exits-text-sm)] text-muted">
+                          {materialBaseUomLabel(product)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ) : null}
           </section>
 
           {tracksExpiration ? (
@@ -475,6 +787,13 @@ export function ProductionRunCreatePage() {
         </>
       ) : null}
 
+      <ProductionMaterialQuantitySheet
+        open={Boolean(qtySheetProduct)}
+        product={qtySheetProduct}
+        onCancel={() => setQtySheetProduct(null)}
+        onConfirm={confirmExtra}
+      />
+
       <StickyActionBar>
         <Button
           type="button"
@@ -485,12 +804,18 @@ export function ProductionRunCreatePage() {
             saving ||
             statusLocked ||
             !definitionId ||
-            materials.length === 0
+            materials.length === 0 ||
+            produceBlocked
           }
           onClick={() => void submit()}
           data-testid="production-run-submit"
         >
-          {saving ? t("production.produce.submitting") : t("production.produce.submit")}
+          {saving
+            ? t("production.produce.submitting")
+            : t("production.produce.submitWithQty").replace(
+                "{qty}",
+                `${outputQuantity || "—"}${outputUom ? ` ${outputUom}` : ""}`,
+              )}
         </Button>
       </StickyActionBar>
     </div>

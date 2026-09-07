@@ -3972,6 +3972,18 @@ export const hilPH: Record<keyof typeof en, string> = {
   "production.produce.available": "Available",
 
   "production.produce.availabilityOk": "Igo ang stock para sa ginalauman nga paggamit.",
+  "production.produce.required": "Kinahanglan",
+  "production.produce.shortBy": "Kulang sang {quantity}",
+  "production.produce.cannotProduce": "Indi makaproduce sang {qty}.",
+  "production.produce.cannotProduceShortage": "Indi makaproduce — kulang ang stock sang isa ukon madamo nga ingredient.",
+  "production.produce.addIngredient": "+ Magdugang sang ingredient",
+  "production.produce.extraBadge": "Extra (ini nga run lang)",
+  "production.produce.extraExceedsAvailable": "Sobra sa available stock ang {name} ({available}).",
+  "production.produce.standardOutput": "Standard output",
+  "production.produce.ingredientsCountLabel": "ka ingredient",
+  "production.produce.maxProducible": "Maximum nga maproduce sa current stock: {qty}",
+  "production.produce.successToast": "Napproduce: {qty} {name}.",
+  "production.produce.submitWithQty": "Produce {qty}",
 
   "production.produce.availabilityShort": "Available lang ang {quantity}.",
 

@@ -3972,6 +3972,18 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.produce.available": "Adda",
 
   "production.produce.availabilityOk": "Makaanay ti stock para iti namnamaen a panagusar.",
+  "production.produce.required": "Masapul",
+  "production.produce.shortBy": "Kurang iti {quantity}",
+  "production.produce.cannotProduce": "Saan a mabalin a produce ti {qty}.",
+  "production.produce.cannotProduceShortage": "Saan a mabalin a produce — kurang ti stock ti maysa wenno adu nga ingredient.",
+  "production.produce.addIngredient": "+ Agnayon iti ingredient",
+  "production.produce.extraBadge": "Extra (daytoy a run laeng)",
+  "production.produce.extraExceedsAvailable": "Lumabes ti {name} iti available stock ({available}).",
+  "production.produce.standardOutput": "Standard output",
+  "production.produce.ingredientsCountLabel": "nga ingredients",
+  "production.produce.maxProducible": "Maximum a maproduce manipud current stock: {qty}",
+  "production.produce.successToast": "Napproduce: {qty} {name}.",
+  "production.produce.submitWithQty": "Produce {qty}",
 
   "production.produce.availabilityShort": "Adda laeng ti {quantity}.",
 

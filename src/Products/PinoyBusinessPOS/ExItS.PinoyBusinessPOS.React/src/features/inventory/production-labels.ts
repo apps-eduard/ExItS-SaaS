@@ -76,5 +76,32 @@ export function scaleProductionQuantity(
   baseQuantity: number,
   scale: number,
 ): number {
-  return baseQuantity * scale;
+  // Match backend AwayFromZero rounding to measured quantity scale (3 dp).
+  const scaled = baseQuantity * scale;
+  return Math.round(scaled * 1000) / 1000;
+}
+
+/** Optional max producible from the most limiting ingredient (entered units). */
+export function maxProducibleFromStock(args: {
+  definitionOutputQuantity: number;
+  components: Array<{ quantityEntered: number; available: number | null }>;
+}): number | null {
+  const { definitionOutputQuantity, components } = args;
+  if (!Number.isFinite(definitionOutputQuantity) || definitionOutputQuantity <= 0) {
+    return null;
+  }
+  let maxScale = Number.POSITIVE_INFINITY;
+  for (const component of components) {
+    if (component.available == null || !Number.isFinite(component.available)) {
+      continue;
+    }
+    if (component.quantityEntered <= 0) {
+      continue;
+    }
+    maxScale = Math.min(maxScale, component.available / component.quantityEntered);
+  }
+  if (!Number.isFinite(maxScale) || maxScale < 0) {
+    return null;
+  }
+  return scaleProductionQuantity(definitionOutputQuantity, maxScale);
 }

@@ -3972,6 +3972,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "production.produce.available": "Anaa",
 
   "production.produce.availabilityOk": "Igo ang stock para sa gilauman nga paggamit.",
+  "production.produce.required": "Gikinahanglan",
+  "production.produce.shortBy": "Kulang og {quantity}",
+  "production.produce.cannotProduce": "Dili makaproduce og {qty}.",
+  "production.produce.cannotProduceShortage": "Dili makaproduce — kulang ang stock sa usa o daghang ingredient.",
+  "production.produce.addIngredient": "+ Pagdugang og ingredient",
+  "production.produce.extraBadge": "Extra (niining run ra)",
+  "production.produce.extraExceedsAvailable": "Molapas sa available stock ang {name} ({available}).",
+  "production.produce.standardOutput": "Standard output",
+  "production.produce.ingredientsCountLabel": "ka ingredient",
+  "production.produce.maxProducible": "Maximum nga maproduce sa current stock: {qty}",
+  "production.produce.successToast": "Napproduce: {qty} {name}.",
+  "production.produce.submitWithQty": "Produce {qty}",
 
   "production.produce.availabilityShort": "Anaa ra ang {quantity}.",
 

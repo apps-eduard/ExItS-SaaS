@@ -3972,6 +3972,18 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.produce.available": "Available",
 
   "production.produce.availabilityOk": "Sapat ang stock para sa expected use.",
+  "production.produce.required": "Kailangan",
+  "production.produce.shortBy": "Kulang ng {quantity}",
+  "production.produce.cannotProduce": "Hindi makapag-produce ng {qty}.",
+  "production.produce.cannotProduceShortage": "Hindi makapag-produce — kulang ang stock ng isa o higit pang ingredient.",
+  "production.produce.addIngredient": "+ Magdagdag ng ingredient",
+  "production.produce.extraBadge": "Extra (run na ito lang)",
+  "production.produce.extraExceedsAvailable": "Lampas sa available stock ang {name} ({available}).",
+  "production.produce.standardOutput": "Standard output",
+  "production.produce.ingredientsCountLabel": "mga ingredient",
+  "production.produce.maxProducible": "Maximum na mapoproduce sa current stock: {qty}",
+  "production.produce.successToast": "Na-produce: {qty} {name}.",
+  "production.produce.submitWithQty": "I-produce ang {qty}",
 
   "production.produce.availabilityShort": "Available lang ang {quantity}.",
 
