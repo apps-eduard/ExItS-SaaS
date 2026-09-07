@@ -18,6 +18,16 @@ export default defineConfig({
     environment: "jsdom",
     globals: false,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    fileParallelism: false,
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "vite.platform-api-proxy.test.ts",
+      "vite.pos-api-proxy.test.ts",
+      "vite.proxy-cookie.test.ts",
+      "vite.block-sw-in-dev.test.ts",
+      "vite.dev-port-health.test.ts",
+      "scripts/emulator-port-forward.test.mjs",
+    ],
   },
 });

@@ -9575,6 +9575,12 @@ export const cebPH: Record<keyof typeof en, string> = {
   "signIn.denied": "Sign in was denied.",
 
   "signIn.devTools": "Development tools",
+  "signIn.portHealth": "Kahimtang sa port",
+  "signIn.portHealthRefresh": "I-refresh",
+  "signIn.portHealthChecking": "Gisusi ang mga port…",
+  "signIn.portHealthUnavailable": "Dili available ang port health (i-restart ang Vite).",
+  "signIn.portHealthUp": "up",
+  "signIn.portHealthDown": "down",
 
   "signIn.error": "Napakyas ang pag-sign in. Susiha ang credentials ug sulayi pag-usab.",
 

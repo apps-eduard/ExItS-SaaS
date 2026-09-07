@@ -500,6 +500,12 @@ export const en = {
   "signIn.error": "Sign in failed. Check your credentials and try again.",
   "signIn.expired": "Your session expired. Sign in again to continue.",
   "signIn.devTools": "Development Test User",
+  "signIn.portHealth": "Port health",
+  "signIn.portHealthRefresh": "Refresh",
+  "signIn.portHealthChecking": "Checking ports…",
+  "signIn.portHealthUnavailable": "Port health unavailable (restart Vite dev server).",
+  "signIn.portHealthUp": "up",
+  "signIn.portHealthDown": "down",
   "signIn.localValidation": "Local validation users",
   "signIn.localValidationHint":
     "Choose a seeded user to fill the username. Enter the password yourself.",

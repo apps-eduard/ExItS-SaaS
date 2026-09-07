@@ -9573,6 +9573,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "signIn.denied": "Sign in was denied.",
 
   "signIn.devTools": "Development tools",
+  "signIn.portHealth": "Katayuan ng port",
+  "signIn.portHealthRefresh": "I-refresh",
+  "signIn.portHealthChecking": "Tinitingnan ang mga port…",
+  "signIn.portHealthUnavailable": "Hindi available ang port health (i-restart ang Vite).",
+  "signIn.portHealthUp": "up",
+  "signIn.portHealthDown": "down",
 
   "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",
 

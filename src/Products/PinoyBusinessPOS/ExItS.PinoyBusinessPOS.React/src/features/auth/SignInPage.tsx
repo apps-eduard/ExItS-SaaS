@@ -12,6 +12,7 @@ import {
   readRememberedUsername,
 } from "@/features/auth/remember-me";
 import { TestUserSelector } from "@/features/auth/TestUserSelector";
+import { DevPortHealthPanel } from "@/features/auth/DevPortHealthPanel";
 import {
   rememberStoreAcquisitionIntent,
   resolveAuthContinuePath,
@@ -270,15 +271,18 @@ export function SignInPage() {
       offlineBanner={offlineBanner}
       belowCard={
         import.meta.env.MODE !== "production" ? (
-          <TestUserSelector
-            onSelectIdentity={(value) => {
-              setUsernameOrEmail(value);
-              setPassword("");
-              setError(null);
-              setSignInFailure(null);
-              setActiveTab("sign-in");
-            }}
-          />
+          <div className="flex flex-col gap-0">
+            <TestUserSelector
+              onSelectIdentity={(value) => {
+                setUsernameOrEmail(value);
+                setPassword("");
+                setError(null);
+                setSignInFailure(null);
+                setActiveTab("sign-in");
+              }}
+            />
+            <DevPortHealthPanel />
+          </div>
         ) : null
       }
     >

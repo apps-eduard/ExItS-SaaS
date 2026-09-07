@@ -9575,6 +9575,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "signIn.denied": "Sign in was denied.",
 
   "signIn.devTools": "Development tools",
+  "signIn.portHealth": "Kasasaad ti port",
+  "signIn.portHealthRefresh": "I-refresh",
+  "signIn.portHealthChecking": "Siksiken dagiti port…",
+  "signIn.portHealthUnavailable": "Saan a available ti port health (i-restart ti Vite).",
+  "signIn.portHealthUp": "up",
+  "signIn.portHealthDown": "down",
 
   "signIn.error": "Napaay ti panagsign in. Kitaen dagiti credentials ken padasen manen.",
 

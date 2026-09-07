@@ -9575,6 +9575,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "signIn.denied": "Sign in was denied.",
 
   "signIn.devTools": "Development tools",
+  "signIn.portHealth": "Kahimtang sang port",
+  "signIn.portHealthRefresh": "I-refresh",
+  "signIn.portHealthChecking": "Ginasusi ang mga port…",
+  "signIn.portHealthUnavailable": "Wala available ang port health (i-restart ang Vite).",
+  "signIn.portHealthUp": "up",
+  "signIn.portHealthDown": "down",
 
   "signIn.error": "Nagpalya ang pag-sign in. Usisaa ang credentials kag tilawi liwat.",
 
