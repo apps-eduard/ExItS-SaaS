@@ -37,6 +37,8 @@ export type ListCatalogProductsOptions = {
   brandId?: string | null;
   /** When true, only products that can appear on the Sell floor (Resale). */
   canBeSold?: boolean;
+  /** When true, only products eligible as production materials. */
+  canBeUsedAsIngredient?: boolean;
   /**
    * When true, only products commercially offered at the workspace branch.
    * Distinct from canBeSold. Sell floor must send this with canBeSold.
@@ -265,6 +267,7 @@ export function listCatalogProducts(
       categoryId: options.categoryId,
       brandId: options.brandId ?? undefined,
       canBeSold: options.canBeSold,
+      canBeUsedAsIngredient: options.canBeUsedAsIngredient,
       commerciallyOffered: options.commerciallyOffered,
       scope: options.scope,
       originBranchId: options.originBranchId,

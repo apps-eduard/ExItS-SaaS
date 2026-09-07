@@ -3927,6 +3927,17 @@ export const hilPH: Record<keyof typeof en, string> = {
   "production.setups.changeProduct": "Ilisan ang produkto",
 
   "production.setups.draftEmpty": "Magdugang sang mga materyal para sa output.",
+  "production.setups.searchMaterialPlaceholder": "Pangita sang materyal, SKU ukon barcode...",
+  "production.setups.selectedMaterials": "Mga napili nga materyal",
+  "production.setups.selectedCount": "{count} ka materyal ang napili",
+  "production.setups.materialSelected": "Napili",
+  "production.setups.editMaterial": "Ilisan",
+  "production.setups.requiredQuantity": "Kinahanglan nga kadamuon",
+  "production.setups.duplicateMaterial": "Napili na ina nga materyal.",
+  "production.setups.materialAsOutputForbidden": "Indi magamit ang output product bilang materyal.",
+  "production.setups.noEligibleMaterials": "Wala sang eligible nga materyal",
+  "production.setups.noEligibleMaterialsDetail": "Markahi ang produkto bilang ingredient (Can be used as ingredient) sa catalog.",
+  "production.setups.loadMoreMaterials": "Mag-load pa sang materyal",
 
   "production.produce.title": "Himoa",
 

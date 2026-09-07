@@ -3927,6 +3927,17 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.setups.changeProduct": "Sukatan ti produkto",
 
   "production.setups.draftEmpty": "Inayon dagiti material para iti output.",
+  "production.setups.searchMaterialPlaceholder": "Biruken ti material, SKU wenno barcode...",
+  "production.setups.selectedMaterials": "Napili a materials",
+  "production.setups.selectedCount": "{count} a materials ti napili",
+  "production.setups.materialSelected": "Napili",
+  "production.setups.editMaterial": "Baliwan",
+  "production.setups.requiredQuantity": "Masapul a kaadu",
+  "production.setups.duplicateMaterial": "Napilianen dayta a material.",
+  "production.setups.materialAsOutputForbidden": "Saan a mabalin a usaren ti output product kas material.",
+  "production.setups.noEligibleMaterials": "Awan ti eligible a materials",
+  "production.setups.noEligibleMaterialsDetail": "Markaan ti produkto kas ingredient (Can be used as ingredient) iti catalog.",
+  "production.setups.loadMoreMaterials": "Agload pay kadagiti materials",
 
   "production.produce.title": "Aramiden",
 

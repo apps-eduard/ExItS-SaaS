@@ -3927,6 +3927,17 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.setups.changeProduct": "Palitan ang product",
 
   "production.setups.draftEmpty": "Magdagdag ng mga materyal para sa output.",
+  "production.setups.searchMaterialPlaceholder": "Maghanap ng materyal, SKU o barcode...",
+  "production.setups.selectedMaterials": "Mga napiling materyal",
+  "production.setups.selectedCount": "{count} materyal ang napili",
+  "production.setups.materialSelected": "Napili",
+  "production.setups.editMaterial": "I-edit",
+  "production.setups.requiredQuantity": "Kinakailangang dami",
+  "production.setups.duplicateMaterial": "Napili na ang materyal na iyon.",
+  "production.setups.materialAsOutputForbidden": "Hindi maaaring gamitin ang output product bilang materyal.",
+  "production.setups.noEligibleMaterials": "Walang eligible na materyal",
+  "production.setups.noEligibleMaterialsDetail": "Markahan ang produkto bilang ingredient (Can be used as ingredient) sa catalog.",
+  "production.setups.loadMoreMaterials": "Mag-load pa ng materyal",
 
   "production.produce.title": "Gumawa",
 

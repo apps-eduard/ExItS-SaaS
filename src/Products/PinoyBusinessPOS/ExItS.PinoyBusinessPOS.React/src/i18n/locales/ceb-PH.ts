@@ -3927,6 +3927,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "production.setups.changeProduct": "Usba ang produkto",
 
   "production.setups.draftEmpty": "Idugang ang mga materyal alang sa output.",
+  "production.setups.searchMaterialPlaceholder": "Pangita og materyal, SKU o barcode...",
+  "production.setups.selectedMaterials": "Mga gipili nga materyal",
+  "production.setups.selectedCount": "{count} ka materyal ang gipili",
+  "production.setups.materialSelected": "Gipili",
+  "production.setups.editMaterial": "Usba",
+  "production.setups.requiredQuantity": "Gikinahanglan nga kadaghan",
+  "production.setups.duplicateMaterial": "Napili na kana nga materyal.",
+  "production.setups.materialAsOutputForbidden": "Dili mahimong gamiton ang output product isip materyal.",
+  "production.setups.noEligibleMaterials": "Walay eligible nga materyal",
+  "production.setups.noEligibleMaterialsDetail": "Markahi ang produkto isip ingredient (Can be used as ingredient) sa catalog.",
+  "production.setups.loadMoreMaterials": "Mag-load pa og materyal",
 
   "production.produce.title": "Himua",
 

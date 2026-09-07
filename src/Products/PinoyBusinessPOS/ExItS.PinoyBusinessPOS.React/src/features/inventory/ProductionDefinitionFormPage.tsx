@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Check } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
@@ -23,15 +24,17 @@ import {
   resolveBusinessUsage,
   type ProductBusinessUsage,
 } from "@/features/catalog/product-business-usage";
+import { ProductionMaterialQuantitySheet } from "@/features/inventory/ProductionMaterialQuantitySheet";
+import {
+  draftQuantityLine,
+  formatMaterialAvailableCaption,
+  isEligibleProductionMaterial,
+  materialBaseUomLabel,
+  type ProductionMaterialDraft,
+} from "@/features/inventory/production-material-uom";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-type DraftMaterial = {
-  materialProductId: string;
-  name: string;
-  quantity: number;
-  uom: string;
-};
 
 function matchesUsage(
   product: PosCatalogProductDto,
@@ -54,15 +57,18 @@ export function ProductionDefinitionFormPage() {
   const [outputName, setOutputName] = useState("");
   const [outputUom, setOutputUom] = useState("");
   const [outputQuantity, setOutputQuantity] = useState("1");
-  const [materials, setMaterials] = useState<DraftMaterial[]>([]);
-  const [materialQty, setMaterialQty] = useState<Record<string, string>>({});
+  const [materials, setMaterials] = useState<ProductionMaterialDraft[]>([]);
   const [outputSearch, setOutputSearch] = useState("");
   const [materialSearch, setMaterialSearch] = useState("");
   const [debouncedOutput, setDebouncedOutput] = useState("");
   const [debouncedMaterial, setDebouncedMaterial] = useState("");
+  const [materialPage, setMaterialPage] = useState(1);
+  const [materialPages, setMaterialPages] = useState<PosCatalogProductDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(!isEdit);
+  const [qtySheetProduct, setQtySheetProduct] = useState<PosCatalogProductDto | null>(null);
+  const [qtySheetEditing, setQtySheetEditing] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedOutput(outputSearch.trim()), 250);
@@ -70,7 +76,11 @@ export function ProductionDefinitionFormPage() {
   }, [outputSearch]);
 
   useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedMaterial(materialSearch.trim()), 250);
+    const handle = window.setTimeout(() => {
+      setDebouncedMaterial(materialSearch.trim());
+      setMaterialPage(1);
+      setMaterialPages([]);
+    }, 250);
     return () => window.clearTimeout(handle);
   }, [materialSearch]);
 
@@ -109,15 +119,19 @@ export function ProductionDefinitionFormPage() {
           setOutputName(def.outputProductId);
         }
       }
-      const loaded: DraftMaterial[] = [];
-      const qtyMap: Record<string, string> = {};
+      const loaded: ProductionMaterialDraft[] = [];
       for (const component of def.components) {
         let productName = component.materialProductId;
-        let uom = "";
+        let displayUom = "";
         try {
           const product = await getCatalogProduct(workspace!, component.materialProductId);
           productName = product.name;
-          uom = product.unitOfMeasure;
+          const unit = (product.units ?? []).find((u) => u.unitId === component.productUnitId);
+          displayUom =
+            unit?.shortLabel ||
+            unit?.displayName ||
+            materialBaseUomLabel(product) ||
+            product.unitOfMeasure;
         } catch {
           // keep id fallback
         }
@@ -125,13 +139,13 @@ export function ProductionDefinitionFormPage() {
           materialProductId: component.materialProductId,
           name: productName,
           quantity: component.quantityEntered,
-          uom,
+          displayUom: displayUom || "qty",
+          productUnitId: component.productUnitId ?? null,
+          weightInputUnit: null,
         });
-        qtyMap[component.materialProductId] = String(component.quantityEntered);
       }
       if (!cancelled) {
         setMaterials(loaded);
-        setMaterialQty(qtyMap);
         setHydrated(true);
       }
     })();
@@ -161,16 +175,38 @@ export function ProductionDefinitionFormPage() {
       "catalog-products",
       "production-material-picker",
       workspace?.organizationId,
+      workspace?.branchId,
       debouncedMaterial,
+      materialPage,
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
-        { search: debouncedMaterial || undefined, status: "Active", pageSize: 40 },
+        {
+          search: debouncedMaterial || undefined,
+          status: "Active",
+          canBeUsedAsIngredient: true,
+          page: materialPage,
+          pageSize: 40,
+        },
         signal,
       ),
   });
+
+  useEffect(() => {
+    const pageItems = materialPickerQuery.data?.items;
+    if (!pageItems) {
+      return;
+    }
+    setMaterialPages((prev) => {
+      if (materialPage === 1) {
+        return pageItems;
+      }
+      const seen = new Set(prev.map((p) => p.productId));
+      return [...prev, ...pageItems.filter((p) => !seen.has(p.productId))];
+    });
+  }, [materialPage, materialPickerQuery.data?.items]);
 
   const outputCandidates = useMemo(() => {
     const items = outputPickerQuery.data?.items ?? [];
@@ -183,19 +219,21 @@ export function ProductionDefinitionFormPage() {
   }, [outputPickerQuery.data?.items]);
 
   const materialCandidates = useMemo(() => {
-    const items = materialPickerQuery.data?.items ?? [];
-    const selected = new Set(materials.map((m) => m.materialProductId));
-    return items.filter((p) => {
-      if (selected.has(p.productId) || p.productId === outputProductId) {
+    return materialPages.filter((p) => {
+      if (p.productId === outputProductId) {
         return false;
       }
-      return (
-        p.canBeUsedAsIngredient === true ||
-        matchesUsage(p, ["Ingredient"]) ||
-        resolveBusinessUsage(p) === "Ingredient"
-      );
+      return isEligibleProductionMaterial(p);
     });
-  }, [materialPickerQuery.data?.items, materials, outputProductId]);
+  }, [materialPages, outputProductId]);
+
+  const selectedIds = useMemo(
+    () => new Set(materials.map((m) => m.materialProductId)),
+    [materials],
+  );
+
+  const materialTotalCount = materialPickerQuery.data?.totalCount ?? 0;
+  const canLoadMoreMaterials = materialPages.length < materialTotalCount;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -214,38 +252,47 @@ export function ProductionDefinitionFormPage() {
     setOutputName(product.name);
     setOutputUom(product.unitOfMeasure);
     setOutputSearch("");
+    setMaterials((prev) => prev.filter((m) => m.materialProductId !== product.productId));
     setError(null);
   }
 
-  function addMaterial(product: PosCatalogProductDto) {
-    const raw = materialQty[product.productId] ?? "1";
-    const qty = Number(raw);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError(t("production.setups.invalidQuantity"));
+  function openMaterialSheet(product: PosCatalogProductDto, editing: boolean) {
+    if (product.productId === outputProductId) {
+      setError(t("production.setups.materialAsOutputForbidden"));
+      return;
+    }
+    setQtySheetProduct(product);
+    setQtySheetEditing(editing);
+    setError(null);
+  }
+
+  function confirmMaterial(draft: ProductionMaterialDraft) {
+    if (draft.materialProductId === outputProductId) {
+      setError(t("production.setups.materialAsOutputForbidden"));
+      setQtySheetProduct(null);
+      setQtySheetEditing(false);
+      return;
+    }
+    const alreadySelected = materials.some(
+      (m) => m.materialProductId === draft.materialProductId,
+    );
+    if (!qtySheetEditing && alreadySelected) {
+      setError(t("production.setups.duplicateMaterial"));
+      setQtySheetProduct(null);
+      setQtySheetEditing(false);
       return;
     }
     setMaterials((prev) => [
-      ...prev.filter((m) => m.materialProductId !== product.productId),
-      {
-        materialProductId: product.productId,
-        name: product.name,
-        quantity: qty,
-        uom: product.unitOfMeasure,
-      },
+      ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
+      draft,
     ]);
-    setMaterialQty((prev) => ({ ...prev, [product.productId]: "1" }));
+    setQtySheetProduct(null);
+    setQtySheetEditing(false);
     setError(null);
   }
 
-  function updateMaterialQty(productId: string, raw: string) {
-    setMaterialQty((prev) => ({ ...prev, [productId]: raw }));
-    const qty = Number(raw);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      return;
-    }
-    setMaterials((prev) =>
-      prev.map((m) => (m.materialProductId === productId ? { ...m, quantity: qty } : m)),
-    );
+  function removeMaterial(productId: string) {
+    setMaterials((prev) => prev.filter((m) => m.materialProductId !== productId));
   }
 
   async function submit() {
@@ -287,6 +334,7 @@ export function ProductionDefinitionFormPage() {
         components: materials.map((m, index) => ({
           materialProductId: m.materialProductId,
           quantity: m.quantity,
+          productUnitId: m.productUnitId ?? null,
           sortOrder: index,
         })),
       };
@@ -304,6 +352,10 @@ export function ProductionDefinitionFormPage() {
       setSaving(false);
     }
   }
+
+  const editingDraft = qtySheetProduct
+    ? materials.find((m) => m.materialProductId === qtySheetProduct.productId) ?? null
+    : null;
 
   return (
     <div
@@ -355,20 +407,22 @@ export function ProductionDefinitionFormPage() {
             <div className="font-medium">{outputName}</div>
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               {t("production.setups.outputQuantity")}
-              <input
-                type="number"
-                min={0}
-                step="any"
-                className="rounded-md border border-border bg-background px-3"
-                value={outputQuantity}
-                onChange={(e) => setOutputQuantity(e.target.value)}
-                disabled={!allowManage}
-                data-testid="production-setup-output-qty"
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3"
+                  value={outputQuantity}
+                  onChange={(e) => setOutputQuantity(e.target.value)}
+                  disabled={!allowManage}
+                  data-testid="production-setup-output-qty"
+                />
+                {outputUom ? (
+                  <span className="text-[length:var(--exits-text-sm)] text-muted">{outputUom}</span>
+                ) : null}
+              </div>
             </label>
-            {outputUom ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{outputUom}</p>
-            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -424,53 +478,77 @@ export function ProductionDefinitionFormPage() {
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("production.setups.materials")}
-        </h2>
+      <section className="flex flex-col gap-2" data-testid="production-setup-materials">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
+            {t("production.setups.materials")}
+          </h2>
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="production-setup-selected-count"
+          >
+            {t("production.setups.selectedCount").replace("{count}", String(materials.length))}
+          </p>
+        </div>
+
         {materials.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("production.setups.draftEmpty")}
           </p>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {materials.map((material) => (
-              <li key={material.materialProductId}>
-                <Card className="flex flex-col gap-2 p-3">
-                  <div className="font-medium">{material.name}</div>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    {t("production.setups.materialQuantity")}
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      className="rounded-md border border-border bg-background px-3"
-                      value={
-                        materialQty[material.materialProductId] ?? String(material.quantity)
-                      }
-                      onChange={(e) =>
-                        updateMaterialQty(material.materialProductId, e.target.value)
-                      }
-                      disabled={!allowManage}
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-fit"
-                    disabled={!allowManage}
-                    onClick={() =>
-                      setMaterials((prev) =>
-                        prev.filter((m) => m.materialProductId !== material.materialProductId),
-                      )
-                    }
+          <div className="flex flex-col gap-2" data-testid="production-setup-selected-materials">
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+              {t("production.setups.selectedMaterials")}
+            </h3>
+            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              {materials.map((material) => (
+                <li key={material.materialProductId}>
+                  <Card
+                    className="flex flex-col gap-2 p-3"
+                    data-testid={`production-setup-selected-${material.materialProductId}`}
                   >
-                    {t("production.setups.removeMaterial")}
-                  </Button>
-                </Card>
-              </li>
-            ))}
-          </ul>
+                    <div className="font-medium">{material.name}</div>
+                    <p className="m-0 text-[length:var(--exits-text-sm)]">
+                      {draftQuantityLine(material)}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-fit"
+                        disabled={!allowManage}
+                        data-testid={`production-setup-edit-${material.materialProductId}`}
+                        onClick={() => {
+                          const fromList = materialPages.find(
+                            (p) => p.productId === material.materialProductId,
+                          );
+                          if (fromList) {
+                            openMaterialSheet(fromList, true);
+                            return;
+                          }
+                          void getCatalogProduct(workspace, material.materialProductId).then(
+                            (product) => openMaterialSheet(product, true),
+                          );
+                        }}
+                      >
+                        {t("production.setups.editMaterial")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-fit"
+                        disabled={!allowManage}
+                        data-testid={`production-setup-remove-${material.materialProductId}`}
+                        onClick={() => removeMaterial(material.materialProductId)}
+                      >
+                        {t("production.setups.removeMaterial")}
+                      </Button>
+                    </div>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <SearchField
@@ -478,45 +556,87 @@ export function ProductionDefinitionFormPage() {
           value={materialSearch}
           onChange={(e) => setMaterialSearch(e.target.value)}
           onClear={() => setMaterialSearch("")}
-          placeholder={t("production.setups.searchMaterial")}
+          placeholder={t("production.setups.searchMaterialPlaceholder")}
           data-testid="production-setup-material-search"
         />
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {materialCandidates.map((product) => (
-            <li key={product.productId}>
-              <Card className="flex flex-col gap-2 p-3">
-                <div className="font-medium">{product.name}</div>
-                <div className="flex flex-wrap items-end gap-2">
-                  <label className="flex min-w-[5.5rem] flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    {t("production.setups.materialQuantity")}
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      className="rounded-md border border-border bg-background px-3"
-                      value={materialQty[product.productId] ?? "1"}
-                      onChange={(e) =>
-                        setMaterialQty((prev) => ({
-                          ...prev,
-                          [product.productId]: e.target.value,
-                        }))
-                      }
-                      disabled={!allowManage}
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    disabled={!allowManage || !online}
-                    onClick={() => addMaterial(product)}
-                  >
-                    {t("production.setups.addMaterial")}
-                  </Button>
-                </div>
-              </Card>
-            </li>
-          ))}
+
+        {materialCandidates.length === 0 && materialPickerQuery.isSuccess ? (
+          <EmptyState
+            title={t("production.setups.noEligibleMaterials")}
+            detail={
+              debouncedMaterial
+                ? t("production.setups.noProductsDetail")
+                : t("production.setups.noEligibleMaterialsDetail")
+            }
+          />
+        ) : null}
+
+        <ul
+          className="m-0 grid list-none grid-cols-1 gap-2 p-0"
+          data-testid="production-setup-material-browser"
+        >
+          {materialCandidates.map((product) => {
+            const selected = selectedIds.has(product.productId);
+            const available = formatMaterialAvailableCaption(product, t("transfer.available"));
+            return (
+              <li key={product.productId}>
+                <button
+                  type="button"
+                  disabled={!allowManage || !online || saving}
+                  data-testid={`production-setup-material-${product.productId}`}
+                  data-selected={selected ? "true" : "false"}
+                  className={cn(
+                    "production-material-pick flex w-full flex-col gap-1 rounded-md border p-3 text-left",
+                    selected
+                      ? "border-primary bg-[var(--exits-surface-muted)]"
+                      : "border-border bg-surface",
+                  )}
+                  onClick={() => openMaterialSheet(product, selected)}
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="min-w-0 font-medium">{product.name}</span>
+                    {selected ? (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-1 text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-primary)]"
+                        data-testid={`production-setup-material-selected-badge-${product.productId}`}
+                      >
+                        <Check className="size-3.5" aria-hidden />
+                        {t("production.setups.materialSelected")}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-[length:var(--exits-text-sm)] text-muted">
+                    {available ?? materialBaseUomLabel(product)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
+
+        {canLoadMoreMaterials ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={materialPickerQuery.isFetching}
+            data-testid="production-setup-material-load-more"
+            onClick={() => setMaterialPage((page) => page + 1)}
+          >
+            {t("production.setups.loadMoreMaterials")}
+          </Button>
+        ) : null}
       </section>
+
+      <ProductionMaterialQuantitySheet
+        open={Boolean(qtySheetProduct)}
+        product={qtySheetProduct}
+        initialDraft={qtySheetEditing ? editingDraft : null}
+        onCancel={() => {
+          setQtySheetProduct(null);
+          setQtySheetEditing(false);
+        }}
+        onConfirm={confirmMaterial}
+      />
 
       <StickyActionBar>
         <Button
