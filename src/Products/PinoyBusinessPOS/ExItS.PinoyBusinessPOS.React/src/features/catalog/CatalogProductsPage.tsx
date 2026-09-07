@@ -49,6 +49,7 @@ import { catalogStockCaption } from "@/features/catalog/catalog-stock-caption";
 import { resolveCatalogStockDisplay } from "@/features/catalog/catalog-stock-display";
 import {
   businessUsageLabelKey,
+  matchesBusinessUsageFilter,
   resolveBusinessUsage,
 } from "@/features/catalog/product-business-usage";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -308,7 +309,7 @@ export function CatalogProductsPage() {
     if (usageFilter === "all") {
       return items;
     }
-    return items.filter((product) => resolveBusinessUsage(product) === usageFilter);
+    return items.filter((product) => matchesBusinessUsageFilter(product, usageFilter));
   }, [query.data?.items, usageFilter]);
 
   if (!workspace) {

@@ -727,6 +727,16 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.canBeSold": "Mabaligya",
 
   "catalog.businessUsage.question": "Paano pagagamiton sang tindahan ini nga produkto?",
+  "catalog.capability.question": "Paggamit / kapabilidad sang produkto",
+  "catalog.capability.canBeSold": "Pwede ibaligya",
+  "catalog.capability.canBeSoldHint": "Makita sa Sell floor kung offered sa branch.",
+  "catalog.capability.canBeIngredient": "Pwede gamiton bilang production ingredient",
+  "catalog.capability.canBeIngredientHint": "Eligible bilang materyal sa Production setups.",
+  "catalog.capability.isProduced": "Produced / manufactured product",
+  "catalog.capability.isProducedHint": "Ginhimo ukon ginpreparar sang business (production output).",
+  "production.setups.ingredients": "Mga ingredient / materyal",
+  "production.setups.outputTabProduced": "Mga produced item",
+  "production.setups.outputTabAll": "Tanan nga eligible",
 
   "catalog.businessUsage.resale": "Para ibaligya",
 

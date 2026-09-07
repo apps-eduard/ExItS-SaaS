@@ -727,6 +727,16 @@ export const cebPH: Record<keyof typeof en, string> = {
   "catalog.canBeSold": "Mabaligya",
 
   "catalog.businessUsage.question": "Unsaon paggamit sa tindahan kini nga produkto?",
+  "catalog.capability.question": "Paggamit / kapabilidad sa produkto",
+  "catalog.capability.canBeSold": "Mahimong ibaligya",
+  "catalog.capability.canBeSoldHint": "Makita sa Sell floor kung offered sa branch.",
+  "catalog.capability.canBeIngredient": "Mahimong gamiton isip production ingredient",
+  "catalog.capability.canBeIngredientHint": "Eligible isip materyal sa Production setups.",
+  "catalog.capability.isProduced": "Produced / manufactured product",
+  "catalog.capability.isProducedHint": "Gihimo o giandam sa business (production output).",
+  "production.setups.ingredients": "Mga ingredient / materyal",
+  "production.setups.outputTabProduced": "Mga produced item",
+  "production.setups.outputTabAll": "Tanang eligible",
 
   "catalog.businessUsage.resale": "Para ibaligya",
 

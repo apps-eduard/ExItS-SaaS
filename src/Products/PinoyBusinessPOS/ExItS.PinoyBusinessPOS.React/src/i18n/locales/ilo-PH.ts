@@ -727,6 +727,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.canBeSold": "Mailako",
 
   "catalog.businessUsage.question": "Kasano nga usaren ti business daytoy a product?",
+  "catalog.capability.question": "Panagusar / kabaelan ti produkto",
+  "catalog.capability.canBeSold": "Mabalin a ilako",
+  "catalog.capability.canBeSoldHint": "Agparang iti Sell floor no offered iti branch.",
+  "catalog.capability.canBeIngredient": "Mabalin a usaren kas production ingredient",
+  "catalog.capability.canBeIngredientHint": "Eligible kas material kadagiti Production setups.",
+  "catalog.capability.isProduced": "Produced / manufactured product",
+  "catalog.capability.isProducedHint": "Naaramid wenno naisagana ti business (production output).",
+  "production.setups.ingredients": "Dagiti ingredient / materials",
+  "production.setups.outputTabProduced": "Dagiti produced item",
+  "production.setups.outputTabAll": "Amin a eligible",
 
   "catalog.businessUsage.resale": "Para ilako",
 

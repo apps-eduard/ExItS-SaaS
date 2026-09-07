@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  capabilitiesFromProduct,
+  isSellFloorCapable,
   isSellFloorBusinessUsage,
+  matchesBusinessUsageFilter,
   resolveBusinessUsage,
 } from "@/features/catalog/product-business-usage";
 
@@ -42,5 +45,43 @@ describe("resolveBusinessUsage", () => {
     expect(isSellFloorBusinessUsage("ProducedItem")).toBe(true);
     expect(isSellFloorBusinessUsage("Ingredient")).toBe(false);
     expect(isSellFloorBusinessUsage("InternalUse")).toBe(false);
+  });
+});
+
+describe("overlapping product capabilities", () => {
+  it("supports sellable + ingredient at the same time", () => {
+    const sugar = {
+      canBeSold: true,
+      canBeUsedAsIngredient: true,
+      isProduced: false,
+    };
+    expect(capabilitiesFromProduct(sugar)).toEqual({
+      canBeSold: true,
+      canBeUsedAsIngredient: true,
+      isProduced: false,
+    });
+    expect(isSellFloorCapable(sugar)).toBe(true);
+    expect(matchesBusinessUsageFilter(sugar, "Resale")).toBe(true);
+    expect(matchesBusinessUsageFilter(sugar, "Ingredient")).toBe(true);
+  });
+
+  it("keeps sellable non-ingredient products off the production ingredient filter", () => {
+    const battery = {
+      canBeSold: true,
+      canBeUsedAsIngredient: false,
+      isProduced: false,
+    };
+    expect(isSellFloorCapable(battery)).toBe(true);
+    expect(matchesBusinessUsageFilter(battery, "Ingredient")).toBe(false);
+    expect(matchesBusinessUsageFilter(battery, "Resale")).toBe(true);
+  });
+
+  it("does not remove sellable products from sell when ingredient is also true", () => {
+    expect(
+      isSellFloorCapable({
+        canBeSold: true,
+        canBeUsedAsIngredient: true,
+      }),
+    ).toBe(true);
   });
 });

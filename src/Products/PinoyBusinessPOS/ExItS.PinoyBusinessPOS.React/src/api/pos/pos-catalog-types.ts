@@ -173,6 +173,8 @@ export type CreatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   businessUsage?: string | null;
+  canBeUsedAsIngredient?: boolean | null;
+  isProduced?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
@@ -193,6 +195,8 @@ export type UpdatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   businessUsage?: string | null;
+  canBeUsedAsIngredient?: boolean | null;
+  isProduced?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean | null;
   expirationWarningDays?: number | null;

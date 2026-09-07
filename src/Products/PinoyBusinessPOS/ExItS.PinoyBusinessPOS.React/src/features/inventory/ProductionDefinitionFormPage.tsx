@@ -20,27 +20,33 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import {
-  resolveBusinessUsage,
-  type ProductBusinessUsage,
-} from "@/features/catalog/product-business-usage";
 import { ProductionMaterialQuantitySheet } from "@/features/inventory/ProductionMaterialQuantitySheet";
 import {
+  activeMaterialUnits,
   draftQuantityLine,
   formatMaterialAvailableCaption,
   isEligibleProductionMaterial,
+  isWeightMaterial,
   materialBaseUomLabel,
+  normalizeMaterialQuantityInput,
+  resolveMaterialEntryMode,
   type ProductionMaterialDraft,
 } from "@/features/inventory/production-material-uom";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import type { WeightInputUnit } from "@/cart/sell-cart-helpers";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-function matchesUsage(
-  product: PosCatalogProductDto,
-  allowed: readonly ProductBusinessUsage[],
-): boolean {
-  return allowed.includes(resolveBusinessUsage(product));
+type OutputPickerTab = "produced" | "all";
+
+function isEligibleProductionOutput(product: PosCatalogProductDto, tab: OutputPickerTab): boolean {
+  // Backend requires IsProduced for production outputs.
+  if (product.isProduced !== true) {
+    return false;
+  }
+  // Tabs share eligibility today; "produced" is the default browse mode.
+  void tab;
+  return true;
 }
 
 export function ProductionDefinitionFormPage() {
@@ -54,9 +60,12 @@ export function ProductionDefinitionFormPage() {
 
   const [name, setName] = useState("");
   const [outputProductId, setOutputProductId] = useState<string | null>(null);
+  const [outputProduct, setOutputProduct] = useState<PosCatalogProductDto | null>(null);
   const [outputName, setOutputName] = useState("");
-  const [outputUom, setOutputUom] = useState("");
-  const [outputQuantity, setOutputQuantity] = useState("1");
+  const [outputQuantityRaw, setOutputQuantityRaw] = useState("1");
+  const [outputProductUnitId, setOutputProductUnitId] = useState<string | null>(null);
+  const [outputWeightUnit, setOutputWeightUnit] = useState<WeightInputUnit>("kg");
+  const [outputPickerTab, setOutputPickerTab] = useState<OutputPickerTab>("produced");
   const [materials, setMaterials] = useState<ProductionMaterialDraft[]>([]);
   const [outputSearch, setOutputSearch] = useState("");
   const [materialSearch, setMaterialSearch] = useState("");
@@ -107,16 +116,35 @@ export function ProductionDefinitionFormPage() {
       const def = existingQuery.data;
       setName(def.name);
       setOutputProductId(def.outputProductId);
-      setOutputQuantity(String(def.outputQuantityEntered));
       try {
         const output = await getCatalogProduct(workspace!, def.outputProductId);
         if (!cancelled) {
+          setOutputProduct(output);
           setOutputName(output.name);
-          setOutputUom(output.unitOfMeasure);
+          const mode = resolveMaterialEntryMode(output);
+          if (mode === "weight") {
+            setOutputWeightUnit("kg");
+            setOutputQuantityRaw(String(def.outputQuantityEntered));
+            setOutputProductUnitId(null);
+          } else if (mode === "unit") {
+            const units = activeMaterialUnits(output);
+            const unitId =
+              def.outputProductUnitId ??
+              units.find((u) => u.unitId === def.outputProductUnitId)?.unitId ??
+              units[0]?.unitId ??
+              null;
+            setOutputProductUnitId(unitId);
+            setOutputQuantityRaw(String(def.outputQuantityEntered));
+          } else {
+            setOutputProductUnitId(def.outputProductUnitId ?? null);
+            setOutputQuantityRaw(String(def.outputQuantityEntered));
+          }
         }
       } catch {
         if (!cancelled) {
           setOutputName(def.outputProductId);
+          setOutputQuantityRaw(String(def.outputQuantityEntered));
+          setOutputProductUnitId(def.outputProductUnitId ?? null);
         }
       }
       const loaded: ProductionMaterialDraft[] = [];
@@ -160,6 +188,7 @@ export function ProductionDefinitionFormPage() {
       "production-output-picker",
       workspace?.organizationId,
       debouncedOutput,
+      outputPickerTab,
     ],
     enabled: Boolean(workspace) && online && allowManage && !outputProductId,
     queryFn: ({ signal }) =>
@@ -210,13 +239,8 @@ export function ProductionDefinitionFormPage() {
 
   const outputCandidates = useMemo(() => {
     const items = outputPickerQuery.data?.items ?? [];
-    return items.filter(
-      (p) =>
-        matchesUsage(p, ["ProducedItem", "Resale"]) ||
-        p.isProduced === true ||
-        p.canBeSold !== false,
-    );
-  }, [outputPickerQuery.data?.items]);
+    return items.filter((p) => isEligibleProductionOutput(p, outputPickerTab));
+  }, [outputPickerQuery.data?.items, outputPickerTab]);
 
   const materialCandidates = useMemo(() => {
     return materialPages.filter((p) => {
@@ -249,11 +273,33 @@ export function ProductionDefinitionFormPage() {
 
   function selectOutput(product: PosCatalogProductDto) {
     setOutputProductId(product.productId);
+    setOutputProduct(product);
     setOutputName(product.name);
-    setOutputUom(product.unitOfMeasure);
     setOutputSearch("");
+    const mode = resolveMaterialEntryMode(product);
+    if (mode === "weight") {
+      setOutputWeightUnit("kg");
+      setOutputQuantityRaw("1");
+      setOutputProductUnitId(null);
+    } else if (mode === "unit") {
+      const units = activeMaterialUnits(product);
+      setOutputProductUnitId(units[0]?.unitId ?? null);
+      setOutputQuantityRaw("1");
+    } else {
+      setOutputProductUnitId(null);
+      setOutputQuantityRaw("1");
+    }
     setMaterials((prev) => prev.filter((m) => m.materialProductId !== product.productId));
     setError(null);
+  }
+
+  function clearOutput() {
+    setOutputProductId(null);
+    setOutputProduct(null);
+    setOutputName("");
+    setOutputQuantityRaw("1");
+    setOutputProductUnitId(null);
+    setOutputWeightUnit("kg");
   }
 
   function openMaterialSheet(product: PosCatalogProductDto, editing: boolean) {
@@ -304,12 +350,17 @@ export function ProductionDefinitionFormPage() {
       setError(t("production.setups.needName"));
       return;
     }
-    if (!outputProductId) {
+    if (!outputProductId || !outputProduct) {
       setError(t("production.setups.needOutput"));
       return;
     }
-    const outQty = Number(outputQuantity);
-    if (!Number.isFinite(outQty) || outQty <= 0) {
+    const normalizedOutput = normalizeMaterialQuantityInput({
+      product: outputProduct,
+      rawValue: Number(outputQuantityRaw),
+      weightUnit: outputWeightUnit,
+      productUnitId: outputProductUnitId,
+    });
+    if (!normalizedOutput.ok) {
       setError(t("production.setups.invalidQuantity"));
       return;
     }
@@ -330,7 +381,8 @@ export function ProductionDefinitionFormPage() {
       const body = {
         name: trimmedName,
         outputProductId,
-        outputQuantity: outQty,
+        outputQuantity: normalizedOutput.quantity,
+        outputProductUnitId: normalizedOutput.productUnitId ?? null,
         components: materials.map((m, index) => ({
           materialProductId: m.materialProductId,
           quantity: m.quantity,
@@ -398,29 +450,61 @@ export function ProductionDefinitionFormPage() {
         />
       </label>
 
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-2" data-testid="production-setup-output">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
           {t("production.setups.outputProduct")}
         </h2>
-        {outputProductId ? (
+        {outputProductId && outputProduct ? (
           <Card className="flex flex-col gap-2 p-3">
             <div className="font-medium">{outputName}</div>
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               {t("production.setups.outputQuantity")}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-stretch gap-2">
                 <input
                   type="number"
                   min={0}
                   step="any"
-                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3"
-                  value={outputQuantity}
-                  onChange={(e) => setOutputQuantity(e.target.value)}
+                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 tabular-nums"
+                  value={outputQuantityRaw}
+                  onChange={(e) => setOutputQuantityRaw(e.target.value)}
                   disabled={!allowManage}
                   data-testid="production-setup-output-qty"
                 />
-                {outputUom ? (
-                  <span className="text-[length:var(--exits-text-sm)] text-muted">{outputUom}</span>
-                ) : null}
+                {isWeightMaterial(outputProduct) ? (
+                  <select
+                    className="rounded-md border border-border bg-background px-2"
+                    value={outputWeightUnit}
+                    onChange={(e) => setOutputWeightUnit(e.target.value as WeightInputUnit)}
+                    disabled={!allowManage}
+                    data-testid="production-setup-output-weight-unit"
+                    aria-label={t("sell.weightUnit")}
+                  >
+                    <option value="kg">{t("sell.weightUnitKg")}</option>
+                    <option value="g">{t("sell.weightUnitG")}</option>
+                  </select>
+                ) : resolveMaterialEntryMode(outputProduct) === "unit" ? (
+                  <select
+                    className="rounded-md border border-border bg-background px-2"
+                    value={outputProductUnitId ?? ""}
+                    onChange={(e) => setOutputProductUnitId(e.target.value || null)}
+                    disabled={!allowManage}
+                    data-testid="production-setup-output-unit"
+                    aria-label={t("production.setups.outputQuantity")}
+                  >
+                    {activeMaterialUnits(outputProduct).map((unit) => (
+                      <option key={unit.unitId} value={unit.unitId}>
+                        {unit.shortLabel || unit.displayName}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className="inline-flex items-center rounded-md border border-border bg-[var(--exits-surface-muted)] px-3 text-[length:var(--exits-text-sm)]"
+                    data-testid="production-setup-output-base-uom"
+                  >
+                    {outputProduct.unitOfMeasure}
+                  </span>
+                )}
               </div>
             </label>
             <Button
@@ -428,17 +512,36 @@ export function ProductionDefinitionFormPage() {
               variant="ghost"
               className="w-fit"
               disabled={!allowManage}
-              onClick={() => {
-                setOutputProductId(null);
-                setOutputName("");
-                setOutputUom("");
-              }}
+              onClick={clearOutput}
             >
               {t("production.setups.changeProduct")}
             </Button>
           </Card>
         ) : (
           <>
+            <div
+              className="flex flex-wrap gap-2"
+              role="tablist"
+              aria-label={t("production.setups.outputProduct")}
+              data-testid="production-setup-output-tabs"
+            >
+              <Button
+                type="button"
+                variant={outputPickerTab === "produced" ? "default" : "outline"}
+                data-testid="production-setup-output-tab-produced"
+                onClick={() => setOutputPickerTab("produced")}
+              >
+                {t("production.setups.outputTabProduced")}
+              </Button>
+              <Button
+                type="button"
+                variant={outputPickerTab === "all" ? "default" : "outline"}
+                data-testid="production-setup-output-tab-all"
+                onClick={() => setOutputPickerTab("all")}
+              >
+                {t("production.setups.outputTabAll")}
+              </Button>
+            </div>
             <SearchField
               label={t("production.setups.searchOutput")}
               value={outputSearch}
@@ -453,14 +556,17 @@ export function ProductionDefinitionFormPage() {
                 detail={t("production.setups.noProductsDetail")}
               />
             ) : null}
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            <ul
+              className="m-0 flex list-none flex-col gap-2 p-0"
+              data-testid="production-setup-output-browser"
+            >
               {outputCandidates.map((product) => (
                 <li key={product.productId}>
                   <Card className="flex flex-wrap items-center justify-between gap-2 p-3">
                     <div className="min-w-0">
                       <div className="font-medium">{product.name}</div>
                       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                        {product.unitOfMeasure}
+                        {materialBaseUomLabel(product)}
                       </p>
                     </div>
                     <Button
@@ -481,7 +587,7 @@ export function ProductionDefinitionFormPage() {
       <section className="flex flex-col gap-2" data-testid="production-setup-materials">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-            {t("production.setups.materials")}
+            {t("production.setups.ingredients")}
           </h2>
           <p
             className="m-0 text-[length:var(--exits-text-sm)] text-muted"

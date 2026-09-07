@@ -68,13 +68,12 @@ import {
 } from "@/features/catalog/product-unit-drafts";
 
 import {
-  businessUsageLabelKey,
-  isSellFloorBusinessUsage,
-  resolveBusinessUsage,
-  type ProductBusinessUsage,
+  capabilitiesFromProduct,
+  isSellFloorCapable,
+  type ProductCapabilityFlags,
 } from "@/features/catalog/product-business-usage";
 
-import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
+import { ProductCapabilitySelector } from "@/features/catalog/ProductCapabilitySelector";
 import {
   CatalogBranchAvailabilitySection,
   CatalogCreateScopeFields,
@@ -315,10 +314,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [brandId, setBrandId] = useState("");
 
-  const [businessUsage, setBusinessUsage] = useState<ProductBusinessUsage>("Resale");
+  const [capabilities, setCapabilities] = useState<ProductCapabilityFlags>({
+    canBeSold: true,
+    canBeUsedAsIngredient: false,
+    isProduced: false,
+  });
 
-  const [initialBusinessUsage, setInitialBusinessUsage] =
-    useState<ProductBusinessUsage | null>(null);
+  const [initialCapabilities, setInitialCapabilities] =
+    useState<ProductCapabilityFlags | null>(null);
 
   const [tracksExpiration, setTracksExpiration] = useState(false);
 
@@ -476,9 +479,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
     setBrandId(product.brandId ?? "");
 
-    const usage = resolveBusinessUsage(product);
-    setBusinessUsage(usage);
-    setInitialBusinessUsage(usage);
+    const caps = capabilitiesFromProduct(product);
+    setCapabilities(caps);
+    setInitialCapabilities(caps);
 
     setTracksExpiration(product.tracksExpiration === true);
 
@@ -625,7 +628,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           unitOfMeasure,
           sellingPrice: price,
           sellingMode,
-          businessUsage,
+          canBeSold: capabilities.canBeSold,
+          canBeUsedAsIngredient: capabilities.canBeUsedAsIngredient,
+          isProduced: capabilities.isProduced,
           units: unitsPayload,
           tracksExpiration: trackStockQuantity && tracksExpiration,
           expirationWarningDays: resolvedWarningDays,
@@ -656,7 +661,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         unitOfMeasure,
         sellingPrice: price,
         sellingMode,
-        businessUsage,
+        canBeSold: capabilities.canBeSold,
+        canBeUsedAsIngredient: capabilities.canBeUsedAsIngredient,
+        isProduced: capabilities.isProduced,
         expectedUpdatedAtUtc,
         units: configurePackages ? unitsPayload : undefined,
         tracksExpiration: existing?.tracksExpiration === true,
@@ -806,12 +813,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const isActive = productStatus?.toLowerCase() === "active";
 
-  const isOnSellFloor = isSellFloorBusinessUsage(businessUsage);
+  const isOnSellFloor = isSellFloorCapable({
+    canBeSold: capabilities.canBeSold,
+    isProduced: capabilities.isProduced,
+  });
 
   const showLeaveSellFloorNote =
     mode === "edit" &&
-    initialBusinessUsage != null &&
-    isSellFloorBusinessUsage(initialBusinessUsage) &&
+    initialCapabilities != null &&
+    isSellFloorCapable(initialCapabilities) &&
     !isOnSellFloor;
 
   const brandOptions: PosProductBrandDto[] = (() => {
@@ -862,7 +872,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               data-testid="catalog-product-form-header-meta"
             >
               <StatusChip tone={isActive ? "success" : "warning"}>{productStatus}</StatusChip>
-              <StatusChip tone="info">{t(businessUsageLabelKey(businessUsage))}</StatusChip>
+              {capabilities.canBeSold ? (
+                <StatusChip tone="info">{t("catalog.capability.canBeSold")}</StatusChip>
+              ) : null}
+              {capabilities.canBeUsedAsIngredient ? (
+                <StatusChip tone="info">{t("catalog.capability.canBeIngredient")}</StatusChip>
+              ) : null}
+              {capabilities.isProduced ? (
+                <StatusChip tone="info">{t("catalog.capability.isProduced")}</StatusChip>
+              ) : null}
             </div>
           ) : undefined
         }
@@ -1113,9 +1131,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
           <div className="catalog-form-section__grid">
             <div className="catalog-form-field--full">
-              <ProductBusinessUsageSelector
-                value={businessUsage}
-                onChange={setBusinessUsage}
+              <ProductCapabilitySelector
+                value={capabilities}
+                onChange={setCapabilities}
                 disabled={readOnly}
               />
             </div>

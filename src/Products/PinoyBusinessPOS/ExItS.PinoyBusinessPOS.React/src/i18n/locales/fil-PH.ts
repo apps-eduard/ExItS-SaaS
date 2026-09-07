@@ -727,6 +727,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.canBeSold": "Pwede ibenta",
 
   "catalog.businessUsage.question": "Paano gagamitin ng business ang product na ito?",
+  "catalog.capability.question": "Paggamit / kakayahan ng produkto",
+  "catalog.capability.canBeSold": "Maaaring ibenta",
+  "catalog.capability.canBeSoldHint": "Lilitaw sa Sell floor kapag offered sa branch.",
+  "catalog.capability.canBeIngredient": "Maaaring gamitin bilang production ingredient",
+  "catalog.capability.canBeIngredientHint": "Eligible bilang materyal sa Production setups.",
+  "catalog.capability.isProduced": "Produced / manufactured product",
+  "catalog.capability.isProducedHint": "Ginawa o inihanda ng business (production output).",
+  "production.setups.ingredients": "Mga ingredient / materyal",
+  "production.setups.outputTabProduced": "Mga produced item",
+  "production.setups.outputTabAll": "Lahat ng eligible",
 
   "catalog.businessUsage.resale": "Para ibenta",
 
