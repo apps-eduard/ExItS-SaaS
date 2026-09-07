@@ -9912,6 +9912,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "summary.printSummary": "I-print ang summary",
   "summary.paidSuccess": "Narekord ang bayad. Nahuman ang sale.",
   "summary.paidSuccessHint": "Pagsugod og bag-ong sale, i-print ang summary, o mag-return kung kinahanglan.",
+  "summary.sectionDetails": "Detalye sa transaksyon",
+  "summary.sectionItems": "Mga item",
+  "summary.sectionTotals": "Mga total",
   "summary.missingSale": "Walay gipili nga sale.",
 
   "summary.newSale": "Bag-ong sale",

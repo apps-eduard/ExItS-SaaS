@@ -9910,6 +9910,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "summary.printSummary": "I-print ang summary",
   "summary.paidSuccess": "Naitala ang bayad. Tapos na ang sale.",
   "summary.paidSuccessHint": "Magsimula ng bagong sale, i-print ang summary, o mag-return kung kailangan.",
+  "summary.sectionDetails": "Detalye ng transaksyon",
+  "summary.sectionItems": "Mga item",
+  "summary.sectionTotals": "Mga kabuuan",
   "summary.missingSale": "Walang napiling sale.",
 
   "summary.newSale": "Bagong sale",

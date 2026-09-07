@@ -119,10 +119,10 @@ describe("TransactionSummaryPage actor attribution", () => {
       expect(screen.getByTestId("summary-sold-by")).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId("summary-sold-by")).toHaveTextContent("Sold by");
     expect(screen.getByTestId("summary-sold-by")).toHaveTextContent("Cashier Ana");
-    expect(screen.getByTestId("summary-voided-by")).toHaveTextContent("Voided by");
     expect(screen.getByTestId("summary-voided-by")).toHaveTextContent("Manager Ben");
+    expect(screen.getByTestId("summary-details-section")).toHaveTextContent("Sold by");
+    expect(screen.getByTestId("summary-details-section")).toHaveTextContent("Voided by");
     expect(screen.queryByText(recordedBy)).not.toBeInTheDocument();
     expect(screen.queryByText(voidedBy)).not.toBeInTheDocument();
   });

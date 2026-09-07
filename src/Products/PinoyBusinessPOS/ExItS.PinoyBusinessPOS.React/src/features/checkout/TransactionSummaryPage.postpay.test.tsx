@@ -70,6 +70,7 @@ function completedSale() {
     voidedAtUtc: null,
     voidedBy: null,
     voidReason: null,
+    shiftNumber: "SHIFT-20260906-000002",
     updatedAtUtc: "2026-09-06T05:29:33Z",
     lines: [
       {
@@ -121,39 +122,40 @@ describe("TransactionSummaryPage post-pay actions", () => {
     );
   }
 
-  it("surfaces New sale, Print, and sticky actions above the fold after payment", async () => {
+  it("puts primary actions in the header and sticky New sale / Print only", async () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("transaction-summary-page")).toBeInTheDocument());
-    expect(screen.getByTestId("summary-success-banner")).toHaveTextContent(/Sale completed/i);
-    expect(screen.getByTestId("summary-postpay-actions-top")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-new-sale")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-print")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-return-items")).toBeInTheDocument();
+
+    const header = screen.getByTestId("summary-header-actions");
+    expect(within(header).getByTestId("summary-new-sale")).toBeInTheDocument();
+    expect(within(header).getByTestId("summary-print")).toBeInTheDocument();
+    expect(within(header).getByTestId("summary-return-items")).toBeInTheDocument();
+    expect(within(header).getByTestId("summary-void-trigger")).toBeInTheDocument();
 
     const sticky = screen.getByTestId("sticky-action-bar");
-    expect(sticky).toBeInTheDocument();
     expect(within(sticky).getByTestId("summary-new-sale-sticky")).toBeInTheDocument();
     expect(within(sticky).getByTestId("summary-print-sticky")).toBeInTheDocument();
-    expect(within(sticky).getByTestId("summary-void-trigger")).toBeInTheDocument();
+    expect(within(sticky).queryByTestId("summary-void-trigger")).not.toBeInTheDocument();
+    expect(within(sticky).queryByTestId("summary-return-items")).not.toBeInTheDocument();
 
+    expect(screen.getByTestId("summary-details-section")).toBeInTheDocument();
+    expect(screen.getByTestId("summary-items-section")).toBeInTheDocument();
+    expect(screen.getByTestId("summary-totals-section")).toBeInTheDocument();
     expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("SALE-20260906-000001");
+    expect(screen.getByTestId("summary-shift")).toHaveTextContent("SHIFT-20260906-000002");
     expect(screen.getByTestId("summary-total")).toBeInTheDocument();
-    expect(screen.queryByTestId("transaction-summary-disclaimer-body")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-success-banner")).not.toBeInTheDocument();
   });
 
-  it("keeps Void sale separate from primary New sale / Print actions", async () => {
+  it("keeps Void sale in the header action group as a destructive control", async () => {
     renderPage();
     await waitFor(() => expect(screen.getByTestId("summary-void-trigger")).toBeInTheDocument());
 
-    const top = screen.getByTestId("summary-postpay-actions-top");
-    expect(within(top).queryByTestId("summary-void-trigger")).not.toBeInTheDocument();
-    expect(within(top).getByTestId("summary-new-sale")).toBeInTheDocument();
-    expect(within(top).getByTestId("summary-print")).toBeInTheDocument();
-
-    const sticky = screen.getByTestId("sticky-action-bar");
-    const voidBtn = within(sticky).getByTestId("summary-void-trigger");
+    const header = screen.getByTestId("summary-header-actions");
+    const voidBtn = within(header).getByTestId("summary-void-trigger");
     expect(voidBtn.className).toMatch(/destructive|danger/i);
+    expect(within(header).getByTestId("summary-new-sale")).toBeInTheDocument();
   });
 
   it("prints summary via browser print", async () => {
@@ -164,15 +166,16 @@ describe("TransactionSummaryPage post-pay actions", () => {
     expect(window.print).toHaveBeenCalled();
   });
 
-  it("hides void/return for voided sales but keeps New sale", async () => {
+  it("hides void/return for voided sales but keeps New sale and Print", async () => {
     vi.mocked(salesClient.getSale).mockResolvedValue(voidedSale() as never);
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("summary-voided-banner")).toBeInTheDocument());
-    expect(screen.getByTestId("summary-new-sale")).toBeInTheDocument();
-    expect(screen.queryByTestId("summary-void-trigger")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("summary-return-items")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("summary-success-banner")).not.toBeInTheDocument();
+    const header = screen.getByTestId("summary-header-actions");
+    expect(within(header).getByTestId("summary-new-sale")).toBeInTheDocument();
+    expect(within(header).getByTestId("summary-print")).toBeInTheDocument();
+    expect(within(header).queryByTestId("summary-void-trigger")).not.toBeInTheDocument();
+    expect(within(header).queryByTestId("summary-return-items")).not.toBeInTheDocument();
   });
 
   it("respects cashier permissions by denying void while keeping primary actions", async () => {

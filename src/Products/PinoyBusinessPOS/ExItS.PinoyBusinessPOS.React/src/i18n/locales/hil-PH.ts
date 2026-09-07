@@ -9912,6 +9912,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "summary.printSummary": "I-print ang summary",
   "summary.paidSuccess": "Narekord ang bayad. Natapos ang sale.",
   "summary.paidSuccessHint": "Magsugod sang bag-o nga sale, i-print ang summary, ukon mag-return kung kinahanglan.",
+  "summary.sectionDetails": "Detalye sang transaksyon",
+  "summary.sectionItems": "Mga item",
+  "summary.sectionTotals": "Mga total",
   "summary.missingSale": "Wala sing gipili nga sale.",
 
   "summary.newSale": "Bag-ong sale",

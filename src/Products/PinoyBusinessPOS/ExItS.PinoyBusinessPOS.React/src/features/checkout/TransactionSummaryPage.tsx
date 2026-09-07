@@ -18,13 +18,10 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
 import { productionCostStatusLabelKey } from "@/features/inventory/production-labels";
-import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-type PostPayPlacement = "top" | "sticky";
 
 /**
  * Transaction Summary — never labeled Invoice.
@@ -43,7 +40,6 @@ export function TransactionSummaryPage() {
   const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
   const [voidSheetOpen, setVoidSheetOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
-  // Collapsed by default so post-pay actions stay above the fold.
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   const workspaceScope =
@@ -108,6 +104,17 @@ export function TransactionSummaryPage() {
   const showReturnAction = !isVoided && allowProcessReturn;
   const showVoidAction = !isVoided && allowVoid;
 
+  const soldBy = saleActors.resolve(sale.recordedBy);
+  const voidedBy = saleActors.resolve(sale.voidedBy);
+  const soldByLabel =
+    saleActors.isResolving && !soldBy
+      ? "\u00a0"
+      : soldBy?.displayName?.trim() || t("common.notAvailable");
+  const voidedByLabel =
+    saleActors.isResolving && !voidedBy
+      ? "\u00a0"
+      : voidedBy?.displayName?.trim() || t("common.notAvailable");
+
   async function onVoid() {
     if (!workspaceScope || !saleId || voiding || isVoided) {
       return;
@@ -137,88 +144,59 @@ export function TransactionSummaryPage() {
     }
   }
 
-  function renderPostPayActions(placement: PostPayPlacement) {
-    const id =
-      placement === "top"
-        ? {
-            group: "summary-postpay-actions-top",
-            newSale: "summary-new-sale",
-            print: "summary-print",
-            returnItems: "summary-return-items",
-            voidTrigger: "summary-void-trigger-top",
-          }
-        : {
-            group: "summary-postpay-actions",
-            newSale: "summary-new-sale-sticky",
-            print: "summary-print-sticky",
-            returnItems: "summary-return-items-sticky",
-            voidTrigger: "summary-void-trigger",
-          };
-
-    const actions = (
-      <div
-        className={cn(
-          "flex w-full min-w-0 flex-wrap items-stretch gap-2",
-          placement === "sticky" && "sm:justify-end",
-        )}
-        data-testid={id.group}
-        data-placement={placement}
+  const headerActions = (
+    <div
+      className="flex min-w-0 flex-wrap items-center gap-2 print:hidden"
+      data-testid="summary-header-actions"
+    >
+      <Button
+        asChild
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="summary-new-sale"
       >
-        <Button asChild className="min-w-0 flex-1 gap-2 sm:flex-none" data-testid={id.newSale}>
-          <Link to="/sell">
-            <Plus className="size-4 shrink-0" aria-hidden />
-            {t("summary.newSale")}
-          </Link>
-        </Button>
+        <Link to="/sell">
+          <Plus className="size-4 shrink-0" aria-hidden />
+          {t("summary.newSale")}
+        </Link>
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="summary-print"
+        onClick={() => window.print()}
+      >
+        <Printer className="size-4 shrink-0" aria-hidden />
+        {t("summary.printSummary")}
+      </Button>
+      {showReturnAction ? (
         <Button
           type="button"
           variant="outline"
-          className="min-w-0 flex-1 gap-2 sm:flex-none"
-          data-testid={id.print}
-          onClick={() => window.print()}
+          className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+          data-testid="summary-return-items"
+          aria-haspopup="dialog"
+          onClick={() => setReturnConfirmOpen(true)}
         >
-          <Printer className="size-4 shrink-0" aria-hidden />
-          {t("summary.printSummary")}
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+          {t("returns.returnItems")}
         </Button>
-        {showReturnAction ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="min-w-0 flex-1 gap-2 sm:flex-none"
-            data-testid={id.returnItems}
-            aria-haspopup="dialog"
-            onClick={() => setReturnConfirmOpen(true)}
-          >
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-            {t("returns.returnItems")}
-          </Button>
-        ) : null}
-        {showVoidAction && placement === "sticky" ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="min-w-0 flex-1 gap-1.5 border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)] sm:flex-none"
-            data-testid={id.voidTrigger}
-            aria-haspopup="dialog"
-            onClick={() => setVoidConfirmOpen(true)}
-          >
-            <Ban className="size-4 shrink-0" aria-hidden />
-            {t("summary.voidSection")}
-          </Button>
-        ) : null}
-      </div>
-    );
-
-    if (placement === "sticky") {
-      return (
-        <StickyActionBar className="print:hidden flex-col items-stretch gap-2 shadow-[0_-4px_24px_color-mix(in_srgb,var(--exits-foreground)_8%,transparent)] sm:flex-row sm:items-center sm:justify-end">
-          {actions}
-        </StickyActionBar>
-      );
-    }
-
-    return actions;
-  }
+      ) : null}
+      {showVoidAction ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 min-h-9 shrink-0 gap-1.5 border-destructive/40 px-2.5 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
+          data-testid="summary-void-trigger"
+          aria-haspopup="dialog"
+          onClick={() => setVoidConfirmOpen(true)}
+        >
+          <Ban className="size-4 shrink-0" aria-hidden />
+          {t("summary.voidSection")}
+        </Button>
+      ) : null}
+    </div>
+  );
 
   return (
     <div
@@ -231,20 +209,7 @@ export function TransactionSummaryPage() {
         backTo="/sell"
         backLabel={t("summary.backToSell")}
         backTestId="summary-back-to-sell"
-        trailing={
-          !isVoided ? (
-            <Button
-              asChild
-              className="hidden h-9 min-h-9 shrink-0 gap-1.5 px-2.5 sm:inline-flex"
-              data-testid="summary-new-sale-header"
-            >
-              <Link to="/sell">
-                <Plus className="size-4 shrink-0" aria-hidden />
-                {t("summary.newSale")}
-              </Link>
-            </Button>
-          ) : undefined
-        }
+        trailing={headerActions}
       />
 
       {isVoided ? (
@@ -258,90 +223,63 @@ export function TransactionSummaryPage() {
             </p>
           ) : null}
         </Card>
-      ) : (
-        <Card
-          data-testid="summary-success-banner"
-          className="border-[color-mix(in_srgb,var(--exits-success)_35%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-success)_8%,var(--exits-surface))]"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-            {t("summary.paidSuccess")}
-          </p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-            {t("summary.paidSuccessHint")}
-          </p>
-        </Card>
-      )}
+      ) : null}
 
-      {!isVoided ? (
-        <div className="print:hidden">{renderPostPayActions("top")}</div>
-      ) : (
-        <div className="print:hidden" data-testid="summary-postpay-actions-top" data-placement="top">
-          <Button asChild className="w-full gap-2 sm:w-auto" data-testid="summary-new-sale">
-            <Link to="/sell">
-              <Plus className="size-4 shrink-0" aria-hidden />
-              {t("summary.newSale")}
-            </Link>
-          </Button>
-        </div>
-      )}
-
-      <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
-          aria-expanded={disclaimerOpen}
-          data-testid="transaction-summary-disclaimer-toggle"
-          onClick={() => setDisclaimerOpen((open) => !open)}
-        >
-          <span>{t("summary.disclaimerTitle")}</span>
-          <ChevronDown
-            className={cn(
-              "size-4 shrink-0 transition-transform duration-150",
-              disclaimerOpen && "rotate-180",
-            )}
-            aria-hidden
-          />
-        </button>
-        {disclaimerOpen ? (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="transaction-summary-disclaimer-body"
-          >
-            {t("summary.disclaimerBody")}
-          </p>
-        ) : null}
-      </Card>
-
-      <Card>
+      <Card data-testid="summary-details-section">
+        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+          {t("summary.sectionDetails")}
+        </h2>
         <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
           <div className="flex justify-between gap-2">
             <dt className="text-muted">{t("summary.saleNumber")}</dt>
-            <dd className="m-0 font-semibold" data-testid="summary-sale-number">
+            <dd className="m-0 text-right font-semibold" data-testid="summary-sale-number">
               {sale.saleNumber}
             </dd>
           </div>
           <div className="flex justify-between gap-2">
             <dt className="text-muted">{t("summary.dateTime")}</dt>
-            <dd className="m-0" data-testid="summary-date-time">
+            <dd className="m-0 text-right" data-testid="summary-date-time">
               {new Date(sale.recordedAtUtc).toLocaleString()}
             </dd>
           </div>
           <div className="flex justify-between gap-2">
             <dt className="text-muted">{t("summary.paymentMethod")}</dt>
-            <dd className="m-0" data-testid="summary-payment-method">
+            <dd className="m-0 text-right" data-testid="summary-payment-method">
               {paymentLabel}
             </dd>
           </div>
           <div className="flex justify-between gap-2">
             <dt className="text-muted">{t("summary.status")}</dt>
-            <dd className="m-0" data-testid="summary-status">
+            <dd className="m-0 text-right" data-testid="summary-status">
               {sale.status}
             </dd>
           </div>
+          {sale.shiftNumber ? (
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted">{t("summary.shift")}</dt>
+              <dd className="m-0 text-right" data-testid="summary-shift">
+                {sale.shiftNumber}
+              </dd>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-2" data-testid="summary-actor-attribution">
+            <dt className="text-muted">{t("common.soldBy")}</dt>
+            <dd className="m-0 text-right font-medium" data-testid="summary-sold-by">
+              {soldByLabel}
+            </dd>
+          </div>
+          {isVoided ? (
+            <div className="flex justify-between gap-2">
+              <dt className="text-muted">{t("common.voidedBy")}</dt>
+              <dd className="m-0 text-right font-medium" data-testid="summary-voided-by">
+                {voidedByLabel}
+              </dd>
+            </div>
+          ) : null}
           {sale.customerDisplayName ? (
             <div className="flex justify-between gap-2">
               <dt className="text-muted">{t("summary.customer")}</dt>
-              <dd className="m-0" data-testid="summary-customer">
+              <dd className="m-0 text-right" data-testid="summary-customer">
                 {sale.customerDisplayName}
               </dd>
             </div>
@@ -349,44 +287,19 @@ export function TransactionSummaryPage() {
           {sale.gCashReference ? (
             <div className="flex justify-between gap-2">
               <dt className="text-muted">{t("summary.gcashReference")}</dt>
-              <dd className="m-0" data-testid="summary-gcash-reference">
+              <dd className="m-0 text-right" data-testid="summary-gcash-reference">
                 {sale.gCashReference}
               </dd>
             </div>
           ) : null}
-          {sale.shiftNumber ? (
-            <div className="flex justify-between gap-2">
-              <dt className="text-muted">{t("summary.shift")}</dt>
-              <dd className="m-0">{sale.shiftNumber}</dd>
-            </div>
-          ) : null}
         </dl>
+      </Card>
 
-        <div
-          className="mt-3 flex flex-col gap-3 border-t border-border pt-3"
-          data-testid="summary-actor-attribution"
-        >
-          <ActorAttribution
-            labelKey="common.soldBy"
-            actorId={sale.recordedBy}
-            occurredAtUtc={sale.recordedAtUtc}
-            resolved={saleActors.resolve(sale.recordedBy)}
-            isLoading={saleActors.isResolving}
-            testId="summary-sold-by"
-          />
-          {isVoided ? (
-            <ActorAttribution
-              labelKey="common.voidedBy"
-              actorId={sale.voidedBy}
-              occurredAtUtc={sale.voidedAtUtc}
-              resolved={saleActors.resolve(sale.voidedBy)}
-              isLoading={saleActors.isResolving}
-              testId="summary-voided-by"
-            />
-          ) : null}
-        </div>
-
-        <ul className="mb-0 mt-4 list-none space-y-2 border-t border-border pt-3 p-0">
+      <Card data-testid="summary-items-section">
+        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+          {t("summary.sectionItems")}
+        </h2>
+        <ul className="m-0 list-none space-y-2 p-0">
           {sale.lines.map((line) => {
             const override = sale.priceOverrides?.find(
               (item) => item.lineNumber === line.lineNumber,
@@ -428,8 +341,13 @@ export function TransactionSummaryPage() {
             );
           })}
         </ul>
+      </Card>
 
-        <div className="mt-4 space-y-1 border-t border-border pt-3 text-[length:var(--exits-text-sm)]">
+      <Card data-testid="summary-totals-section">
+        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+          {t("summary.sectionTotals")}
+        </h2>
+        <div className="space-y-1 text-[length:var(--exits-text-sm)]">
           <p className="m-0 flex justify-between gap-2">
             <span className="text-muted">{t("summary.subtotal")}</span>
             <MoneyDisplay amount={sale.subtotal} />
@@ -454,13 +372,14 @@ export function TransactionSummaryPage() {
             </p>
           ) : null}
         </div>
+      </Card>
 
-        {showCostSection ? (
-          <div
-            className="mt-4 space-y-1 border-t border-border pt-3 text-[length:var(--exits-text-sm)]"
-            data-testid="summary-cost-section"
-          >
-            <p className="m-0 font-semibold">{t("summary.costSection")}</p>
+      {showCostSection ? (
+        <Card data-testid="summary-cost-section">
+          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+            {t("summary.costSection")}
+          </h2>
+          <div className="space-y-1 text-[length:var(--exits-text-sm)]">
             {sale.costStatus ? (
               <p className="m-0 flex justify-between gap-2">
                 <span className="text-muted">{t("summary.costStatus")}</span>
@@ -500,6 +419,33 @@ export function TransactionSummaryPage() {
               </p>
             ) : null}
           </div>
+        </Card>
+      ) : null}
+
+      <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2 print:hidden">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
+          aria-expanded={disclaimerOpen}
+          data-testid="transaction-summary-disclaimer-toggle"
+          onClick={() => setDisclaimerOpen((open) => !open)}
+        >
+          <span>{t("summary.disclaimerTitle")}</span>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 transition-transform duration-150",
+              disclaimerOpen && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
+        {disclaimerOpen ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="transaction-summary-disclaimer-body"
+          >
+            {t("summary.disclaimerBody")}
+          </p>
         ) : null}
       </Card>
 
@@ -577,7 +523,7 @@ export function TransactionSummaryPage() {
       {!isVoided && !allowVoid ? (
         <p
           data-testid="summary-void-denied"
-          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted print:hidden"
         >
           {t("summary.voidDenied")}
         </p>
@@ -600,7 +546,33 @@ export function TransactionSummaryPage() {
         />
       ) : null}
 
-      {renderPostPayActions("sticky")}
+      <StickyActionBar className="print:hidden justify-stretch gap-2 sm:justify-end">
+        <div
+          className="flex w-full min-w-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end"
+          data-testid="summary-postpay-actions"
+        >
+          <Button
+            asChild
+            className="min-w-0 flex-1 gap-2 sm:flex-none"
+            data-testid="summary-new-sale-sticky"
+          >
+            <Link to="/sell">
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {t("summary.newSale")}
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-w-0 flex-1 gap-2 sm:flex-none"
+            data-testid="summary-print-sticky"
+            onClick={() => window.print()}
+          >
+            <Printer className="size-4 shrink-0" aria-hidden />
+            {t("summary.printSummary")}
+          </Button>
+        </div>
+      </StickyActionBar>
     </div>
   );
 }
