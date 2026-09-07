@@ -28,6 +28,15 @@ export type PeriodComparisonFacts = {
   comparisonToDate: string;
 };
 
+/** Display helper for period % change (calculation unchanged). */
+export function formatDashboardPercentChange(pct: number): string {
+  if (!Number.isFinite(pct)) {
+    return "—";
+  }
+  const decimals = Math.abs(pct % 1) < 1e-9 ? 0 : 1;
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(decimals)}%`;
+}
+
 export function DashboardHeroMetric({
   label,
   children,
@@ -142,12 +151,15 @@ export function DashboardComparisonTrend({
   comparison,
   absoluteLabel,
   vsPriorLabel,
+  variant = "chip",
 }: {
   comparison: PeriodComparisonFacts;
   absoluteLabel?: ReactNode;
   /** @deprecated Unused — unavailable comparisons are omitted. */
   pctUnavailableLabel?: string;
   vsPriorLabel: string;
+  /** Inline sits on the Total sales summary row without a chip background. */
+  variant?: "chip" | "inline";
 }) {
   const pct = comparison.percentageChange;
   const available = comparison.percentageAvailable && pct != null;
@@ -162,20 +174,19 @@ export function DashboardComparisonTrend({
     <div
       className={cn(
         "dashboard-trend",
+        variant === "inline" && "dashboard-trend--inline",
         direction === "up" && "dashboard-trend--up",
         direction === "down" && "dashboard-trend--down",
         direction === "flat" && "dashboard-trend--flat",
       )}
       data-testid="dashboard-comparison-trend"
+      data-trend-direction={direction}
     >
       <span className="dashboard-trend__icon" aria-hidden>
         <Icon />
       </span>
       <span className="dashboard-trend__copy">
-        <span className="dashboard-trend__pct">
-          {pct! > 0 ? "+" : ""}
-          {pct!.toFixed(pct! % 1 === 0 ? 0 : 1)}%
-        </span>
+        <span className="dashboard-trend__pct">{formatDashboardPercentChange(pct!)}</span>
         {absoluteLabel ? <span className="dashboard-trend__absolute">{absoluteLabel}</span> : null}
         <span className="dashboard-trend__vs">{vsPriorLabel}</span>
       </span>

@@ -309,6 +309,22 @@ describe("ManagementDashboardPage V2 visual composition", () => {
     expect(screen.getByTestId("dashboard-utang-radial")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-inventory-health")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-comparison-trend")).toHaveTextContent("12.4%");
+    expect(screen.getByTestId("dashboard-comparison-trend")).toHaveAttribute(
+      "data-trend-direction",
+      "up",
+    );
+    expect(screen.getByTestId("dashboard-comparison-trend").className).toMatch(
+      /dashboard-trend--inline/,
+    );
+    expect(screen.getByTestId("dashboard-comparison-trend").className).not.toMatch(
+      /dashboard-trend--chip/,
+    );
+    const summary = screen.getByTestId("kpi-period-sales-summary");
+    expect(summary).toHaveTextContent(/txns/i);
+    expect(summary).toContainElement(screen.getByTestId("kpi-period-sales-txns"));
+    expect(summary).toContainElement(screen.getByTestId("dashboard-comparison-trend"));
+    expect(screen.getByTestId("scope-period-sales")).toHaveClass("dashboard-branch-chip");
+    expect(screen.getByTestId("scope-period-sales")).toHaveTextContent("Main Branch");
     expect(screen.getByTestId("dashboard-toolbar")).toBeInTheDocument();
     expect(screen.queryByTestId("report-filters")).not.toBeInTheDocument();
 
@@ -344,6 +360,9 @@ describe("ManagementDashboardPage V2 visual composition", () => {
 
     expect(within(screen.getByTestId("dashboard-branch-performance")).getByTestId("scope-period-sales")).toHaveTextContent(
       "Second Branch",
+    );
+    expect(within(screen.getByTestId("dashboard-branch-performance")).getByTestId("scope-period-sales")).toHaveClass(
+      "dashboard-branch-chip",
     );
 
     expect(getDashboard).toHaveBeenCalledWith(

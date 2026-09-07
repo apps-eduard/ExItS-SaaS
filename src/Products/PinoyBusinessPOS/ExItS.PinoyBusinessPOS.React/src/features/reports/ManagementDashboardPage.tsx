@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
-import { Clock3 } from "lucide-react";
+import { Clock3, Store } from "lucide-react";
 import {
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
@@ -404,8 +404,13 @@ export function ManagementDashboardPage() {
           >
             <div className="dashboard-sales-block__header">
               <h2 className="dashboard-section-title">{t("dashboard.section.salesPerformance")}</h2>
-              <span className="dashboard-panel__scope" data-testid="scope-period-sales">
-                {branchScopeLabel}
+              <span
+                className="dashboard-branch-chip"
+                data-testid="scope-period-sales"
+                title={branchScopeLabel}
+              >
+                <Store className="dashboard-branch-chip__icon" aria-hidden />
+                <span className="dashboard-branch-chip__name">{branchScopeLabel}</span>
               </span>
             </div>
 
@@ -415,27 +420,36 @@ export function ManagementDashboardPage() {
               data-metric-scope="branch"
             >
               <span className="dashboard-hero__label">{t("dashboard.totalSales")}</span>
-              <div className="dashboard-hero__value">
-                <AnimatedMoneyValue
-                  amount={dashboard.completedSalesTotal}
-                  animationKey={animationKey}
-                />
-              </div>
               {dashboard.completedSalesTotal <= 0 ? (
                 <p className="dashboard-hero__empty m-0">{t("dashboard.noSalesYet")}</p>
               ) : (
-                <p className="dashboard-hero__meta m-0">
-                  {dashboard.completedSaleCount} {t("dashboard.transactions")}
-                </p>
-              )}
-              {dashboard.salesTotalComparison ? (
-                <div className="dashboard-hero__trend">
-                  <DashboardComparisonTrend
-                    comparison={dashboard.salesTotalComparison}
-                    vsPriorLabel={t("dashboard.vsPriorShort")}
-                  />
+                <div className="dashboard-hero__summary" data-testid="kpi-period-sales-summary">
+                  <div className="dashboard-hero__value">
+                    <AnimatedMoneyValue
+                      amount={dashboard.completedSalesTotal}
+                      animationKey={animationKey}
+                    />
+                  </div>
+                  <span className="dashboard-hero__sep" aria-hidden>
+                    ·
+                  </span>
+                  <span className="dashboard-hero__meta" data-testid="kpi-period-sales-txns">
+                    {dashboard.completedSaleCount} {t("dashboard.transactions")}
+                  </span>
+                  {dashboard.salesTotalComparison ? (
+                    <>
+                      <span className="dashboard-hero__sep" aria-hidden>
+                        ·
+                      </span>
+                      <DashboardComparisonTrend
+                        comparison={dashboard.salesTotalComparison}
+                        vsPriorLabel={t("dashboard.vsPriorShort")}
+                        variant="inline"
+                      />
+                    </>
+                  ) : null}
                 </div>
-              ) : null}
+              )}
             </article>
 
             <div className="dashboard-kpi-strip" role="list" data-testid="dashboard-kpi-strip">
