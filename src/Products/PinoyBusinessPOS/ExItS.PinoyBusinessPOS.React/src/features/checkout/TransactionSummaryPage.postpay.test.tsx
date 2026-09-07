@@ -17,7 +17,12 @@ vi.mock("@/api/pos/pos-sales-client", async (importOriginal) => {
 
 vi.mock("@/features/actors/useActorDirectory", () => ({
   useActorDirectory: () => ({
-    resolve: () => null,
+    resolve: (actorId: string | null | undefined) => {
+      if (actorId === "ffffffff-ffff-4fff-8fff-ffffffffffff") {
+        return { actorId, displayName: "Mica Uy", actorStatus: "Active" };
+      }
+      return null;
+    },
     isResolving: false,
     sortedIds: [],
   }),
@@ -71,6 +76,10 @@ function completedSale() {
     voidedBy: null,
     voidReason: null,
     shiftNumber: "SHIFT-20260906-000002",
+    costStatus: "Complete",
+    totalCostSnapshot: 40,
+    grossProfit: 63.5,
+    grossMarginPercent: 61.4,
     updatedAtUtc: "2026-09-06T05:29:33Z",
     lines: [
       {
@@ -84,6 +93,7 @@ function completedSale() {
         unitPrice: 45,
         quantity: 1,
         lineTotal: 45,
+        lineCostSnapshot: 20,
       },
     ],
     documentKind: "TransactionSummary",
@@ -100,7 +110,7 @@ function voidedSale() {
   };
 }
 
-describe("TransactionSummaryPage post-pay actions", () => {
+describe("TransactionSummaryPage post-pay cleanup", () => {
   beforeEach(() => {
     sessionGrant = managerGrant;
     vi.mocked(salesClient.getSale).mockReset();
@@ -122,40 +132,54 @@ describe("TransactionSummaryPage post-pay actions", () => {
     );
   }
 
-  it("puts primary actions in the header and sticky New sale / Print only", async () => {
+  it("exposes four header actions with no success banner or cost section", async () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("transaction-summary-page")).toBeInTheDocument());
+
+    expect(screen.queryByTestId("summary-success-banner")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Payment recorded\. Sale completed\./i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-cost-section")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-line-cost-1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("summary-postpay-actions-top")).not.toBeInTheDocument();
 
     const header = screen.getByTestId("summary-header-actions");
     expect(within(header).getByTestId("summary-new-sale")).toBeInTheDocument();
     expect(within(header).getByTestId("summary-print")).toBeInTheDocument();
     expect(within(header).getByTestId("summary-return-items")).toBeInTheDocument();
     expect(within(header).getByTestId("summary-void-trigger")).toBeInTheDocument();
+    expect(within(header).getByTestId("summary-void-trigger").className).toMatch(/destructive|danger/i);
+
+    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("SALE-20260906-000001");
+    expect(screen.getByTestId("summary-shift")).toHaveTextContent("SHIFT-20260906-000002");
+    expect(screen.getByTestId("summary-sold-by")).toHaveTextContent("Mica Uy");
+    expect(screen.getByTestId("summary-sold-by")).not.toHaveTextContent(/2026/);
+    expect(screen.getByTestId("summary-total")).toHaveTextContent("103.50");
+    expect(screen.getByTestId("summary-tendered")).toBeInTheDocument();
+    expect(screen.getByTestId("summary-change")).toBeInTheDocument();
+    expect(screen.getByTestId("transaction-summary-disclaimer")).toBeInTheDocument();
+  });
+
+  it("keeps Sold by under Shift without a separate sold-by timestamp", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId("summary-details-section")).toBeInTheDocument());
+
+    const details = screen.getByTestId("summary-details-section").textContent ?? "";
+    const shiftIdx = details.indexOf("Shift");
+    const soldIdx = details.indexOf("Sold by");
+    expect(shiftIdx).toBeGreaterThanOrEqual(0);
+    expect(soldIdx).toBeGreaterThan(shiftIdx);
+  });
+
+  it("sticky bottom only has New sale and Print summary", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId("sticky-action-bar")).toBeInTheDocument());
 
     const sticky = screen.getByTestId("sticky-action-bar");
     expect(within(sticky).getByTestId("summary-new-sale-sticky")).toBeInTheDocument();
     expect(within(sticky).getByTestId("summary-print-sticky")).toBeInTheDocument();
     expect(within(sticky).queryByTestId("summary-void-trigger")).not.toBeInTheDocument();
     expect(within(sticky).queryByTestId("summary-return-items")).not.toBeInTheDocument();
-
-    expect(screen.getByTestId("summary-details-section")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-items-section")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-totals-section")).toBeInTheDocument();
-    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("SALE-20260906-000001");
-    expect(screen.getByTestId("summary-shift")).toHaveTextContent("SHIFT-20260906-000002");
-    expect(screen.getByTestId("summary-total")).toBeInTheDocument();
-    expect(screen.queryByTestId("summary-success-banner")).not.toBeInTheDocument();
-  });
-
-  it("keeps Void sale in the header action group as a destructive control", async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getByTestId("summary-void-trigger")).toBeInTheDocument());
-
-    const header = screen.getByTestId("summary-header-actions");
-    const voidBtn = within(header).getByTestId("summary-void-trigger");
-    expect(voidBtn.className).toMatch(/destructive|danger/i);
-    expect(within(header).getByTestId("summary-new-sale")).toBeInTheDocument();
   });
 
   it("prints summary via browser print", async () => {

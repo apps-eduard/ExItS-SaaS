@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, ChevronDown, Plus, Printer, RotateCcw } from "lucide-react";
-import { canProcessReturn, canVoidSale, canViewReports } from "@/access/pos-capabilities";
+import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
   getSale,
@@ -17,7 +17,6 @@ import { LoadingSkeleton, StickyActionBar } from "@/components/exits/FoundationS
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
-import { productionCostStatusLabelKey } from "@/features/inventory/production-labels";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
@@ -41,6 +40,8 @@ export function TransactionSummaryPage() {
   const [voidSheetOpen, setVoidSheetOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [stickyVisible, setStickyVisible] = useState(false);
+  const stickyGateRef = useRef<HTMLDivElement | null>(null);
 
   const workspaceScope =
     boundWorkspace?.branchId && boundWorkspace.organizationId
@@ -52,7 +53,6 @@ export function TransactionSummaryPage() {
 
   const allowVoid = canVoidSale(sessionGrant);
   const allowProcessReturn = canProcessReturn(sessionGrant);
-  const allowViewCost = canViewReports(sessionGrant);
 
   const saleQuery = useQuery({
     queryKey: ["pos-sale", workspaceScope?.organizationId, workspaceScope?.branchId, saleId],
@@ -64,6 +64,25 @@ export function TransactionSummaryPage() {
     saleQuery.data?.recordedBy,
     saleQuery.data?.voidedBy,
   ]);
+
+  useEffect(() => {
+    if (!saleId || saleQuery.isLoading || saleQuery.isError || !saleQuery.data) {
+      return;
+    }
+    const gate = stickyGateRef.current;
+    if (!gate || typeof IntersectionObserver === "undefined") {
+      setStickyVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setStickyVisible(!(entry?.isIntersecting ?? true));
+      },
+      { threshold: 0 },
+    );
+    observer.observe(gate);
+    return () => observer.disconnect();
+  }, [saleId, saleQuery.isLoading, saleQuery.isError, saleQuery.data]);
 
   if (!saleId) {
     return (
@@ -94,13 +113,6 @@ export function TransactionSummaryPage() {
   const sale = saleQuery.data;
   const isVoided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
   const paymentLabel = formatPaymentMethodLabel(sale.paymentMethod);
-  const costComplete = sale.costStatus === "Complete";
-  const showCostSection =
-    allowViewCost &&
-    (sale.costStatus != null ||
-      sale.totalCostSnapshot != null ||
-      sale.grossProfit != null ||
-      sale.lines.some((line) => line.lineCostSnapshot != null || line.unitCostSnapshot != null));
   const showReturnAction = !isVoided && allowProcessReturn;
   const showVoidAction = !isVoided && allowVoid;
 
@@ -211,6 +223,7 @@ export function TransactionSummaryPage() {
         backTestId="summary-back-to-sell"
         trailing={headerActions}
       />
+      <div ref={stickyGateRef} className="h-px w-full shrink-0" aria-hidden data-testid="summary-sticky-gate" />
 
       {isVoided ? (
         <Card data-testid="summary-voided-banner">
@@ -327,14 +340,6 @@ export function TransactionSummaryPage() {
                         : null}
                     </span>
                   ) : null}
-                  {allowViewCost && line.lineCostSnapshot != null ? (
-                    <span
-                      className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
-                      data-testid={`summary-line-cost-${line.lineNumber}`}
-                    >
-                      {t("summary.lineCost")}: <MoneyDisplay amount={line.lineCostSnapshot} />
-                    </span>
-                  ) : null}
                 </span>
                 <MoneyDisplay amount={line.lineTotal} />
               </li>
@@ -373,54 +378,6 @@ export function TransactionSummaryPage() {
           ) : null}
         </div>
       </Card>
-
-      {showCostSection ? (
-        <Card data-testid="summary-cost-section">
-          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
-            {t("summary.costSection")}
-          </h2>
-          <div className="space-y-1 text-[length:var(--exits-text-sm)]">
-            {sale.costStatus ? (
-              <p className="m-0 flex justify-between gap-2">
-                <span className="text-muted">{t("summary.costStatus")}</span>
-                <span data-testid="summary-cost-status">
-                  {t(productionCostStatusLabelKey(sale.costStatus))}
-                </span>
-              </p>
-            ) : null}
-            {costComplete && sale.totalCostSnapshot != null ? (
-              <p className="m-0 flex justify-between gap-2" data-testid="summary-total-cost">
-                <span className="text-muted">{t("summary.totalCost")}</span>
-                <MoneyDisplay amount={sale.totalCostSnapshot} />
-              </p>
-            ) : sale.totalCostSnapshot != null ? (
-              <p className="m-0 flex justify-between gap-2" data-testid="summary-known-cost">
-                <span className="text-muted">{t("summary.knownCost")}</span>
-                <MoneyDisplay amount={sale.totalCostSnapshot} />
-              </p>
-            ) : null}
-            {costComplete && sale.grossProfit != null ? (
-              <p className="m-0 flex justify-between gap-2" data-testid="summary-gross-profit">
-                <span className="text-muted">{t("summary.grossProfit")}</span>
-                <MoneyDisplay amount={sale.grossProfit} />
-              </p>
-            ) : null}
-            {costComplete && sale.grossMarginPercent != null ? (
-              <p className="m-0 flex justify-between gap-2" data-testid="summary-gross-margin">
-                <span className="text-muted">{t("summary.grossMargin")}</span>
-                <span>{sale.grossMarginPercent.toFixed(1)}%</span>
-              </p>
-            ) : null}
-            {!costComplete && sale.costStatus ? (
-              <p className="m-0 text-muted" data-testid="summary-cost-incomplete">
-                {sale.costStatus === "Partial"
-                  ? t("summary.costIncompletePartial")
-                  : t("summary.costIncompleteUnavailable")}
-              </p>
-            ) : null}
-          </div>
-        </Card>
-      ) : null}
 
       <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2 print:hidden">
         <button
@@ -546,33 +503,35 @@ export function TransactionSummaryPage() {
         />
       ) : null}
 
-      <StickyActionBar className="print:hidden justify-stretch gap-2 sm:justify-end">
-        <div
-          className="flex w-full min-w-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end"
-          data-testid="summary-postpay-actions"
-        >
-          <Button
-            asChild
-            className="min-w-0 flex-1 gap-2 sm:flex-none"
-            data-testid="summary-new-sale-sticky"
+      {stickyVisible ? (
+        <StickyActionBar className="print:hidden justify-stretch gap-2 sm:justify-end">
+          <div
+            className="flex w-full min-w-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end"
+            data-testid="summary-postpay-actions"
           >
-            <Link to="/sell">
-              <Plus className="size-4 shrink-0" aria-hidden />
-              {t("summary.newSale")}
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="min-w-0 flex-1 gap-2 sm:flex-none"
-            data-testid="summary-print-sticky"
-            onClick={() => window.print()}
-          >
-            <Printer className="size-4 shrink-0" aria-hidden />
-            {t("summary.printSummary")}
-          </Button>
-        </div>
-      </StickyActionBar>
+            <Button
+              asChild
+              className="min-w-0 flex-1 gap-2 sm:flex-none"
+              data-testid="summary-new-sale-sticky"
+            >
+              <Link to="/sell">
+                <Plus className="size-4 shrink-0" aria-hidden />
+                {t("summary.newSale")}
+              </Link>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-w-0 flex-1 gap-2 sm:flex-none"
+              data-testid="summary-print-sticky"
+              onClick={() => window.print()}
+            >
+              <Printer className="size-4 shrink-0" aria-hidden />
+              {t("summary.printSummary")}
+            </Button>
+          </div>
+        </StickyActionBar>
+      ) : null}
     </div>
   );
 }

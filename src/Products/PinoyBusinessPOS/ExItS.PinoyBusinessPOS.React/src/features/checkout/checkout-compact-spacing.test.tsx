@@ -31,6 +31,12 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     );
   });
 
+  it("CheckoutCashPage toasts payment success before opening summary", () => {
+    const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
+    expect(source).toMatch(/showToast\(t\("summary\.paidSuccess"\),\s*"success"\)/);
+    expect(source).toMatch(/navigate\(`\/sell\/sales\/\$\{sale\.saleId\}\/summary`/);
+  });
+
   it("CheckoutCashPage uses scroll region + tender dock and keeps section order", () => {
     const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
     expect(source).toContain('data-testid="checkout-cash-page" className="checkout-cash-page"');

@@ -29,6 +29,7 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { useToast } from "@/components/exits/ToastProvider";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
@@ -112,6 +113,7 @@ function toApiPaymentMethod(choice: UiPaymentChoice): CheckoutPaymentMethod {
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const location = useLocation();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
@@ -744,6 +746,7 @@ export function CheckoutCashPage() {
       cart.clear();
       attemptSaleIdRef.current = allocateSecureId();
       await invalidatePosStockQueries(queryClient);
+      showToast(t("summary.paidSuccess"), "success");
       navigate(`/sell/sales/${sale.saleId}/summary`, { replace: true });
     } catch (error) {
       if (isLikelyNetworkFailure(error) && workspaceScope) {
@@ -756,6 +759,7 @@ export function CheckoutCashPage() {
           cart.clear();
           attemptSaleIdRef.current = allocateSecureId();
           await invalidatePosStockQueries(queryClient);
+          showToast(t("summary.paidSuccess"), "success");
           navigate(`/sell/sales/${confirmed.saleId}/summary`, { replace: true });
           return;
         } catch (lookupError) {
