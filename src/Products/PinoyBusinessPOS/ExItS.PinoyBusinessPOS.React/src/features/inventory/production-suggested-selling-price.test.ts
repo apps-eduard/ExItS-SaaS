@@ -37,6 +37,12 @@ describe("POS-PRODUCTION-SUGGESTED-SELLING-PRICE-V1", () => {
     expect(at40!.rounded).toBe(225);
   });
 
+  it("defaults target margin to 30%", () => {
+    expect(DEFAULT_TARGET_GROSS_MARGIN).toBe(0.3);
+    const suggestion = suggestSellingPriceFromUnitCost(135);
+    expect(suggestion!.targetMargin).toBe(0.3);
+  });
+
   it("applies commercial PHP upward rounding steps", () => {
     expect(roundCommercialPhpSellingPrice(12.63)).toBe(13);
     expect(roundCommercialPhpSellingPrice(47.12)).toBe(50);
