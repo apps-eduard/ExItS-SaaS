@@ -107,13 +107,8 @@ describe("account shell", () => {
     expect(screen.queryByRole("button", { name: "Preferences" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
-    await user.click(trigger);
-    const menu = await screen.findByRole("menu");
-    expect(within(menu).getByText("Olivia Mendoza")).toBeInTheDocument();
-    expect(within(menu).getByTestId("account-menu-role")).toHaveTextContent("Cashier");
-    expect(within(menu).queryByText("olivia")).not.toBeInTheDocument();
-
-    await user.click(within(menu).getByRole("menuitem", { name: "Preferences" }));
+    expect(screen.getByTestId("shell-preferences-button")).toBeInTheDocument();
+    await user.click(screen.getByTestId("shell-preferences-button"));
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
     });
@@ -122,6 +117,13 @@ describe("account shell", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
     });
+
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByText("Olivia Mendoza")).toBeInTheDocument();
+    expect(within(menu).getByTestId("account-menu-role")).toHaveTextContent("Cashier");
+    expect(within(menu).queryByText("olivia")).not.toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: "Preferences" })).not.toBeInTheDocument();
   });
 
   it("closes the account menu on Escape", async () => {

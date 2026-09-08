@@ -10292,6 +10292,100 @@ a.exits-chip--primary:hover {
   }
 }
 
+/* Right/left side drawer (preferences, etc.) */
+.exits-side-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.exits-side-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #0f172a 45%, transparent);
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity var(--exits-motion-normal) var(--exits-ease-standard);
+}
+
+.exits-side-drawer__backdrop[data-open="true"] {
+  opacity: 1;
+}
+
+.exits-side-drawer__panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 26rem);
+  max-width: 100%;
+  pointer-events: auto;
+  border: 0;
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-lg);
+  transition: transform var(--exits-motion-slow) var(--exits-ease-emphasized);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.exits-side-drawer__panel[data-side="right"] {
+  right: 0;
+  border-left: 1px solid var(--exits-border);
+  transform: translateX(100%);
+  padding-right: env(safe-area-inset-right);
+}
+
+.exits-side-drawer__panel[data-side="left"] {
+  left: 0;
+  border-right: 1px solid var(--exits-border);
+  transform: translateX(-100%);
+  padding-left: env(safe-area-inset-left);
+}
+
+.exits-side-drawer__panel[data-open="true"] {
+  transform: translateX(0);
+}
+
+.exits-side-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--exits-border);
+}
+
+.exits-side-drawer__title {
+  margin: 0;
+  font-size: var(--exits-text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--exits-text);
+  line-height: 1.25;
+}
+
+.exits-side-drawer__description {
+  margin: 0.35rem 0 0;
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+  line-height: 1.4;
+}
+
+.exits-side-drawer__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+}
+
+.exits-side-drawer__panel--preferences {
+  width: min(100%, 24rem);
+}
+
 /* Manager / Cashier role home */
 .manager-ops-home {
   width: 100%;

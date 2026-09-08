@@ -238,145 +238,153 @@ export function TransactionSummaryPage() {
         </Card>
       ) : null}
 
-      <Card data-testid="summary-details-section">
-        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
-          {t("summary.sectionDetails")}
-        </h2>
-        <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("summary.saleNumber")}</dt>
-            <dd className="m-0 text-right font-semibold" data-testid="summary-sale-number">
-              {sale.saleNumber}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("summary.dateTime")}</dt>
-            <dd className="m-0 text-right" data-testid="summary-date-time">
-              {new Date(sale.recordedAtUtc).toLocaleString()}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("summary.paymentMethod")}</dt>
-            <dd className="m-0 text-right" data-testid="summary-payment-method">
-              {paymentLabel}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("summary.status")}</dt>
-            <dd className="m-0 text-right" data-testid="summary-status">
-              {sale.status}
-            </dd>
-          </div>
-          {sale.shiftNumber ? (
+      <Card data-testid="summary-body-card" className="flex flex-col gap-4">
+        <section data-testid="summary-details-section">
+          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+            {t("summary.sectionDetails")}
+          </h2>
+          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
             <div className="flex justify-between gap-2">
-              <dt className="text-muted">{t("summary.shift")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-shift">
-                {sale.shiftNumber}
+              <dt className="text-muted">{t("summary.saleNumber")}</dt>
+              <dd className="m-0 text-right font-semibold" data-testid="summary-sale-number">
+                {sale.saleNumber}
               </dd>
             </div>
-          ) : null}
-          <div className="flex justify-between gap-2" data-testid="summary-actor-attribution">
-            <dt className="text-muted">{t("common.soldBy")}</dt>
-            <dd className="m-0 text-right font-medium" data-testid="summary-sold-by">
-              {soldByLabel}
-            </dd>
-          </div>
-          {isVoided ? (
             <div className="flex justify-between gap-2">
-              <dt className="text-muted">{t("common.voidedBy")}</dt>
-              <dd className="m-0 text-right font-medium" data-testid="summary-voided-by">
-                {voidedByLabel}
+              <dt className="text-muted">{t("summary.dateTime")}</dt>
+              <dd className="m-0 text-right" data-testid="summary-date-time">
+                {new Date(sale.recordedAtUtc).toLocaleString()}
               </dd>
             </div>
-          ) : null}
-          {sale.customerDisplayName ? (
             <div className="flex justify-between gap-2">
-              <dt className="text-muted">{t("summary.customer")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-customer">
-                {sale.customerDisplayName}
+              <dt className="text-muted">{t("summary.paymentMethod")}</dt>
+              <dd className="m-0 text-right" data-testid="summary-payment-method">
+                {paymentLabel}
               </dd>
             </div>
-          ) : null}
-          {sale.gCashReference ? (
             <div className="flex justify-between gap-2">
-              <dt className="text-muted">{t("summary.gcashReference")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-gcash-reference">
-                {sale.gCashReference}
+              <dt className="text-muted">{t("summary.status")}</dt>
+              <dd className="m-0 text-right" data-testid="summary-status">
+                {sale.status}
               </dd>
             </div>
-          ) : null}
-        </dl>
-      </Card>
+            {sale.shiftNumber ? (
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t("summary.shift")}</dt>
+                <dd className="m-0 text-right" data-testid="summary-shift">
+                  {sale.shiftNumber}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-2" data-testid="summary-actor-attribution">
+              <dt className="text-muted">{t("common.soldBy")}</dt>
+              <dd className="m-0 text-right font-medium" data-testid="summary-sold-by">
+                {soldByLabel}
+              </dd>
+            </div>
+            {isVoided ? (
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t("common.voidedBy")}</dt>
+                <dd className="m-0 text-right font-medium" data-testid="summary-voided-by">
+                  {voidedByLabel}
+                </dd>
+              </div>
+            ) : null}
+            {sale.customerDisplayName ? (
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t("summary.customer")}</dt>
+                <dd className="m-0 text-right" data-testid="summary-customer">
+                  {sale.customerDisplayName}
+                </dd>
+              </div>
+            ) : null}
+            {sale.gCashReference ? (
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted">{t("summary.gcashReference")}</dt>
+                <dd className="m-0 text-right" data-testid="summary-gcash-reference">
+                  {sale.gCashReference}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
 
-      <Card data-testid="summary-items-section">
-        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
-          {t("summary.sectionItems")}
-        </h2>
-        <ul className="m-0 list-none space-y-2 p-0">
-          {sale.lines.map((line) => {
-            const override = sale.priceOverrides?.find(
-              (item) => item.lineNumber === line.lineNumber,
-            );
-            return (
-              <li
-                key={line.saleLineId}
-                className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
-                data-testid={`summary-line-${line.lineNumber}`}
-              >
-                <span className="min-w-0">
-                  <span className="truncate">
-                    {line.name} × {line.quantity} {line.unitOfMeasure}
-                  </span>
-                  {override ? (
-                    <span
-                      className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
-                      data-testid={`summary-line-price-changed-${line.lineNumber}`}
-                    >
-                      {t("sell.priceChanged")} · {t("summary.regularPrice")}: ₱
-                      {override.baselineUnitPrice.toFixed(2)} · {t("summary.sellingPrice")}: ₱
-                      {override.appliedUnitPrice.toFixed(2)}
-                      {override.reason
-                        ? ` · ${t("summary.priceOverrideReason")}: ${override.reason}`
-                        : null}
+        <section
+          data-testid="summary-items-section"
+          className="border-t border-border pt-4"
+        >
+          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+            {t("summary.sectionItems")}
+          </h2>
+          <ul className="m-0 list-none space-y-2 p-0">
+            {sale.lines.map((line) => {
+              const override = sale.priceOverrides?.find(
+                (item) => item.lineNumber === line.lineNumber,
+              );
+              return (
+                <li
+                  key={line.saleLineId}
+                  className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
+                  data-testid={`summary-line-${line.lineNumber}`}
+                >
+                  <span className="min-w-0">
+                    <span className="truncate">
+                      {line.name} × {line.quantity} {line.unitOfMeasure}
                     </span>
-                  ) : null}
-                </span>
-                <MoneyDisplay amount={line.lineTotal} />
-              </li>
-            );
-          })}
-        </ul>
-      </Card>
+                    {override ? (
+                      <span
+                        className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`summary-line-price-changed-${line.lineNumber}`}
+                      >
+                        {t("sell.priceChanged")} · {t("summary.regularPrice")}: ₱
+                        {override.baselineUnitPrice.toFixed(2)} · {t("summary.sellingPrice")}: ₱
+                        {override.appliedUnitPrice.toFixed(2)}
+                        {override.reason
+                          ? ` · ${t("summary.priceOverrideReason")}: ${override.reason}`
+                          : null}
+                      </span>
+                    ) : null}
+                  </span>
+                  <MoneyDisplay amount={line.lineTotal} />
+                </li>
+              );
+            })}
+          </ul>
+        </section>
 
-      <Card data-testid="summary-totals-section">
-        <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
-          {t("summary.sectionTotals")}
-        </h2>
-        <div className="space-y-1 text-[length:var(--exits-text-sm)]">
-          <p className="m-0 flex justify-between gap-2">
-            <span className="text-muted">{t("summary.subtotal")}</span>
-            <MoneyDisplay amount={sale.subtotal} />
-          </p>
-          <p
-            className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
-            data-testid="summary-total"
-          >
-            <span>{t("summary.total")}</span>
-            <MoneyDisplay amount={sale.total} />
-          </p>
-          {sale.amountTendered != null ? (
-            <p className="m-0 flex justify-between gap-2" data-testid="summary-tendered">
-              <span className="text-muted">{t("summary.cashReceived")}</span>
-              <MoneyDisplay amount={sale.amountTendered} />
+        <section
+          data-testid="summary-totals-section"
+          className="border-t border-border pt-4"
+        >
+          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
+            {t("summary.sectionTotals")}
+          </h2>
+          <div className="space-y-1 text-[length:var(--exits-text-sm)]">
+            <p className="m-0 flex justify-between gap-2">
+              <span className="text-muted">{t("summary.subtotal")}</span>
+              <MoneyDisplay amount={sale.subtotal} />
             </p>
-          ) : null}
-          {sale.changeAmount != null ? (
-            <p className="m-0 flex justify-between gap-2" data-testid="summary-change">
-              <span className="text-muted">{t("summary.change")}</span>
-              <MoneyDisplay amount={sale.changeAmount} />
+            <p
+              className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
+              data-testid="summary-total"
+            >
+              <span>{t("summary.total")}</span>
+              <MoneyDisplay amount={sale.total} />
             </p>
-          ) : null}
-        </div>
+            {sale.amountTendered != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-tendered">
+                <span className="text-muted">{t("summary.cashReceived")}</span>
+                <MoneyDisplay amount={sale.amountTendered} />
+              </p>
+            ) : null}
+            {sale.changeAmount != null ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-change">
+                <span className="text-muted">{t("summary.change")}</span>
+                <MoneyDisplay amount={sale.changeAmount} />
+              </p>
+            ) : null}
+          </div>
+        </section>
       </Card>
 
       <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2 print:hidden">

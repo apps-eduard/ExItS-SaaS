@@ -483,8 +483,7 @@ test.describe("RMAP-17 purchasing + receiving", () => {
     await mockBoundOwnerSession(page);
     await mockPurchasingApi(page);
     await signInOwnerOperations(page);
-    await page.getByTestId("account-menu-trigger").click();
-    await page.getByRole("menuitem", { name: /Preferences|Mga setting/i }).click();
+    await page.getByTestId("shell-preferences-button").click();
     await page.getByRole("radio", { name: /Filipino/i }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "fil-PH");
     await page.getByTestId("preferences-close").click();

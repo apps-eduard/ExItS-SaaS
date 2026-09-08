@@ -26,18 +26,20 @@ export function SettingsSelect<T extends string>({
   onChange,
 }: SettingsSelectProps<T>) {
   const labelId = useId();
-  // Theme/Density (3): stacked on small screens, one row from ~480px.
+  // Prefer container width over viewport: preferences live in a narrow right drawer,
+  // where viewport-based 3-up columns truncates labels (Sy… / Li… / D…).
+  // Theme/Density (3): stack until the control is wide enough for readable 3-up.
   // Language (5+): 2 columns; odd last option spans full width.
   const layoutClass =
     options.length === 3
-      ? "grid grid-cols-1 gap-2 min-[480px]:grid-cols-3"
+      ? "grid grid-cols-1 gap-2 @min-[28rem]:grid-cols-3"
       : options.length === 2
         ? "grid grid-cols-2 gap-2"
         : "grid grid-cols-2 gap-2";
   const oddLastSpansFull = options.length > 3 && options.length % 2 === 1;
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 py-4">
+    <div className="@container flex min-w-0 flex-col gap-3 py-4">
       <span
         id={labelId}
         className="exits-type-label text-foreground"
@@ -66,9 +68,9 @@ export function SettingsSelect<T extends string>({
                 onChange(option.value);
               }}
             >
-              <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+              <span className="flex min-w-0 flex-1 items-center gap-2">
                 {option.icon}
-                <span className="truncate">{option.label}</span>
+                <span className="min-w-0 wrap-break-word">{option.label}</span>
               </span>
               {selected ? (
                 <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />

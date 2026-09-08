@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Home, LogOut, RefreshCw, Settings, User, UserPen } from "lucide-react";
+import { Building2, ChevronDown, Home, LogOut, RefreshCw, User, UserPen } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
@@ -253,16 +253,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           {t("topbar.editProfile")}
         </MenuItem>
       ) : null}
-      <MenuItem
-        onSelect={() => {
-          setOpen(false);
-          navigate("/settings/preferences");
-        }}
-      >
-        <Settings className="size-4 shrink-0" aria-hidden="true" />
-        {t("topbar.preferences")}
-      </MenuItem>
-      <MenuSeparator />
+      {isPersonal ? <MenuSeparator /> : null}
       <MenuItem
         destructive
         disabled={signingOut}

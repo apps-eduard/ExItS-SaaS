@@ -413,19 +413,19 @@ function TransactionCardRow({
         data-testid={`transaction-card-row-${sale.saleId}`}
       >
         <span className="min-w-0 flex-1">
-          <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="min-w-0 wrap-break-word font-semibold">{sale.saleNumber}</span>
-            <StatusChip tone={saleStatusTone(sale.status, voided)}>{sale.status}</StatusChip>
-          </span>
+          <span className="block min-w-0 truncate font-semibold">{sale.saleNumber}</span>
           <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
             {formatPaymentMethodLabel(sale.paymentMethod)} · {formatRecordedWhen(sale.recordedAtUtc)}
             {showCashier && cashierName ? ` · ${cashierName}` : null}
           </span>
         </span>
-        <span className="flex shrink-0 items-center gap-2">
-          <MoneyDisplay amount={sale.total} />
-          <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
-          <span className="sr-only">{t("transactions.viewSummary")}</span>
+        <span className="flex shrink-0 flex-col items-end gap-1">
+          <StatusChip tone={saleStatusTone(sale.status, voided)}>{sale.status}</StatusChip>
+          <span className="flex items-center gap-2">
+            <MoneyDisplay amount={sale.total} />
+            <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+            <span className="sr-only">{t("transactions.viewSummary")}</span>
+          </span>
         </span>
       </Link>
     </li>

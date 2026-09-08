@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
+import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { PersonalBottomNav } from "@/features/personal/PersonalBottomNav";
 import { formatUnreadNotificationBadge } from "@/features/personal/personal-notifications";
 import { usePersonalNotificationUnreadCountQuery } from "@/features/personal/people-queries";
@@ -77,6 +78,10 @@ export function PersonalShell() {
                       navigate("/personal/notifications", { state: notificationsLinkState });
                     }
               }
+            />
+            <ShellPreferencesButton
+              label={t("topbar.preferences")}
+              className="app-top-bar__action"
             />
             <AccountMenu signingOut={signingOut} onSignOut={() => void handleSignOut()} compact />
           </div>

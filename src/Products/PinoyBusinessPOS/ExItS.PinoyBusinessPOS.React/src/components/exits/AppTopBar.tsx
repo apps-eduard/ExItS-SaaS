@@ -6,6 +6,7 @@ import { listOrganizationNotifications } from "@/api/platform/organization-notif
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
+import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import {
   countUnreadOrganizationNotifications,
   formatUnreadNotificationBadge,
@@ -197,6 +198,10 @@ export function AppTopBar() {
               }
             />
           ) : null}
+          <ShellPreferencesButton
+            label={t("topbar.preferences")}
+            className="app-top-bar__action"
+          />
           <AccountMenu
             compact
             signingOut={signingOut}
