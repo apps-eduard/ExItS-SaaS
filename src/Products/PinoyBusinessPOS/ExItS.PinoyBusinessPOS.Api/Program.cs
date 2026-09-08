@@ -454,6 +454,7 @@ builder.Services.AddScoped<ProposeIncomingOrderChanges>();
 builder.Services.AddScoped<RevalidateConnectedPoDraft>();
 builder.Services.AddScoped<RegisterQueryService>();
 builder.Services.AddScoped<CreateRegister>();
+builder.Services.AddScoped<EnsureAvailablePwaRegisterForShift>();
 builder.Services.AddScoped<UpdateRegister>();
 builder.Services.AddScoped<ActivateRegister>();
 builder.Services.AddScoped<DeactivateRegister>();

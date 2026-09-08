@@ -2,11 +2,13 @@ using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Application.Registers;
 
@@ -258,6 +260,150 @@ public sealed class CreateRegister
         {
             return ApplicationResult<PosRegisterDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Narrow operational path for pure React PWA shift open: reuse any free Active register, or
+/// auto-create the next <c>PWA-NNNN</c> display name. Requires <see cref="UtangCapability.ManageShifts"/>
+/// only — does not grant general register management to cashiers.
+/// </summary>
+public sealed class EnsureAvailablePwaRegisterForShift
+{
+    private readonly IRegisterRepository _registers;
+    private readonly ICashierShiftRepository _shifts;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly PosDeviceAuthorizationOptions _deviceAuthorization;
+    private readonly TimeProvider _clock;
+
+    public EnsureAvailablePwaRegisterForShift(
+        IRegisterRepository registers,
+        ICashierShiftRepository shifts,
+        IPosUnitOfWork unitOfWork,
+        IPosCommercialAccessAccessor access,
+        IOptions<PosDeviceAuthorizationOptions> deviceAuthorization,
+        TimeProvider? clock = null)
+    {
+        _registers = registers;
+        _shifts = shifts;
+        _unitOfWork = unitOfWork;
+        _access = access;
+        _deviceAuthorization = deviceAuthorization.Value;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<PosRegisterDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManageShifts);
+        if (!gate.IsSuccess)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        if (_deviceAuthorization.EnforcementEnabled)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(
+                ApplicationErrorCodes.PwaRegisterEnsureDeviceEnforcementEnabled,
+                "Automatic PWA register provisioning is disabled while POS device enforcement is enabled.");
+        }
+
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to ensure a PWA register.");
+        }
+
+        var org = PosOrganizationId.From(organizationId);
+        var blockedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var attempt = 0; attempt < PwaRegisterAllocation.MaxCreateAttempts; attempt++)
+        {
+            var free = await _registers
+                .ListAvailableForShiftAsync(org, cancellationToken)
+                .ConfigureAwait(false);
+            if (free.Count > 0)
+            {
+                var chosen = free[0];
+                var openShift = await _shifts
+                    .FindOpenForRegisterAsync(org, chosen.Id.Value, cancellationToken)
+                    .ConfigureAwait(false);
+                return ApplicationResult<PosRegisterDto>.Success(
+                    RegisterMapper.Map(chosen, openShift is not null, openShift?.ActorId));
+            }
+
+            var (allRegisters, _) = await _registers
+                .ListAsync(org, new RegisterFilter(), 0, 500, cancellationToken)
+                .ConfigureAwait(false);
+            var candidateName = PwaRegisterAllocation.NextDisplayName(
+                allRegisters.Select(r => r.Name).Concat(blockedNames));
+
+            var existingNamed = await _registers
+                .FindByNormalizedNameAsync(org, candidateName.ToUpperInvariant(), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingNamed is not null)
+            {
+                if (existingNamed.Status == RegisterStatus.Active)
+                {
+                    var hasOpen = await _registers
+                        .HasOpenShiftAsync(org, existingNamed.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!hasOpen)
+                    {
+                        return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(existingNamed));
+                    }
+                }
+
+                blockedNames.Add(candidateName);
+                continue;
+            }
+
+            try
+            {
+                var utcNow = _clock.GetUtcNow();
+                var code = await _registers.AllocateNextRegisterCodeAsync(org, cancellationToken).ConfigureAwait(false);
+                var register = Register.Create(
+                    org,
+                    code,
+                    candidateName,
+                    actorId,
+                    utcNow,
+                    PwaRegisterAllocation.Description);
+                await _registers.AddAsync(register, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(register));
+            }
+            catch (DomainException ex) when (
+                ex.ErrorCode is ApplicationErrorCodes.RegisterNameConflict
+                    or ApplicationErrorCodes.RegisterCodeConflict)
+            {
+                blockedNames.Add(candidateName);
+            }
+            catch (PersistenceConflictException)
+            {
+                blockedNames.Add(candidateName);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<PosRegisterDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+        }
+
+        var fallbackFree = await _registers
+            .ListAvailableForShiftAsync(org, cancellationToken)
+            .ConfigureAwait(false);
+        if (fallbackFree.Count > 0)
+        {
+            return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(fallbackFree[0]));
+        }
+
+        return ApplicationResult<PosRegisterDto>.Failure(
+            ApplicationErrorCodes.PwaRegisterEnsureExhausted,
+            "Could not ensure an available PWA cash register after concurrent create retries.");
     }
 }
 

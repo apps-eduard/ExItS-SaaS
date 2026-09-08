@@ -2457,12 +2457,12 @@ export const en = {
   "shift.goToRegisters": "Go to registers",
   "shift.pwaRegisterTitle": "Preparing web cash register",
   "shift.pwaRegisterDetail":
-    "Web POS creates cash register {name} automatically so you can open a shift without manual register setup.",
-  "shift.pwaRegisterPreparing": "Creating PWA-0001?",
-  "shift.pwaRegisterRetry": "Create PWA-0001",
-  "shift.pwaRegisterError": "Could not create the web cash register.",
+    "Web POS prepares an available cash register automatically so you can open a shift without manual register setup.",
+  "shift.pwaRegisterPreparing": "Preparing another register…",
+  "shift.pwaRegisterRetry": "Prepare register",
+  "shift.pwaRegisterError": "Could not prepare a web cash register.",
   "shift.pwaRegisterBusy":
-    "PWA-0001 already has an open shift. Close that shift first, or use another cash register.",
+    "All cash registers are currently in use. Close a shift or wait while another register is prepared.",
   "shift.closeTitle": "Close shift",
   "shift.closeConfirm": "Close shift",
   "shift.closing": "Closing?",

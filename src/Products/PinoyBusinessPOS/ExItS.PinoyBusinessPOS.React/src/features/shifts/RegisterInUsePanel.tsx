@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { LoadingState } from "@/components/exits/LoadingState";
 import { useI18n } from "@/i18n/I18nProvider";
 
 type RegisterInUsePanelProps = {
@@ -9,6 +10,10 @@ type RegisterInUsePanelProps = {
   openedByDisplayName: string | null;
   chooseRegisterHref?: string;
   onChooseRegister?: () => void;
+  /** When true, show operational “preparing another register” instead of a dead-end choose link. */
+  preparing?: boolean;
+  preparingLabel?: string;
+  hideChooseRegister?: boolean;
   testId?: string;
 };
 
@@ -21,6 +26,9 @@ export function RegisterInUsePanel({
   openedByDisplayName,
   chooseRegisterHref = "/registers",
   onChooseRegister,
+  preparing = false,
+  preparingLabel,
+  hideChooseRegister = false,
   testId = "register-in-use-panel",
 }: RegisterInUsePanelProps) {
   const { t } = useI18n();
@@ -40,10 +48,14 @@ export function RegisterInUsePanel({
           .replace("{register}", registerLabel)
           .replace("{name}", opener)}
       </p>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("shift.registerInUseHelp")}
-      </p>
-      {onChooseRegister ? (
+      {preparing ? (
+        <LoadingState label={preparingLabel ?? t("shift.pwaRegisterPreparing")} />
+      ) : (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("shift.registerInUseHelp")}
+        </p>
+      )}
+      {hideChooseRegister || preparing ? null : onChooseRegister ? (
         <Button
           type="button"
           data-testid={`${testId}-choose-register`}

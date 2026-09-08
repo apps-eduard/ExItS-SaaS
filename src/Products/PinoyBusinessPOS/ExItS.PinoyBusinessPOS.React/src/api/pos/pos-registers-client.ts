@@ -107,6 +107,37 @@ export type CreateRegisterBody = {
   description?: string | null;
 };
 
+const ENSURE_PWA_REGISTER_OPERATION = "pos.register.ensure_available_for_pwa_shift";
+
+/**
+ * Reuse any free Active register, or auto-create the next PWA-NNNN.
+ * Requires ManageShifts (cashiers allowed). Device enforcement must be disabled.
+ */
+export async function ensureAvailablePwaRegisterForShift(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosRegisterDto> {
+  const operationId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, "0").slice(-12)}`;
+  const payload = {};
+  const payloadJson = JSON.stringify(payload);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    operationId,
+    payloadJson,
+    ENSURE_PWA_REGISTER_OPERATION,
+  );
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REGISTERS_PATH}/ensure-available-for-pwa-shift`,
+    body: payload,
+    headers,
+  });
+}
+
 /** Requires ManageRegisters. Server allocates REG-NNNNNN code. */
 export async function createRegister(
   workspace: PosWorkspaceScope,

@@ -159,6 +159,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.RegisterNameConflict
             or ApplicationErrorCodes.RegisterCodeConflict
             or ApplicationErrorCodes.RegisterConcurrencyConflict
+            or ApplicationErrorCodes.PwaRegisterEnsureExhausted
             or DomainErrorCodes.RegisterDeactivateBlockedByOpenShift
             or DomainErrorCodes.RegisterNotActive
             or DomainErrorCodes.CashierShiftRegisterConflict
@@ -193,6 +194,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ProductAvailabilityForbidden
             or ApplicationErrorCodes.CustomerBranchAccessForbidden
             or ApplicationErrorCodes.SupplierBranchAccessForbidden
+            or ApplicationErrorCodes.PwaRegisterEnsureDeviceEnforcementEnabled
             or ConnectedSupplierErrorCodes.BranchResponseForbidden
             or ConnectedSupplierErrorCodes.BranchReadForbidden => StatusCodes.Status403Forbidden,
 

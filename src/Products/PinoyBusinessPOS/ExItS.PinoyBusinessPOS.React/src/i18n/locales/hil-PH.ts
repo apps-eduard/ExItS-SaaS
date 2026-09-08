@@ -9612,15 +9612,15 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "shift.openingCashSection": "Opening cash",
 
-  "shift.pwaRegisterBusy": "PWA-0001 already has an open shift. Close that shift first, or use another cash register.",
+  "shift.pwaRegisterBusy": "All cash registers are currently in use. Close a shift or wait while another register is prepared.",
 
-  "shift.pwaRegisterDetail": "Web POS creates cash register {name} automatically so you can open a shift without manual register setup.",
+  "shift.pwaRegisterDetail": "Web POS prepares an available cash register automatically so you can open a shift without manual register setup.",
 
-  "shift.pwaRegisterError": "Could not create the web cash register.",
+  "shift.pwaRegisterError": "Could not prepare a web cash register.",
 
-  "shift.pwaRegisterPreparing": "Creating PWA-0001?",
+  "shift.pwaRegisterPreparing": "Preparing another register…",
 
-  "shift.pwaRegisterRetry": "Create PWA-0001",
+  "shift.pwaRegisterRetry": "Prepare register",
 
   "shift.pwaRegisterTitle": "Preparing web cash register",
 

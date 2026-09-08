@@ -13,6 +13,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Registers;
 internal static class RegisterEndpoints
 {
     public const string CreateOperation = "pos.register.create";
+    public const string EnsurePwaRegisterOperation = "pos.register.ensure_available_for_pwa_shift";
     public const string ActivateOperation = "pos.register.activate";
     public const string DeactivateOperation = "pos.register.deactivate";
 
@@ -41,6 +42,36 @@ internal static class RegisterEndpoints
 
             var items = await queries.ListAvailableForShiftAsync(organizationId, ct).ConfigureAwait(false);
             return Results.Ok(items);
+        });
+
+        group.MapPost("/ensure-available-for-pwa-shift", async (
+            HttpRequest request,
+            EnsureAvailablePwaRegisterForShift useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            // Narrow operational ensure: ManageShifts (cashiers) — not ManageRegisters.
+            if (!TryAuthorize(request, access, UtangCapability.ManageShifts, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    EnsurePwaRegisterOperation,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, actorId, ct2),
+                    dto => dto,
+                    dto => Results.Ok(dto),
+                    ct)
+                .ConfigureAwait(false);
         });
 
         group.MapGet("/", async (

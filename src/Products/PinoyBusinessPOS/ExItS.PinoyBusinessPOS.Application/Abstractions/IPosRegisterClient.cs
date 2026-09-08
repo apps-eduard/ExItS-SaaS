@@ -30,6 +30,11 @@ public interface IPosRegisterClient
 
     Task<ApiResult<PosRegisterDto>> CreateAsync(CreateRegisterRequest request, CancellationToken ct = default);
 
+    /// <summary>
+    /// Reuse a free Active register or auto-create the next PWA-NNNN (ManageShifts; device enforcement must be off).
+    /// </summary>
+    Task<ApiResult<PosRegisterDto>> EnsureAvailableForPwaShiftAsync(CancellationToken ct = default);
+
     Task<ApiResult<PosRegisterDto>> UpdateAsync(
         Guid registerId,
         UpdateRegisterRequest request,
