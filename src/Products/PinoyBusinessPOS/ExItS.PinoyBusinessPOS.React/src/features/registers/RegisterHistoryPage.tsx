@@ -1,17 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ReceiptText } from "lucide-react";
+import { ReceiptText } from "lucide-react";
 import { canViewRegisters, canViewShifts } from "@/access/pos-capabilities";
 import {
   getRegister,
   getRegisterActivity,
 } from "@/api/pos/pos-registers-client";
-import {
-  isOpenCashierShift,
-  listCashierShifts,
-  type PosCashierShiftDto,
-} from "@/api/pos/pos-shifts-client";
+import { listCashierShifts } from "@/api/pos/pos-shifts-client";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -25,25 +21,13 @@ import {
   resolveHistoryDatePreset,
   type HistoryDatePreset,
 } from "@/features/registers/date-range-presets";
+import { ShiftHistoryResponsiveList } from "@/features/shifts/ShiftHistoryResponsiveList";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PRESETS: HistoryDatePreset[] = ["today", "last7Days", "last30Days"];
-
-function formatOpenedWhen(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return iso;
-  }
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export function RegisterHistoryPage() {
   const { t } = useI18n();
@@ -153,15 +137,19 @@ export function RegisterHistoryPage() {
 
   const register = registerQuery.data;
   const activity = activityQuery.data;
+  const branchName = boundWorkspace?.branchName?.trim() || null;
+  const contextLine = [register.name, register.registerCode, branchName]
+    .filter(Boolean)
+    .join(" • ");
 
   return (
     <div
       data-testid="register-history-page"
-      className="register-history-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
+      className="register-history-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-3"
     >
       <PageHeader
         title={t("register.historyTitle")}
-        description={`${register.registerCode} — ${register.name}`}
+        description={contextLine}
         backTo={pageBackNav.registers.to}
         backLabel={t(pageBackNav.registers.labelKey)}
         backTestId="page-header-back-registers"
@@ -196,7 +184,7 @@ export function RegisterHistoryPage() {
 
       {activity ? (
         <div
-          className="grid gap-2 sm:grid-cols-2"
+          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
           data-testid="register-history-activity"
         >
           <Card className="exits-metric-surface flex flex-col gap-0.5 p-3">
@@ -281,81 +269,16 @@ export function RegisterHistoryPage() {
           <EmptyState title={t("register.historyShiftsEmpty")} />
         ) : null}
 
-        <ul className="exits-list m-0 grid list-none gap-2 p-0">
-          {shifts.map((shift) => (
-            <RegisterHistoryShiftRow
-              key={shift.shiftId}
-              shift={shift}
-              cashierName={actors.resolve(shift.actorId)?.displayName ?? null}
-            />
-          ))}
-        </ul>
+        <ShiftHistoryResponsiveList
+          shifts={shifts}
+          resolveCashierName={(actorId) => actors.resolve(actorId)?.displayName ?? null}
+          showCashier
+          showRegister={false}
+          rowTestIdPrefix="register-history-shift"
+          viewShiftTestIdPrefix="register-history-view-shift"
+          viewTxnsTestIdPrefix="register-history-shift-txns"
+        />
       </div>
     </div>
-  );
-}
-
-function RegisterHistoryShiftRow({
-  shift,
-  cashierName,
-}: {
-  shift: PosCashierShiftDto;
-  cashierName: string | null;
-}) {
-  const { t } = useI18n();
-  const open = isOpenCashierShift(shift);
-  return (
-    <li>
-      <div
-        className="exits-list__card flex min-w-0 flex-col gap-2 p-3"
-        data-testid={`register-history-shift-${shift.shiftId}`}
-      >
-        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="m-0 truncate font-semibold">{shift.shiftNumber}</p>
-            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-              {formatOpenedWhen(shift.openedAtUtc)}
-              {cashierName ? ` · ${cashierName}` : null}
-            </p>
-          </div>
-          <StatusChip tone={open ? "success" : "info"}>
-            {open ? t("shift.statusOpen") : shift.status}
-          </StatusChip>
-        </div>
-        {shift.completedTransactionCount != null || shift.completedSalesTotal != null ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            <span className="text-muted">{t("register.transactionsLabel")}: </span>
-            <span className="font-medium tabular-nums">
-              {shift.completedTransactionCount ?? 0}
-            </span>
-            {shift.completedSalesTotal != null ? (
-              <>
-                <span className="text-muted"> · </span>
-                <span className="font-medium tabular-nums">
-                  {formatPeso(shift.completedSalesTotal)}
-                </span>
-              </>
-            ) : null}
-          </p>
-        ) : null}
-        <div className="flex min-w-0 flex-wrap gap-2">
-          <Link
-            to={`/shifts/${shift.shiftId}`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
-            data-testid={`register-history-view-shift-${shift.shiftId}`}
-          >
-            {t("register.viewShift")}
-            <ChevronRight className="size-3.5" aria-hidden />
-          </Link>
-          <Link
-            to={`/shifts/${shift.shiftId}/transactions`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
-            data-testid={`register-history-shift-txns-${shift.shiftId}`}
-          >
-            {t("register.viewTransactions")}
-          </Link>
-        </div>
-      </div>
-    </li>
   );
 }

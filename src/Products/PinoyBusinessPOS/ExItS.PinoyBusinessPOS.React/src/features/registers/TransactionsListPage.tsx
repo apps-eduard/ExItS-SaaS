@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { canViewSales } from "@/access/pos-capabilities";
@@ -43,13 +43,26 @@ function formatRecordedWhen(iso: string): string {
   });
 }
 
+function saleStatusTone(status: string, voided: boolean): "danger" | "success" | "info" {
+  if (voided) {
+    return "danger";
+  }
+  if (status === "Completed") {
+    return "success";
+  }
+  return "info";
+}
+
 /**
  * Shared transactions list scoped by route:
  * - `/registers/:registerId/transactions`
  * - `/shifts/:shiftId/transactions`
+ *
+ * Mobile (&lt; lg): compact cards. Desktop (≥ lg): semantic data table.
  */
 export function TransactionsListPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { registerId, shiftId } = useParams();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canView = canViewSales(sessionGrant);
@@ -58,6 +71,7 @@ export function TransactionsListPage() {
   const scopedShiftId = shiftId?.trim() || undefined;
   const isShiftScope = Boolean(scopedShiftId);
   const isRegisterScope = Boolean(scopedRegisterId) && !isShiftScope;
+  const showCashierColumn = isRegisterScope;
 
   const [preset, setPreset] = useState<HistoryDatePreset>("last7Days");
   const [page, setPage] = useState(1);
@@ -96,10 +110,7 @@ export function TransactionsListPage() {
       isShiftScope ? null : range.toDate,
       page,
     ],
-    enabled:
-      workspaceScope !== null &&
-      canView &&
-      (isRegisterScope || isShiftScope),
+    enabled: workspaceScope !== null && canView && (isRegisterScope || isShiftScope),
     queryFn: ({ signal }) =>
       listSales(
         workspaceScope!,
@@ -135,16 +146,22 @@ export function TransactionsListPage() {
     ? t("transactions.shiftTitle")
     : t("transactions.registerTitle");
 
+  const branchName = boundWorkspace?.branchName?.trim() || null;
+
   const contextLine = isShiftScope
     ? shiftQuery.data
-      ? `${shiftQuery.data.shiftNumber}${
-          shiftQuery.data.registerCode
-            ? ` · ${shiftQuery.data.registerCode}`
-            : ""
-        }`
+      ? [
+          shiftQuery.data.shiftNumber,
+          shiftQuery.data.registerName || shiftQuery.data.registerCode || null,
+          branchName,
+        ]
+          .filter(Boolean)
+          .join(" • ")
       : t("transactions.shiftLede")
     : registerQuery.data
-      ? `${registerQuery.data.registerCode} — ${registerQuery.data.name}`
+      ? [registerQuery.data.name, registerQuery.data.registerCode, branchName]
+          .filter(Boolean)
+          .join(" • ")
       : t("transactions.registerLede");
 
   if (!canView) {
@@ -167,12 +184,14 @@ export function TransactionsListPage() {
 
   const totalCount = salesQuery.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   return (
     <div
       data-testid="transactions-list-page"
       data-scope={isShiftScope ? "shift" : "register"}
-      className="transactions-list-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
+      className="transactions-list-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-3"
     >
       <PageHeader
         title={title}
@@ -218,57 +237,171 @@ export function TransactionsListPage() {
         <EmptyState title={t("transactions.empty")} detail={t("transactions.emptyDetail")} />
       ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="transactions-list">
-        {sales.map((sale) => (
-          <TransactionRow
-            key={sale.saleId}
-            sale={sale}
-            cashierName={actors.resolve(sale.recordedBy)?.displayName ?? null}
-          />
-        ))}
-      </ul>
+      {sales.length > 0 ? (
+        <>
+          <ul
+            className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
+            data-testid="transactions-list-cards"
+          >
+            {sales.map((sale) => (
+              <TransactionCardRow
+                key={sale.saleId}
+                sale={sale}
+                cashierName={
+                  showCashierColumn
+                    ? actors.resolve(sale.recordedBy)?.displayName ?? null
+                    : null
+                }
+                showCashier={showCashierColumn}
+              />
+            ))}
+          </ul>
 
-      {totalCount > PAGE_SIZE ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("transactions.pageOf")
-              .replace("{page}", String(page))
-              .replace("{pages}", String(totalPages))}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              data-testid="transactions-prev"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              {t("transactions.prevPage")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              data-testid="transactions-next"
-              onClick={() => setPage((current) => current + 1)}
-            >
-              {t("transactions.nextPage")}
-            </Button>
+          <div
+            className="hidden min-w-0 overflow-x-auto lg:block"
+            data-testid="transactions-list-table"
+          >
+            <table className="w-full min-w-[42rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("transactions.col.saleNumber")}
+                  </th>
+                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("transactions.col.dateTime")}
+                  </th>
+                  {showCashierColumn ? (
+                    <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.cashier")}
+                    </th>
+                  ) : null}
+                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("transactions.col.payment")}
+                  </th>
+                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("transactions.col.status")}
+                  </th>
+                  <th className="whitespace-nowrap px-2 py-2 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("transactions.col.amount")}
+                  </th>
+                  <th className="w-8 px-2 py-2">
+                    <span className="sr-only">{t("transactions.viewSummary")}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sales.map((sale) => {
+                  const voided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
+                  const cashierName = showCashierColumn
+                    ? actors.resolve(sale.recordedBy)?.displayName ?? null
+                    : null;
+                  const summaryPath = `/sell/sales/${sale.saleId}/summary`;
+                  return (
+                    <tr
+                      key={sale.saleId}
+                      role="link"
+                      tabIndex={0}
+                      className="cursor-pointer border-b border-border transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+                      data-testid={`transaction-table-row-${sale.saleId}`}
+                      aria-label={`${sale.saleNumber}. ${t("transactions.viewSummary")}`}
+                      onClick={() => navigate(summaryPath)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigate(summaryPath);
+                        }
+                      }}
+                    >
+                      <td
+                        className="px-2 py-2 align-middle font-semibold"
+                        data-testid={`transaction-row-${sale.saleId}`}
+                      >
+                        {sale.saleNumber}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-2 align-middle text-muted">
+                        {formatRecordedWhen(sale.recordedAtUtc)}
+                      </td>
+                      {showCashierColumn ? (
+                        <td className="max-w-[14rem] truncate px-2 py-2 align-middle">
+                          {cashierName ?? "—"}
+                        </td>
+                      ) : null}
+                      <td className="whitespace-nowrap px-2 py-2 align-middle">
+                        {formatPaymentMethodLabel(sale.paymentMethod)}
+                      </td>
+                      <td className="px-2 py-2 align-middle">
+                        <StatusChip tone={saleStatusTone(sale.status, voided)}>
+                          {sale.status}
+                        </StatusChip>
+                      </td>
+                      <td className="px-2 py-2 align-middle text-right tabular-nums">
+                        <MoneyDisplay amount={sale.total} />
+                      </td>
+                      <td className="px-2 py-2 align-middle text-right text-muted">
+                        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        </>
+      ) : null}
+
+      {totalCount > 0 ? (
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+            data-testid="transactions-page-count"
+          >
+            {totalCount > PAGE_SIZE
+              ? t("transactions.pageRange")
+                  .replace("{start}", String(rangeStart))
+                  .replace("{end}", String(rangeEnd))
+                  .replace("{total}", String(totalCount))
+              : t("transactions.pageOf")
+                  .replace("{page}", String(page))
+                  .replace("{pages}", String(totalPages))}
+          </p>
+          {totalCount > PAGE_SIZE ? (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                data-testid="transactions-prev"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                {t("transactions.prevPage")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                data-testid="transactions-next"
+                onClick={() => setPage((current) => current + 1)}
+              >
+                {t("transactions.nextPage")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
 }
 
-function TransactionRow({
+function TransactionCardRow({
   sale,
   cashierName,
+  showCashier,
 }: {
   sale: PosSaleDto;
   cashierName: string | null;
+  showCashier: boolean;
 }) {
   const { t } = useI18n();
   const voided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
@@ -277,18 +410,16 @@ function TransactionRow({
       <Link
         to={`/sell/sales/${sale.saleId}/summary`}
         className="exits-list__card flex min-w-0 items-center gap-2 p-3 text-foreground no-underline"
-        data-testid={`transaction-row-${sale.saleId}`}
+        data-testid={`transaction-card-row-${sale.saleId}`}
       >
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="truncate font-semibold">{sale.saleNumber}</span>
-            <StatusChip tone={voided ? "danger" : sale.status === "Completed" ? "success" : "info"}>
-              {sale.status}
-            </StatusChip>
+            <span className="min-w-0 wrap-break-word font-semibold">{sale.saleNumber}</span>
+            <StatusChip tone={saleStatusTone(sale.status, voided)}>{sale.status}</StatusChip>
           </span>
-          <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+          <span className="mt-1 block text-[length:var(--exits-text-sm)] text-muted">
             {formatPaymentMethodLabel(sale.paymentMethod)} · {formatRecordedWhen(sale.recordedAtUtc)}
-            {cashierName ? ` · ${cashierName}` : null}
+            {showCashier && cashierName ? ` · ${cashierName}` : null}
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2">

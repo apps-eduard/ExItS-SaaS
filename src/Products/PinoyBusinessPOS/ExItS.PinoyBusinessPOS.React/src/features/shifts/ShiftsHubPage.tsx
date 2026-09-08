@@ -1,22 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
-  ChevronRight,
   CircleAlert,
   Clock3,
-  ReceiptText,
   ShoppingCart,
   Store,
 } from "lucide-react";
 import { canManageShifts, canViewShifts, isPosCashierRole } from "@/access/pos-capabilities";
 import { listRegisters } from "@/api/pos/pos-registers-client";
-import {
-  isOpenCashierShift,
-  listCashierShifts,
-  type PosCashierShiftDto,
-} from "@/api/pos/pos-shifts-client";
+import { listCashierShifts } from "@/api/pos/pos-shifts-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
@@ -35,25 +28,12 @@ import {
   ManagerActionGrid,
 } from "@/features/role/ManagerHomeShared";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
+import { ShiftHistoryResponsiveList } from "@/features/shifts/ShiftHistoryResponsiveList";
 import { useI18n } from "@/i18n/I18nProvider";
-import { formatPeso } from "@/lib/format-money";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PRESETS: HistoryDatePreset[] = ["today", "last7Days", "thisWeek", "thisMonth"];
-
-function formatOpenedWhen(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return iso;
-  }
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export function ShiftsHubPage() {
   const { t } = useI18n();
@@ -216,7 +196,7 @@ export function ShiftsHubPage() {
     <div
       data-testid="shifts-hub-page"
       data-role-scope={isCashier ? "cashier" : "manager"}
-      className="shifts-hub-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
+      className="shifts-hub-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-3"
     >
       <PageHeader
         title={isCashier ? t("shift.myHubTitle") : t("shift.hubTitle")}
@@ -343,16 +323,15 @@ export function ShiftsHubPage() {
           {myHistoryQuery.isSuccess && myShifts.length === 0 ? (
             <EmptyState title={t("shift.historyEmpty")} />
           ) : null}
-          <ul className="exits-list m-0 grid list-none gap-2 p-0">
-            {myShifts.map((shift) => (
-              <ShiftHistoryRow
-                key={shift.shiftId}
-                shift={shift}
-                cashierName={null}
-                showCashier={false}
-              />
-            ))}
-          </ul>
+          <ShiftHistoryResponsiveList
+            shifts={myShifts}
+            resolveCashierName={() => null}
+            showCashier={false}
+            showRegister
+            rowTestIdPrefix="shift-history-row"
+            viewShiftTestIdPrefix="shift-history-view"
+            viewTxnsTestIdPrefix="shift-history-txns"
+          />
         </section>
       ) : (
         <>
@@ -369,16 +348,15 @@ export function ShiftsHubPage() {
             {openShiftsQuery.isSuccess && openShifts.length === 0 ? (
               <EmptyState title={t("shift.openShiftsEmpty")} />
             ) : null}
-            <ul className="exits-list m-0 grid list-none gap-2 p-0">
-              {openShifts.map((shift) => (
-                <ShiftHistoryRow
-                  key={shift.shiftId}
-                  shift={shift}
-                  cashierName={actors.resolve(shift.actorId)?.displayName ?? null}
-                  showCashier
-                />
-              ))}
-            </ul>
+            <ShiftHistoryResponsiveList
+              shifts={openShifts}
+              resolveCashierName={(actorId) => actors.resolve(actorId)?.displayName ?? null}
+              showCashier
+              showRegister
+              rowTestIdPrefix="shift-history-row"
+              viewShiftTestIdPrefix="shift-history-view"
+              viewTxnsTestIdPrefix="shift-history-txns"
+            />
           </section>
 
           <section className="flex min-w-0 flex-col gap-2" data-testid="manager-shifts-history">
@@ -453,94 +431,18 @@ export function ShiftsHubPage() {
             {historyQuery.isSuccess && historyShifts.length === 0 ? (
               <EmptyState title={t("shift.historyEmpty")} />
             ) : null}
-            <ul className="exits-list m-0 grid list-none gap-2 p-0">
-              {historyShifts.map((shift) => (
-                <ShiftHistoryRow
-                  key={shift.shiftId}
-                  shift={shift}
-                  cashierName={actors.resolve(shift.actorId)?.displayName ?? null}
-                  showCashier
-                />
-              ))}
-            </ul>
+            <ShiftHistoryResponsiveList
+              shifts={historyShifts}
+              resolveCashierName={(actorId) => actors.resolve(actorId)?.displayName ?? null}
+              showCashier
+              showRegister
+              rowTestIdPrefix="shift-history-row"
+              viewShiftTestIdPrefix="shift-history-view"
+              viewTxnsTestIdPrefix="shift-history-txns"
+            />
           </section>
         </>
       )}
     </div>
-  );
-}
-
-function ShiftHistoryRow({
-  shift,
-  cashierName,
-  showCashier,
-}: {
-  shift: PosCashierShiftDto;
-  cashierName: string | null;
-  showCashier: boolean;
-}) {
-  const { t } = useI18n();
-  const open = isOpenCashierShift(shift);
-  const registerLabel =
-    shift.registerCode && shift.registerName
-      ? `${shift.registerCode} — ${shift.registerName}`
-      : shift.registerCode || shift.registerName || t("shift.noRegisterOnShift");
-
-  return (
-    <li>
-      <div
-        className="exits-list__card flex min-w-0 flex-col gap-2 p-3"
-        data-testid={`shift-history-row-${shift.shiftId}`}
-      >
-        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="m-0 truncate font-semibold">{shift.shiftNumber}</p>
-            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-              {registerLabel}
-              {" · "}
-              {formatOpenedWhen(shift.openedAtUtc)}
-              {showCashier && cashierName ? ` · ${cashierName}` : null}
-            </p>
-          </div>
-          <StatusChip tone={open ? "success" : "info"}>
-            {open ? t("shift.statusOpen") : shift.status}
-          </StatusChip>
-        </div>
-        {shift.completedTransactionCount != null || shift.completedSalesTotal != null ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            <span className="text-muted">{t("register.transactionsLabel")}: </span>
-            <span className="font-medium tabular-nums">
-              {shift.completedTransactionCount ?? 0}
-            </span>
-            {shift.completedSalesTotal != null ? (
-              <>
-                <span className="text-muted"> · </span>
-                <span className="font-medium tabular-nums">
-                  {formatPeso(shift.completedSalesTotal)}
-                </span>
-              </>
-            ) : null}
-          </p>
-        ) : null}
-        <div className="flex min-w-0 flex-wrap gap-2">
-          <Link
-            to={`/shifts/${shift.shiftId}`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
-            data-testid={`shift-history-view-${shift.shiftId}`}
-          >
-            {t("register.viewShift")}
-            <ChevronRight className="size-3.5" aria-hidden />
-          </Link>
-          <Link
-            to={`/shifts/${shift.shiftId}/transactions`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
-            data-testid={`shift-history-txns-${shift.shiftId}`}
-          >
-            <ReceiptText className="size-3.5 shrink-0" aria-hidden />
-            {t("register.viewTransactions")}
-          </Link>
-        </div>
-      </div>
-    </li>
   );
 }

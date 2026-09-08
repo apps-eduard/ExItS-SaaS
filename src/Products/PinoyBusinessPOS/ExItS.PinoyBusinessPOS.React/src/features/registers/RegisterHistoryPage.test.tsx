@@ -121,13 +121,14 @@ describe("RegisterHistoryPage", () => {
     expect(screen.getByTestId("register-history-activity")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByTestId("register-history-shift-shift-1")).toBeInTheDocument();
+    expect(screen.getByTestId("register-history-shift-table")).toBeInTheDocument();
+    expect(screen.getByTestId("register-history-shift-cards").className).toMatch(/\blg:hidden\b/);
     expect(screen.getByTestId("register-history-all-transactions")).toHaveAttribute(
       "href",
       "/registers/reg-1/transactions",
     );
-    expect(screen.getByTestId("register-history-shift-txns-shift-1")).toHaveAttribute(
-      "href",
-      "/shifts/shift-1/transactions",
-    );
+    const txnLinks = screen.getAllByTestId("register-history-shift-txns-shift-1");
+    expect(txnLinks.length).toBeGreaterThanOrEqual(1);
+    expect(txnLinks[0]).toHaveAttribute("href", "/shifts/shift-1/transactions");
   });
 });
