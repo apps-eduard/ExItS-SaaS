@@ -105,7 +105,11 @@ export function estimatedMaterialMargin(
   }
   const amount = roundMoney(sellingPrice - unitMaterialCost);
   const percent =
-    sellingPrice > 0 ? roundMoney((amount / sellingPrice) * 100) : amount === 0 ? 0 : 100;
+    sellingPrice > 0
+      ? Math.round(((amount / sellingPrice) * 100) * 10) / 10
+      : amount === 0
+        ? 0
+        : 100;
   return { amount, percent };
 }
 

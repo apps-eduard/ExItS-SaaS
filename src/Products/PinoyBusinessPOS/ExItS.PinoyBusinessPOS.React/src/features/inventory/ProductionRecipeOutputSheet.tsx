@@ -9,7 +9,6 @@ import {
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   DEFAULT_CATALOG_SELLING_MODE,
-  DEFAULT_CATALOG_SELLING_PRICE,
   type PosUnitOfMeasureCode,
 } from "@/api/pos/pos-catalog-options";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -29,7 +28,15 @@ import {
   type RecipeMaterialCostEstimate,
 } from "@/features/inventory/production-recipe-cost";
 import {
-  isEligibleProductionMaterial,
+  DEFAULT_TARGET_GROSS_MARGIN,
+  TARGET_GROSS_MARGIN_PRESETS,
+  formatGrossMarginPercent,
+  isLowGrossMargin,
+  isSellingBelowCost,
+  resolveMaterialCostBasis,
+  suggestSellingPriceFromUnitCost,
+} from "@/features/inventory/production-suggested-selling-price";
+import {
   materialBaseUomLabel,
   type ProductionMaterialDraft,
 } from "@/features/inventory/production-material-uom";
@@ -73,6 +80,10 @@ function sellingModeForUom(uom: string): string {
   return DEFAULT_CATALOG_SELLING_MODE;
 }
 
+function marginPresetLabel(margin: number): string {
+  return `${Math.round(margin * 100)}%`;
+}
+
 export function ProductionRecipeOutputSheet({
   open,
   workspace,
@@ -89,7 +100,11 @@ export function ProductionRecipeOutputSheet({
   const [baseUnit, setBaseUnit] = useState(standardYieldUom);
   const [canBeSold, setCanBeSold] = useState(true);
   const [canBeIngredient, setCanBeIngredient] = useState(false);
-  const [sellingPrice, setSellingPrice] = useState(String(DEFAULT_CATALOG_SELLING_PRICE || 25));
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [userEditedSellingPrice, setUserEditedSellingPrice] = useState(false);
+  const [targetMargin, setTargetMargin] = useState(DEFAULT_TARGET_GROSS_MARGIN);
+  const [customMarginRaw, setCustomMarginRaw] = useState("");
+  const [usingCustomMargin, setUsingCustomMargin] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -107,7 +122,11 @@ export function ProductionRecipeOutputSheet({
     setBaseUnit(standardYieldUom);
     setCanBeSold(true);
     setCanBeIngredient(false);
-    setSellingPrice("25");
+    setSellingPrice("");
+    setUserEditedSellingPrice(false);
+    setTargetMargin(DEFAULT_TARGET_GROSS_MARGIN);
+    setCustomMarginRaw("");
+    setUsingCustomMargin(false);
     setCategoryId("");
     setSearch("");
     setLocalError(null);
@@ -197,14 +216,81 @@ export function ProductionRecipeOutputSheet({
     costEstimate?.batchCost ?? null,
     standardYieldQty,
   );
+
+  const costBasis = useMemo(
+    () =>
+      resolveMaterialCostBasis({
+        unitCost: unitMaterialCost,
+        knownLineCount: costEstimate?.knownLineCount ?? 0,
+        missingLineCount: costEstimate?.missingLineCount ?? 0,
+      }),
+    [unitMaterialCost, costEstimate?.knownLineCount, costEstimate?.missingLineCount],
+  );
+
+  const suggestion = useMemo(() => {
+    if (!canBeSold || !costBasis.complete || costBasis.unitCost == null) {
+      return null;
+    }
+    return suggestSellingPriceFromUnitCost(costBasis.unitCost, targetMargin);
+  }, [canBeSold, costBasis, targetMargin]);
+
+  // Auto-fill suggested price only while the user has not manually edited.
+  useEffect(() => {
+    if (!open || !canBeSold || userEditedSellingPrice || !suggestion) {
+      return;
+    }
+    setSellingPrice(String(suggestion.rounded));
+  }, [open, canBeSold, userEditedSellingPrice, suggestion]);
+
   const priceNum = Number(sellingPrice);
   const margin =
     canBeSold && Number.isFinite(priceNum)
       ? estimatedMaterialMargin(priceNum, unitMaterialCost)
       : null;
 
+  const belowCost =
+    canBeSold &&
+    unitMaterialCost != null &&
+    Number.isFinite(priceNum) &&
+    isSellingBelowCost(priceNum, unitMaterialCost);
+
+  const lowMargin =
+    canBeSold &&
+    unitMaterialCost != null &&
+    Number.isFinite(priceNum) &&
+    isLowGrossMargin(priceNum, unitMaterialCost);
+
   if (!open) {
     return null;
+  }
+
+  function applySuggestedPrice() {
+    if (!suggestion) {
+      return;
+    }
+    setSellingPrice(String(suggestion.rounded));
+    setUserEditedSellingPrice(false);
+  }
+
+  function onSellingPriceChange(value: string) {
+    setUserEditedSellingPrice(true);
+    setSellingPrice(value);
+  }
+
+  function selectPresetMargin(marginValue: number) {
+    setUsingCustomMargin(false);
+    setCustomMarginRaw("");
+    setTargetMargin(marginValue);
+  }
+
+  function onCustomMarginChange(raw: string) {
+    setUsingCustomMargin(true);
+    setCustomMarginRaw(raw);
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 100) {
+      return;
+    }
+    setTargetMargin(parsed / 100);
   }
 
   async function createAndLink() {
@@ -214,7 +300,7 @@ export function ProductionRecipeOutputSheet({
       return;
     }
     const price = canBeSold ? Number(sellingPrice) : 0;
-    if (canBeSold && (!Number.isFinite(price) || price < 0)) {
+    if (canBeSold && (!Number.isFinite(price) || price < 0 || sellingPrice.trim() === "")) {
       setLocalError(t("production.recipes.invalidSellingPrice"));
       return;
     }
@@ -270,9 +356,6 @@ export function ProductionRecipeOutputSheet({
     if (materials.some((m) => m.materialProductId === product.productId)) {
       setLocalError(t("production.setups.materialAsOutputForbidden"));
       return;
-    }
-    if (isEligibleProductionMaterial(product) && product.isProduced !== true) {
-      // still require produced
     }
     onLinked({ outputProduct: product, createdNew: false });
   }
@@ -398,20 +481,226 @@ export function ProductionRecipeOutputSheet({
               {t("production.recipes.canBeIngredient")}
             </label>
 
+            <div
+              className="rounded-md border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-sm)]"
+              data-testid="production-recipe-estimated-cost"
+            >
+              <div className="font-medium">{t("production.recipes.estimatedMaterialCost")}</div>
+              {costLoading ? (
+                <LoadingState label={t("production.loading")} />
+              ) : unitMaterialCost != null ? (
+                <>
+                  <p className="m-0 mt-1.5 flex flex-wrap justify-between gap-2">
+                    <span>{t("production.recipes.estimatedBatchCost")}</span>
+                    <span className="tabular-nums font-medium">
+                      {formatPeso(costEstimate!.batchCost!)}
+                    </span>
+                  </p>
+                  <p className="m-0 mt-1 flex flex-wrap justify-between gap-2">
+                    <span>
+                      {t("production.recipes.estimatedUnitCostLabel").replace(
+                        "{uom}",
+                        String(baseUnit),
+                      )}
+                    </span>
+                    <span
+                      className="tabular-nums font-medium"
+                      data-testid="production-recipe-unit-material-cost"
+                    >
+                      {formatPeso(unitMaterialCost)}
+                    </span>
+                  </p>
+                  {(costEstimate?.missingLineCount ?? 0) > 0 ? (
+                    <p className="m-0 mt-1 text-muted">
+                      {t("production.recipes.estimatedCostPartial")}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="m-0 mt-1 text-muted">
+                  {t("production.recipes.estimatedCostUnavailable")}
+                </p>
+              )}
+            </div>
+
             {canBeSold ? (
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("production.recipes.sellingPrice")}
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  className="rounded-md border border-border bg-background px-3 tabular-nums"
-                  value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  disabled={busy}
-                  data-testid="production-recipe-selling-price"
-                />
-              </label>
+              <div
+                className="flex flex-col gap-2"
+                data-testid="production-recipe-pricing-section"
+              >
+                {costBasis.complete && suggestion ? (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[length:var(--exits-text-sm)] font-medium">
+                        {t("production.recipes.targetGrossMargin")}
+                      </span>
+                      <div
+                        className="flex flex-wrap gap-1.5"
+                        data-testid="production-recipe-target-margin"
+                      >
+                        {TARGET_GROSS_MARGIN_PRESETS.map((preset) => (
+                          <Button
+                            key={preset}
+                            type="button"
+                            variant={
+                              !usingCustomMargin && targetMargin === preset ? "default" : "outline"
+                            }
+                            className="h-8 px-2.5"
+                            data-testid={`production-recipe-margin-${Math.round(preset * 100)}`}
+                            onClick={() => selectPresetMargin(preset)}
+                            disabled={busy}
+                          >
+                            {marginPresetLabel(preset)}
+                          </Button>
+                        ))}
+                        <Button
+                          type="button"
+                          variant={usingCustomMargin ? "default" : "outline"}
+                          className="h-8 px-2.5"
+                          data-testid="production-recipe-margin-custom"
+                          onClick={() => {
+                            setUsingCustomMargin(true);
+                            if (!customMarginRaw) {
+                              setCustomMarginRaw(String(Math.round(targetMargin * 100)));
+                            }
+                          }}
+                          disabled={busy}
+                        >
+                          {t("production.recipes.targetMarginCustom")}
+                        </Button>
+                      </div>
+                      {usingCustomMargin ? (
+                        <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                          <input
+                            type="number"
+                            min={1}
+                            max={99}
+                            step={1}
+                            className="w-20 rounded-md border border-border bg-background px-2 tabular-nums"
+                            value={customMarginRaw}
+                            onChange={(e) => onCustomMarginChange(e.target.value)}
+                            disabled={busy}
+                            data-testid="production-recipe-margin-custom-input"
+                          />
+                          %
+                        </label>
+                      ) : null}
+                    </div>
+
+                    <div
+                      className="rounded-md border border-border p-3 text-[length:var(--exits-text-sm)]"
+                      data-testid="production-recipe-suggested-price"
+                    >
+                      <div className="font-medium">
+                        {t("production.recipes.suggestedSellingPrice")}
+                      </div>
+                      <p
+                        className="m-0 mt-1 text-[length:var(--exits-text-md)] font-semibold tabular-nums"
+                        data-testid="production-recipe-suggested-price-value"
+                      >
+                        {t("production.recipes.suggestedPriceValue")
+                          .replace("{price}", formatPeso(suggestion.rounded))
+                          .replace("{uom}", String(baseUnit))}
+                      </p>
+                      <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                        {t("production.recipes.suggestedPriceBasedOnMaterial")}
+                      </p>
+                      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                        {t("production.recipes.laborOverheadNotIncluded")}
+                      </p>
+                      {margin ? (
+                        <>
+                          <p
+                            className="m-0 mt-2"
+                            data-testid="production-recipe-gross-profit"
+                          >
+                            {t("production.recipes.estimatedGrossProfit")}:{" "}
+                            {t("production.recipes.estimatedGrossProfitValue")
+                              .replace("{amount}", formatPeso(margin.amount))
+                              .replace("{uom}", String(baseUnit))}
+                          </p>
+                          <p
+                            className="m-0 mt-0.5 text-muted"
+                            data-testid="production-recipe-actual-margin"
+                          >
+                            {t("production.recipes.estimatedMargin").replace(
+                              "{percent}",
+                              formatGrossMarginPercent(margin.percent),
+                            )}
+                          </p>
+                        </>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-2 w-fit"
+                        disabled={busy}
+                        data-testid="production-recipe-use-suggested-price"
+                        onClick={applySuggestedPrice}
+                      >
+                        {t("production.recipes.useSuggestedPrice")}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className="rounded-md border border-border p-3 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid="production-recipe-suggested-unavailable"
+                  >
+                    <div className="font-medium text-foreground">
+                      {t("production.recipes.suggestedPriceUnavailable")}
+                    </div>
+                    <p className="m-0 mt-1">
+                      {costBasis.complete === false && costBasis.reason === "partial"
+                        ? t("production.recipes.estimatedCostPartialManual")
+                        : t("production.recipes.suggestedPriceUnavailableReason")}
+                    </p>
+                  </div>
+                )}
+
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  {t("production.recipes.sellingPrice")}
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    className="rounded-md border border-border bg-background px-3 tabular-nums"
+                    value={sellingPrice}
+                    onChange={(e) => onSellingPriceChange(e.target.value)}
+                    disabled={busy}
+                    data-testid="production-recipe-selling-price"
+                  />
+                </label>
+
+                {belowCost && unitMaterialCost != null ? (
+                  <div
+                    className="rounded-md border border-[var(--exits-danger)]/40 bg-[var(--exits-danger-soft)] p-3 text-[length:var(--exits-text-sm)] text-destructive"
+                    data-testid="production-recipe-below-cost-warning"
+                    role="status"
+                  >
+                    <div className="font-medium">
+                      {t("production.recipes.sellingBelowCostWarning")}
+                    </div>
+                    <p className="m-0 mt-1">
+                      {t("production.recipes.sellingBelowCostDetail")
+                        .replace("{cost}", formatPeso(unitMaterialCost))
+                        .replace("{price}", formatPeso(priceNum))
+                        .replace("{loss}", formatPeso(unitMaterialCost - priceNum))
+                        .replace("{uom}", String(baseUnit))}
+                    </p>
+                  </div>
+                ) : null}
+
+                {lowMargin && !belowCost ? (
+                  <div
+                    className="rounded-md border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-sm)] text-muted"
+                    data-testid="production-recipe-low-margin-warning"
+                    role="status"
+                  >
+                    {t("production.recipes.lowMarginWarning")}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             {(categoriesQuery.data?.items.length ?? 0) > 0 ? (
@@ -433,44 +722,6 @@ export function ProductionRecipeOutputSheet({
                 </select>
               </label>
             ) : null}
-
-            <div
-              className="rounded-md border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-sm)]"
-              data-testid="production-recipe-estimated-cost"
-            >
-              <div className="font-medium">{t("production.recipes.estimatedMaterialCost")}</div>
-              {costLoading ? (
-                <LoadingState label={t("production.loading")} />
-              ) : unitMaterialCost != null ? (
-                <>
-                  <p className="m-0 mt-1">
-                    {t("production.recipes.estimatedBatchCost")}:{" "}
-                    {formatPeso(costEstimate!.batchCost!)}
-                  </p>
-                  <p className="m-0 mt-1">
-                    {t("production.recipes.estimatedUnitCost")
-                      .replace("{cost}", formatPeso(unitMaterialCost))
-                      .replace("{uom}", String(baseUnit))}
-                  </p>
-                  {margin ? (
-                    <p className="m-0 mt-1 text-muted">
-                      {t("production.recipes.estimatedMargin")
-                        .replace("{amount}", formatPeso(margin.amount))
-                        .replace("{percent}", String(margin.percent))}
-                    </p>
-                  ) : null}
-                  {(costEstimate?.missingLineCount ?? 0) > 0 ? (
-                    <p className="m-0 mt-1 text-muted">
-                      {t("production.recipes.estimatedCostPartial")}
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <p className="m-0 mt-1 text-muted">
-                  {t("production.recipes.estimatedCostUnavailable")}
-                </p>
-              )}
-            </div>
 
             <p
               className="m-0 text-[length:var(--exits-text-sm)] text-muted"

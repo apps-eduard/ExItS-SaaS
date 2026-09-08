@@ -23,6 +23,9 @@ describe("production-recipe-cost", () => {
     const margin = estimatedMaterialMargin(25, 11.9);
     expect(margin?.amount).toBe(13.1);
     expect(margin?.percent).toBe(52.4);
+    const atSuggested = estimatedMaterialMargin(195, 135);
+    expect(atSuggested?.amount).toBe(60);
+    expect(atSuggested?.percent).toBe(30.8);
   });
 
   it("applies multiplier to base for costing", () => {
