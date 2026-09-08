@@ -335,6 +335,52 @@ public sealed class SaleCostProfitTests
     }
 
     [Fact]
+    public async Task Profitability_report_all_unavailable_sale_costs_keeps_gross_profit_null()
+    {
+        var service = new ProfitabilityReportService(
+            new FakeSaleRepo
+            {
+                Period = new SalePeriodAggregate(2500m, 3, 0m, 0, 0m, 0m, 0m, 0),
+                Costs = new SaleCostPeriodAggregate(3, 0, 0, 3, 0m),
+            },
+            new FakeReturnRepo(),
+            new FakeWasteRepo(),
+            new FakeStockUseRepo(),
+            new FixedClock(Now));
+
+        var result = await service.GetAsync(Org.Value, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
+
+        Assert.Equal("Unavailable", result.Value!.CogsStatus);
+        Assert.Null(result.Value.GrossProfit);
+        Assert.Null(result.Value.GrossMarginPercent);
+        Assert.Null(result.Value.TotalCogs);
+        Assert.Equal(0m, result.Value.CostCompletenessPercent);
+        Assert.Equal(2500m, result.Value.NetSales);
+    }
+
+    [Fact]
+    public async Task Profitability_report_complete_zero_profit_remains_valid_zero()
+    {
+        var service = new ProfitabilityReportService(
+            new FakeSaleRepo
+            {
+                Period = new SalePeriodAggregate(100m, 1, 0m, 0, 0m, 0m, 0m, 0),
+                Costs = new SaleCostPeriodAggregate(1, 1, 0, 0, 100m),
+            },
+            new FakeReturnRepo(),
+            new FakeWasteRepo(),
+            new FakeStockUseRepo(),
+            new FixedClock(Now));
+
+        var result = await service.GetAsync(Org.Value, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
+
+        Assert.Equal("Complete", result.Value!.CogsStatus);
+        Assert.Equal(0m, result.Value.GrossProfit);
+        Assert.Equal(0m, result.Value.GrossMarginPercent);
+        Assert.Equal(100m, result.Value.TotalCogs);
+    }
+
+    [Fact]
     public void Customer_facing_order_dtos_do_not_expose_cost_snapshots()
     {
         var forbidden = new[]

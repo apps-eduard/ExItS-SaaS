@@ -2364,6 +2364,25 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "dashboard.grossProfit": "Gross profit",
 
+  "dashboard.grossProfitCostIncomplete": "Cost data incomplete",
+
+  "dashboard.grossProfitCostUnavailable": "Cost data unavailable",
+
+  "dashboard.grossProfitCostUnavailableDetail": "No complete cost data is available for this period.",
+
+  "dashboard.grossProfitAppearsWhenComplete": "Gross profit and margin will appear when all sale costs are complete.",
+
+  "dashboard.costCoverage": "Cost coverage",
+
+  "dashboard.salesCosted": "Sales costed",
+
+  "dashboard.salesCostedCount": "{complete} of {total}",
+
+  "dashboard.incompleteCostSales": "Missing/incomplete cost",
+
+  "dashboard.viewProfitability": "View profitability",
+
+
   "dashboard.branchRanking": "Branch comparison",
 
   "dashboard.branchRankingEmpty": "No branch sales in this period.",

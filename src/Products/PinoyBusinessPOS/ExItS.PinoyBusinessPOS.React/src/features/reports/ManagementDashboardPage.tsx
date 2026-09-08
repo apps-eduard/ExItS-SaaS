@@ -31,7 +31,8 @@ import {
 import { InventoryHealthBars } from "@/features/reports/dashboard/InventoryHealthBars";
 import { PaymentMixDonut } from "@/features/reports/dashboard/PaymentMixDonut";
 import { RankedHorizontalBars } from "@/features/reports/dashboard/RankedHorizontalBars";
-import { GrossMarginRadial, UtangOverdueRadial } from "@/features/reports/dashboard/RadialKpis";
+import { UtangOverdueRadial } from "@/features/reports/dashboard/RadialKpis";
+import { DashboardGrossProfitCard } from "@/features/reports/dashboard/DashboardGrossProfitCard";
 import { SalesTrendAreaChart } from "@/features/reports/dashboard/SalesTrendAreaChart";
 import {
   resolveDashboardBranchDisplayName,
@@ -291,12 +292,6 @@ export function ManagementDashboardPage() {
     dashboard && dashboard.completedSaleCount > 0
       ? dashboard.completedSalesTotal / dashboard.completedSaleCount
       : null;
-
-  const grossProfitAvailable =
-    profitabilityQuery.data?.cogsStatus === "Complete" &&
-    profitabilityQuery.data.grossProfit != null &&
-    profitabilityQuery.data.grossMarginPercent != null &&
-    profitabilityQuery.data.totalCogs != null;
 
   const topProductRows = useMemo(() => {
     const rows = productsQuery.data?.rows ?? [];
@@ -618,22 +613,13 @@ export function ManagementDashboardPage() {
               />
             </DashboardPanel>
 
-            {grossProfitAvailable && profitabilityQuery.data ? (
-              <DashboardPanel
-                title={t("dashboard.grossMargin")}
+            {profitabilityQuery.isSuccess || profitabilityQuery.isFetching ? (
+              <DashboardGrossProfitCard
+                data={profitabilityQuery.data}
+                loading={profitabilityQuery.isLoading || profitabilityQuery.isFetching}
                 scopeLabel={branchScopeLabel}
-                scopeTestId="scope-gross-margin"
-                testId="dashboard-gross-margin"
-              >
-                <GrossMarginRadial
-                  marginPercent={profitabilityQuery.data.grossMarginPercent!}
-                  grossProfit={profitabilityQuery.data.grossProfit!}
-                  revenue={profitabilityQuery.data.netSales}
-                  marginLabel={t("dashboard.grossMargin")}
-                  profitLabel={t("dashboard.grossProfit")}
-                  animationKey={animationKey}
-                />
-              </DashboardPanel>
+                animationKey={animationKey}
+              />
             ) : null}
 
             {branchRankEnabled && branchRankQuery.data && branchRankQuery.data.length > 0 ? (

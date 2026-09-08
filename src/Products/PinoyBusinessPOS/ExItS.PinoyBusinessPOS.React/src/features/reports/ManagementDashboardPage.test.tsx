@@ -230,6 +230,11 @@ describe("ManagementDashboardPage V2 visual composition", () => {
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-top-products-empty")).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-gross-profit")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-gross-profit-unavailable")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("dashboard-gross-margin-radial")).not.toBeInTheDocument();
     expect(screen.queryByText(/change % n\/a/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Today\?s/)).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Today\?s/);
@@ -297,6 +302,27 @@ describe("ManagementDashboardPage V2 visual composition", () => {
       productBasedUtangSalesInPeriod: 6250,
       productBasedUtangSaleCount: 34,
     });
+    getProfitabilityReport.mockResolvedValue({
+      fromDate: "2026-08-24",
+      toDate: "2026-08-30",
+      branchId: null,
+      netSales: 10500,
+      cogsStatus: "Complete",
+      knownCogs: 7050,
+      totalCogs: 7050,
+      grossProfit: 3450,
+      grossMarginPercent: 32.8,
+      completedSaleCount: 10,
+      completeCostSaleCount: 10,
+      partialCostSaleCount: 0,
+      unavailableCostSaleCount: 0,
+      wasteLossKnownCost: 0,
+      wasteLossCostStatus: "Unavailable",
+      stockUseKnownCost: 0,
+      stockUseCostStatus: "Unavailable",
+      costCompletenessPercent: 100,
+      commercialDiscountTotal: 0,
+    });
 
     renderDashboardPage();
 
@@ -308,6 +334,11 @@ describe("ManagementDashboardPage V2 visual composition", () => {
     expect(screen.getByTestId("dashboard-payment-mix")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-utang-radial")).toBeInTheDocument();
     expect(screen.getByTestId("dashboard-inventory-health")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-gross-profit")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-gross-profit-complete")).toBeInTheDocument();
+      expect(screen.getByTestId("dashboard-gross-margin-radial")).toBeInTheDocument();
+    });
     expect(screen.getByTestId("dashboard-comparison-trend")).toHaveTextContent("12.4%");
     expect(screen.getByTestId("dashboard-comparison-trend")).toHaveAttribute(
       "data-trend-direction",

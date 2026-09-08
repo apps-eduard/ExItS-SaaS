@@ -177,6 +177,7 @@ export function DashboardPanel({
   className,
   testId,
   compact,
+  badge,
 }: {
   title: string;
   scopeLabel?: string;
@@ -185,6 +186,7 @@ export function DashboardPanel({
   className?: string;
   testId?: string;
   compact?: boolean;
+  badge?: ReactNode;
 }) {
   return (
     <section
@@ -196,7 +198,10 @@ export function DashboardPanel({
       data-testid={testId}
     >
       <div className="dashboard-panel__header">
-        <h3 className="dashboard-panel__title">{title}</h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h3 className="dashboard-panel__title">{title}</h3>
+          {badge}
+        </div>
         {scopeLabel ? (
           <span className="dashboard-panel__scope" data-testid={scopeTestId}>
             {scopeLabel}
