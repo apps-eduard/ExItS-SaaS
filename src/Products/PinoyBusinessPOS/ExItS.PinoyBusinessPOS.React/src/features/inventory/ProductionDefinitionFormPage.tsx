@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
+import { listCatalogProducts, getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   DEFAULT_CATALOG_UNIT_OF_MEASURE,
@@ -61,6 +61,32 @@ const YIELD_UOM_OPTIONS: PosUnitOfMeasureCode[] = [
   "Box",
 ];
 
+async function ensureCanBeUsedAsIngredient(
+  workspace: { organizationId: string; branchId: string },
+  product: PosCatalogProductDto,
+): Promise<PosCatalogProductDto> {
+  if (product.canBeUsedAsIngredient === true) {
+    return product;
+  }
+  return updateCatalogProduct(workspace, product.productId, {
+    name: product.name,
+    unitOfMeasure: product.unitOfMeasure,
+    sellingPrice: product.sellingPrice,
+    description: product.description ?? null,
+    sku: product.sku ?? null,
+    barcode: product.barcode ?? null,
+    categoryId: product.categoryId ?? null,
+    brandId: product.brandId ?? null,
+    sellingMode: product.sellingMode,
+    canBeSold: product.canBeSold ?? true,
+    canBeUsedAsIngredient: true,
+    isProduced: product.isProduced ?? false,
+    expectedUpdatedAtUtc: product.updatedAtUtc,
+    tracksExpiration: product.tracksExpiration ?? false,
+    expirationWarningDays: product.expirationWarningDays ?? null,
+  });
+}
+
 export function ProductionDefinitionFormPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -95,6 +121,9 @@ export function ProductionDefinitionFormPage() {
   const [qtySheetProduct, setQtySheetProduct] = useState<PosCatalogProductDto | null>(null);
   const [qtySheetEditing, setQtySheetEditing] = useState(false);
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
+  /** When true, browse Active catalog and enable ingredient capability on add. */
+  const [browseCatalogIngredients, setBrowseCatalogIngredients] = useState(false);
+  const [enablingIngredient, setEnablingIngredient] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedOutput(outputSearch.trim()), 250);
@@ -227,6 +256,7 @@ export function ProductionDefinitionFormPage() {
       workspace?.branchId,
       debouncedMaterial,
       materialPage,
+      browseCatalogIngredients,
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
@@ -235,7 +265,7 @@ export function ProductionDefinitionFormPage() {
         {
           search: debouncedMaterial || undefined,
           status: "Active",
-          canBeUsedAsIngredient: true,
+          canBeUsedAsIngredient: browseCatalogIngredients ? undefined : true,
           page: materialPage,
           pageSize: 40,
         },
@@ -243,6 +273,10 @@ export function ProductionDefinitionFormPage() {
       ),
   });
 
+  useEffect(() => {
+    setMaterialPage(1);
+    setMaterialPages([]);
+  }, [browseCatalogIngredients]);
   useEffect(() => {
     const pageItems = materialPickerQuery.data?.items;
     if (!pageItems) {
@@ -267,10 +301,29 @@ export function ProductionDefinitionFormPage() {
       if (p.productId === outputProductId) {
         return false;
       }
+      if (browseCatalogIngredients) {
+        return true;
+      }
       return isEligibleProductionMaterial(p);
     });
-  }, [materialPages, outputProductId]);
+  }, [materialPages, outputProductId, browseCatalogIngredients]);
 
+  // If the org has no tagged ingredients yet, surface catalog browse automatically.
+  useEffect(() => {
+    if (
+      !browseCatalogIngredients &&
+      materialPickerQuery.isSuccess &&
+      (materialPickerQuery.data?.totalCount ?? 0) === 0 &&
+      !debouncedMaterial
+    ) {
+      setBrowseCatalogIngredients(true);
+    }
+  }, [
+    browseCatalogIngredients,
+    materialPickerQuery.isSuccess,
+    materialPickerQuery.data?.totalCount,
+    debouncedMaterial,
+  ]);
   const selectedIds = useMemo(
     () => new Set(materials.map((m) => m.materialProductId)),
     [materials],
@@ -341,7 +394,10 @@ export function ProductionDefinitionFormPage() {
     setError(null);
   }
 
-  function confirmMaterial(draft: ProductionMaterialDraft) {
+  async function confirmMaterial(draft: ProductionMaterialDraft) {
+    if (!workspace) {
+      return;
+    }
     if (draft.materialProductId === outputProductId) {
       setError(t("production.setups.materialAsOutputForbidden"));
       setQtySheetProduct(null);
@@ -357,13 +413,42 @@ export function ProductionDefinitionFormPage() {
       setQtySheetEditing(false);
       return;
     }
-    setMaterials((prev) => [
-      ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
-      draft,
-    ]);
-    setQtySheetProduct(null);
-    setQtySheetEditing(false);
-    setError(null);
+
+    let sourceProduct =
+      qtySheetProduct && qtySheetProduct.productId === draft.materialProductId
+        ? qtySheetProduct
+        : materialPages.find((p) => p.productId === draft.materialProductId) ?? null;
+
+    if (!sourceProduct) {
+      try {
+        sourceProduct = await getCatalogProduct(workspace, draft.materialProductId);
+      } catch {
+        setError(t("production.setups.saveFailed"));
+        return;
+      }
+    }
+
+    try {
+      if (sourceProduct.canBeUsedAsIngredient !== true) {
+        setEnablingIngredient(true);
+        sourceProduct = await ensureCanBeUsedAsIngredient(workspace, sourceProduct);
+      }
+      setMaterials((prev) => [
+        ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
+        draft,
+      ]);
+      setQtySheetProduct(null);
+      setQtySheetEditing(false);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("production.recipes.enableIngredientFailed"))
+          : t("production.recipes.enableIngredientFailed"),
+      );
+    } finally {
+      setEnablingIngredient(false);
+    }
   }
 
   function removeMaterial(productId: string) {
@@ -776,15 +861,40 @@ export function ProductionDefinitionFormPage() {
           data-testid="production-setup-material-search"
         />
 
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant={browseCatalogIngredients ? "default" : "outline"}
+            disabled={!allowManage || !online}
+            data-testid="production-setup-browse-catalog-ingredients"
+            onClick={() => setBrowseCatalogIngredients((v) => !v)}
+          >
+            {browseCatalogIngredients
+              ? t("production.recipes.showTaggedIngredientsOnly")
+              : t("production.recipes.browseCatalogToEnable")}
+          </Button>
+          {browseCatalogIngredients ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("production.recipes.browseCatalogHint")}
+            </p>
+          ) : null}
+        </div>
+
         {materialCandidates.length === 0 && materialPickerQuery.isSuccess ? (
           <EmptyState
             title={t("production.setups.noEligibleMaterials")}
             detail={
               debouncedMaterial
                 ? t("production.setups.noProductsDetail")
-                : t("production.setups.noEligibleMaterialsDetail")
+                : browseCatalogIngredients
+                  ? t("production.setups.noProductsDetail")
+                  : t("production.setups.noEligibleMaterialsDetail")
             }
           />
+        ) : null}
+
+        {materialPickerQuery.isLoading && materialPages.length === 0 ? (
+          <LoadingState label={t("production.loading")} />
         ) : null}
 
         <ul
@@ -794,11 +904,12 @@ export function ProductionDefinitionFormPage() {
           {materialCandidates.map((product) => {
             const selected = selectedIds.has(product.productId);
             const available = formatMaterialAvailableCaption(product, t("transfer.available"));
+            const needsEnable = product.canBeUsedAsIngredient !== true;
             return (
               <li key={product.productId}>
                 <button
                   type="button"
-                  disabled={!allowManage || !online || saving}
+                  disabled={!allowManage || !online || saving || enablingIngredient}
                   data-testid={`production-setup-material-${product.productId}`}
                   data-selected={selected ? "true" : "false"}
                   className={cn(
@@ -818,6 +929,10 @@ export function ProductionDefinitionFormPage() {
                       >
                         <Check className="size-3.5" aria-hidden />
                         {t("production.setups.materialSelected")}
+                      </span>
+                    ) : needsEnable ? (
+                      <span className="shrink-0 text-[length:var(--exits-text-xs)] text-muted">
+                        {t("production.recipes.willEnableIngredient")}
                       </span>
                     ) : null}
                   </span>

@@ -16,6 +16,8 @@ describe("POS-PRODUCTION-RECIPE-FIRST-TIME-SETUP-AND-REUSE-V1", () => {
     expect(form).toContain("outputCreatedOnSaveHint");
     // Create mode must not force catalog output picker upfront.
     expect(form).toContain("showOutputPicker = isEdit && !outputProductId");
+    expect(form).toContain("browseCatalogIngredients");
+    expect(form).toContain("ensureCanBeUsedAsIngredient");
   });
 
   it("save sheet creates or links output product", () => {
