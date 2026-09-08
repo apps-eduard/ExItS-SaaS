@@ -525,6 +525,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     }
   }, [trackStockQuantity, tracksExpiration]);
 
+  useEffect(() => {
+    if (capabilities.canBeUsedAsIngredient && !trackStockQuantity) {
+      setTrackStockQuantity(true);
+    }
+  }, [capabilities.canBeUsedAsIngredient, trackStockQuantity]);
+
   const openingStockState = {
     trackStockQuantity,
     addOpeningStock,
@@ -586,6 +592,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         throw new Error(t("catalog.byWeightRequiresKg"));
       }
 
+      if (capabilities.canBeUsedAsIngredient && !trackStockQuantity) {
+        throw new Error(t("catalog.ingredientRequiresTrackedInventory"));
+      }
+
       if (mode === "create") {
         const openingValidation = validateOpeningStockInput(openingStockState);
         if (openingValidation) {
@@ -639,11 +649,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         const product = await createCatalogProduct(workspace, body);
 
-        if (trackStockQuantity) {
+        if (trackStockQuantity || capabilities.canBeUsedAsIngredient) {
           await enableInventoryTracking(
             workspace,
             product.productId,
-            buildEnableInventoryBody(openingStockState),
+            buildEnableInventoryBody({
+              ...openingStockState,
+              trackStockQuantity: true,
+            }),
           );
         }
 
@@ -669,6 +682,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         tracksExpiration: existing?.tracksExpiration === true,
         expirationWarningDays: existing?.expirationWarningDays ?? null,
       });
+
+      if (capabilities.canBeUsedAsIngredient && product.isTracked !== true) {
+        await enableInventoryTracking(workspace, product.productId, {
+          openingQuantity: 0,
+        });
+      }
 
       return { kind: "saved", product };
     },
@@ -1133,7 +1152,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             <div className="catalog-form-field--full">
               <ProductCapabilitySelector
                 value={capabilities}
-                onChange={setCapabilities}
+                onChange={(next) => {
+                  setCapabilities(next);
+                  if (next.canBeUsedAsIngredient) {
+                    setTrackStockQuantity(true);
+                    setError(null);
+                  }
+                }}
                 disabled={readOnly}
               />
             </div>
@@ -1286,16 +1311,25 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
           <div className="catalog-form-section__grid">
             <FormCheck
-              label={t("catalog.trackStockQuantity")}
+              label={
+                capabilities.canBeUsedAsIngredient
+                  ? t("catalog.trackStockQuantityRequiredForIngredient")
+                  : t("catalog.trackStockQuantity")
+              }
               checked={trackStockQuantity}
               testId="catalog-track-stock-quantity"
               onChange={(next) => {
+                if (!next && capabilities.canBeUsedAsIngredient) {
+                  setError(t("catalog.ingredientRequiresTrackedInventory"));
+                  return;
+                }
                 setTrackStockQuantity(next);
+                setError(null);
                 if (!next) {
                   setAddOpeningStock(false);
                 }
               }}
-              disabled={mode === "edit"}
+              disabled={mode === "edit" || capabilities.canBeUsedAsIngredient || readOnly}
             />
 
             {trackStockQuantity && mode === "create" ? (

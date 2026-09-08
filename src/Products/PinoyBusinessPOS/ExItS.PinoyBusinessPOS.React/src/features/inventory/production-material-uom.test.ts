@@ -25,12 +25,21 @@ function product(partial: Partial<PosCatalogProductDto>): PosCatalogProductDto {
 }
 
 describe("production-material-uom", () => {
-  it("only treats CanBeUsedAsIngredient products as eligible", () => {
+  it("only treats tracked ingredient products as eligible", () => {
     expect(
-      isEligibleProductionMaterial(product({ canBeUsedAsIngredient: true })),
+      isEligibleProductionMaterial(
+        product({ canBeUsedAsIngredient: true, isTracked: true }),
+      ),
     ).toBe(true);
     expect(
-      isEligibleProductionMaterial(product({ canBeUsedAsIngredient: false })),
+      isEligibleProductionMaterial(
+        product({ canBeUsedAsIngredient: true, isTracked: false }),
+      ),
+    ).toBe(false);
+    expect(
+      isEligibleProductionMaterial(
+        product({ canBeUsedAsIngredient: false, isTracked: true }),
+      ),
     ).toBe(false);
     expect(isEligibleProductionMaterial(product({}))).toBe(false);
   });

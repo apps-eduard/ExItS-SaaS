@@ -18,24 +18,31 @@ export type RecipeMaterialCostEstimate = {
   missingLineCount: number;
 };
 
-/** Resolve latest known acquisition unit cost from recent stock movements. */
+/**
+ * Resolve latest known acquisition unit cost from recent stock movements.
+ * Soft-fails when the product has no inventory account / movements yet.
+ */
 export async function resolveLatestAcquisitionUnitCost(
   workspace: PosWorkspaceScope,
   productId: string,
   signal?: AbortSignal,
 ): Promise<number | null> {
-  const page = await listInventoryMovements(
-    workspace,
-    productId,
-    { page: 1, pageSize: 40 },
-    signal,
-  );
-  for (const movement of page.items) {
-    if (movement.unitCost != null && Number.isFinite(movement.unitCost) && movement.unitCost >= 0) {
-      return movement.unitCost;
+  try {
+    const page = await listInventoryMovements(
+      workspace,
+      productId,
+      { page: 1, pageSize: 40 },
+      signal,
+    );
+    for (const movement of page.items) {
+      if (movement.unitCost != null && Number.isFinite(movement.unitCost) && movement.unitCost >= 0) {
+        return movement.unitCost;
+      }
     }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export function buildRecipeMaterialCostEstimate(

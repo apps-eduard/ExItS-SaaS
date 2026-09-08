@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { getCatalogProduct, listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
-import { getInventoryProduct } from "@/api/pos/pos-inventory-client";
+import { enableInventoryTracking, getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   createProductionRun,
@@ -429,6 +429,29 @@ export function ProductionRunCreatePage() {
     };
 
     try {
+      // Recipe create should have enabled tracking; recover if an older output is still untracked.
+      try {
+        const outputInv = await getInventoryProduct(workspace, definition.outputProductId);
+        if (outputInv.isTracked !== true) {
+          await enableInventoryTracking(workspace, definition.outputProductId, {
+            openingQuantity: 0,
+          });
+        }
+      } catch {
+        try {
+          await enableInventoryTracking(workspace, definition.outputProductId, {
+            openingQuantity: 0,
+          });
+        } catch (enableErr) {
+          setError(
+            enableErr instanceof PosApiError
+              ? (enableErr.problem.detail ?? t("production.recipes.enableTrackingFailed"))
+              : t("production.recipes.enableTrackingFailed"),
+          );
+          return;
+        }
+      }
+
       const created = await createProductionRun(workspace, body);
       runIdRef.current = null;
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });

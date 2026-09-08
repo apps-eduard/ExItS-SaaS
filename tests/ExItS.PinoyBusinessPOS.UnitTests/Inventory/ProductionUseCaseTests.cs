@@ -22,6 +22,55 @@ public sealed class ProductionUseCaseTests
     private static readonly DateTimeOffset Utc = new(2026, 8, 29, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public async Task Untracked_ingredient_blocks_definition_and_run_with_product_name()
+    {
+        var fx = new Fixture();
+        await fx.AddProductAsync(fx.FlourId, "Tomato", opening: 6m, track: false);
+        fx.Products.Items.Single(p => p.Id.Value == fx.FlourId)
+            .UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+        await fx.AddProductAsync(fx.BreadId, "Pandesal", 0m, track: true, openingUnitCost: null);
+        fx.Products.Items.Single(p => p.Id.Value == fx.BreadId)
+            .UpdateUsage(ProductUsageCapabilities.MadeProduct, Utc);
+
+        var definition = await fx.CreateDefinition.ExecuteAsync(
+            OrgA,
+            new CreateProductionDefinitionRequest(
+                "Tomato sauce",
+                fx.BreadId,
+                1m,
+                [new CreateProductionComponentRequest(fx.FlourId, 1m)]),
+            Actor);
+
+        Assert.Equal(DomainErrorCodes.IngredientRequiresTrackedInventory, definition.ErrorCode);
+        Assert.Contains("Tomato", definition.ErrorMessage);
+
+        // Simulate a stale definition that already references an untracked ingredient.
+        await fx.AddProductAsync(fx.SugarId, "Sugar", 10m, track: true, openingUnitCost: 2m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.SugarId)
+            .UpdateUsage(ProductUsageCapabilities.Ingredient, Utc);
+        // Replace flour account with untracked after definition would have been created:
+        // use sugar as material for a valid definition, then disable sugar tracking for the run.
+        var okDefinition = await fx.CreateDefinition.ExecuteAsync(
+            OrgA,
+            new CreateProductionDefinitionRequest(
+                "Sweet bread",
+                fx.BreadId,
+                100m,
+                [new CreateProductionComponentRequest(fx.SugarId, 2m)]),
+            Actor);
+        Assert.True(okDefinition.IsSuccess, okDefinition.ErrorCode + ": " + okDefinition.ErrorMessage);
+
+        fx.Inventory.Accounts.RemoveAll(a => a.ProductId.Value == fx.SugarId);
+
+        var run = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(okDefinition.Value!.ProductionDefinitionId, OutputQuantity: 100m),
+            Actor);
+        Assert.Equal(DomainErrorCodes.InventoryNotTracked, run.ErrorCode);
+        Assert.Contains("Sugar", run.ErrorMessage);
+    }
+
+    [Fact]
     public async Task Produce_scales_materials_and_increases_output()
     {
         var fx = await SeedAsync();
@@ -532,7 +581,7 @@ public sealed class ProductionUseCaseTests
         public Fixture()
         {
             var lots = new InventoryLotStockService(Lots);
-            CreateDefinition = new CreateProductionDefinition(Definitions, Products, Units, UnitOfWork, Clock);
+            CreateDefinition = new CreateProductionDefinition(Definitions, Products, Units, Inventory, UnitOfWork, Clock);
             UpdateDefinition = new UpdateProductionDefinition(Definitions, CreateDefinition, UnitOfWork, Clock);
             CreateRun = new CreateProductionRun(
                 Runs, Definitions, Products, Units, Inventory, Branches, lots, UnitOfWork, Clock);

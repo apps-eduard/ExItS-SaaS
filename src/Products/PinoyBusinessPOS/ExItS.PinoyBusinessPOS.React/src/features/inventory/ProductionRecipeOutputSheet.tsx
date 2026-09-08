@@ -14,7 +14,7 @@ import {
 } from "@/api/pos/pos-catalog-options";
 import { PosApiError } from "@/api/pos/pos-http";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
-import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
+import { enableInventoryTracking, getInventoryProduct } from "@/api/pos/pos-inventory-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -221,6 +221,7 @@ export function ProductionRecipeOutputSheet({
     setBusy(true);
     setLocalError(null);
     try {
+      // Omit scope so Owner/Admin create OrganizationStandard; branch managers create BranchLocal.
       const product = await createCatalogProduct(workspace, {
         name: trimmed,
         unitOfMeasure: baseUnit,
@@ -230,15 +231,28 @@ export function ProductionRecipeOutputSheet({
         canBeUsedAsIngredient: canBeIngredient,
         isProduced: true,
         categoryId: categoryId || null,
-        scope: "OrganizationStandard",
       });
       try {
+        // Opening 0 — stock rises only after Produce. Do not send unitCost without qty.
         await enableInventoryTracking(workspace, product.productId, {
           openingQuantity: 0,
-          unitCost: unitMaterialCost,
         });
-      } catch {
-        // Tracking may already be on; recipe save still proceeds.
+      } catch (enableErr) {
+        let tracked = false;
+        try {
+          const account = await getInventoryProduct(workspace, product.productId);
+          tracked = account.isTracked === true;
+        } catch {
+          tracked = false;
+        }
+        if (!tracked) {
+          setLocalError(
+            enableErr instanceof PosApiError
+              ? (enableErr.problem.detail ?? t("production.recipes.enableTrackingFailed"))
+              : t("production.recipes.enableTrackingFailed"),
+          );
+          return;
+        }
       }
       onLinked({ outputProduct: product, createdNew: true });
     } catch (err) {

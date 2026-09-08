@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildRecipeMaterialCostEstimate,
   estimatedMaterialMargin,
@@ -28,5 +28,22 @@ describe("production-recipe-cost", () => {
   it("applies multiplier to base for costing", () => {
     expect(toBaseQuantityForCost(500, 0.001)).toBe(0.5);
     expect(toBaseQuantityForCost(10, null)).toBe(10);
+  });
+});
+
+describe("resolveLatestAcquisitionUnitCost soft-fail", () => {
+  it("returns null when movements request fails", async () => {
+    const { resolveLatestAcquisitionUnitCost } = await import(
+      "@/features/inventory/production-recipe-cost"
+    );
+    const inventoryClient = await import("@/api/pos/pos-inventory-client");
+    vi.spyOn(inventoryClient, "listInventoryMovements").mockRejectedValue(
+      new Error("Inventory account was not found."),
+    );
+    const cost = await resolveLatestAcquisitionUnitCost(
+      { organizationId: "org", branchId: "br" },
+      "product-1",
+    );
+    expect(cost).toBeNull();
   });
 });

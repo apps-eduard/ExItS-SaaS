@@ -55,6 +55,7 @@ public sealed class CreateProductionDefinition
     private readonly IProductionDefinitionRepository _definitions;
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
+    private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -62,12 +63,14 @@ public sealed class CreateProductionDefinition
         IProductionDefinitionRepository definitions,
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
+        IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _definitions = definitions;
         _products = products;
         _units = units;
+        _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -207,6 +210,16 @@ public sealed class CreateProductionDefinition
                 "Output product must have IsProduced capability.");
         }
 
+        var outputAccount = await _inventory
+            .GetByProductIdAsync(orgId, output.Id, ct)
+            .ConfigureAwait(false);
+        if (outputAccount is null || !outputAccount.IsTracked)
+        {
+            return ApplicationResult<ResolvedDefinition>.Failure(
+                DomainErrorCodes.InventoryNotTracked,
+                IngredientInventoryTracking.UntrackedProductionOutputMessage(output.Name));
+        }
+
         decimal outputMultiplier = 1m;
         ProductUnitId? outputUnitId = null;
         if (outputProductUnitId is Guid ouid && ouid != Guid.Empty)
@@ -255,6 +268,16 @@ public sealed class CreateProductionDefinition
                 return ApplicationResult<ResolvedDefinition>.Failure(
                     DomainErrorCodes.ProductionComponentNotEligible,
                     $"Product '{material.Name}' is not eligible as a production material (CanBeUsedAsIngredient required).");
+            }
+
+            var materialAccount = await _inventory
+                .GetByProductIdAsync(orgId, material.Id, ct)
+                .ConfigureAwait(false);
+            if (materialAccount is null || !materialAccount.IsTracked)
+            {
+                return ApplicationResult<ResolvedDefinition>.Failure(
+                    DomainErrorCodes.IngredientRequiresTrackedInventory,
+                    IngredientInventoryTracking.UntrackedProductionMaterialMessage(material.Name));
             }
 
             decimal multiplier = 1m;

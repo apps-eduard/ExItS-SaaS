@@ -187,6 +187,7 @@ public static class DomainErrorCodes
     public const string InvalidInventorySourceType = "pos.inventory.source_type.invalid";
     public const string InvalidInventoryQuantity = "pos.inventory.quantity.invalid";
     public const string InventoryNotTracked = "pos.inventory.not_tracked";
+    public const string IngredientRequiresTrackedInventory = "pos.inventory.ingredient_requires_tracked";
     public const string InventoryAlreadyTracked = "pos.inventory.already_tracked";
     public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";

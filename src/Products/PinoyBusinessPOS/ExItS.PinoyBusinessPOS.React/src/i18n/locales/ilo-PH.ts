@@ -1,4 +1,4 @@
-﻿import { en } from "./en";
+import { en } from "./en";
 
 
 
@@ -272,11 +272,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.search": "Biruken ti siudad wenno munisipyo",
 
-  "branches.deliveryAreas.searchPlaceholder": "BirukenÃ¢â‚¬Â¦",
+  "branches.deliveryAreas.searchPlaceholder": "Birukenâ€¦",
 
   "branches.deliveryAreas.typeToSearch": "I-type ti siudad wenno munisipyo",
 
-  "branches.deliveryAreas.searching": "AgbirbirukÃ¢â‚¬Â¦",
+  "branches.deliveryAreas.searching": "Agbirbirukâ€¦",
 
   "branches.deliveryAreas.noMatch": "Awan agpadpada a siudad wenno munisipyo",
 
@@ -852,9 +852,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "catalog.governance.branchProduct": "Branch product",
 
-  "catalog.governance.branchProductThisBranch": "Branch product Ã‚Â· this branch",
+  "catalog.governance.branchProductThisBranch": "Branch product Â· this branch",
 
-  "catalog.governance.branchProductOrigin": "Branch product Ã‚Â· {branch}",
+  "catalog.governance.branchProductOrigin": "Branch product Â· {branch}",
 
   "catalog.governance.offeredHere": "Offered here",
 
@@ -948,11 +948,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "catalog.branchPricing.save": "Save override",
 
-  "catalog.branchPricing.saving": "SavingÃ¢â‚¬Â¦",
+  "catalog.branchPricing.saving": "Savingâ€¦",
 
   "catalog.branchPricing.remove": "Remove override",
 
-  "catalog.branchPricing.removing": "RemovingÃ¢â‚¬Â¦",
+  "catalog.branchPricing.removing": "Removingâ€¦",
 
   "catalog.branchPricing.saved": "Branch price saved.",
 
@@ -1065,6 +1065,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.sectionInventory": "Inventory",
 
   "catalog.trackStockQuantity": "Track stock quantity",
+  "catalog.trackStockQuantityRequiredForIngredient": "Track inventory (required for ingredients)",
+  "catalog.ingredientRequiresTrackedInventory": "Ingredients must use tracked inventory.",
 
   "catalog.sectionImage": "Ladawan",
 
@@ -1616,7 +1618,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "connected.filterAllCount": "Amin ({count})",
 
-  "connected.catalogHelp": "Linked = supplier product is already connected to your catalog; safe exact matches may be linked automatically. New product = no credible matching product was found in your catalog Ã¢â‚¬â€ add it as a new product. Check match = one likely product was found and needs confirmation. Needs attention = conflicting or ambiguous matches need manual resolution.",
+  "connected.catalogHelp": "Linked = supplier product is already connected to your catalog; safe exact matches may be linked automatically. New product = no credible matching product was found in your catalog â€” add it as a new product. Check match = one likely product was found and needs confirmation. Needs attention = conflicting or ambiguous matches need manual resolution.",
 
   "connected.newProductHelp": "No credible matching product was found in your catalog. Add it as a new product.",
 
@@ -2680,7 +2682,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "workspace.locationCountMany": "{count} locations",
 
-  "workspace.locationTypeBreakdown": "{retail} Retail Â· {warehouse} Warehouse",
+  "workspace.locationTypeBreakdown": "{retail} Retail · {warehouse} Warehouse",
 
   "experience.warehouseOperations": "Warehouse operations",
 
@@ -2766,7 +2768,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} Ã‚Â· Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} Â· Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Ipakita ti window",
 
@@ -2830,7 +2832,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.branchBreakdown": "By branch",
 
-  "inventory.branchBreakdownMetrics": "{onHand} on hand Ã‚Â· {reserved} reserved Ã‚Â· {available} available",
+  "inventory.branchBreakdownMetrics": "{onHand} on hand Â· {reserved} reserved Â· {available} available",
 
   "inventory.branchNameUnknown": "Di ammo a branch",
 
@@ -2930,7 +2932,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Ã‚Â· {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Â· {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ti expiration tracking.",
 
@@ -3008,7 +3010,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.enableExpirationPastWarning": "Napalabasen daytoy nga expiry date.",
 
-  "inventory.enableExpirationRemoveRow": "IkkatÃƒÂ©n",
+  "inventory.enableExpirationRemoveRow": "IkkatÃ©n",
 
   "inventory.disableExpirationBlocked":
 
@@ -3054,7 +3056,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.addStockHint":
 
-    "Stock correction Ã¢â‚¬â€ not a purchase. Use Direct Buy or PO receive to record purchase cost.",
+    "Stock correction â€” not a purchase. Use Direct Buy or PO receive to record purchase cost.",
 
   "inventory.expirationInventory": "Expiration inventory",
 
@@ -3154,7 +3156,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "stockUse.noProductsDetail": "Padasem ti sabali a search wenno All stock.",
 
-  "stockUse.loading": "Agload ti stock useÃ¢â‚¬Â¦",
+  "stockUse.loading": "Agload ti stock useâ€¦",
 
   "stockUse.errorTitle": "Stock Use",
 
@@ -3170,11 +3172,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "stockUse.saveFailed": "Saan a ma-record ti stock use.",
 
-  "stockUse.recording": "Ag-recordÃ¢â‚¬Â¦",
+  "stockUse.recording": "Ag-recordâ€¦",
 
   "stockUse.void": "I-void",
 
-  "stockUse.voiding": "Ag-voidÃ¢â‚¬Â¦",
+  "stockUse.voiding": "Ag-voidâ€¦",
 
   "stockUse.voidConfirm": "I-void daytoy a stock use ken isubli ti inventory?",
 
@@ -3292,7 +3294,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "wasteLoss.noProductsDetail": "Padasen ti sabali a panagbiruk.",
 
-  "wasteLoss.loading": "Agkarga ti waste / lossÃ¢â‚¬Â¦",
+  "wasteLoss.loading": "Agkarga ti waste / lossâ€¦",
 
   "wasteLoss.errorTitle": "Waste / Loss",
 
@@ -3308,11 +3310,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "wasteLoss.saveFailed": "Saan a ma-record ti waste / loss.",
 
-  "wasteLoss.recording": "Agre-recordÃ¢â‚¬Â¦",
+  "wasteLoss.recording": "Agre-recordâ€¦",
 
   "wasteLoss.void": "I-void",
 
-  "wasteLoss.voiding": "Ag-voidÃ¢â‚¬Â¦",
+  "wasteLoss.voiding": "Ag-voidâ€¦",
 
   "wasteLoss.voidConfirm": "I-void daytoy a waste / loss ken isubli ti inventory?",
 
@@ -3648,7 +3650,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "stockCount.fieldTitle": "Nagan ti bilang",
 
-  "stockCount.titleSuggestedHint": "Nasingasing a nagan Ã¢â‚¬â€ mabalinmo nga edit.",
+  "stockCount.titleSuggestedHint": "Nasingasing a nagan â€” mabalinmo nga edit.",
 
   "stockCount.titleRequired": "Enter a title for this stock count.",
 
@@ -3852,7 +3854,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "production.manageDenied": "Awan ti permisoyo a mangimaton iti produksion.",
 
-  "production.loading": "Agkarga ti produksionÃ¢â‚¬Â¦",
+  "production.loading": "Agkarga ti produksionâ€¦",
 
   "production.backHome": "Agsubli iti Produksion",
 
@@ -3908,7 +3910,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "production.setups.save": "Idulin ti setup",
 
-  "production.setups.saving": "AgidulinÃ¢â‚¬Â¦",
+  "production.setups.saving": "Agidulinâ€¦",
 
   "production.setups.saveFailed": "Saan a maidulin ti setup ti produksion.",
 
@@ -3948,7 +3950,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.setups.noEligibleMaterials": "Awan ti eligible a materials",
   "production.setups.noEligibleMaterialsDetail": "Markaan ti produkto kas ingredient (Can be used as ingredient) iti catalog.",
   "production.setups.loadMoreMaterials": "Agload pay kadagiti materials",
-  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients — then save to create the finished product.",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients � then save to create the finished product.",
   "production.recipes.standardYield": "Standard yield",
   "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
   "production.recipes.saveAsRecipe": "Save as production recipe",
@@ -3968,10 +3970,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedBatchCost": "Estimated batch material cost",
   "production.recipes.estimatedUnitCost": "{cost} / {uom}",
   "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
-  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown — estimate is partial.",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown � estimate is partial.",
   "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
   "production.recipes.createProductAndSave": "Create product & save recipe",
   "production.recipes.createOutputFailed": "Could not create the output product.",
+  "production.recipes.enableTrackingFailed": "Product was created, but inventory tracking could not be enabled. Open Inventory for this product and enable tracking, then Produce.",
   "production.recipes.needOutputName": "Enter a product name.",
   "production.recipes.invalidSellingPrice": "Enter a valid selling price.",
   "production.recipes.yes": "Yes",
@@ -3980,7 +3983,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.recipes.produceAction": "Produce",
   "production.recipes.browseCatalogToEnable": "Browse catalog products",
   "production.recipes.showTaggedIngredientsOnly": "Show tagged ingredients only",
-  "production.recipes.browseCatalogHint": "Pick a product — it will be marked as an ingredient when you add it.",
+  "production.recipes.browseCatalogHint": "Pick a product � it will be marked as an ingredient when you add it.",
   "production.recipes.willEnableIngredient": "Enable as ingredient",
   "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
   "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
@@ -4011,7 +4014,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.produce.required": "Masapul",
   "production.produce.shortBy": "Kurang iti {quantity}",
   "production.produce.cannotProduce": "Saan a mabalin a produce ti {qty}.",
-  "production.produce.cannotProduceShortage": "Saan a mabalin a produce — kurang ti stock ti maysa wenno adu nga ingredient.",
+  "production.produce.cannotProduceShortage": "Saan a mabalin a produce � kurang ti stock ti maysa wenno adu nga ingredient.",
   "production.produce.addIngredient": "+ Agnayon iti ingredient",
   "production.produce.extraBadge": "Extra (daytoy a run laeng)",
   "production.produce.extraExceedsAvailable": "Lumabes ti {name} iti available stock ({available}).",
@@ -4037,7 +4040,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "production.produce.submit": "Irekord ti produksion",
 
-  "production.produce.submitting": "AgrekordÃ¢â‚¬Â¦",
+  "production.produce.submitting": "Agrekordâ€¦",
 
   "production.produce.saveFailed": "Saan a mairekord ti produksion.",
 
@@ -4075,7 +4078,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "production.runs.void": "I-void",
 
-  "production.runs.voiding": "Ag-voidÃ¢â‚¬Â¦",
+  "production.runs.voiding": "Ag-voidâ€¦",
 
   "production.runs.voidConfirm": "I-void daytoy a panagtaray ken isubli ti inventory?",
 
@@ -4103,7 +4106,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "openingStock.unitCost": "Unit purchase cost",
 
-  "openingStock.unitCostHelper": "What you paid per base inventory unit Ã¢â‚¬â€ not the selling price.",
+  "openingStock.unitCostHelper": "What you paid per base inventory unit â€” not the selling price.",
 
   "openingStock.value": "Stock value",
 
@@ -4217,7 +4220,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.statusWithdrawn": "Nabawi",
 
-  "incomingOrders.summary": "{products} produkto Ã‚Â· {units} yunit",
+  "incomingOrders.summary": "{products} produkto Â· {units} yunit",
 
   "incomingOrders.title": "Incoming orders",
 
@@ -4237,7 +4240,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.tracksExpirationShort": "Tracks expiry",
 
-  "inventory.untrackedHint": "Ti not tracked pasabot a naka-off ti inventory enforcement Ã¢â‚¬â€ saan a zero stock.",
+  "inventory.untrackedHint": "Ti not tracked pasabot a naka-off ti inventory enforcement â€” saan a zero stock.",
 
   "inventory.windowCustom": "Custom",
 
@@ -4401,7 +4404,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.reverseCancel": "Ikansela",
 
-  "purchasing.reversing": "Ma-reverseÃ¢â‚¬Â¦",
+  "purchasing.reversing": "Ma-reverseâ€¦",
 
   "purchasing.reverseFailed": "Saan a ma-reverse ti receipt.",
 
@@ -4443,9 +4446,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢â‚¬â€ nayon",
+  "inventory.movementType.manualIncrease": "Stock adjustment â€” nayon",
 
-  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢â‚¬â€ bawas",
+  "inventory.movementType.manualDecrease": "Stock adjustment â€” bawas",
 
   "inventory.movementType.sale": "Sale",
 
@@ -4459,9 +4462,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.transferCancel": "Transfer cancel restore",
 
-  "inventory.movementType.stockCountIncrease": "Stock count Ã¢â‚¬â€ nayon",
+  "inventory.movementType.stockCountIncrease": "Stock count â€” nayon",
 
-  "inventory.movementType.stockCountDecrease": "Stock count Ã¢â‚¬â€ bawas",
+  "inventory.movementType.stockCountDecrease": "Stock count â€” bawas",
 
   "inventory.movementType.stockUse": "Stock use",
 
@@ -5387,9 +5390,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "expense.backList": "Agsubli kadagiti gastos",
 
-  "expense.loading": "Agkarkarga kadagiti gastosÃ¢â‚¬Â¦",
+  "expense.loading": "Agkarkarga kadagiti gastosâ€¦",
 
-  "expense.loadingCategories": "Agkarkarga kadagiti kategoriaÃ¢â‚¬Â¦",
+  "expense.loadingCategories": "Agkarkarga kadagiti kategoriaâ€¦",
 
   "expense.errorTitle": "Dagiti Gastos",
 
@@ -5419,7 +5422,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "expense.filter.expenseNumber": "Biruken ti numero ti gastos",
 
-  "expense.filter.expenseNumberPlaceholder": "EXP-Ã¢â‚¬Â¦",
+  "expense.filter.expenseNumberPlaceholder": "EXP-â€¦",
 
   "expense.filter.fromDate": "Manipud petsa",
 
@@ -5449,7 +5452,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "expense.categoryPlaceholder": "Pilien ti kategoria",
 
-  "expense.category.creating": "AgparpartuatÃ¢â‚¬Â¦",
+  "expense.category.creating": "Agparpartuatâ€¦",
 
   "expense.category.deactivateConfirm": "I-deactivate daytoy a kategoria? Agtalinaed iti history ngem saan a mapili para iti baro a gastos.",
 
@@ -5467,7 +5470,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "expense.gCashReference": "Reperensia ti GCash",
 
-  "expense.recording": "AgrekrekordÃ¢â‚¬Â¦",
+  "expense.recording": "Agrekrekordâ€¦",
 
   "expense.recordedTitle": "Nairekord ti gastos",
 
@@ -5531,7 +5534,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "expense.voidConfirm": "I-void ti gastos",
 
-  "expense.voiding": "Agvo-voidÃ¢â‚¬Â¦",
+  "expense.voiding": "Agvo-voidâ€¦",
 
   "expense.voidFailed": "Saan a ma-void ti gastos.",
 
@@ -5717,7 +5720,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "org.glance.locations": "Locations",
 
-  "org.glance.locationsBreakdown": "{retail} Retail Ã‚Â· {warehouse} Warehouse",
+  "org.glance.locationsBreakdown": "{retail} Retail Â· {warehouse} Warehouse",
 
   "org.glance.areas": "Areas",
 
@@ -7769,7 +7772,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "prices.saveOneAria": "I-save ti price para iti {product}",
 
-  "prices.savingOne": "AgisaveÃ¢â‚¬Â¦",
+  "prices.savingOne": "Agisaveâ€¦",
 
   "prices.staleConflict": "Nasukatan ti price iti sabali a lugar. Kitaen ti kaudian a price ken padasen manen.",
 
@@ -7831,7 +7834,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.decreaseQty": "Pabassiten ti kaadu",
 
-  "purchasing.draftSummary": "{products} produkto Ã‚Â· {units} yunit",
+  "purchasing.draftSummary": "{products} produkto Â· {units} yunit",
 
   "purchasing.subtotal": "Dagup",
 
@@ -8121,7 +8124,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.branchSwitchDraftReset":
 
-    "Workspace branch changed. Your draft was cleared Ã¢â‚¬â€ re-enter items for the current branch.",
+    "Workspace branch changed. Your draft was cleared â€” re-enter items for the current branch.",
 
   "purchasing.receiveStockNotTracked": "Only inventory-tracked products can be received here.",
 
@@ -8287,7 +8290,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.recordFailed": "Saan a marekord ti bayad.",
 
-  "supplierPayables.recording": "AgrekrekordÃ¢â‚¬Â¦",
+  "supplierPayables.recording": "Agrekrekordâ€¦",
 
   "supplierPayables.confirmPayment": "Irekord ti bayad",
 
@@ -8565,7 +8568,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "reports.export.noData": "Awan ti data a ma-export",
 
-  "reports.export.preparing": "Maisagsagana ti exportÃ¢â‚¬Â¦",
+  "reports.export.preparing": "Maisagsagana ti exportâ€¦",
 
   "reports.expenseSummary": "Expense summary",
 
@@ -8689,11 +8692,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "reports.costIncompletePartial":
 
-    "Adda kulang wenno partial a sale costs Ã¢â‚¬â€ saan a maipakita ti gross profit.",
+    "Adda kulang wenno partial a sale costs â€” saan a maipakita ti gross profit.",
 
   "reports.costIncompleteUnavailable":
 
-    "Saan a magun-od dagiti sale costs iti daytoy a period Ã¢â‚¬â€ saan a maipakita ti gross profit.",
+    "Saan a magun-od dagiti sale costs iti daytoy a period â€” saan a maipakita ti gross profit.",
 
   "reports.metric.wasteLossCost": "Waste / loss cost",
 
@@ -8985,7 +8988,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "managerHome.lede": "What is happening in this branch today, and what needs attention.",
 
-  "managerHome.loading": "Loading branch operationsâ€¦",
+  "managerHome.loading": "Loading branch operations…",
 
   "managerHome.loadError": "Could not load manager home.",
 
@@ -9023,7 +9026,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "managerHome.shift.openAction": "Open shift",
 
-  "managerHome.register.none": "â€”",
+  "managerHome.register.none": "—",
 
   "managerHome.attention.healthy": "Everything looks under control",
 
@@ -9065,7 +9068,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "managerHome.snapshot.inventory": "Inventory",
 
-  "managerHome.snapshot.inventoryDetail": "Low stock {low} Â· Expiry {expiry}",
+  "managerHome.snapshot.inventoryDetail": "Low stock {low} · Expiry {expiry}",
 
   "managerHome.snapshot.inventoryClear": "No stock issues",
 
@@ -9083,7 +9086,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "managerHome.snapshot.utang": "Utang",
 
-  "managerHome.snapshot.utangDetail": "Outstanding {outstanding} Â· Overdue {overdue}",
+  "managerHome.snapshot.utangDetail": "Outstanding {outstanding} · Overdue {overdue}",
 
   "managerHome.snapshot.transfers": "Transfers",
 
@@ -9589,7 +9592,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "shift.pwaRegisterTitle": "Preparing web cash register",
 
-  "shift.readinessBlocked": "Nablock Ã¢â‚¬â€ awan ti nakalukat a shift.",
+  "shift.readinessBlocked": "Nablock â€” awan ti nakalukat a shift.",
 
   "shift.readinessClosed": "Nablock ? nairikep ti shift.",
 
@@ -9646,7 +9649,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "signIn.devTools": "Development tools",
   "signIn.portHealth": "Kasasaad ti port",
   "signIn.portHealthRefresh": "I-refresh",
-  "signIn.portHealthChecking": "Siksiken dagiti portâ€¦",
+  "signIn.portHealthChecking": "Siksiken dagiti port…",
   "signIn.portHealthUnavailable": "Saan a available ti port health (i-restart ti Vite).",
   "signIn.portHealthUp": "up",
     "signIn.portHealthDown": "down",
@@ -9664,7 +9667,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "signIn.localValidationResetBullet3": "migrate and reseed",
   "signIn.localValidationResetBullet4": "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
   "signIn.localValidationResetCannotUndo": "This cannot be undone.",
-  "signIn.localValidationSupervisorOffline": "Supervisor offline — start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationSupervisorOffline": "Supervisor offline � start Local Validation to enable Restart / Reset.",
   "signIn.localValidationControlsLocalhostOnly": "Restart and Reset are available only when browsing via localhost.",
 
   "signIn.error": "Napaay ti panagsign in. Kitaen dagiti credentials ken padasen manen.",
@@ -10006,11 +10009,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "summary.costIncompletePartial":
 
-    "Adda kulang a line costs Ã¢â‚¬â€ saan a maipakita ti profit.",
+    "Adda kulang a line costs â€” saan a maipakita ti profit.",
 
   "summary.costIncompleteUnavailable":
 
-    "Saan a magun-od dagiti line costs Ã¢â‚¬â€ saan a maipakita ti profit.",
+    "Saan a magun-od dagiti line costs â€” saan a maipakita ti profit.",
 
   "summary.lineCost": "Line cost",
 
@@ -10349,11 +10352,11 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "staffAssign.selectAreas": "Agpili kadagiti areas",
 
-  "staffAssign.areaLocationBreakdown": "{count} locations Â· {retail} Retail Â· {warehouse} Warehouse",
+  "staffAssign.areaLocationBreakdown": "{count} locations · {retail} Retail · {warehouse} Warehouse",
 
-  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations Â· {retail} Retail",
+  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations · {retail} Retail",
 
-  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations Â· {warehouse} Warehouse",
+  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations · {warehouse} Warehouse",
 
   "staffAssign.areaNameLabel": "{name} Area",
 
@@ -10459,7 +10462,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.create.codeRequired": "Branch code is required.",
 
-  "branches.create.creating": "CreatingÃ¢â‚¬Â¦",
+  "branches.create.creating": "Creatingâ€¦",
 
   "branches.create.failed": "Could not create branch.",
 
@@ -10515,7 +10518,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.storefrontQr.title": "Customer storefront",
 
-  "branches.storefrontQr.loading": "Agload ti storefront QRÃ¢â‚¬Â¦",
+  "branches.storefrontQr.loading": "Agload ti storefront QRâ€¦",
 
   "branches.storefrontQr.loadFailed": "Saan a ma-load ti storefront QR.",
 
@@ -10629,7 +10632,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.save": "I-save ang mga pagbabago",
 
-  "areas.saving": "MaidulinÃ¢â‚¬Â¦",
+  "areas.saving": "Maidulinâ€¦",
 
   "areas.cancel": "Ikanselar",
 
@@ -10663,7 +10666,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "areas.locationCount": "{count} lokasyon",
 
-  "areas.locationBreakdown": "{retail} Retail Â· {warehouse} Warehouse",
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
 
   "areas.edit": "I-edit",
 
@@ -10750,7 +10753,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.mgmt.addWarehouse": "Add warehouse",
   "branches.mgmt.addWarehouseLocked": "Available on Pro",
   "branches.mgmt.addMenuLabel": "Add Branch & Warehouse",
-  "branches.mgmt.capacityBreakdown": "{retail} Retail Â· {warehouse} Warehouses",
+  "branches.mgmt.capacityBreakdown": "{retail} Retail · {warehouse} Warehouses",
   "branches.mgmt.filter.typeLabel": "Type",
   "branches.mgmt.filter.statusLabel": "Status",
   "branches.mgmt.filter.retail": "Retail",
@@ -10923,7 +10926,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.status.cancelled": "Naikansela",
   "retailWarehouse.title": "Warehouse",
   "retailWarehouse.lede": "Agkiddaw iti stock manipud iti supply warehouse ken suroten dagiti delivery.",
-  "retailWarehouse.loading": "Agload ti warehouseâ€¦",
+  "retailWarehouse.loading": "Agload ti warehouse…",
   "retailWarehouse.loadError": "Saan a ma-load ti warehouse workspace.",
   "retailWarehouse.navLabel": "Dagiti seksion ti warehouse",
   "retailWarehouse.nav.overview": "Overview",
@@ -11010,7 +11013,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",
   "warehouseDashboard.needWarehouse": "Open a warehouse workspace to view this dashboard.",
-  "warehouseDashboard.loading": "Loading warehouse dashboardâ€¦",
+  "warehouseDashboard.loading": "Loading warehouse dashboard…",
   "warehouseDashboard.currentLocationOnly": "Current warehouse only",
   "warehouseDashboard.kpi.tracked": "Tracked products",
   "warehouseDashboard.kpi.lowStock": "Low stock",
@@ -11025,7 +11028,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.attention.receivePo": "Purchase orders ready to receive",
   "warehouseDashboard.attention.stockRequests": "Stock requests waiting",
   "warehouseDashboard.currentStock": "Current stock",
-  "warehouseDashboard.currentStockNote": "Snapshot as of now â€” not affected by the date preset.",
+  "warehouseDashboard.currentStockNote": "Snapshot as of now — not affected by the date preset.",
   "warehouseDashboard.health.healthy": "Healthy",
   "warehouseDashboard.health.lowStock": "Low stock",
   "warehouseDashboard.health.outOfStock": "Out of stock",
@@ -11060,7 +11063,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.viewRequests": "View requests",
   "warehouseDashboard.destinations": "Top destinations",
   "warehouseDashboard.destinationsEmpty": "No transfer destinations in recent outgoing transfers.",
-  "warehouseDashboard.destinationsNote": "Based on outgoing transfer quantities â€” destinations may be Retail or Warehouse.",
+  "warehouseDashboard.destinationsNote": "Based on outgoing transfer quantities — destinations may be Retail or Warehouse.",
   "warehouseDashboard.units": "units",
   "warehouseDashboard.topMoved": "Most moved products",
   "warehouseDashboard.topMovedEmpty": "No product movement in this period.",

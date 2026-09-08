@@ -264,9 +264,15 @@ public sealed class CreateProductionRun
                                         if (!accountsByProduct.TryGetValue(productId.Value, out var account)
                                             || !account.IsTracked)
                                         {
+                                            var label = productsById.TryGetValue(productId.Value, out var labeled)
+                                                ? labeled.Name
+                                                : "Product";
+                                            var message = productId == definition.OutputProductId
+                                                ? IngredientInventoryTracking.UntrackedProductionOutputMessage(label)
+                                                : IngredientInventoryTracking.UntrackedProductionMaterialMessage(label);
                                             failure = ApplicationResult<ProductionRunDto>.Failure(
                                                 DomainErrorCodes.InventoryNotTracked,
-                                                "Inventory must be tracked for all production materials and the output product.");
+                                                message);
                                             return;
                                         }
                                     }

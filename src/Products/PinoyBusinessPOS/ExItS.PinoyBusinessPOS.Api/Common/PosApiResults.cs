@@ -130,6 +130,7 @@ internal static class PosApiResults
             or DomainErrorCodes.InventoryUomChangeBlocked
             or DomainErrorCodes.InventoryAlreadyTracked
             or DomainErrorCodes.InventoryNotTracked
+            or DomainErrorCodes.IngredientRequiresTrackedInventory
             or ApplicationErrorCodes.ExpenseCategoryNameConflict
             or ApplicationErrorCodes.ExpenseNumberConflict
             or ApplicationErrorCodes.ExpenseConcurrencyConflict

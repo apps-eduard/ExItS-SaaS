@@ -300,6 +300,7 @@ public sealed class CreateCatalogProduct
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IProductBrandRepository _brands;
+    private readonly IInventoryRepository? _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly CatalogProductGovernanceAuthority _governance;
@@ -317,7 +318,8 @@ public sealed class CreateCatalogProduct
         CatalogProductGovernanceAuthority governance,
         ICatalogGovernanceActorAccessor actorAccessor,
         ISupplierProductExposureRepository? exposures = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IInventoryRepository? inventory = null)
     {
         _products = products;
         _units = units;
@@ -329,6 +331,7 @@ public sealed class CreateCatalogProduct
         _actorAccessor = actorAccessor;
         _exposures = exposures;
         _branches = branches;
+        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -422,7 +425,36 @@ public sealed class CreateCatalogProduct
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CatalogProduct>.Success(staged.Value!);
+
+            var created = staged.Value!;
+            if (created.CanBeUsedAsIngredient)
+            {
+                if (_inventory is null)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        DomainErrorCodes.IngredientRequiresTrackedInventory,
+                        IngredientInventoryTracking.RequiresTrackedMessage);
+                }
+
+                var ensured = await IngredientInventoryTracking
+                    .EnsureTrackedAsync(
+                        _inventory,
+                        created.OrganizationId,
+                        created.Id,
+                        created.UnitOfMeasure,
+                        created.SellingMode,
+                        _clock.UtcNow,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!ensured.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(ensured.ErrorCode!, ensured.ErrorMessage!);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<CatalogProduct>.Success(created);
         }
         catch (DomainException ex)
         {
@@ -749,6 +781,25 @@ public sealed class UpdateCatalogProduct
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, cancellationToken).ConfigureAwait(false);
+
+            if (product.CanBeUsedAsIngredient)
+            {
+                var ensured = await IngredientInventoryTracking
+                    .EnsureTrackedAsync(
+                        _inventory,
+                        orgId,
+                        product.Id,
+                        product.UnitOfMeasure,
+                        product.SellingMode,
+                        now,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!ensured.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(ensured.ErrorCode!, ensured.ErrorMessage!);
+                }
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogProduct>.Success(product);
         }

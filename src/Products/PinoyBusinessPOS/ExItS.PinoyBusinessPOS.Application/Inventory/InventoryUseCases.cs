@@ -855,6 +855,13 @@ public sealed class DisableInventoryTracking
                 "Inventory account was not found.");
         }
 
+        if (product.CanBeUsedAsIngredient)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                DomainErrorCodes.IngredientRequiresTrackedInventory,
+                IngredientInventoryTracking.RequiresTrackedMessage);
+        }
+
         try
         {
             account.Disable(_clock.UtcNow);

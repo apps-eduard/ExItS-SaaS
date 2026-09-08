@@ -746,10 +746,11 @@ internal static class InventoryEndpoints
         }
 
         var dto = await queries.GetByProductIdAsync(organizationId, productId, context, ct).ConfigureAwait(false);
+        // Mutation already succeeded; a null management DTO is a product/visibility miss, not a missing account.
         return dto is null
             ? PosApiResults.Problem(
-                ApplicationErrorCodes.InventoryAccountNotFound,
-                "Inventory account was not found.",
+                ApplicationErrorCodes.InventoryProductNotFound,
+                "Product was not found.",
                 StatusCodes.Status404NotFound)
             : Results.Ok(dto);
     }
@@ -771,8 +772,8 @@ internal static class InventoryEndpoints
         var dto = await queries.GetByProductIdAsync(organizationId, productId, context, ct).ConfigureAwait(false);
         return dto is null
             ? ApplicationResult<PosInventoryAccountDto>.Failure(
-                ApplicationErrorCodes.InventoryAccountNotFound,
-                "Inventory account was not found.")
+                ApplicationErrorCodes.InventoryProductNotFound,
+                "Product was not found.")
             : ApplicationResult<PosInventoryAccountDto>.Success(dto);
     }
 

@@ -1,4 +1,4 @@
-﻿import { en } from "./en";
+import { en } from "./en";
 
 
 
@@ -1065,6 +1065,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "catalog.sectionInventory": "Inventory",
 
   "catalog.trackStockQuantity": "Track stock quantity",
+  "catalog.trackStockQuantityRequiredForIngredient": "Track inventory (required for ingredients)",
+  "catalog.ingredientRequiresTrackedInventory": "Ingredients must use tracked inventory.",
 
   "catalog.sectionImage": "Larawan",
 
@@ -2680,7 +2682,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "workspace.locationCountMany": "{count} locations",
 
-  "workspace.locationTypeBreakdown": "{retail} Retail Â· {warehouse} Warehouse",
+  "workspace.locationTypeBreakdown": "{retail} Retail · {warehouse} Warehouse",
 
   "experience.warehouseOperations": "Warehouse operations",
 
@@ -3948,7 +3950,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.setups.noEligibleMaterials": "Walang eligible na materyal",
   "production.setups.noEligibleMaterialsDetail": "Markahan ang produkto bilang ingredient (Can be used as ingredient) sa catalog.",
   "production.setups.loadMoreMaterials": "Mag-load pa ng materyal",
-  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients — then save to create the finished product.",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients � then save to create the finished product.",
   "production.recipes.standardYield": "Standard yield",
   "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
   "production.recipes.saveAsRecipe": "Save as production recipe",
@@ -3968,10 +3970,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedBatchCost": "Estimated batch material cost",
   "production.recipes.estimatedUnitCost": "{cost} / {uom}",
   "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
-  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown — estimate is partial.",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown � estimate is partial.",
   "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
   "production.recipes.createProductAndSave": "Create product & save recipe",
   "production.recipes.createOutputFailed": "Could not create the output product.",
+  "production.recipes.enableTrackingFailed": "Product was created, but inventory tracking could not be enabled. Open Inventory for this product and enable tracking, then Produce.",
   "production.recipes.needOutputName": "Enter a product name.",
   "production.recipes.invalidSellingPrice": "Enter a valid selling price.",
   "production.recipes.yes": "Yes",
@@ -3980,7 +3983,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.produceAction": "Produce",
   "production.recipes.browseCatalogToEnable": "Browse catalog products",
   "production.recipes.showTaggedIngredientsOnly": "Show tagged ingredients only",
-  "production.recipes.browseCatalogHint": "Pick a product — it will be marked as an ingredient when you add it.",
+  "production.recipes.browseCatalogHint": "Pick a product � it will be marked as an ingredient when you add it.",
   "production.recipes.willEnableIngredient": "Enable as ingredient",
   "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
   "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
@@ -4011,7 +4014,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.produce.required": "Kailangan",
   "production.produce.shortBy": "Kulang ng {quantity}",
   "production.produce.cannotProduce": "Hindi makapag-produce ng {qty}.",
-  "production.produce.cannotProduceShortage": "Hindi makapag-produce — kulang ang stock ng isa o higit pang ingredient.",
+  "production.produce.cannotProduceShortage": "Hindi makapag-produce � kulang ang stock ng isa o higit pang ingredient.",
   "production.produce.addIngredient": "+ Magdagdag ng ingredient",
   "production.produce.extraBadge": "Extra (run na ito lang)",
   "production.produce.extraExceedsAvailable": "Lampas sa available stock ang {name} ({available}).",
@@ -9063,7 +9066,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "managerHome.snapshot.inventory": "Inventory",
 
-  "managerHome.snapshot.inventoryDetail": "Kulang {low} Â· Expiry {expiry}",
+  "managerHome.snapshot.inventoryDetail": "Kulang {low} · Expiry {expiry}",
 
   "managerHome.snapshot.inventoryClear": "Walang isyu sa stock",
 
@@ -9081,7 +9084,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "managerHome.snapshot.utang": "Utang",
 
-  "managerHome.snapshot.utangDetail": "Outstanding {outstanding} Â· Overdue {overdue}",
+  "managerHome.snapshot.utangDetail": "Outstanding {outstanding} · Overdue {overdue}",
 
   "managerHome.snapshot.transfers": "Transfers",
 
@@ -9644,7 +9647,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "signIn.devTools": "Development tools",
   "signIn.portHealth": "Katayuan ng port",
   "signIn.portHealthRefresh": "I-refresh",
-  "signIn.portHealthChecking": "Tinitingnan ang mga portâ€¦",
+  "signIn.portHealthChecking": "Tinitingnan ang mga port…",
   "signIn.portHealthUnavailable": "Hindi available ang port health (i-restart ang Vite).",
   "signIn.portHealthUp": "up",
     "signIn.portHealthDown": "down",
@@ -9662,7 +9665,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "signIn.localValidationResetBullet3": "migrate and reseed",
   "signIn.localValidationResetBullet4": "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
   "signIn.localValidationResetCannotUndo": "This cannot be undone.",
-  "signIn.localValidationSupervisorOffline": "Supervisor offline — start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationSupervisorOffline": "Supervisor offline � start Local Validation to enable Restart / Reset.",
   "signIn.localValidationControlsLocalhostOnly": "Restart and Reset are available only when browsing via localhost.",
 
   "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",
@@ -10347,11 +10350,11 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "staffAssign.selectAreas": "Pumili ng areas",
 
-  "staffAssign.areaLocationBreakdown": "{count} locations Â· {retail} Retail Â· {warehouse} Warehouse",
+  "staffAssign.areaLocationBreakdown": "{count} locations · {retail} Retail · {warehouse} Warehouse",
 
-  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations Â· {retail} Retail",
+  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations · {retail} Retail",
 
-  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations Â· {warehouse} Warehouse",
+  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations · {warehouse} Warehouse",
 
   "staffAssign.areaNameLabel": "{name} Area",
 
@@ -10661,7 +10664,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "areas.locationCount": "{count} lokasyon",
 
-  "areas.locationBreakdown": "{retail} Retail Â· {warehouse} Warehouse",
+  "areas.locationBreakdown": "{retail} Retail · {warehouse} Warehouse",
 
   "areas.edit": "I-edit",
 
@@ -10748,7 +10751,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.mgmt.addWarehouse": "Add warehouse",
   "branches.mgmt.addWarehouseLocked": "Available on Pro",
   "branches.mgmt.addMenuLabel": "Add Branch & Warehouse",
-  "branches.mgmt.capacityBreakdown": "{retail} Retail Â· {warehouse} Warehouses",
+  "branches.mgmt.capacityBreakdown": "{retail} Retail · {warehouse} Warehouses",
   "branches.mgmt.filter.typeLabel": "Type",
   "branches.mgmt.filter.statusLabel": "Status",
   "branches.mgmt.filter.retail": "Retail",
@@ -10921,7 +10924,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.status.cancelled": "Kinansela",
   "retailWarehouse.title": "Warehouse",
   "retailWarehouse.lede": "Humingi ng stock mula sa supply warehouse at subaybayan ang mga delivery.",
-  "retailWarehouse.loading": "Naglo-load ang warehouseâ€¦",
+  "retailWarehouse.loading": "Naglo-load ang warehouse…",
   "retailWarehouse.loadError": "Hindi ma-load ang warehouse workspace.",
   "retailWarehouse.navLabel": "Mga seksyon ng warehouse",
   "retailWarehouse.nav.overview": "Pangkalahatan",
@@ -11008,7 +11011,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
   "warehouseDashboard.typeBadge": "Warehouse",
   "warehouseDashboard.needWarehouse": "Open a warehouse workspace to view this dashboard.",
-  "warehouseDashboard.loading": "Loading warehouse dashboardâ€¦",
+  "warehouseDashboard.loading": "Loading warehouse dashboard…",
   "warehouseDashboard.currentLocationOnly": "Current warehouse only",
   "warehouseDashboard.kpi.tracked": "Tracked products",
   "warehouseDashboard.kpi.lowStock": "Low stock",
@@ -11023,7 +11026,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.attention.receivePo": "Purchase orders ready to receive",
   "warehouseDashboard.attention.stockRequests": "Stock requests waiting",
   "warehouseDashboard.currentStock": "Current stock",
-  "warehouseDashboard.currentStockNote": "Snapshot as of now â€” not affected by the date preset.",
+  "warehouseDashboard.currentStockNote": "Snapshot as of now — not affected by the date preset.",
   "warehouseDashboard.health.healthy": "Healthy",
   "warehouseDashboard.health.lowStock": "Low stock",
   "warehouseDashboard.health.outOfStock": "Out of stock",
@@ -11058,7 +11061,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.viewRequests": "View requests",
   "warehouseDashboard.destinations": "Top destinations",
   "warehouseDashboard.destinationsEmpty": "No transfer destinations in recent outgoing transfers.",
-  "warehouseDashboard.destinationsNote": "Based on outgoing transfer quantities â€” destinations may be Retail or Warehouse.",
+  "warehouseDashboard.destinationsNote": "Based on outgoing transfer quantities — destinations may be Retail or Warehouse.",
   "warehouseDashboard.units": "units",
   "warehouseDashboard.topMoved": "Most moved products",
   "warehouseDashboard.topMovedEmpty": "No product movement in this period.",

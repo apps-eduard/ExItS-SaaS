@@ -23,7 +23,7 @@ export type ProductionMaterialDraft = {
 };
 
 export function isEligibleProductionMaterial(product: PosCatalogProductDto): boolean {
-  return product.canBeUsedAsIngredient === true;
+  return product.canBeUsedAsIngredient === true && product.isTracked === true;
 }
 
 export function isWeightMaterial(product: PosCatalogProductDto): boolean {

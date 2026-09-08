@@ -428,6 +428,17 @@ export function InventoryDetailPage() {
     return <LoadingState label={t("loading.label")} />;
   }
 
+  if (accountQuery.isError) {
+    return (
+      <ErrorState
+        title={t("error.title")}
+        detail={describePosApiError(accountQuery.error, t, "inventory.notFound")}
+        error={accountQuery.error}
+        operation="load inventory product"
+      />
+    );
+  }
+
   const account = accountQuery.data;
   if (!account) {
     return <ErrorState title={t("error.title")} detail={t("inventory.notFound")} />;

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
+import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
 import { listCatalogProducts, getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
@@ -65,26 +66,31 @@ async function ensureCanBeUsedAsIngredient(
   workspace: { organizationId: string; branchId: string },
   product: PosCatalogProductDto,
 ): Promise<PosCatalogProductDto> {
-  if (product.canBeUsedAsIngredient === true) {
-    return product;
+  let next = product;
+  if (product.canBeUsedAsIngredient !== true) {
+    next = await updateCatalogProduct(workspace, product.productId, {
+      name: product.name,
+      unitOfMeasure: product.unitOfMeasure,
+      sellingPrice: product.sellingPrice,
+      description: product.description ?? null,
+      sku: product.sku ?? null,
+      barcode: product.barcode ?? null,
+      categoryId: product.categoryId ?? null,
+      brandId: product.brandId ?? null,
+      sellingMode: product.sellingMode,
+      canBeSold: product.canBeSold ?? true,
+      canBeUsedAsIngredient: true,
+      isProduced: product.isProduced ?? false,
+      expectedUpdatedAtUtc: product.updatedAtUtc,
+      tracksExpiration: product.tracksExpiration ?? false,
+      expirationWarningDays: product.expirationWarningDays ?? null,
+    });
   }
-  return updateCatalogProduct(workspace, product.productId, {
-    name: product.name,
-    unitOfMeasure: product.unitOfMeasure,
-    sellingPrice: product.sellingPrice,
-    description: product.description ?? null,
-    sku: product.sku ?? null,
-    barcode: product.barcode ?? null,
-    categoryId: product.categoryId ?? null,
-    brandId: product.brandId ?? null,
-    sellingMode: product.sellingMode,
-    canBeSold: product.canBeSold ?? true,
-    canBeUsedAsIngredient: true,
-    isProduced: product.isProduced ?? false,
-    expectedUpdatedAtUtc: product.updatedAtUtc,
-    tracksExpiration: product.tracksExpiration ?? false,
-    expirationWarningDays: product.expirationWarningDays ?? null,
-  });
+  if (next.isTracked !== true) {
+    await enableInventoryTracking(workspace, next.productId, { openingQuantity: 0 });
+    next = { ...next, isTracked: true, canBeUsedAsIngredient: true };
+  }
+  return next;
 }
 
 export function ProductionDefinitionFormPage() {
