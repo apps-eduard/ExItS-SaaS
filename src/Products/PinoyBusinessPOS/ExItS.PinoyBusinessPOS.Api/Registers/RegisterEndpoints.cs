@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 
 namespace ExItS.PinoyBusinessPOS.Api.Registers;
@@ -104,6 +105,25 @@ internal static class RegisterEndpoints
                     pageSize,
                     ct)
                 .ConfigureAwait(false);
+
+            // Cashiers see only free Active registers plus their own open-shift register —
+            // not other cashiers' occupied stations or open-shift owner ids.
+            if (PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                && PosOrganizationScope.TryGetActorId(request, out var cashierActorId, out _))
+            {
+                var scopedItems = result.Items
+                    .Where(r =>
+                        !r.HasOpenShift
+                        || (r.OpenShiftActorId is Guid opener && opener == cashierActorId))
+                    .Select(r => r with { OpenShiftActorId = r.HasOpenShift ? r.OpenShiftActorId : null })
+                    .ToList();
+                return Results.Ok(new PagedResult<PosRegisterDto>(
+                    scopedItems,
+                    scopedItems.Count,
+                    result.Page,
+                    result.PageSize));
+            }
+
             return Results.Ok(result);
         });
 

@@ -78,6 +78,8 @@ export function ManagerMetricCard({
 
 export type ManagerActionCardProps = {
   label: string;
+  /** Optional secondary line under the label (e.g. "View my shift history"). */
+  detail?: string;
   icon: LucideIcon;
   testId?: string;
   /** Quieter styling for secondary Insights cards. */
@@ -90,7 +92,7 @@ export type ManagerActionCardProps = {
  * Start selling uses the same family (no solid primary fill).
  */
 export function ManagerActionCard(props: ManagerActionCardProps) {
-  const { label, icon: Icon, testId, quiet = false, badge } = props;
+  const { label, detail, icon: Icon, testId, quiet = false, badge } = props;
   const classes = cn(
     "manager-action-card inline-flex w-full min-w-0 items-center gap-2 border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 py-2.5 text-left no-underline text-foreground",
     "rounded-[var(--exits-radius-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -105,8 +107,15 @@ export function ManagerActionCard(props: ManagerActionCardProps) {
       >
         <Icon className="size-5" />
       </span>
-      <span className="manager-action-card__label min-w-0 flex-1 wrap-break-word text-[length:var(--exits-text-sm)] font-medium">
-        {label}
+      <span className="manager-action-card__copy min-w-0 flex-1">
+        <span className="manager-action-card__label block wrap-break-word text-[length:var(--exits-text-sm)] font-medium">
+          {label}
+        </span>
+        {detail ? (
+          <span className="manager-action-card__detail mt-0.5 block wrap-break-word text-[length:var(--exits-text-xs)] font-normal text-muted">
+            {detail}
+          </span>
+        ) : null}
       </span>
       {badge != null ? (
         <span

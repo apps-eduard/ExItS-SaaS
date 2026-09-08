@@ -36,6 +36,7 @@ import {
   canUseAdminExperience,
   canUseOperationsExperience,
   hasOrganizationManagementAuthority,
+  isPosCashierRole,
   resolveEffectivePosRoleCode,
 } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
@@ -110,6 +111,7 @@ export function RoleHomeShell({
   const canShifts = !warehouse && canViewShifts(sessionGrant);
   const canOpenShift = !warehouse && canManageShifts(sessionGrant);
   const canRegisters = !warehouse && canViewRegisters(sessionGrant);
+  const isCashier = isPosCashierRole(sessionGrant);
   const canCustomers = !warehouse && canViewCustomers(sessionGrant);
   const canCustomerOrders = !warehouse && canViewCustomerOrders(sessionGrant);
   const canSuppliers = canViewSuppliers(sessionGrant);
@@ -198,7 +200,7 @@ export function RoleHomeShell({
   if (canShifts) {
     operationTiles.push({
       key: "shifts",
-      label: t("shift.hubTitle"),
+      label: isCashier ? t("shift.myHubTitle") : t("shift.hubTitle"),
       icon: RefreshCw,
       testId: "open-shifts",
       to: "/shifts",
@@ -216,7 +218,7 @@ export function RoleHomeShell({
   if (canRegisters) {
     operationTiles.push({
       key: "registers",
-      label: t("register.listTitle"),
+      label: isCashier ? t("register.myTitle") : t("register.listTitle"),
       icon: LayoutDashboard,
       testId: "open-registers",
       to: "/registers",
@@ -462,7 +464,7 @@ export function RoleHomeShell({
 
       {canShifts ? (
         <Button asChild variant="ghost" className="w-fit" data-testid="open-shifts">
-          <Link to="/shifts">{t("shift.hubTitle")}</Link>
+          <Link to="/shifts">{isCashier ? t("shift.myHubTitle") : t("shift.hubTitle")}</Link>
         </Button>
       ) : null}
       {canOpenShift ? (
@@ -472,7 +474,7 @@ export function RoleHomeShell({
       ) : null}
       {canRegisters ? (
         <Button asChild variant="ghost" className="w-fit" data-testid="open-registers">
-          <Link to="/registers">{t("register.listTitle")}</Link>
+          <Link to="/registers">{isCashier ? t("register.myTitle") : t("register.listTitle")}</Link>
         </Button>
       ) : null}
       {canDevices ? (

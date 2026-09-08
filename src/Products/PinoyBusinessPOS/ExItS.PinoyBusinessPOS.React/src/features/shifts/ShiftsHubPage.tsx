@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleAlert, Clock3, ShoppingCart, Store } from "lucide-react";
-import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
+import { canManageShifts, canViewShifts, isPosCashierRole } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -21,6 +21,7 @@ export function ShiftsHubPage() {
 
   const canView = canViewShifts(sessionGrant);
   const canManage = canManageShifts(sessionGrant);
+  const isCashier = isPosCashierRole(sessionGrant);
 
   const readinessDetail =
     readiness.status === "ready"
@@ -41,7 +42,7 @@ export function ShiftsHubPage() {
     return (
       <div data-testid="shifts-hub-denied" className="shifts-hub-page flex flex-col gap-3">
         <PageHeader
-          title={t("shift.hubTitle")}
+          title={isPosCashierRole(sessionGrant) ? t("shift.myHubTitle") : t("shift.hubTitle")}
           backTo={pageBackNav.managerHome.to}
           backLabel={t(pageBackNav.managerHome.labelKey)}
           backTestId="page-header-back-shifts"
@@ -60,7 +61,8 @@ export function ShiftsHubPage() {
       className="shifts-hub-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
     >
       <PageHeader
-        title={t("shift.hubTitle")}
+        title={isCashier ? t("shift.myHubTitle") : t("shift.hubTitle")}
+        description={isCashier ? t("shift.myHubDetail") : t("shift.hubDetail")}
         backTo={pageBackNav.managerHome.to}
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-shifts"

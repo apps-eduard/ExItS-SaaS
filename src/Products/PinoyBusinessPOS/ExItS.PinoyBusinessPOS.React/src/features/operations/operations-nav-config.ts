@@ -34,6 +34,7 @@ import {
   canViewReturns,
   canViewShifts,
   canViewSuppliers,
+  isPosCashierRole,
 } from "@/access/pos-capabilities";
 import {
   isWarehouseBranch,
@@ -496,7 +497,7 @@ export function buildOperationsSidebarGroups(input: {
       {
         id: "shifts",
         to: "/shifts",
-        labelKey: "org.more.shifts",
+        labelKey: isPosCashierRole(grant) ? "shift.myHubTitle" : "org.more.shifts",
         icon: RefreshCw,
         testId: "ops-sidebar-shifts",
         matchPrefixes: ["/shifts"],
@@ -508,7 +509,7 @@ export function buildOperationsSidebarGroups(input: {
       {
         id: "registers",
         to: "/registers",
-        labelKey: "register.listTitle",
+        labelKey: isPosCashierRole(grant) ? "register.myTitle" : "register.listTitle",
         icon: MonitorSmartphone,
         testId: "ops-sidebar-registers",
         matchPrefixes: ["/registers"],

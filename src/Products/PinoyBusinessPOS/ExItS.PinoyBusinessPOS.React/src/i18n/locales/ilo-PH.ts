@@ -8450,11 +8450,41 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "register.listLede": "Cash counters for opening shifts. Separate from authorized devices (browser/app installations).",
 
+  "register.myLede": "Your operational cash register for this branch.",
+
   "register.listTitle": "Cash registers",
+
+  "register.myTitle": "My cash register",
 
   "register.loadError": "Could not load cash registers.",
 
   "register.noOpenShift": "Awan ti nakalukat a shift",
+
+  "register.openShiftStatus": "Open shift",
+
+  "register.availableStatus": "Available",
+
+  "register.statusReady": "Ready",
+
+  "register.cashierLabel": "Cashier",
+
+  "register.openedLabel": "Opened",
+
+  "register.openingCashLabel": "Opening cash",
+
+  "register.transactionsLabel": "Transactions",
+
+  "register.cashSalesLabel": "Cash sales",
+
+  "register.continueSelling": "Continue selling",
+
+  "register.viewMyShift": "View my shift",
+
+  "register.viewShift": "View shift",
+
+  "register.preparingMine": "Preparing your cash register…",
+
+  "register.cashierNoRegister": "No register available. Ask your manager to make a register available.",
 
   "register.viewOnly": "You can view cash registers. Creating or editing them needs manager access.",
 
@@ -9549,6 +9579,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shift.hubLede": "Lukatan ken nairikep ti ti cashier shift. Masapul ti nakalukat a shift ti checkout.",
 
   "shift.hubTitle": "Dagiti shift",
+
+  "shift.hubDetail": "View open and previous cashier shifts",
+
+  "shift.myHubTitle": "My shifts",
+
+  "shift.myHubDetail": "View my shift history",
 
   "shift.manageDeniedDetail": "Makatan-aw a iti shifts ngem saan a maka-abli wenno maka-nairikep.",
 

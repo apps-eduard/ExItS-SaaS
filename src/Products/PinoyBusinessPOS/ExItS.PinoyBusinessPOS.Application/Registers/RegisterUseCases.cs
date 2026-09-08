@@ -30,7 +30,9 @@ public sealed record PosRegisterDto(
     DateTimeOffset UpdatedAtUtc,
     Guid UpdatedBy,
     bool HasOpenShift,
-    Guid? OpenShiftActorId = null);
+    Guid? OpenShiftActorId = null,
+    Guid? OpenShiftId = null,
+    DateTimeOffset? OpenShiftOpenedAtUtc = null);
 
 public sealed record PosRegisterActivityDto(
     Guid RegisterId,
@@ -56,7 +58,9 @@ public static class RegisterMapper
     public static PosRegisterDto Map(
         Register register,
         bool hasOpenShift = false,
-        Guid? openShiftActorId = null) =>
+        Guid? openShiftActorId = null,
+        Guid? openShiftId = null,
+        DateTimeOffset? openShiftOpenedAtUtc = null) =>
         new(
             register.Id.Value,
             register.OrganizationId.Value,
@@ -69,7 +73,9 @@ public static class RegisterMapper
             register.UpdatedAtUtc,
             register.UpdatedBy,
             hasOpenShift,
-            openShiftActorId);
+            openShiftActorId,
+            openShiftId,
+            openShiftOpenedAtUtc);
 
     public static PosRegisterSummaryDto MapSummary(Register register) =>
         new(register.Id.Value, register.RegisterCode, register.Name, register.Status.ToString());
@@ -103,7 +109,12 @@ public sealed class RegisterQueryService
         var openShift = await _shifts
             .FindOpenForRegisterAsync(org, register.Id.Value, cancellationToken)
             .ConfigureAwait(false);
-        return RegisterMapper.Map(register, openShift is not null, openShift?.ActorId);
+        return RegisterMapper.Map(
+            register,
+            openShift is not null,
+            openShift?.ActorId,
+            openShift?.Id.Value,
+            openShift?.OpenedAtUtc);
     }
 
     public async Task<PagedResult<PosRegisterDto>> ListAsync(
@@ -125,7 +136,13 @@ public sealed class RegisterQueryService
             var openShift = await _shifts
                 .FindOpenForRegisterAsync(org, register.Id.Value, cancellationToken)
                 .ConfigureAwait(false);
-            mapped.Add(RegisterMapper.Map(register, openShift is not null, openShift?.ActorId));
+            mapped.Add(
+                RegisterMapper.Map(
+                    register,
+                    openShift is not null,
+                    openShift?.ActorId,
+                    openShift?.Id.Value,
+                    openShift?.OpenedAtUtc));
         }
 
         return new PagedResult<PosRegisterDto>(mapped, total, Math.Max(page ?? 1, 1), take);

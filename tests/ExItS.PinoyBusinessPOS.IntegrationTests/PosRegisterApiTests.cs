@@ -221,6 +221,68 @@ public sealed class PosRegisterApiTests(PosPostgreSqlFixture fixture)
             await ReadErrorCodeAsync(ensureResponse));
     }
 
+    [Fact]
+    public async Task Cashier_cannot_view_or_close_another_actors_shift_and_list_is_own_scoped()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString, deviceEnforcementEnabled: false);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var owner = Actor;
+        var cashier = Guid.Parse("c7c7c7c7-c7c7-c7c7-c7c7-c7c7c7c7c7c7");
+
+        await PosInventoryOpsIntegrationSupport.BootstrapOwnerAsync(client, org, owner);
+        await PosInventoryOpsIntegrationSupport.AssignRoleAsync(client, org, owner, cashier, "Cashier");
+
+        using var ensureOwner = Scoped(HttpMethod.Post, $"{Registers}/ensure-available-for-pwa-shift", org, owner);
+        ensureOwner.Content = JsonContent.Create(new { }, options: JsonOptions);
+        using var ensureOwnerResponse = await client.SendAsync(ensureOwner);
+        ensureOwnerResponse.EnsureSuccessStatusCode();
+        var ownerReg = await ensureOwnerResponse.Content.ReadFromJsonAsync<PosRegisterDto>(JsonOptions);
+        var ownerShift = await PosShiftIntegrationSupport.EnsureOpenShiftAsync(
+            client,
+            org,
+            owner,
+            0m,
+            ownerReg!.RegisterId);
+
+        using var ensureCashier = Scoped(HttpMethod.Post, $"{Registers}/ensure-available-for-pwa-shift", org, cashier);
+        ensureCashier.Content = JsonContent.Create(new { }, options: JsonOptions);
+        using var ensureCashierResponse = await client.SendAsync(ensureCashier);
+        ensureCashierResponse.EnsureSuccessStatusCode();
+        var cashierReg = await ensureCashierResponse.Content.ReadFromJsonAsync<PosRegisterDto>(JsonOptions);
+        var cashierShift = await PosShiftIntegrationSupport.EnsureOpenShiftAsync(
+            client,
+            org,
+            cashier,
+            0m,
+            cashierReg!.RegisterId);
+
+        using var getOther = Scoped(HttpMethod.Get, $"{Shifts}/{ownerShift.ShiftId:D}", org, cashier);
+        using var getOtherResponse = await client.SendAsync(getOther);
+        Assert.Equal(HttpStatusCode.NotFound, getOtherResponse.StatusCode);
+
+        using var closeOther = Scoped(HttpMethod.Post, $"{Shifts}/{ownerShift.ShiftId:D}/close", org, cashier);
+        closeOther.Content = JsonContent.Create(new CloseCashierShiftRequest(0m), options: JsonOptions);
+        using var closeOtherResponse = await client.SendAsync(closeOther);
+        Assert.Equal(HttpStatusCode.Forbidden, closeOtherResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.CashierShiftMismatch, await ReadErrorCodeAsync(closeOtherResponse));
+
+        using var listAsCashier = Scoped(HttpMethod.Get, $"{Shifts}?page=1&pageSize=50", org, cashier);
+        using var listResponse = await client.SendAsync(listAsCashier);
+        listResponse.EnsureSuccessStatusCode();
+        var page = await listResponse.Content.ReadFromJsonAsync<PosCashierShiftPagedResult>(JsonOptions);
+        Assert.All(page!.Items, item => Assert.Equal(cashier, item.ActorId));
+        Assert.Contains(page.Items, item => item.ShiftId == cashierShift.ShiftId);
+        Assert.DoesNotContain(page.Items, item => item.ShiftId == ownerShift.ShiftId);
+
+        using var listRegisters = Scoped(HttpMethod.Get, $"{Registers}?page=1&pageSize=50", org, cashier);
+        using var listRegistersResponse = await client.SendAsync(listRegisters);
+        listRegistersResponse.EnsureSuccessStatusCode();
+        var registers = await listRegistersResponse.Content.ReadFromJsonAsync<PagedResult<PosRegisterDto>>(JsonOptions);
+        Assert.DoesNotContain(registers!.Items, r => r.RegisterId == ownerReg.RegisterId && r.HasOpenShift);
+        Assert.Contains(registers.Items, r => r.RegisterId == cashierReg.RegisterId);
+    }
+
     private static HttpRequestMessage Scoped(HttpMethod method, string path, Guid organizationId, Guid? actorId = null)
     {
         var request = new HttpRequestMessage(method, path);

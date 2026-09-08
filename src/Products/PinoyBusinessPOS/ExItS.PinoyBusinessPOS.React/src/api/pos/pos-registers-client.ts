@@ -26,6 +26,10 @@ export type PosRegisterDto = {
   hasOpenShift: boolean;
   /** Actor who owns the current Open shift on this register, when present. */
   openShiftActorId?: string | null;
+  /** Open shift id for this register, when present. */
+  openShiftId?: string | null;
+  /** When the open shift started (UTC ISO), when present. */
+  openShiftOpenedAtUtc?: string | null;
 };
 
 export type PosRegisterPagedResult = {
