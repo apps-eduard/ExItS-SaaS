@@ -16,6 +16,7 @@ export type PosSessionGrantFacts = Pick<
 export const FEATURE_OVERRIDE_SALE_PRICE = "store-sales-override-price";
 export const FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED = "store-sales-override-price-unlimited";
 export const FEATURE_CUSTOMER_CREDIT_CREATE = "customer-credit-create";
+export const FEATURE_STORE_SALES_VIEW = "store-sales-view";
 export const FEATURE_STORE_REPORTS_VIEW = "store-reports-view";
 export const FEATURE_STORE_ADVANCED_REPORTS = "store-advanced-reports";
 export const FEATURE_STORE_EXPORT = "store-export";
@@ -391,6 +392,25 @@ export function canManagePurchasing(grant: PosSessionGrantFacts | null | undefin
   }
   const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
   return role === "inventorystaff";
+}
+
+/**
+ * ViewSales UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
+ * Prefers session feature codes when present (`store-sales-view`).
+ * Server remains authoritative via StoreSalesView.
+ */
+export function canViewSales(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_STORE_SALES_VIEW)) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
 }
 
 /**

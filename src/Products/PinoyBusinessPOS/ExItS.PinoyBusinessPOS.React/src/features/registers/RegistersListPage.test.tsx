@@ -234,5 +234,19 @@ describe("RegistersListPage role UX", () => {
     expect(screen.getByText("Mica Uy")).toBeInTheDocument();
     expect(screen.getByText("register.availableStatus")).toBeInTheDocument();
     expect(screen.getByTestId("registers-shifts-nav-link")).toHaveTextContent("shift.hubTitle");
+    expect(screen.getByTestId("register-history-reg-1")).toHaveAttribute(
+      "href",
+      "/registers/reg-1/history",
+    );
+    expect(screen.getByTestId("register-transactions-reg-1")).toHaveAttribute(
+      "href",
+      "/registers/reg-1/transactions",
+    );
+    expect(screen.getByTestId("register-history-reg-3")).toBeInTheDocument();
+    expect(screen.getByTestId("register-transactions-reg-3")).toBeInTheDocument();
+    expect(screen.getByTestId("register-view-shift-reg-1")).toHaveAttribute(
+      "href",
+      "/shifts/shift-mica",
+    );
   });
 });

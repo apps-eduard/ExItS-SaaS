@@ -434,6 +434,12 @@ public sealed class SaleCostProfitTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Period);
 
+        public Task<SalePeriodAggregate> AggregateAsync(
+            PosOrganizationId organizationId,
+            SaleFilter filter,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Period);
+
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

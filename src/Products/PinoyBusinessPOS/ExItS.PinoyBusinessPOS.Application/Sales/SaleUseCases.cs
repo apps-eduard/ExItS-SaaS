@@ -138,6 +138,7 @@ public sealed class SaleQueryService
             BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId,
             DocumentKind: SalesDocumentWording.TransactionSummary,
             BranchId: sale.BranchId?.Value,
+            RegisterId: sale.RegisterId?.Value,
             GrossSubtotal: sale.GrossSubtotal,
             LineDiscountTotal: sale.LineDiscountTotal,
             SaleDiscountTotal: sale.SaleDiscountTotal,

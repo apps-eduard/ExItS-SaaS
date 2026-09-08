@@ -496,6 +496,12 @@ export async function listSales(
     fromDate?: string;
     toDate?: string;
     saleNumber?: string;
+    registerId?: string;
+    cashierShiftId?: string;
+    shiftId?: string;
+    actorId?: string;
+    recordedBy?: string;
+    branchId?: string;
     page?: number;
     pageSize?: number;
   } = {},
@@ -511,6 +517,12 @@ export async function listSales(
       fromDate: options.fromDate,
       toDate: options.toDate,
       saleNumber: options.saleNumber,
+      registerId: options.registerId,
+      cashierShiftId: options.cashierShiftId,
+      shiftId: options.shiftId,
+      actorId: options.actorId,
+      recordedBy: options.recordedBy,
+      branchId: options.branchId,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 20,
     }),

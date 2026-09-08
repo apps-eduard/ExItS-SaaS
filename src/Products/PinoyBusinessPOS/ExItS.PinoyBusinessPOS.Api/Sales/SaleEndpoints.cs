@@ -4,8 +4,10 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Application.Reporting;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Api.Sales;
@@ -39,6 +41,12 @@ internal static class SaleEndpoints
             string? fromDate,
             string? toDate,
             string? saleNumber,
+            Guid? registerId,
+            Guid? cashierShiftId,
+            Guid? shiftId,
+            Guid? actorId,
+            Guid? recordedBy,
+            Guid? branchId,
             int? page,
             int? pageSize,
             SaleQueryService queries,
@@ -58,7 +66,32 @@ internal static class SaleEndpoints
                 return problem!;
             }
 
-            var filter = new SaleFilter(parsedStatus, parsedMethod, parsedFrom, parsedTo, saleNumber);
+            if (!PosOrganizationScope.TryGetActorId(request, out var requestActorId, out problem))
+            {
+                return problem!;
+            }
+
+            var effectiveShiftId = cashierShiftId ?? shiftId;
+            var requestedActorId = actorId ?? recordedBy;
+
+            // Cashiers may only list their own sales (ignore client actor override).
+            var effectiveRecordedBy = OperationalReportService.RestrictShiftActor(
+                PosRoleRequestContext.CurrentRole,
+                requestActorId) ?? requestedActorId;
+
+            PosOrganizationScope.TryGetOptionalBranchId(request, out var headerBranchId);
+            var effectiveBranchId = branchId ?? headerBranchId;
+
+            var filter = new SaleFilter(
+                parsedStatus,
+                parsedMethod,
+                parsedFrom,
+                parsedTo,
+                saleNumber,
+                registerId,
+                effectiveShiftId,
+                effectiveRecordedBy,
+                effectiveBranchId);
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -213,13 +246,30 @@ internal static class SaleEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
             var sale = await queries.GetByIdAsync(organizationId, saleId, ct).ConfigureAwait(false);
-            return sale is null
-                ? PosApiResults.Problem(
+            if (sale is null)
+            {
+                return PosApiResults.Problem(
                     ApplicationErrorCodes.SaleNotFound,
                     "Sale was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(sale);
+                    StatusCodes.Status404NotFound);
+            }
+
+            // Cashiers may only open their own transaction summaries.
+            if (PosRoleRequestContext.CurrentRole is PosRole.Cashier && sale.RecordedBy != actorId)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.SaleNotFound,
+                    "Sale was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(sale);
         });
 
         group.MapPost("/{saleId:guid}/void", async (

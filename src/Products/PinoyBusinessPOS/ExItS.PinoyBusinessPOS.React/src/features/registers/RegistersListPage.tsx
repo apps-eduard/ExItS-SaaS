@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Clock3, DoorClosed, Play, ShoppingCart } from "lucide-react";
+import { Clock3, DoorClosed, History, Play, ReceiptText, ShoppingCart } from "lucide-react";
 import {
   canManageRegisters,
   canManageShifts,
@@ -452,27 +452,53 @@ function ManagerRegistersPanel({
                     </span>
                   </p>
                 ) : null}
-                {open && register.openShiftId ? (
+                <div className="mt-1 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  {open && register.openShiftId ? (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-fit"
+                      data-testid={`register-view-shift-${register.registerId}`}
+                    >
+                      <Link to={`/shifts/${register.openShiftId}`}>{t("register.viewShift")}</Link>
+                    </Button>
+                  ) : open ? (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-fit"
+                      data-testid={`register-view-shift-${register.registerId}`}
+                    >
+                      <Link to="/shifts">{t("register.viewShift")}</Link>
+                    </Button>
+                  ) : null}
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="mt-1 w-full sm:w-fit"
-                    data-testid={`register-view-shift-${register.registerId}`}
+                    className="w-full sm:w-fit"
+                    data-testid={`register-history-${register.registerId}`}
                   >
-                    <Link to={`/shifts/${register.openShiftId}`}>{t("register.viewShift")}</Link>
+                    <Link to={`/registers/${register.registerId}/history`}>
+                      <History className="size-3.5 shrink-0" aria-hidden />
+                      {t("register.viewHistory")}
+                    </Link>
                   </Button>
-                ) : open ? (
                   <Button
                     asChild
                     variant="outline"
                     size="sm"
-                    className="mt-1 w-full sm:w-fit"
-                    data-testid={`register-view-shift-${register.registerId}`}
+                    className="w-full sm:w-fit"
+                    data-testid={`register-transactions-${register.registerId}`}
                   >
-                    <Link to="/shifts">{t("register.viewShift")}</Link>
+                    <Link to={`/registers/${register.registerId}/transactions`}>
+                      <ReceiptText className="size-3.5 shrink-0" aria-hidden />
+                      {t("register.viewTransactions")}
+                    </Link>
                   </Button>
-                ) : null}
+                </div>
               </Card>
             </li>
           );

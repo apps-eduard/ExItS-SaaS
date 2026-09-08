@@ -37,6 +37,7 @@ import {
   canManageInventory,
   canViewRegisters,
   canViewReturns,
+  canViewSales,
   canViewShifts,
   canViewStatement,
   canVoidSale,
@@ -405,6 +406,49 @@ describe("pos-capabilities", () => {
     expect(canProcessReturn(manager)).toBe(true);
     expect(canProcessReturn(cashier)).toBe(false);
     expect(canProcessReturn(reporting)).toBe(false);
+  });
+
+  it("ViewSales includes Cashier/ReportingUser and respects store-sales-view denial", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+    });
+    const inventory = grant({
+      mappedPosRoleCode: "InventoryStaff",
+      productLocalRoleCode: "InventoryStaff",
+      membershipRole: "OrganizationMember",
+    });
+    const denied = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-catalog-view"],
+      grantedFeatureCodes: ["store-catalog-view"],
+    });
+
+    expect(canViewSales(owner)).toBe(true);
+    expect(canViewSales(manager)).toBe(true);
+    expect(canViewSales(cashier)).toBe(true);
+    expect(canViewSales(reporting)).toBe(true);
+    expect(canViewSales(inventory)).toBe(false);
+    expect(canViewSales(denied)).toBe(false);
   });
 
   it("ViewSuppliers includes InventoryStaff/ReportingUser; ManageSuppliers is Owner/Manager only", () => {

@@ -48,15 +48,41 @@ public sealed class CashierShiftQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        var orgId = PosOrganizationId.From(organizationId);
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var (items, total) = await _shifts
-            .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, cancellationToken)
+            .ListAsync(orgId, filter, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+
+        var rollups = await _shifts
+            .GetCompletedSalesRollupsAsync(
+                orgId,
+                items.Select(s => s.Id.Value).ToList(),
+                cancellationToken)
             .ConfigureAwait(false);
 
         var mapped = new List<PosCashierShiftDto>(items.Count);
         foreach (var shift in items)
         {
-            mapped.Add(await MapAsync(shift, cancellationToken).ConfigureAwait(false));
+            var dto = await MapAsync(shift, cancellationToken).ConfigureAwait(false);
+            if (rollups.TryGetValue(shift.Id.Value, out var rollup))
+            {
+                dto = dto with
+                {
+                    CompletedTransactionCount = rollup.CompletedCount,
+                    CompletedSalesTotal = rollup.CompletedTotal
+                };
+            }
+            else
+            {
+                dto = dto with
+                {
+                    CompletedTransactionCount = 0,
+                    CompletedSalesTotal = 0m
+                };
+            }
+
+            mapped.Add(dto);
         }
 
         return new PagedResult<PosCashierShiftDto>(

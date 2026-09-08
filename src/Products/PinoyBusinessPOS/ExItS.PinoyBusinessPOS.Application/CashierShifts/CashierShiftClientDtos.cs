@@ -42,7 +42,11 @@ public sealed record PosCashierShiftDto(
     IReadOnlyList<CashCountDenominationLineDto>? OpeningDenominationLines = null,
     IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null,
     string? EffectiveOpeningCashCountMode = null,
-    string? EffectiveClosingCashCountMode = null);
+    string? EffectiveClosingCashCountMode = null,
+    /// <summary>Completed sale count for this shift (list enrichment; null when not loaded).</summary>
+    int? CompletedTransactionCount = null,
+    /// <summary>Completed sales total for this shift (list enrichment; null when not loaded).</summary>
+    decimal? CompletedSalesTotal = null);
 
 public sealed record PosCashierShiftSummaryDto(
     Guid ShiftId,

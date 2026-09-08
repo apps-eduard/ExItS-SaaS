@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Options;
+using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -44,7 +45,10 @@ public sealed record PosRegisterActivityDto(
     int CompletedSaleCount,
     decimal GrossSalesTotal,
     DateTimeOffset? ActivityFromUtc,
-    DateTimeOffset? ActivityToUtc);
+    DateTimeOffset? ActivityToUtc,
+    decimal CashSalesTotal = 0m,
+    decimal ManualGCashSalesTotal = 0m,
+    decimal UtangSalesTotal = 0m);
 
 public sealed record CreateRegisterRequest(string Name, string? Description = null);
 
@@ -85,11 +89,16 @@ public sealed class RegisterQueryService
 {
     private readonly IRegisterRepository _registers;
     private readonly ICashierShiftRepository _shifts;
+    private readonly ISaleRepository _sales;
 
-    public RegisterQueryService(IRegisterRepository registers, ICashierShiftRepository shifts)
+    public RegisterQueryService(
+        IRegisterRepository registers,
+        ICashierShiftRepository shifts,
+        ISaleRepository sales)
     {
         _registers = registers;
         _shifts = shifts;
+        _sales = sales;
     }
 
     public async Task<PosRegisterDto?> GetByIdAsync(
@@ -163,6 +172,7 @@ public sealed class RegisterQueryService
         Guid registerId,
         DateTimeOffset? fromUtc,
         DateTimeOffset? toUtc,
+        Guid? actorId = null,
         CancellationToken cancellationToken = default)
     {
         var org = PosOrganizationId.From(organizationId);
@@ -176,7 +186,7 @@ public sealed class RegisterQueryService
         var (shifts, _) = await _shifts
             .ListAsync(
                 org,
-                new CashierShiftFilter(RegisterId: registerId),
+                new CashierShiftFilter(ActorId: actorId, RegisterId: registerId),
                 0,
                 500,
                 cancellationToken)
@@ -194,6 +204,25 @@ public sealed class RegisterQueryService
         }
 
         var list = scoped.ToList();
+
+        DateOnly? fromDate = fromUtc is null
+            ? null
+            : DateOnly.FromDateTime(fromUtc.Value.UtcDateTime);
+        DateOnly? toDate = toUtc is null
+            ? null
+            : DateOnly.FromDateTime(toUtc.Value.UtcDateTime);
+
+        var salesAggregate = await _sales
+            .AggregateAsync(
+                org,
+                new SaleFilter(
+                    FromDateUtc: fromDate,
+                    ToDateUtc: toDate,
+                    RegisterId: registerId,
+                    RecordedBy: actorId),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return new PosRegisterActivityDto(
             register.Id.Value,
             register.RegisterCode,
@@ -201,10 +230,13 @@ public sealed class RegisterQueryService
             register.Status.ToString(),
             list.Count(s => s.Status == CashierShiftStatus.Open),
             list.Count(s => s.Status == CashierShiftStatus.Closed),
-            0,
-            0m,
+            salesAggregate.CompletedCount,
+            salesAggregate.CompletedTotal,
             fromUtc,
-            toUtc);
+            toUtc,
+            salesAggregate.CashTotal,
+            salesAggregate.ManualGCashTotal,
+            salesAggregate.UtangTotal);
     }
 }
 

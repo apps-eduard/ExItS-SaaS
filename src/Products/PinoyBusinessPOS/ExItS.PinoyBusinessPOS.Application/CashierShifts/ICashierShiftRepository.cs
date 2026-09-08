@@ -73,6 +73,14 @@ public interface ICashierShiftRepository
         PosOrganizationId organizationId,
         CashierShiftId shiftId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Completed-sale count and total per shift id (one query; used to enrich shift list cards).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, CashierShiftCompletedSalesRollup>> GetCompletedSalesRollupsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> shiftIds,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record CashierShiftSalesTotals(
@@ -85,3 +93,5 @@ public sealed record CashierShiftSalesTotals(
     int VoidedCashCount,
     int CompletedGCashCount,
     int CompletedUtangCount);
+
+public sealed record CashierShiftCompletedSalesRollup(int CompletedCount, decimal CompletedTotal);

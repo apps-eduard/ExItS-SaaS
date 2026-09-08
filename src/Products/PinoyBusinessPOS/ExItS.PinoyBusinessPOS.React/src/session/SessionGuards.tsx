@@ -29,6 +29,7 @@ import {
   canViewRegisters,
   canViewReports,
   canViewReturns,
+  canViewSales,
   canViewShifts,
   canViewStatement,
   canViewSuppliers,
@@ -668,6 +669,16 @@ export function RequireViewReturns({ children }: { children: ReactNode }) {
 
   if (!canViewReturns(sessionGrant)) {
     return <ExperienceAccessDeniedPage testId="returns-view-denied" />;
+  }
+
+  return children;
+}
+
+export function RequireViewSales({ children }: { children: ReactNode }) {
+  const { sessionGrant } = useWorkspace();
+
+  if (!canViewSales(sessionGrant)) {
+    return <ExperienceAccessDeniedPage testId="sales-view-denied" />;
   }
 
   return children;

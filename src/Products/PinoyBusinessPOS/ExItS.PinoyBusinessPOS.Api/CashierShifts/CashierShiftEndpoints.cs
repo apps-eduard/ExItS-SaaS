@@ -31,6 +31,7 @@ internal static class CashierShiftEndpoints
             string? shiftNumber,
             string? fromBusinessDate,
             string? toBusinessDate,
+            Guid? registerId,
             int? page,
             int? pageSize,
             CashierShiftQueryService queries,
@@ -62,7 +63,13 @@ internal static class CashierShiftEndpoints
             var result = await queries
                 .ListAsync(
                     organizationId,
-                    new CashierShiftFilter(parsedStatus, effectiveActorId, shiftNumber, parsedFrom, parsedTo),
+                    new CashierShiftFilter(
+                        parsedStatus,
+                        effectiveActorId,
+                        shiftNumber,
+                        parsedFrom,
+                        parsedTo,
+                        registerId),
                     page,
                     pageSize,
                     ct)

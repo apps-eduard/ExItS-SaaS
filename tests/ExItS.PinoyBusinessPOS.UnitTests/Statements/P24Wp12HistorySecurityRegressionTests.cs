@@ -523,6 +523,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
 
         public Task<SalePeriodAggregate> AggregatePeriodAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, SaleStatus? status = null, SalePaymentMethod? paymentMethod = null, Guid? customerId = null, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<SalePeriodAggregate> AggregateAsync(PosOrganizationId organizationId, SaleFilter filter, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 

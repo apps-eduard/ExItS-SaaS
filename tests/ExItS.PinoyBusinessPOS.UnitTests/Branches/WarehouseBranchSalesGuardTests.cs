@@ -163,5 +163,12 @@ public sealed class WarehouseBranchSalesGuardTests
             CashierShiftId shiftId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new CashierShiftSalesTotals(0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+        public Task<IReadOnlyDictionary<Guid, CashierShiftCompletedSalesRollup>> GetCompletedSalesRollupsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> shiftIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, CashierShiftCompletedSalesRollup>>(
+                new Dictionary<Guid, CashierShiftCompletedSalesRollup>());
     }
 }

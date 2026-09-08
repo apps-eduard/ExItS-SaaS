@@ -402,6 +402,12 @@ public sealed class CustomerOrderUtangLedgerServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new SalePeriodAggregate(0, 0, 0, 0, 0, 0, 0, 0));
 
+        public Task<SalePeriodAggregate> AggregateAsync(
+            PosOrganizationId organizationId,
+            SaleFilter filter,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SalePeriodAggregate(0, 0, 0, 0, 0, 0, 0, 0));
+
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

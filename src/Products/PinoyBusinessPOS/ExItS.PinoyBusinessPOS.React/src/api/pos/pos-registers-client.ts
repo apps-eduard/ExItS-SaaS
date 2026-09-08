@@ -93,6 +93,22 @@ export function listRegisters(
   });
 }
 
+export type PosRegisterActivityDto = {
+  registerId: string;
+  registerCode: string;
+  name: string;
+  status: string;
+  openShiftCount: number;
+  closedShiftCount: number;
+  completedSaleCount: number;
+  grossSalesTotal: number;
+  activityFromUtc?: string | null;
+  activityToUtc?: string | null;
+  cashSalesTotal?: number;
+  manualGCashSalesTotal?: number;
+  utangSalesTotal?: number;
+};
+
 export function getRegister(
   workspace: PosWorkspaceScope,
   registerId: string,
@@ -103,6 +119,27 @@ export function getRegister(
     workspace,
     signal,
     path: `${REGISTERS_PATH}/${registerId}`,
+  });
+}
+
+/** Register activity totals for a UTC window (ViewRegisters). */
+export function getRegisterActivity(
+  workspace: PosWorkspaceScope,
+  registerId: string,
+  options: {
+    fromUtc?: string;
+    toUtc?: string;
+  } = {},
+  signal?: AbortSignal,
+): Promise<PosRegisterActivityDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${REGISTERS_PATH}/${registerId}/activity`, {
+      fromUtc: options.fromUtc,
+      toUtc: options.toUtc,
+    }),
   });
 }
 

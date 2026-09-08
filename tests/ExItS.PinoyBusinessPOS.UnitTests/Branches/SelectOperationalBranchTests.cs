@@ -251,5 +251,11 @@ public sealed class SelectOperationalBranchTests
             CashierShiftId shiftId,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public Task<IReadOnlyDictionary<Guid, CashierShiftCompletedSalesRollup>> GetCompletedSalesRollupsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> shiftIds,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 }

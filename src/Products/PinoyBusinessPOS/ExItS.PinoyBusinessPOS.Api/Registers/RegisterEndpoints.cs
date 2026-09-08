@@ -170,12 +170,27 @@ internal static class RegisterEndpoints
             }
 
             var register = await queries.GetByIdAsync(organizationId, registerId, ct).ConfigureAwait(false);
-            return register is null
-                ? PosApiResults.Problem(
+            if (register is null)
+            {
+                return PosApiResults.Problem(
                     ApplicationErrorCodes.RegisterNotFound,
                     "Register was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(register);
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                && PosOrganizationScope.TryGetActorId(request, out var cashierActorId, out _)
+                && register.HasOpenShift
+                && register.OpenShiftActorId is Guid opener
+                && opener != cashierActorId)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(register);
         });
 
         group.MapGet("/{registerId:guid}/activity", async (
@@ -192,8 +207,38 @@ internal static class RegisterEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            // Cashiers may only see their own shift/sale activity on a register.
+            Guid? scopedActorId = PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                ? actorId
+                : null;
+
+            var register = await queries.GetByIdAsync(organizationId, registerId, ct).ConfigureAwait(false);
+            if (register is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (scopedActorId is not null
+                && register.HasOpenShift
+                && register.OpenShiftActorId is Guid opener
+                && opener != scopedActorId.Value)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
             var activity = await queries
-                .GetActivityAsync(organizationId, registerId, fromUtc, toUtc, ct)
+                .GetActivityAsync(organizationId, registerId, fromUtc, toUtc, scopedActorId, ct)
                 .ConfigureAwait(false);
             return activity is null
                 ? PosApiResults.Problem(

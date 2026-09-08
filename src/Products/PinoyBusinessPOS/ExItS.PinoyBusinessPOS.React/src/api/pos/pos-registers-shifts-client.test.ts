@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createRegister, listRegisters, listRegistersAvailableForShift } from "@/api/pos/pos-registers-client";
 import {
   closeCashierShift,
   getCurrentCashierShift,
+  listCashierShifts,
   openCashierShift,
 } from "@/api/pos/pos-shifts-client";
+import {
+  createRegister,
+  getRegisterActivity,
+  listRegisters,
+  listRegistersAvailableForShift,
+} from "@/api/pos/pos-registers-client";
 import {
   getOperationalSetup,
   resolveOpeningCashRequired,
@@ -90,6 +96,54 @@ describe("pos-registers-client / pos-shifts-client", () => {
     expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain("page=2");
   });
 
+  it("loads register activity with fromUtc/toUtc", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          registerId,
+          registerCode: "REG-1",
+          name: "Front",
+          status: "Active",
+          openShiftCount: 0,
+          closedShiftCount: 1,
+          completedSaleCount: 2,
+          grossSalesTotal: 50,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const activity = await getRegisterActivity(workspace, registerId, {
+      fromUtc: "2026-09-01T00:00:00.000Z",
+      toUtc: "2026-09-08T23:59:59.999Z",
+    });
+    expect(activity.completedSaleCount).toBe(2);
+    const url = String(vi.mocked(fetch).mock.calls[0][0]);
+    expect(url).toContain(`/registers/${registerId}/activity`);
+    expect(url).toContain("fromUtc=");
+    expect(url).toContain("toUtc=");
+  });
+
+  it("lists cashier shifts with registerId filter", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          items: [openShiftJson({ completedTransactionCount: 3, completedSalesTotal: 90 })],
+          totalCount: 1,
+          page: 1,
+          pageSize: 20,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const page = await listCashierShifts(workspace, { registerId, status: "Closed" });
+    expect(page.items[0].completedTransactionCount).toBe(3);
+    const url = String(vi.mocked(fetch).mock.calls[0][0]);
+    expect(url).toContain(`registerId=${registerId}`);
+    expect(url).toContain("status=Closed");
+  });
+
   it("loads operational setup for opening cash policy", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(
@@ -109,7 +163,8 @@ describe("pos-registers-client / pos-shifts-client", () => {
     expect(resolveOpeningCashVisible("Optional")).toBe(true);
     expect(resolveOpeningCashVisible("Off")).toBe(false);
     expect(resolveOpeningCashRequired("Required")).toBe(true);
-    expect(resolveOpeningCashRequired("")).toBe(false);
+    // Empty/missing mode defaults to Required (ON).
+    expect(resolveOpeningCashRequired("")).toBe(true);
   });
 
   it("treats current shift 404 as null", async () => {

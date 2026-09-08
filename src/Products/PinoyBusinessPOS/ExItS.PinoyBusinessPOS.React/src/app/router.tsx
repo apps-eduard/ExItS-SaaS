@@ -138,6 +138,8 @@ import {
   OwnerRoleHomePage,
 } from "@/features/role/RoleHomePages";
 import { RegistersListPage } from "@/features/registers/RegistersListPage";
+import { RegisterHistoryPage } from "@/features/registers/RegisterHistoryPage";
+import { TransactionsListPage } from "@/features/registers/TransactionsListPage";
 import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
 import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
 import { CheckoutCashPage } from "@/features/checkout/CheckoutCashPage";
@@ -220,6 +222,7 @@ import {
   RequireViewPurchasing,
   RequireViewRegisters,
   RequireViewReturns,
+  RequireViewSales,
   RequireViewShifts,
   RequireViewStatement,
   RequireViewSuppliers,
@@ -757,6 +760,14 @@ export const appRoutes = [
                   </RequireManageShifts>
                 ),
               },
+              {
+                path: ":shiftId/transactions",
+                element: (
+                  <RequireViewSales>
+                    <TransactionsListPage />
+                  </RequireViewSales>
+                ),
+              },
               { path: ":shiftId", element: <ShiftDetailPage /> },
             ],
           },
@@ -766,11 +777,23 @@ export const appRoutes = [
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
                   <RequireViewRegisters>
-                    <RegistersListPage />
+                    <Outlet />
                   </RequireViewRegisters>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
+            children: [
+              { index: true, element: <RegistersListPage /> },
+              { path: ":registerId/history", element: <RegisterHistoryPage /> },
+              {
+                path: ":registerId/transactions",
+                element: (
+                  <RequireViewSales>
+                    <TransactionsListPage />
+                  </RequireViewSales>
+                ),
+              },
+            ],
           },
           {
             path: "customers",

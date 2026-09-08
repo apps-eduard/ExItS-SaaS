@@ -5,6 +5,7 @@ import {
   DoorClosed,
   Loader2,
   MessageSquareText,
+  ReceiptText,
   ShoppingCart,
   SkipForward,
 } from "lucide-react";
@@ -278,6 +279,14 @@ export function ShiftDetailPage() {
 
       <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />
 
+      <ManagerActionCard
+        to={`/shifts/${shift.shiftId}/transactions`}
+        label={t("shift.viewTransactions")}
+        detail={t("shift.viewTransactionsDetail")}
+        icon={ReceiptText}
+        testId="shift-view-transactions"
+      />
+
       {open && canManage ? (
         <section
           data-testid="shift-close-panel"
@@ -354,25 +363,35 @@ export function ShiftDetailPage() {
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            {!closingRequired ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                disabled={saving}
-                data-testid="shift-close-skip-cash"
-                onClick={() => void onClose(true)}
-              >
-                <SkipForward className="size-4 shrink-0" aria-hidden />
-                {t("shift.skipClosingCash")}
-              </Button>
-            ) : (
-              <span className="hidden sm:block" aria-hidden />
-            )}
+          {!closingRequired ? (
             <Button
               type="button"
-              className="w-full sm:ml-auto sm:w-auto"
+              variant="outline"
+              className="w-full sm:w-auto"
+              disabled={saving}
+              data-testid="shift-close-skip-cash"
+              onClick={() => void onClose(true)}
+            >
+              <SkipForward className="size-4 shrink-0" aria-hidden />
+              {t("shift.skipClosingCash")}
+            </Button>
+          ) : null}
+
+          <div
+            className="flex min-w-0 flex-row items-stretch gap-2"
+            data-testid="shift-primary-actions"
+          >
+            <div className="min-w-0 flex-1">
+              <ManagerActionCard
+                to="/sell"
+                label={t("role.openSellFloor")}
+                icon={ShoppingCart}
+                testId="shift-go-sell"
+              />
+            </div>
+            <Button
+              type="button"
+              className="h-auto min-h-11 shrink-0 self-stretch px-3"
               disabled={saving}
               data-testid="shift-close-confirm"
               onClick={() => void onClose(false)}
@@ -386,9 +405,7 @@ export function ShiftDetailPage() {
             </Button>
           </div>
         </section>
-      ) : null}
-
-      {open ? (
+      ) : open ? (
         <ManagerActionCard
           to="/sell"
           label={t("role.openSellFloor")}
