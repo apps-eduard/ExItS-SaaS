@@ -10916,12 +10916,81 @@ a.exits-chip--primary:hover {
   background: #fff;
 }
 
-.stock-count-create-page .stock-count-create-actions[data-testid="sticky-action-bar"],
-.stock-count-create-page .stock-count-create-actions {
-  background: #fff;
-  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
-  box-shadow: var(--exits-shadow-md);
-  backdrop-filter: none;
+.stock-count-create-table-shell {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.stock-count-create-table__head {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.stock-count-create-table thead.sticky {
+  background: color-mix(in srgb, var(--exits-surface-muted) 92%, #fff);
+}
+
+.stock-count-create-table__row:last-child {
+  border-bottom: 0;
+}
+
+.stock-count-create-table__row:hover {
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.stock-count-create-page .stock-count-action-btn {
+  border-radius: 9999px;
+}
+
+.stock-count-create-page .stock-count-action-btn--soft {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.stock-count-create-page .stock-count-action-btn--soft:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 16%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.stock-count-create-page .stock-count-notes-input {
+  min-height: var(--exits-control-height);
+  height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
+  padding-block: 0.35rem;
+  resize: none;
+  line-height: 1.25;
+}
+
+.stock-count-create-page .stock-count-section--products {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.stock-count-create-products-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.15rem;
+}
+
+.stock-count-create-products-scroll .stock-count-picker {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.stock-count-create-products-scroll .stock-count-create-table-shell {
+  max-height: none;
 }
 
 .catalog-form-section:nth-of-type(1) {
@@ -13025,7 +13094,8 @@ a.exits-chip--primary:hover {
 /* Pages that manage their own list scroll fill the content pane. */
 .operations-shell--viewport-lock .customer-orders-page,
 .operations-shell--viewport-lock .catalog-page--products-scroll,
-.operations-shell--viewport-lock .inventory-list-page {
+.operations-shell--viewport-lock .inventory-list-page,
+.operations-shell--viewport-lock .stock-count-create-page {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;

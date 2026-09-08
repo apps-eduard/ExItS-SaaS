@@ -3716,6 +3716,7 @@ export const en = {
   "stockCount.completing": "Completing?",
   "stockCount.completeConfirm": "Completing this stock count will adjust inventory to the physical quantities entered.",
   "stockCount.product": "Product",
+  "stockCount.unit": "Unit",
   "stockCount.systemStock": "System stock",
   "stockCount.systemQuantity": "System quantity",
   "stockCount.physicalCount": "Physical count",

@@ -3819,7 +3819,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockCount.completeConfirm": "Completing this stock count will adjust inventory to the physical quantities entered.",
 
   "stockCount.product": "Product",
-
+  "stockCount.unit": "Unit",
   "stockCount.systemStock": "System stock",
 
   "stockCount.systemQuantity": "System quantity",

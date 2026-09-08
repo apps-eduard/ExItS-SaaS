@@ -3819,7 +3819,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockCount.completeConfirm": "Kapag kinumpleto ang stock count na ito, ia-adjust ang inventory sa mga pisikal na dami na inilagay.",
 
   "stockCount.product": "Produkto",
-
+  "stockCount.unit": "Unit",
   "stockCount.systemStock": "System stock",
 
   "stockCount.systemQuantity": "System quantity",

@@ -3823,7 +3823,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockCount.systemQuantity": "Quantity sa sistema",
 
   "stockCount.product": "Produkto",
-
+  "stockCount.unit": "Unit",
   "stockCount.physicalCount": "Pisikal nga ihap",
 
   "stockCount.countedQuantity": "Counted quantity",

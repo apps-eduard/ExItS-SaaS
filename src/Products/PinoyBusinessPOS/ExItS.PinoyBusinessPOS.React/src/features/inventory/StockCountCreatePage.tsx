@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -11,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -24,6 +24,7 @@ import {
   type StockCountPeriodType,
 } from "@/features/inventory/stock-count-title-suggestion";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type SelectedProduct = {
@@ -32,6 +33,15 @@ type SelectedProduct = {
   unitOfMeasure: string;
   onHand: number;
 };
+
+function toSelectedProduct(row: PosInventoryAccountDto): SelectedProduct {
+  return {
+    productId: row.productId,
+    name: row.name,
+    unitOfMeasure: row.unitOfMeasure,
+    onHand: row.onHandQuantity,
+  };
+}
 
 const DEFAULT_PERIOD: StockCountPeriodType = "Monthly";
 
@@ -63,6 +73,7 @@ export function StockCountCreatePage() {
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const isLargeScreen = useMediaMin(1024);
 
   const initialDate = todayDateOnly();
   const [period, setPeriod] = useState<StockCountPeriodType>(DEFAULT_PERIOD);
@@ -77,6 +88,8 @@ export function StockCountCreatePage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [showAddProducts, setShowAddProducts] = useState(true);
+  const productsScrollRef = useRef<HTMLDivElement | null>(null);
 
   function applyPeriod(next: StockCountPeriodType) {
     setPeriod(next);
@@ -128,7 +141,7 @@ export function StockCountCreatePage() {
       workspace?.branchId,
       debounced,
     ],
-    enabled: Boolean(workspace) && online && allowManage,
+    enabled: Boolean(workspace) && online && allowManage && showAddProducts,
     queryFn: ({ signal }) =>
       listInventory(
         workspace!,
@@ -153,25 +166,40 @@ export function StockCountCreatePage() {
       return;
     }
     setError(null);
-    setSelected((prev) => [
-      ...prev,
-      {
-        productId: row.productId,
-        name: row.name,
-        unitOfMeasure: row.unitOfMeasure,
-        onHand: row.onHandQuantity,
-      },
-    ]);
+    setSelected((prev) => [...prev, toSelectedProduct(row)]);
   }
 
   function removeProduct(productId: string) {
-    setSelected((prev) => prev.filter((p) => p.productId !== productId));
+    setSelected((prev) => {
+      const next = prev.filter((p) => p.productId !== productId);
+      if (next.length === 0) {
+        setShowAddProducts(true);
+      }
+      return next;
+    });
+  }
+
+  function hideAddProductsPanel() {
+    setShowAddProducts(false);
+    setSearch("");
+    setDebounced("");
   }
 
   async function countAllTracked() {
-    if (!workspace || loadingAll || saving) {
+    if (!workspace || loadingAll || saving || !online) {
       return;
     }
+
+    // Hide search + picker immediately so the selected list is the focus.
+    hideAddProductsPanel();
+    // Instant feedback from rows already loaded in the picker (if any).
+    if (pickerRows.length > 0) {
+      setSelected(
+        pickerRows.slice(0, STOCK_COUNT_MAX_LINES).map(toSelectedProduct),
+      );
+      productsScrollRef.current?.scrollTo({ top: 0 });
+    }
+
     setLoadingAll(true);
     setError(null);
     setNotice(null);
@@ -187,36 +215,43 @@ export function StockCountCreatePage() {
           pageSize,
           tracked: true,
         });
-        totalCount = result.totalCount;
-        for (const row of result.items) {
+        const items = result.items ?? [];
+        totalCount = Number(result.totalCount) || 0;
+        for (const row of items) {
           if (!row.isTracked || seen.has(row.productId)) {
             continue;
           }
           seen.add(row.productId);
-          collected.push({
-            productId: row.productId,
-            name: row.name,
-            unitOfMeasure: row.unitOfMeasure,
-            onHand: row.onHandQuantity,
-          });
+          collected.push(toSelectedProduct(row));
           if (collected.length >= STOCK_COUNT_MAX_LINES) {
             break;
           }
         }
-        if (result.items.length === 0 || page * pageSize >= totalCount) {
+        if (items.length === 0 || page * pageSize >= totalCount || collected.length >= totalCount) {
           break;
         }
         page += 1;
       }
+
+      if (collected.length === 0) {
+        setSelected([]);
+        setShowAddProducts(true);
+        setError(t("stockCount.noTrackedProducts"));
+        return;
+      }
+
       setSelected(collected);
+      hideAddProductsPanel();
+      productsScrollRef.current?.scrollTo({ top: 0 });
       if (totalCount > STOCK_COUNT_MAX_LINES) {
         setNotice(
           t("stockCount.countAllCapped").replace("{max}", String(STOCK_COUNT_MAX_LINES)),
         );
-      } else if (collected.length === 0) {
-        setError(t("stockCount.noTrackedProducts"));
       }
     } catch (err) {
+      if (pickerRows.length === 0) {
+        setShowAddProducts(true);
+      }
       setError(
         err instanceof PosApiError
           ? (err.problem.detail ?? t("stockCount.loadFailed"))
@@ -284,120 +319,123 @@ export function StockCountCreatePage() {
 
   const productRowClass =
     "stock-count-product-row flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2";
-  const productActionClass = " w-full shrink-0 sm:w-auto";
+  const actionIconClass = "stock-count-action-btn shrink-0";
+  const actionIconSoftClass = "stock-count-action-btn stock-count-action-btn--soft shrink-0";
 
   return (
     <div
-      className="stock-count-create-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-2.5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+      className="stock-count-create-page exits-page mx-auto flex h-full min-h-0 w-full max-w-[80rem] min-w-0 flex-col gap-2.5 overflow-hidden"
       data-testid="stock-count-create-page"
     >
-      <PageHeader
-        title={t("stockCount.newTitle")}
-        description={t("stockCount.newLede")}
-        backTo="/inventory/stock-counts"
-        backLabel={t("stockCount.backList")}
-        backTestId="page-header-back-stock-counts"
-      />
+      <div className="stock-count-create-chrome flex shrink-0 min-w-0 flex-col gap-2.5">
+        <PageHeader
+          title={t("stockCount.newTitle")}
+          description={t("stockCount.newLede")}
+          backTo="/inventory/stock-counts"
+          backLabel={t("stockCount.backList")}
+          backTestId="page-header-back-stock-counts"
+        />
 
-      <p
-        className="stock-count-create-scope m-0"
-        data-testid="stock-count-create-scope"
-      >
-        {boundWorkspace?.branchName
-          ? t("stockCount.orgScopeNote").replace("{name}", boundWorkspace.branchName)
-          : t("stockCount.branchRequired")}
-      </p>
-
-      {!online ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockCount.offline")}</p>
-      ) : null}
-
-      {error ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert" data-testid="stock-count-create-error">
-          {error}
+        <p
+          className="stock-count-create-scope m-0"
+          data-testid="stock-count-create-scope"
+        >
+          {boundWorkspace?.branchName
+            ? t("stockCount.orgScopeNote").replace("{name}", boundWorkspace.branchName)
+            : t("stockCount.branchRequired")}
         </p>
-      ) : null}
-      {notice ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="stock-count-create-notice">
-          {notice}
-        </p>
-      ) : null}
 
-      <section
-        className="catalog-form-section stock-count-section exits-animate-panel"
-        data-testid="stock-count-create-fields"
-      >
-        <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {!online ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockCount.offline")}</p>
+        ) : null}
+
+        {error ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert" data-testid="stock-count-create-error">
+            {error}
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="stock-count-create-notice">
+            {notice}
+          </p>
+        ) : null}
+
+        <section
+          className="catalog-form-section stock-count-section exits-animate-panel"
+          data-testid="stock-count-create-fields"
+        >
+          <div className="stock-count-create-meta grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(10rem,13rem)_minmax(0,1fr)_minmax(10rem,14rem)] lg:items-start">
+            <label className="flex min-w-0 flex-col gap-1">
+              <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                {t("stockCount.countPeriod")}
+              </span>
+              <select
+                className="exits-select catalog-form-select"
+                value={period}
+                onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
+                data-testid="stock-count-period"
+              >
+                {STOCK_COUNT_PERIOD_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(periodLabelKey(value))}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex min-w-0 flex-col gap-1 sm:col-span-2 lg:col-span-1">
+              <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                {t("stockCount.fieldTitle")}
+              </span>
+              <input
+                className="exits-input"
+                value={title}
+                onChange={(e) => onTitleChange(e.target.value)}
+                maxLength={80}
+                autoComplete="off"
+                data-testid="stock-count-title"
+              />
+              <span className="text-[length:var(--exits-text-xs)] text-muted">
+                {t("stockCount.titleSuggestedHint")}
+              </span>
+            </label>
+
+            <label className="flex min-w-0 flex-col gap-1 sm:col-start-2 sm:row-start-1 lg:col-start-auto lg:row-start-auto">
+              <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                {t("stockCount.countDate")}
+              </span>
+              <input
+                type="date"
+                className="exits-input"
+                value={countDate}
+                onChange={(e) => applyCountDate(e.target.value)}
+                data-testid="stock-count-date"
+              />
+            </label>
+          </div>
+
           <label className="flex min-w-0 flex-col gap-1">
             <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
-              {t("stockCount.countPeriod")}
+              {t("stockCount.notes")}{" "}
+              <span className="font-normal">({t("stockCount.notesOptional")})</span>
             </span>
-            <select
-              className="exits-select catalog-form-select"
-              value={period}
-              onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
-              data-testid="stock-count-period"
-            >
-              {STOCK_COUNT_PERIOD_TYPES.map((value) => (
-                <option key={value} value={value}>
-                  {t(periodLabelKey(value))}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex min-w-0 flex-col gap-1">
-            <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
-              {t("stockCount.countDate")}
-            </span>
-            <input
-              type="date"
-              className="exits-input"
-              value={countDate}
-              onChange={(e) => applyCountDate(e.target.value)}
-              data-testid="stock-count-date"
+            <textarea
+              className="exits-input stock-count-notes-input"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={512}
+              rows={1}
+              data-testid="stock-count-notes"
             />
           </label>
-        </div>
-
-        <label className="flex min-w-0 flex-col gap-1">
-          <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
-            {t("stockCount.fieldTitle")}
-          </span>
-          <input
-            className="exits-input"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            maxLength={80}
-            autoComplete="off"
-            data-testid="stock-count-title"
-          />
-          <span className="text-[length:var(--exits-text-xs)] text-muted">
-            {t("stockCount.titleSuggestedHint")}
-          </span>
-        </label>
-
-        <label className="flex min-w-0 flex-col gap-1">
-          <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
-            {t("stockCount.notes")}{" "}
-            <span className="font-normal">({t("stockCount.notesOptional")})</span>
-          </span>
-          <textarea
-            className="exits-input min-h-16"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            maxLength={512}
-            rows={2}
-            data-testid="stock-count-notes"
-          />
-        </label>
-      </section>
+        </section>
+      </div>
 
       <section
-        className="catalog-form-section stock-count-section exits-animate-panel"
+        className="catalog-form-section stock-count-section stock-count-section--products exits-animate-panel"
         data-testid="stock-count-selected"
       >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="catalog-form-section__title m-0 flex min-w-0 items-baseline gap-2">
             <span>{t("stockCount.productsToCount")}</span>
             {selected.length > 0 ? (
@@ -406,19 +444,97 @@ export function StockCountCreatePage() {
               </span>
             ) : null}
           </h2>
-          <Button
-            type="button"
-            variant="outline"
-            className={productActionClass}
-            disabled={!online || loadingAll || saving}
-            onClick={() => void countAllTracked()}
-            data-testid="stock-count-count-all"
-          >
-            {loadingAll ? t("stockCount.loadingAll") : t("stockCount.countAll")}
-          </Button>
+          <div className="stock-count-create-toolbar flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full shrink-0 sm:w-auto"
+              disabled={!online || loadingAll || saving}
+              onClick={() => void countAllTracked()}
+              data-testid="stock-count-count-all"
+            >
+              {loadingAll ? t("stockCount.loadingAll") : t("stockCount.countAll")}
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              className="w-full shrink-0 sm:w-auto"
+              disabled={!online || saving || selected.length === 0}
+              onClick={() => void saveDraft()}
+              data-testid="stock-count-save-draft"
+            >
+              {saving ? t("stockCount.saving") : t("stockCount.saveDraft")}
+            </Button>
+          </div>
         </div>
+
+        <div
+          ref={productsScrollRef}
+          className="stock-count-create-products-scroll"
+          data-testid="stock-count-products-scroll"
+        >
         {selected.length === 0 ? (
           <p className="stock-count-empty m-0">{t("stockCount.draftEmpty")}</p>
+        ) : isLargeScreen ? (
+          <div
+            className="stock-count-create-table-shell min-w-0 overflow-x-auto"
+            data-testid="stock-count-selected-table"
+          >
+            <table className="stock-count-create-table w-full min-w-[32rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+              <thead>
+                <tr className="stock-count-create-table__head border-b border-border">
+                  <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("stockCount.product")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("stockCount.unit")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("inventory.onHand")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("catalog.col.actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {selected.map((product) => (
+                  <tr
+                    key={product.productId}
+                    className="stock-count-create-table__row border-b border-border"
+                    data-testid={`stock-count-selected-${product.productId}`}
+                  >
+                    <td className="max-w-[18rem] px-3 py-2.5 align-middle">
+                      <span className="block truncate font-semibold text-foreground">
+                        {product.name}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
+                      {product.unitOfMeasure}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                      {product.onHand}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className={actionIconSoftClass}
+                          aria-label={t("stockCount.removeProduct")}
+                          onClick={() => removeProduct(product.productId)}
+                          data-testid={`stock-count-remove-${product.productId}`}
+                        >
+                          <Trash2 className="size-4 shrink-0" aria-hidden />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
             {selected.map((product) => (
@@ -436,75 +552,163 @@ export function StockCountCreatePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className={productActionClass}
+                  size="icon"
+                  className={actionIconSoftClass}
+                  aria-label={t("stockCount.removeProduct")}
                   onClick={() => removeProduct(product.productId)}
                   data-testid={`stock-count-remove-${product.productId}`}
                 >
-                  {t("stockCount.removeProduct")}
+                  <Trash2 className="size-4 shrink-0" aria-hidden />
                 </Button>
               </li>
             ))}
           </ul>
         )}
 
-        <div className="stock-count-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
-          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
-            {t("stockCount.addProducts")}
-          </h3>
-          <SearchField
-            label={t("stockCount.searchProducts")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("stockCount.searchProducts")}
-            data-testid="stock-count-product-search"
-          />
-          {pickerQuery.isLoading ? <LoadingState label={t("stockCount.loading")} /> : null}
-          {!pickerQuery.isLoading && pickerRows.length === 0 ? (
-            <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
-          ) : null}
-          <ul
-            className="m-0 flex max-h-[min(42vh,18rem)] list-none flex-col gap-1.5 overflow-y-auto overscroll-contain p-0"
-            data-testid="stock-count-product-picker"
-          >
-            {pickerRows.map((row) => {
-              const already = selectedIds.has(row.productId);
-              return (
-                <li key={row.productId} className={productRowClass}>
-                  <div className="min-w-0">
-                    <p className="m-0 font-medium leading-snug">{row.name}</p>
-                    <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                      {row.unitOfMeasure} · {t("inventory.onHand")}: {row.onHandQuantity}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant={already ? "outline" : "default"}
-                    className={productActionClass}
-                    disabled={already || !online}
-                    onClick={() => addProduct(row)}
-                    data-testid={`stock-count-add-${row.productId}`}
-                  >
-                    {already ? t("stockCount.alreadyAdded") : t("stockCount.addProduct")}
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+        {showAddProducts ? (
+          <div className="stock-count-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+              {t("stockCount.addProducts")}
+            </h3>
+            <SearchField
+              label={t("stockCount.searchProducts")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClear={() => setSearch("")}
+              placeholder={t("stockCount.searchProducts")}
+              data-testid="stock-count-product-search"
+            />
+            {pickerQuery.isLoading ? <LoadingState label={t("stockCount.loading")} /> : null}
+            {!pickerQuery.isLoading && pickerRows.length === 0 ? (
+              <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
+            ) : null}
+
+            {pickerRows.length > 0 ? (
+              isLargeScreen ? (
+                <div
+                  className="stock-count-create-table-shell min-w-0 overflow-x-auto"
+                  data-testid="stock-count-product-picker"
+                >
+                  <table className="stock-count-create-table w-full min-w-[32rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                    <thead>
+                      <tr className="stock-count-create-table__head border-b border-border">
+                        <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                          {t("stockCount.product")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                          {t("stockCount.unit")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                          {t("inventory.onHand")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                          {t("catalog.col.actions")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pickerRows.map((row) => {
+                        const already = selectedIds.has(row.productId);
+                        return (
+                          <tr
+                            key={row.productId}
+                            className="stock-count-create-table__row border-b border-border"
+                          >
+                            <td className="max-w-[18rem] px-3 py-2.5 align-middle">
+                              <span className="block truncate font-semibold text-foreground">
+                                {row.name}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
+                              {row.unitOfMeasure}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                              {row.onHandQuantity}
+                            </td>
+                            <td className="px-3 py-2.5 align-middle">
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant={already ? "outline" : "default"}
+                                  size="icon"
+                                  className={already ? actionIconSoftClass : actionIconClass}
+                                  disabled={already || !online}
+                                  aria-label={
+                                    already ? t("stockCount.alreadyAdded") : t("stockCount.addProduct")
+                                  }
+                                  onClick={() => addProduct(row)}
+                                  data-testid={`stock-count-add-${row.productId}`}
+                                >
+                                  {already ? (
+                                    <Check className="size-4 shrink-0" aria-hidden />
+                                  ) : (
+                                    <Plus className="size-4 shrink-0" aria-hidden />
+                                  )}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <ul
+                  className="m-0 flex list-none flex-col gap-1.5 p-0"
+                  data-testid="stock-count-product-picker"
+                >
+                  {pickerRows.map((row) => {
+                    const already = selectedIds.has(row.productId);
+                    return (
+                      <li key={row.productId} className={productRowClass}>
+                        <div className="min-w-0">
+                          <p className="m-0 font-medium leading-snug">{row.name}</p>
+                          <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                            {row.unitOfMeasure} · {t("inventory.onHand")}: {row.onHandQuantity}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={already ? "outline" : "default"}
+                          size="icon"
+                          className={already ? actionIconSoftClass : actionIconClass}
+                          disabled={already || !online}
+                          aria-label={
+                            already ? t("stockCount.alreadyAdded") : t("stockCount.addProduct")
+                          }
+                          onClick={() => addProduct(row)}
+                          data-testid={`stock-count-add-${row.productId}`}
+                        >
+                          {already ? (
+                            <Check className="size-4 shrink-0" aria-hidden />
+                          ) : (
+                            <Plus className="size-4 shrink-0" aria-hidden />
+                          )}
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            ) : null}
+          </div>
+        ) : (
+          <div className="stock-count-picker-toggle flex min-w-0 justify-start border-t border-border pt-2.5">
+            <Button
+              type="button"
+              variant="ghost"
+              className="px-0 text-[length:var(--exits-text-sm)] font-medium text-primary hover:bg-transparent"
+              onClick={() => setShowAddProducts(true)}
+              data-testid="stock-count-show-add-products"
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {t("stockCount.addProducts")}
+            </Button>
+          </div>
+        )}
         </div>
       </section>
-
-      <StickyActionBar className="stock-count-create-actions px-3 py-3 sm:px-4">
-        <Button
-          type="button"
-          className="w-full flex-1"
-          disabled={!online || saving || selected.length === 0}
-          onClick={() => void saveDraft()}
-          data-testid="stock-count-save-draft"
-        >
-          {saving ? t("stockCount.saving") : t("stockCount.saveDraft")}
-        </Button>
-      </StickyActionBar>
     </div>
   );
 }
