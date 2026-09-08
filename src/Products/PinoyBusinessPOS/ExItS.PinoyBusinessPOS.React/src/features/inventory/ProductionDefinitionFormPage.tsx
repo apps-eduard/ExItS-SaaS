@@ -520,7 +520,15 @@ export function ProductionDefinitionFormPage() {
       const saved = isEdit
         ? await updateProductionDefinition(workspace, definitionId!, body)
         : await createProductionDefinition(workspace, body);
-      navigate(`/inventory/production/setups/${saved.productionDefinitionId}`, { replace: true });
+      if (isEdit) {
+        navigate(`/inventory/production/setups/${saved.productionDefinitionId}`, { replace: true });
+      } else {
+        // First-time recipe: stock stays 0 until Produce — take the user there next.
+        navigate(
+          `/inventory/production/produce?definitionId=${saved.productionDefinitionId}`,
+          { replace: true },
+        );
+      }
     } catch (err) {
       setError(
         err instanceof PosApiError

@@ -3983,6 +3983,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.browseCatalogHint": "Pick a product — it will be marked as an ingredient when you add it.",
   "production.recipes.willEnableIngredient": "Enable as ingredient",
   "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
+  "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
 
   "production.produce.title": "Gumawa",
 

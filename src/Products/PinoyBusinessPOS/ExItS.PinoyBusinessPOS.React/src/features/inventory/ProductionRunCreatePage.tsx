@@ -418,6 +418,7 @@ export function ProductionRunCreatePage() {
     const body = {
       productionDefinitionId: definitionId,
       outputQuantity: outQty,
+      branchId: workspace.branchId,
       notes: notes.trim() || null,
       referenceNumber: referenceNumber.trim() || null,
       outputExpirationDate: expirationDate.trim() || null,
@@ -432,6 +433,9 @@ export function ProductionRunCreatePage() {
       runIdRef.current = null;
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       await queryClient.invalidateQueries({ queryKey: ["production"] });
+      await queryClient.invalidateQueries({ queryKey: ["pos-catalog-browse"] });
+      await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      await queryClient.invalidateQueries({ queryKey: ["pos-catalog"] });
       showToast(
         t("production.produce.successToast")
           .replace("{qty}", String(outQty))

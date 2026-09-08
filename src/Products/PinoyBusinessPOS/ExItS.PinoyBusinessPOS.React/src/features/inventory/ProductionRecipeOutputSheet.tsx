@@ -458,6 +458,13 @@ export function ProductionRecipeOutputSheet({
               )}
             </div>
 
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="production-recipe-stock-zero-hint"
+            >
+              {t("production.recipes.stockZeroUntilProduce")}
+            </p>
+
             <Button
               type="button"
               className="w-full"

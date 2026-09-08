@@ -18,6 +18,7 @@ describe("POS-PRODUCTION-RECIPE-FIRST-TIME-SETUP-AND-REUSE-V1", () => {
     expect(form).toContain("showOutputPicker = isEdit && !outputProductId");
     expect(form).toContain("browseCatalogIngredients");
     expect(form).toContain("ensureCanBeUsedAsIngredient");
+    expect(form).toContain("/inventory/production/produce?definitionId=");
   });
 
   it("save sheet creates or links output product", () => {

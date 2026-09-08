@@ -20,6 +20,8 @@ describe("POS-PRODUCTION-RUN-RECIPE-SNAPSHOT-STOCK-GUARD-V1", () => {
     expect(source).toContain("extraMaterials");
     expect(source).toContain("showToast");
     expect(source).toContain("listCatalogProducts");
+    expect(source).toContain("branchId: workspace.branchId");
+    expect(source).toContain('queryKey: ["pos-catalog-browse"]');
     // Ingredient picker only — setups come from production definitions, not the full catalog.
     expect(source).toMatch(/canBeUsedAsIngredient:\s*true/);
   });
