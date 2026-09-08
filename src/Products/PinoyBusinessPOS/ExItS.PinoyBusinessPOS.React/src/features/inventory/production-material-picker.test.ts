@@ -21,9 +21,11 @@ describe("POS-PRODUCTION-SETUP-MATERIAL-PICKER-UX-V1", () => {
     expect(source).toContain("production.setups.materialAsOutputForbidden");
     expect(source).toContain("production.setups.needMaterials");
     expect(source).toContain("outputProductUnitId");
-    expect(source).toContain('data-testid="production-setup-output-tabs"');
+    // Create flow uses draft yield UOM; edit/clear-output still keeps product unit pickers.
+    expect(source).toContain("production-recipe-yield-uom");
     expect(source).toContain("production-setup-output-unit");
     expect(source).toContain("production-setup-output-weight-unit");
+    expect(source).toContain("ProductionRecipeOutputSheet");
     expect(source).not.toContain("setMaterialQty");
   });
 

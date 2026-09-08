@@ -5,6 +5,10 @@ import { Check } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
+import {
+  DEFAULT_CATALOG_UNIT_OF_MEASURE,
+  type PosUnitOfMeasureCode,
+} from "@/api/pos/pos-catalog-options";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   createProductionDefinition,
@@ -21,6 +25,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { ProductionMaterialQuantitySheet } from "@/features/inventory/ProductionMaterialQuantitySheet";
+import { ProductionRecipeOutputSheet } from "@/features/inventory/ProductionRecipeOutputSheet";
 import {
   activeMaterialUnits,
   draftQuantityLine,
@@ -40,14 +45,21 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 type OutputPickerTab = "produced" | "all";
 
 function isEligibleProductionOutput(product: PosCatalogProductDto, tab: OutputPickerTab): boolean {
-  // Backend requires IsProduced for production outputs.
   if (product.isProduced !== true) {
     return false;
   }
-  // Tabs share eligibility today; "produced" is the default browse mode.
   void tab;
   return true;
 }
+
+const YIELD_UOM_OPTIONS: PosUnitOfMeasureCode[] = [
+  "Piece",
+  "Kilogram",
+  "Gram",
+  "Liter",
+  "Pack",
+  "Box",
+];
 
 export function ProductionDefinitionFormPage() {
   const { t } = useI18n();
@@ -62,9 +74,13 @@ export function ProductionDefinitionFormPage() {
   const [outputProductId, setOutputProductId] = useState<string | null>(null);
   const [outputProduct, setOutputProduct] = useState<PosCatalogProductDto | null>(null);
   const [outputName, setOutputName] = useState("");
-  const [outputQuantityRaw, setOutputQuantityRaw] = useState("1");
+  const [outputQuantityRaw, setOutputQuantityRaw] = useState(isEdit ? "1" : "100");
   const [outputProductUnitId, setOutputProductUnitId] = useState<string | null>(null);
   const [outputWeightUnit, setOutputWeightUnit] = useState<WeightInputUnit>("kg");
+  /** Create-mode yield UOM before an output product exists. */
+  const [draftYieldUom, setDraftYieldUom] = useState<PosUnitOfMeasureCode | string>(
+    DEFAULT_CATALOG_UNIT_OF_MEASURE,
+  );
   const [outputPickerTab, setOutputPickerTab] = useState<OutputPickerTab>("produced");
   const [materials, setMaterials] = useState<ProductionMaterialDraft[]>([]);
   const [outputSearch, setOutputSearch] = useState("");
@@ -78,6 +94,7 @@ export function ProductionDefinitionFormPage() {
   const [hydrated, setHydrated] = useState(!isEdit);
   const [qtySheetProduct, setQtySheetProduct] = useState<PosCatalogProductDto | null>(null);
   const [qtySheetEditing, setQtySheetEditing] = useState(false);
+  const [outputSheetOpen, setOutputSheetOpen] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedOutput(outputSearch.trim()), 250);
@@ -121,6 +138,7 @@ export function ProductionDefinitionFormPage() {
         if (!cancelled) {
           setOutputProduct(output);
           setOutputName(output.name);
+          setDraftYieldUom(output.unitOfMeasure || DEFAULT_CATALOG_UNIT_OF_MEASURE);
           const mode = resolveMaterialEntryMode(output);
           if (mode === "weight") {
             setOutputWeightUnit("kg");
@@ -182,6 +200,8 @@ export function ProductionDefinitionFormPage() {
     };
   }, [existingQuery.data, hydrated, workspace]);
 
+  const showOutputPicker = isEdit && !outputProductId;
+
   const outputPickerQuery = useQuery({
     queryKey: [
       "catalog-products",
@@ -190,7 +210,7 @@ export function ProductionDefinitionFormPage() {
       debouncedOutput,
       outputPickerTab,
     ],
-    enabled: Boolean(workspace) && online && allowManage && !outputProductId,
+    enabled: Boolean(workspace) && online && allowManage && showOutputPicker,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
@@ -275,25 +295,34 @@ export function ProductionDefinitionFormPage() {
     setOutputProductId(product.productId);
     setOutputProduct(product);
     setOutputName(product.name);
+    setDraftYieldUom(product.unitOfMeasure || DEFAULT_CATALOG_UNIT_OF_MEASURE);
     setOutputSearch("");
     const mode = resolveMaterialEntryMode(product);
     if (mode === "weight") {
       setOutputWeightUnit("kg");
-      setOutputQuantityRaw("1");
+      setOutputQuantityRaw(isEdit ? "1" : outputQuantityRaw || "100");
       setOutputProductUnitId(null);
     } else if (mode === "unit") {
       const units = activeMaterialUnits(product);
       setOutputProductUnitId(units[0]?.unitId ?? null);
-      setOutputQuantityRaw("1");
+      setOutputQuantityRaw(isEdit ? "1" : outputQuantityRaw || "100");
     } else {
       setOutputProductUnitId(null);
-      setOutputQuantityRaw("1");
+      setOutputQuantityRaw(isEdit ? "1" : outputQuantityRaw || "100");
     }
     setMaterials((prev) => prev.filter((m) => m.materialProductId !== product.productId));
     setError(null);
   }
 
   function clearOutput() {
+    if (!isEdit) {
+      setOutputProductId(null);
+      setOutputProduct(null);
+      setOutputName("");
+      setOutputProductUnitId(null);
+      setOutputWeightUnit("kg");
+      return;
+    }
     setOutputProductId(null);
     setOutputProduct(null);
     setOutputName("");
@@ -341,38 +370,51 @@ export function ProductionDefinitionFormPage() {
     setMaterials((prev) => prev.filter((m) => m.materialProductId !== productId));
   }
 
-  async function submit() {
-    if (!workspace || !allowManage || !online || saving) {
-      return;
-    }
+  function validateRecipeDraft(): boolean {
     const trimmedName = name.trim();
     if (!trimmedName) {
       setError(t("production.setups.needName"));
-      return;
+      return false;
     }
-    if (!outputProductId || !outputProduct) {
-      setError(t("production.setups.needOutput"));
-      return;
-    }
-    const normalizedOutput = normalizeMaterialQuantityInput({
-      product: outputProduct,
-      rawValue: Number(outputQuantityRaw),
-      weightUnit: outputWeightUnit,
-      productUnitId: outputProductUnitId,
-    });
-    if (!normalizedOutput.ok) {
+    const qty = Number(outputQuantityRaw);
+    if (!Number.isFinite(qty) || qty <= 0) {
       setError(t("production.setups.invalidQuantity"));
-      return;
+      return false;
     }
     if (materials.length === 0) {
       setError(t("production.setups.needMaterials"));
-      return;
+      return false;
     }
     for (const material of materials) {
       if (material.quantity <= 0) {
         setError(t("production.setups.invalidQuantity"));
-        return;
+        return false;
       }
+    }
+    return true;
+  }
+
+  async function persistDefinition(linkedOutput: PosCatalogProductDto) {
+    if (!workspace || !allowManage || !online) {
+      return;
+    }
+    const trimmedName = name.trim();
+    const normalizedOutput = normalizeMaterialQuantityInput({
+      product: linkedOutput,
+      rawValue: Number(outputQuantityRaw),
+      weightUnit: outputWeightUnit,
+      productUnitId: outputProductUnitId,
+    });
+    // When product was just created with matching base UOM, accept raw qty if normalize fails
+    // only due to missing units (Piece base).
+    let outputQuantity = Number(outputQuantityRaw);
+    let outUnitId: string | null = outputProductUnitId;
+    if (normalizedOutput.ok) {
+      outputQuantity = normalizedOutput.quantity;
+      outUnitId = normalizedOutput.productUnitId ?? null;
+    } else if (!Number.isFinite(outputQuantity) || outputQuantity <= 0) {
+      setError(t("production.setups.invalidQuantity"));
+      return;
     }
 
     setSaving(true);
@@ -380,9 +422,9 @@ export function ProductionDefinitionFormPage() {
     try {
       const body = {
         name: trimmedName,
-        outputProductId,
-        outputQuantity: normalizedOutput.quantity,
-        outputProductUnitId: normalizedOutput.productUnitId ?? null,
+        outputProductId: linkedOutput.productId,
+        outputQuantity,
+        outputProductUnitId: outUnitId,
         components: materials.map((m, index) => ({
           materialProductId: m.materialProductId,
           quantity: m.quantity,
@@ -402,7 +444,30 @@ export function ProductionDefinitionFormPage() {
       );
     } finally {
       setSaving(false);
+      setOutputSheetOpen(false);
     }
+  }
+
+  async function submit() {
+    if (!workspace || !allowManage || !online || saving) {
+      return;
+    }
+    if (!validateRecipeDraft()) {
+      return;
+    }
+
+    if (!isEdit && (!outputProductId || !outputProduct)) {
+      setOutputSheetOpen(true);
+      setError(null);
+      return;
+    }
+
+    if (!outputProductId || !outputProduct) {
+      setError(t("production.setups.needOutput"));
+      return;
+    }
+
+    await persistDefinition(outputProduct);
   }
 
   const editingDraft = qtySheetProduct
@@ -416,7 +481,9 @@ export function ProductionDefinitionFormPage() {
     >
       <PageHeader
         title={isEdit ? t("production.setups.edit") : t("production.setups.new")}
-        description={t("production.setups.formLede")}
+        description={
+          isEdit ? t("production.setups.formLede") : t("production.recipes.formLedeFirstTime")
+        }
         backTo={
           isEdit
             ? `/inventory/production/setups/${definitionId}`
@@ -452,9 +519,44 @@ export function ProductionDefinitionFormPage() {
 
       <section className="flex flex-col gap-2" data-testid="production-setup-output">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-          {t("production.setups.outputProduct")}
+          {isEdit
+            ? t("production.setups.outputProduct")
+            : t("production.recipes.standardYield")}
         </h2>
-        {outputProductId && outputProduct ? (
+
+        {!isEdit ? (
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("production.recipes.standardYield")}
+            <div className="flex flex-wrap items-stretch gap-2">
+              <input
+                type="number"
+                min={0}
+                step="any"
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 tabular-nums"
+                value={outputQuantityRaw}
+                onChange={(e) => setOutputQuantityRaw(e.target.value)}
+                disabled={!allowManage}
+                data-testid="production-setup-output-qty"
+              />
+              <select
+                className="rounded-md border border-border bg-background px-2"
+                value={draftYieldUom}
+                onChange={(e) => setDraftYieldUom(e.target.value)}
+                disabled={!allowManage}
+                data-testid="production-recipe-yield-uom"
+                aria-label={t("production.recipes.baseUnit")}
+              >
+                {YIELD_UOM_OPTIONS.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </label>
+        ) : null}
+
+        {isEdit && outputProductId && outputProduct ? (
           <Card className="flex flex-col gap-2 p-3">
             <div className="font-medium">{outputName}</div>
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -517,7 +619,9 @@ export function ProductionDefinitionFormPage() {
               {t("production.setups.changeProduct")}
             </Button>
           </Card>
-        ) : (
+        ) : null}
+
+        {showOutputPicker ? (
           <>
             <div
               className="flex flex-wrap gap-2"
@@ -581,7 +685,13 @@ export function ProductionDefinitionFormPage() {
               ))}
             </ul>
           </>
-        )}
+        ) : null}
+
+        {!isEdit ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("production.recipes.outputCreatedOnSaveHint")}
+          </p>
+        ) : null}
       </section>
 
       <section className="flex flex-col gap-2" data-testid="production-setup-materials">
@@ -733,6 +843,16 @@ export function ProductionDefinitionFormPage() {
         ) : null}
       </section>
 
+      {!isEdit ? (
+        <label
+          className="flex items-center gap-2 text-[length:var(--exits-text-sm)]"
+          data-testid="production-recipe-save-as-recipe"
+        >
+          <input type="checkbox" checked disabled readOnly />
+          {t("production.recipes.saveAsRecipe")}
+        </label>
+      ) : null}
+
       <ProductionMaterialQuantitySheet
         open={Boolean(qtySheetProduct)}
         product={qtySheetProduct}
@@ -743,6 +863,27 @@ export function ProductionDefinitionFormPage() {
         }}
         onConfirm={confirmMaterial}
       />
+
+      {workspace ? (
+        <ProductionRecipeOutputSheet
+          open={outputSheetOpen}
+          workspace={workspace}
+          recipeName={name}
+          standardYieldQty={Number(outputQuantityRaw) || 0}
+          standardYieldUom={draftYieldUom}
+          materials={materials}
+          onCancel={() => setOutputSheetOpen(false)}
+          onLinked={(result) => {
+            setOutputProductId(result.outputProduct.productId);
+            setOutputProduct(result.outputProduct);
+            setOutputName(result.outputProduct.name);
+            setDraftYieldUom(
+              result.outputProduct.unitOfMeasure || draftYieldUom || DEFAULT_CATALOG_UNIT_OF_MEASURE,
+            );
+            void persistDefinition(result.outputProduct);
+          }}
+        />
+      ) : null}
 
       <StickyActionBar>
         <Button

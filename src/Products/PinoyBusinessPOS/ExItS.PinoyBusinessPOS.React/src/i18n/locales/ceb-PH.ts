@@ -3840,7 +3840,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "production.homeProduce": "Himua",
 
-  "production.homeSetups": "Mga setup",
+  "production.homeSetups": "Recipes",
 
   "production.homeHistory": "Kasaysayan",
 
@@ -3856,7 +3856,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "production.backHome": "Balik sa Produksiyon",
 
-  "production.backSetups": "Balik sa mga Setup",
+  "production.backSetups": "Back to Recipes",
 
   "production.backRuns": "Balik sa Kasaysayan",
 
@@ -3948,6 +3948,36 @@ export const cebPH: Record<keyof typeof en, string> = {
   "production.setups.noEligibleMaterials": "Walay eligible nga materyal",
   "production.setups.noEligibleMaterialsDetail": "Markahi ang produkto isip ingredient (Can be used as ingredient) sa catalog.",
   "production.setups.loadMoreMaterials": "Mag-load pa og materyal",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients — then save to create the finished product.",
+  "production.recipes.standardYield": "Standard yield",
+  "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
+  "production.recipes.saveAsRecipe": "Save as production recipe",
+  "production.recipes.createOutputTitle": "Create output product",
+  "production.recipes.outputMode": "Output product",
+  "production.recipes.createNewOutput": "Create new output product",
+  "production.recipes.useExistingOutput": "Use existing product",
+  "production.recipes.outputProductName": "Product name",
+  "production.recipes.standardProducedQty": "Standard produced quantity",
+  "production.recipes.baseUnit": "Base unit",
+  "production.recipes.canBeSold": "Can be sold?",
+  "production.recipes.canBeIngredient": "Can be used as ingredient?",
+  "production.recipes.sellingPrice": "Selling price",
+  "production.recipes.category": "Category",
+  "production.recipes.categoryNone": "No category",
+  "production.recipes.estimatedMaterialCost": "Estimated material cost",
+  "production.recipes.estimatedBatchCost": "Estimated batch material cost",
+  "production.recipes.estimatedUnitCost": "{cost} / {uom}",
+  "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown — estimate is partial.",
+  "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
+  "production.recipes.createProductAndSave": "Create product & save recipe",
+  "production.recipes.createOutputFailed": "Could not create the output product.",
+  "production.recipes.needOutputName": "Enter a product name.",
+  "production.recipes.invalidSellingPrice": "Enter a valid selling price.",
+  "production.recipes.yes": "Yes",
+  "production.recipes.no": "No",
+  "production.recipes.standardYieldLabel": "Standard yield: {qty}",
+  "production.recipes.produceAction": "Produce",
 
   "production.produce.title": "Himua",
 
