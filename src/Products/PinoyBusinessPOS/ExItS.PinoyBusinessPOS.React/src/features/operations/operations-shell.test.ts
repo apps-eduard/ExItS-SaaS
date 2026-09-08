@@ -217,5 +217,14 @@ describe("operations navigation", () => {
         grant: owner,
       }),
     ).toBe(true);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/org/notifications",
+        grant: owner,
+      }),
+    ).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/notifications")).toBe(false);
+    expect(isAdminOnlyOperationsPath("/org/branches")).toBe(true);
   });
 });

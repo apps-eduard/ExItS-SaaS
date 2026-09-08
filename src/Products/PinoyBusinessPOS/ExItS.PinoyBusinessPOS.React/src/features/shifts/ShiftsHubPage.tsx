@@ -196,7 +196,7 @@ export function ShiftsHubPage() {
     <div
       data-testid="shifts-hub-page"
       data-role-scope={isCashier ? "cashier" : "manager"}
-      className="shifts-hub-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-3"
+      className="shifts-hub-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-4"
     >
       <PageHeader
         title={isCashier ? t("shift.myHubTitle") : t("shift.hubTitle")}
@@ -257,7 +257,10 @@ export function ShiftsHubPage() {
       </div>
 
       {hasOpenShift && currentShift ? (
-        <div className="shifts-hub-page__current flex min-w-0 flex-col gap-2.5" data-testid="shift-current-banner">
+        <div
+          className="shifts-hub-panel shifts-hub-page__current exits-animate-panel flex min-w-0 flex-col gap-3"
+          data-testid="shift-current-banner"
+        >
           <div className="exits-metric-surface flex min-w-0 flex-col gap-1 px-3 py-2.5">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <StatusChip tone="success">{t("shift.statusOpen")}</StatusChip>
@@ -279,7 +282,10 @@ export function ShiftsHubPage() {
           </ManagerActionGrid>
         </div>
       ) : (
-        <div className="shifts-hub-page__none flex min-w-0 flex-col gap-2.5" data-testid="shift-none-banner">
+        <div
+          className="shifts-hub-panel shifts-hub-page__none exits-animate-panel flex min-w-0 flex-col gap-3"
+          data-testid="shift-none-banner"
+        >
           <div className="exits-metric-surface flex items-start gap-2 px-3 py-2.5">
             <Clock3 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
             <div className="min-w-0 flex-1">
@@ -303,7 +309,10 @@ export function ShiftsHubPage() {
       )}
 
       {isCashier ? (
-        <section className="flex min-w-0 flex-col gap-2" data-testid="cashier-shifts-history">
+        <section
+          className="shifts-hub-panel exits-animate-panel flex min-w-0 flex-col gap-3"
+          data-testid="cashier-shifts-history"
+        >
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
             {t("shift.myHistoryTitle")}
           </h2>
@@ -335,15 +344,23 @@ export function ShiftsHubPage() {
         </section>
       ) : (
         <>
-          <section className="flex min-w-0 flex-col gap-2" data-testid="manager-open-shifts">
-            <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-              {t("shift.openShiftsTitle")}
-            </h2>
-            {boundWorkspace?.branchName ? (
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="shifts-hub-branch">
-                {boundWorkspace.branchName}
-              </p>
-            ) : null}
+          <section
+            className="shifts-hub-panel exits-animate-panel flex min-w-0 flex-col gap-3"
+            data-testid="manager-open-shifts"
+          >
+            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("shift.openShiftsTitle")}
+              </h2>
+              {boundWorkspace?.branchName ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                  data-testid="shifts-hub-branch"
+                >
+                  {boundWorkspace.branchName}
+                </p>
+              ) : null}
+            </div>
             {openShiftsQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
             {openShiftsQuery.isSuccess && openShifts.length === 0 ? (
               <EmptyState title={t("shift.openShiftsEmpty")} />
@@ -359,7 +376,10 @@ export function ShiftsHubPage() {
             />
           </section>
 
-          <section className="flex min-w-0 flex-col gap-2" data-testid="manager-shifts-history">
+          <section
+            className="shifts-hub-panel exits-animate-panel flex min-w-0 flex-col gap-3"
+            data-testid="manager-shifts-history"
+          >
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
               {t("shift.historyTitle")}
             </h2>
@@ -377,7 +397,7 @@ export function ShiftsHubPage() {
             />
 
             <div
-              className="grid gap-2 sm:grid-cols-3"
+              className="shifts-hub-filters grid gap-2 sm:grid-cols-3"
               data-testid="manager-shifts-filters"
             >
               <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">

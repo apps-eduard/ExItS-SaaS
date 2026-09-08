@@ -5,6 +5,7 @@ import {
   canViewDashboard,
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Button } from "@/components/ui/button";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -17,7 +18,6 @@ import {
 } from "@/features/reports/report-hub-catalog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { cn } from "@/lib/cn";
 
 export function ReportsHubPage() {
   const { t } = useI18n();
@@ -65,6 +65,18 @@ export function ReportsHubPage() {
     [catalog.entries, activeCategory, search, t],
   );
 
+  const categoryChipItems = useMemo(
+    () =>
+      catalog.categories.map((id) => ({
+        key: id,
+        label: t(REPORT_HUB_CATEGORY_LABEL_KEYS[id]),
+        state: (id === activeCategory ? "active" : "idle") as "active" | "idle",
+        testId: `reports-hub-category-${id}`,
+        onSelect: () => setCategory(id),
+      })),
+    [catalog.categories, activeCategory, t],
+  );
+
   return (
     <div className="reports-hub-page exits-page" data-testid="reports-hub-page">
       <PageHeader
@@ -106,32 +118,13 @@ export function ReportsHubPage() {
         </label>
 
         {!searching && catalog.categories.length > 0 ? (
-          <div
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("reports.hub.categoriesLabel")}
+            testId="reports-hub-categories"
             className="reports-hub-categories"
-            role="tablist"
-            aria-label={t("reports.hub.categoriesLabel")}
-            data-testid="reports-hub-categories"
-          >
-            {catalog.categories.map((id) => {
-              const selected = id === activeCategory;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  className={cn(
-                    "reports-hub-category",
-                    selected && "reports-hub-category--active",
-                  )}
-                  data-testid={`reports-hub-category-${id}`}
-                  onClick={() => setCategory(id)}
-                >
-                  {t(REPORT_HUB_CATEGORY_LABEL_KEYS[id])}
-                </button>
-              );
-            })}
-          </div>
+            items={categoryChipItems}
+          />
         ) : null}
       </div>
 

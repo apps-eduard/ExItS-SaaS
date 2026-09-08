@@ -452,19 +452,12 @@ function ManagerRegistersPanel({
                     </span>
                   </p>
                 ) : null}
-                <div
-                  className={
-                    open
-                      ? "mt-1 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3"
-                      : "mt-1 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2"
-                  }
-                >
+                <div className="mt-1 flex min-w-0 flex-wrap gap-1.5">
                   {open && register.openShiftId ? (
                     <Button
                       asChild
                       variant="outline"
-                      size="sm"
-                      className="w-full"
+                      className="h-8 min-h-8 w-auto gap-1 border-primary/40 bg-[var(--exits-primary-soft)] px-2.5 text-[length:var(--exits-text-xs)] text-primary hover:border-primary/55 hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))]"
                       data-testid={`register-view-shift-${register.registerId}`}
                     >
                       <Link to={`/shifts/${register.openShiftId}`}>
@@ -476,8 +469,7 @@ function ManagerRegistersPanel({
                     <Button
                       asChild
                       variant="outline"
-                      size="sm"
-                      className="w-full"
+                      className="h-8 min-h-8 w-auto gap-1 border-primary/40 bg-[var(--exits-primary-soft)] px-2.5 text-[length:var(--exits-text-xs)] text-primary hover:border-primary/55 hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))]"
                       data-testid={`register-view-shift-${register.registerId}`}
                     >
                       <Link to="/shifts">
@@ -489,8 +481,7 @@ function ManagerRegistersPanel({
                   <Button
                     asChild
                     variant="outline"
-                    size="sm"
-                    className="w-full"
+                    className="h-8 min-h-8 w-auto gap-1 border-[color-mix(in_srgb,var(--exits-warning)_40%,var(--exits-border))] bg-[var(--exits-warning-soft)] px-2.5 text-[length:var(--exits-text-xs)] text-[var(--exits-warning)] hover:border-[color-mix(in_srgb,var(--exits-warning)_55%,var(--exits-border))] hover:bg-[color-mix(in_srgb,var(--exits-warning)_16%,var(--exits-surface))]"
                     data-testid={`register-history-${register.registerId}`}
                   >
                     <Link to={`/registers/${register.registerId}/history`}>
@@ -501,8 +492,7 @@ function ManagerRegistersPanel({
                   <Button
                     asChild
                     variant="outline"
-                    size="sm"
-                    className="w-full"
+                    className="h-8 min-h-8 w-auto gap-1 border-[color-mix(in_srgb,var(--exits-info)_40%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-info)_12%,var(--exits-surface))] px-2.5 text-[length:var(--exits-text-xs)] text-[var(--exits-info)] hover:border-[color-mix(in_srgb,var(--exits-info)_55%,var(--exits-border))] hover:bg-[color-mix(in_srgb,var(--exits-info)_18%,var(--exits-surface))]"
                     data-testid={`register-transactions-${register.registerId}`}
                   >
                     <Link to={`/registers/${register.registerId}/transactions`}>

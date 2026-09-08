@@ -92,7 +92,10 @@ export function ReturnsHubPage() {
         backTestId="page-header-back-returns"
       />
 
-      <form className="flex min-w-0 flex-col gap-2" onSubmit={onSearchSubmit}>
+      <form
+        className="flex min-w-0 flex-row items-center gap-2"
+        onSubmit={onSearchSubmit}
+      >
         <SearchField
           label={t("returns.searchTransaction")}
           value={search}
@@ -103,13 +106,13 @@ export function ReturnsHubPage() {
           }}
           placeholder={t("returns.transactionNumber")}
           data-testid="returns-search-input"
-          containerClassName="returns-hub-page__search exits-page__search"
+          containerClassName="returns-hub-page__search exits-page__search min-w-0 flex-1"
         />
         <ExitsChipBar
           variant="actions"
           ariaLabel={t("returns.search")}
           testId="returns-toolbar"
-          className="exits-animate-toolbar"
+          className="exits-animate-toolbar shrink-0"
           items={[
             {
               key: "search",

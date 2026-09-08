@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronRight, ReceiptText } from "lucide-react";
+import { Eye, ReceiptText } from "lucide-react";
 import {
   isOpenCashierShift,
   type PosCashierShiftDto,
@@ -79,44 +79,44 @@ export function ShiftHistoryResponsiveList({
       </ul>
 
       <div
-        className="hidden min-w-0 overflow-x-auto lg:block"
+        className="shift-history-table-shell hidden min-w-0 overflow-x-auto lg:block"
         data-testid={`${rowTestIdPrefix}-table`}
       >
-        <table className="w-full min-w-[48rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+        <table className="shift-history-table w-full min-w-[48rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
           <thead>
-            <tr className="border-b border-border">
-              <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+            <tr className="shift-history-table__head border-b border-border">
+              <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.shift")}
               </th>
               {showCashier ? (
-                <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                   {t("shift.col.cashier")}
                 </th>
               ) : null}
               {showRegister ? (
-                <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                   {t("shift.col.register")}
                 </th>
               ) : null}
-              <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+              <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.opened")}
               </th>
-              <th className="hidden whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted xl:table-cell">
+              <th className="hidden whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted xl:table-cell">
                 {t("shift.col.closed")}
               </th>
-              <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+              <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.status")}
               </th>
-              <th className="whitespace-nowrap px-2 py-2 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+              <th className="whitespace-nowrap px-3 py-2.5 text-center text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.transactions")}
               </th>
-              <th className="whitespace-nowrap px-2 py-2 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+              <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.sales")}
               </th>
-              <th className="hidden whitespace-nowrap px-2 py-2 text-right text-[length:var(--exits-text-xs)] font-medium text-muted 2xl:table-cell">
+              <th className="hidden whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted 2xl:table-cell">
                 {t("shift.col.variance")}
               </th>
-              <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
+              <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                 {t("shift.col.actions")}
               </th>
             </tr>
@@ -130,53 +130,54 @@ export function ShiftHistoryResponsiveList({
               return (
                 <tr
                   key={shift.shiftId}
-                  className="border-b border-border align-middle hover:bg-muted/40"
+                  className="shift-history-table__row border-b border-border align-middle"
                   data-testid={`${rowTestIdPrefix}-table-row-${shift.shiftId}`}
                 >
-                  <td className="whitespace-nowrap px-2 py-2 font-semibold">{shift.shiftNumber}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 font-semibold">{shift.shiftNumber}</td>
                   {showCashier ? (
-                    <td className="max-w-[12rem] truncate px-2 py-2">{cashierName ?? "—"}</td>
+                    <td className="max-w-[12rem] truncate px-3 py-2.5">{cashierName ?? "—"}</td>
                   ) : null}
                   {showRegister ? (
-                    <td className="max-w-[10rem] truncate px-2 py-2">{registerLabel}</td>
+                    <td className="max-w-[10rem] truncate px-3 py-2.5">{registerLabel}</td>
                   ) : null}
-                  <td className="whitespace-nowrap px-2 py-2 text-muted">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-muted">
                     {formatOpenedWhen(shift.openedAtUtc)}
                   </td>
-                  <td className="hidden whitespace-nowrap px-2 py-2 text-muted xl:table-cell">
+                  <td className="hidden whitespace-nowrap px-3 py-2.5 text-muted xl:table-cell">
                     {formatClosedWhen(shift.closedAtUtc)}
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-3 py-2.5">
                     <StatusChip tone={open ? "success" : "info"}>
                       {open ? t("shift.statusOpen") : shift.status}
                     </StatusChip>
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className="px-3 py-2.5 text-center tabular-nums">
                     {shift.completedTransactionCount ?? "—"}
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className="px-3 py-2.5 text-right tabular-nums">
                     {shift.completedSalesTotal != null
                       ? formatPeso(shift.completedSalesTotal)
                       : "—"}
                   </td>
-                  <td className="hidden px-2 py-2 text-right tabular-nums 2xl:table-cell">
+                  <td className="hidden px-3 py-2.5 text-right tabular-nums 2xl:table-cell">
                     {shift.cashVarianceAmount != null
                       ? formatPeso(shift.cashVarianceAmount)
                       : "—"}
                   </td>
-                  <td className="px-2 py-2">
-                    <div className="flex min-w-0 flex-wrap gap-1.5">
+                  <td className="whitespace-nowrap px-3 py-2.5">
+                    <div className="flex min-w-0 flex-nowrap items-center gap-1.5">
                       <Link
                         to={`/shifts/${shift.shiftId}`}
-                        className="inline-flex min-h-8 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2 text-[length:var(--exits-text-xs)] font-medium text-foreground no-underline"
+                        className="shift-history-action shift-history-action--view inline-flex min-h-8 shrink-0 items-center gap-1 rounded-[var(--exits-radius-md)] px-2.5 text-[length:var(--exits-text-xs)] font-medium no-underline"
                         data-testid={`${viewShiftTestIdPrefix}-${shift.shiftId}`}
+                        aria-label={t("register.viewShift")}
                       >
-                        {t("register.viewShift")}
-                        <ChevronRight className="size-3" aria-hidden />
+                        <Eye className="size-3 shrink-0" aria-hidden />
+                        {t("shift.col.shift")}
                       </Link>
                       <Link
                         to={`/shifts/${shift.shiftId}/transactions`}
-                        className="inline-flex min-h-8 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2 text-[length:var(--exits-text-xs)] font-medium text-foreground no-underline"
+                        className="shift-history-action shift-history-action--txns inline-flex min-h-8 shrink-0 items-center gap-1 rounded-[var(--exits-radius-md)] px-2.5 text-[length:var(--exits-text-xs)] font-medium no-underline"
                         data-testid={`${viewTxnsTestIdPrefix}-${shift.shiftId}`}
                       >
                         <ReceiptText className="size-3 shrink-0" aria-hidden />
@@ -220,7 +221,7 @@ function ShiftHistoryCard({
 
   return (
     <li>
-      <div className="exits-list__card flex min-w-0 flex-col gap-2 p-3" data-testid={rowTestId}>
+      <div className="exits-list__card shift-history-card flex min-w-0 flex-col gap-2 p-3" data-testid={rowTestId}>
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="m-0 truncate font-semibold">{shift.shiftNumber}</p>
@@ -255,18 +256,19 @@ function ShiftHistoryCard({
             ) : null}
           </p>
         ) : null}
-        <div className="flex min-w-0 flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-1.5">
           <Link
             to={`/shifts/${shift.shiftId}`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
+            className="shift-history-action shift-history-action--view inline-flex min-h-8 items-center gap-1 rounded-[var(--exits-radius-md)] px-2.5 text-[length:var(--exits-text-xs)] font-medium no-underline"
             data-testid={viewShiftTestId}
+            aria-label={t("register.viewShift")}
           >
-            {t("register.viewShift")}
-            <ChevronRight className="size-3.5" aria-hidden />
+            <Eye className="size-3.5 shrink-0" aria-hidden />
+            {t("shift.col.shift")}
           </Link>
           <Link
             to={`/shifts/${shift.shiftId}/transactions`}
-            className="inline-flex min-h-9 items-center gap-1 rounded-[var(--exits-radius-md)] border border-border px-2.5 text-[length:var(--exits-text-sm)] font-medium text-foreground no-underline"
+            className="shift-history-action shift-history-action--txns inline-flex min-h-8 items-center gap-1 rounded-[var(--exits-radius-md)] px-2.5 text-[length:var(--exits-text-xs)] font-medium no-underline"
             data-testid={viewTxnsTestId}
           >
             <ReceiptText className="size-3.5 shrink-0" aria-hidden />

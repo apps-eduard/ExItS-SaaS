@@ -14,6 +14,7 @@ import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -34,7 +35,6 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
-import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const OTHER_SOURCE = "__other__";
@@ -417,7 +417,7 @@ export function ReceiveStockPage() {
 
   return (
     <div
-      className="receive-stock-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-3"
+      className="receive-stock-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-2.5"
       data-testid="receive-stock-page"
     >
       <PageHeader
@@ -447,13 +447,13 @@ export function ReceiveStockPage() {
       {!reviewing ? (
         <>
           <section
-            className="flex min-w-0 flex-col gap-2"
+            className="catalog-form-section receive-stock-section exits-animate-panel flex min-w-0 flex-col gap-2"
             data-testid="direct-purchase-details"
             aria-labelledby="direct-purchase-details-heading"
           >
             <h2
               id="direct-purchase-details-heading"
-              className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+              className="catalog-form-section__title m-0"
             >
               {t("purchasing.purchaseDetails")}
             </h2>
@@ -462,7 +462,7 @@ export function ReceiveStockPage() {
                 <span className="sr-only">{t("purchasing.purchaseDate")}</span>
                 <input
                   type="date"
-                  className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-3"
+                  className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   value={purchaseDate}
                   onChange={(e) => setPurchaseDate(e.target.value)}
                   data-testid="direct-purchase-date"
@@ -472,7 +472,7 @@ export function ReceiveStockPage() {
               <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 <span className="sr-only">{t("purchasing.boughtFrom")}</span>
                 <select
-                  className="exits-select h-[var(--exits-control-height)]"
+                  className="exits-select catalog-form-select h-[var(--exits-control-height)]"
                   value={supplierChoice}
                   onChange={(e) => {
                     const next = e.target.value;
@@ -503,7 +503,7 @@ export function ReceiveStockPage() {
               <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 <span className="sr-only">{t("purchasing.reference")}</span>
                 <input
-                  className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-3"
+                  className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
                   placeholder={t("purchasing.reference")}
@@ -516,7 +516,7 @@ export function ReceiveStockPage() {
               <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 <span className="text-muted">{t("purchasing.sourceName")}</span>
                 <input
-                  className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-3"
+                  className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                   value={sourceName}
                   onChange={(e) => setSourceName(e.target.value)}
                   placeholder={t("purchasing.sourcePlaceholder")}
@@ -527,7 +527,7 @@ export function ReceiveStockPage() {
             <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="sr-only">{t("purchasing.notesOptional")}</span>
               <textarea
-                className="min-h-0 rounded-md border border-border bg-background px-3 py-2"
+                className="exits-input min-h-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -539,13 +539,13 @@ export function ReceiveStockPage() {
           </section>
 
           <section
-            className="flex min-w-0 flex-col gap-2"
+            className="catalog-form-section receive-stock-section exits-animate-panel flex min-w-0 flex-col gap-2"
             data-testid="direct-add-products"
             aria-labelledby="direct-add-products-heading"
           >
             <h2
               id="direct-add-products-heading"
-              className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+              className="catalog-form-section__title m-0"
             >
               {t("purchasing.addProducts")}
             </h2>
@@ -558,44 +558,32 @@ export function ReceiveStockPage() {
               data-testid="direct-product-search"
             />
             {categories.length > 0 ? (
-              <div
-                className="flex min-w-0 flex-wrap gap-1.5"
-                role="group"
-                aria-label={t("purchasing.categoryFilter")}
-                data-testid="direct-category-filters"
-              >
-                <button
-                  type="button"
-                  className={cn(
-                    "rounded-md border px-2.5 py-1 text-[length:var(--exits-text-xs)]",
-                    !categoryId
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : "border-border bg-background text-muted",
-                  )}
-                  onClick={() => setCategoryId("")}
-                >
-                  {t("purchasing.categoryAll")}
-                </button>
-                {categories.map((category) => (
-                  <button
-                    type="button"
-                    key={category.categoryId}
-                    className={cn(
-                      "rounded-md border px-2.5 py-1 text-[length:var(--exits-text-xs)]",
+              <ExitsChipBar
+                variant="filter"
+                ariaLabel={t("purchasing.categoryFilter")}
+                testId="direct-category-filters"
+                className="exits-chip-bar--scroll receive-stock-categories"
+                items={[
+                  {
+                    key: "all",
+                    label: t("purchasing.categoryAll"),
+                    state: !categoryId ? "active" : "idle",
+                    onSelect: () => setCategoryId(""),
+                  },
+                  ...categories.map((category) => ({
+                    key: category.categoryId,
+                    label: category.name,
+                    state:
                       categoryId === category.categoryId
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-background text-muted",
-                    )}
-                    onClick={() =>
+                        ? ("active" as const)
+                        : ("idle" as const),
+                    onSelect: () =>
                       setCategoryId((prev) =>
                         prev === category.categoryId ? "" : category.categoryId,
-                      )
-                    }
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
+                      ),
+                  })),
+                ]}
+              />
             ) : null}
 
             {showProductResults && productsQuery.isFetching ? (
@@ -626,7 +614,7 @@ export function ReceiveStockPage() {
                 return (
                   <li key={product.productId}>
                     <article
-                      className="rounded-md border border-border bg-background px-3 py-2.5"
+                      className="receive-stock-product-card rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5"
                       data-testid={`direct-product-${product.productId}`}
                     >
                       <div className="flex min-w-0 items-baseline justify-between gap-2">
@@ -639,7 +627,7 @@ export function ReceiveStockPage() {
                         <label className="flex min-w-0 flex-1 flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted sm:max-w-[7rem]">
                           {t("purchasing.qtyShort")}
                           <input
-                            className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-2 text-[length:var(--exits-text-sm)] text-foreground"
+                            className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 text-[length:var(--exits-text-sm)] text-foreground"
                             value={draft.qty}
                             onChange={(e) =>
                               patchRowDraft(product.productId, { qty: e.target.value })
@@ -651,7 +639,7 @@ export function ReceiveStockPage() {
                         <label className="flex min-w-0 flex-1 flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted sm:max-w-[9rem]">
                           {t("purchasing.costShort")}
                           <input
-                            className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-2 text-[length:var(--exits-text-sm)] text-foreground"
+                            className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 text-[length:var(--exits-text-sm)] text-foreground"
                             value={draft.cost}
                             onChange={(e) =>
                               patchRowDraft(product.productId, { cost: e.target.value })
@@ -667,7 +655,7 @@ export function ReceiveStockPage() {
                               {t("purchasing.expiryDate")}
                               <input
                                 type="date"
-                                className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-2 text-[length:var(--exits-text-sm)] text-foreground"
+                                className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 text-[length:var(--exits-text-sm)] text-foreground"
                                 value={draft.expiry}
                                 onChange={(e) =>
                                   patchRowDraft(product.productId, {
@@ -680,7 +668,7 @@ export function ReceiveStockPage() {
                             <label className="flex min-w-0 flex-1 flex-col gap-0.5 text-[length:var(--exits-text-xs)] text-muted sm:max-w-[9rem]">
                               {t("purchasing.lotNumber")}
                               <input
-                                className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-md border border-border bg-background px-2 text-[length:var(--exits-text-sm)] text-foreground"
+                                className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-2 text-[length:var(--exits-text-sm)] text-foreground"
                                 value={draft.lot}
                                 onChange={(e) =>
                                   patchRowDraft(product.productId, { lot: e.target.value })
@@ -708,18 +696,18 @@ export function ReceiveStockPage() {
           </section>
 
           <section
-            className="flex min-w-0 flex-col gap-2 border-t border-border pt-3"
+            className="catalog-form-section receive-stock-section exits-animate-panel flex min-w-0 flex-col gap-2"
             data-testid="direct-receipt-items"
             aria-labelledby="direct-receipt-items-heading"
           >
             <h2
               id="direct-receipt-items-heading"
-              className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+              className="catalog-form-section__title m-0"
             >
               {t("purchasing.receiptItems")}
             </h2>
             {lines.length === 0 ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              <p className="receive-stock-empty m-0" data-testid="direct-receipt-empty">
                 {t("purchasing.draftEmpty")}
               </p>
             ) : (
@@ -730,7 +718,7 @@ export function ReceiveStockPage() {
                     return (
                       <li
                         key={line.productId}
-                        className="flex min-w-0 items-start justify-between gap-2 rounded-md border border-border px-3 py-2"
+                        className="receive-stock-line flex min-w-0 items-start justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2"
                         data-testid={`direct-receipt-line-${line.productId}`}
                       >
                         <div className="min-w-0 flex-1">
@@ -774,7 +762,7 @@ export function ReceiveStockPage() {
             )}
           </section>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div className="receive-stock-actions flex flex-wrap items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"

@@ -345,8 +345,8 @@ export function WarehouseManagementDashboardPage() {
             : `${applied.fromDate} → ${applied.toDate}`}
         </p>
         {preset === "custom" ? (
-          <div className="dashboard-toolbar__custom flex flex-wrap items-end gap-2">
-            <label className="dashboard-toolbar__field">
+          <div className="dashboard-toolbar__custom flex flex-wrap items-end gap-2 md:flex-nowrap">
+            <label className="dashboard-toolbar__field min-w-0 md:flex-1">
               <span>{t("reports.fromDate")}</span>
               <input
                 type="date"
@@ -355,7 +355,7 @@ export function WarehouseManagementDashboardPage() {
                 onChange={(e) => setCustom((c) => ({ ...c, fromDate: e.target.value }))}
               />
             </label>
-            <label className="dashboard-toolbar__field">
+            <label className="dashboard-toolbar__field min-w-0 md:flex-1">
               <span>{t("reports.toDate")}</span>
               <input
                 type="date"
@@ -366,7 +366,7 @@ export function WarehouseManagementDashboardPage() {
             </label>
             <button
               type="button"
-              className="dashboard-toolbar__preset"
+              className="dashboard-toolbar__preset shrink-0"
               onClick={() => setApplied(custom)}
             >
               {t("reports.apply")}

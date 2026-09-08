@@ -104,13 +104,19 @@ export function shouldUseOperationsShell(input: {
   if (input.experience === "manage_business") {
     return false;
   }
-  const path = input.pathname;
+  const path = input.pathname.split("?")[0] ?? input.pathname;
   if (
     path.startsWith("/personal") ||
     path.startsWith("/onboarding") ||
-    path.startsWith("/workspace") ||
-    path.startsWith("/org")
+    path.startsWith("/workspace")
   ) {
+    return false;
+  }
+  // Org notifications are shell chrome (bell), not Admin management IA — keep ops sidenav.
+  if (path === "/org/notifications" || path.startsWith("/org/notifications/")) {
+    return true;
+  }
+  if (path === "/org" || path.startsWith("/org/")) {
     return false;
   }
   return true;
@@ -653,11 +659,15 @@ export const OPERATIONS_FORBIDDEN_ADMIN_PREFIXES = [
 ] as const;
 
 export function isAdminOnlyOperationsPath(pathname: string): boolean {
-  if (pathname === "/org" || pathname.startsWith("/org/")) {
+  const path = pathname.split("?")[0] ?? pathname;
+  if (path === "/org/notifications" || path.startsWith("/org/notifications/")) {
+    return false;
+  }
+  if (path === "/org" || path.startsWith("/org/")) {
     // /org itself is Admin overview — forbidden in ops shell links
     return true;
   }
   return OPERATIONS_FORBIDDEN_ADMIN_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
 }

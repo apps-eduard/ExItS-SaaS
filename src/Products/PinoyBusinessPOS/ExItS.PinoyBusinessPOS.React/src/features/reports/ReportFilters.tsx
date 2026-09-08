@@ -117,31 +117,42 @@ export function ReportFilters({
           />
 
           {preset === "custom" ? (
-            <div className="catalog-form-section__grid" data-testid="report-custom-dates">
-              <label className="flex min-w-0 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("reports.fromDate")}
-                <input
-                  type="date"
-                  className="catalog-form-select font-normal"
-                  value={custom.fromDate}
-                  data-testid="report-from-date"
-                  disabled={loading}
-                  onChange={(event) => onCustomChange({ ...custom, fromDate: event.target.value })}
-                />
-              </label>
-              <label className="flex min-w-0 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("reports.toDate")}
-                <input
-                  type="date"
-                  className="catalog-form-select font-normal"
-                  value={custom.toDate}
-                  data-testid="report-to-date"
-                  disabled={loading}
-                  onChange={(event) => onCustomChange({ ...custom, toDate: event.target.value })}
-                />
-              </label>
+            <div className="flex min-w-0 flex-col gap-2" data-testid="report-custom-dates">
+              <div className="report-filters__date-row flex min-w-0 flex-col gap-2 md:flex-row md:items-end">
+                <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("reports.fromDate")}
+                  <input
+                    type="date"
+                    className="catalog-form-select font-normal"
+                    value={custom.fromDate}
+                    data-testid="report-from-date"
+                    disabled={loading}
+                    onChange={(event) => onCustomChange({ ...custom, fromDate: event.target.value })}
+                  />
+                </label>
+                <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("reports.toDate")}
+                  <input
+                    type="date"
+                    className="catalog-form-select font-normal"
+                    value={custom.toDate}
+                    data-testid="report-to-date"
+                    disabled={loading}
+                    onChange={(event) => onCustomChange({ ...custom, toDate: event.target.value })}
+                  />
+                </label>
+                <Button
+                  type="button"
+                  className="w-full shrink-0 md:w-auto"
+                  data-testid="report-apply-filters"
+                  disabled={loading || !customValid}
+                  onClick={onApply}
+                >
+                  {t("reports.apply")}
+                </Button>
+              </div>
               {!customValid ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive sm:col-span-2">
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">
                   {t("reports.invalidRange")}
                 </p>
               ) : null}
@@ -154,16 +165,6 @@ export function ReportFilters({
               {t("reports.activeRange")}: {range.fromDate} → {range.toDate}
             </p>
           )}
-
-          <Button
-            type="button"
-            className="w-fit"
-            data-testid="report-apply-filters"
-            disabled={loading || (preset === "custom" && !customValid)}
-            onClick={onApply}
-          >
-            {t("reports.apply")}
-          </Button>
         </>
       ) : (
         <p

@@ -8,6 +8,7 @@ import {
   reactivateCatalogCategory,
   updateCatalogCategory,
 } from "@/api/pos/pos-catalog-client";
+import type { PosProductCategoryDto } from "@/api/pos/pos-catalog-types";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -19,6 +20,7 @@ import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
@@ -147,9 +149,11 @@ export function CatalogCategoriesPage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
+  const items = query.data?.items ?? [];
+
   return (
     <div
-      className="catalog-categories-page catalog-page exits-page flex min-w-0 flex-col gap-3"
+      className="catalog-categories-page catalog-page exits-page flex min-w-0 flex-col gap-2.5"
       data-testid="catalog-categories-page"
     >
       <PageHeader
@@ -183,8 +187,8 @@ export function CatalogCategoriesPage() {
           </div>
           <Button
             type="submit"
-            variant="outline"
-            className="catalog-form-quick-add__button"
+            variant="default"
+            className="catalog-form-quick-add__button catalog-form-quick-add__button--primary"
             data-testid="catalog-add-category"
             disabled={!name.trim() || createMutation.isPending}
           >
@@ -198,159 +202,348 @@ export function CatalogCategoriesPage() {
         </form>
       </section>
 
-      <SearchField
-        label={t("catalog.searchCategories")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("catalog.searchCategories")}
-        data-testid="catalog-categories-search"
-        containerClassName="catalog-categories-page__search exits-page__search exits-animate-toolbar"
-      />
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("catalog.categoryStatusFilter")}
-        testId="catalog-category-status-filters"
-        items={STATUS_FILTERS.map((filter) => ({
-          key: filter.key,
-          label: t(filter.labelKey),
-          state: (status || "all") === filter.key ? "active" : "idle",
-          testId: `catalog-category-status-${filter.key === "all" ? "all" : filter.key}`,
-          onSelect: () => setStatus(filter.value),
-        }))}
-      />
+      <div className="catalog-categories-toolbar" data-testid="catalog-categories-toolbar">
+        <SearchField
+          label={t("catalog.searchCategories")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={t("catalog.searchCategories")}
+          data-testid="catalog-categories-search"
+          containerClassName="catalog-categories-page__search exits-page__search min-w-0 flex-1"
+        />
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("catalog.categoryStatusFilter")}
+          testId="catalog-category-status-filters"
+          className="catalog-categories-toolbar__filters shrink-0"
+          items={STATUS_FILTERS.map((filter) => ({
+            key: filter.key,
+            label: t(filter.labelKey),
+            state: (status || "all") === filter.key ? "active" : "idle",
+            testId: `catalog-category-status-${filter.key === "all" ? "all" : filter.key}`,
+            onSelect: () => setStatus(filter.value),
+          }))}
+        />
+      </div>
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
-      {query.isSuccess && query.data.items.length === 0 ? (
+      {query.isSuccess && items.length === 0 ? (
         <EmptyState
           title={t("catalog.emptyCategories")}
           detail={t("catalog.emptyCategoriesDetail")}
         />
       ) : null}
 
-      <ul
-        className="catalog-categories-list m-0 grid list-none gap-2 p-0"
-        data-testid="catalog-categories-list"
-      >
-        {query.data?.items.map((category) => {
-          const isActive = category.status === "Active";
-          const isRenaming = renamingId === category.categoryId;
-          const isActing = actingId === category.categoryId;
+      {items.length > 0 ? (
+        <div className="catalog-categories-results">
+          <ul
+            className="catalog-categories-list m-0 grid list-none gap-2 p-0 lg:hidden"
+            data-testid="catalog-categories-list"
+          >
+            {items.map((category) => (
+              <li key={category.categoryId}>
+                <CategoryCard
+                  category={category}
+                  t={t}
+                  isRenaming={renamingId === category.categoryId}
+                  renameDraft={renameDraft}
+                  isActing={actingId === category.categoryId}
+                  renamePending={renameMutation.isPending}
+                  onRenameDraftChange={setRenameDraft}
+                  onBeginRename={() => beginRename(category.categoryId, category.name)}
+                  onCancelRename={cancelRename}
+                  onSaveRename={() =>
+                    renameMutation.mutate({
+                      categoryId: category.categoryId,
+                      nextName: renameDraft.trim(),
+                      expectedUpdatedAtUtc: category.updatedAtUtc,
+                    })
+                  }
+                  onToggleStatus={() =>
+                    void handleStatusToggle(category.categoryId, category.status === "Active")
+                  }
+                />
+              </li>
+            ))}
+          </ul>
 
-          return (
-            <li key={category.categoryId}>
-              <article
-                className="catalog-category-row exits-list__card"
-                data-testid={`catalog-category-row-${category.categoryId}`}
-              >
-                <div className="catalog-category-row__main min-w-0">
-                  {isRenaming ? (
-                    <div className="catalog-category-row__rename">
-                      <Input
-                        label={t("catalog.renamePrompt")}
-                        name={`rename-${category.categoryId}`}
-                        value={renameDraft}
-                        onChange={(event) => setRenameDraft(event.target.value)}
-                        data-testid={`catalog-category-rename-input-${category.categoryId}`}
-                      />
-                      <div className="catalog-category-row__rename-actions">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          data-testid={`catalog-category-rename-save-${category.categoryId}`}
-                          disabled={!renameDraft.trim() || renameMutation.isPending}
-                          onClick={() =>
-                            renameMutation.mutate({
-                              categoryId: category.categoryId,
-                              nextName: renameDraft.trim(),
-                              expectedUpdatedAtUtc: category.updatedAtUtc,
-                            })
-                          }
-                        >
-                          {renameMutation.isPending ? (
-                            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                          ) : (
-                            <Check className="size-4 shrink-0" aria-hidden />
-                          )}
-                          {t("catalog.saveRename")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          aria-label={t("catalog.cancelRename")}
-                          onClick={cancelRename}
-                        >
-                          <X className="size-4 shrink-0" aria-hidden />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="catalog-category-row__heading">
-                      <p className="exits-list__name m-0 min-w-0 truncate font-semibold">{category.name}</p>
-                      <StatusChip tone={isActive ? "success" : "warning"}>
-                        {category.status}
-                      </StatusChip>
-                    </div>
-                  )}
-                </div>
-
-                {!isRenaming ? (
-                  <div className="catalog-category-row__actions">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="catalog-category-row__action"
-                      data-testid={`catalog-category-rename-${category.categoryId}`}
-                      disabled={isActing}
-                      onClick={() => beginRename(category.categoryId, category.name)}
+          <div
+            className="catalog-categories-table-shell hidden min-w-0 overflow-x-auto lg:block"
+            data-testid="catalog-categories-table"
+          >
+            <table className="catalog-categories-table w-full min-w-[36rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+              <thead>
+                <tr className="catalog-categories-table__head border-b border-border">
+                  <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("catalog.name")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("catalog.statusFilter")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                    {t("catalog.col.actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((category) => {
+                  const isActive = category.status === "Active";
+                  const isRenaming = renamingId === category.categoryId;
+                  const isActing = actingId === category.categoryId;
+                  return (
+                    <tr
+                      key={category.categoryId}
+                      className="catalog-categories-table__row border-b border-border"
+                      data-testid={`catalog-category-table-row-${category.categoryId}`}
                     >
-                      <Pencil className="size-4 shrink-0" aria-hidden />
-                      {t("catalog.rename")}
-                    </Button>
-                    {isActive ? (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        className="catalog-category-row__action"
-                        data-testid={`catalog-category-deactivate-${category.categoryId}`}
-                        disabled={isActing}
-                        onClick={() => void handleStatusToggle(category.categoryId, true)}
-                      >
-                        {isActing ? (
-                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                      <td className="max-w-[20rem] px-3 py-2.5 align-middle">
+                        {isRenaming ? (
+                          <CategoryRenameEditor
+                            categoryId={category.categoryId}
+                            renameDraft={renameDraft}
+                            renamePending={renameMutation.isPending}
+                            t={t}
+                            onRenameDraftChange={setRenameDraft}
+                            onCancelRename={cancelRename}
+                            onSaveRename={() =>
+                              renameMutation.mutate({
+                                categoryId: category.categoryId,
+                                nextName: renameDraft.trim(),
+                                expectedUpdatedAtUtc: category.updatedAtUtc,
+                              })
+                            }
+                          />
                         ) : (
-                          <Ban className="size-4 shrink-0" aria-hidden />
+                          <span className="block truncate font-semibold text-foreground">
+                            {category.name}
+                          </span>
                         )}
-                        {t("catalog.deactivate")}
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="catalog-category-row__action catalog-form-actions__restore"
-                        data-testid={`catalog-category-reactivate-${category.categoryId}`}
-                        disabled={isActing}
-                        onClick={() => void handleStatusToggle(category.categoryId, false)}
-                      >
-                        {isActing ? (
-                          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                        ) : (
-                          <RotateCcw className="size-4 shrink-0" aria-hidden />
-                        )}
-                        {t("catalog.reactivate")}
-                      </Button>
-                    )}
-                  </div>
-                ) : null}
-              </article>
-            </li>
-          );
-        })}
-      </ul>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 align-middle">
+                        <StatusChip tone={isActive ? "success" : "warning"}>
+                          {category.status}
+                        </StatusChip>
+                      </td>
+                      <td className="px-3 py-2.5 align-middle">
+                        {!isRenaming ? (
+                          <div className="catalog-category-row__actions catalog-category-row__actions--table justify-end">
+                            <CategoryActionButtons
+                              categoryId={category.categoryId}
+                              isActive={isActive}
+                              isActing={isActing}
+                              t={t}
+                              onBeginRename={() => beginRename(category.categoryId, category.name)}
+                              onToggleStatus={() =>
+                                void handleStatusToggle(category.categoryId, isActive)
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+type Translate = (key: MessageKey) => string;
+
+function CategoryRenameEditor({
+  categoryId,
+  renameDraft,
+  renamePending,
+  t,
+  onRenameDraftChange,
+  onCancelRename,
+  onSaveRename,
+}: {
+  categoryId: string;
+  renameDraft: string;
+  renamePending: boolean;
+  t: Translate;
+  onRenameDraftChange: (value: string) => void;
+  onCancelRename: () => void;
+  onSaveRename: () => void;
+}) {
+  return (
+    <div className="catalog-category-row__rename">
+      <Input
+        label={t("catalog.renamePrompt")}
+        name={`rename-${categoryId}`}
+        value={renameDraft}
+        onChange={(event) => onRenameDraftChange(event.target.value)}
+        data-testid={`catalog-category-rename-input-${categoryId}`}
+      />
+      <div className="catalog-category-row__rename-actions">
+        <Button
+          type="button"
+          variant="default"
+          className="catalog-category-row__rename-save"
+          data-testid={`catalog-category-rename-save-${categoryId}`}
+          disabled={!renameDraft.trim() || renamePending}
+          onClick={onSaveRename}
+        >
+          {renamePending ? (
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          ) : (
+            <Check className="size-4 shrink-0" aria-hidden />
+          )}
+          {t("catalog.saveRename")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="catalog-category-row__rename-cancel"
+          data-testid={`catalog-category-rename-cancel-${categoryId}`}
+          disabled={renamePending}
+          onClick={onCancelRename}
+        >
+          <X className="size-4 shrink-0" aria-hidden />
+          {t("catalog.cancelRename")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CategoryActionButtons({
+  categoryId,
+  isActive,
+  isActing,
+  t,
+  onBeginRename,
+  onToggleStatus,
+}: {
+  categoryId: string;
+  isActive: boolean;
+  isActing: boolean;
+  t: Translate;
+  onBeginRename: () => void;
+  onToggleStatus: () => void;
+}) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="catalog-category-row__action"
+        data-testid={`catalog-category-rename-${categoryId}`}
+        disabled={isActing}
+        onClick={onBeginRename}
+      >
+        <Pencil className="size-4 shrink-0" aria-hidden />
+        {t("catalog.rename")}
+      </Button>
+      {isActive ? (
+        <Button
+          type="button"
+          variant="destructive"
+          className="catalog-category-row__action"
+          data-testid={`catalog-category-deactivate-${categoryId}`}
+          disabled={isActing}
+          onClick={onToggleStatus}
+        >
+          {isActing ? (
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          ) : (
+            <Ban className="size-4 shrink-0" aria-hidden />
+          )}
+          {t("catalog.deactivate")}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="catalog-category-row__action catalog-form-actions__restore"
+          data-testid={`catalog-category-reactivate-${categoryId}`}
+          disabled={isActing}
+          onClick={onToggleStatus}
+        >
+          {isActing ? (
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          ) : (
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+          )}
+          {t("catalog.reactivate")}
+        </Button>
+      )}
+    </>
+  );
+}
+
+function CategoryCard({
+  category,
+  t,
+  isRenaming,
+  renameDraft,
+  isActing,
+  renamePending,
+  onRenameDraftChange,
+  onBeginRename,
+  onCancelRename,
+  onSaveRename,
+  onToggleStatus,
+}: {
+  category: PosProductCategoryDto;
+  t: Translate;
+  isRenaming: boolean;
+  renameDraft: string;
+  isActing: boolean;
+  renamePending: boolean;
+  onRenameDraftChange: (value: string) => void;
+  onBeginRename: () => void;
+  onCancelRename: () => void;
+  onSaveRename: () => void;
+  onToggleStatus: () => void;
+}) {
+  const isActive = category.status === "Active";
+
+  return (
+    <article
+      className="catalog-category-row exits-list__card"
+      data-testid={`catalog-category-row-${category.categoryId}`}
+    >
+      <div className="catalog-category-row__main min-w-0">
+        {isRenaming ? (
+          <CategoryRenameEditor
+            categoryId={category.categoryId}
+            renameDraft={renameDraft}
+            renamePending={renamePending}
+            t={t}
+            onRenameDraftChange={onRenameDraftChange}
+            onCancelRename={onCancelRename}
+            onSaveRename={onSaveRename}
+          />
+        ) : (
+          <div className="catalog-category-row__heading">
+            <p className="exits-list__name m-0 min-w-0 truncate font-semibold">{category.name}</p>
+            <StatusChip tone={isActive ? "success" : "warning"}>{category.status}</StatusChip>
+          </div>
+        )}
+      </div>
+
+      {!isRenaming ? (
+        <div className="catalog-category-row__actions">
+          <CategoryActionButtons
+            categoryId={category.categoryId}
+            isActive={isActive}
+            isActing={isActing}
+            t={t}
+            onBeginRename={onBeginRename}
+            onToggleStatus={onToggleStatus}
+          />
+        </div>
+      ) : null}
+    </article>
   );
 }

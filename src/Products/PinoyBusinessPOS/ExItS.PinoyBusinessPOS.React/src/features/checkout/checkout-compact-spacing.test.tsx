@@ -46,6 +46,7 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
 
     const money = source.indexOf('data-testid="checkout-money-summary"');
     const payment = source.indexOf('data-testid="checkout-payment-method"');
+    const gcash = source.indexOf('data-testid="checkout-gcash-panel"');
     const discount = source.indexOf('data-testid="checkout-discount-panel"');
     const utang = source.indexOf('data-testid="checkout-utang-panel"');
     const dock = source.indexOf('data-testid="checkout-tender-dock"');
@@ -53,11 +54,13 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     const confirm = source.indexOf('data-testid="checkout-confirm"');
     expect(money).toBeGreaterThan(-1);
     expect(payment).toBeGreaterThan(money);
-    expect(discount).toBeGreaterThan(payment);
+    expect(gcash).toBeGreaterThan(payment);
+    expect(discount).toBeGreaterThan(gcash);
     expect(utang).toBeGreaterThan(discount);
     expect(dock).toBeGreaterThan(utang);
     expect(cash).toBeGreaterThan(dock);
     expect(confirm).toBeGreaterThan(dock);
+    expect(source.indexOf('data-testid="checkout-gcash-panel"', dock)).toBe(-1);
   });
 
   it("collapsed payment / discount toggles stay compact and expand on open", async () => {

@@ -1004,6 +1004,39 @@ export function CheckoutCashPage() {
             </p>
           ) : null}
         </CheckoutCollapsibleSection>
+        {paymentChoice === "GCash" && !zeroTotal ? (
+          <div
+            data-testid="checkout-gcash-panel"
+            className="checkout-gcash-under-method exits-animate-panel"
+          >
+            <label
+              className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+              htmlFor="checkout-gcash-reference"
+            >
+              <span className="inline-flex flex-wrap items-baseline gap-1">
+                {t("checkout.gcashReference")}
+                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                  {t("checkout.fieldRequired")}
+                </span>
+              </span>
+              <input
+                id="checkout-gcash-reference"
+                data-testid="checkout-gcash-reference"
+                type="text"
+                required
+                aria-required="true"
+                maxLength={GCASH_REFERENCE_MAX_LENGTH}
+                value={gcashReference}
+                disabled={saving}
+                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                onChange={(event) => setGcashReference(event.target.value)}
+              />
+            </label>
+            <p className="mb-0 mt-1.5 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.gcashReferenceHint")}
+            </p>
+          </div>
+        ) : null}
         {/* Prove Card / Debit / provider GCash are not offered */}
         <span data-testid="checkout-no-card" className="sr-only">
           no-card
@@ -1427,40 +1460,6 @@ export function CheckoutCashPage() {
             </p>
           </Card>
         )
-      ) : null}
-
-      {paymentChoice === "GCash" && !zeroTotal ? (
-        <Card
-          data-testid="checkout-gcash-panel"
-          className="checkout-detail-panel checkout-gcash-under-method exits-animate-panel"
-        >
-          <label
-            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-            htmlFor="checkout-gcash-reference"
-          >
-            <span className="inline-flex flex-wrap items-baseline gap-1">
-              {t("checkout.gcashReference")}
-              <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
-                {t("checkout.fieldRequired")}
-              </span>
-            </span>
-            <input
-              id="checkout-gcash-reference"
-              data-testid="checkout-gcash-reference"
-              type="text"
-              required
-              aria-required="true"
-              maxLength={GCASH_REFERENCE_MAX_LENGTH}
-              value={gcashReference}
-              disabled={saving}
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setGcashReference(event.target.value)}
-            />
-          </label>
-          <p className="mb-0 mt-1.5 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.gcashReferenceHint")}
-          </p>
-        </Card>
       ) : null}
 
       <div className="checkout-actions">

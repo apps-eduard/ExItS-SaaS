@@ -191,7 +191,7 @@ export function TransactionsListPage() {
     <div
       data-testid="transactions-list-page"
       data-scope={isShiftScope ? "shift" : "register"}
-      className="transactions-list-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-3"
+      className="transactions-list-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-4"
     >
       <PageHeader
         title={title}
@@ -201,195 +201,197 @@ export function TransactionsListPage() {
         backTestId="page-header-back-transactions"
       />
 
-      {isRegisterScope ? (
-        <>
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("transactions.dateRange")}
-            testId="transactions-date-presets"
-            items={PRESETS.map((key) => ({
-              key,
-              label: t(`register.preset.${key}` as "register.preset.today"),
-              state: preset === key ? "active" : "idle",
-              testId: `transactions-preset-${key}`,
-              onSelect: () => {
-                setPreset(key);
-                setPage(1);
-              },
-            }))}
-          />
-          <p
-            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-            data-testid="transactions-range"
-          >
-            {range.fromDate === range.toDate
-              ? range.fromDate
-              : `${range.fromDate} → ${range.toDate}`}
-          </p>
-        </>
-      ) : null}
-
-      {salesQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
-      {salesQuery.isError ? (
-        <ErrorState title={t("error.title")} detail={t("transactions.loadError")} />
-      ) : null}
-      {salesQuery.isSuccess && sales.length === 0 ? (
-        <EmptyState title={t("transactions.empty")} detail={t("transactions.emptyDetail")} />
-      ) : null}
-
-      {sales.length > 0 ? (
-        <>
-          <ul
-            className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
-            data-testid="transactions-list-cards"
-          >
-            {sales.map((sale) => (
-              <TransactionCardRow
-                key={sale.saleId}
-                sale={sale}
-                cashierName={
-                  showCashierColumn
-                    ? actors.resolve(sale.recordedBy)?.displayName ?? null
-                    : null
-                }
-                showCashier={showCashierColumn}
-              />
-            ))}
-          </ul>
-
-          <div
-            className="hidden min-w-0 overflow-x-auto lg:block"
-            data-testid="transactions-list-table"
-          >
-            <table className="w-full min-w-[42rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                    {t("transactions.col.saleNumber")}
-                  </th>
-                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                    {t("transactions.col.dateTime")}
-                  </th>
-                  {showCashierColumn ? (
-                    <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("transactions.col.cashier")}
-                    </th>
-                  ) : null}
-                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                    {t("transactions.col.payment")}
-                  </th>
-                  <th className="whitespace-nowrap px-2 py-2 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                    {t("transactions.col.status")}
-                  </th>
-                  <th className="whitespace-nowrap px-2 py-2 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
-                    {t("transactions.col.amount")}
-                  </th>
-                  <th className="w-8 px-2 py-2">
-                    <span className="sr-only">{t("transactions.viewSummary")}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map((sale) => {
-                  const voided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
-                  const cashierName = showCashierColumn
-                    ? actors.resolve(sale.recordedBy)?.displayName ?? null
-                    : null;
-                  const summaryPath = `/sell/sales/${sale.saleId}/summary`;
-                  return (
-                    <tr
-                      key={sale.saleId}
-                      role="link"
-                      tabIndex={0}
-                      className="cursor-pointer border-b border-border transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
-                      data-testid={`transaction-table-row-${sale.saleId}`}
-                      aria-label={`${sale.saleNumber}. ${t("transactions.viewSummary")}`}
-                      onClick={() => navigate(summaryPath)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          navigate(summaryPath);
-                        }
-                      }}
-                    >
-                      <td
-                        className="px-2 py-2 align-middle font-semibold"
-                        data-testid={`transaction-row-${sale.saleId}`}
-                      >
-                        {sale.saleNumber}
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-middle text-muted">
-                        {formatRecordedWhen(sale.recordedAtUtc)}
-                      </td>
-                      {showCashierColumn ? (
-                        <td className="max-w-[14rem] truncate px-2 py-2 align-middle">
-                          {cashierName ?? "—"}
-                        </td>
-                      ) : null}
-                      <td className="whitespace-nowrap px-2 py-2 align-middle">
-                        {formatPaymentMethodLabel(sale.paymentMethod)}
-                      </td>
-                      <td className="px-2 py-2 align-middle">
-                        <StatusChip tone={saleStatusTone(sale.status, voided)}>
-                          {sale.status}
-                        </StatusChip>
-                      </td>
-                      <td className="px-2 py-2 align-middle text-right tabular-nums">
-                        <MoneyDisplay amount={sale.total} />
-                      </td>
-                      <td className="px-2 py-2 align-middle text-right text-muted">
-                        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <section className="transactions-list-panel exits-animate-panel flex min-w-0 flex-col gap-3">
+        {isRegisterScope ? (
+          <div className="flex min-w-0 flex-col gap-2">
+            <ExitsChipBar
+              variant="filter"
+              ariaLabel={t("transactions.dateRange")}
+              testId="transactions-date-presets"
+              items={PRESETS.map((key) => ({
+                key,
+                label: t(`register.preset.${key}` as "register.preset.today"),
+                state: preset === key ? "active" : "idle",
+                testId: `transactions-preset-${key}`,
+                onSelect: () => {
+                  setPreset(key);
+                  setPage(1);
+                },
+              }))}
+            />
+            <p
+              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+              data-testid="transactions-range"
+            >
+              {range.fromDate === range.toDate
+                ? range.fromDate
+                : `${range.fromDate} → ${range.toDate}`}
+            </p>
           </div>
-        </>
-      ) : null}
+        ) : null}
 
-      {totalCount > 0 ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="transactions-page-count"
-          >
-            {totalCount > PAGE_SIZE
-              ? t("transactions.pageRange")
-                  .replace("{start}", String(rangeStart))
-                  .replace("{end}", String(rangeEnd))
-                  .replace("{total}", String(totalCount))
-              : t("transactions.pageOf")
-                  .replace("{page}", String(page))
-                  .replace("{pages}", String(totalPages))}
-          </p>
-          {totalCount > PAGE_SIZE ? (
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                data-testid="transactions-prev"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                {t("transactions.prevPage")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                data-testid="transactions-next"
-                onClick={() => setPage((current) => current + 1)}
-              >
-                {t("transactions.nextPage")}
-              </Button>
+        {salesQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
+        {salesQuery.isError ? (
+          <ErrorState title={t("error.title")} detail={t("transactions.loadError")} />
+        ) : null}
+        {salesQuery.isSuccess && sales.length === 0 ? (
+          <EmptyState title={t("transactions.empty")} detail={t("transactions.emptyDetail")} />
+        ) : null}
+
+        {sales.length > 0 ? (
+          <>
+            <ul
+              className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
+              data-testid="transactions-list-cards"
+            >
+              {sales.map((sale) => (
+                <TransactionCardRow
+                  key={sale.saleId}
+                  sale={sale}
+                  cashierName={
+                    showCashierColumn
+                      ? actors.resolve(sale.recordedBy)?.displayName ?? null
+                      : null
+                  }
+                  showCashier={showCashierColumn}
+                />
+              ))}
+            </ul>
+
+            <div
+              className="transactions-list-table-shell hidden min-w-0 overflow-x-auto lg:block"
+              data-testid="transactions-list-table"
+            >
+              <table className="transactions-list-table w-full min-w-[42rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                <thead>
+                  <tr className="transactions-list-table__head border-b border-border">
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.saleNumber")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.dateTime")}
+                    </th>
+                    {showCashierColumn ? (
+                      <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("transactions.col.cashier")}
+                      </th>
+                    ) : null}
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.payment")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-center text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.status")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("transactions.col.amount")}
+                    </th>
+                    <th className="w-8 px-3 py-2.5">
+                      <span className="sr-only">{t("transactions.viewSummary")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => {
+                    const voided = sale.status === "Voided" || Boolean(sale.voidedAtUtc);
+                    const cashierName = showCashierColumn
+                      ? actors.resolve(sale.recordedBy)?.displayName ?? null
+                      : null;
+                    const summaryPath = `/sell/sales/${sale.saleId}/summary`;
+                    return (
+                      <tr
+                        key={sale.saleId}
+                        role="link"
+                        tabIndex={0}
+                        className="transactions-list-table__row cursor-pointer border-b border-border transition-colors focus-visible:outline-none"
+                        data-testid={`transaction-table-row-${sale.saleId}`}
+                        aria-label={`${sale.saleNumber}. ${t("transactions.viewSummary")}`}
+                        onClick={() => navigate(summaryPath)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            navigate(summaryPath);
+                          }
+                        }}
+                      >
+                        <td
+                          className="px-3 py-2.5 align-middle font-semibold"
+                          data-testid={`transaction-row-${sale.saleId}`}
+                        >
+                          {sale.saleNumber}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
+                          {formatRecordedWhen(sale.recordedAtUtc)}
+                        </td>
+                        {showCashierColumn ? (
+                          <td className="max-w-[14rem] truncate px-3 py-2.5 align-middle">
+                            {cashierName ?? "—"}
+                          </td>
+                        ) : null}
+                        <td className="whitespace-nowrap px-3 py-2.5 align-middle">
+                          {formatPaymentMethodLabel(sale.paymentMethod)}
+                        </td>
+                        <td className="px-3 py-2.5 text-center align-middle">
+                          <StatusChip tone={saleStatusTone(sale.status, voided)}>
+                            {sale.status}
+                          </StatusChip>
+                        </td>
+                        <td className="px-3 py-2.5 align-middle text-right font-semibold tabular-nums">
+                          <MoneyDisplay amount={sale.total} />
+                        </td>
+                        <td className="px-3 py-2.5 align-middle text-right text-muted">
+                          <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ) : null}
-        </div>
-      ) : null}
+          </>
+        ) : null}
+
+        {totalCount > 0 ? (
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="transactions-page-count"
+            >
+              {totalCount > PAGE_SIZE
+                ? t("transactions.pageRange")
+                    .replace("{start}", String(rangeStart))
+                    .replace("{end}", String(rangeEnd))
+                    .replace("{total}", String(totalCount))
+                : t("transactions.pageOf")
+                    .replace("{page}", String(page))
+                    .replace("{pages}", String(totalPages))}
+            </p>
+            {totalCount > PAGE_SIZE ? (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 min-h-8 px-3"
+                  disabled={page <= 1}
+                  data-testid="transactions-prev"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  {t("transactions.prevPage")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 min-h-8 px-3"
+                  disabled={page >= totalPages}
+                  data-testid="transactions-next"
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  {t("transactions.nextPage")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -409,7 +411,7 @@ function TransactionCardRow({
     <li>
       <Link
         to={`/sell/sales/${sale.saleId}/summary`}
-        className="exits-list__card flex min-w-0 items-center gap-2 p-3 text-foreground no-underline"
+        className="exits-list__card transactions-list-card flex min-w-0 items-center gap-2 p-3 text-foreground no-underline"
         data-testid={`transaction-card-row-${sale.saleId}`}
       >
         <span className="min-w-0 flex-1">

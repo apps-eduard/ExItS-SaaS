@@ -199,7 +199,7 @@ export function CustomersListPage() {
 
   return (
     <div
-      className="customers-page exits-page flex min-w-0 flex-col gap-3"
+      className="customers-page exits-page flex min-w-0 flex-col gap-2.5"
       data-testid="customers-list-page"
     >
       <PageHeader
@@ -223,49 +223,51 @@ export function CustomersListPage() {
         }
       />
 
-      <SearchField
-        label={t("customers.search")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={
-          kind === "businesses"
-            ? t("customers.business.search")
-            : t("customers.search")
-        }
-        data-testid="customers-search"
-        containerClassName="customers-page__search exits-page__search"
-      />
-
-      {allowBusiness ? (
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("customers.kindFilter")}
-          testId="customers-kind-filters"
-          items={KIND_FILTERS.map((filter) => ({
-            key: filter.value,
-            label: t(filter.labelKey),
-            state: kind === filter.value ? "active" : "idle",
-            testId: `customers-kind-${filter.value}`,
-            onSelect: () => setKind(filter.value),
-          }))}
+      <div className="customers-toolbar" data-testid="customers-toolbar">
+        <SearchField
+          label={t("customers.search")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={
+            kind === "businesses"
+              ? t("customers.business.search")
+              : t("customers.search")
+          }
+          data-testid="customers-search"
+          containerClassName="customers-page__search exits-page__search"
         />
-      ) : null}
 
-      {showStatusFilter ? (
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("customers.statusFilter")}
-          testId="customers-status-filters"
-          items={STATUS_FILTERS.map((filter) => ({
-            key: filter.key,
-            label: t(filter.labelKey),
-            state: (status || "all") === filter.key ? "active" : "idle",
-            testId: `customers-status-${filter.key === "all" ? "all" : filter.key}`,
-            onSelect: () => setStatus(filter.value),
-          }))}
-        />
-      ) : null}
+        {allowBusiness ? (
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("customers.kindFilter")}
+            testId="customers-kind-filters"
+            items={KIND_FILTERS.map((filter) => ({
+              key: filter.value,
+              label: t(filter.labelKey),
+              state: kind === filter.value ? "active" : "idle",
+              testId: `customers-kind-${filter.value}`,
+              onSelect: () => setKind(filter.value),
+            }))}
+          />
+        ) : null}
+
+        {showStatusFilter ? (
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("customers.statusFilter")}
+            testId="customers-status-filters"
+            items={STATUS_FILTERS.map((filter) => ({
+              key: filter.key,
+              label: t(filter.labelKey),
+              state: (status || "all") === filter.key ? "active" : "idle",
+              testId: `customers-status-${filter.key === "all" ? "all" : filter.key}`,
+              onSelect: () => setStatus(filter.value),
+            }))}
+          />
+        ) : null}
+      </div>
 
       {usingCache ? (
         <div className="exits-alert" data-testid="customers-cached-notice" role="status">
@@ -276,7 +278,10 @@ export function CustomersListPage() {
       ) : null}
 
       {showPeople ? (
-        <section className="customers-section" data-testid="customers-people-section">
+        <section
+          className="customers-section customers-section-panel"
+          data-testid="customers-people-section"
+        >
           {kind === "all" ? (
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindPeople")}</h2>
@@ -304,7 +309,7 @@ export function CustomersListPage() {
               return (
                 <li key={customer.customerId}>
                   <Link
-                    className="exits-list__card customer-row block min-w-0 text-foreground no-underline"
+                    className="exits-list__card customer-row customers-card block min-w-0 text-foreground no-underline"
                     to={`/customers/${customer.customerId}`}
                     data-testid={`customer-row-${customer.customerId}`}
                   >
@@ -344,7 +349,10 @@ export function CustomersListPage() {
       ) : null}
 
       {showBusinesses ? (
-        <section className="customers-section" data-testid="customers-business-section">
+        <section
+          className="customers-section customers-section-panel"
+          data-testid="customers-business-section"
+        >
           {kind === "all" ? (
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindBusinesses")}</h2>
@@ -392,7 +400,7 @@ export function CustomersListPage() {
               return (
                 <li key={customer.connectionId}>
                   <Link
-                    className="exits-list__card business-customer-row customer-row block min-w-0 text-foreground no-underline"
+                    className="exits-list__card business-customer-row customer-row customers-card block min-w-0 text-foreground no-underline"
                     to={`/customers/business/${customer.connectionId}`}
                     data-testid={`business-customer-row-${customer.connectionId}`}
                   >

@@ -277,26 +277,28 @@ export function ShiftDetailPage() {
         ) : null}
       </div>
 
-      <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />
+      <section className="shift-detail-panel exits-animate-panel flex min-w-0 flex-col gap-2.5">
+        <ShiftCashHistoryPanel shift={shift} summary={summary} closed={closed} />
 
-      <ManagerActionCard
-        to={`/shifts/${shift.shiftId}/transactions`}
-        label={t("shift.viewTransactions")}
-        detail={t("shift.viewTransactionsDetail")}
-        icon={ReceiptText}
-        testId="shift-view-transactions"
-      />
+        <ManagerActionCard
+          to={`/shifts/${shift.shiftId}/transactions`}
+          label={t("shift.viewTransactions")}
+          detail={t("shift.viewTransactionsDetail")}
+          icon={ReceiptText}
+          testId="shift-view-transactions"
+        />
+      </section>
 
       {open && canManage ? (
         <section
           data-testid="shift-close-panel"
-          className="flex flex-col gap-2.5 border-t border-border pt-3"
+          className="shift-detail-panel shift-detail-panel--close exits-animate-panel flex flex-col gap-3"
         >
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
             {t("shift.closeTitle")}
           </h2>
 
-          <div className="min-w-0">
+          <div className="shift-close-denom min-w-0">
             <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
               {t("shift.denomHelper")}
             </p>
@@ -315,41 +317,43 @@ export function ShiftDetailPage() {
             />
           </div>
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="inline-flex items-center gap-1.5 font-medium">
-              <Banknote className="size-3.5 shrink-0 text-primary" aria-hidden />
-              {t("shift.closingCashLabel")}
-            </span>
-            <input
-              data-testid="shift-closing-cash"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="0.01"
-              className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-              value={closingCash}
-              onChange={(event) => {
-                setClosingCash(event.target.value);
-                setDenomLines([]);
-              }}
-            />
-          </label>
+          <div className="shift-close-fields flex min-w-0 flex-col gap-2.5">
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <Banknote className="size-3.5 shrink-0 text-primary" aria-hidden />
+                {t("shift.closingCashLabel")}
+              </span>
+              <input
+                data-testid="shift-closing-cash"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+                className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                value={closingCash}
+                onChange={(event) => {
+                  setClosingCash(event.target.value);
+                  setDenomLines([]);
+                }}
+              />
+            </label>
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span className="inline-flex items-center gap-1.5 font-medium">
-              <MessageSquareText className="size-3.5 shrink-0 text-primary" aria-hidden />
-              {t("shift.closingNotesLabel")}
-            </span>
-            <input
-              data-testid="shift-closing-notes"
-              type="text"
-              maxLength={512}
-              placeholder={t("shift.closingNotesLabel")}
-              className="h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              value={closingNotes}
-              onChange={(event) => setClosingNotes(event.target.value)}
-            />
-          </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <MessageSquareText className="size-3.5 shrink-0 text-primary" aria-hidden />
+                {t("shift.closingNotesLabel")}
+              </span>
+              <input
+                data-testid="shift-closing-notes"
+                type="text"
+                maxLength={512}
+                placeholder={t("shift.closingNotesLabel")}
+                className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                value={closingNotes}
+                onChange={(event) => setClosingNotes(event.target.value)}
+              />
+            </label>
+          </div>
 
           {closingError ? (
             <div
@@ -378,7 +382,7 @@ export function ShiftDetailPage() {
           ) : null}
 
           <div
-            className="flex min-w-0 flex-row items-stretch gap-2"
+            className="shift-primary-actions flex min-w-0 flex-row items-stretch gap-2"
             data-testid="shift-primary-actions"
           >
             <div className="min-w-0 flex-1">
@@ -391,7 +395,7 @@ export function ShiftDetailPage() {
             </div>
             <Button
               type="button"
-              className="h-auto min-h-11 shrink-0 self-stretch px-3"
+              className="shift-primary-actions__close h-auto min-h-[var(--exits-control-height)] shrink-0 self-stretch px-4"
               disabled={saving}
               data-testid="shift-close-confirm"
               onClick={() => void onClose(false)}

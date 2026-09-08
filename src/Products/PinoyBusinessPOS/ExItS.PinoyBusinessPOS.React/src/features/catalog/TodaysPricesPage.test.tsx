@@ -206,6 +206,24 @@ describe("TodaysPricesPage per-product save", () => {
     expect(updateCatalogProductPrices.mock.calls[0][1].items[0].productId).toBe(PRODUCT_A.productId);
   });
 
+  it("reset restores the price before editing", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const rowA = await screen.findByTestId(`price-row-${PRODUCT_A.productId}`);
+    const input = within(rowA).getByRole("textbox", { name: "prices.newPrice" });
+    await user.clear(input);
+    await user.type(input, "40");
+    expect(within(rowA).getByTestId(`price-save-${PRODUCT_A.productId}`)).toBeInTheDocument();
+    expect(within(rowA).getByTestId(`price-reset-${PRODUCT_A.productId}`)).toBeInTheDocument();
+
+    await user.click(within(rowA).getByTestId(`price-reset-${PRODUCT_A.productId}`));
+
+    expect(input).toHaveValue("28");
+    expect(within(rowA).queryByTestId(`price-save-${PRODUCT_A.productId}`)).not.toBeInTheDocument();
+    expect(within(rowA).queryByTestId(`price-reset-${PRODUCT_A.productId}`)).not.toBeInTheDocument();
+    expect(updateCatalogProductPrices).not.toHaveBeenCalled();
+  });
+
   it("failure preserves draft and current price", async () => {
     const user = userEvent.setup();
     updateCatalogProductPrices.mockResolvedValue({

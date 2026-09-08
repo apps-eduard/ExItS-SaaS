@@ -113,7 +113,7 @@ export function InventoryTransferListPage() {
 
   return (
     <div
-      className="inventory-transfer-list-page exits-page flex min-w-0 flex-col gap-3"
+      className="inventory-transfer-list-page exits-page flex min-w-0 flex-col gap-2.5"
       data-testid="inventory-transfer-list-page"
     >
       <PageHeader
@@ -153,13 +153,14 @@ export function InventoryTransferListPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
 
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        <div className="flex min-w-0 shrink-0 flex-col gap-1">
-          <span className="exits-type-label">{t("transfer.filter.direction")}</span>
+      <div className="transfer-filters" data-testid="transfer-filters">
+        <div className="transfer-filters__row transfer-filters__row--direction catalog-page__filter-inline">
+          <span className="catalog-page__filter-section-label">{t("transfer.filter.direction")}</span>
           <ExitsChipBar
             variant="filter"
             ariaLabel={t("transfer.filter.direction")}
             testId="transfer-direction-filters"
+            className="min-w-0 flex-1"
             items={[
               {
                 key: "all",
@@ -186,12 +187,13 @@ export function InventoryTransferListPage() {
           />
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="exits-type-label">{t("transfer.filter.status")}</span>
+        <div className="transfer-filters__row transfer-filters__row--status catalog-page__filter-inline">
+          <span className="catalog-page__filter-section-label">{t("transfer.filter.status")}</span>
           <ExitsChipBar
             variant="filter"
             ariaLabel={t("transfer.filter.status")}
             testId="transfer-status-filters"
+            className="min-w-0 flex-1"
             items={STATUS_FILTERS.map((filter) => ({
               key: filter.value || "all-status",
               label: t(filter.labelKey),
@@ -203,144 +205,149 @@ export function InventoryTransferListPage() {
         </div>
       </div>
 
-      {query.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
-      {query.isError ? (
-        <ErrorState title={t("transfer.errorTitle")} detail={t("transfer.loadFailed")} />
-      ) : null}
+      <div className="transfer-results-panel flex min-w-0 flex-col gap-2.5">
+        {query.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
+        {query.isError ? (
+          <ErrorState title={t("transfer.errorTitle")} detail={t("transfer.loadFailed")} />
+        ) : null}
 
-      {!query.isLoading && !query.isError && items.length === 0 ? (
-        <>
-          <EmptyState
-            title={t("transfer.empty")}
-            detail={multiBranch ? t("transfer.emptyDetail") : t("transfer.singleBranchDetail")}
-          />
-          {canCreate ? (
-            <Button asChild>
-              <Link to="/inventory/transfers/new" data-testid="transfer-empty-cta">
-                <Plus className="size-4 shrink-0" aria-hidden />
-                {t("transfer.new")}
-              </Link>
-            </Button>
-          ) : null}
-          {!multiBranch ? (
-            <p
-              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-              data-testid="transfer-single-branch"
+        {!query.isLoading && !query.isError && items.length === 0 ? (
+          <>
+            <EmptyState
+              title={t("transfer.empty")}
+              detail={multiBranch ? t("transfer.emptyDetail") : t("transfer.singleBranchDetail")}
+            />
+            {canCreate ? (
+              <Button asChild>
+                <Link to="/inventory/transfers/new" data-testid="transfer-empty-cta">
+                  <Plus className="size-4 shrink-0" aria-hidden />
+                  {t("transfer.new")}
+                </Link>
+              </Button>
+            ) : null}
+            {!multiBranch ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="transfer-single-branch"
+              >
+                {t("transfer.requiresTwoBranches")}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {items.length > 0 ? (
+          <section className="flex min-w-0 flex-col gap-1.5">
+            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+              {t("transfer.listSection")}
+            </h2>
+            <ul
+              className="m-0 grid w-full list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
+              data-testid="transfer-list"
             >
-              {t("transfer.requiresTwoBranches")}
-            </p>
-          ) : null}
-        </>
-      ) : null}
-
-      {items.length > 0 ? (
-        <section className="flex min-w-0 flex-col gap-1.5">
-          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-            {t("transfer.listSection")}
-          </h2>
-          <ul
-            className="m-0 grid w-full list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
-            data-testid="transfer-list"
-          >
-            {items.map((item) => {
-              const source = branchDisplayName(item.sourceBranchName, item.sourceBranchId);
-              const dest = branchDisplayName(item.destinationBranchName, item.destinationBranchId);
-              const transferNumber = item.transferNumber?.trim() || "";
-              const executor = inventoryTransferExecutor(item);
-              const resolved = actors.resolve(executor.actorId);
-              const executorName =
-                resolved?.displayName && resolved.actorStatus !== "NotAvailable"
-                  ? resolved.displayName
-                  : actors.isResolving
-                    ? "…"
-                    : t("common.notAvailable");
-              return (
-                <li key={item.transferId} className="min-w-0">
-                  <Link
-                    to={`/inventory/transfers/${item.transferId}`}
-                    className="exits-list__card transfer-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
-                    data-testid={`transfer-row-${item.transferId}`}
-                  >
-                    <span className="transfer-row__main flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="flex min-w-0 items-start justify-between gap-2">
-                        <span className="min-w-0">
-                          {transferNumber ? (
-                            <span className="mb-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
-                              {transferNumber}
+              {items.map((item) => {
+                const source = branchDisplayName(item.sourceBranchName, item.sourceBranchId);
+                const dest = branchDisplayName(item.destinationBranchName, item.destinationBranchId);
+                const transferNumber = item.transferNumber?.trim() || "";
+                const executor = inventoryTransferExecutor(item);
+                const resolved = actors.resolve(executor.actorId);
+                const executorName =
+                  resolved?.displayName && resolved.actorStatus !== "NotAvailable"
+                    ? resolved.displayName
+                    : actors.isResolving
+                      ? "…"
+                      : t("common.notAvailable");
+                return (
+                  <li key={item.transferId} className="min-w-0">
+                    <Link
+                      to={`/inventory/transfers/${item.transferId}`}
+                      className="exits-list__card transfer-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
+                      data-testid={`transfer-row-${item.transferId}`}
+                    >
+                      <span className="transfer-row__main flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="flex min-w-0 items-start justify-between gap-2">
+                          <span className="min-w-0">
+                            {transferNumber ? (
+                              <span className="mb-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
+                                {transferNumber}
+                              </span>
+                            ) : null}
+                            <span className="block truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+                              {source} → {dest}
                             </span>
-                          ) : null}
-                          <span className="block truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
-                            {source} → {dest}
                           </span>
+                          <StatusChip tone={inventoryTransferStatusTone(item.status)}>
+                            {t(inventoryTransferStatusLabelKey(item.status))}
+                          </StatusChip>
                         </span>
-                        <StatusChip tone={inventoryTransferStatusTone(item.status)}>
-                          {t(inventoryTransferStatusLabelKey(item.status))}
-                        </StatusChip>
-                      </span>
-                      <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                        <span>{t("transfer.linesCount").replace("{count}", String(item.lineCount))}</span>
-                        <span aria-hidden>·</span>
-                        <span>
-                          {t("transfer.sent")} {formatTransferQty(item.totalSentQty)}
+                        <span className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                          <span>{t("transfer.linesCount").replace("{count}", String(item.lineCount))}</span>
+                          <span aria-hidden>·</span>
+                          <span>
+                            {t("transfer.sent")} {formatTransferQty(item.totalSentQty)}
+                          </span>
+                          <span aria-hidden>·</span>
+                          <span>
+                            {t("transfer.received")} {formatTransferQty(item.totalReceivedQty)}
+                          </span>
+                          {item.totalDifferenceQty !== 0 ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span>
+                                {t("transfer.difference")} {formatTransferQty(item.totalDifferenceQty)}
+                              </span>
+                            </>
+                          ) : null}
                         </span>
-                        <span aria-hidden>·</span>
-                        <span>
-                          {t("transfer.received")} {formatTransferQty(item.totalReceivedQty)}
+                        <span
+                          className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-xs)] text-muted"
+                          data-testid={`transfer-executor-${item.transferId}`}
+                        >
+                          <span>{t(executor.labelKey).replace("{name}", executorName)}</span>
+                          <span aria-hidden>·</span>
+                          <span>{formatTransferTimestamp(item.updatedAtUtc)}</span>
                         </span>
-                        {item.totalDifferenceQty !== 0 ? (
-                          <>
-                            <span aria-hidden>·</span>
-                            <span>
-                              {t("transfer.difference")} {formatTransferQty(item.totalDifferenceQty)}
-                            </span>
-                          </>
-                        ) : null}
                       </span>
-                      <span
-                        className="flex flex-wrap gap-x-2 gap-y-0.5 text-[length:var(--exits-text-xs)] text-muted"
-                        data-testid={`transfer-executor-${item.transferId}`}
-                      >
-                        <span>{t(executor.labelKey).replace("{name}", executorName)}</span>
-                        <span aria-hidden>·</span>
-                        <span>{formatTransferTimestamp(item.updatedAtUtc)}</span>
-                      </span>
-                    </span>
-                    <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
+                      <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
 
-      {totalCount > PAGE_SIZE ? (
-        <div className="flex flex-wrap items-center justify-between gap-2" data-testid="transfer-pagination">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            data-testid="transfer-prev"
+        {totalCount > PAGE_SIZE ? (
+          <div
+            className="flex flex-wrap items-center justify-between gap-2"
+            data-testid="transfer-pagination"
           >
-            {t("transfer.prevPage")}
-          </Button>
-          <span className="text-[length:var(--exits-text-sm)] text-muted">
-            {t("transfer.pageOf")
-              .replace("{page}", String(page))
-              .replace("{pages}", String(totalPages))}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            data-testid="transfer-next"
-          >
-            {t("transfer.nextPage")}
-          </Button>
-        </div>
-      ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              data-testid="transfer-prev"
+            >
+              {t("transfer.prevPage")}
+            </Button>
+            <span className="text-[length:var(--exits-text-sm)] text-muted">
+              {t("transfer.pageOf")
+                .replace("{page}", String(page))
+                .replace("{pages}", String(totalPages))}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              data-testid="transfer-next"
+            >
+              {t("transfer.nextPage")}
+            </Button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

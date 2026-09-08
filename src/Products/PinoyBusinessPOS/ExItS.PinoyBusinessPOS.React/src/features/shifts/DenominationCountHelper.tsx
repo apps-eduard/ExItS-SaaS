@@ -129,7 +129,7 @@ export function DenominationCountHelper({
         </div>
       )}
 
-      <ul className="denom-helper__grid m-0 grid list-none gap-1.5 p-0">
+      <ul className="denom-helper__grid m-0 grid list-none p-0">
         {sorted.map((denom) => {
           const key = String(denom.value);
           const quantity = quantities[key] ?? 0;

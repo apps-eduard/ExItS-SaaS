@@ -283,12 +283,12 @@ export function StockCountCreatePage() {
   }
 
   const productRowClass =
-    "flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2";
+    "stock-count-product-row flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2";
   const productActionClass = " w-full shrink-0 sm:w-auto";
 
   return (
     <div
-      className="stock-count-create-page exits-page flex min-w-0 flex-col gap-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+      className="stock-count-create-page exits-page mx-auto flex w-full max-w-[56rem] min-w-0 flex-col gap-2.5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
       data-testid="stock-count-create-page"
     >
       <PageHeader
@@ -300,7 +300,7 @@ export function StockCountCreatePage() {
       />
 
       <p
-        className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2.5 text-[length:var(--exits-text-sm)] leading-snug text-foreground"
+        className="stock-count-create-scope m-0"
         data-testid="stock-count-create-scope"
       >
         {boundWorkspace?.branchName
@@ -323,25 +323,47 @@ export function StockCountCreatePage() {
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-3" data-testid="stock-count-create-fields">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countPeriod")}</span>
-          <select
-            className="exits-select"
-            value={period}
-            onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
-            data-testid="stock-count-period"
-          >
-            {STOCK_COUNT_PERIOD_TYPES.map((value) => (
-              <option key={value} value={value}>
-                {t(periodLabelKey(value))}
-              </option>
-            ))}
-          </select>
-        </label>
+      <section
+        className="catalog-form-section stock-count-section exits-animate-panel"
+        data-testid="stock-count-create-fields"
+      >
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+              {t("stockCount.countPeriod")}
+            </span>
+            <select
+              className="exits-select catalog-form-select"
+              value={period}
+              onChange={(e) => applyPeriod(e.target.value as StockCountPeriodType)}
+              data-testid="stock-count-period"
+            >
+              {STOCK_COUNT_PERIOD_TYPES.map((value) => (
+                <option key={value} value={value}>
+                  {t(periodLabelKey(value))}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.fieldTitle")}</span>
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+              {t("stockCount.countDate")}
+            </span>
+            <input
+              type="date"
+              className="exits-input"
+              value={countDate}
+              onChange={(e) => applyCountDate(e.target.value)}
+              data-testid="stock-count-date"
+            />
+          </label>
+        </div>
+
+        <label className="flex min-w-0 flex-col gap-1">
+          <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+            {t("stockCount.fieldTitle")}
+          </span>
           <input
             className="exits-input"
             value={title}
@@ -350,38 +372,33 @@ export function StockCountCreatePage() {
             autoComplete="off"
             data-testid="stock-count-title"
           />
-          <span className="text-[length:var(--exits-text-xs)] text-muted">{t("stockCount.titleSuggestedHint")}</span>
+          <span className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("stockCount.titleSuggestedHint")}
+          </span>
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">{t("stockCount.countDate")}</span>
-          <input
-            type="date"
-            className="exits-input"
-            value={countDate}
-            onChange={(e) => applyCountDate(e.target.value)}
-            data-testid="stock-count-date"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--exits-text-sm)] font-semibold">
+        <label className="flex min-w-0 flex-col gap-1">
+          <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
             {t("stockCount.notes")}{" "}
-            <span className="font-normal text-muted">({t("stockCount.notesOptional")})</span>
+            <span className="font-normal">({t("stockCount.notesOptional")})</span>
           </span>
           <textarea
-            className="exits-input min-h-20"
+            className="exits-input min-h-16"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             maxLength={512}
+            rows={2}
             data-testid="stock-count-notes"
           />
         </label>
       </section>
 
-      <section className="flex flex-col gap-3" data-testid="stock-count-selected">
+      <section
+        className="catalog-form-section stock-count-section exits-animate-panel"
+        data-testid="stock-count-selected"
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="m-0 flex min-w-0 items-baseline gap-2 text-[length:var(--exits-text-lg)] font-semibold">
+          <h2 className="catalog-form-section__title m-0 flex min-w-0 items-baseline gap-2">
             <span>{t("stockCount.productsToCount")}</span>
             {selected.length > 0 ? (
               <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
@@ -401,9 +418,9 @@ export function StockCountCreatePage() {
           </Button>
         </div>
         {selected.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockCount.draftEmpty")}</p>
+          <p className="stock-count-empty m-0">{t("stockCount.draftEmpty")}</p>
         ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
             {selected.map((product) => (
               <li
                 key={product.productId}
@@ -429,53 +446,55 @@ export function StockCountCreatePage() {
             ))}
           </ul>
         )}
+
+        <div className="stock-count-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
+          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+            {t("stockCount.addProducts")}
+          </h3>
+          <SearchField
+            label={t("stockCount.searchProducts")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("stockCount.searchProducts")}
+            data-testid="stock-count-product-search"
+          />
+          {pickerQuery.isLoading ? <LoadingState label={t("stockCount.loading")} /> : null}
+          {!pickerQuery.isLoading && pickerRows.length === 0 ? (
+            <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
+          ) : null}
+          <ul
+            className="m-0 flex max-h-[min(42vh,18rem)] list-none flex-col gap-1.5 overflow-y-auto overscroll-contain p-0"
+            data-testid="stock-count-product-picker"
+          >
+            {pickerRows.map((row) => {
+              const already = selectedIds.has(row.productId);
+              return (
+                <li key={row.productId} className={productRowClass}>
+                  <div className="min-w-0">
+                    <p className="m-0 font-medium leading-snug">{row.name}</p>
+                    <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                      {row.unitOfMeasure} · {t("inventory.onHand")}: {row.onHandQuantity}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={already ? "outline" : "default"}
+                    className={productActionClass}
+                    disabled={already || !online}
+                    onClick={() => addProduct(row)}
+                    data-testid={`stock-count-add-${row.productId}`}
+                  >
+                    {already ? t("stockCount.alreadyAdded") : t("stockCount.addProduct")}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">{t("stockCount.addProducts")}</h2>
-        <SearchField
-          label={t("stockCount.searchProducts")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("stockCount.searchProducts")}
-          data-testid="stock-count-product-search"
-        />
-        {pickerQuery.isLoading ? <LoadingState label={t("stockCount.loading")} /> : null}
-        {!pickerQuery.isLoading && pickerRows.length === 0 ? (
-          <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
-        ) : null}
-        <ul
-          className="m-0 flex max-h-[min(50vh,22rem)] list-none flex-col gap-2 overflow-y-auto overscroll-contain p-0"
-          data-testid="stock-count-product-picker"
-        >
-          {pickerRows.map((row) => {
-            const already = selectedIds.has(row.productId);
-            return (
-              <li key={row.productId} className={productRowClass}>
-                <div className="min-w-0">
-                  <p className="m-0 font-medium leading-snug">{row.name}</p>
-                  <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                    {row.unitOfMeasure} · {t("inventory.onHand")}: {row.onHandQuantity}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant={already ? "outline" : "default"}
-                  className={productActionClass}
-                  disabled={already || !online}
-                  onClick={() => addProduct(row)}
-                  data-testid={`stock-count-add-${row.productId}`}
-                >
-                  {already ? t("stockCount.alreadyAdded") : t("stockCount.addProduct")}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <StickyActionBar className="px-3 py-3 sm:px-4">
+      <StickyActionBar className="stock-count-create-actions px-3 py-3 sm:px-4">
         <Button
           type="button"
           className="w-full flex-1"

@@ -96,6 +96,15 @@ export function canSavePriceDraft(row: PriceDraft): boolean {
   return !pricesEqual(parsed.value, row.currentPrice);
 }
 
+/** Restore draft to the last saved / loaded price and clear row error. */
+export function resetPriceDraft(row: PriceDraft): PriceDraft {
+  return {
+    ...row,
+    draftPrice: String(row.currentPrice),
+    rowError: null,
+  };
+}
+
 /**
  * Merge server products into local drafts.
  * Dirty rows keep draftPrice + concurrency token; non-dirty rows refresh fully.

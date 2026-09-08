@@ -168,10 +168,10 @@ export function InventoryListPage() {
 
   return (
     <div
-      className="inventory-list-page exits-page flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden"
+      className="inventory-list-page exits-page flex h-full min-h-0 min-w-0 flex-col gap-2.5 overflow-hidden"
       data-testid="inventory-list-page"
     >
-      <div className="inventory-list-page__chrome shrink-0 flex min-w-0 flex-col gap-3">
+      <div className="inventory-list-page__chrome shrink-0 flex min-w-0 flex-col gap-2.5">
         <PageHeader
           title={t("inventory.title")}
           description={
@@ -208,31 +208,33 @@ export function InventoryListPage() {
           items={inventoryToolbarItems}
         />
 
-        <SearchField
-          label={t("inventory.search")}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("inventory.search")}
-          data-testid="inventory-search"
-          containerClassName="inventory-list-page__search exits-page__search"
-        />
+        <div className="inventory-filters" data-testid="inventory-filters">
+          <SearchField
+            label={t("inventory.search")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("inventory.search")}
+            data-testid="inventory-search"
+            containerClassName="inventory-list-page__search exits-page__search"
+          />
 
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("inventory.trackingFilter")}
-          testId="inventory-tracking-filters"
-          items={TRACKING_FILTERS.map((filter) => ({
-            key: filter.key,
-            label: t(filter.labelKey),
-            state: trackingFilter === filter.value ? "active" : "idle",
-            testId: `inventory-filter-${filter.key}`,
-            onSelect: () => setTrackingFilter(filter.value),
-          }))}
-        />
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("inventory.trackingFilter")}
+            testId="inventory-tracking-filters"
+            items={TRACKING_FILTERS.map((filter) => ({
+              key: filter.key,
+              label: t(filter.labelKey),
+              state: trackingFilter === filter.value ? "active" : "idle",
+              testId: `inventory-filter-${filter.key}`,
+              onSelect: () => setTrackingFilter(filter.value),
+            }))}
+          />
+        </div>
       </div>
 
-      <div className="inventory-list-page__results flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="inventory-list-page__results inventory-results-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {query.isFetching && !query.isLoading && query.data ? (
           <BackgroundRefreshIndicator active label={t("loading.updating")} />
         ) : null}
@@ -294,7 +296,7 @@ export function InventoryListPage() {
                       <div className="inventory-row__main min-w-0">
                         <span className="exits-list__name block truncate font-semibold">{item.name}</span>
                         {!tracked || tracksExpiry || showStockChip ? (
-                          <div className="inventory-row__chips mt-1.5 flex flex-wrap gap-1">
+                          <div className="inventory-row__chips mt-1 flex flex-wrap gap-1">
                             {!tracked ? (
                               <span className="inventory-row__badge inventory-row__badge--untracked">
                                 {t("inventory.notTracked")}

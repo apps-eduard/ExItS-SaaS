@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Award,
+  ChevronRight,
   CircleDollarSign,
   Globe,
   LayoutTemplate,
@@ -16,7 +17,7 @@ import {
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
-import type { CatalogProductScopeCode } from "@/api/pos/pos-catalog-types";
+import type { CatalogProductScopeCode, PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -123,6 +124,7 @@ const SCOPE_FILTERS: Array<{
 
 export function CatalogProductsPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const isDesktopFilters = useMediaMin(768);
   const workspace = usePosWorkspaceScope();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -395,7 +397,10 @@ export function CatalogProductsPage() {
         />
 
         {isDesktopFilters ? (
-          <div className="catalog-page__filters-desktop flex min-w-0 flex-col gap-2.5">
+          <div
+            className="catalog-products-filters catalog-page__filters-desktop flex min-w-0 flex-col gap-2"
+            data-testid="catalog-products-filters"
+          >
             <div className="catalog-page__taxonomy grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
               <CatalogCategoryBrandSelects
                 categoryId={categoryId}
@@ -423,7 +428,7 @@ export function CatalogProductsPage() {
             />
 
             <div className="catalog-page__search-use-row">
-              <section className="catalog-page__filter-section catalog-page__filter-section--search min-w-0">
+              <section className="catalog-page__filter-section catalog-page__filter-section--search catalog-page__filter-inline min-w-0">
                 <p className="catalog-page__filter-section-label">{t("catalog.filters.search")}</p>
                 <SearchField
                   label={t("catalog.filters.search")}
@@ -432,10 +437,10 @@ export function CatalogProductsPage() {
                   onClear={() => setSearch("")}
                   placeholder={t("catalog.searchProducts")}
                   data-testid="catalog-search"
-                  containerClassName="catalog-page__search exits-page__search min-w-0"
+                  containerClassName="catalog-page__search exits-page__search min-w-0 flex-1"
                 />
               </section>
-              <section className="catalog-page__filter-section catalog-page__filter-section--usage min-w-0">
+              <section className="catalog-page__filter-section catalog-page__filter-section--usage catalog-page__filter-inline min-w-0">
                 <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
                 <CatalogFilterScrollRow
                   ariaLabel={t("catalog.filters.use")}
@@ -452,7 +457,10 @@ export function CatalogProductsPage() {
             </div>
           </div>
         ) : (
-          <div className="catalog-page__filters-mobile flex min-w-0 flex-col gap-2">
+          <div
+            className="catalog-products-filters catalog-page__filters-mobile flex min-w-0 flex-col gap-2"
+            data-testid="catalog-products-filters"
+          >
             <div className="catalog-page__filters-mobile-toolbar flex min-w-0 items-center gap-2.5">
               <FilterButton
                 activeCount={sheetFilterCount}
@@ -558,7 +566,7 @@ export function CatalogProductsPage() {
         </BottomSheet>
       ) : null}
 
-      <div className="catalog-page__products flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="catalog-products-panel catalog-page__products flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div
           className="catalog-page__products-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
           data-testid="catalog-products-scroll"
@@ -574,128 +582,237 @@ export function CatalogProductsPage() {
             <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
           ) : null}
 
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-products-list">
-        {filteredItems.map((product) => {
-          const categoryName = product.categoryId
-            ? categoryNameById.get(product.categoryId)
-            : undefined;
-          const usage = resolveBusinessUsage(product);
-          const secondaryMeta = [product.brandName, categoryName].filter(Boolean).join(" · ");
-          const idsMeta = [product.sku, product.barcode].filter(Boolean).join(" · ");
-          const isActive = product.status.toLowerCase() === "active";
-          const isStandard = isOrganizationStandardProduct(product);
-          const isLocal = isBranchLocalProduct(product);
-          const originName = product.originBranchId
-            ? (branchNameById.get(product.originBranchId) ?? null)
-            : null;
-          const scopeBadge = isStandard
-            ? t("catalog.governance.organizationProduct")
-            : isLocal
-              ? originName &&
-                  currentBranchName &&
-                  product.originBranchId === workspace.branchId
-                ? t("catalog.governance.branchProductThisBranch")
-                : originName
-                  ? t("catalog.governance.branchProductOrigin").replace("{branch}", originName)
-                  : t("catalog.governance.branchProduct")
-              : null;
-          const offeringLabel =
-            isStandard && product.isOfferedAtBranch === false
-              ? t("catalog.governance.notOfferedAtBranch")
-              : null;
-          const displayPrice = resolveCatalogDisplayPrice(product);
-          const priceOrigin = resolveCatalogPriceOrigin(product, Boolean(workspace.branchId));
-          const priceOriginLabel =
-            priceOrigin === "branchOverride"
-              ? t("catalog.productListPrice.branchPrice")
-              : priceOrigin === "organizationDefault"
-                ? t("catalog.productListPrice.orgDefault")
-                : null;
-          const stockDisplay = resolveCatalogStockDisplay(product);
-          const stockCaption = catalogStockCaption(t, stockDisplay);
+          <ul
+            className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
+            data-testid="catalog-products-list"
+          >
+            {filteredItems.map((product) => {
+              const row = buildCatalogProductListRow({
+                product,
+                categoryNameById,
+                branchNameById,
+                currentBranchId: workspace?.branchId,
+                currentBranchName,
+                t,
+              });
 
-          return (
-            <li key={product.productId}>
-              <Link
-                className="exits-list__card catalog-product-row block min-w-0 text-foreground no-underline"
-                to={`/catalog/products/${product.productId}/edit`}
-                data-testid={`catalog-product-row-${product.productId}`}
-              >
-                <span className="catalog-product-row__main min-w-0">
-                  <span className="exits-list__name block truncate font-semibold">{product.name}</span>
-                  {secondaryMeta ? (
-                    <span className="catalog-product-row__meta mt-1 block truncate text-muted">
-                      {secondaryMeta}
-                    </span>
-                  ) : null}
-                  {idsMeta ? (
-                    <span className="catalog-product-row__ids mt-0.5 block truncate text-muted">
-                      {idsMeta}
-                    </span>
-                  ) : null}
-                  <span className="catalog-product-row__usage mt-0.5 block truncate text-muted">
-                    {t(businessUsageLabelKey(usage))}
-                  </span>
-                  {scopeBadge ? (
-                    <span
-                      className="catalog-product-row__scope mt-1 inline-flex"
-                      data-testid="catalog-product-scope-badge"
-                    >
-                      <StatusChip tone="info">{scopeBadge}</StatusChip>
-                    </span>
-                  ) : null}
-                  {offeringLabel ? (
-                    <span
-                      className="catalog-product-row__offering mt-1 block text-muted"
-                      data-testid="catalog-product-offering"
-                    >
-                      {offeringLabel}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="catalog-product-row__aside">
-                  {displayPrice != null && Number.isFinite(displayPrice) ? (
-                    <span className="catalog-product-row__price-block">
-                      <span
-                        className="catalog-product-row__price"
-                        data-testid={`catalog-product-price-${product.productId}`}
-                      >
-                        {formatPeso(displayPrice)}
+              return (
+                <li key={product.productId}>
+                  <Link
+                    className="exits-list__card catalog-product-row catalog-products-card block min-w-0 text-foreground no-underline"
+                    to={`/catalog/products/${product.productId}/edit`}
+                    data-testid={`catalog-product-row-${product.productId}`}
+                  >
+                    <span className="catalog-product-row__main min-w-0">
+                      <span className="exits-list__name block truncate font-semibold">
+                        {product.name}
                       </span>
-                      {priceOriginLabel ? (
-                        <span
-                          className="catalog-product-row__price-origin text-muted"
-                          data-testid={`catalog-product-price-origin-${product.productId}`}
-                        >
-                          {priceOriginLabel}
+                      {row.secondaryMeta ? (
+                        <span className="catalog-product-row__meta mt-1 block truncate text-muted">
+                          {row.secondaryMeta}
                         </span>
                       ) : null}
-                      <span
-                        className={`catalog-product-row__stock catalog-product-row__stock--${stockDisplay.tone}`}
-                        data-testid={`catalog-product-stock-${product.productId}`}
-                      >
-                        {stockCaption}
+                      {row.idsMeta ? (
+                        <span className="catalog-product-row__ids mt-0.5 block truncate text-muted">
+                          {row.idsMeta}
+                        </span>
+                      ) : null}
+                      <span className="catalog-product-row__usage mt-0.5 block truncate text-muted">
+                        {row.usageLabel}
                       </span>
+                      {row.scopeBadge ? (
+                        <span
+                          className="catalog-product-row__scope mt-1 inline-flex"
+                          data-testid="catalog-product-scope-badge"
+                        >
+                          <StatusChip tone="info">{row.scopeBadge}</StatusChip>
+                        </span>
+                      ) : null}
+                      {row.offeringLabel ? (
+                        <span
+                          className="catalog-product-row__offering mt-1 block text-muted"
+                          data-testid="catalog-product-offering"
+                        >
+                          {row.offeringLabel}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : product.isTracked === false ? (
-                    <span className="catalog-product-row__price-block">
-                      <span
-                        className={`catalog-product-row__stock catalog-product-row__stock--${stockDisplay.tone}`}
-                        data-testid={`catalog-product-stock-${product.productId}`}
-                      >
-                        {stockCaption}
-                      </span>
+                    <span className="catalog-product-row__aside">
+                      {row.displayPrice != null && Number.isFinite(row.displayPrice) ? (
+                        <span className="catalog-product-row__price-block">
+                          <span
+                            className="catalog-product-row__price"
+                            data-testid={`catalog-product-price-${product.productId}`}
+                          >
+                            {formatPeso(row.displayPrice)}
+                          </span>
+                          {row.priceOriginLabel ? (
+                            <span
+                              className="catalog-product-row__price-origin text-muted"
+                              data-testid={`catalog-product-price-origin-${product.productId}`}
+                            >
+                              {row.priceOriginLabel}
+                            </span>
+                          ) : null}
+                          <span
+                            className={`catalog-product-row__stock catalog-product-row__stock--${row.stockTone}`}
+                            data-testid={`catalog-product-stock-${product.productId}`}
+                          >
+                            {row.stockCaption}
+                          </span>
+                        </span>
+                      ) : product.isTracked === false ? (
+                        <span className="catalog-product-row__price-block">
+                          <span
+                            className={`catalog-product-row__stock catalog-product-row__stock--${row.stockTone}`}
+                            data-testid={`catalog-product-stock-${product.productId}`}
+                          >
+                            {row.stockCaption}
+                          </span>
+                        </span>
+                      ) : null}
+                      <StatusChip tone={row.isActive ? "success" : "neutral"}>
+                        {product.status}
+                      </StatusChip>
                     </span>
-                  ) : null}
-                  <StatusChip tone={isActive ? "success" : "neutral"}>
-                    {product.status}
-                  </StatusChip>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
+
+          {filteredItems.length > 0 ? (
+            <div
+              className="catalog-products-table-shell hidden min-w-0 overflow-x-auto lg:block"
+              data-testid="catalog-products-table"
+            >
+              <table className="catalog-products-table w-full min-w-[56rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                <thead>
+                  <tr className="catalog-products-table__head border-b border-border">
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.name")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.category")}
+                    </th>
+                    <th className="hidden whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted xl:table-cell">
+                      {t("catalog.sku")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.businessUsage.label")}
+                    </th>
+                    <th className="hidden whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted 2xl:table-cell">
+                      {t("catalog.col.scope")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.col.price")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.col.stock")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("catalog.statusFilter")}
+                    </th>
+                    <th className="w-8 px-3 py-2.5">
+                      <span className="sr-only">{t("catalog.editProduct")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((product) => {
+                    const row = buildCatalogProductListRow({
+                      product,
+                      categoryNameById,
+                      branchNameById,
+                      currentBranchId: workspace?.branchId,
+                      currentBranchName,
+                      t,
+                    });
+                    const editPath = `/catalog/products/${product.productId}/edit`;
+                    return (
+                      <tr
+                        key={product.productId}
+                        role="link"
+                        tabIndex={0}
+                        className="catalog-products-table__row cursor-pointer border-b border-border transition-colors focus-visible:outline-none"
+                        data-testid={`catalog-product-table-row-${product.productId}`}
+                        aria-label={`${product.name}. ${t("catalog.editProduct")}`}
+                        onClick={() => navigate(editPath)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            navigate(editPath);
+                          }
+                        }}
+                      >
+                        <td className="max-w-[14rem] px-3 py-2.5 align-middle">
+                          <span className="block truncate font-semibold text-foreground">
+                            {product.name}
+                          </span>
+                          {product.brandName ? (
+                            <span className="mt-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
+                              {product.brandName}
+                            </span>
+                          ) : null}
+                          {row.offeringLabel ? (
+                            <span className="mt-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
+                              {row.offeringLabel}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="max-w-[10rem] truncate px-3 py-2.5 align-middle text-muted">
+                          {row.categoryName ?? t("catalog.noCategory")}
+                        </td>
+                        <td className="hidden max-w-[10rem] truncate px-3 py-2.5 align-middle text-muted xl:table-cell">
+                          {product.sku?.trim() || "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
+                          {row.usageLabel}
+                        </td>
+                        <td className="hidden px-3 py-2.5 align-middle 2xl:table-cell">
+                          {row.scopeBadge ? (
+                            <StatusChip tone="info">{row.scopeBadge}</StatusChip>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 text-right align-middle">
+                          {row.displayPrice != null && Number.isFinite(row.displayPrice) ? (
+                            <span className="block font-semibold tabular-nums">
+                              {formatPeso(row.displayPrice)}
+                            </span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                          {row.priceOriginLabel ? (
+                            <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+                              {row.priceOriginLabel}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td
+                          className={cn(
+                            "max-w-[9rem] truncate px-3 py-2.5 align-middle text-muted",
+                            `catalog-product-row__stock--${row.stockTone}`,
+                          )}
+                        >
+                          {row.stockCaption}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 align-middle">
+                          <StatusChip tone={row.isActive ? "success" : "neutral"}>
+                            {product.status}
+                          </StatusChip>
+                        </td>
+                        <td className="px-3 py-2.5 align-middle text-muted">
+                          <ChevronRight className="size-4" aria-hidden />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
 
         {query.isSuccess && totalCount > 0 ? (
@@ -734,6 +851,78 @@ export function CatalogProductsPage() {
   );
 }
 
+type CatalogProductListRow = {
+  categoryName: string | undefined;
+  secondaryMeta: string;
+  idsMeta: string;
+  usageLabel: string;
+  scopeBadge: string | null;
+  offeringLabel: string | null;
+  displayPrice: number | null | undefined;
+  priceOriginLabel: string | null;
+  stockCaption: string;
+  stockTone: string;
+  isActive: boolean;
+};
+
+function buildCatalogProductListRow(input: {
+  product: PosCatalogProductDto;
+  categoryNameById: Map<string, string>;
+  branchNameById: Map<string, string>;
+  currentBranchId: string | null | undefined;
+  currentBranchName: string | null;
+  t: (key: MessageKey) => string;
+}): CatalogProductListRow {
+  const { product, categoryNameById, branchNameById, currentBranchId, currentBranchName, t } =
+    input;
+  const categoryName = product.categoryId
+    ? categoryNameById.get(product.categoryId)
+    : undefined;
+  const usage = resolveBusinessUsage(product);
+  const isActive = product.status.toLowerCase() === "active";
+  const isStandard = isOrganizationStandardProduct(product);
+  const isLocal = isBranchLocalProduct(product);
+  const originName = product.originBranchId
+    ? (branchNameById.get(product.originBranchId) ?? null)
+    : null;
+  const scopeBadge = isStandard
+    ? t("catalog.governance.organizationProduct")
+    : isLocal
+      ? originName && currentBranchName && product.originBranchId === currentBranchId
+        ? t("catalog.governance.branchProductThisBranch")
+        : originName
+          ? t("catalog.governance.branchProductOrigin").replace("{branch}", originName)
+          : t("catalog.governance.branchProduct")
+      : null;
+  const offeringLabel =
+    isStandard && product.isOfferedAtBranch === false
+      ? t("catalog.governance.notOfferedAtBranch")
+      : null;
+  const displayPrice = resolveCatalogDisplayPrice(product);
+  const priceOrigin = resolveCatalogPriceOrigin(product, Boolean(currentBranchId));
+  const priceOriginLabel =
+    priceOrigin === "branchOverride"
+      ? t("catalog.productListPrice.branchPrice")
+      : priceOrigin === "organizationDefault"
+        ? t("catalog.productListPrice.orgDefault")
+        : null;
+  const stockDisplay = resolveCatalogStockDisplay(product);
+
+  return {
+    categoryName,
+    secondaryMeta: [product.brandName, categoryName].filter(Boolean).join(" · "),
+    idsMeta: [product.sku, product.barcode].filter(Boolean).join(" · "),
+    usageLabel: t(businessUsageLabelKey(usage)),
+    scopeBadge,
+    offeringLabel,
+    displayPrice,
+    priceOriginLabel,
+    stockCaption: catalogStockCaption(t, stockDisplay),
+    stockTone: stockDisplay.tone,
+    isActive,
+  };
+}
+
 type CatalogCategoryBrandSelectsProps = {
   categoryId: string;
   brandId: string;
@@ -761,12 +950,20 @@ function CatalogCategoryBrandSelects({
   allBrandsLabel,
   stacked = false,
 }: CatalogCategoryBrandSelectsProps) {
+  const fieldClass = stacked
+    ? "catalog-form-field catalog-page__taxonomy-field flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] font-medium"
+    : "catalog-page__taxonomy-field catalog-page__filter-inline flex min-w-0 items-center gap-2 text-[length:var(--exits-text-sm)]";
+
   const fields = (
     <>
-      <label className="catalog-form-field catalog-page__taxonomy-field flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] font-medium">
-        {categoryLabel}
+      <label className={fieldClass}>
+        {stacked ? (
+          categoryLabel
+        ) : (
+          <span className="catalog-page__filter-section-label">{categoryLabel}</span>
+        )}
         <select
-          className="catalog-form-select"
+          className={cn("catalog-form-select", !stacked && "min-w-0 flex-1")}
           data-testid="catalog-filter-category"
           value={categoryId}
           onChange={(event) => onCategoryChange(event.target.value)}
@@ -779,10 +976,14 @@ function CatalogCategoryBrandSelects({
           ))}
         </select>
       </label>
-      <label className="catalog-form-field catalog-page__taxonomy-field flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)] font-medium">
-        {brandLabel}
+      <label className={fieldClass}>
+        {stacked ? (
+          brandLabel
+        ) : (
+          <span className="catalog-page__filter-section-label">{brandLabel}</span>
+        )}
         <select
-          className="catalog-form-select"
+          className={cn("catalog-form-select", !stacked && "min-w-0 flex-1")}
           data-testid="catalog-filter-brand"
           value={brandId}
           onChange={(event) => onBrandChange(event.target.value)}
@@ -799,7 +1000,11 @@ function CatalogCategoryBrandSelects({
   );
 
   if (stacked) {
-    return <div className="catalog-page__taxonomy catalog-page__taxonomy--stacked flex min-w-0 flex-col gap-2">{fields}</div>;
+    return (
+      <div className="catalog-page__taxonomy catalog-page__taxonomy--stacked flex min-w-0 flex-col gap-2">
+        {fields}
+      </div>
+    );
   }
 
   return fields;
@@ -935,7 +1140,7 @@ function CatalogProductFilterChipBars({
   return (
     <div className="catalog-page__filter-groups flex min-w-0 flex-col gap-2" data-testid="catalog-filter-groups">
       <div className="catalog-page__filter-row catalog-page__filter-row--scope-status">
-        <section className="catalog-page__filter-section catalog-page__filter-section--scope min-w-0">
+        <section className="catalog-page__filter-section catalog-page__filter-section--scope catalog-page__filter-inline min-w-0">
           <p className="catalog-page__filter-section-label">{t("catalog.filters.scope")}</p>
           <CatalogFilterScrollRow
             ariaLabel={t("catalog.filters.scope")}
@@ -944,7 +1149,7 @@ function CatalogProductFilterChipBars({
           />
         </section>
         {includeStatus ? (
-          <section className="catalog-page__filter-section catalog-page__filter-section--status min-w-0">
+          <section className="catalog-page__filter-section catalog-page__filter-section--status catalog-page__filter-inline min-w-0">
             <p className="catalog-page__filter-section-label">{t("catalog.filters.status")}</p>
             <CatalogFilterScrollRow
               ariaLabel={t("catalog.filters.status")}
@@ -955,7 +1160,7 @@ function CatalogProductFilterChipBars({
         ) : null}
       </div>
       {includeUsage ? (
-        <section className="catalog-page__filter-section catalog-page__filter-section--usage">
+        <section className="catalog-page__filter-section catalog-page__filter-section--usage catalog-page__filter-inline">
           <p className="catalog-page__filter-section-label">{t("catalog.filters.use")}</p>
           <CatalogFilterScrollRow
             ariaLabel={t("catalog.filters.use")}
