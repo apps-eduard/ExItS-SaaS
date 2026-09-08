@@ -3888,6 +3888,15 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "production.setups.addMaterial": "Magdugang sang materyal",
 
+  "production.setups.addIngredient": "+ Magdugang sang sangkap",
+  "production.setups.closeIngredientPicker": "Sirado",
+  "production.setups.tableIngredient": "Sangkap",
+  "production.setups.tableQty": "Kadamuon",
+  "production.setups.tableUnit": "Unit",
+  "production.setups.tableAvailable": "Available",
+  "production.setups.tableActions": "Mga aksyon",
+  "production.setups.availableShort": "Available {qty} {uom}",
+
   "production.setups.removeMaterial": "Kuhaon",
 
   "production.setups.materialQuantity": "Kadamuon sang materyal",

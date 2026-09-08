@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const here = dirname(fileURLToPath(import.meta.url));
 
 describe("POS-PRODUCTION-SETUP-MATERIAL-PICKER-UX-V1", () => {
-  it("shows materials without requiring search and uses ingredient filter", () => {
+  it("shows materials via add-ingredient picker and uses ingredient filter", () => {
     const source = readFileSync(resolve(here, "ProductionDefinitionFormPage.tsx"), "utf8");
     expect(source).toContain("canBeUsedAsIngredient: true");
     expect(source).toContain('data-testid="production-setup-material-browser"');
@@ -14,6 +14,8 @@ describe("POS-PRODUCTION-SETUP-MATERIAL-PICKER-UX-V1", () => {
     expect(source).toMatch(/search:\s*debouncedMaterial\s*\|\|\s*undefined/);
     expect(source).toContain("ProductionMaterialQuantitySheet");
     expect(source).toContain('data-testid="production-setup-selected-materials"');
+    expect(source).toContain('data-testid="production-setup-add-ingredient"');
+    expect(source).toContain("materialPickerOpen");
     expect(source).toContain("production.setups.selectedCount");
     expect(source).toContain("production.setups.editMaterial");
     expect(source).toContain("production.setups.removeMaterial");

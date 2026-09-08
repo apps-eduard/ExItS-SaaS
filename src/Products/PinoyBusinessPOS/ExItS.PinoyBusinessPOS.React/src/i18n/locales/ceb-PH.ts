@@ -3888,6 +3888,15 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "production.setups.addMaterial": "Idugang ang materyal",
 
+  "production.setups.addIngredient": "+ Idugang ang sangkap",
+  "production.setups.closeIngredientPicker": "Sirado",
+  "production.setups.tableIngredient": "Sangkap",
+  "production.setups.tableQty": "Kadaghan",
+  "production.setups.tableUnit": "Unit",
+  "production.setups.tableAvailable": "Available",
+  "production.setups.tableActions": "Mga aksyon",
+  "production.setups.availableShort": "Available {qty} {uom}",
+
   "production.setups.removeMaterial": "Kuhaa",
 
   "production.setups.materialQuantity": "Kadaghan sa materyal",

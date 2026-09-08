@@ -167,6 +167,22 @@ export function draftDisplayQuantity(draft: ProductionMaterialDraft): string {
   return formatQuantityDisplay(draft.quantity);
 }
 
+export function draftQuantityParts(draft: ProductionMaterialDraft): { qty: string; unit: string } {
+  return { qty: draftDisplayQuantity(draft), unit: draft.displayUom };
+}
+
 export function draftQuantityLine(draft: ProductionMaterialDraft): string {
   return `${draftDisplayQuantity(draft)} ${draft.displayUom}`;
+}
+
+/** Compact availability label for recipe table cells (e.g. "9 kg"). */
+export function formatMaterialAvailableCell(product: PosCatalogProductDto | null | undefined): string {
+  if (!product) {
+    return "—";
+  }
+  const stock = formatMaterialAvailableStock(product);
+  if (!stock) {
+    return "—";
+  }
+  return `${formatQuantityDisplay(stock.qty)} ${stock.uom}`;
 }

@@ -1,4 +1,4 @@
-import { en } from "./en";
+ï»¿import { en } from "./en";
 
 
 
@@ -3888,6 +3888,15 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "production.setups.addMaterial": "Magdagdag ng materyal",
 
+  "production.setups.addIngredient": "+ Magdagdag ng sangkap",
+  "production.setups.closeIngredientPicker": "Isara",
+  "production.setups.tableIngredient": "Sangkap",
+  "production.setups.tableQty": "Dami",
+  "production.setups.tableUnit": "Yunit",
+  "production.setups.tableAvailable": "Available",
+  "production.setups.tableActions": "Mga aksyon",
+  "production.setups.availableShort": "Available {qty} {uom}",
+
   "production.setups.removeMaterial": "Alisin",
 
   "production.setups.materialQuantity": "Dami ng materyal",
@@ -3950,7 +3959,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.setups.noEligibleMaterials": "Walang eligible na materyal",
   "production.setups.noEligibleMaterialsDetail": "Markahan ang produkto bilang ingredient (Can be used as ingredient) sa catalog.",
   "production.setups.loadMoreMaterials": "Mag-load pa ng materyal",
-  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients — then save to create the finished product.",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients ï¿½ then save to create the finished product.",
   "production.recipes.standardYield": "Standard yield",
   "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
   "production.recipes.saveAsRecipe": "Save as production recipe",
@@ -3970,7 +3979,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedBatchCost": "Estimated batch material cost",
   "production.recipes.estimatedUnitCost": "{cost} / {uom}",
   "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
-  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown — estimate is partial.",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown ï¿½ estimate is partial.",
   "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
   "production.recipes.createProductAndSave": "Create product & save recipe",
   "production.recipes.createOutputFailed": "Could not create the output product.",
@@ -3983,7 +3992,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.produceAction": "Produce",
   "production.recipes.browseCatalogToEnable": "Browse catalog products",
   "production.recipes.showTaggedIngredientsOnly": "Show tagged ingredients only",
-  "production.recipes.browseCatalogHint": "Pick a product — it will be marked as an ingredient when you add it.",
+  "production.recipes.browseCatalogHint": "Pick a product ï¿½ it will be marked as an ingredient when you add it.",
   "production.recipes.willEnableIngredient": "Enable as ingredient",
   "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
   "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
@@ -4014,7 +4023,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.produce.required": "Kailangan",
   "production.produce.shortBy": "Kulang ng {quantity}",
   "production.produce.cannotProduce": "Hindi makapag-produce ng {qty}.",
-  "production.produce.cannotProduceShortage": "Hindi makapag-produce — kulang ang stock ng isa o higit pang ingredient.",
+  "production.produce.cannotProduceShortage": "Hindi makapag-produce ï¿½ kulang ang stock ng isa o higit pang ingredient.",
   "production.produce.addIngredient": "+ Magdagdag ng ingredient",
   "production.produce.extraBadge": "Extra (run na ito lang)",
   "production.produce.extraExceedsAvailable": "Lampas sa available stock ang {name} ({available}).",
@@ -9665,7 +9674,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "signIn.localValidationResetBullet3": "migrate and reseed",
   "signIn.localValidationResetBullet4": "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
   "signIn.localValidationResetCannotUndo": "This cannot be undone.",
-  "signIn.localValidationSupervisorOffline": "Supervisor offline — start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationSupervisorOffline": "Supervisor offline ï¿½ start Local Validation to enable Restart / Reset.",
   "signIn.localValidationControlsLocalhostOnly": "Restart and Reset are available only when browsing via localhost.",
 
   "signIn.error": "Hindi nag-sign in. Suriin ang credentials at subukang muli.",

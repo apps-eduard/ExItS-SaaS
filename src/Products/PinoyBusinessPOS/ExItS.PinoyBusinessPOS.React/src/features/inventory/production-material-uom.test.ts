@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   draftQuantityLine,
+  draftQuantityParts,
   formatMaterialAvailableCaption,
+  formatMaterialAvailableCell,
   isEligibleProductionMaterial,
   isWeightMaterial,
   normalizeMaterialQuantityInput,
@@ -150,6 +152,25 @@ describe("production-material-uom", () => {
         weightInputUnit: "g",
       }),
     ).toBe("500 g");
+  });
+
+  it("splits draft quantity parts and available cells for recipe table", () => {
+    expect(
+      draftQuantityParts({
+        materialProductId: "1",
+        name: "Egg",
+        quantity: 6,
+        displayUom: "Piece",
+      }),
+    ).toEqual({ qty: "6", unit: "Piece" });
+
+    const egg = product({
+      name: "Egg",
+      unitOfMeasure: "Piece",
+      isTracked: true,
+      branchAvailableQuantity: 42,
+    });
+    expect(formatMaterialAvailableCell(egg)).toBe("42 Piece");
   });
 
   it("rejects invalid decimal weight conversion", () => {

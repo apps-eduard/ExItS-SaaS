@@ -1,4 +1,4 @@
-import { en } from "./en";
+ï»¿import { en } from "./en";
 
 
 
@@ -3888,6 +3888,15 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "production.setups.addMaterial": "Inayon ti material",
 
+  "production.setups.addIngredient": "+ Inayon ti sangkap",
+  "production.setups.closeIngredientPicker": "Irikep",
+  "production.setups.tableIngredient": "Sangkap",
+  "production.setups.tableQty": "Kaadu",
+  "production.setups.tableUnit": "Unit",
+  "production.setups.tableAvailable": "Available",
+  "production.setups.tableActions": "Dagiti aksion",
+  "production.setups.availableShort": "Available {qty} {uom}",
+
   "production.setups.removeMaterial": "Ikkaten",
 
   "production.setups.materialQuantity": "Kaadu ti material",
@@ -3950,7 +3959,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.setups.noEligibleMaterials": "Awan ti eligible a materials",
   "production.setups.noEligibleMaterialsDetail": "Markaan ti produkto kas ingredient (Can be used as ingredient) iti catalog.",
   "production.setups.loadMoreMaterials": "Agload pay kadagiti materials",
-  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients — then save to create the finished product.",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients ï¿½ then save to create the finished product.",
   "production.recipes.standardYield": "Standard yield",
   "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
   "production.recipes.saveAsRecipe": "Save as production recipe",
@@ -3970,7 +3979,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedBatchCost": "Estimated batch material cost",
   "production.recipes.estimatedUnitCost": "{cost} / {uom}",
   "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
-  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown — estimate is partial.",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown ï¿½ estimate is partial.",
   "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
   "production.recipes.createProductAndSave": "Create product & save recipe",
   "production.recipes.createOutputFailed": "Could not create the output product.",
@@ -3983,7 +3992,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.recipes.produceAction": "Produce",
   "production.recipes.browseCatalogToEnable": "Browse catalog products",
   "production.recipes.showTaggedIngredientsOnly": "Show tagged ingredients only",
-  "production.recipes.browseCatalogHint": "Pick a product — it will be marked as an ingredient when you add it.",
+  "production.recipes.browseCatalogHint": "Pick a product ï¿½ it will be marked as an ingredient when you add it.",
   "production.recipes.willEnableIngredient": "Enable as ingredient",
   "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
   "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
@@ -4014,7 +4023,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "production.produce.required": "Masapul",
   "production.produce.shortBy": "Kurang iti {quantity}",
   "production.produce.cannotProduce": "Saan a mabalin a produce ti {qty}.",
-  "production.produce.cannotProduceShortage": "Saan a mabalin a produce — kurang ti stock ti maysa wenno adu nga ingredient.",
+  "production.produce.cannotProduceShortage": "Saan a mabalin a produce ï¿½ kurang ti stock ti maysa wenno adu nga ingredient.",
   "production.produce.addIngredient": "+ Agnayon iti ingredient",
   "production.produce.extraBadge": "Extra (daytoy a run laeng)",
   "production.produce.extraExceedsAvailable": "Lumabes ti {name} iti available stock ({available}).",
@@ -9667,7 +9676,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "signIn.localValidationResetBullet3": "migrate and reseed",
   "signIn.localValidationResetBullet4": "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
   "signIn.localValidationResetCannotUndo": "This cannot be undone.",
-  "signIn.localValidationSupervisorOffline": "Supervisor offline — start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationSupervisorOffline": "Supervisor offline ï¿½ start Local Validation to enable Restart / Reset.",
   "signIn.localValidationControlsLocalhostOnly": "Restart and Reset are available only when browsing via localhost.",
 
   "signIn.error": "Napaay ti panagsign in. Kitaen dagiti credentials ken padasen manen.",
