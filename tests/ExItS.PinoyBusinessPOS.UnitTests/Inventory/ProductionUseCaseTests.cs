@@ -71,6 +71,71 @@ public sealed class ProductionUseCaseTests
     }
 
     [Fact]
+    public async Task Non_ingredient_product_is_rejected_as_definition_component()
+    {
+        var fx = new Fixture();
+        await fx.AddProductAsync(fx.FlourId, "Battery", opening: 12m, track: true);
+        // Default create leaves CanBeUsedAsIngredient=false (ordinary resale).
+        await fx.AddProductAsync(fx.BreadId, "Pandesal", 0m, track: true, openingUnitCost: null);
+        fx.Products.Items.Single(p => p.Id.Value == fx.BreadId)
+            .UpdateUsage(ProductUsageCapabilities.MadeProduct, Utc);
+
+        var battery = fx.Products.Items.Single(p => p.Id.Value == fx.FlourId);
+        Assert.False(battery.CanBeUsedAsIngredient);
+        Assert.True(fx.Inventory.Accounts.Single(a => a.ProductId.Value == fx.FlourId).IsTracked);
+
+        var definition = await fx.CreateDefinition.ExecuteAsync(
+            OrgA,
+            new CreateProductionDefinitionRequest(
+                "Invalid battery recipe",
+                fx.BreadId,
+                1m,
+                [new CreateProductionComponentRequest(fx.FlourId, 1m)]),
+            Actor);
+
+        Assert.Equal(DomainErrorCodes.ProductionComponentNotEligible, definition.ErrorCode);
+        Assert.Contains("Battery", definition.ErrorMessage);
+        Assert.False(battery.CanBeUsedAsIngredient);
+    }
+
+    [Fact]
+    public async Task Zero_stock_tracked_ingredient_may_define_recipe_but_produce_blocks()
+    {
+        var fx = await SeedAsync(flourOnHand: 0m);
+        var flour = fx.Products.Items.Single(p => p.Id.Value == fx.FlourId);
+        Assert.True(flour.CanBeUsedAsIngredient);
+        Assert.Equal(0m, fx.Inventory.GetOnHand(fx.FlourId));
+
+        var definition = await CreateDefinitionAsync(fx, outputQty: 100m, flourQty: 10m);
+        Assert.NotEqual(Guid.Empty, definition.ProductionDefinitionId);
+        Assert.True(flour.CanBeUsedAsIngredient);
+        Assert.True(fx.Inventory.Accounts.Single(a => a.ProductId.Value == fx.FlourId).IsTracked);
+
+        var run = await fx.CreateRun.ExecuteAsync(
+            OrgA,
+            new CreateProductionRunRequest(definition.ProductionDefinitionId, OutputQuantity: 100m),
+            Actor);
+        Assert.False(run.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, run.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Create_definition_does_not_mutate_material_capability_or_tracking()
+    {
+        var fx = await SeedAsync(flourOnHand: 20m);
+        var flour = fx.Products.Items.Single(p => p.Id.Value == fx.FlourId);
+        var beforeIngredient = flour.CanBeUsedAsIngredient;
+        var beforeTracked = fx.Inventory.Accounts.Single(a => a.ProductId.Value == fx.FlourId).IsTracked;
+        var beforeOnHand = fx.Inventory.GetOnHand(fx.FlourId);
+
+        _ = await CreateDefinitionAsync(fx, outputQty: 50m, flourQty: 5m);
+
+        Assert.Equal(beforeIngredient, flour.CanBeUsedAsIngredient);
+        Assert.Equal(beforeTracked, fx.Inventory.Accounts.Single(a => a.ProductId.Value == fx.FlourId).IsTracked);
+        Assert.Equal(beforeOnHand, fx.Inventory.GetOnHand(fx.FlourId));
+    }
+
+    [Fact]
     public async Task Produce_scales_materials_and_increases_output()
     {
         var fx = await SeedAsync();

@@ -96,7 +96,8 @@ describe("POS-PRODUCTION-RECIPE-INGREDIENTS-TABLE-UX-V1", () => {
   it("excludes already-selected products from picker and requires eligible/tracked", () => {
     expect(source).toContain("selectedIds.has(p.productId)");
     expect(source).toContain("isEligibleProductionMaterial");
-    expect(source).toContain("canBeUsedAsIngredient: browseCatalogIngredients ? undefined : true");
+    expect(source).toContain("canBeUsedAsIngredient: true");
+    expect(source).not.toContain("browseCatalogIngredients");
   });
 
   it("mobile uses compact stacked rows without forcing desktop table", () => {

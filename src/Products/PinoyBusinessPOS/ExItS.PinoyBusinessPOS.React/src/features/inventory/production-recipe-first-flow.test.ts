@@ -16,8 +16,10 @@ describe("POS-PRODUCTION-RECIPE-FIRST-TIME-SETUP-AND-REUSE-V1", () => {
     expect(form).toContain("outputCreatedOnSaveHint");
     // Create mode must not force catalog output picker upfront.
     expect(form).toContain("showOutputPicker = isEdit && !outputProductId");
-    expect(form).toContain("browseCatalogIngredients");
-    expect(form).toContain("ensureCanBeUsedAsIngredient");
+    // Ingredient capability is configured in Products — never auto-converted from Recipe.
+    expect(form).not.toContain("browseCatalogIngredients");
+    expect(form).not.toContain("ensureCanBeUsedAsIngredient");
+    expect(form).toContain("isEligibleProductionMaterial");
     expect(form).toContain("/inventory/production/produce?definitionId=");
   });
 

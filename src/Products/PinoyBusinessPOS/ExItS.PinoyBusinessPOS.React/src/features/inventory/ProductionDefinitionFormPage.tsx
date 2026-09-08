@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { enableInventoryTracking } from "@/api/pos/pos-inventory-client";
-import { listCatalogProducts, getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
+import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   DEFAULT_CATALOG_UNIT_OF_MEASURE,
@@ -63,37 +62,6 @@ const YIELD_UOM_OPTIONS: PosUnitOfMeasureCode[] = [
   "Box",
 ];
 
-async function ensureCanBeUsedAsIngredient(
-  workspace: { organizationId: string; branchId: string },
-  product: PosCatalogProductDto,
-): Promise<PosCatalogProductDto> {
-  let next = product;
-  if (product.canBeUsedAsIngredient !== true) {
-    next = await updateCatalogProduct(workspace, product.productId, {
-      name: product.name,
-      unitOfMeasure: product.unitOfMeasure,
-      sellingPrice: product.sellingPrice,
-      description: product.description ?? null,
-      sku: product.sku ?? null,
-      barcode: product.barcode ?? null,
-      categoryId: product.categoryId ?? null,
-      brandId: product.brandId ?? null,
-      sellingMode: product.sellingMode,
-      canBeSold: product.canBeSold ?? true,
-      canBeUsedAsIngredient: true,
-      isProduced: product.isProduced ?? false,
-      expectedUpdatedAtUtc: product.updatedAtUtc,
-      tracksExpiration: product.tracksExpiration ?? false,
-      expirationWarningDays: product.expirationWarningDays ?? null,
-    });
-  }
-  if (next.isTracked !== true) {
-    await enableInventoryTracking(workspace, next.productId, { openingQuantity: 0 });
-    next = { ...next, isTracked: true, canBeUsedAsIngredient: true };
-  }
-  return next;
-}
-
 export function ProductionDefinitionFormPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -128,9 +96,6 @@ export function ProductionDefinitionFormPage() {
   const [qtySheetProduct, setQtySheetProduct] = useState<PosCatalogProductDto | null>(null);
   const [qtySheetEditing, setQtySheetEditing] = useState(false);
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
-  /** When true, browse Active catalog and enable ingredient capability on add. */
-  const [browseCatalogIngredients, setBrowseCatalogIngredients] = useState(false);
-  const [enablingIngredient, setEnablingIngredient] = useState(false);
   /** Ingredient picker collapsed by default; opened via + Add ingredient. */
   const [materialPickerOpen, setMaterialPickerOpen] = useState(false);
   /** Catalog snapshots for selected rows (availability / edit sheet). */
@@ -272,7 +237,6 @@ export function ProductionDefinitionFormPage() {
       workspace?.branchId,
       debouncedMaterial,
       materialPage,
-      browseCatalogIngredients,
     ],
     enabled: Boolean(workspace) && online && allowManage && materialPickerOpen,
     queryFn: ({ signal }) =>
@@ -281,7 +245,7 @@ export function ProductionDefinitionFormPage() {
         {
           search: debouncedMaterial || undefined,
           status: "Active",
-          canBeUsedAsIngredient: browseCatalogIngredients ? undefined : true,
+          canBeUsedAsIngredient: true,
           page: materialPage,
           pageSize: 40,
         },
@@ -289,10 +253,6 @@ export function ProductionDefinitionFormPage() {
       ),
   });
 
-  useEffect(() => {
-    setMaterialPage(1);
-    setMaterialPages([]);
-  }, [browseCatalogIngredients]);
   useEffect(() => {
     const pageItems = materialPickerQuery.data?.items;
     if (!pageItems) {
@@ -322,41 +282,20 @@ export function ProductionDefinitionFormPage() {
       if (p.productId === outputProductId) {
         return false;
       }
-      // Prefer excluding already-selected so picker does not duplicate table rows.
       if (selectedIds.has(p.productId)) {
         return false;
       }
-      if (browseCatalogIngredients) {
-        return true;
-      }
+      // Strict: Active + CanBeUsedAsIngredient + tracked. Never fall back to full catalog.
       return isEligibleProductionMaterial(p);
     });
-  }, [
-    materialPages,
-    outputProductId,
-    browseCatalogIngredients,
-    selectedIds,
-  ]);
-
-  // If the org has no tagged ingredients yet, surface catalog browse automatically.
-  useEffect(() => {
-    if (
-      !browseCatalogIngredients &&
-      materialPickerQuery.isSuccess &&
-      (materialPickerQuery.data?.totalCount ?? 0) === 0 &&
-      !debouncedMaterial
-    ) {
-      setBrowseCatalogIngredients(true);
-    }
-  }, [
-    browseCatalogIngredients,
-    materialPickerQuery.isSuccess,
-    materialPickerQuery.data?.totalCount,
-    debouncedMaterial,
-  ]);
+  }, [materialPages, outputProductId, selectedIds]);
 
   const materialTotalCount = materialPickerQuery.data?.totalCount ?? 0;
   const canLoadMoreMaterials = materialPages.length < materialTotalCount;
+  const noEligibleIngredients =
+    materialPickerQuery.isSuccess &&
+    !debouncedMaterial &&
+    materialTotalCount === 0;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -415,6 +354,11 @@ export function ProductionDefinitionFormPage() {
       setError(t("production.setups.materialAsOutputForbidden"));
       return;
     }
+    // Recipe draft must never convert catalog products. Only already-eligible materials.
+    if (!editing && !isEligibleProductionMaterial(product)) {
+      setError(t("production.setups.materialNotEligible"));
+      return;
+    }
     setQtySheetProduct(product);
     setQtySheetEditing(editing);
     setError(null);
@@ -454,33 +398,27 @@ export function ProductionDefinitionFormPage() {
       }
     }
 
-    try {
-      if (sourceProduct.canBeUsedAsIngredient !== true) {
-        setEnablingIngredient(true);
-        sourceProduct = await ensureCanBeUsedAsIngredient(workspace, sourceProduct);
-      }
-      setMaterials((prev) => [
-        ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
-        draft,
-      ]);
-      setMaterialCatalogById((prev) => ({
-        ...prev,
-        [sourceProduct.productId]: sourceProduct,
-      }));
+    // Side-effect free: new materials must already be eligible. Never mutate catalog.
+    if (!qtySheetEditing && !isEligibleProductionMaterial(sourceProduct)) {
+      setError(t("production.setups.materialNotEligible"));
       setQtySheetProduct(null);
       setQtySheetEditing(false);
-      setMaterialPickerOpen(false);
-      setMaterialSearch("");
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("production.recipes.enableIngredientFailed"))
-          : t("production.recipes.enableIngredientFailed"),
-      );
-    } finally {
-      setEnablingIngredient(false);
+      return;
     }
+
+    setMaterials((prev) => [
+      ...prev.filter((m) => m.materialProductId !== draft.materialProductId),
+      draft,
+    ]);
+    setMaterialCatalogById((prev) => ({
+      ...prev,
+      [sourceProduct.productId]: sourceProduct,
+    }));
+    setQtySheetProduct(null);
+    setQtySheetEditing(false);
+    setMaterialPickerOpen(false);
+    setMaterialSearch("");
+    setError(null);
   }
 
   function removeMaterial(productId: string) {
@@ -1060,35 +998,33 @@ export function ProductionDefinitionFormPage() {
               data-testid="production-setup-material-search"
             />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant={browseCatalogIngredients ? "default" : "outline"}
-                disabled={!allowManage || !online}
-                data-testid="production-setup-browse-catalog-ingredients"
-                onClick={() => setBrowseCatalogIngredients((v) => !v)}
+            {noEligibleIngredients ? (
+              <div
+                className="flex flex-col gap-2"
+                data-testid="production-setup-no-eligible-ingredients"
               >
-                {browseCatalogIngredients
-                  ? t("production.recipes.showTaggedIngredientsOnly")
-                  : t("production.recipes.browseCatalogToEnable")}
-              </Button>
-              {browseCatalogIngredients ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("production.recipes.browseCatalogHint")}
-                </p>
-              ) : null}
-            </div>
+                <EmptyState
+                  title={t("production.setups.noProductionIngredientsYet")}
+                  detail={t("production.setups.noProductionIngredientsDetail")}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-fit"
+                  data-testid="production-setup-manage-products"
+                  onClick={() => navigate("/catalog")}
+                >
+                  {t("production.setups.manageProducts")}
+                </Button>
+              </div>
+            ) : null}
 
-            {materialCandidates.length === 0 && materialPickerQuery.isSuccess ? (
+            {!noEligibleIngredients &&
+            materialCandidates.length === 0 &&
+            materialPickerQuery.isSuccess ? (
               <EmptyState
                 title={t("production.setups.noEligibleMaterials")}
-                detail={
-                  debouncedMaterial
-                    ? t("production.setups.noProductsDetail")
-                    : browseCatalogIngredients
-                      ? t("production.setups.noProductsDetail")
-                      : t("production.setups.noEligibleMaterialsDetail")
-                }
+                detail={t("production.setups.noProductsDetail")}
               />
             ) : null}
 
@@ -1096,43 +1032,40 @@ export function ProductionDefinitionFormPage() {
               <LoadingState label={t("production.loading")} />
             ) : null}
 
-            <ul
-              className="m-0 grid max-h-64 list-none grid-cols-1 gap-1.5 overflow-y-auto p-0"
-              data-testid="production-setup-material-browser"
-            >
-              {materialCandidates.map((product) => {
-                const available = formatMaterialAvailableCaption(product, t("transfer.available"));
-                const needsEnable = product.canBeUsedAsIngredient !== true;
-                return (
-                  <li key={product.productId}>
-                    <button
-                      type="button"
-                      disabled={!allowManage || !online || saving || enablingIngredient}
-                      data-testid={`production-setup-material-${product.productId}`}
-                      data-selected="false"
-                      className={cn(
-                        "production-material-pick flex w-full flex-col gap-0.5 rounded-md border border-border bg-surface p-2.5 text-left",
-                      )}
-                      onClick={() => openMaterialSheet(product, false)}
-                    >
-                      <span className="flex items-start justify-between gap-2">
+            {!noEligibleIngredients ? (
+              <ul
+                className="m-0 grid max-h-64 list-none grid-cols-1 gap-1.5 overflow-y-auto p-0"
+                data-testid="production-setup-material-browser"
+              >
+                {materialCandidates.map((product) => {
+                  const available = formatMaterialAvailableCaption(
+                    product,
+                    t("transfer.available"),
+                  );
+                  return (
+                    <li key={product.productId}>
+                      <button
+                        type="button"
+                        disabled={!allowManage || !online || saving}
+                        data-testid={`production-setup-material-${product.productId}`}
+                        data-selected="false"
+                        className={cn(
+                          "production-material-pick flex w-full flex-col gap-0.5 rounded-md border border-border bg-surface p-2.5 text-left",
+                        )}
+                        onClick={() => openMaterialSheet(product, false)}
+                      >
                         <span className="min-w-0 font-medium">{product.name}</span>
-                        {needsEnable ? (
-                          <span className="shrink-0 text-[length:var(--exits-text-xs)] text-muted">
-                            {t("production.recipes.willEnableIngredient")}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-[length:var(--exits-text-sm)] text-muted">
-                        {available ?? materialBaseUomLabel(product)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        <span className="text-[length:var(--exits-text-sm)] text-muted">
+                          {available ?? materialBaseUomLabel(product)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
 
-            {canLoadMoreMaterials ? (
+            {!noEligibleIngredients && canLoadMoreMaterials ? (
               <Button
                 type="button"
                 variant="outline"
