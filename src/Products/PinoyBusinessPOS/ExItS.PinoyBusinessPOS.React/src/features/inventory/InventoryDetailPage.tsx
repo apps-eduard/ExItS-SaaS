@@ -1269,6 +1269,16 @@ export function InventoryDetailPage() {
                     <div className="inventory-adjust-form__actions">
                       <Button
                         type="button"
+                        variant="ghost"
+                        className="inventory-adjust-form__disable w-fit"
+                        disabled={disableMutation.isPending || !canDisableInventory}
+                        onClick={() => disableMutation.mutate()}
+                        data-testid="inventory-disable"
+                      >
+                        {t("inventory.disable")}
+                      </Button>
+                      <Button
+                        type="button"
                         className="inventory-adjust-form__submit"
                         disabled={
                           adjusting ||
@@ -1286,17 +1296,6 @@ export function InventoryDetailPage() {
                         {adjustApplyLabel}
                       </Button>
                     </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-fit"
-                      disabled={disableMutation.isPending || !canDisableInventory}
-                      onClick={() => disableMutation.mutate()}
-                      data-testid="inventory-disable"
-                    >
-                      {t("inventory.disable")}
-                    </Button>
                   </Card>
                 </div>
               ) : null}

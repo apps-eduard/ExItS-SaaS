@@ -3316,12 +3316,23 @@ html:has(.admin-shell) #root {
 
 .inventory-adjust-form__actions {
   display: flex;
-  justify-content: stretch;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 0.15rem;
 }
 
+.inventory-adjust-form__disable {
+  flex: 0 1 auto;
+  justify-self: start;
+}
+
 .inventory-adjust-form__submit {
-  width: 100%;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 9.5rem;
+  margin-inline-start: auto;
 }
 
 .inventory-detail-page .inventory-direction-option {
@@ -3337,15 +3348,6 @@ html:has(.admin-shell) #root {
 @media (min-width: 768px) {
   .inventory-detail-page {
     gap: 0.75rem;
-  }
-
-  .inventory-adjust-form__actions {
-    justify-content: flex-end;
-  }
-
-  .inventory-adjust-form__submit {
-    width: auto;
-    min-width: 9.5rem;
   }
 
   .inventory-expiration-summary-strip {
