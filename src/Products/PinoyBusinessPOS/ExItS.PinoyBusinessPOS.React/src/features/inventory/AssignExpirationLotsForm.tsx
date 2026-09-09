@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { CalendarClock, Plus } from "lucide-react";
 import {
   enableExpirationTracking,
   type EnableExpirationTrackingResponse,
@@ -304,6 +304,7 @@ export function AssignExpirationLotsForm({
           onClick={() => void onSubmit()}
           data-testid="enable-expiration-submit"
         >
+          {!submitting ? <CalendarClock className="size-4 shrink-0" aria-hidden /> : null}
           {submitting ? t("loading.label") : submitLabel}
         </Button>
         {actionsExtra}
