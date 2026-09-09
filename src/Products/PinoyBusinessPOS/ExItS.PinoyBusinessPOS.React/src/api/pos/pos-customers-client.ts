@@ -29,6 +29,7 @@ export const posCustomerListItemSchema = z.object({
   linkedPersonalPublicUserId: z.string().nullable().optional(),
   linkedBuyerOrganizationId: guidSchema.nullable().optional(),
   linkedBuyerPublicOrganizationId: z.string().nullable().optional(),
+  partyKind: z.string().nullable().optional(),
 });
 
 export const posCustomerDetailSchema = posCustomerListItemSchema;
@@ -174,6 +175,12 @@ export type CreatePosCustomerInput = {
   platformBusinessCustomerId?: string | null;
   /** POS-local Personal ExItS ID (EX-####-####). Required when creating with an ExItS identity. */
   linkedPersonalPublicUserId?: string | null;
+  /** Person (default) or Business party kind. */
+  partyKind?: "Person" | "Business" | string | null;
+  /** Linked ExItS buyer Organization Guid — Business customers only. */
+  linkedBuyerOrganizationId?: string | null;
+  /** Linked public ORG###### for the buyer organization. */
+  linkedBuyerPublicOrganizationId?: string | null;
 };
 
 export type UpdatePosCustomerInput = CreatePosCustomerInput & {
@@ -223,6 +230,13 @@ export function buildCreateCustomerPayload(input: CreatePosCustomerInput) {
       : {}),
     ...(input.linkedPersonalPublicUserId?.trim()
       ? { linkedPersonalPublicUserId: input.linkedPersonalPublicUserId.trim() }
+      : {}),
+    ...(input.partyKind?.trim() ? { partyKind: input.partyKind.trim() } : {}),
+    ...(input.linkedBuyerOrganizationId?.trim()
+      ? { linkedBuyerOrganizationId: input.linkedBuyerOrganizationId.trim() }
+      : {}),
+    ...(input.linkedBuyerPublicOrganizationId?.trim()
+      ? { linkedBuyerPublicOrganizationId: input.linkedBuyerPublicOrganizationId.trim() }
       : {}),
   };
 }

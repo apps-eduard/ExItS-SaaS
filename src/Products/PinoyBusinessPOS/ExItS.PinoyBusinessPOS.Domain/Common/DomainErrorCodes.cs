@@ -171,6 +171,7 @@ public static class DomainErrorCodes
     public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
     public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
+    public const string InvalidCustomerPartyKind = "pos.customer.party_kind.invalid";
     public const string ConnectedSupplierRequiresBusinessQr = "pos.connected_supplier.requires_business_qr";
     public const string ConnectedSupplierQrPurposeMismatch = "pos.connected_supplier.qr_purpose_mismatch";
     public const string ConnectedSupplierBranchRequired = "pos.connected_supplier.branch_required";

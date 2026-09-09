@@ -163,6 +163,9 @@ internal static class CustomerEndpoints
                         body.CustomerId,
                         body.PlatformBusinessCustomerId,
                         body.LinkedPersonalPublicUserId,
+                        body.PartyKind,
+                        body.LinkedBuyerOrganizationId,
+                        body.LinkedBuyerPublicOrganizationId,
                         ct2),
                     POSCustomerQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/customers/{dto.CustomerId:D}", dto),
@@ -435,7 +438,10 @@ public sealed record CreateCustomerRequest(
     string? Notes,
     Guid? CustomerId = null,
     Guid? PlatformBusinessCustomerId = null,
-    string? LinkedPersonalPublicUserId = null);
+    string? LinkedPersonalPublicUserId = null,
+    string? PartyKind = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record UpdateCustomerRequest(
     string DisplayName,

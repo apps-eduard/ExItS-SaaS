@@ -155,6 +155,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_customers_status",
                     "status IN ('Active', 'Inactive')");
+                tb.HasCheckConstraint(
+                    "ck_customers_party_kind",
+                    "party_kind IN ('Person', 'Business')");
             });
 
             entity.HasKey(e => e.Id);
@@ -166,6 +169,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(256);
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(512);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PartyKind)
+                .HasColumnName("party_kind")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue(nameof(CustomerPartyKind.Person));
             entity.Property(e => e.PlatformBusinessCustomerId)
                 .HasColumnName("platform_business_customer_id");
             entity.Property(e => e.LinkedPersonalPublicUserId)

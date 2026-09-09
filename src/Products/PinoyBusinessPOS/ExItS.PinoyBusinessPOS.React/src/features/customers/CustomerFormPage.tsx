@@ -334,12 +334,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             : t("customers.formLede")
         }
         backTo={
-          mode === "edit" && customerId ? `/customers/${customerId}` : pageBackNav.customers.to
+          mode === "edit" && customerId ? `/customers/${customerId}` : "/customers/new"
         }
         backLabel={
           mode === "edit" && customerId
             ? t("customers.backDetail")
-            : t(pageBackNav.customers.labelKey)
+            : t("customers.add")
         }
         backTestId="page-header-back-customers"
       />

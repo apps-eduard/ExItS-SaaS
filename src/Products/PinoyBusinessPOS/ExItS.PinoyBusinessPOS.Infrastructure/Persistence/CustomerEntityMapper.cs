@@ -20,7 +20,12 @@ internal static class CustomerEntityMapper
             record.UpdatedAtUtc,
             record.LinkedPersonalPublicUserId,
             record.LinkedBuyerOrganizationId,
-            record.LinkedBuyerPublicOrganizationId);
+            record.LinkedBuyerPublicOrganizationId,
+            Enum.Parse<CustomerPartyKind>(
+                string.IsNullOrWhiteSpace(record.PartyKind)
+                    ? nameof(CustomerPartyKind.Person)
+                    : record.PartyKind,
+                ignoreCase: true));
 
     public static POSCustomerRecord ToRecord(POSCustomer customer) =>
         new()
@@ -33,6 +38,7 @@ internal static class CustomerEntityMapper
             Address = customer.Address,
             Notes = customer.Notes,
             Status = customer.Status.ToString(),
+            PartyKind = customer.PartyKind.ToString(),
             PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId,
             LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId,
             LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId,
@@ -49,6 +55,7 @@ internal static class CustomerEntityMapper
         record.Address = customer.Address;
         record.Notes = customer.Notes;
         record.Status = customer.Status.ToString();
+        record.PartyKind = customer.PartyKind.ToString();
         record.PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId;
         record.LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId;
         record.LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId;

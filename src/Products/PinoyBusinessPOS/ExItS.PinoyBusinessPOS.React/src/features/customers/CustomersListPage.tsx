@@ -5,6 +5,7 @@ import { ChevronRight, Plus } from "lucide-react";
 import { canCreateCustomer, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   listBusinessCustomers,
+  listRelationships,
   type BusinessCustomer,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
@@ -28,6 +29,11 @@ import { useOrganizationOfflineContext } from "@/offline/organization-offline-co
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { CustomerListConnectionBadges } from "@/features/customers/CustomerListConnectionBadges";
+import {
+  buildBusinessListRows,
+  isBusinessPosCustomer,
+  isPersonPosCustomer,
+} from "@/features/customers/customer-business-list";
 import { parseKindForTest, type KindFilter } from "@/features/customers/customers-kind";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
@@ -101,6 +107,7 @@ export function CustomersListPage() {
   const showBusinesses = allowBusiness && (kind === "all" || kind === "businesses");
   /** Status chips only on People tab — avoids two competing “All” filters on All. */
   const showStatusFilter = kind === "people";
+  const showAdd = allowCreate && (showPeople || kind === "businesses" || kind === "all");
 
   const peopleQuery = useQuery({
     queryKey: [
@@ -111,13 +118,13 @@ export function CustomersListPage() {
       debounced,
       status,
     ],
-    enabled: Boolean(workspace) && online && showPeople,
+    enabled: Boolean(workspace) && online && (showPeople || showBusinesses),
     queryFn: ({ signal }) =>
       listCustomers(
         workspace!,
         {
           search: debounced || undefined,
-          status: status || undefined,
+          status: showPeople ? status || undefined : undefined,
           pageSize: 50,
         },
         signal,
@@ -134,6 +141,12 @@ export function CustomersListPage() {
     enabled: Boolean(workspace) && online && showBusinesses,
     queryFn: ({ signal }) =>
       listBusinessCustomers(workspace!, { search: debounced || undefined }, signal),
+  });
+
+  const supplierRelationshipsQuery = useQuery({
+    queryKey: ["connected-suppliers", "buyer-view", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && showBusinesses,
+    queryFn: ({ signal }) => listRelationships(workspace!, "buyer", signal),
   });
 
   const deliveryExceptionQuery = useQuery({
@@ -185,13 +198,41 @@ export function CustomersListPage() {
   }, [offlineContext, showCachedFallback]);
 
   const usingCache = showCachedFallback && cached !== null;
-  const peopleItems = usingCache
+  const allPosItems = usingCache
     ? filterCachedCustomers(cached, { search: debounced, status })
     : (peopleQuery.data?.items ?? []);
+  const peopleItems = allPosItems.filter(isPersonPosCustomer);
+  const posBusinessItems = (peopleQuery.data?.items ?? []).filter(isBusinessPosCustomer);
 
-  const businessItems = useMemo(() => businessQuery.data ?? [], [businessQuery.data]);
+  const activeSupplierOrganizationIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const rel of supplierRelationshipsQuery.data ?? []) {
+      if (rel.status === "Active") {
+        ids.add(rel.supplierOrganizationId.toLowerCase());
+      }
+    }
+    return ids;
+  }, [supplierRelationshipsQuery.data]);
+
+  const businessRows = useMemo(
+    () =>
+      buildBusinessListRows({
+        connections: businessQuery.data ?? [],
+        posBusinessCustomers: posBusinessItems,
+        activeSupplierOrganizationIds,
+      }).filter((row) => {
+        if (!debounced) return true;
+        const term = debounced.toLowerCase();
+        return (
+          row.displayName.toLowerCase().includes(term) ||
+          (row.publicOrganizationId?.toLowerCase().includes(term) ?? false)
+        );
+      }),
+    [activeSupplierOrganizationIds, businessQuery.data, debounced, posBusinessItems],
+  );
+
   const peopleReady = peopleQuery.isSuccess || usingCache;
-  const businessesReady = businessQuery.isSuccess;
+  const businessesReady = businessQuery.isSuccess && peopleQuery.isSuccess;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -209,7 +250,7 @@ export function CustomersListPage() {
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-customers"
         trailing={
-          allowCreate && showPeople ? (
+          showAdd ? (
             <Link
               to="/customers/new"
               className="customers-page__add"
@@ -357,11 +398,13 @@ export function CustomersListPage() {
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindBusinesses")}</h2>
               {businessesReady ? (
-                <span className="customers-section__count">{businessItems.length}</span>
+                <span className="customers-section__count">{businessRows.length}</span>
               ) : null}
             </div>
           ) : null}
-          {businessQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+          {businessQuery.isLoading || (showBusinesses && peopleQuery.isLoading) ? (
+            <LoadingState label={t("loading.label")} />
+          ) : null}
           {businessQuery.isError ? (
             <div className="flex flex-col gap-2" data-testid="business-customers-error">
               <ErrorState
@@ -380,7 +423,7 @@ export function CustomersListPage() {
               </button>
             </div>
           ) : null}
-          {businessesReady && businessItems.length === 0 ? (
+          {businessesReady && businessRows.length === 0 ? (
             <EmptyState
               title={t("customers.business.empty")}
               detail={t("customers.business.emptyHelp")}
@@ -390,51 +433,86 @@ export function CustomersListPage() {
             className="exits-list customers-business-list m-0 grid list-none gap-2 p-0"
             data-testid="business-customers-list"
           >
-            {businessItems.map((customer) => {
-              const name =
-                customer.organizationDisplayName.trim() || t("customers.business.unknown");
-              const pricing = discountLabel(
-                customer,
-                t("customers.business.discountShort"),
-              );
+            {businessRows.map((row) => {
+              const pricing =
+                row.source === "connection"
+                  ? discountLabel(row.connection, t("customers.business.discountShort"))
+                  : null;
               return (
-                <li key={customer.connectionId}>
+                <li key={row.key}>
                   <Link
                     className="exits-list__card business-customer-row customer-row customers-card block min-w-0 text-foreground no-underline"
-                    to={`/customers/business/${customer.connectionId}`}
-                    data-testid={`business-customer-row-${customer.connectionId}`}
+                    to={row.href}
+                    data-testid={
+                      row.source === "connection"
+                        ? `business-customer-row-${row.connection.connectionId}`
+                        : `business-pos-customer-row-${row.customer.customerId}`
+                    }
                   >
                     <span className="customer-row__main min-w-0">
                       <span className="business-customer-row__title">
                         <span
                           className="exits-list__name truncate font-semibold"
-                          data-testid={`business-customer-name-${customer.connectionId}`}
+                          data-testid={
+                            row.source === "connection"
+                              ? `business-customer-name-${row.connection.connectionId}`
+                              : `business-pos-customer-name-${row.customer.customerId}`
+                          }
                         >
-                          {name}
-                        </span>
-                        <span className="business-customer-row__badge">
-                          {t("customers.business.badgeShort")}
+                          {row.displayName.trim() || t("customers.business.unknown")}
                         </span>
                       </span>
-                      <span className="business-customer-row__facts">
-                        <span>
-                          {t("customers.business.sharedCountShort").replace(
-                            "{count}",
-                            String(customer.sharedCount),
-                          )}
-                        </span>
-                        {pricing ? <span>{pricing}</span> : null}
+                      <span className="mt-1 flex flex-wrap gap-1.5">
+                        {row.badges.map((badge) => (
+                          <StatusChip
+                            key={badge}
+                            tone={
+                              badge === "connected"
+                                ? "success"
+                                : badge === "local"
+                                  ? "neutral"
+                                  : "info"
+                            }
+                          >
+                            {badge === "local"
+                              ? t("customers.badge.local")
+                              : badge === "connected"
+                                ? t("customers.badge.connected")
+                                : t("customers.badge.exitsOrganization")}
+                          </StatusChip>
+                        ))}
+                        {row.alsoSupplier ? (
+                          <StatusChip tone="warning">{t("customers.badge.alsoSupplier")}</StatusChip>
+                        ) : null}
                       </span>
+                      {row.source === "connection" ? (
+                        <span className="business-customer-row__facts">
+                          <span>
+                            {t("customers.business.sharedCountShort").replace(
+                              "{count}",
+                              String(row.connection.sharedCount),
+                            )}
+                          </span>
+                          {pricing ? <span>{pricing}</span> : null}
+                        </span>
+                      ) : row.publicOrganizationId ? (
+                        <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                          {row.publicOrganizationId}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="customer-row__aside">
                       <StatusChip
                         tone={
-                          customer.relationshipStatus.toLowerCase() === "active"
+                          (row.source === "connection"
+                            ? row.relationshipStatus
+                            : row.status
+                          ).toLowerCase() === "active"
                             ? "success"
                             : "warning"
                         }
                       >
-                        {customer.relationshipStatus}
+                        {row.source === "connection" ? row.relationshipStatus : row.status}
                       </StatusChip>
                       <ChevronRight
                         className="customer-row__chevron size-4 shrink-0 text-muted"

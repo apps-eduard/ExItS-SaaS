@@ -2033,6 +2033,36 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.kindPeople": "People",
 
   "customers.kindBusinesses": "Businesses",
+  "customers.addChooserLede": "Choose whether this customer is a person or a business.",
+  "customers.addStepsAria": "Add customer steps",
+  "customers.addStepChoose": "Choose",
+  "customers.addStepComplete": "Details",
+  "customers.addStepBusiness": "Business",
+  "customers.addStepConnect": "Connect",
+  "customers.addPerson": "Person",
+  "customers.addPersonDetail": "Individual customer",
+  "customers.addBusiness": "Business",
+  "customers.addBusinessDetail": "Company, store, organization, or other business",
+  "customers.addBusinessChooserLede": "Create a local business customer or connect an ExItS Organization.",
+  "customers.addBusinessLocal": "Business not on ExItS",
+  "customers.addBusinessLocalDetail": "Create a local business customer",
+  "customers.addBusinessLocalLede": "Save business details without an ExItS Organization identity.",
+  "customers.addBusinessOrganization": "ExItS Organization",
+  "customers.addBusinessOrganizationDetail": "Find or connect an existing ExItS Organization",
+  "customers.addBusinessOrganizationLede": "Reuse the Organization identity. Do not create a duplicate customer.",
+  "customers.addBusinessChooserHint": "Customer and supplier roles are independent. The same organization can be both.",
+  "customers.businessName": "Business name",
+  "customers.businessNameRequired": "Business name is required.",
+  "customers.contactPerson": "Contact person",
+  "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
+  "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
+  "customers.orgConnectAsCustomer": "Add as business customer",
+  "customers.orgOpenExistingConnection": "Open existing connection",
+  "customers.orgOpenExistingCustomer": "Open existing customer",
+  "customers.badge.local": "Local",
+  "customers.badge.connected": "Connected",
+  "customers.badge.exitsOrganization": "ExItS Organization",
+  "customers.badge.alsoSupplier": "Also a supplier",
 
   "customers.peopleEmptyCompact": "No people customers yet.",
 
@@ -2084,7 +2114,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.business.empty": "No business customers yet",
 
-  "customers.business.emptyHelp": "Accept a buyer connection request to add a business customer.",
+  "customers.business.emptyHelp": "Add a local business or connect an ExItS Organization. Buyer connections also appear here.",
 
   "customers.business.loadFailed": "Could not load business customers.",
 

@@ -13,7 +13,8 @@ public sealed record PosCustomerListItemDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record PosCustomerDetailDto(
     Guid CustomerId,
@@ -28,7 +29,8 @@ public sealed record PosCustomerDetailDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record CreatePosCustomerRequest(
     string DisplayName,
@@ -36,7 +38,10 @@ public sealed record CreatePosCustomerRequest(
     string? Address,
     string? Notes,
     Guid? CustomerId = null,
-    Guid? PlatformBusinessCustomerId = null);
+    Guid? PlatformBusinessCustomerId = null,
+    string? PartyKind = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record UpdatePosCustomerRequest(
     string DisplayName,

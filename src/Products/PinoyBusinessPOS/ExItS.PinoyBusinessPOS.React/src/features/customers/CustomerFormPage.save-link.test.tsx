@@ -59,9 +59,9 @@ const userIdentityId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 function renderCreate() {
   return render(
     <AppProviders>
-      <MemoryRouter initialEntries={["/customers/new"]}>
+      <MemoryRouter initialEntries={["/customers/new/person"]}>
         <Routes>
-          <Route path="/customers/new" element={<CustomerCreatePage />} />
+          <Route path="/customers/new/person" element={<CustomerCreatePage />} />
           <Route
             path="/customers/:customerId"
             element={<div data-testid="customer-detail-stub" />}

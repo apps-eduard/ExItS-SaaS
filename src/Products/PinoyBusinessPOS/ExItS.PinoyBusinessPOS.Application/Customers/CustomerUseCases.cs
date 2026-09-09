@@ -20,7 +20,8 @@ public sealed record POSCustomerDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record CustomerSyncPageDto(
     List<POSCustomerDto> Items,
@@ -243,7 +244,8 @@ public sealed class POSCustomerQueryService
             customer.UpdatedAtUtc,
             customer.LinkedPersonalPublicUserId,
             customer.LinkedBuyerOrganizationId,
-            customer.LinkedBuyerPublicOrganizationId);
+            customer.LinkedBuyerPublicOrganizationId,
+            customer.PartyKind.ToString());
 }
 
 public sealed class CreatePOSCustomer
@@ -277,6 +279,9 @@ public sealed class CreatePOSCustomer
         Guid? clientCustomerId = null,
         Guid? platformBusinessCustomerId = null,
         string? linkedPersonalPublicUserId = null,
+        string? partyKind = null,
+        Guid? linkedBuyerOrganizationId = null,
+        string? linkedBuyerPublicOrganizationId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -294,6 +299,35 @@ public sealed class CreatePOSCustomer
                 }
             }
 
+            if (linkedBuyerOrganizationId is Guid buyerOrgId && buyerOrgId != Guid.Empty)
+            {
+                var existingBuyer = await _customers
+                    .FindByLinkedBuyerOrganizationIdAsync(orgId, buyerOrgId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingBuyer is not null)
+                {
+                    return ApplicationResult<POSCustomer>.Success(existingBuyer);
+                }
+            }
+
+            CustomerPartyKind resolvedPartyKind = CustomerPartyKind.Person;
+            if (!string.IsNullOrWhiteSpace(partyKind))
+            {
+                if (!Enum.TryParse(partyKind.Trim(), ignoreCase: true, out resolvedPartyKind)
+                    || !Enum.IsDefined(resolvedPartyKind))
+                {
+                    return ApplicationResult<POSCustomer>.Failure(
+                        DomainErrorCodes.InvalidCustomerPartyKind,
+                        "Party kind must be Person or Business.");
+                }
+            }
+
+            if (linkedBuyerOrganizationId is not null
+                || !string.IsNullOrWhiteSpace(linkedBuyerPublicOrganizationId))
+            {
+                resolvedPartyKind = CustomerPartyKind.Business;
+            }
+
             var customer = clientCustomerId is null
                 ? POSCustomer.Create(
                     orgId,
@@ -303,7 +337,10 @@ public sealed class CreatePOSCustomer
                     address,
                     notes,
                     platformBusinessCustomerId: platformBusinessCustomerId,
-                    linkedPersonalPublicUserId: linkedPersonalPublicUserId)
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId,
+                    linkedBuyerOrganizationId: linkedBuyerOrganizationId,
+                    linkedBuyerPublicOrganizationId: linkedBuyerPublicOrganizationId,
+                    partyKind: resolvedPartyKind)
                 : POSCustomer.Create(
                     orgId,
                     displayName,
@@ -313,7 +350,10 @@ public sealed class CreatePOSCustomer
                     notes,
                     id: POSCustomerId.From(clientCustomerId.Value),
                     platformBusinessCustomerId: platformBusinessCustomerId,
-                    linkedPersonalPublicUserId: linkedPersonalPublicUserId);
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId,
+                    linkedBuyerOrganizationId: linkedBuyerOrganizationId,
+                    linkedBuyerPublicOrganizationId: linkedBuyerPublicOrganizationId,
+                    partyKind: resolvedPartyKind);
 
             if (customer.PlatformBusinessCustomerId is not null)
             {

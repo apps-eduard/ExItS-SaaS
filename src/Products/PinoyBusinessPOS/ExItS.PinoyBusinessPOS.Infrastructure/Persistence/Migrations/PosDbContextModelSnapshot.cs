@@ -2489,6 +2489,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<string>("PartyKind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Person")
+                        .HasColumnName("party_kind");
+
                     b.Property<Guid?>("PlatformBusinessCustomerId")
                         .HasColumnType("uuid")
                         .HasColumnName("platform_business_customer_id");
@@ -2542,6 +2550,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("customers", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_customers_party_kind", "party_kind IN ('Person', 'Business')");
+
                             t.HasCheckConstraint("ck_customers_status", "status IN ('Active', 'Inactive')");
                         });
                 });

@@ -103,6 +103,10 @@ import {
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import { CatalogTemplateImportPage } from "@/features/catalog/CatalogTemplateImportPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
+import { CustomerAddChooserPage } from "@/features/customers/CustomerAddChooserPage";
+import { CustomerBusinessAddChooserPage } from "@/features/customers/CustomerBusinessAddChooserPage";
+import { CustomerBusinessLocalFormPage } from "@/features/customers/CustomerBusinessLocalFormPage";
+import { CustomerBusinessOrgConnectPage } from "@/features/customers/CustomerBusinessOrgConnectPage";
 import { BusinessCustomerDetailPage } from "@/features/customers/BusinessCustomerDetailPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
@@ -812,7 +816,39 @@ export const appRoutes = [
                 path: "new",
                 element: (
                   <RequireCreateCustomer>
+                    <CustomerAddChooserPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/person",
+                element: (
+                  <RequireCreateCustomer>
                     <CustomerCreatePage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessAddChooserPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business/local",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessLocalFormPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business/organization",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessOrgConnectPage />
                   </RequireCreateCustomer>
                 ),
               },

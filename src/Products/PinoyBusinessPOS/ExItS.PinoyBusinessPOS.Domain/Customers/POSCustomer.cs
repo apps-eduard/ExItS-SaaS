@@ -28,6 +28,11 @@ public sealed class POSCustomer
     public string? Notes { get; private set; }
     public CustomerStatus Status { get; private set; }
     /// <summary>
+    /// Person vs Business party classification. Defaults to <see cref="CustomerPartyKind.Person"/>.
+    /// Forced to <see cref="CustomerPartyKind.Business"/> when linked to a buyer organization.
+    /// </summary>
+    public CustomerPartyKind PartyKind { get; private set; }
+    /// <summary>
     /// Optional Platform <c>BusinessCustomerId</c> correlation value (not a cross-database FK).
     /// Null for legacy POS customers that have no Platform BusinessCustomer.
     /// </summary>
@@ -61,6 +66,7 @@ public sealed class POSCustomer
         string? address,
         string? notes,
         CustomerStatus status,
+        CustomerPartyKind partyKind,
         Guid? platformBusinessCustomerId,
         string? linkedPersonalPublicUserId,
         Guid? linkedBuyerOrganizationId,
@@ -76,6 +82,7 @@ public sealed class POSCustomer
         Address = address;
         Notes = notes;
         Status = status;
+        PartyKind = partyKind;
         PlatformBusinessCustomerId = platformBusinessCustomerId;
         LinkedPersonalPublicUserId = linkedPersonalPublicUserId;
         LinkedBuyerOrganizationId = linkedBuyerOrganizationId;
@@ -95,7 +102,8 @@ public sealed class POSCustomer
         Guid? platformBusinessCustomerId = null,
         string? linkedPersonalPublicUserId = null,
         Guid? linkedBuyerOrganizationId = null,
-        string? linkedBuyerPublicOrganizationId = null)
+        string? linkedBuyerPublicOrganizationId = null,
+        CustomerPartyKind partyKind = CustomerPartyKind.Person)
     {
         EnsureUtc(utcNow);
         var (displayMobile, normalizedMobile) = NormalizeOptionalMobile(mobileNumber);
@@ -103,6 +111,16 @@ public sealed class POSCustomer
             linkedPersonalPublicUserId,
             linkedBuyerOrganizationId,
             linkedBuyerPublicOrganizationId);
+        if (!Enum.IsDefined(partyKind))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerPartyKind,
+                "Party kind must be Person or Business.");
+        }
+
+        var resolvedPartyKind = buyerOrgId is not null
+            ? CustomerPartyKind.Business
+            : partyKind;
 
         return new POSCustomer(
             id ?? POSCustomerId.New(),
@@ -113,6 +131,7 @@ public sealed class POSCustomer
             NormalizeOptionalText(address, AddressMaxLength, DomainErrorCodes.InvalidAddress, "Address"),
             NormalizeOptionalText(notes, NotesMaxLength, DomainErrorCodes.InvalidNotes, "Notes"),
             CustomerStatus.Active,
+            resolvedPartyKind,
             NormalizeOptionalPlatformBusinessCustomerId(platformBusinessCustomerId),
             personalLink,
             buyerOrgId,
@@ -135,7 +154,8 @@ public sealed class POSCustomer
         DateTimeOffset updatedAtUtc,
         string? linkedPersonalPublicUserId = null,
         Guid? linkedBuyerOrganizationId = null,
-        string? linkedBuyerPublicOrganizationId = null) =>
+        string? linkedBuyerPublicOrganizationId = null,
+        CustomerPartyKind partyKind = CustomerPartyKind.Person) =>
         new(
             id,
             organizationId,
@@ -145,6 +165,7 @@ public sealed class POSCustomer
             address,
             notes,
             status,
+            partyKind,
             platformBusinessCustomerId,
             linkedPersonalPublicUserId,
             linkedBuyerOrganizationId,
@@ -292,6 +313,7 @@ public sealed class POSCustomer
 
         LinkedBuyerOrganizationId = buyerOrganizationId;
         LinkedBuyerPublicOrganizationId = publicId;
+        PartyKind = CustomerPartyKind.Business;
         UpdatedAtUtc = utcNow;
     }
 
