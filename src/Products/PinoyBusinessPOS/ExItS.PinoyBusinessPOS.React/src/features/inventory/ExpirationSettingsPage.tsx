@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Package } from "lucide-react";
+import { Ban, Package } from "lucide-react";
 import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   enableExpirationTracking,
@@ -348,7 +348,9 @@ export function ExpirationSettingsPage() {
             >
               <Link to={`/inventory/${productId}`}>
                 <Package className="size-4 shrink-0" aria-hidden />
-                {t("inventory.viewStockLots")}
+                <span className="expiration-settings-view-lots-btn__label">
+                  {t("inventory.viewStockLots")}
+                </span>
               </Link>
             </Button>
           </div>
@@ -384,11 +386,12 @@ export function ExpirationSettingsPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-fit"
+              className="expiration-settings-disable-btn w-fit"
               disabled={disableMutation.isPending || !disableAllowed}
               onClick={() => disableMutation.mutate()}
               data-testid="expiration-settings-disable"
             >
+              <Ban className="size-4 shrink-0" aria-hidden />
               {t("inventory.disableExpirationTracking")}
             </Button>
             <Button
@@ -400,7 +403,9 @@ export function ExpirationSettingsPage() {
             >
               <Link to={`/inventory/${productId}`}>
                 <Package className="size-4 shrink-0" aria-hidden />
-                {t("inventory.viewStockLots")}
+                <span className="expiration-settings-view-lots-btn__label">
+                  {t("inventory.viewStockLots")}
+                </span>
               </Link>
             </Button>
           </div>

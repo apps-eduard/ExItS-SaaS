@@ -3249,9 +3249,32 @@ html:has(.admin-shell) #root {
   align-items: start;
 }
 
+.expiration-settings-disable-btn {
+  font-weight: 600;
+  color: var(--exits-danger, #b91c1c);
+  border-color: color-mix(in srgb, var(--exits-danger, #b91c1c) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger, #b91c1c) 8%, var(--exits-surface));
+}
+
+.expiration-settings-disable-btn:hover:not(:disabled) {
+  border-color: var(--exits-danger, #b91c1c);
+  background: color-mix(in srgb, var(--exits-danger, #b91c1c) 14%, var(--exits-surface));
+  color: var(--exits-danger, #b91c1c);
+}
+
+.expiration-settings-disable-btn svg {
+  stroke-width: 2.5;
+}
+
+.expiration-settings-disable-btn:disabled {
+  color: color-mix(in srgb, var(--exits-danger, #b91c1c) 55%, var(--exits-text-muted));
+  border-color: color-mix(in srgb, var(--exits-danger, #b91c1c) 22%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger, #b91c1c) 5%, var(--exits-surface));
+}
+
 .expiration-settings-view-lots-btn {
-  font-weight: 700;
-  color: var(--exits-primary);
+  font-weight: 400;
+  color: var(--exits-text);
   border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
 }
@@ -3259,7 +3282,11 @@ html:has(.admin-shell) #root {
 .expiration-settings-view-lots-btn:hover {
   border-color: var(--exits-primary);
   background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
-  color: var(--exits-primary);
+  color: var(--exits-text);
+}
+
+.expiration-settings-view-lots-btn__label {
+  font-weight: 400;
 }
 
 .expiration-settings-view-lots-btn svg {
