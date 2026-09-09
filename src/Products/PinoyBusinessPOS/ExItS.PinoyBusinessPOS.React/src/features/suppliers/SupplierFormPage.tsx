@@ -316,7 +316,6 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
           </section>
 
           <section className="supplier-form-section">
-            <h2 className="supplier-form-section__title">{t("suppliers.sectionNotes")}</h2>
             <div className="supplier-form-section__grid">{renderFields(notes)}</div>
           </section>
         </div>
