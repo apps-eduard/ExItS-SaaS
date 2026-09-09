@@ -9315,6 +9315,11 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text-muted);
 }
 
+.app-top-bar__workspace-icon {
+  color: var(--exits-primary);
+  stroke-width: 2.5;
+}
+
 .app-top-bar__workspace-text {
   display: inline-flex;
   min-width: 0;
