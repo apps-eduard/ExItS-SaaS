@@ -12,6 +12,8 @@ export type ActionTileDef = {
   current?: boolean;
   disabled?: boolean;
   to?: string;
+  /** Optional router location state (e.g. preferences returnTo). */
+  state?: unknown;
   onClick?: () => void;
 };
 
@@ -64,7 +66,7 @@ export function ActionTileGrid({
           );
         }
 
-        return tile.onClick ? (
+        return tile.onClick && !tile.to ? (
           <RoleActionTile
             key={tile.key}
             label={tile.label}
@@ -87,6 +89,8 @@ export function ActionTileGrid({
             current={tile.current}
             disabled={tile.disabled}
             to={tile.to!}
+            state={tile.state}
+            onClick={tile.onClick}
             className={tileClassName}
             style={{ animationDelay: `${40 + index * 35}ms` }}
           />

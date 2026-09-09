@@ -1,4 +1,4 @@
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
+import { rememberPreferencesReturnTo } from "@/features/preferences/preferences-return";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
@@ -14,8 +15,10 @@ import { workingExperienceRoute } from "@/workspace/working-experience";
 
 export function HomePage() {
   const { t } = useI18n();
+  const location = useLocation();
   const { session } = useSession();
   const { status, boundWorkspace } = useWorkspace();
+  const preferencesReturnTo = `${location.pathname}${location.search}`;
 
   if (!boundWorkspace) {
     if (status === "loading" || status === "binding" || status === "idle" || status === "ready") {
@@ -73,7 +76,13 @@ function BoundHomeRedirect({
           </Button>
         ) : null}
         <Button asChild variant="ghost">
-          <Link to="/settings/preferences">{t("preferences.title")}</Link>
+          <Link
+            to="/settings/preferences"
+            state={{ returnTo: preferencesReturnTo }}
+            onClick={() => rememberPreferencesReturnTo(preferencesReturnTo)}
+          >
+            {t("preferences.title")}
+          </Link>
         </Button>
       </div>
     </div>

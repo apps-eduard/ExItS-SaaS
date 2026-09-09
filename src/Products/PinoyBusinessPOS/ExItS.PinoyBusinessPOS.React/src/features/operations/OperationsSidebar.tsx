@@ -5,6 +5,11 @@ import {
   flattenOperationsSidebarItems,
   matchOperationsSidebarItem,
 } from "@/features/operations/operations-nav-config";
+import {
+  capturePreferencesReturnFrom,
+  isPreferencesDestination,
+  preferencesNavigationState,
+} from "@/features/preferences/preferences-return";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -40,11 +45,21 @@ export function OperationsSidebar() {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeId === item.id;
+                const preferencesState = isPreferencesDestination(item.to)
+                  ? preferencesNavigationState(location.pathname, location.search)
+                  : undefined;
                 return (
                   <li key={item.id}>
                     <NavLink
                       to={item.to}
                       end={item.end}
+                      state={preferencesState}
+                      onClick={
+                        preferencesState
+                          ? () =>
+                              capturePreferencesReturnFrom(location.pathname, location.search)
+                          : undefined
+                      }
                       data-testid={item.testId}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(

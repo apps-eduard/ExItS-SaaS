@@ -1,5 +1,9 @@
 import { Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import {
+  capturePreferencesReturnFrom,
+  preferencesNavigationState,
+} from "@/features/preferences/preferences-return";
 import { cn } from "@/lib/cn";
 
 export type ShellPreferencesButtonProps = {
@@ -11,6 +15,7 @@ export type ShellPreferencesButtonProps = {
 
 /**
  * Compact shell preferences control — icon only; opens the preferences drawer route.
+ * Remembers the current route so close returns here instead of always landing on More.
  */
 export function ShellPreferencesButton({
   to = "/settings/preferences",
@@ -18,9 +23,18 @@ export function ShellPreferencesButton({
   testId = "shell-preferences-button",
   className,
 }: ShellPreferencesButtonProps) {
+  const location = useLocation();
+  const preferencesState = preferencesNavigationState(location.pathname, location.search);
+
   return (
     <Link
       to={to}
+      state={preferencesState}
+      onClick={
+        preferencesState
+          ? () => capturePreferencesReturnFrom(location.pathname, location.search)
+          : undefined
+      }
       data-testid={testId}
       aria-label={label}
       title={label}

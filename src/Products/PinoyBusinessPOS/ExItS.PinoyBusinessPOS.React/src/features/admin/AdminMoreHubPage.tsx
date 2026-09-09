@@ -1,9 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   buildAdminNavGroups,
   type AdminNavGroupId,
 } from "@/features/admin/admin-nav-config";
 import { PageHeader } from "@/components/exits/PageHeader";
+import {
+  capturePreferencesReturnFrom,
+  isPreferencesDestination,
+  preferencesNavigationState,
+} from "@/features/preferences/preferences-return";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -15,8 +20,10 @@ const MORE_GROUPS: AdminNavGroupId[] = ["business", "security", "settings"];
  */
 export function AdminMoreHubPage() {
   const { t } = useI18n();
+  const location = useLocation();
   const { sessionGrant } = useWorkspace();
   const groups = buildAdminNavGroups(sessionGrant).filter((g) => MORE_GROUPS.includes(g.id));
+  const preferencesState = preferencesNavigationState(location.pathname, location.search);
 
   return (
     <div className="admin-hub-page exits-page" data-testid="admin-more-hub">
@@ -33,10 +40,17 @@ export function AdminMoreHubPage() {
           <div className="admin-hub-grid">
             {group.items.map((item) => {
               const Icon = item.icon;
+              const preferences = isPreferencesDestination(item.to);
               return (
                 <Link
                   key={item.id}
                   to={item.to}
+                  state={preferences ? preferencesState : undefined}
+                  onClick={
+                    preferences && preferencesState
+                      ? () => capturePreferencesReturnFrom(location.pathname, location.search)
+                      : undefined
+                  }
                   data-testid={`admin-more-hub-${item.id}`}
                   className="admin-hub-tile"
                 >

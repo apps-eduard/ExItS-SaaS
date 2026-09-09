@@ -13,7 +13,9 @@ export type RoleActionTileProps = {
   disabled?: boolean;
   className?: string;
   style?: CSSProperties;
-} & ({ to: string; onClick?: never } | { to?: never; onClick: () => void });
+  /** Optional router location state (e.g. preferences returnTo). */
+  state?: unknown;
+} & ({ to: string; onClick?: () => void } | { to?: never; onClick: () => void });
 
 /**
  * Owner-dashboard-style action tile: icon left of label, no chevron.
@@ -82,7 +84,14 @@ export function RoleActionTile(props: RoleActionTileProps) {
       );
     }
     return (
-      <Link to={props.to} data-testid={testId} className={classes} style={style}>
+      <Link
+        to={props.to}
+        state={props.state}
+        onClick={props.onClick}
+        data-testid={testId}
+        className={classes}
+        style={style}
+      >
         {content}
       </Link>
     );

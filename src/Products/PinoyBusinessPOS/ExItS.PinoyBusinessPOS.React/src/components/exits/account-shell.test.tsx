@@ -115,8 +115,9 @@ describe("account shell", () => {
 
     await user.click(screen.getByTestId("preferences-close"));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("preferences-drawer")).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("account-menu-trigger"));
     const menu = await screen.findByRole("menu");

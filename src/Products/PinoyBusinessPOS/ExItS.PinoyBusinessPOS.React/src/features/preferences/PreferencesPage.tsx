@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { DensityControl } from "@/components/exits/DensityControl";
 import { LanguageControl } from "@/components/exits/LanguageControl";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { ThemeControl } from "@/components/exits/ThemeControl";
+import {
+  clearPreferencesReturnTo,
+  resolvePreferencesReturnTo,
+} from "@/features/preferences/preferences-return";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav, personalPageBackNav } from "@/navigation/page-back-nav";
 import { sessionAccountClass } from "@/session/account-class";
@@ -12,9 +16,12 @@ import { useSession } from "@/session/SessionProvider";
 export function PreferencesPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const { session } = useSession();
   const isPersonal = sessionAccountClass(session) === "Personal";
-  const closeTo = isPersonal ? personalPageBackNav.more.to : pageBackNav.more.to;
+  const fallbackCloseTo = isPersonal ? personalPageBackNav.more.to : pageBackNav.more.to;
+  // Capture once on open so close always returns to the page that opened preferences.
+  const closeToRef = useRef(resolvePreferencesReturnTo(location.state, fallbackCloseTo));
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -26,7 +33,8 @@ export function PreferencesPage() {
       open={open}
       onClose={() => setOpen(false)}
       onExited={() => {
-        navigate(closeTo, { replace: true });
+        clearPreferencesReturnTo();
+        navigate(closeToRef.current, { replace: true });
       }}
       title={t("preferences.title")}
       description={t("preferences.lede")}
