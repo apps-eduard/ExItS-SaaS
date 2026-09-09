@@ -1048,6 +1048,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.save": "I-save / tipigi",
 
   "catalog.saveRename": "I-save ang bag-o nga ngalan",
+  "catalog.resetRename": "I-reset",
 
   "catalog.saved": "Natipig na",
 

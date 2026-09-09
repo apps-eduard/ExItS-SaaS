@@ -2911,6 +2911,7 @@ export const en = {
   "catalog.allBrands": "All brands",
   "catalog.selectBrand": "Select brand",
   "catalog.saveRename": "Save",
+  "catalog.resetRename": "Reset",
   "catalog.cancelRename": "Cancel",
   "catalog.newProduct": "New product",
   "catalog.editProduct": "Edit product",

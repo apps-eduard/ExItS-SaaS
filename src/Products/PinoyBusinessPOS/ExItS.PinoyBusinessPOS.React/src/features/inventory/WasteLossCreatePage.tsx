@@ -3,7 +3,12 @@ import { Plus, Trash2 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
+import {
+  listCatalogProducts,
+  getCatalogProduct,
+  listCatalogCategories,
+  listCatalogBrands,
+} from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   getInventoryProduct,
@@ -21,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -44,6 +50,8 @@ import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+type ProductFilter = "internal" | "all";
 
 type DraftLine = {
   productId: string;
@@ -129,6 +137,9 @@ export function WasteLossCreatePage() {
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [productFilter, setProductFilter] = useState<ProductFilter>("internal");
+  const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -179,16 +190,49 @@ export function WasteLossCreatePage() {
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
-      listInventory(workspace!, { search: debounced || undefined, pageSize: 40 }, signal),
+      listInventory(
+        workspace!,
+        { search: debounced || undefined, pageSize: 40, tracked: true },
+        signal,
+      ),
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog-categories", "waste-loss-picker", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) =>
+      listCatalogCategories(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
+  const brandsQuery = useQuery({
+    queryKey: ["catalog-brands", "waste-loss-picker", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) =>
+      listCatalogBrands(workspace!, { status: "Active", pageSize: 100 }, signal),
   });
 
   const catalogQuery = useQuery({
-    queryKey: ["catalog-products", "waste-loss-picker", workspace?.organizationId, debounced],
+    queryKey: [
+      "catalog-products",
+      "waste-loss-picker",
+      workspace?.organizationId,
+      debounced,
+      productFilter,
+      categoryId,
+      brandId,
+    ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
-        { search: debounced || undefined, status: "Active", pageSize: 40 },
+        {
+          search: debounced || undefined,
+          status: "Active",
+          pageSize: 40,
+          canBeSold: productFilter === "internal" ? false : undefined,
+          categoryId: categoryId || undefined,
+          brandId: brandId || undefined,
+        },
         signal,
       ),
   });
@@ -215,11 +259,26 @@ export function WasteLossCreatePage() {
         continue;
       }
 
+      if (categoryId || brandId) {
+        if (!cat) {
+          continue;
+        }
+        if (categoryId && cat.categoryId !== categoryId) {
+          continue;
+        }
+        if (brandId && cat.brandId !== brandId) {
+          continue;
+        }
+      }
+
       const usage = resolveBusinessUsage(
         cat ?? {
           canBeSold: inv?.productStatus === "Active" ? true : undefined,
         },
       );
+      if (productFilter === "internal" && usage !== "InternalUse") {
+        continue;
+      }
 
       rows.push({
         productId,
@@ -234,7 +293,14 @@ export function WasteLossCreatePage() {
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [inventoryQuery.data?.items, catalogQuery.data?.items, t]);
+  }, [
+    inventoryQuery.data?.items,
+    catalogQuery.data?.items,
+    productFilter,
+    categoryId,
+    brandId,
+    t,
+  ]);
 
   const selectedIds = useMemo(() => new Set(lines.map((l) => l.productId)), [lines]);
 
@@ -811,6 +877,7 @@ export function WasteLossCreatePage() {
               onClick={() => void submit()}
               data-testid="waste-loss-submit"
             >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
               {saving ? t("wasteLoss.recording") : t("wasteLoss.recordWasteLoss")}
             </Button>
           </div>
@@ -956,19 +1023,78 @@ export function WasteLossCreatePage() {
 
             {!fromExpiration ? (
               <div className="waste-loss-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
-                <div className="waste-loss-create-toolbar flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h3 className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+                <div className="waste-loss-create-toolbar flex min-w-0 flex-col gap-2">
+                  <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
                     {t("wasteLoss.addProduct")}
                   </h3>
-                  <SearchField
-                    label={t("wasteLoss.searchProducts")}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onClear={() => setSearch("")}
-                    placeholder={t("wasteLoss.searchProducts")}
-                    containerClassName="min-w-0 flex-1 sm:max-w-[20rem]"
-                    data-testid="waste-loss-product-search"
-                  />
+
+                  <div className="waste-loss-create-filters flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <SearchField
+                      label={t("wasteLoss.searchProducts")}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onClear={() => setSearch("")}
+                      placeholder={t("wasteLoss.searchProducts")}
+                      containerClassName="min-w-0 w-full sm:min-w-[12rem] sm:flex-1 sm:basis-[14rem]"
+                      data-testid="waste-loss-product-search"
+                    />
+                    <ExitsChipBar
+                      variant="filter"
+                      ariaLabel={t("wasteLoss.addProduct")}
+                      testId="waste-loss-product-filter"
+                      className="shrink-0"
+                      items={[
+                        {
+                          key: "internal",
+                          label: t("stockUse.filterInternalUse"),
+                          state: productFilter === "internal" ? "active" : "idle",
+                          testId: "waste-loss-filter-internal",
+                          onSelect: () => setProductFilter("internal"),
+                        },
+                        {
+                          key: "all",
+                          label: t("stockUse.filterAllStock"),
+                          state: productFilter === "all" ? "active" : "idle",
+                          testId: "waste-loss-filter-all",
+                          onSelect: () => setProductFilter("all"),
+                        },
+                      ]}
+                    />
+                    <label className="flex min-w-0 flex-1 basis-[10rem] flex-col gap-1 sm:max-w-[14rem]">
+                      <span className="sr-only">{t("catalog.category")}</span>
+                      <select
+                        className="exits-select catalog-form-select"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        disabled={statusLocked}
+                        data-testid="waste-loss-filter-category"
+                      >
+                        <option value="">{t("catalog.allCategories")}</option>
+                        {(categoriesQuery.data?.items ?? []).map((category) => (
+                          <option key={category.categoryId} value={category.categoryId}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex min-w-0 flex-1 basis-[10rem] flex-col gap-1 sm:max-w-[14rem]">
+                      <span className="sr-only">{t("catalog.brand")}</span>
+                      <select
+                        className="exits-select catalog-form-select"
+                        value={brandId}
+                        onChange={(e) => setBrandId(e.target.value)}
+                        disabled={statusLocked}
+                        data-testid="waste-loss-filter-brand"
+                      >
+                        <option value="">{t("catalog.allBrands")}</option>
+                        {(brandsQuery.data?.items ?? []).map((brand) => (
+                          <option key={brand.brandId} value={brand.brandId}>
+                            {brand.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
 
                 {pickerLoading ? <LoadingState label={t("wasteLoss.loading")} /> : null}

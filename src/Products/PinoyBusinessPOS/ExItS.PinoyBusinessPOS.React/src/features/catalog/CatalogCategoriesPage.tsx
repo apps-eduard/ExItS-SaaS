@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Check, Loader2, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCatalogCategory,
@@ -47,6 +47,7 @@ export function CatalogCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  const [renameOriginal, setRenameOriginal] = useState("");
   const [actingId, setActingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export function CatalogCategoriesPage() {
     onSuccess: async () => {
       setRenamingId(null);
       setRenameDraft("");
+      setRenameOriginal("");
       setError(null);
       await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
     },
@@ -137,12 +139,18 @@ export function CatalogCategoriesPage() {
   function beginRename(categoryId: string, currentName: string) {
     setRenamingId(categoryId);
     setRenameDraft(currentName);
+    setRenameOriginal(currentName);
     setError(null);
   }
 
   function cancelRename() {
     setRenamingId(null);
     setRenameDraft("");
+    setRenameOriginal("");
+  }
+
+  function resetRename() {
+    setRenameDraft(renameOriginal);
   }
 
   if (!workspace) {
@@ -251,11 +259,13 @@ export function CatalogCategoriesPage() {
                   t={t}
                   isRenaming={renamingId === category.categoryId}
                   renameDraft={renameDraft}
+                  renameOriginal={renameOriginal}
                   isActing={actingId === category.categoryId}
                   renamePending={renameMutation.isPending}
                   onRenameDraftChange={setRenameDraft}
                   onBeginRename={() => beginRename(category.categoryId, category.name)}
                   onCancelRename={cancelRename}
+                  onResetRename={resetRename}
                   onSaveRename={() =>
                     renameMutation.mutate({
                       categoryId: category.categoryId,
@@ -305,10 +315,12 @@ export function CatalogCategoriesPage() {
                           <CategoryRenameEditor
                             categoryId={category.categoryId}
                             renameDraft={renameDraft}
+                            renameOriginal={renameOriginal}
                             renamePending={renameMutation.isPending}
                             t={t}
                             onRenameDraftChange={setRenameDraft}
                             onCancelRename={cancelRename}
+                            onResetRename={resetRename}
                             onSaveRename={() =>
                               renameMutation.mutate({
                                 categoryId: category.categoryId,
@@ -361,55 +373,78 @@ type Translate = (key: MessageKey) => string;
 function CategoryRenameEditor({
   categoryId,
   renameDraft,
+  renameOriginal,
   renamePending,
   t,
   onRenameDraftChange,
   onCancelRename,
+  onResetRename,
   onSaveRename,
 }: {
   categoryId: string;
   renameDraft: string;
+  renameOriginal: string;
   renamePending: boolean;
   t: Translate;
   onRenameDraftChange: (value: string) => void;
   onCancelRename: () => void;
+  onResetRename: () => void;
   onSaveRename: () => void;
 }) {
+  const isDirty = renameDraft !== renameOriginal;
+  const canSave = Boolean(renameDraft.trim()) && isDirty && !renamePending;
+
   return (
     <div className="catalog-category-row__rename">
-      <Input
-        label={t("catalog.renamePrompt")}
-        name={`rename-${categoryId}`}
-        value={renameDraft}
-        onChange={(event) => onRenameDraftChange(event.target.value)}
-        data-testid={`catalog-category-rename-input-${categoryId}`}
-      />
+      <div className="catalog-category-row__rename-field min-w-0">
+        <Input
+          label={t("catalog.renamePrompt")}
+          name={`rename-${categoryId}`}
+          value={renameDraft}
+          onChange={(event) => onRenameDraftChange(event.target.value)}
+          data-testid={`catalog-category-rename-input-${categoryId}`}
+        />
+      </div>
       <div className="catalog-category-row__rename-actions">
         <Button
           type="button"
           variant="default"
+          size="icon"
           className="catalog-category-row__rename-save"
           data-testid={`catalog-category-rename-save-${categoryId}`}
-          disabled={!renameDraft.trim() || renamePending}
+          disabled={!canSave}
+          aria-label={t("catalog.saveRename")}
           onClick={onSaveRename}
         >
           {renamePending ? (
             <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
           ) : (
-            <Check className="size-4 shrink-0" aria-hidden />
+            <Save className="size-4 shrink-0" aria-hidden />
           )}
-          {t("catalog.saveRename")}
         </Button>
         <Button
           type="button"
           variant="outline"
+          size="icon"
+          className="catalog-category-row__rename-reset"
+          data-testid={`catalog-category-rename-reset-${categoryId}`}
+          disabled={!isDirty || renamePending}
+          aria-label={t("catalog.resetRename")}
+          onClick={onResetRename}
+        >
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           className="catalog-category-row__rename-cancel"
           data-testid={`catalog-category-rename-cancel-${categoryId}`}
           disabled={renamePending}
+          aria-label={t("catalog.cancelRename")}
           onClick={onCancelRename}
         >
-          <X className="size-4 shrink-0" aria-hidden />
-          {t("catalog.cancelRename")}
+          <Ban className="size-4 shrink-0" aria-hidden />
         </Button>
       </div>
     </div>
@@ -486,11 +521,13 @@ function CategoryCard({
   t,
   isRenaming,
   renameDraft,
+  renameOriginal,
   isActing,
   renamePending,
   onRenameDraftChange,
   onBeginRename,
   onCancelRename,
+  onResetRename,
   onSaveRename,
   onToggleStatus,
 }: {
@@ -498,11 +535,13 @@ function CategoryCard({
   t: Translate;
   isRenaming: boolean;
   renameDraft: string;
+  renameOriginal: string;
   isActing: boolean;
   renamePending: boolean;
   onRenameDraftChange: (value: string) => void;
   onBeginRename: () => void;
   onCancelRename: () => void;
+  onResetRename: () => void;
   onSaveRename: () => void;
   onToggleStatus: () => void;
 }) {
@@ -518,10 +557,12 @@ function CategoryCard({
           <CategoryRenameEditor
             categoryId={category.categoryId}
             renameDraft={renameDraft}
+            renameOriginal={renameOriginal}
             renamePending={renamePending}
             t={t}
             onRenameDraftChange={onRenameDraftChange}
             onCancelRename={onCancelRename}
+            onResetRename={onResetRename}
             onSaveRename={onSaveRename}
           />
         ) : (

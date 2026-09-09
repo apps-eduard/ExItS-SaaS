@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { PackageMinus, Plus, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -516,6 +516,7 @@ export function StockUseCreatePage() {
             onClick={() => void submit()}
             data-testid="stock-use-submit"
           >
+            <PackageMinus className="size-4 shrink-0" aria-hidden />
             {saving ? t("stockUse.recording") : t("stockUse.recordUse")}
           </Button>
         </div>
@@ -649,47 +650,43 @@ export function StockUseCreatePage() {
 
           <div className="stock-use-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
             <div className="stock-use-create-toolbar flex min-w-0 flex-col gap-2">
-              <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <h3 className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
-                  {t("stockUse.addProduct")}
-                </h3>
-                <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
-                  <ExitsChipBar
-                    variant="filter"
-                    ariaLabel={t("stockUse.addProduct")}
-                    testId="stock-use-product-filter"
-                    className="shrink-0"
-                    items={[
-                      {
-                        key: "internal",
-                        label: t("stockUse.filterInternalUse"),
-                        state: productFilter === "internal" ? "active" : "idle",
-                        testId: "stock-use-filter-internal",
-                        onSelect: () => setProductFilter("internal"),
-                      },
-                      {
-                        key: "all",
-                        label: t("stockUse.filterAllStock"),
-                        state: productFilter === "all" ? "active" : "idle",
-                        testId: "stock-use-filter-all",
-                        onSelect: () => setProductFilter("all"),
-                      },
-                    ]}
-                  />
-                  <SearchField
-                    label={t("stockUse.searchProducts")}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onClear={() => setSearch("")}
-                    placeholder={t("stockUse.searchProducts")}
-                    containerClassName="min-w-0 flex-1 sm:max-w-[18rem]"
-                    data-testid="stock-use-product-search"
-                  />
-                </div>
-              </div>
+              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+                {t("stockUse.addProduct")}
+              </h3>
 
-              <div className="stock-use-create-filters grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:max-w-[36rem] lg:self-end">
-                <label className="flex min-w-0 flex-col gap-1">
+              <div className="stock-use-create-filters flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <SearchField
+                  label={t("stockUse.searchProducts")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onClear={() => setSearch("")}
+                  placeholder={t("stockUse.searchProducts")}
+                  containerClassName="min-w-0 w-full sm:min-w-[12rem] sm:flex-1 sm:basis-[14rem]"
+                  data-testid="stock-use-product-search"
+                />
+                <ExitsChipBar
+                  variant="filter"
+                  ariaLabel={t("stockUse.addProduct")}
+                  testId="stock-use-product-filter"
+                  className="shrink-0"
+                  items={[
+                    {
+                      key: "internal",
+                      label: t("stockUse.filterInternalUse"),
+                      state: productFilter === "internal" ? "active" : "idle",
+                      testId: "stock-use-filter-internal",
+                      onSelect: () => setProductFilter("internal"),
+                    },
+                    {
+                      key: "all",
+                      label: t("stockUse.filterAllStock"),
+                      state: productFilter === "all" ? "active" : "idle",
+                      testId: "stock-use-filter-all",
+                      onSelect: () => setProductFilter("all"),
+                    },
+                  ]}
+                />
+                <label className="flex min-w-0 flex-1 basis-[10rem] flex-col gap-1 sm:max-w-[14rem]">
                   <span className="sr-only">{t("catalog.category")}</span>
                   <select
                     className="exits-select catalog-form-select"
@@ -706,7 +703,7 @@ export function StockUseCreatePage() {
                     ))}
                   </select>
                 </label>
-                <label className="flex min-w-0 flex-col gap-1">
+                <label className="flex min-w-0 flex-1 basis-[10rem] flex-col gap-1 sm:max-w-[14rem]">
                   <span className="sr-only">{t("catalog.brand")}</span>
                   <select
                     className="exits-select catalog-form-select"

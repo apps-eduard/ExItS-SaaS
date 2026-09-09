@@ -1048,6 +1048,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "catalog.save": "I-save / tipigi",
 
   "catalog.saveRename": "I-save ang bag-ong ngalan",
+  "catalog.resetRename": "I-reset",
 
   "catalog.saved": "Natipig na",
 

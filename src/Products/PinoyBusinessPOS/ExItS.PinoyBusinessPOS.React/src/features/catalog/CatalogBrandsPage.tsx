@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Check, Loader2, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCatalogBrand,
@@ -47,6 +47,7 @@ export function CatalogBrandsPage() {
   const [error, setError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  const [renameOriginal, setRenameOriginal] = useState("");
   const [actingId, setActingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,6 +113,7 @@ export function CatalogBrandsPage() {
     onSuccess: async () => {
       setRenamingId(null);
       setRenameDraft("");
+      setRenameOriginal("");
       setError(null);
       await queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
     },
@@ -153,12 +155,18 @@ export function CatalogBrandsPage() {
   function beginRename(brandId: string, currentName: string) {
     setRenamingId(brandId);
     setRenameDraft(currentName);
+    setRenameOriginal(currentName);
     setError(null);
   }
 
   function cancelRename() {
     setRenamingId(null);
     setRenameDraft("");
+    setRenameOriginal("");
+  }
+
+  function resetRename() {
+    setRenameDraft(renameOriginal);
   }
 
   if (!workspace) {
@@ -264,11 +272,13 @@ export function CatalogBrandsPage() {
                   t={t}
                   isRenaming={renamingId === brand.brandId}
                   renameDraft={renameDraft}
+                  renameOriginal={renameOriginal}
                   isActing={actingId === brand.brandId}
                   renamePending={renameMutation.isPending}
                   onRenameDraftChange={setRenameDraft}
                   onBeginRename={() => beginRename(brand.brandId, brand.name)}
                   onCancelRename={cancelRename}
+                  onResetRename={resetRename}
                   onSaveRename={() =>
                     renameMutation.mutate({
                       brandId: brand.brandId,
@@ -318,10 +328,12 @@ export function CatalogBrandsPage() {
                           <BrandRenameEditor
                             brandId={brand.brandId}
                             renameDraft={renameDraft}
+                            renameOriginal={renameOriginal}
                             renamePending={renameMutation.isPending}
                             t={t}
                             onRenameDraftChange={setRenameDraft}
                             onCancelRename={cancelRename}
+                            onResetRename={resetRename}
                             onSaveRename={() =>
                               renameMutation.mutate({
                                 brandId: brand.brandId,
@@ -374,55 +386,78 @@ type Translate = (key: MessageKey) => string;
 function BrandRenameEditor({
   brandId,
   renameDraft,
+  renameOriginal,
   renamePending,
   t,
   onRenameDraftChange,
   onCancelRename,
+  onResetRename,
   onSaveRename,
 }: {
   brandId: string;
   renameDraft: string;
+  renameOriginal: string;
   renamePending: boolean;
   t: Translate;
   onRenameDraftChange: (value: string) => void;
   onCancelRename: () => void;
+  onResetRename: () => void;
   onSaveRename: () => void;
 }) {
+  const isDirty = renameDraft !== renameOriginal;
+  const canSave = Boolean(renameDraft.trim()) && isDirty && !renamePending;
+
   return (
     <div className="catalog-brand-row__rename">
-      <Input
-        label={t("catalog.renameBrandPrompt")}
-        name={`rename-${brandId}`}
-        value={renameDraft}
-        onChange={(event) => onRenameDraftChange(event.target.value)}
-        data-testid={`catalog-brand-rename-input-${brandId}`}
-      />
+      <div className="catalog-brand-row__rename-field min-w-0">
+        <Input
+          label={t("catalog.renameBrandPrompt")}
+          name={`rename-${brandId}`}
+          value={renameDraft}
+          onChange={(event) => onRenameDraftChange(event.target.value)}
+          data-testid={`catalog-brand-rename-input-${brandId}`}
+        />
+      </div>
       <div className="catalog-brand-row__rename-actions">
         <Button
           type="button"
           variant="default"
+          size="icon"
           className="catalog-brand-row__rename-save"
           data-testid={`catalog-brand-rename-save-${brandId}`}
-          disabled={!renameDraft.trim() || renamePending}
+          disabled={!canSave}
+          aria-label={t("catalog.saveRename")}
           onClick={onSaveRename}
         >
           {renamePending ? (
             <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
           ) : (
-            <Check className="size-4 shrink-0" aria-hidden />
+            <Save className="size-4 shrink-0" aria-hidden />
           )}
-          {t("catalog.saveRename")}
         </Button>
         <Button
           type="button"
           variant="outline"
+          size="icon"
+          className="catalog-brand-row__rename-reset"
+          data-testid={`catalog-brand-rename-reset-${brandId}`}
+          disabled={!isDirty || renamePending}
+          aria-label={t("catalog.resetRename")}
+          onClick={onResetRename}
+        >
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           className="catalog-brand-row__rename-cancel"
           data-testid={`catalog-brand-rename-cancel-${brandId}`}
           disabled={renamePending}
+          aria-label={t("catalog.cancelRename")}
           onClick={onCancelRename}
         >
-          <X className="size-4 shrink-0" aria-hidden />
-          {t("catalog.cancelRename")}
+          <Ban className="size-4 shrink-0" aria-hidden />
         </Button>
       </div>
     </div>
@@ -499,11 +534,13 @@ function BrandCard({
   t,
   isRenaming,
   renameDraft,
+  renameOriginal,
   isActing,
   renamePending,
   onRenameDraftChange,
   onBeginRename,
   onCancelRename,
+  onResetRename,
   onSaveRename,
   onToggleStatus,
 }: {
@@ -511,11 +548,13 @@ function BrandCard({
   t: Translate;
   isRenaming: boolean;
   renameDraft: string;
+  renameOriginal: string;
   isActing: boolean;
   renamePending: boolean;
   onRenameDraftChange: (value: string) => void;
   onBeginRename: () => void;
   onCancelRename: () => void;
+  onResetRename: () => void;
   onSaveRename: () => void;
   onToggleStatus: () => void;
 }) {
@@ -531,10 +570,12 @@ function BrandCard({
           <BrandRenameEditor
             brandId={brand.brandId}
             renameDraft={renameDraft}
+            renameOriginal={renameOriginal}
             renamePending={renamePending}
             t={t}
             onRenameDraftChange={onRenameDraftChange}
             onCancelRename={onCancelRename}
+            onResetRename={onResetRename}
             onSaveRename={onSaveRename}
           />
         ) : (

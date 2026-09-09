@@ -1048,6 +1048,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "catalog.save": "I-save",
 
   "catalog.saveRename": "I-save",
+  "catalog.resetRename": "I-reset",
 
   "catalog.saved": "Na-save",
 
