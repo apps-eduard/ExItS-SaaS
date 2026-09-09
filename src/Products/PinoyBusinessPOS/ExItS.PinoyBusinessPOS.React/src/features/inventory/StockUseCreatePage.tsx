@@ -3,7 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { listCatalogProducts, getCatalogProduct } from "@/api/pos/pos-catalog-client";
+import { listCatalogProducts, getCatalogProduct, listCatalogCategories, listCatalogBrands } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   getInventoryProduct,
@@ -68,6 +68,8 @@ export function StockUseCreatePage() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [productFilter, setProductFilter] = useState<ProductFilter>("internal");
+  const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,20 @@ export function StockUseCreatePage() {
       ),
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog-categories", "stock-use-picker", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) =>
+      listCatalogCategories(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
+  const brandsQuery = useQuery({
+    queryKey: ["catalog-brands", "stock-use-picker", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) =>
+      listCatalogBrands(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
   const catalogQuery = useQuery({
     queryKey: [
       "catalog-products",
@@ -114,6 +130,8 @@ export function StockUseCreatePage() {
       workspace?.organizationId,
       debounced,
       productFilter,
+      categoryId,
+      brandId,
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
@@ -124,6 +142,8 @@ export function StockUseCreatePage() {
           status: "Active",
           pageSize: 40,
           canBeSold: productFilter === "internal" ? false : undefined,
+          categoryId: categoryId || undefined,
+          brandId: brandId || undefined,
         },
         signal,
       ),
@@ -151,6 +171,18 @@ export function StockUseCreatePage() {
         continue;
       }
 
+      if (categoryId || brandId) {
+        if (!cat) {
+          continue;
+        }
+        if (categoryId && cat.categoryId !== categoryId) {
+          continue;
+        }
+        if (brandId && cat.brandId !== brandId) {
+          continue;
+        }
+      }
+
       const usage = resolveBusinessUsage(
         cat ?? {
           canBeSold: inv?.productStatus === "Active" ? true : undefined,
@@ -174,7 +206,14 @@ export function StockUseCreatePage() {
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [inventoryQuery.data?.items, catalogQuery.data?.items, productFilter, t]);
+  }, [
+    inventoryQuery.data?.items,
+    catalogQuery.data?.items,
+    productFilter,
+    categoryId,
+    brandId,
+    t,
+  ]);
 
   const selectedIds = useMemo(() => new Set(lines.map((l) => l.productId)), [lines]);
 
@@ -609,42 +648,81 @@ export function StockUseCreatePage() {
           )}
 
           <div className="stock-use-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
-            <div className="stock-use-create-toolbar flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <h3 className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
-                {t("stockUse.addProduct")}
-              </h3>
-              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
-                <ExitsChipBar
-                  variant="filter"
-                  ariaLabel={t("stockUse.addProduct")}
-                  testId="stock-use-product-filter"
-                  className="shrink-0"
-                  items={[
-                    {
-                      key: "internal",
-                      label: t("stockUse.filterInternalUse"),
-                      state: productFilter === "internal" ? "active" : "idle",
-                      testId: "stock-use-filter-internal",
-                      onSelect: () => setProductFilter("internal"),
-                    },
-                    {
-                      key: "all",
-                      label: t("stockUse.filterAllStock"),
-                      state: productFilter === "all" ? "active" : "idle",
-                      testId: "stock-use-filter-all",
-                      onSelect: () => setProductFilter("all"),
-                    },
-                  ]}
-                />
-                <SearchField
-                  label={t("stockUse.searchProducts")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onClear={() => setSearch("")}
-                  placeholder={t("stockUse.searchProducts")}
-                  containerClassName="min-w-0 flex-1 sm:max-w-[20rem]"
-                  data-testid="stock-use-product-search"
-                />
+            <div className="stock-use-create-toolbar flex min-w-0 flex-col gap-2">
+              <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <h3 className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+                  {t("stockUse.addProduct")}
+                </h3>
+                <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
+                  <ExitsChipBar
+                    variant="filter"
+                    ariaLabel={t("stockUse.addProduct")}
+                    testId="stock-use-product-filter"
+                    className="shrink-0"
+                    items={[
+                      {
+                        key: "internal",
+                        label: t("stockUse.filterInternalUse"),
+                        state: productFilter === "internal" ? "active" : "idle",
+                        testId: "stock-use-filter-internal",
+                        onSelect: () => setProductFilter("internal"),
+                      },
+                      {
+                        key: "all",
+                        label: t("stockUse.filterAllStock"),
+                        state: productFilter === "all" ? "active" : "idle",
+                        testId: "stock-use-filter-all",
+                        onSelect: () => setProductFilter("all"),
+                      },
+                    ]}
+                  />
+                  <SearchField
+                    label={t("stockUse.searchProducts")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onClear={() => setSearch("")}
+                    placeholder={t("stockUse.searchProducts")}
+                    containerClassName="min-w-0 flex-1 sm:max-w-[18rem]"
+                    data-testid="stock-use-product-search"
+                  />
+                </div>
+              </div>
+
+              <div className="stock-use-create-filters grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:max-w-[36rem] lg:self-end">
+                <label className="flex min-w-0 flex-col gap-1">
+                  <span className="sr-only">{t("catalog.category")}</span>
+                  <select
+                    className="exits-select catalog-form-select"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    disabled={statusLocked}
+                    data-testid="stock-use-filter-category"
+                  >
+                    <option value="">{t("catalog.allCategories")}</option>
+                    {(categoriesQuery.data?.items ?? []).map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-1">
+                  <span className="sr-only">{t("catalog.brand")}</span>
+                  <select
+                    className="exits-select catalog-form-select"
+                    value={brandId}
+                    onChange={(e) => setBrandId(e.target.value)}
+                    disabled={statusLocked}
+                    data-testid="stock-use-filter-brand"
+                  >
+                    <option value="">{t("catalog.allBrands")}</option>
+                    {(brandsQuery.data?.items ?? []).map((brand) => (
+                      <option key={brand.brandId} value={brand.brandId}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             </div>
 

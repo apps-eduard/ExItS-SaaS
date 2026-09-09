@@ -25,7 +25,6 @@ import {
 } from "@/features/registers/date-range-presets";
 import {
   ManagerActionCard,
-  ManagerActionGrid,
 } from "@/features/role/ManagerHomeShared";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { ShiftHistoryResponsiveList } from "@/features/shifts/ShiftHistoryResponsiveList";
@@ -261,17 +260,22 @@ export function ShiftsHubPage() {
           className="shifts-hub-panel shifts-hub-page__current exits-animate-panel flex min-w-0 flex-col gap-3"
           data-testid="shift-current-banner"
         >
-          <div className="exits-metric-surface flex min-w-0 flex-col gap-1 px-3 py-2.5">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <StatusChip tone="success">{t("shift.statusOpen")}</StatusChip>
-              <span className="shifts-hub-page__shift-number min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-                {currentShift.shiftNumber}
-              </span>
+          <div className="shifts-hub-page__current-row grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch">
+            <div className="exits-metric-surface shifts-hub-page__current-detail flex h-full min-w-0 items-center gap-2.5 px-3 py-2.5">
+              <Clock3 className="size-5 shrink-0 text-primary" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <p className="shifts-hub-page__shift-number m-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+                  {currentShift.shiftNumber}
+                </p>
+                <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                  {registerLine}
+                </p>
+              </div>
+              <StatusChip tone="success" className="shrink-0 self-center">
+                {t("shift.statusOpen")}
+              </StatusChip>
             </div>
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{registerLine}</p>
-          </div>
 
-          <ManagerActionGrid>
             <ManagerActionCard
               to={`/shifts/${currentShift.shiftId}`}
               label={t("shift.viewCurrent")}
@@ -279,7 +283,7 @@ export function ShiftsHubPage() {
               testId="shift-open-detail"
             />
             <ManagerActionCard to="/sell" label={t("role.openSellFloor")} icon={ShoppingCart} />
-          </ManagerActionGrid>
+          </div>
         </div>
       ) : (
         <div

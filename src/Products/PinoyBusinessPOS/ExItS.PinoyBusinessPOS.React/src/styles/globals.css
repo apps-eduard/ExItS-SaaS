@@ -11062,10 +11062,12 @@ a.exits-chip--primary:hover {
 
 .stock-use-create-page .stock-use-notes-input {
   height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
   max-height: var(--exits-control-height);
   padding-block: 0.35rem;
   resize: none;
   line-height: 1.25;
+  overflow: hidden;
 }
 
 .stock-use-create-page .stock-use-qty-input {
@@ -11560,9 +11562,56 @@ a.exits-chip--primary:hover {
   box-shadow: none;
 }
 
+.shifts-hub-page__current-row > .manager-action-card,
+.shifts-hub-page__current-row > .shifts-hub-page__current-detail {
+  min-height: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: #fff;
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .shifts-hub-page__current-row > .manager-action-card,
+:root:not([data-theme="dark"]) .shifts-hub-page__current-row > .shifts-hub-page__current-detail,
+[data-theme="light"] .shifts-hub-page__current-row > .manager-action-card,
+[data-theme="light"] .shifts-hub-page__current-row > .shifts-hub-page__current-detail {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
+}
+
+[data-theme="dark"] .shifts-hub-page__current-row > .manager-action-card,
+[data-theme="dark"] .shifts-hub-page__current-row > .shifts-hub-page__current-detail {
+  background: var(--exits-surface);
+}
+
+.shifts-hub-page__current-row > .manager-action-card {
+  display: flex;
+  align-self: stretch;
+}
+
+.shifts-hub-page__current-row > .shifts-hub-page__current-detail.exits-metric-surface {
+  background: #fff;
+  box-shadow: var(--exits-shadow-sm);
+}
+
+[data-theme="dark"] .shifts-hub-page__current-row > .shifts-hub-page__current-detail.exits-metric-surface {
+  background: var(--exits-surface);
+}
+
 .shifts-hub-page .manager-action-card {
   background: var(--exits-surface);
   box-shadow: var(--exits-shadow-sm);
+}
+
+.shifts-hub-page__current.shifts-hub-panel {
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+}
+
+:root:not([data-theme="dark"]) .shifts-hub-page__current.shifts-hub-panel,
+[data-theme="light"] .shifts-hub-page__current.shifts-hub-panel {
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, #fff);
 }
 
 .shifts-hub-page .manager-action-card:hover {
