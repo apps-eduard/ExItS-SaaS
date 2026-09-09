@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Package } from "lucide-react";
+import { Ban, Package, Save } from "lucide-react";
 import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   enableExpirationTracking,
@@ -376,11 +376,12 @@ export function ExpirationSettingsPage() {
           <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              className="w-fit"
+              className="expiration-settings-save-btn w-fit"
               disabled={saveWarningMutation.isPending || needsRepair}
               onClick={() => saveWarningMutation.mutate()}
               data-testid="expiration-settings-save"
             >
+              <Save className="size-4 shrink-0" aria-hidden />
               {t("inventory.saveNearExpiryWarning")}
             </Button>
             <Button

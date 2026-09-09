@@ -3249,8 +3249,12 @@ html:has(.admin-shell) #root {
   align-items: start;
 }
 
+.expiration-settings-save-btn svg {
+  stroke-width: 2.5;
+}
+
 .expiration-settings-disable-btn {
-  font-weight: 600;
+  font-weight: 400;
   color: var(--exits-danger, #b91c1c);
   border-color: color-mix(in srgb, var(--exits-danger, #b91c1c) 35%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-danger, #b91c1c) 8%, var(--exits-surface));
