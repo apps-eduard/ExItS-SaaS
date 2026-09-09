@@ -3249,6 +3249,24 @@ html:has(.admin-shell) #root {
   align-items: start;
 }
 
+.expiration-settings-view-lots-btn {
+  font-weight: 700;
+  color: var(--exits-primary);
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.expiration-settings-view-lots-btn:hover {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.expiration-settings-view-lots-btn svg {
+  color: var(--exits-primary);
+  stroke-width: 2.5;
+}
+
 @media (min-width: 768px) {
   .enable-expiration-lot-row__fields {
     grid-template-columns: minmax(5.5rem, 0.7fr) minmax(9rem, 1fr) minmax(0, 1.2fr);

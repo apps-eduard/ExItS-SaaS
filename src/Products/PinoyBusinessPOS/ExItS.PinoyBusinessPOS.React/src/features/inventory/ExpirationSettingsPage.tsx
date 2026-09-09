@@ -326,29 +326,32 @@ export function ExpirationSettingsPage() {
               intent="enable"
               onSuccess={onExpirationEnabled}
             />
-          ) : (
+          ) : null}
+          <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
+            {onHand <= 0 ? (
+              <Button
+                type="button"
+                className="w-fit"
+                disabled={enableMutation.isPending}
+                onClick={() => enableMutation.mutate()}
+                data-testid="expiration-settings-enable"
+              >
+                {t("inventory.enableExpirationTracking")}
+              </Button>
+            ) : null}
             <Button
+              asChild
               type="button"
-              className="w-fit"
-              disabled={enableMutation.isPending}
-              onClick={() => enableMutation.mutate()}
-              data-testid="expiration-settings-enable"
+              variant="outline"
+              className="expiration-settings-view-lots-btn w-fit"
+              data-testid="expiration-settings-view-lots"
             >
-              {t("inventory.enableExpirationTracking")}
+              <Link to={`/inventory/${productId}`}>
+                <Package className="size-4 shrink-0" aria-hidden />
+                {t("inventory.viewStockLots")}
+              </Link>
             </Button>
-          )}
-          <Button
-            asChild
-            type="button"
-            variant="outline"
-            className="w-fit"
-            data-testid="expiration-settings-view-lots"
-          >
-            <Link to={`/inventory/${productId}`}>
-              <Package className="size-4 shrink-0" aria-hidden />
-              {t("inventory.viewStockLots")}
-            </Link>
-          </Button>
+          </div>
         </Card>
       ) : (
         <Card
@@ -392,7 +395,7 @@ export function ExpirationSettingsPage() {
               asChild
               type="button"
               variant="outline"
-              className="w-fit"
+              className="expiration-settings-view-lots-btn w-fit"
               data-testid="expiration-settings-view-lots"
             >
               <Link to={`/inventory/${productId}`}>
