@@ -1162,7 +1162,11 @@ export function InventoryDetailPage() {
                         value={adjustQty}
                         onChange={(e) => setAdjustQty(e.target.value)}
                       />
-                      <span className="inventory-adjust-qty__uom" aria-hidden="true">
+                      <span
+                        className="inventory-adjust-qty__uom-chip"
+                        aria-hidden="true"
+                        data-testid="inventory-adjust-uom"
+                      >
                         {account.unitOfMeasure}
                       </span>
                     </div>

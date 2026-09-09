@@ -3295,15 +3295,23 @@ html:has(.admin-shell) #root {
   align-items: end;
 }
 
-.inventory-adjust-qty__uom {
+.inventory-adjust-qty__uom-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   height: var(--exits-control-height);
   min-height: var(--exits-control-height);
-  color: var(--exits-text-muted);
+  min-width: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-text);
   font-size: var(--exits-text-sm);
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1;
   white-space: nowrap;
+  user-select: none;
 }
 
 .inventory-adjust-form__actions {
