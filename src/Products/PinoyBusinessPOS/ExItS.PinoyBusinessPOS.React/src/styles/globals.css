@@ -3298,10 +3298,10 @@ html:has(.admin-shell) #root {
 }
 
 .inventory-detail-actions-card .inventory-expiration-summary-strip {
-  margin-top: 0.15rem;
-  padding: 0.65rem 0 0;
+  margin: 0;
+  padding: 0 0 0.65rem;
   border: 0;
-  border-top: 1px solid var(--exits-border);
+  border-bottom: 1px solid var(--exits-border);
   border-radius: 0;
   background: transparent;
 }

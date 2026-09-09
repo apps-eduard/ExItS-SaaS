@@ -871,6 +871,7 @@ export function InventoryDetailPage() {
           className="inventory-detail-actions-card flex flex-col gap-2.5 p-3"
           data-testid="inventory-quick-actions"
         >
+          {expirationSummaryStrip}
           <div className="inventory-detail-quick-actions">
             {needsExpirationSetup ? (
               <>
@@ -965,7 +966,6 @@ export function InventoryDetailPage() {
               </Link>
             </Button>
           </div>
-          {expirationSummaryStrip}
         </Card>
       ) : account.isTracked ? (
         expirationSummaryStrip
