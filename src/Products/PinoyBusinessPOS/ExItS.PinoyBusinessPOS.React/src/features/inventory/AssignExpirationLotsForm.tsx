@@ -159,17 +159,34 @@ export function AssignExpirationLotsForm({
           return (
             <div
               key={row.id}
-              className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
+              className="enable-expiration-lot-row flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
               data-testid={`enable-expiration-lot-row-${index}`}
             >
-              <Input
-                label={`${t("inventory.enableExpirationQuantity")} *`}
-                name={`enableExpirationQty-${row.id}`}
-                inputMode="decimal"
-                value={row.quantity}
-                onChange={(e) => updateQuantity(row.id, e.target.value)}
-                data-testid={`enable-expiration-qty-${index}`}
-              />
+              <div className="enable-expiration-lot-row__fields">
+                <Input
+                  label={`${t("inventory.enableExpirationQuantity")} *`}
+                  name={`enableExpirationQty-${row.id}`}
+                  inputMode="decimal"
+                  value={row.quantity}
+                  onChange={(e) => updateQuantity(row.id, e.target.value)}
+                  data-testid={`enable-expiration-qty-${index}`}
+                />
+                <Input
+                  label={`${t("inventory.enableExpirationExpiry")} *`}
+                  name={`enableExpirationExpiry-${row.id}`}
+                  type="date"
+                  value={row.expiryDate}
+                  onChange={(e) => updateRow(row.id, { expiryDate: e.target.value })}
+                  data-testid={`enable-expiration-expiry-${index}`}
+                />
+                <Input
+                  label={t("inventory.enableExpirationLotOptional")}
+                  name={`enableExpirationLot-${row.id}`}
+                  value={row.lotNumber}
+                  onChange={(e) => updateRow(row.id, { lotNumber: e.target.value })}
+                  data-testid={`enable-expiration-lot-${index}`}
+                />
+              </div>
               {rowMax < onHandQuantity ? (
                 <p
                   className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -178,14 +195,6 @@ export function AssignExpirationLotsForm({
                   {t("inventory.enableExpirationQuantityMax").replace("{max}", String(rowMax))}
                 </p>
               ) : null}
-              <Input
-                label={`${t("inventory.enableExpirationExpiry")} *`}
-                name={`enableExpirationExpiry-${row.id}`}
-                type="date"
-                value={row.expiryDate}
-                onChange={(e) => updateRow(row.id, { expiryDate: e.target.value })}
-                data-testid={`enable-expiration-expiry-${index}`}
-              />
               {past ? (
                 <p
                   className="m-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -194,13 +203,6 @@ export function AssignExpirationLotsForm({
                   {t("inventory.enableExpirationPastWarning")}
                 </p>
               ) : null}
-              <Input
-                label={t("inventory.enableExpirationLotOptional")}
-                name={`enableExpirationLot-${row.id}`}
-                value={row.lotNumber}
-                onChange={(e) => updateRow(row.id, { lotNumber: e.target.value })}
-                data-testid={`enable-expiration-lot-${index}`}
-              />
               {rows.length > 1 ? (
                 <Button
                   type="button"
