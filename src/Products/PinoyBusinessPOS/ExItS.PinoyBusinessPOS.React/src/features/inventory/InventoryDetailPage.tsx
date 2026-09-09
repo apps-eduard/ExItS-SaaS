@@ -1175,55 +1175,57 @@ export function InventoryDetailPage() {
                       {t("inventory.stockAdjustment")}
                     </h2>
 
-                    <fieldset className="m-0 border-0 p-0">
-                      <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
-                        {t("inventory.direction")}
-                      </legend>
-                      <div
-                        className="inventory-adjust-direction flex flex-wrap gap-1.5"
-                        data-testid="inventory-adjust-direction"
-                      >
-                        <label className="inventory-direction-option">
-                          <input
-                            type="radio"
-                            name="adjustDirection"
-                            value="In"
-                            checked={adjustDirection === "In"}
-                            onChange={() => {
-                              setAdjustDirection("In");
-                              setSelectedLotId("");
-                            }}
-                          />
-                          <span>{t("inventory.adjustIn")}</span>
-                        </label>
-                        <label className="inventory-direction-option">
-                          <input
-                            type="radio"
-                            name="adjustDirection"
-                            value="Out"
-                            checked={adjustDirection === "Out"}
-                            onChange={() => setAdjustDirection("Out")}
-                          />
-                          <span>{t("inventory.adjustOut")}</span>
-                        </label>
-                      </div>
-                    </fieldset>
+                    <div className="inventory-adjust-direction-qty">
+                      <fieldset className="inventory-adjust-direction-qty__direction m-0 border-0 p-0">
+                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.direction")}
+                        </legend>
+                        <div
+                          className="inventory-adjust-direction flex flex-wrap gap-1.5"
+                          data-testid="inventory-adjust-direction"
+                        >
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="adjustDirection"
+                              value="In"
+                              checked={adjustDirection === "In"}
+                              onChange={() => {
+                                setAdjustDirection("In");
+                                setSelectedLotId("");
+                              }}
+                            />
+                            <span>{t("inventory.adjustIn")}</span>
+                          </label>
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="adjustDirection"
+                              value="Out"
+                              checked={adjustDirection === "Out"}
+                              onChange={() => setAdjustDirection("Out")}
+                            />
+                            <span>{t("inventory.adjustOut")}</span>
+                          </label>
+                        </div>
+                      </fieldset>
 
-                    <div className="inventory-adjust-qty">
-                      <Input
-                        label={t("inventory.adjustQuantityRequired")}
-                        name="adjustQuantity"
-                        inputMode="decimal"
-                        value={adjustQty}
-                        onChange={(e) => setAdjustQty(e.target.value)}
-                      />
-                      <span
-                        className="inventory-adjust-qty__uom-chip"
-                        aria-hidden="true"
-                        data-testid="inventory-adjust-uom"
-                      >
-                        {account.unitOfMeasure}
-                      </span>
+                      <div className="inventory-adjust-qty">
+                        <Input
+                          label={t("inventory.adjustQuantityRequired")}
+                          name="adjustQuantity"
+                          inputMode="decimal"
+                          value={adjustQty}
+                          onChange={(e) => setAdjustQty(e.target.value)}
+                        />
+                        <span
+                          className="inventory-adjust-qty__uom-chip"
+                          aria-hidden="true"
+                          data-testid="inventory-adjust-uom"
+                        >
+                          {account.unitOfMeasure}
+                        </span>
+                      </div>
                     </div>
 
                     {tracksExpiration && adjustDirection === "In" ? (
