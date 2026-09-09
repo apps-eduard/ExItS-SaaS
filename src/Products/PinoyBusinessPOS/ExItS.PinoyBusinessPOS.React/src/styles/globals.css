@@ -3348,7 +3348,8 @@ html:has(.admin-shell) #root {
 @media (min-width: 1200px) {
   .inventory-detail-workspace--split {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
+    /* Adjust ~40–45% | Lots ~55–60% */
+    grid-template-columns: minmax(18rem, 1fr) minmax(0, 1.35fr);
     gap: 0.75rem 1rem;
     align-items: start;
   }

@@ -1110,10 +1110,6 @@ export function InventoryDetailPage() {
               )}
               data-testid="inventory-detail-workspace"
             >
-              {lotsPanel ? (
-                <div className="inventory-detail-workspace__lots">{lotsPanel}</div>
-              ) : null}
-
               {allowManageInventory ? (
                 <div className="inventory-detail-workspace__adjust flex min-w-0 flex-col gap-2">
                   <Card
@@ -1305,6 +1301,10 @@ export function InventoryDetailPage() {
                     {t("inventory.disable")}
                   </Button>
                 </div>
+              ) : null}
+
+              {lotsPanel ? (
+                <div className="inventory-detail-workspace__lots">{lotsPanel}</div>
               ) : null}
             </div>
           ) : null}

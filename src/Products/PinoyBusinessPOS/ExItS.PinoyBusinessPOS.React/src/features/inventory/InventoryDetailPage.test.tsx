@@ -471,7 +471,7 @@ describe("InventoryDetailPage expiration UX", () => {
 
     const lots = screen.getByTestId("inventory-lots");
     const adjust = screen.getByTestId("inventory-adjust-form");
-    expect(lots.compareDocumentPosition(adjust) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(adjust.compareDocumentPosition(lots) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("links to expiration settings when enabling expiration tracking", async () => {
