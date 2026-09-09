@@ -875,7 +875,7 @@ export function InventoryDetailPage() {
           <div className="inventory-detail-quick-actions">
             {needsExpirationSetup ? (
               <>
-                <Button asChild type="button" className="inventory-detail-action-btn w-full">
+                <Button asChild type="button" className="inventory-detail-action-btn inventory-detail-action-btn--solid w-full">
                   <Link
                     to={expirationSettingsPath(productId!, "assign")}
                     data-testid="inventory-expiration-setup-assign"

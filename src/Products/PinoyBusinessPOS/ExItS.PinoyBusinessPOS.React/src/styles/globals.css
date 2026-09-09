@@ -3338,6 +3338,12 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
+.inventory-detail-action-btn--solid .inventory-detail-action-btn__icon,
+.inventory-detail-action-btn--solid .inventory-detail-action-btn__caret {
+  color: var(--exits-primary-foreground);
+  opacity: 1;
+}
+
 .inventory-detail-opening-fields {
   display: grid;
   grid-template-columns: 1fr;
