@@ -1177,7 +1177,7 @@ export function InventoryDetailPage() {
 
                     <div className="inventory-adjust-direction-qty">
                       <fieldset className="inventory-adjust-direction-qty__direction m-0 border-0 p-0">
-                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
+                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-medium text-muted">
                           {t("inventory.direction")}
                         </legend>
                         <div
