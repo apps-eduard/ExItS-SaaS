@@ -12109,6 +12109,28 @@ a.exits-chip--primary:hover {
   background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
 }
 
+.supplier-form-cancel-btn {
+  font-weight: 400;
+  color: var(--exits-text);
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.supplier-form-cancel-btn:hover {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+  color: var(--exits-text);
+}
+
+.supplier-form-cancel-btn svg {
+  color: var(--exits-primary);
+  stroke-width: 2.5;
+}
+
+.supplier-form-save-btn svg {
+  stroke-width: 2.5;
+}
+
 .supplier-form-control {
   width: 100%;
   min-height: var(--exits-control-height);
@@ -12118,7 +12140,10 @@ a.exits-chip--primary:hover {
 }
 
 .supplier-form-control--area {
-  min-height: 5.5rem;
+  min-height: calc(var(--exits-control-height) * 2);
+  max-height: calc(var(--exits-control-height) * 2 + 0.5rem);
+  resize: vertical;
+  line-height: 1.35;
 }
 
 .supplier-form-control:focus-visible {

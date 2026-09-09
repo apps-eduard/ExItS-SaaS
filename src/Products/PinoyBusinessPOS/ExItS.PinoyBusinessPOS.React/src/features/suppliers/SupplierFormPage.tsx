@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Save } from "lucide-react";
 import {
   createSupplier,
   getSupplier,
@@ -247,7 +248,8 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
           <textarea
             id={field.testId}
             data-testid={field.testId}
-            className="supplier-form-control supplier-form-control--area min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            className="supplier-form-control supplier-form-control--area rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            rows={2}
             value={form[field.key]}
             disabled={saving}
             onChange={(event) => setField(field.key, event.target.value)}
@@ -320,18 +322,25 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
         </div>
 
         <div className="supplier-form-actions flex flex-wrap items-center justify-end gap-2 border-t border-border px-3 py-3 sm:px-4">
-          <Button asChild variant="ghost" className="w-fit" disabled={saving}>
+          <Button
+            asChild
+            variant="outline"
+            className="supplier-form-cancel-btn w-fit"
+            disabled={saving}
+          >
             <Link to={cancelTo} data-testid="supplier-cancel">
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
               {t("suppliers.back")}
             </Link>
           </Button>
           <Button
             type="button"
-            className="w-fit"
+            className="supplier-form-save-btn w-fit"
             data-testid="supplier-save"
             disabled={saving}
             onClick={() => void onSubmit()}
           >
+            {!saving ? <Save className="size-4 shrink-0" aria-hidden /> : null}
             {saving ? t("suppliers.saving") : t("suppliers.save")}
           </Button>
         </div>
