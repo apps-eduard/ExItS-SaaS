@@ -3237,11 +3237,38 @@ html:has(.admin-shell) #root {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.inventory-detail-actions-card {
+  min-width: 0;
+}
+
 .inventory-detail-quick-actions {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.5rem;
   min-width: 0;
+}
+
+.inventory-detail-action-btn {
+  justify-content: flex-start !important;
+}
+
+.inventory-detail-action-btn__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--exits-text-muted);
+}
+
+.inventory-detail-action-btn__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.inventory-detail-action-btn__caret {
+  margin-inline-start: auto;
+  color: var(--exits-text-muted);
 }
 
 .inventory-detail-opening-fields {
@@ -3268,6 +3295,15 @@ html:has(.admin-shell) #root {
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
+}
+
+.inventory-detail-actions-card .inventory-expiration-summary-strip {
+  margin-top: 0.15rem;
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--exits-border);
+  border-radius: 0;
+  background: transparent;
 }
 
 .inventory-expiration-summary-strip__title {

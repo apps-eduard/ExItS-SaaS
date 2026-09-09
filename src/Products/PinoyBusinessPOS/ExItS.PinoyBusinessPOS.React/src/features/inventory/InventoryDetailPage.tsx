@@ -1,7 +1,7 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronRight, PackageMinus, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -575,6 +575,16 @@ export function InventoryDetailPage() {
       </div>
     ) : null;
 
+  const actionLinkContent = (icon: ReactNode, label: string) => (
+    <>
+      <span className="inventory-detail-action-btn__icon" aria-hidden>
+        {icon}
+      </span>
+      <span className="inventory-detail-action-btn__label">{label}</span>
+      <ChevronRight className="inventory-detail-action-btn__caret size-4 shrink-0" aria-hidden />
+    </>
+  );
+
   const lotsPanel =
     tracksExpiration && !showAddOpeningStock && !needsExpirationSetup ? (
       <Card className="inventory-lots-panel flex flex-col gap-2 p-3" data-testid="inventory-lots">
@@ -857,62 +867,108 @@ export function InventoryDetailPage() {
       </Card>
 
       {account.isTracked && allowManageInventory ? (
-        <div className="inventory-detail-quick-actions" data-testid="inventory-quick-actions">
-          {needsExpirationSetup ? (
-            <>
-              <Button asChild type="button" className="w-full">
-                <Link
-                  to={expirationSettingsPath(productId!, "assign")}
-                  data-testid="inventory-expiration-setup-assign"
+        <Card
+          className="inventory-detail-actions-card flex flex-col gap-2.5 p-3"
+          data-testid="inventory-quick-actions"
+        >
+          <div className="inventory-detail-quick-actions">
+            {needsExpirationSetup ? (
+              <>
+                <Button asChild type="button" className="inventory-detail-action-btn w-full">
+                  <Link
+                    to={expirationSettingsPath(productId!, "assign")}
+                    data-testid="inventory-expiration-setup-assign"
+                  >
+                    {actionLinkContent(
+                      <CalendarClock className="size-4 shrink-0" />,
+                      t("inventory.assignExpirationDates"),
+                    )}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="inventory-detail-action-btn w-full"
                 >
-                  {t("inventory.assignExpirationDates")}
-                </Link>
-              </Button>
-              <Button asChild type="button" variant="outline" className="w-full">
+                  <Link
+                    to={expirationSettingsPath(productId!, "warning")}
+                    data-testid="inventory-manage-expiration"
+                  >
+                    {actionLinkContent(
+                      <CalendarClock className="size-4 shrink-0" />,
+                      t("inventory.manageExpirationSettings"),
+                    )}
+                  </Link>
+                </Button>
+              </>
+            ) : tracksExpiration ? (
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="inventory-detail-action-btn w-full"
+              >
                 <Link
                   to={expirationSettingsPath(productId!, "warning")}
                   data-testid="inventory-manage-expiration"
                 >
-                  {t("inventory.manageExpirationSettings")}
+                  {actionLinkContent(
+                    <CalendarClock className="size-4 shrink-0" />,
+                    t("inventory.manageExpirationSettings"),
+                  )}
                 </Link>
               </Button>
-            </>
-          ) : tracksExpiration ? (
-            <Button asChild type="button" variant="outline" className="w-full">
+            ) : (
+              <Button asChild type="button" className="inventory-detail-action-btn w-full">
+                <Link
+                  to={expirationSettingsPath(productId!)}
+                  data-testid="inventory-enable-expiration"
+                >
+                  {actionLinkContent(
+                    <CalendarClock className="size-4 shrink-0" />,
+                    t("inventory.enableExpirationTracking"),
+                  )}
+                </Link>
+              </Button>
+            )}
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="inventory-detail-action-btn w-full"
+            >
               <Link
-                to={expirationSettingsPath(productId!, "warning")}
-                data-testid="inventory-manage-expiration"
+                to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
+                data-testid="inventory-record-stock-use"
               >
-                {t("inventory.manageExpirationSettings")}
+                {actionLinkContent(
+                  <PackageMinus className="size-4 shrink-0" />,
+                  t("inventory.recordStockUse"),
+                )}
               </Link>
             </Button>
-          ) : (
-            <Button asChild type="button" className="w-full">
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="inventory-detail-action-btn w-full"
+            >
               <Link
-                to={expirationSettingsPath(productId!)}
-                data-testid="inventory-enable-expiration"
+                to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
+                data-testid="inventory-record-waste-loss"
               >
-                {t("inventory.enableExpirationTracking")}
+                {actionLinkContent(
+                  <Trash2 className="size-4 shrink-0" />,
+                  t("inventory.recordWasteLoss"),
+                )}
               </Link>
             </Button>
-          )}
-          <Button asChild type="button" variant="outline" className="w-full">
-            <Link
-              to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
-              data-testid="inventory-record-stock-use"
-            >
-              {t("inventory.recordStockUse")}
-            </Link>
-          </Button>
-          <Button asChild type="button" variant="outline" className="w-full">
-            <Link
-              to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
-              data-testid="inventory-record-waste-loss"
-            >
-              {t("inventory.recordWasteLoss")}
-            </Link>
-          </Button>
-        </div>
+          </div>
+          {expirationSummaryStrip}
+        </Card>
+      ) : account.isTracked ? (
+        expirationSummaryStrip
       ) : null}
 
       {!account.isTracked ? (
@@ -1100,7 +1156,6 @@ export function InventoryDetailPage() {
       ) : (
         <>
           {expirationPendingCard}
-          {expirationSummaryStrip}
 
           {allowManageInventory || lotsPanel ? (
             <div
