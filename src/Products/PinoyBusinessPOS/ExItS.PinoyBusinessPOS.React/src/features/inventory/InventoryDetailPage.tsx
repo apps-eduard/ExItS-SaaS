@@ -921,7 +921,7 @@ export function InventoryDetailPage() {
                 </Link>
               </Button>
             ) : (
-              <Button asChild type="button" className="inventory-detail-action-btn w-full">
+              <Button asChild type="button" className="inventory-detail-action-btn inventory-detail-action-btn--solid w-full">
                 <Link
                   to={expirationSettingsPath(productId!)}
                   data-testid="inventory-enable-expiration"
