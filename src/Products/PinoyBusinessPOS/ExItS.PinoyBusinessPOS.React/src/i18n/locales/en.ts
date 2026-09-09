@@ -2145,7 +2145,7 @@ export const en = {
   "sell.weightUpdate": "Update",
   "sell.pricePerKg": "/ kg",
   "sell.pricePerUnit": "/ {unit}",
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+  "sell.linePreview": "{qty} {unit} × {price} = {amount}",
   "sell.weightErrorZero": "Enter a weight greater than zero.",
   "sell.customQtyAddTitle": "Enter quantity",
   "sell.customQtyEditTitle": "Edit quantity",

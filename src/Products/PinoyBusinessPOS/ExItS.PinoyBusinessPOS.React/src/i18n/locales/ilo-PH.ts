@@ -9398,7 +9398,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Agbirok wenno agpili iti produkto tapno mangrugi iti sale.",
 
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+  "sell.linePreview": "{qty} {unit} × {price} = {amount}",
 
   "sell.midSession.deviceLost": "Saanen a napalubusan ti device mo para iti panaglako.",
 

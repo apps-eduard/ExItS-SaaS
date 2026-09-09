@@ -11,7 +11,9 @@ import {
   type WeightInputUnit,
 } from "@/cart/sell-cart-helpers";
 import { sellStockCaption } from "@/features/sell/sell-stock-caption";
+import { formatSellLinePreview } from "@/features/sell/format-sell-line-preview";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 
 type SellWeightEntryDialogProps = {
   open: boolean;
@@ -223,14 +225,17 @@ export function SellWeightEntryDialog({
         {preview != null && kilograms != null ? (
           <p
             data-testid="sell-weight-preview"
-            className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+            className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold tabular-nums"
             aria-live="polite"
           >
-            {t("sell.linePreview")
-              .replace("{qty}", formatQuantityDisplay(kilograms))
-              .replace("{unit}", "kg")
-              .replace("{price}", unitPrice.toFixed(2))
-              .replace("{amount}", preview.toFixed(2))}
+            {formatSellLinePreview(t("sell.linePreview"), {
+              qty: formatQuantityDisplay(
+                unitCode === "g" ? Math.round(kilograms * 1000) : kilograms,
+              ),
+              unit: unitCode,
+              price: `${formatPeso(unitPrice)} ${t("sell.pricePerKg")}`,
+              amount: formatPeso(preview),
+            })}
           </p>
         ) : null}
 

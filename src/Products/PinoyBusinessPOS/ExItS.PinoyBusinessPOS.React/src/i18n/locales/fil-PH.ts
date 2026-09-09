@@ -9396,7 +9396,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Maghanap o pumili ng produkto para magsimula ng sale.",
 
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+  "sell.linePreview": "{qty} {unit} × {price} = {amount}",
 
   "sell.midSession.deviceLost": "Hindi na aprubado ang device mo para magbenta.",
 

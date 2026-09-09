@@ -9398,7 +9398,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Pangita o pilia ang mga produkto aron magsugod og sale.",
 
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+  "sell.linePreview": "{qty} {unit} × {price} = {amount}",
 
   "sell.midSession.deviceLost": "Dili na aprubado ang imong device para sa pagbaligya.",
 

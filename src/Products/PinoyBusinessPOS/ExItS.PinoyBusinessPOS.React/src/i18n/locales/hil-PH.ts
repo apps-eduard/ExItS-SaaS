@@ -9398,7 +9398,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Maghanap ukon magpili sang produkto para magsugod sang sale.",
 
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+  "sell.linePreview": "{qty} {unit} × {price} = {amount}",
 
   "sell.midSession.deviceLost": "Indi na aprubado ang imo device para sa pagbaligya.",
 

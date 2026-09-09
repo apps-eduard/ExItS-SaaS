@@ -10,7 +10,9 @@ import {
   roundMoney,
 } from "@/cart/sell-cart-helpers";
 import { sellStockCaption } from "@/features/sell/sell-stock-caption";
+import { formatSellLinePreview } from "@/features/sell/format-sell-line-preview";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 
 type SellCustomQuantityDialogProps = {
   open: boolean;
@@ -175,14 +177,15 @@ export function SellCustomQuantityDialog({
         {preview != null && quantity != null ? (
           <p
             data-testid="sell-custom-qty-preview"
-            className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+            className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2 text-[length:var(--exits-text-sm)] font-semibold tabular-nums"
             aria-live="polite"
           >
-            {t("sell.linePreview")
-              .replace("{qty}", formatQuantityDisplay(quantity))
-              .replace("{unit}", unitLabel)
-              .replace("{price}", unitPrice.toFixed(2))
-              .replace("{amount}", preview.toFixed(2))}
+            {formatSellLinePreview(t("sell.linePreview"), {
+              qty: formatQuantityDisplay(quantity),
+              unit: unitLabel,
+              price: `${formatPeso(unitPrice)} ${t("sell.pricePerUnit").replace("{unit}", unitLabel)}`,
+              amount: formatPeso(preview),
+            })}
           </p>
         ) : null}
 
