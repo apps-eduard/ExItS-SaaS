@@ -2308,6 +2308,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "customers.search": "Pangita sang customers",
 
+  "customers.searchPeople": "Pangita sang tawo",
+
   "customers.sectionBasics": "Panguna",
 
   "customers.sectionDetails": "Mga detalye",
@@ -2327,6 +2329,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.statusAll": "Tanan",
 
   "customers.statusFilter": "Status sa customer",
+
+  "customers.statusLabel": "Status",
 
   "customers.statusInactive": "Inactive",
 

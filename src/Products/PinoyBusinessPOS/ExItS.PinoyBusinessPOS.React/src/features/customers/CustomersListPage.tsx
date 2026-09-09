@@ -106,7 +106,7 @@ export function CustomersListPage() {
   const showPeople = kind === "all" || kind === "people";
   const showBusinesses = allowBusiness && (kind === "all" || kind === "businesses");
   /** Status chips only on People tab — avoids two competing “All” filters on All. */
-  const showStatusFilter = kind === "people";
+  const showStatusFilter = showPeople;
   const showAdd = allowCreate && (showPeople || kind === "businesses" || kind === "all");
 
   const peopleQuery = useQuery({
@@ -233,6 +233,31 @@ export function CustomersListPage() {
 
   const peopleReady = peopleQuery.isSuccess || usingCache;
   const businessesReady = businessQuery.isSuccess && peopleQuery.isSuccess;
+  const peopleCount = peopleReady ? peopleItems.length : null;
+  const businessCount = businessesReady ? businessRows.length : null;
+  const allCount = !allowBusiness
+    ? peopleCount
+    : peopleCount != null && businessCount != null
+      ? peopleCount + businessCount
+      : null;
+
+  const searchPlaceholder =
+    kind === "people"
+      ? t("customers.searchPeople")
+      : kind === "businesses"
+        ? t("customers.business.search")
+        : t("customers.search");
+
+  const kindLabel = (filter: (typeof KIND_FILTERS)[number]): string => {
+    const base = t(filter.labelKey);
+    const count =
+      filter.value === "all"
+        ? allCount
+        : filter.value === "people"
+          ? peopleCount
+          : businessCount;
+    return count != null ? `${base} ${count}` : base;
+  };
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -240,7 +265,7 @@ export function CustomersListPage() {
 
   return (
     <div
-      className="customers-page exits-page flex min-w-0 flex-col gap-2.5"
+      className="customers-page exits-page flex min-w-0 flex-col gap-2"
       data-testid="customers-list-page"
     >
       <PageHeader
@@ -264,49 +289,59 @@ export function CustomersListPage() {
         }
       />
 
-      <div className="customers-toolbar" data-testid="customers-toolbar">
-        <SearchField
-          label={t("customers.search")}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={
-            kind === "businesses"
-              ? t("customers.business.search")
-              : t("customers.search")
-          }
-          data-testid="customers-search"
-          containerClassName="customers-page__search exits-page__search"
-        />
-
-        {allowBusiness ? (
+      {allowBusiness ? (
+        <div className="customers-kind-tabs">
           <ExitsChipBar
             variant="filter"
             ariaLabel={t("customers.kindFilter")}
             testId="customers-kind-filters"
             items={KIND_FILTERS.map((filter) => ({
               key: filter.value,
-              label: t(filter.labelKey),
+              label: kindLabel(filter),
               state: kind === filter.value ? "active" : "idle",
               testId: `customers-kind-${filter.value}`,
               onSelect: () => setKind(filter.value),
             }))}
           />
-        ) : null}
+        </div>
+      ) : null}
+
+      <div className="customers-toolbar" data-testid="customers-toolbar">
+        <div className="customers-toolbar__search">
+          <SearchField
+            label={searchPlaceholder}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={searchPlaceholder}
+            data-testid="customers-search"
+            containerClassName="customers-page__search exits-page__search"
+          />
+        </div>
 
         {showStatusFilter ? (
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("customers.statusFilter")}
-            testId="customers-status-filters"
-            items={STATUS_FILTERS.map((filter) => ({
-              key: filter.key,
-              label: t(filter.labelKey),
-              state: (status || "all") === filter.key ? "active" : "idle",
-              testId: `customers-status-${filter.key === "all" ? "all" : filter.key}`,
-              onSelect: () => setStatus(filter.value),
-            }))}
-          />
+          <label className="customers-status-control" data-testid="customers-status-filters">
+            <span className="customers-status-control__label">{t("customers.statusLabel")}</span>
+            <select
+              className="exits-select customers-status-control__select"
+              value={status === "" ? "all" : status}
+              aria-label={t("customers.statusFilter")}
+              onChange={(event) => {
+                const next = event.target.value;
+                setStatus(next === "all" ? "" : (next as StatusFilter));
+              }}
+            >
+              {STATUS_FILTERS.map((filter) => (
+                <option
+                  key={filter.key}
+                  value={filter.key === "all" ? "all" : filter.key}
+                  data-testid={`customers-status-${filter.key === "all" ? "all" : filter.key}`}
+                >
+                  {t(filter.labelKey)}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
       </div>
 

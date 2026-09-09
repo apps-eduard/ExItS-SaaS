@@ -2308,6 +2308,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.search": "Pangita iti customers",
 
+  "customers.searchPeople": "Pangita iti tattao",
+
   "customers.sectionBasics": "Pangrugian",
 
   "customers.sectionDetails": "Dagiti detalye",
@@ -2327,6 +2329,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.statusAll": "Amin",
 
   "customers.statusFilter": "Status iti customer",
+
+  "customers.statusLabel": "Status",
 
   "customers.statusInactive": "Inactive",
 

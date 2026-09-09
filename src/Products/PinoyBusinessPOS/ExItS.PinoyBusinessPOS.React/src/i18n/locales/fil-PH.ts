@@ -2308,6 +2308,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "customers.search": "Maghanap ng customers",
 
+  "customers.searchPeople": "Maghanap ng tao",
+
   "customers.sectionBasics": "Basics",
 
   "customers.sectionDetails": "Details",
@@ -2327,6 +2329,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.statusAll": "Lahat",
 
   "customers.statusFilter": "Status ng customer",
+
+  "customers.statusLabel": "Status",
 
   "customers.statusInactive": "Inactive",
 

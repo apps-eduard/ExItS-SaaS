@@ -2308,6 +2308,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "customers.search": "Pangita og customers",
 
+  "customers.searchPeople": "Pangita og tawo",
+
   "customers.sectionBasics": "Panguna",
 
   "customers.sectionDetails": "Mga detalye",
@@ -2327,6 +2329,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.statusAll": "Tanan",
 
   "customers.statusFilter": "Status sa customer",
+
+  "customers.statusLabel": "Status",
 
   "customers.statusInactive": "Inactive",
 
