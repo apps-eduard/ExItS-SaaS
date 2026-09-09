@@ -3231,6 +3231,8 @@ export const en = {
   "inventory.reason": "Reason",
   "inventory.reasonRequired": "A reason is required for stock adjustments.",
   "inventory.applyAdjustment": "Apply adjustment",
+  "inventory.applyIncrease": "Apply increase",
+  "inventory.applyDecrease": "Apply decrease",
   "inventory.movements": "Movement history",
   "inventory.movementCol.when": "When",
   "inventory.movementCol.qty": "Qty",

@@ -3251,6 +3251,114 @@ html:has(.admin-shell) #root {
   min-width: 0;
 }
 
+.inventory-detail-workspace {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.inventory-expiration-summary-strip {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+.inventory-expiration-summary-strip__title {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  color: var(--exits-text);
+}
+
+.inventory-expiration-summary-strip__onhand {
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+}
+
+.inventory-expiration-summary-strip__counts {
+  display: inline-flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.inventory-adjust-qty {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.inventory-adjust-qty__uom {
+  display: inline-flex;
+  align-items: center;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.inventory-adjust-form__actions {
+  display: flex;
+  justify-content: stretch;
+  margin-top: 0.15rem;
+}
+
+.inventory-adjust-form__submit {
+  width: 100%;
+}
+
+.inventory-detail-page .inventory-direction-option {
+  min-height: var(--exits-control-height);
+  padding: 0.25rem 0.65rem;
+}
+
+.inventory-lots-panel .inventory-lot-table__grid th,
+.inventory-lots-panel .inventory-lot-table__grid td {
+  padding: 0.35rem 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .inventory-detail-page {
+    gap: 0.75rem;
+  }
+
+  .inventory-adjust-form__actions {
+    justify-content: flex-end;
+  }
+
+  .inventory-adjust-form__submit {
+    width: auto;
+    min-width: 9.5rem;
+  }
+
+  .inventory-expiration-summary-strip {
+    padding: 0.45rem 0.75rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .inventory-detail-workspace--split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
+    gap: 0.75rem 1rem;
+    align-items: start;
+  }
+
+  .inventory-detail-workspace__lots,
+  .inventory-detail-workspace__adjust {
+    min-width: 0;
+  }
+}
+
 @media (min-width: 640px) {
   .inventory-detail-quick-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));

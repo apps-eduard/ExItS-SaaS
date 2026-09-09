@@ -2781,6 +2781,10 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.applyAdjustment": "I-apply ang adjustment",
 
+  "inventory.applyDecrease": "I-apply ang decrease",
+
+  "inventory.applyIncrease": "I-apply ang increase",
+
   "inventory.backList": "Balik sa inventory",
 
   "inventory.backOps": "Balik sa operations",

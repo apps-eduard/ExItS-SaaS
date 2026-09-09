@@ -529,84 +529,98 @@ export function InventoryDetailPage() {
   const adjustExpiryReady =
     !adjustInRequiresExpiry || hasValidExpiryDateInput(adjustExpiry);
 
-  const lotsSection =
-    tracksExpiration && !showAddOpeningStock ? (
-      needsExpirationSetup ? (
-        <Card
-          className="flex flex-col gap-3 p-3"
-          data-testid="inventory-expiration-pending"
-        >
-          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("inventory.missingExpirationShort")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("inventory.expirationPendingSummary")
-              .replace("{qty}", String(account.onHandQuantity))
-              .replace("{uom}", account.unitOfMeasure)}
-          </p>
-        </Card>
-      ) : (
-        <>
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-expiration-summary">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.expirationInventory")}
-            </h2>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
-            </p>
-            <div
-              className="inventory-expiry-counts flex min-w-0 flex-wrap gap-2"
-              data-testid="inventory-expiry-totals"
-            >
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--good">
-                {t("inventory.statusGood")}: {goodQuantity}
-              </span>
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
-                {t("inventory.nearExpiryQty")}: {account.nearExpiryQuantity ?? 0}
-              </span>
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
-                {t("inventory.expiredQty")}: {account.expiredQuantity ?? 0}
-              </span>
-            </div>
-          </Card>
-
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-lots">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.stockLots")}
-            </h2>
-            {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-            {lots.length === 0 && !lotsQuery.isLoading ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("inventory.lotsEmptyHint")}
-              </p>
-            ) : (
-              <InventoryLotList
-                lots={lots}
-                unitOfMeasure={account.unitOfMeasure}
-                formatStatus={formatStatus}
-              />
-            )}
-            {lotsQuery.hasNextPage ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-fit"
-                disabled={lotsQuery.isFetchingNextPage}
-                onClick={() => void lotsQuery.fetchNextPage()}
-                data-testid="inventory-lots-load-more"
-              >
-                {lotsQuery.isFetchingNextPage
-                  ? t("inventory.loadingMore")
-                  : t("inventory.loadMore")}
-              </Button>
-            ) : null}
-          </Card>
-        </>
-      )
+  const expirationPendingCard =
+    tracksExpiration && !showAddOpeningStock && needsExpirationSetup ? (
+      <Card
+        className="flex flex-col gap-3 p-3"
+        data-testid="inventory-expiration-pending"
+      >
+        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+          {t("inventory.missingExpirationShort")}
+        </h2>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("inventory.expirationPendingSummary")
+            .replace("{qty}", String(account.onHandQuantity))
+            .replace("{uom}", account.unitOfMeasure)}
+        </p>
+      </Card>
     ) : null;
 
+  const expirationSummaryStrip =
+    tracksExpiration && !showAddOpeningStock && !needsExpirationSetup ? (
+      <div
+        className="inventory-expiration-summary-strip"
+        data-testid="inventory-expiration-summary"
+      >
+        <span className="inventory-expiration-summary-strip__title">
+          {t("inventory.expirationInventory")}
+        </span>
+        <span className="inventory-expiration-summary-strip__onhand">
+          {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
+        </span>
+        <div
+          className="inventory-expiry-counts inventory-expiration-summary-strip__counts"
+          data-testid="inventory-expiry-totals"
+        >
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--good">
+            {t("inventory.statusGood")} {goodQuantity}
+          </span>
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
+            {t("inventory.nearExpiryQty")} {account.nearExpiryQuantity ?? 0}
+          </span>
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
+            {t("inventory.expiredQty")} {account.expiredQuantity ?? 0}
+          </span>
+        </div>
+      </div>
+    ) : null;
+
+  const lotsPanel =
+    tracksExpiration && !showAddOpeningStock && !needsExpirationSetup ? (
+      <Card className="inventory-lots-panel flex flex-col gap-2 p-3" data-testid="inventory-lots">
+        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          {t("inventory.stockLots")}
+        </h2>
+        {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        {lots.length === 0 && !lotsQuery.isLoading ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("inventory.lotsEmptyHint")}
+          </p>
+        ) : (
+          <InventoryLotList
+            lots={lots}
+            unitOfMeasure={account.unitOfMeasure}
+            formatStatus={formatStatus}
+          />
+        )}
+        {lotsQuery.hasNextPage ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-fit"
+            disabled={lotsQuery.isFetchingNextPage}
+            onClick={() => void lotsQuery.fetchNextPage()}
+            data-testid="inventory-lots-load-more"
+          >
+            {lotsQuery.isFetchingNextPage
+              ? t("inventory.loadingMore")
+              : t("inventory.loadMore")}
+          </Button>
+        ) : null}
+      </Card>
+    ) : null;
+
+  const adjustApplyLabel = adjusting
+    ? t("checkout.confirmingTransaction")
+    : adjustDirection === "In"
+      ? t("inventory.applyIncrease")
+      : t("inventory.applyDecrease");
+
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-detail-page">
+    <div
+      className="inventory-detail-page flex min-w-0 flex-col gap-3"
+      data-testid="inventory-detail-page"
+    >
       <PageHeader
         title={account.name}
         description={t("inventory.detailLede")}
@@ -1085,185 +1099,214 @@ export function InventoryDetailPage() {
         </>
       ) : (
         <>
-          {lotsSection}
+          {expirationPendingCard}
+          {expirationSummaryStrip}
 
-          {allowManageInventory ? (
-            <>
-              <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">
-                <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-                  {t("inventory.stockAdjustment")}
-                </h2>
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="inventory-adjust-branch"
-                >
-                  {t("inventory.adjustingAtBranch").replace("{name}", branchLabel)}
-                </p>
-
-            <fieldset className="m-0 border-0 p-0">
-              <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("inventory.direction")}
-              </legend>
-              <div className="flex flex-wrap gap-2" data-testid="inventory-adjust-direction">
-                <label className="inventory-direction-option">
-                  <input
-                    type="radio"
-                    name="adjustDirection"
-                    value="In"
-                    checked={adjustDirection === "In"}
-                    onChange={() => {
-                      setAdjustDirection("In");
-                      setSelectedLotId("");
-                    }}
-                  />
-                  <span>{t("inventory.adjustIn")}</span>
-                </label>
-                <label className="inventory-direction-option">
-                  <input
-                    type="radio"
-                    name="adjustDirection"
-                    value="Out"
-                    checked={adjustDirection === "Out"}
-                    onChange={() => setAdjustDirection("Out")}
-                  />
-                  <span>{t("inventory.adjustOut")}</span>
-                </label>
-              </div>
-            </fieldset>
-
-            <Input
-              label={t("inventory.adjustQuantityRequired")}
-              name="adjustQuantity"
-              inputMode="decimal"
-              value={adjustQty}
-              onChange={(e) => setAdjustQty(e.target.value)}
-            />
-
-            {tracksExpiration && adjustDirection === "In" ? (
-              <div className="flex flex-col gap-3" data-testid="inventory-stock-details">
-                <h3 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-                  {t("inventory.stockDetails")}
-                </h3>
-                <div className="inventory-detail-opening-fields">
-                  <Input
-                    label={t("inventory.expirationDateRequiredLabel")}
-                    name="adjustExpirationDate"
-                    type="date"
-                    value={adjustExpiry}
-                    onChange={(e) => setAdjustExpiry(e.target.value)}
-                    data-testid="inventory-adjust-expiry"
-                  />
-                  <Input
-                    label={t("inventory.batchLotNumber")}
-                    name="adjustLotNumber"
-                    value={adjustLotNumber}
-                    onChange={(e) => setAdjustLotNumber(e.target.value)}
-                  />
-                </div>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.stockInExpiryHint")}
-                </p>
-              </div>
-            ) : null}
-
-            {tracksExpiration && adjustDirection === "Out" ? (
-              <fieldset className="m-0 border-0 p-0" data-testid="inventory-deduct-mode">
-                <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("inventory.deductFrom")}
-                </legend>
-                <div className="flex flex-col gap-2">
-                  <label className="inventory-direction-option">
-                    <input
-                      type="radio"
-                      name="deductMode"
-                      value="auto"
-                      checked={deductMode === "auto"}
-                      onChange={() => {
-                        setDeductMode("auto");
-                        setSelectedLotId("");
-                      }}
-                      data-testid="inventory-deduct-auto"
-                    />
-                    <span>{t("inventory.deductAutoFefo")}</span>
-                  </label>
-                  <label className="inventory-direction-option">
-                    <input
-                      type="radio"
-                      name="deductMode"
-                      value="manual"
-                      checked={deductMode === "manual"}
-                      onChange={() => setDeductMode("manual")}
-                      data-testid="inventory-deduct-manual"
-                    />
-                    <span>{t("inventory.deductChooseLot")}</span>
-                  </label>
-                </div>
-                <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.deductAutoHint")}
-                </p>
-                {deductMode === "manual" && lots.length > 0 ? (
-                  <div className="mt-3">
-                    <InventoryLotList
-                      lots={lots}
-                      unitOfMeasure={account.unitOfMeasure}
-                      formatStatus={formatStatus}
-                      selectable
-                      selectedLotId={selectedLotId}
-                      onSelectLot={setSelectedLotId}
-                      namePrefix="inventory-adjust-lot"
-                    />
-                  </div>
-                ) : null}
-                {deductMode === "manual" && lots.length === 0 ? (
-                  <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.lotsEmpty")}
-                  </p>
-                ) : null}
-              </fieldset>
-            ) : null}
-
-            <Input
-              label={t("inventory.reason")}
-              name="adjustReason"
-              value={adjustReason}
-              onChange={(e) => setAdjustReason(e.target.value)}
-              placeholder={t("inventory.reasonStockCountPlaceholder")}
-            />
-
-            <Button
-              type="button"
-              disabled={
-                adjusting ||
-                statusLocked ||
-                !adjustQty.trim() ||
-                !adjustExpiryReady ||
-                (tracksExpiration &&
-                  adjustDirection === "Out" &&
-                  deductMode === "manual" &&
-                  !selectedLotId)
-              }
-              onClick={() => void onAdjust()}
-              data-testid="inventory-adjust"
+          {allowManageInventory || lotsPanel ? (
+            <div
+              className={cn(
+                "inventory-detail-workspace",
+                Boolean(lotsPanel && allowManageInventory) && "inventory-detail-workspace--split",
+              )}
+              data-testid="inventory-detail-workspace"
             >
-              {adjusting
-                ? t("checkout.confirmingTransaction")
-                : tracksExpiration && adjustDirection === "In"
-                  ? t("inventory.addStock")
-                  : t("inventory.applyAdjustment")}
-            </Button>
-          </Card>
+              {lotsPanel ? (
+                <div className="inventory-detail-workspace__lots">{lotsPanel}</div>
+              ) : null}
 
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-fit"
-            disabled={disableMutation.isPending || !canDisableInventory}
-            onClick={() => disableMutation.mutate()}
-            data-testid="inventory-disable"
-          >
-            {t("inventory.disable")}
-          </Button>
-            </>
+              {allowManageInventory ? (
+                <div className="inventory-detail-workspace__adjust flex min-w-0 flex-col gap-2">
+                  <Card
+                    className="inventory-adjust-form flex flex-col gap-2.5 p-3"
+                    data-testid="inventory-adjust-form"
+                  >
+                    <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                      {t("inventory.stockAdjustment")}
+                    </h2>
+                    <p
+                      className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid="inventory-adjust-branch"
+                    >
+                      {t("inventory.adjustingAtBranch").replace("{name}", branchLabel)}
+                    </p>
+
+                    <fieldset className="m-0 border-0 p-0">
+                      <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
+                        {t("inventory.direction")}
+                      </legend>
+                      <div
+                        className="inventory-adjust-direction flex flex-wrap gap-1.5"
+                        data-testid="inventory-adjust-direction"
+                      >
+                        <label className="inventory-direction-option">
+                          <input
+                            type="radio"
+                            name="adjustDirection"
+                            value="In"
+                            checked={adjustDirection === "In"}
+                            onChange={() => {
+                              setAdjustDirection("In");
+                              setSelectedLotId("");
+                            }}
+                          />
+                          <span>{t("inventory.adjustIn")}</span>
+                        </label>
+                        <label className="inventory-direction-option">
+                          <input
+                            type="radio"
+                            name="adjustDirection"
+                            value="Out"
+                            checked={adjustDirection === "Out"}
+                            onChange={() => setAdjustDirection("Out")}
+                          />
+                          <span>{t("inventory.adjustOut")}</span>
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <div className="inventory-adjust-qty">
+                      <Input
+                        label={t("inventory.adjustQuantityRequired")}
+                        name="adjustQuantity"
+                        inputMode="decimal"
+                        value={adjustQty}
+                        onChange={(e) => setAdjustQty(e.target.value)}
+                      />
+                      <span className="inventory-adjust-qty__uom" aria-hidden="true">
+                        {account.unitOfMeasure}
+                      </span>
+                    </div>
+
+                    {tracksExpiration && adjustDirection === "In" ? (
+                      <div className="flex flex-col gap-2" data-testid="inventory-stock-details">
+                        <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.stockDetails")}
+                        </h3>
+                        <div className="inventory-detail-opening-fields">
+                          <Input
+                            label={t("inventory.expirationDateRequiredLabel")}
+                            name="adjustExpirationDate"
+                            type="date"
+                            value={adjustExpiry}
+                            onChange={(e) => setAdjustExpiry(e.target.value)}
+                            data-testid="inventory-adjust-expiry"
+                          />
+                          <Input
+                            label={t("inventory.batchLotNumber")}
+                            name="adjustLotNumber"
+                            value={adjustLotNumber}
+                            onChange={(e) => setAdjustLotNumber(e.target.value)}
+                          />
+                        </div>
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("inventory.stockInExpiryHint")}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {tracksExpiration && adjustDirection === "Out" ? (
+                      <fieldset className="m-0 border-0 p-0" data-testid="inventory-deduct-mode">
+                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.deductFrom")}
+                        </legend>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="deductMode"
+                              value="auto"
+                              checked={deductMode === "auto"}
+                              onChange={() => {
+                                setDeductMode("auto");
+                                setSelectedLotId("");
+                              }}
+                              data-testid="inventory-deduct-auto"
+                            />
+                            <span>{t("inventory.deductAutoFefo")}</span>
+                          </label>
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="deductMode"
+                              value="manual"
+                              checked={deductMode === "manual"}
+                              onChange={() => setDeductMode("manual")}
+                              data-testid="inventory-deduct-manual"
+                            />
+                            <span>{t("inventory.deductChooseLot")}</span>
+                          </label>
+                        </div>
+                        <p className="mt-1.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("inventory.deductAutoHint")}
+                        </p>
+                        {deductMode === "manual" && lots.length > 0 ? (
+                          <div className="mt-2">
+                            <InventoryLotList
+                              lots={lots}
+                              unitOfMeasure={account.unitOfMeasure}
+                              formatStatus={formatStatus}
+                              selectable
+                              selectedLotId={selectedLotId}
+                              onSelectLot={setSelectedLotId}
+                              namePrefix="inventory-adjust-lot"
+                            />
+                          </div>
+                        ) : null}
+                        {deductMode === "manual" && lots.length === 0 ? (
+                          <p className="mt-1.5 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                            {t("inventory.lotsEmpty")}
+                          </p>
+                        ) : null}
+                      </fieldset>
+                    ) : null}
+
+                    <Input
+                      label={t("inventory.reason")}
+                      name="adjustReason"
+                      value={adjustReason}
+                      onChange={(e) => setAdjustReason(e.target.value)}
+                      placeholder={t("inventory.reasonStockCountPlaceholder")}
+                      list="inventory-adjust-reason-suggestions"
+                    />
+                    <datalist id="inventory-adjust-reason-suggestions">
+                      <option value={t("inventory.reasonStockCountPlaceholder")} />
+                    </datalist>
+
+                    <div className="inventory-adjust-form__actions">
+                      <Button
+                        type="button"
+                        className="inventory-adjust-form__submit"
+                        disabled={
+                          adjusting ||
+                          statusLocked ||
+                          !adjustQty.trim() ||
+                          !adjustExpiryReady ||
+                          (tracksExpiration &&
+                            adjustDirection === "Out" &&
+                            deductMode === "manual" &&
+                            !selectedLotId)
+                        }
+                        onClick={() => void onAdjust()}
+                        data-testid="inventory-adjust"
+                      >
+                        {adjustApplyLabel}
+                      </Button>
+                    </div>
+                  </Card>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-fit"
+                    disabled={disableMutation.isPending || !canDisableInventory}
+                    onClick={() => disableMutation.mutate()}
+                    data-testid="inventory-disable"
+                  >
+                    {t("inventory.disable")}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </>
       )}

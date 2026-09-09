@@ -2781,6 +2781,10 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.applyAdjustment": "Apply adjustment",
 
+  "inventory.applyDecrease": "Apply decrease",
+
+  "inventory.applyIncrease": "Apply increase",
+
   "inventory.backList": "Bumalik sa inventory",
 
   "inventory.backOps": "Bumalik sa operations",

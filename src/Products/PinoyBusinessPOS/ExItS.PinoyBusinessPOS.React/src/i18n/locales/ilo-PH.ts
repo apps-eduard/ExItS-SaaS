@@ -2781,6 +2781,10 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.applyAdjustment": "I-apply ti adjustment",
 
+  "inventory.applyDecrease": "I-apply ti decrease",
+
+  "inventory.applyIncrease": "I-apply ti increase",
+
   "inventory.backList": "Agsubli iti inventory",
 
   "inventory.backOps": "Agsubli iti operations",
