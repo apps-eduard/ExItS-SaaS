@@ -325,10 +325,25 @@ export function ExpirationSettingsPage() {
               expirationWarningDays={resolvedWarningDays}
               intent="enable"
               onSuccess={onExpirationEnabled}
+              actionsExtra={
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="expiration-settings-view-lots-btn w-fit"
+                  data-testid="expiration-settings-view-lots"
+                >
+                  <Link to={`/inventory/${productId}`}>
+                    <Package className="size-4 shrink-0" aria-hidden />
+                    <span className="expiration-settings-view-lots-btn__label">
+                      {t("inventory.viewStockLots")}
+                    </span>
+                  </Link>
+                </Button>
+              }
             />
-          ) : null}
-          <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
-            {onHand <= 0 ? (
+          ) : (
+            <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 className="w-fit"
@@ -338,22 +353,22 @@ export function ExpirationSettingsPage() {
               >
                 {t("inventory.enableExpirationTracking")}
               </Button>
-            ) : null}
-            <Button
-              asChild
-              type="button"
-              variant="outline"
-              className="expiration-settings-view-lots-btn w-fit"
-              data-testid="expiration-settings-view-lots"
-            >
-              <Link to={`/inventory/${productId}`}>
-                <Package className="size-4 shrink-0" aria-hidden />
-                <span className="expiration-settings-view-lots-btn__label">
-                  {t("inventory.viewStockLots")}
-                </span>
-              </Link>
-            </Button>
-          </div>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="expiration-settings-view-lots-btn w-fit"
+                data-testid="expiration-settings-view-lots"
+              >
+                <Link to={`/inventory/${productId}`}>
+                  <Package className="size-4 shrink-0" aria-hidden />
+                  <span className="expiration-settings-view-lots-btn__label">
+                    {t("inventory.viewStockLots")}
+                  </span>
+                </Link>
+              </Button>
+            </div>
+          )}
         </Card>
       ) : (
         <Card

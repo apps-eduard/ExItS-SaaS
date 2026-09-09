@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import {
   enableExpirationTracking,
@@ -34,6 +34,8 @@ export type AssignExpirationLotsFormProps = {
   /** When assigning lots for already-tracked stock (repair), use assign copy. */
   intent?: "enable" | "assign";
   onSuccess: (result: EnableExpirationTrackingResponse) => void;
+  /** Optional controls rendered on the same row as the primary submit (left-aligned). */
+  actionsExtra?: ReactNode;
 };
 
 export function AssignExpirationLotsForm({
@@ -45,6 +47,7 @@ export function AssignExpirationLotsForm({
   expirationWarningDays,
   intent = "assign",
   onSuccess,
+  actionsExtra,
 }: AssignExpirationLotsFormProps) {
   const { t } = useI18n();
   const [rows, setRows] = useState<ExpirationLotDraft[]>([]);
@@ -291,7 +294,10 @@ export function AssignExpirationLotsForm({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap justify-end gap-2" data-testid="enable-expiration-primary-actions">
+      <div
+        className="enable-expiration-primary-actions flex flex-wrap items-center justify-start gap-2"
+        data-testid="enable-expiration-primary-actions"
+      >
         <Button
           type="button"
           disabled={!canSubmit}
@@ -300,6 +306,7 @@ export function AssignExpirationLotsForm({
         >
           {submitting ? t("loading.label") : submitLabel}
         </Button>
+        {actionsExtra}
       </div>
     </div>
   );
