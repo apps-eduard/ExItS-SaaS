@@ -500,35 +500,37 @@ export function PurchaseOrderCreatePage() {
         <span className="text-muted">{t("purchasing.receivingBranchHelp")}</span>
       </label>
 
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.supplier")}
-        <select
-          className="exits-select"
-          value={supplierId}
-          onChange={(e) => onSupplierChange(e.target.value)}
-          disabled={!allowManage || !online}
-          data-testid="po-supplier"
-        >
-          <option value="">{t("purchasing.selectSupplier")}</option>
-          {(suppliersQuery.data?.items ?? []).map((s) => (
-            <option key={s.supplierId} value={s.supplierId}>
-              {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="po-create-meta grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start">
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          {t("purchasing.supplier")}
+          <select
+            className="exits-select"
+            value={supplierId}
+            onChange={(e) => onSupplierChange(e.target.value)}
+            disabled={!allowManage || !online}
+            data-testid="po-supplier"
+          >
+            <option value="">{t("purchasing.selectSupplier")}</option>
+            {(suppliersQuery.data?.items ?? []).map((s) => (
+              <option key={s.supplierId} value={s.supplierId}>
+                {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.orderDate")}
-        <input
-          type="date"
-          className="rounded-md border border-border bg-background px-3"
-          value={orderDate}
-          onChange={(e) => setOrderDate(e.target.value)}
-          disabled={!allowManage || !online}
-          data-testid="po-order-date"
-        />
-      </label>
+        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          {t("purchasing.orderDate")}
+          <input
+            type="date"
+            className="rounded-md border border-border bg-background px-3"
+            value={orderDate}
+            onChange={(e) => setOrderDate(e.target.value)}
+            disabled={!allowManage || !online}
+            data-testid="po-order-date"
+          />
+        </label>
+      </div>
 
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("purchasing.notes")}
