@@ -14,7 +14,8 @@ public sealed record CustomerStatementLineDto(
     string? DueStatus,
     bool IsOverdue,
     bool IsReversed,
-    decimal RunningBalance);
+    decimal RunningBalance,
+    Guid? SourceSaleId = null);
 
 public sealed record CustomerStatementDto(
     Guid OrganizationId,

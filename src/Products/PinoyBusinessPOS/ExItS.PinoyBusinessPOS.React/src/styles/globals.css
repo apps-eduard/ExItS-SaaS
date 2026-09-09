@@ -11980,6 +11980,16 @@ a.exits-chip--primary:hover {
   margin-inline: auto;
 }
 
+.customer-business-local-form {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+.customer-business-local-form__notes {
+  resize: vertical;
+}
+
 .supplier-form-card {
   min-width: 0;
   overflow: hidden;
@@ -12002,7 +12012,7 @@ a.exits-chip--primary:hover {
 }
 
 .supplier-form-section + .supplier-form-section {
-  border-top: 1px solid var(--exits-border);
+  border-top: 0;
 }
 
 .supplier-form-section:first-child {

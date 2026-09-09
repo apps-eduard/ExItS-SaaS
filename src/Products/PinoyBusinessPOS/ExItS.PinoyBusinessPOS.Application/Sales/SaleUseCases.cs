@@ -705,6 +705,7 @@ public sealed class CheckoutSale
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
         IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
         bool allowUnlimitedSalePriceOverride = false,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -717,7 +718,7 @@ public sealed class CheckoutSale
                     clientSaleId: null,
                     discounts,
                     priceOverrides,
-                    branchId: null,
+                    branchId,
                     allowOfflinePriceAuthorities: false,
                     cancellationToken)
                 .ConfigureAwait(false);

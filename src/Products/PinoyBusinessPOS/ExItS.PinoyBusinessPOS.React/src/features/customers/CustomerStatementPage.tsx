@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCustomer, getCustomerStatement } from "@/api/pos/pos-customers-client";
 import { Card } from "@/components/ui/card";
@@ -39,6 +39,20 @@ function statementDescription(line: {
   status: string;
 }): string {
   return line.remarks?.trim() || line.status || "—";
+}
+
+function formatStatementWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function matchesEntryFilter(entryType: string, filter: StatementEntryFilter): boolean {
@@ -218,9 +232,12 @@ export function CustomerStatementPage() {
           ) : (
             <Card className="overflow-hidden p-0" data-testid="statement-lines">
               <div className="min-w-0 overflow-x-auto">
-                <table className="customer-ledger-table w-full min-w-[32rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                <table className="customer-ledger-table w-full min-w-[40rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
                   <thead>
                     <tr className="border-b border-border">
+                      <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("transactions.col.dateTime")}
+                      </th>
                       <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
                         {t("inventory.movementCol.type")}
                       </th>
@@ -242,13 +259,26 @@ export function CustomerStatementPage() {
                           className="border-b border-border last:border-b-0"
                           data-testid={`statement-line-${line.entryId}`}
                         >
+                          <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted tabular-nums">
+                            {formatStatementWhen(line.recordedAtUtc)}
+                          </td>
                           <td className="whitespace-nowrap px-3 py-2.5 align-middle">
                             <StatusChip tone={isCredit ? "warning" : "success"}>
                               {line.entryType}
                             </StatusChip>
                           </td>
                           <td className="max-w-[24rem] px-3 py-2.5 align-middle text-muted">
-                            <span className="line-clamp-2">{description}</span>
+                            {line.sourceSaleId ? (
+                              <Link
+                                to={`/sell/sales/${line.sourceSaleId}/summary`}
+                                className="line-clamp-2 font-medium text-[var(--exits-primary)] underline-offset-2 hover:underline"
+                                data-testid={`statement-sale-link-${line.entryId}`}
+                              >
+                                {description}
+                              </Link>
+                            ) : (
+                              <span className="line-clamp-2">{description}</span>
+                            )}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right font-semibold tabular-nums">
                             <MoneyDisplay amount={line.amount} />

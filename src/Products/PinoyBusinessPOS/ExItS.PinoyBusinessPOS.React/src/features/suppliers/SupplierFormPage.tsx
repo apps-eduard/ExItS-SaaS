@@ -60,7 +60,6 @@ type FieldDef = {
     | "suppliers.telephone"
     | "suppliers.email"
     | "suppliers.addressLine1"
-    | "suppliers.addressLine2"
     | "suppliers.city"
     | "suppliers.province"
     | "suppliers.postalCode"
@@ -208,12 +207,6 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
       key: "addressLine1",
       labelKey: "suppliers.addressLine1",
       testId: "supplier-address1",
-      span: "full",
-    },
-    {
-      key: "addressLine2",
-      labelKey: "suppliers.addressLine2",
-      testId: "supplier-address2",
       span: "full",
     },
     { key: "cityMunicipality", labelKey: "suppliers.city", testId: "supplier-city" },

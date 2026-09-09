@@ -228,8 +228,25 @@ internal static class SaleEndpoints
                 return problem!;
             }
 
+            // Quote must use the same branch effective prices as checkout, otherwise Exact tender
+            // can match the preview total and still fail with amount_tendered.below_total.
+            if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var quoteBranchId))
+            {
+                return PosApiResults.Problem(
+                    DomainErrorCodes.InvalidBranchId,
+                    $"Header '{PosOrganizationHeaders.BranchHeaderName}' must be a non-empty GUID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
             var result = await useCase
-                .QuoteAsync(organizationId, body.Lines, body.Discounts, body.PriceOverrides, allowUnlimited, ct)
+                .QuoteAsync(
+                    organizationId,
+                    body.Lines,
+                    body.Discounts,
+                    body.PriceOverrides,
+                    allowUnlimited,
+                    quoteBranchId,
+                    ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });

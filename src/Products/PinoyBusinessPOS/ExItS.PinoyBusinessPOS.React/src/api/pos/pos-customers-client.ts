@@ -128,6 +128,7 @@ export const posCustomerStatementLineSchema = z.object({
   isOverdue: z.boolean(),
   isReversed: z.boolean(),
   runningBalance: z.number(),
+  sourceSaleId: guidSchema.nullable().optional(),
 });
 
 export const posCustomerStatementSchema = z.object({

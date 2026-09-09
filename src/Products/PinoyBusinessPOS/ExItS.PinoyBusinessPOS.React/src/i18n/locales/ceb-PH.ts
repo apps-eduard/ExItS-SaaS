@@ -2045,6 +2045,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.addBusinessDetail": "Company, store, organization, or other business",
   "customers.addBusinessChooserLede": "Create a local business customer or connect an ExItS Organization.",
   "customers.addBusinessLocal": "Business not on ExItS",
+  "customers.backBusinessChooser": "Back to business options",
+  "customers.backCustomerChooser": "Back to customer options",
+  "customers.saveBusiness": "Save business",
   "customers.addBusinessLocalDetail": "Create a local business customer",
   "customers.addBusinessLocalLede": "Save business details without an ExItS Organization identity.",
   "customers.addBusinessOrganization": "ExItS Organization",
@@ -10288,7 +10291,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "suppliers.addViaQrDetail": "Camera, QR photo, o i-type ang ORG###### aron mohangyo og connection.",
 
-  "suppliers.addressLine1": "Address line 1",
+  "suppliers.addressLine1": "Building / House No. and Street",
 
   "suppliers.addressLine2": "Address line 2",
 
