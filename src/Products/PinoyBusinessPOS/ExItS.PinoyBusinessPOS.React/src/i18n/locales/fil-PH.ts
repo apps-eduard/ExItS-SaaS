@@ -9568,6 +9568,14 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "sell.weightErrorZero": "Maglagay ng bigat na higit sa zero.",
 
+  "sell.weightGramsEqualsKg": "{grams} g = {kg} kg",
+
+  "sell.weightSummaryPriceLabel": "Presyo",
+
+  "sell.weightSummaryTotalLabel": "Kabuuan",
+
+  "sell.weightSummaryWeightLabel": "Bigat",
+
   "sell.weightQuantity": "Bigat",
 
   "sell.weightUnit": "Unit",

@@ -9570,6 +9570,14 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "sell.weightErrorZero": "Butangi og weight nga labaw sa zero.",
 
+  "sell.weightGramsEqualsKg": "{grams} g = {kg} kg",
+
+  "sell.weightSummaryPriceLabel": "Presyo",
+
+  "sell.weightSummaryTotalLabel": "Kinatibuk-an",
+
+  "sell.weightSummaryWeightLabel": "Weight",
+
   "sell.weightQuantity": "Weight",
 
   "sell.weightUnit": "Unit",

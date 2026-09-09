@@ -1886,6 +1886,98 @@ html:has(.admin-shell) #root {
   font-weight: 500;
 }
 
+.sell-weight-entry__control {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.sell-weight-entry__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  margin: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding-inline: 0.75rem;
+  font: inherit;
+  font-size: var(--exits-text-md);
+  color: var(--exits-text);
+}
+
+.sell-weight-entry__input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--exits-ring);
+}
+
+.sell-weight-entry__units {
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+}
+
+.sell-weight-entry__unit {
+  min-width: 2.75rem;
+  height: var(--exits-control-height);
+  padding: 0 0.65rem;
+  border: 0;
+  border-inline-start: 1px solid var(--exits-border);
+  background: transparent;
+  color: var(--exits-text-muted);
+  font: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sell-weight-entry__unit:first-child {
+  border-inline-start: 0;
+}
+
+.sell-weight-entry__unit--active {
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-text);
+}
+
+.sell-weight-entry__unit:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--exits-ring);
+}
+
+.sell-weight-entry__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface-muted);
+  font-size: var(--exits-text-sm);
+}
+
+.sell-weight-entry__summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--exits-text-muted);
+}
+
+.sell-weight-entry__summary-row--total {
+  margin-top: 0.15rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
+  color: var(--exits-text);
+  font-weight: 600;
+}
+
 /*
  * Dense product pane (3+ columns): stack media above copy so height fits content.
  * Must follow base .sell-product-card rules so these win the cascade.

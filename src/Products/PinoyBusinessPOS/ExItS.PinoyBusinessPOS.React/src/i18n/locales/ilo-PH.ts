@@ -9570,6 +9570,14 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "sell.weightErrorZero": "Isurat ti weight a dakdakkel ngem zero.",
 
+  "sell.weightGramsEqualsKg": "{grams} g = {kg} kg",
+
+  "sell.weightSummaryPriceLabel": "Presyo",
+
+  "sell.weightSummaryTotalLabel": "Dagup",
+
+  "sell.weightSummaryWeightLabel": "Weight",
+
   "sell.weightQuantity": "Weight",
 
   "sell.weightUnit": "Unit",

@@ -9570,6 +9570,14 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "sell.weightErrorZero": "Butangi sang weight nga sobra sa zero.",
 
+  "sell.weightGramsEqualsKg": "{grams} g = {kg} kg",
+
+  "sell.weightSummaryPriceLabel": "Presyo",
+
+  "sell.weightSummaryTotalLabel": "Kabilugan",
+
+  "sell.weightSummaryWeightLabel": "Weight",
+
   "sell.weightQuantity": "Weight",
 
   "sell.weightUnit": "Unit",
