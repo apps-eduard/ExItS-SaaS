@@ -7551,6 +7551,56 @@ a.dashboard-metric-card:focus-visible {
   line-height: 1.35;
 }
 
+.inventory-expiring-table-shell {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.inventory-expiring-table__head {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.inventory-expiring-table th,
+.inventory-expiring-table td {
+  padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--exits-border);
+  vertical-align: middle;
+}
+
+.inventory-expiring-table th {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.inventory-expiring-table__row:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-expiring-table__name {
+  max-width: 14rem;
+}
+
+.inventory-expiring-table__actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.inventory-expiring-table__view {
+  font-weight: 700;
+  color: var(--exits-primary);
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+}
+
+.inventory-expiring-table__view:hover {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+}
+
 .inventory-direction-option {
   display: inline-flex;
   min-height: 2.75rem;
