@@ -3148,6 +3148,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockUse.quantityUsed": "Kadaghanon nga gigamit",
 
   "stockUse.available": "Anaa",
+  "stockUse.remaining": "Nahabilin",
 
   "stockUse.addProduct": "Pagdugang og product",
 
@@ -3290,6 +3291,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "wasteLoss.quantityWasted": "Gidaghanon",
 
   "wasteLoss.available": "Available",
+  "wasteLoss.remaining": "Nahabilin",
 
   "wasteLoss.addProduct": "Dugangi og produkto",
 

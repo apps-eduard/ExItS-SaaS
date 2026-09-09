@@ -39,6 +39,7 @@ import {
   convertDisplayBetweenWeightUnits,
   displayQtyFromCanonical,
   entryUnitLabel,
+  formatRemainingAfterEntry,
   isStockUseWeightProduct,
   parseStockUseEntryQuantity,
   type WeightInputUnit,
@@ -94,7 +95,6 @@ export function StockUseCreatePage() {
   const [weightUnitByProduct, setWeightUnitByProduct] = useState<
     Record<string, WeightInputUnit>
   >({});
-  const [focusedQtyProductId, setFocusedQtyProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
@@ -335,7 +335,6 @@ export function StockUseCreatePage() {
       delete next[productId];
       return next;
     });
-    setFocusedQtyProductId((current) => (current === productId ? null : current));
   }
 
   function addFromPicker(row: PickerRow) {
@@ -597,19 +596,14 @@ export function StockUseCreatePage() {
   function renderWeightUnitSegment(input: {
     productId: string;
     value: WeightInputUnit;
-    visible: boolean;
     disabled?: boolean;
     onChange: (unit: WeightInputUnit) => void;
   }) {
     return (
       <div
-        className={cn(
-          "stock-use-weight-unit",
-          input.visible ? "stock-use-weight-unit--visible" : "stock-use-weight-unit--reserved",
-        )}
+        className="stock-use-weight-unit"
         role="radiogroup"
         aria-label={t("sell.weightUnit")}
-        aria-hidden={!input.visible}
         data-testid={`stock-use-weight-unit-${input.productId}`}
       >
         {(["kg", "g"] as const).map((code) => (
@@ -622,8 +616,7 @@ export function StockUseCreatePage() {
               "stock-use-weight-unit__option",
               input.value === code && "stock-use-weight-unit__option--active",
             )}
-            disabled={input.disabled || !input.visible}
-            tabIndex={input.visible ? 0 : -1}
+            disabled={input.disabled}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => input.onChange(code)}
             data-testid={`stock-use-weight-unit-${code}-${input.productId}`}
@@ -647,9 +640,6 @@ export function StockUseCreatePage() {
     onWeightUnitChange?: (unit: WeightInputUnit) => void;
   }) {
     const weightUnit = weightUnitFor(input.productId, input.isWeight);
-    const showWeightUnit =
-      input.isWeight &&
-      (focusedQtyProductId === input.productId || weightUnit === "g" || input.value.trim() !== "");
     const hint = inlineQtyHint({
       productId: input.productId,
       raw: input.value,
@@ -674,29 +664,24 @@ export function StockUseCreatePage() {
             value={input.value}
             placeholder=""
             onChange={(e) => input.onChange(e.target.value)}
-            onFocus={() => setFocusedQtyProductId(input.productId)}
-            onBlur={() =>
-              setFocusedQtyProductId((current) =>
-                current === input.productId ? null : current,
-              )
-            }
             disabled={input.disabled}
             aria-label={t("stockUse.quantityUsed")}
             data-testid={input.testId}
           />
-          {input.isWeight ? (
-            renderWeightUnitSegment({
-              productId: input.productId,
-              value: weightUnit,
-              visible: showWeightUnit,
-              disabled: input.disabled,
-              onChange: (unit) => input.onWeightUnitChange?.(unit),
-            })
-          ) : (
-            <span className="stock-use-qty-entry__uom" aria-hidden>
-              {unitLabel}
-            </span>
-          )}
+          <div className="stock-use-qty-entry__unit-slot">
+            {input.isWeight ? (
+              renderWeightUnitSegment({
+                productId: input.productId,
+                value: weightUnit,
+                disabled: input.disabled,
+                onChange: (unit) => input.onWeightUnitChange?.(unit),
+              })
+            ) : (
+              <span className="stock-use-qty-entry__uom" title={unitLabel}>
+                {unitLabel}
+              </span>
+            )}
+          </div>
         </div>
         {hint ? (
           <p className="stock-use-qty-entry__hint m-0" role="status">
@@ -827,6 +812,9 @@ export function StockUseCreatePage() {
                       {t("stockUse.available")}
                     </th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                      {t("stockUse.remaining")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
                       {t("stockUse.quantityUsed")}
                     </th>
                     <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
@@ -841,6 +829,22 @@ export function StockUseCreatePage() {
                       isWeight: line.isWeight,
                       weightUnit,
                       uom: line.uom,
+                    });
+                    const rawQty =
+                      qtyByProduct[line.productId] ??
+                      (line.quantity > 0
+                        ? displayQtyFromCanonical({
+                            quantity: line.quantity,
+                            isWeight: line.isWeight,
+                            weightUnit,
+                          })
+                        : "");
+                    const leftQty = formatRemainingAfterEntry({
+                      available: line.available,
+                      raw: rawQty,
+                      isWeight: line.isWeight,
+                      weightUnit,
+                      fallbackQuantity: line.quantity,
                     });
                     return (
                       <tr
@@ -860,6 +864,10 @@ export function StockUseCreatePage() {
                           {line.available}
                           {line.isWeight ? " kg" : ""}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                          {leftQty}
+                          {line.isWeight ? " kg" : ""}
+                        </td>
                         <td className="px-3 py-2.5 align-middle">
                           <div className="flex justify-end">
                             {renderQtyEntry({
@@ -867,15 +875,7 @@ export function StockUseCreatePage() {
                               isWeight: line.isWeight,
                               uom: line.uom,
                               available: line.available,
-                              value:
-                                qtyByProduct[line.productId] ??
-                                (line.quantity > 0
-                                  ? displayQtyFromCanonical({
-                                      quantity: line.quantity,
-                                      isWeight: line.isWeight,
-                                      weightUnit,
-                                    })
-                                  : ""),
+                              value: rawQty,
                               disabled: statusLocked,
                               testId: `stock-use-line-qty-${line.productId}`,
                               onChange: (raw) => updateLineQty(line.productId, raw),
@@ -920,6 +920,22 @@ export function StockUseCreatePage() {
             <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
               {lines.map((line) => {
                 const weightUnit = weightUnitFor(line.productId, line.isWeight);
+                const rawQty =
+                  qtyByProduct[line.productId] ??
+                  (line.quantity > 0
+                    ? displayQtyFromCanonical({
+                        quantity: line.quantity,
+                        isWeight: line.isWeight,
+                        weightUnit,
+                      })
+                    : "");
+                const leftQty = formatRemainingAfterEntry({
+                  available: line.available,
+                  raw: rawQty,
+                  isWeight: line.isWeight,
+                  weightUnit,
+                  fallbackQuantity: line.quantity,
+                });
                 return (
                   <li
                     key={line.productId}
@@ -931,6 +947,7 @@ export function StockUseCreatePage() {
                       <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
                         {line.isWeight ? "kg" : line.uom} · {t("stockUse.available")}:{" "}
                         {line.available}
+                        {line.isWeight ? " kg" : ""} · {t("stockUse.remaining")}: {leftQty}
                         {line.isWeight ? " kg" : ""}
                       </p>
                       <div className="mt-2">
@@ -939,15 +956,7 @@ export function StockUseCreatePage() {
                           isWeight: line.isWeight,
                           uom: line.uom,
                           available: line.available,
-                          value:
-                            qtyByProduct[line.productId] ??
-                            (line.quantity > 0
-                              ? displayQtyFromCanonical({
-                                  quantity: line.quantity,
-                                  isWeight: line.isWeight,
-                                  weightUnit,
-                                })
-                              : ""),
+                          value: rawQty,
                           disabled: statusLocked,
                           testId: `stock-use-line-qty-${line.productId}`,
                           onChange: (raw) => updateLineQty(line.productId, raw),

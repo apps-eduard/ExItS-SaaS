@@ -5,6 +5,7 @@ import {
   displayQtyFromCanonical,
   isStockUseWeightProduct,
   parseStockUseEntryQuantity,
+  remainingAfterEntry,
 } from "@/features/inventory/stock-use-quantity";
 
 describe("stock-use-quantity", () => {
@@ -94,5 +95,32 @@ describe("stock-use-quantity", () => {
     expect(convertDisplayBetweenWeightUnits("0.25", "kg", "g")).toBe("250");
     expect(convertDisplayBetweenWeightUnits("250", "g", "kg")).toBe("0.25");
     expect(convertDisplayBetweenWeightUnits("", "kg", "g")).toBe("");
+  });
+
+  it("computes remaining stock after the entered quantity", () => {
+    expect(
+      remainingAfterEntry({
+        available: 24,
+        raw: "5",
+        isWeight: false,
+        weightUnit: "kg",
+      }),
+    ).toBe(19);
+    expect(
+      remainingAfterEntry({
+        available: 0.5,
+        raw: "250",
+        isWeight: true,
+        weightUnit: "g",
+      }),
+    ).toBe(0.25);
+    expect(
+      remainingAfterEntry({
+        available: 24,
+        raw: "",
+        isWeight: false,
+        weightUnit: "kg",
+      }),
+    ).toBe(24);
   });
 });

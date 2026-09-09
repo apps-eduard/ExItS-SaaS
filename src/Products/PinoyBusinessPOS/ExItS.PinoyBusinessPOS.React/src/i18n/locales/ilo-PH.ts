@@ -3148,6 +3148,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockUse.quantityUsed": "Kaadu a naaramat",
 
   "stockUse.available": "Available",
+  "stockUse.remaining": "Nabati",
 
   "stockUse.addProduct": "Agnayon ti product",
 
@@ -3290,6 +3291,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "wasteLoss.quantityWasted": "Kaadu",
 
   "wasteLoss.available": "Available",
+  "wasteLoss.remaining": "Nabati",
 
   "wasteLoss.addProduct": "Manginayon ti produkto",
 

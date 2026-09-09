@@ -3148,6 +3148,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockUse.quantityUsed": "Dami ng ginamit",
 
   "stockUse.available": "Available",
+  "stockUse.remaining": "Natira",
 
   "stockUse.addProduct": "Magdagdag ng product",
 
@@ -3290,6 +3291,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "wasteLoss.quantityWasted": "Dami",
 
   "wasteLoss.available": "Available",
+  "wasteLoss.remaining": "Natira",
 
   "wasteLoss.addProduct": "Magdagdag ng product",
 

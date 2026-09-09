@@ -118,3 +118,46 @@ export function entryUnitLabel(input: {
   }
   return input.uom;
 }
+
+/** On-hand remaining after the operator's current entry (canonical units). */
+export function remainingAfterEntry(input: {
+  available: number;
+  raw: string;
+  isWeight: boolean;
+  weightUnit: WeightInputUnit;
+  fallbackQuantity?: number;
+}): number {
+  const trimmed = input.raw.trim();
+  let used = 0;
+  if (trimmed !== "") {
+    const parsed = parseStockUseEntryQuantity({
+      raw: input.raw,
+      isWeight: input.isWeight,
+      weightUnit: input.weightUnit,
+    });
+    if (parsed.ok) {
+      used = parsed.quantity;
+    } else if ((input.fallbackQuantity ?? 0) > 0) {
+      used = input.fallbackQuantity!;
+    }
+  } else if ((input.fallbackQuantity ?? 0) > 0) {
+    used = input.fallbackQuantity!;
+  }
+  const remaining = input.available - used;
+  if (!Number.isFinite(remaining)) {
+    return input.available;
+  }
+  return Math.max(0, roundQuantity(remaining));
+}
+
+export function formatRemainingAfterEntry(input: {
+  available: number;
+  raw: string;
+  isWeight: boolean;
+  weightUnit: WeightInputUnit;
+  fallbackQuantity?: number;
+}): string {
+  return formatQuantityDisplay(
+    remainingAfterEntry(input),
+  );
+}

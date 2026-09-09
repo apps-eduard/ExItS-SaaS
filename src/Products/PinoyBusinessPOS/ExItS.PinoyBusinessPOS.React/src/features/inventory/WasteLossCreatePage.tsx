@@ -46,9 +46,20 @@ import {
   sortLotsForWasteLoss,
   wasteLossReasonLabelKey,
 } from "@/features/inventory/waste-loss-labels";
+import {
+  canAddStockUseQuantity,
+  convertDisplayBetweenWeightUnits,
+  displayQtyFromCanonical,
+  entryUnitLabel,
+  formatRemainingAfterEntry,
+  isStockUseWeightProduct,
+  parseStockUseEntryQuantity,
+  type WeightInputUnit,
+} from "@/features/inventory/stock-use-quantity";
 import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type ProductFilter = "internal" | "all";
@@ -57,11 +68,14 @@ type DraftLine = {
   productId: string;
   name: string;
   uom: string;
+  /** Canonical inventory quantity (kg for weight products). */
   quantity: number;
   available: number;
   tracksExpiration: boolean;
   inventoryLotId: string;
   lots: PosInventoryLotDto[];
+  isWeight: boolean;
+  weightInputUnit: WeightInputUnit | null;
 };
 
 type PickerRow = {
@@ -72,6 +86,7 @@ type PickerRow = {
   usageLabel: string;
   isTracked: boolean;
   tracksExpiration: boolean;
+  isWeight: boolean;
 };
 
 type ExactLotPrefillState =
@@ -142,6 +157,9 @@ export function WasteLossCreatePage() {
   const [brandId, setBrandId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
+  const [weightUnitByProduct, setWeightUnitByProduct] = useState<
+    Record<string, WeightInputUnit>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
@@ -288,6 +306,10 @@ export function WasteLossCreatePage() {
         usageLabel: t(businessUsageLabelKey(usage)),
         isTracked,
         tracksExpiration: inv?.tracksExpiration === true || cat?.tracksExpiration === true,
+        isWeight: isStockUseWeightProduct({
+          unitOfMeasure: cat?.unitOfMeasure ?? inv?.unitOfMeasure ?? "",
+          sellingMode: cat?.sellingMode,
+        }),
       });
     }
 
@@ -303,6 +325,11 @@ export function WasteLossCreatePage() {
   ]);
 
   const selectedIds = useMemo(() => new Set(lines.map((l) => l.productId)), [lines]);
+
+  const availablePickerRows = useMemo(
+    () => pickerRows.filter((row) => !selectedIds.has(row.productId)),
+    [pickerRows, selectedIds],
+  );
 
   useEffect(() => {
     if (!workspace || !preselectProductId || !allowManage || !online) {
@@ -353,6 +380,10 @@ export function WasteLossCreatePage() {
 
           const productName = cat?.name ?? inv.name;
           const uom = cat?.unitOfMeasure ?? inv.unitOfMeasure;
+          const isWeight = isStockUseWeightProduct({
+            unitOfMeasure: uom,
+            sellingMode: cat?.sellingMode,
+          });
 
           if (!(lot.quantityOnHand > 0)) {
             preselectDoneKeyRef.current = prefillKey;
@@ -373,6 +404,7 @@ export function WasteLossCreatePage() {
 
           const qty = lot.quantityOnHand;
           const lots = sortLotsForWasteLoss(lotsPage.items, true);
+          const weightUnit: WeightInputUnit = "kg";
           setLines([
             {
               productId: inv.productId,
@@ -383,9 +415,20 @@ export function WasteLossCreatePage() {
               tracksExpiration: true,
               inventoryLotId: lot.lotId,
               lots,
+              isWeight,
+              weightInputUnit: isWeight ? weightUnit : null,
             },
           ]);
-          setQtyByProduct({ [inv.productId]: String(qty) });
+          setQtyByProduct({
+            [inv.productId]: displayQtyFromCanonical({
+              quantity: qty,
+              isWeight,
+              weightUnit,
+            }),
+          });
+          if (isWeight) {
+            setWeightUnitByProduct({ [inv.productId]: weightUnit });
+          }
           preselectDoneKeyRef.current = prefillKey;
           setExactLotPrefill({ status: "ready", lot, productName, uom });
         } catch {
@@ -409,15 +452,24 @@ export function WasteLossCreatePage() {
           setReason(reasonParam);
         }
         preselectDoneKeyRef.current = prefillKey;
-        await addProductLine({
-          productId: inv.productId,
-          name: cat?.name ?? inv.name,
-          uom: cat?.unitOfMeasure ?? inv.unitOfMeasure,
-          onHand: inv.onHandQuantity,
-          usageLabel: "",
-          isTracked: true,
-          tracksExpiration: inv.tracksExpiration === true || cat?.tracksExpiration === true,
-        });
+        await addProductLine(
+          {
+            productId: inv.productId,
+            name: cat?.name ?? inv.name,
+            uom: cat?.unitOfMeasure ?? inv.unitOfMeasure,
+            onHand: inv.onHandQuantity,
+            usageLabel: "",
+            isTracked: true,
+            tracksExpiration: inv.tracksExpiration === true || cat?.tracksExpiration === true,
+            isWeight: isStockUseWeightProduct({
+              unitOfMeasure: cat?.unitOfMeasure ?? inv.unitOfMeasure,
+              sellingMode: cat?.sellingMode,
+            }),
+          },
+          0,
+          "kg",
+        );
+        setQtyByProduct((prev) => ({ ...prev, [inv.productId]: "" }));
       } catch {
         // Product-only preselect is best-effort; keep form usable.
       }
@@ -446,7 +498,11 @@ export function WasteLossCreatePage() {
     return sortLotsForWasteLoss(result.items, prioritizeExpiredLots);
   }
 
-  async function addProductLine(row: PickerRow) {
+  async function addProductLine(
+    row: PickerRow,
+    quantity: number,
+    weightUnit: WeightInputUnit | null,
+  ) {
     let lots: PosInventoryLotDto[] = [];
     if (row.tracksExpiration) {
       lots = await loadLots(row.productId);
@@ -454,7 +510,6 @@ export function WasteLossCreatePage() {
     setLines((prev) => {
       const without = prev.filter((line) => line.productId !== row.productId);
       const existing = prev.find((line) => line.productId === row.productId);
-      const quantity = existing?.quantity ?? 1;
       return [
         ...without,
         {
@@ -466,75 +521,151 @@ export function WasteLossCreatePage() {
           tracksExpiration: row.tracksExpiration,
           inventoryLotId: existing?.inventoryLotId ?? "",
           lots,
+          isWeight: row.isWeight,
+          weightInputUnit: row.isWeight ? (weightUnit ?? "kg") : null,
         },
       ];
     });
   }
 
-  function upsertLine(row: PickerRow, quantity: number) {
-    setLines((prev) => {
-      const existing = prev.find((line) => line.productId === row.productId);
-      const without = prev.filter((line) => line.productId !== row.productId);
-      return [
-        ...without,
-        {
-          productId: row.productId,
-          name: row.name,
-          uom: row.uom,
-          quantity,
-          available: row.onHand,
-          tracksExpiration: row.tracksExpiration,
-          inventoryLotId: existing?.inventoryLotId ?? "",
-          lots: existing?.lots ?? [],
-        },
-      ];
+  function weightUnitFor(productId: string, isWeight: boolean): WeightInputUnit {
+    if (!isWeight) {
+      return "kg";
+    }
+    return weightUnitByProduct[productId] ?? "kg";
+  }
+
+  function clearPendingEntry(productId: string) {
+    setQtyByProduct((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+    setWeightUnitByProduct((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
     });
   }
 
-  async function addOrUpdateFromPicker(row: PickerRow) {
+  async function addFromPicker(row: PickerRow) {
     setError(null);
-    const raw = qtyByProduct[row.productId] ?? "1";
-    const qty = Number(raw);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError(t("wasteLoss.invalidQuantity"));
+    if (selectedIds.has(row.productId)) {
       return;
     }
-    if (qty > row.onHand) {
+    const weightUnit = weightUnitFor(row.productId, row.isWeight);
+    const raw = qtyByProduct[row.productId] ?? "";
+    if (
+      !canAddStockUseQuantity({
+        raw,
+        isWeight: row.isWeight,
+        weightUnit,
+        available: row.onHand,
+      })
+    ) {
+      const parsed = parseStockUseEntryQuantity({
+        raw,
+        isWeight: row.isWeight,
+        weightUnit,
+      });
+      if (!parsed.ok) {
+        if (parsed.reason !== "blank") {
+          setError(t("wasteLoss.invalidQuantity"));
+        }
+        return;
+      }
       setError(
-        t("wasteLoss.onlyAvailable").replace("{quantity}", `${row.onHand} ${row.uom}`.trim()),
-      );
-      return;
-    }
-    const existing = lines.find((line) => line.productId === row.productId);
-    const nextQty = existing ? existing.quantity + qty : qty;
-    if (nextQty > row.onHand) {
-      setError(
-        t("wasteLoss.onlyAvailable").replace("{quantity}", `${row.onHand} ${row.uom}`.trim()),
-      );
-      return;
-    }
-    if (!existing) {
-      await addProductLine(row);
-      setLines((prev) =>
-        prev.map((line) =>
-          line.productId === row.productId ? { ...line, quantity: qty } : line,
+        t("wasteLoss.onlyAvailable").replace(
+          "{quantity}",
+          `${row.onHand} ${row.isWeight ? "kg" : row.uom}`.trim(),
         ),
       );
-    } else {
-      upsertLine(row, nextQty);
+      return;
     }
-    setQtyByProduct((prev) => ({ ...prev, [row.productId]: "1" }));
+
+    const parsed = parseStockUseEntryQuantity({
+      raw,
+      isWeight: row.isWeight,
+      weightUnit,
+    });
+    if (!parsed.ok) {
+      return;
+    }
+
+    await addProductLine(row, parsed.quantity, row.isWeight ? weightUnit : null);
+    setQtyByProduct((prev) => ({
+      ...prev,
+      [row.productId]: displayQtyFromCanonical({
+        quantity: parsed.quantity,
+        isWeight: row.isWeight,
+        weightUnit,
+      }),
+    }));
+    if (row.isWeight) {
+      setWeightUnitByProduct((prev) => ({ ...prev, [row.productId]: weightUnit }));
+    }
   }
 
   function updateLineQty(productId: string, raw: string) {
     setQtyByProduct((prev) => ({ ...prev, [productId]: raw }));
-    const qty = Number(raw);
-    if (!Number.isFinite(qty) || qty <= 0) {
+    const line = lines.find((item) => item.productId === productId);
+    if (!line) {
+      return;
+    }
+    const weightUnit = weightUnitFor(productId, line.isWeight);
+    const parsed = parseStockUseEntryQuantity({
+      raw,
+      isWeight: line.isWeight,
+      weightUnit,
+    });
+    if (!parsed.ok) {
       return;
     }
     setLines((prev) =>
-      prev.map((line) => (line.productId === productId ? { ...line, quantity: qty } : line)),
+      prev.map((item) =>
+        item.productId === productId ? { ...item, quantity: parsed.quantity } : item,
+      ),
     );
+  }
+
+  function updateLineWeightUnit(productId: string, nextUnit: WeightInputUnit) {
+    const line = lines.find((item) => item.productId === productId);
+    const currentUnit = weightUnitFor(productId, true);
+    const currentRaw = qtyByProduct[productId] ?? "";
+    const converted = convertDisplayBetweenWeightUnits(currentRaw, currentUnit, nextUnit);
+    setWeightUnitByProduct((prev) => ({ ...prev, [productId]: nextUnit }));
+    setQtyByProduct((prev) => ({ ...prev, [productId]: converted }));
+    if (!line) {
+      return;
+    }
+    const parsed = parseStockUseEntryQuantity({
+      raw: converted,
+      isWeight: true,
+      weightUnit: nextUnit,
+    });
+    if (!parsed.ok) {
+      setLines((prev) =>
+        prev.map((item) =>
+          item.productId === productId ? { ...item, weightInputUnit: nextUnit } : item,
+        ),
+      );
+      return;
+    }
+    setLines((prev) =>
+      prev.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: parsed.quantity, weightInputUnit: nextUnit }
+          : item,
+      ),
+    );
+  }
+
+  function updatePickerWeightUnit(productId: string, nextUnit: WeightInputUnit) {
+    const currentUnit = weightUnitFor(productId, true);
+    const currentRaw = qtyByProduct[productId] ?? "";
+    const converted = convertDisplayBetweenWeightUnits(currentRaw, currentUnit, nextUnit);
+    setWeightUnitByProduct((prev) => ({ ...prev, [productId]: nextUnit }));
+    setQtyByProduct((prev) => ({ ...prev, [productId]: converted }));
   }
 
   function updateLineLot(productId: string, inventoryLotId: string) {
@@ -547,6 +678,36 @@ export function WasteLossCreatePage() {
 
   function removeLine(productId: string) {
     setLines((prev) => prev.filter((line) => line.productId !== productId));
+    clearPendingEntry(productId);
+  }
+
+  function inlineQtyHint(input: {
+    productId: string;
+    raw: string;
+    isWeight: boolean;
+    available: number;
+    uom: string;
+  }): string | null {
+    const weightUnit = weightUnitFor(input.productId, input.isWeight);
+    const trimmed = input.raw.trim();
+    if (trimmed === "") {
+      return null;
+    }
+    const parsed = parseStockUseEntryQuantity({
+      raw: input.raw,
+      isWeight: input.isWeight,
+      weightUnit,
+    });
+    if (!parsed.ok) {
+      return t("wasteLoss.invalidQuantity");
+    }
+    if (parsed.quantity > input.available) {
+      return t("wasteLoss.onlyAvailable").replace(
+        "{quantity}",
+        `${input.available} ${input.isWeight ? "kg" : input.uom}`.trim(),
+      );
+    }
+    return null;
   }
 
   function validateLines(): boolean {
@@ -563,7 +724,7 @@ export function WasteLossCreatePage() {
         setError(
           t("wasteLoss.onlyAvailable").replace(
             "{quantity}",
-            `${line.available} ${line.uom}`.trim(),
+            `${line.available} ${line.isWeight ? "kg" : line.uom}`.trim(),
           ),
         );
         return false;
@@ -677,6 +838,106 @@ export function WasteLossCreatePage() {
   const qtyInputClass = "exits-input waste-loss-qty-input tabular-nums";
   const pickerLoading = inventoryQuery.isLoading || catalogQuery.isLoading;
 
+  function renderWeightUnitSegment(input: {
+    productId: string;
+    value: WeightInputUnit;
+    disabled?: boolean;
+    onChange: (unit: WeightInputUnit) => void;
+  }) {
+    return (
+      <div
+        className="inventory-qty-weight-unit"
+        role="radiogroup"
+        aria-label={t("sell.weightUnit")}
+        data-testid={`waste-loss-weight-unit-${input.productId}`}
+      >
+        {(["kg", "g"] as const).map((code) => (
+          <button
+            key={code}
+            type="button"
+            role="radio"
+            aria-checked={input.value === code}
+            className={cn(
+              "inventory-qty-weight-unit__option",
+              input.value === code && "inventory-qty-weight-unit__option--active",
+            )}
+            disabled={input.disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => input.onChange(code)}
+            data-testid={`waste-loss-weight-unit-${code}-${input.productId}`}
+          >
+            {code}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  function renderQtyEntry(input: {
+    productId: string;
+    isWeight: boolean;
+    uom: string;
+    available: number;
+    value: string;
+    disabled?: boolean;
+    testId: string;
+    ariaLabel: string;
+    onChange: (raw: string) => void;
+    onWeightUnitChange?: (unit: WeightInputUnit) => void;
+  }) {
+    const weightUnit = weightUnitFor(input.productId, input.isWeight);
+    const hint = inlineQtyHint({
+      productId: input.productId,
+      raw: input.value,
+      isWeight: input.isWeight,
+      available: input.available,
+      uom: input.uom,
+    });
+    const unitLabel = entryUnitLabel({
+      isWeight: input.isWeight,
+      weightUnit,
+      uom: input.uom,
+    });
+
+    return (
+      <div className="inventory-qty-entry">
+        <div className="inventory-qty-entry__controls">
+          <input
+            type="number"
+            min={0}
+            step="any"
+            className={qtyInputClass}
+            value={input.value}
+            placeholder=""
+            onChange={(e) => input.onChange(e.target.value)}
+            disabled={input.disabled}
+            aria-label={input.ariaLabel}
+            data-testid={input.testId}
+          />
+          <div className="inventory-qty-entry__unit-slot">
+            {input.isWeight ? (
+              renderWeightUnitSegment({
+                productId: input.productId,
+                value: weightUnit,
+                disabled: input.disabled,
+                onChange: (unit) => input.onWeightUnitChange?.(unit),
+              })
+            ) : (
+              <span className="inventory-qty-entry__uom" title={unitLabel}>
+                {unitLabel}
+              </span>
+            )}
+          </div>
+        </div>
+        {hint ? (
+          <p className="inventory-qty-entry__hint m-0" role="status">
+            {hint}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderLotPicker(line: DraftLine) {
     if (!line.tracksExpiration) {
       return null;
@@ -689,7 +950,7 @@ export function WasteLossCreatePage() {
         ) : (
           <InventoryLotList
             lots={line.lots}
-            unitOfMeasure={line.uom}
+            unitOfMeasure={line.isWeight ? "kg" : line.uom}
             formatStatus={(lot) => formatLotStatus(lot, t)}
             selectable
             selectedLotId={line.inventoryLotId}
@@ -903,6 +1164,9 @@ export function WasteLossCreatePage() {
                         {t("wasteLoss.available")}
                       </th>
                       <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("wasteLoss.remaining")}
+                      </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
                         {t("wasteLoss.quantityWasted")}
                       </th>
                       <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
@@ -911,113 +1175,163 @@ export function WasteLossCreatePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lines.map((line) => (
-                      <Fragment key={line.productId}>
-                        <tr
-                          className="waste-loss-create-table__row border-b border-border"
-                          data-testid={`waste-loss-line-${line.productId}`}
-                        >
-                          <td className="max-w-[18rem] px-3 py-2.5 align-middle">
-                            <span className="block truncate font-semibold text-foreground">
-                              {line.name}
-                            </span>
-                            <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
-                              {line.uom}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
-                            {line.available}
-                          </td>
-                          <td className="px-3 py-2.5 align-middle">
-                            <div className="flex justify-end">
-                              <input
-                                type="number"
-                                min={0}
-                                step="any"
-                                className={qtyInputClass}
-                                value={qtyByProduct[line.productId] ?? String(line.quantity)}
-                                onChange={(e) => updateLineQty(line.productId, e.target.value)}
-                                disabled={statusLocked}
-                                aria-label={t("wasteLoss.quantityWasted")}
-                                data-testid={`waste-loss-line-qty-${line.productId}`}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 align-middle">
-                            {!fromExpiration ? (
+                    {lines.map((line) => {
+                      const weightUnit = weightUnitFor(line.productId, line.isWeight);
+                      const rawQty =
+                        qtyByProduct[line.productId] ??
+                        (line.quantity > 0
+                          ? displayQtyFromCanonical({
+                              quantity: line.quantity,
+                              isWeight: line.isWeight,
+                              weightUnit,
+                            })
+                          : "");
+                      const leftQty = formatRemainingAfterEntry({
+                        available: line.available,
+                        raw: rawQty,
+                        isWeight: line.isWeight,
+                        weightUnit,
+                        fallbackQuantity: line.quantity,
+                      });
+                      return (
+                        <Fragment key={line.productId}>
+                          <tr
+                            className="waste-loss-create-table__row border-b border-border"
+                            data-testid={`waste-loss-line-${line.productId}`}
+                          >
+                            <td className="max-w-[18rem] px-3 py-2.5 align-middle">
+                              <span className="block truncate font-semibold text-foreground">
+                                {line.name}
+                              </span>
+                              <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+                                {line.isWeight ? "kg" : line.uom}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                              {line.available}
+                              {line.isWeight ? " kg" : ""}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                              {leftQty}
+                              {line.isWeight ? " kg" : ""}
+                            </td>
+                            <td className="px-3 py-2.5 align-middle">
                               <div className="flex justify-end">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  className={actionIconSoftClass}
-                                  aria-label={t("wasteLoss.removeLine")}
-                                  onClick={() => removeLine(line.productId)}
-                                  disabled={statusLocked}
-                                  data-testid={`waste-loss-remove-${line.productId}`}
-                                >
-                                  <Trash2 className="size-4 shrink-0" aria-hidden />
-                                </Button>
+                                {renderQtyEntry({
+                                  productId: line.productId,
+                                  isWeight: line.isWeight,
+                                  uom: line.uom,
+                                  available: line.available,
+                                  value: rawQty,
+                                  disabled: statusLocked,
+                                  testId: `waste-loss-line-qty-${line.productId}`,
+                                  ariaLabel: t("wasteLoss.quantityWasted"),
+                                  onChange: (raw) => updateLineQty(line.productId, raw),
+                                  onWeightUnitChange: (unit) =>
+                                    updateLineWeightUnit(line.productId, unit),
+                                })}
                               </div>
-                            ) : null}
-                          </td>
-                        </tr>
-                        {line.tracksExpiration ? (
-                          <tr className="border-b border-border">
-                            <td colSpan={4} className="waste-loss-lot-cell px-3 py-2.5">
-                              {renderLotPicker(line)}
+                            </td>
+                            <td className="px-3 py-2.5 align-middle">
+                              {!fromExpiration ? (
+                                <div className="flex justify-end">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className={actionIconSoftClass}
+                                    aria-label={t("wasteLoss.removeLine")}
+                                    onClick={() => removeLine(line.productId)}
+                                    disabled={statusLocked}
+                                    data-testid={`waste-loss-remove-${line.productId}`}
+                                  >
+                                    <Trash2 className="size-4 shrink-0" aria-hidden />
+                                  </Button>
+                                </div>
+                              ) : null}
                             </td>
                           </tr>
-                        ) : null}
-                      </Fragment>
-                    ))}
+                          {line.tracksExpiration ? (
+                            <tr className="border-b border-border">
+                              <td colSpan={5} className="waste-loss-lot-cell px-3 py-2.5">
+                                {renderLotPicker(line)}
+                              </td>
+                            </tr>
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             ) : (
               <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-                {lines.map((line) => (
-                  <li
-                    key={line.productId}
-                    className={productRowClass}
-                    data-testid={`waste-loss-line-${line.productId}`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="m-0 font-medium leading-snug">{line.name}</p>
-                      <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                        {line.uom} · {t("wasteLoss.available")}: {line.available}
-                      </p>
-                      <label className="mt-2 flex max-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                        <span className="text-muted">{t("wasteLoss.quantityWasted")}</span>
-                        <input
-                          type="number"
-                          min={0}
-                          step="any"
-                          className={qtyInputClass}
-                          value={qtyByProduct[line.productId] ?? String(line.quantity)}
-                          onChange={(e) => updateLineQty(line.productId, e.target.value)}
+                {lines.map((line) => {
+                  const weightUnit = weightUnitFor(line.productId, line.isWeight);
+                  const rawQty =
+                    qtyByProduct[line.productId] ??
+                    (line.quantity > 0
+                      ? displayQtyFromCanonical({
+                          quantity: line.quantity,
+                          isWeight: line.isWeight,
+                          weightUnit,
+                        })
+                      : "");
+                  const leftQty = formatRemainingAfterEntry({
+                    available: line.available,
+                    raw: rawQty,
+                    isWeight: line.isWeight,
+                    weightUnit,
+                    fallbackQuantity: line.quantity,
+                  });
+                  return (
+                    <li
+                      key={line.productId}
+                      className={productRowClass}
+                      data-testid={`waste-loss-line-${line.productId}`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="m-0 font-medium leading-snug">{line.name}</p>
+                        <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                          {line.isWeight ? "kg" : line.uom} · {t("wasteLoss.available")}:{" "}
+                          {line.available}
+                          {line.isWeight ? " kg" : ""} · {t("wasteLoss.remaining")}: {leftQty}
+                          {line.isWeight ? " kg" : ""}
+                        </p>
+                        <div className="mt-2">
+                          {renderQtyEntry({
+                            productId: line.productId,
+                            isWeight: line.isWeight,
+                            uom: line.uom,
+                            available: line.available,
+                            value: rawQty,
+                            disabled: statusLocked,
+                            testId: `waste-loss-line-qty-${line.productId}`,
+                            ariaLabel: t("wasteLoss.quantityWasted"),
+                            onChange: (raw) => updateLineQty(line.productId, raw),
+                            onWeightUnitChange: (unit) =>
+                              updateLineWeightUnit(line.productId, unit),
+                          })}
+                        </div>
+                        <div className="mt-2">{renderLotPicker(line)}</div>
+                      </div>
+                      {!fromExpiration ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className={actionIconSoftClass}
+                          aria-label={t("wasteLoss.removeLine")}
+                          onClick={() => removeLine(line.productId)}
                           disabled={statusLocked}
-                          data-testid={`waste-loss-line-qty-${line.productId}`}
-                        />
-                      </label>
-                      <div className="mt-2">{renderLotPicker(line)}</div>
-                    </div>
-                    {!fromExpiration ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className={actionIconSoftClass}
-                        aria-label={t("wasteLoss.removeLine")}
-                        onClick={() => removeLine(line.productId)}
-                        disabled={statusLocked}
-                        data-testid={`waste-loss-remove-${line.productId}`}
-                      >
-                        <Trash2 className="size-4 shrink-0" aria-hidden />
-                      </Button>
-                    ) : null}
-                  </li>
-                ))}
+                          data-testid={`waste-loss-remove-${line.productId}`}
+                        >
+                          <Trash2 className="size-4 shrink-0" aria-hidden />
+                        </Button>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             )}
 
@@ -1099,11 +1413,11 @@ export function WasteLossCreatePage() {
 
                 {pickerLoading ? <LoadingState label={t("wasteLoss.loading")} /> : null}
 
-                {!pickerLoading && pickerRows.length === 0 ? (
+                {!pickerLoading && availablePickerRows.length === 0 ? (
                   <p className="waste-loss-empty m-0">{t("wasteLoss.noProductsDetail")}</p>
                 ) : null}
 
-                {pickerRows.length > 0 ? (
+                {availablePickerRows.length > 0 ? (
                   isLargeScreen ? (
                     <div
                       className="waste-loss-create-table-shell min-w-0 overflow-x-auto"
@@ -1130,8 +1444,15 @@ export function WasteLossCreatePage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pickerRows.map((row) => {
-                            const already = selectedIds.has(row.productId);
+                          {availablePickerRows.map((row) => {
+                            const weightUnit = weightUnitFor(row.productId, row.isWeight);
+                            const raw = qtyByProduct[row.productId] ?? "";
+                            const canAdd = canAddStockUseQuantity({
+                              raw,
+                              isWeight: row.isWeight,
+                              weightUnit,
+                              available: row.onHand,
+                            });
                             return (
                               <tr
                                 key={row.productId}
@@ -1142,7 +1463,7 @@ export function WasteLossCreatePage() {
                                     {row.name}
                                   </span>
                                   <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
-                                    {row.uom}
+                                    {row.isWeight ? "kg" : row.uom}
                                   </span>
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
@@ -1150,37 +1471,41 @@ export function WasteLossCreatePage() {
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
                                   {row.onHand}
+                                  {row.isWeight ? " kg" : ""}
                                 </td>
                                 <td className="px-3 py-2.5 align-middle">
                                   <div className="flex justify-end">
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      step="any"
-                                      className={qtyInputClass}
-                                      value={qtyByProduct[row.productId] ?? "1"}
-                                      onChange={(e) =>
+                                    {renderQtyEntry({
+                                      productId: row.productId,
+                                      isWeight: row.isWeight,
+                                      uom: row.uom,
+                                      available: row.onHand,
+                                      value: raw,
+                                      disabled: statusLocked,
+                                      testId: `waste-loss-picker-qty-${row.productId}`,
+                                      ariaLabel: t("wasteLoss.quantityWasted"),
+                                      onChange: (value) =>
                                         setQtyByProduct((prev) => ({
                                           ...prev,
-                                          [row.productId]: e.target.value,
-                                        }))
-                                      }
-                                      disabled={statusLocked}
-                                      aria-label={t("wasteLoss.quantityWasted")}
-                                      data-testid={`waste-loss-picker-qty-${row.productId}`}
-                                    />
+                                          [row.productId]: value,
+                                        })),
+                                      onWeightUnitChange: (unit) =>
+                                        updatePickerWeightUnit(row.productId, unit),
+                                    })}
                                   </div>
                                 </td>
                                 <td className="px-3 py-2.5 align-middle">
                                   <div className="flex justify-end">
                                     <Button
                                       type="button"
-                                      variant={already ? "outline" : "default"}
+                                      variant="default"
                                       size="icon"
-                                      className={already ? actionIconSoftClass : actionIconClass}
-                                      disabled={!online || statusLocked || row.onHand <= 0}
+                                      className={actionIconClass}
+                                      disabled={
+                                        !online || statusLocked || row.onHand <= 0 || !canAdd
+                                      }
                                       aria-label={t("wasteLoss.addProduct")}
-                                      onClick={() => void addOrUpdateFromPicker(row)}
+                                      onClick={() => void addFromPicker(row)}
                                       data-testid={`waste-loss-add-${row.productId}`}
                                     >
                                       <Plus className="size-4 shrink-0" aria-hidden />
@@ -1198,42 +1523,51 @@ export function WasteLossCreatePage() {
                       className="m-0 flex list-none flex-col gap-1.5 p-0"
                       data-testid="waste-loss-product-picker"
                     >
-                      {pickerRows.map((row) => {
-                        const already = selectedIds.has(row.productId);
+                      {availablePickerRows.map((row) => {
+                        const weightUnit = weightUnitFor(row.productId, row.isWeight);
+                        const raw = qtyByProduct[row.productId] ?? "";
+                        const canAdd = canAddStockUseQuantity({
+                          raw,
+                          isWeight: row.isWeight,
+                          weightUnit,
+                          available: row.onHand,
+                        });
                         return (
                           <li key={row.productId} className={productRowClass}>
                             <div className="min-w-0 flex-1">
                               <p className="m-0 font-medium leading-snug">{row.name}</p>
                               <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                                {row.usageLabel} · {t("wasteLoss.available")}: {row.onHand} {row.uom}
+                                {row.usageLabel} · {t("wasteLoss.available")}: {row.onHand}{" "}
+                                {row.isWeight ? "kg" : row.uom}
                               </p>
-                              <label className="mt-2 flex max-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                                <span className="text-muted">{t("wasteLoss.quantityWasted")}</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step="any"
-                                  className={qtyInputClass}
-                                  value={qtyByProduct[row.productId] ?? "1"}
-                                  onChange={(e) =>
+                              <div className="mt-2">
+                                {renderQtyEntry({
+                                  productId: row.productId,
+                                  isWeight: row.isWeight,
+                                  uom: row.uom,
+                                  available: row.onHand,
+                                  value: raw,
+                                  disabled: statusLocked,
+                                  testId: `waste-loss-picker-qty-${row.productId}`,
+                                  ariaLabel: t("wasteLoss.quantityWasted"),
+                                  onChange: (value) =>
                                     setQtyByProduct((prev) => ({
                                       ...prev,
-                                      [row.productId]: e.target.value,
-                                    }))
-                                  }
-                                  disabled={statusLocked}
-                                  data-testid={`waste-loss-picker-qty-${row.productId}`}
-                                />
-                              </label>
+                                      [row.productId]: value,
+                                    })),
+                                  onWeightUnitChange: (unit) =>
+                                    updatePickerWeightUnit(row.productId, unit),
+                                })}
+                              </div>
                             </div>
                             <Button
                               type="button"
-                              variant={already ? "outline" : "default"}
+                              variant="default"
                               size="icon"
-                              className={already ? actionIconSoftClass : actionIconClass}
-                              disabled={!online || statusLocked || row.onHand <= 0}
+                              className={actionIconClass}
+                              disabled={!online || statusLocked || row.onHand <= 0 || !canAdd}
                               aria-label={t("wasteLoss.addProduct")}
-                              onClick={() => void addOrUpdateFromPicker(row)}
+                              onClick={() => void addFromPicker(row)}
                               data-testid={`waste-loss-add-${row.productId}`}
                             >
                               <Plus className="size-4 shrink-0" aria-hidden />

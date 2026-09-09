@@ -3148,6 +3148,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "stockUse.quantityUsed": "Kadamuon nga gingamit",
 
   "stockUse.available": "Available",
+  "stockUse.remaining": "Nabilin",
 
   "stockUse.addProduct": "Magdugang sang product",
 
@@ -3290,6 +3291,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "wasteLoss.quantityWasted": "Kadamo",
 
   "wasteLoss.available": "Available",
+  "wasteLoss.remaining": "Nabilin",
 
   "wasteLoss.addProduct": "Magdugang produkto",
 
