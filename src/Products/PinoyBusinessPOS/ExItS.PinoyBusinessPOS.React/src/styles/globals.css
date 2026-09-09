@@ -11431,11 +11431,13 @@ a.exits-chip--primary:hover {
 }
 
 .waste-loss-create-page .waste-loss-notes-input {
+  min-height: var(--exits-control-height);
   height: var(--exits-control-height);
   max-height: var(--exits-control-height);
   padding-block: 0.35rem;
   resize: none;
   line-height: 1.25;
+  overflow-y: auto;
 }
 
 .stock-use-create-page .stock-use-qty-input,
