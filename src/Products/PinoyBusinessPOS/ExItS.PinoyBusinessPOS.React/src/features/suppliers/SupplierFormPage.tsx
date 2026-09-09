@@ -308,7 +308,9 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
 
           <section className="supplier-form-section">
             <h2 className="supplier-form-section__title">{t("suppliers.sectionAddress")}</h2>
-            <div className="supplier-form-section__grid">{renderFields(address)}</div>
+            <div className="supplier-form-section__grid supplier-form-section__grid--address">
+              {renderFields(address)}
+            </div>
           </section>
 
           <section className="supplier-form-section">

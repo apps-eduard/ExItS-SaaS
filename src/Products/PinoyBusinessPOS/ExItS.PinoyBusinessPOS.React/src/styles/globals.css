@@ -12084,6 +12084,10 @@ a.exits-chip--primary:hover {
   .supplier-form-section__grid .supplier-form-field:has(.supplier-form-control--area) {
     grid-column: 1 / -1;
   }
+
+  .supplier-form-section__grid--address {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1200px) {
