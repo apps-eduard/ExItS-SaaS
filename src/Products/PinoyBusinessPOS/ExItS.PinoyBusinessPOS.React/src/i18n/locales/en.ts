@@ -4209,7 +4209,7 @@ export const en = {
   "suppliers.postalCode": "Postal code",
   "suppliers.taxNumber": "Tax or registration number",
   "suppliers.notes": "Notes",
-  "suppliers.save": "Save",
+  "suppliers.save": "Save supplier",
   "suppliers.saving": "Saving?",
   "suppliers.back": "Back to suppliers",
   "suppliers.detailLede": "Supplier contact details and status.",

@@ -8,6 +8,7 @@ import {
   type CreatePosSupplierInput,
 } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -66,6 +67,7 @@ type FieldDef = {
     | "suppliers.notes";
   testId: string;
   multiline?: boolean;
+  span?: "full" | "half";
 };
 
 export function SupplierCreatePage() {
@@ -201,21 +203,43 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
     { key: "email", labelKey: "suppliers.email", testId: "supplier-email" },
   ];
   const address: FieldDef[] = [
-    { key: "addressLine1", labelKey: "suppliers.addressLine1", testId: "supplier-address1" },
-    { key: "addressLine2", labelKey: "suppliers.addressLine2", testId: "supplier-address2" },
+    {
+      key: "addressLine1",
+      labelKey: "suppliers.addressLine1",
+      testId: "supplier-address1",
+      span: "full",
+    },
+    {
+      key: "addressLine2",
+      labelKey: "suppliers.addressLine2",
+      testId: "supplier-address2",
+      span: "full",
+    },
     { key: "cityMunicipality", labelKey: "suppliers.city", testId: "supplier-city" },
     { key: "province", labelKey: "suppliers.province", testId: "supplier-province" },
     { key: "postalCode", labelKey: "suppliers.postalCode", testId: "supplier-postal" },
   ];
   const notes: FieldDef[] = [
-    { key: "notes", labelKey: "suppliers.notes", testId: "supplier-notes", multiline: true },
+    {
+      key: "notes",
+      labelKey: "suppliers.notes",
+      testId: "supplier-notes",
+      multiline: true,
+      span: "full",
+    },
   ];
+
+  const cancelTo = mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new";
 
   function renderFields(fields: FieldDef[]) {
     return fields.map((field) => (
       <label
         key={field.key}
-        className="supplier-form-field flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+        className={
+          field.span === "full" || field.multiline
+            ? "supplier-form-field supplier-form-field--full flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+            : "supplier-form-field flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+        }
         htmlFor={field.testId}
       >
         {t(field.labelKey)}
@@ -247,7 +271,7 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
       <PageHeader
         title={mode === "create" ? t("suppliers.newTitle") : t("suppliers.editTitle")}
         description={t("suppliers.formLede")}
-        backTo={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new"}
+        backTo={cancelTo}
         backLabel={t(pageBackNav.suppliers.labelKey)}
         backTestId="page-header-back-suppliers"
       />
@@ -270,41 +294,46 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
         </div>
       ) : null}
 
-      <section className="supplier-form-section">
-        <h2 className="supplier-form-section__title">{t("suppliers.sectionBasics")}</h2>
-        <div className="supplier-form-section__grid">{renderFields(basics)}</div>
-      </section>
+      <Card className="supplier-form-card flex min-w-0 flex-col gap-0 p-0" data-testid="supplier-form-card">
+        <div className="supplier-form-card__body flex min-w-0 flex-col gap-0 p-3 sm:p-4">
+          <section className="supplier-form-section">
+            <h2 className="supplier-form-section__title">{t("suppliers.sectionBasics")}</h2>
+            <div className="supplier-form-section__grid">{renderFields(basics)}</div>
+          </section>
 
-      <section className="supplier-form-section">
-        <h2 className="supplier-form-section__title">{t("suppliers.sectionContact")}</h2>
-        <div className="supplier-form-section__grid">{renderFields(contact)}</div>
-      </section>
+          <section className="supplier-form-section">
+            <h2 className="supplier-form-section__title">{t("suppliers.sectionContact")}</h2>
+            <div className="supplier-form-section__grid">{renderFields(contact)}</div>
+          </section>
 
-      <section className="supplier-form-section">
-        <h2 className="supplier-form-section__title">{t("suppliers.sectionAddress")}</h2>
-        <div className="supplier-form-section__grid">{renderFields(address)}</div>
-      </section>
+          <section className="supplier-form-section">
+            <h2 className="supplier-form-section__title">{t("suppliers.sectionAddress")}</h2>
+            <div className="supplier-form-section__grid">{renderFields(address)}</div>
+          </section>
 
-      <section className="supplier-form-section">
-        <h2 className="supplier-form-section__title">{t("suppliers.sectionNotes")}</h2>
-        <div className="supplier-form-section__grid">{renderFields(notes)}</div>
-      </section>
+          <section className="supplier-form-section">
+            <h2 className="supplier-form-section__title">{t("suppliers.sectionNotes")}</h2>
+            <div className="supplier-form-section__grid">{renderFields(notes)}</div>
+          </section>
+        </div>
 
-      <div className="supplier-form-actions sticky bottom-0 z-5 mt-1 flex flex-wrap gap-2 border-t border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] py-3 backdrop-blur-sm">
-        <Button
-          type="button"
-          data-testid="supplier-save"
-          disabled={saving}
-          onClick={() => void onSubmit()}
-        >
-          {saving ? t("suppliers.saving") : t("suppliers.save")}
-        </Button>
-        <Button asChild variant="ghost" disabled={saving}>
-          <Link to={mode === "edit" && supplierId ? `/suppliers/${supplierId}` : "/suppliers/new"}>
-            {t("suppliers.back")}
-          </Link>
-        </Button>
-      </div>
+        <div className="supplier-form-actions flex flex-wrap items-center justify-end gap-2 border-t border-border px-3 py-3 sm:px-4">
+          <Button asChild variant="ghost" className="w-fit" disabled={saving}>
+            <Link to={cancelTo} data-testid="supplier-cancel">
+              {t("suppliers.back")}
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            className="w-fit"
+            data-testid="supplier-save"
+            disabled={saving}
+            onClick={() => void onSubmit()}
+          >
+            {saving ? t("suppliers.saving") : t("suppliers.save")}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

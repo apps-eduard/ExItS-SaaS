@@ -11436,7 +11436,6 @@ a.exits-chip--primary:hover {
   animation-delay: 120ms;
 }
 
-.supplier-form-section,
 .catalog-form-section {
   display: flex;
   min-width: 0;
@@ -12008,31 +12007,59 @@ a.exits-chip--primary:hover {
   }
 }
 
+.supplier-form-page {
+  width: 100%;
+  max-width: 68.75rem; /* 1100px */
+  margin-inline: auto;
+}
+
+.supplier-form-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
 .supplier-form-section {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.875rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
+  gap: 0.55rem;
+  padding: 0.75rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  animation: exits-panel-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.supplier-form-section + .supplier-form-section {
+  border-top: 1px solid var(--exits-border);
+}
+
+.supplier-form-section:first-child {
+  padding-top: 0;
+}
+
+.supplier-form-section:last-child {
+  padding-bottom: 0;
 }
 
 .supplier-form-section:nth-of-type(1) {
-  animation-delay: 60ms;
+  animation-delay: 40ms;
 }
 
 .supplier-form-section:nth-of-type(2) {
-  animation-delay: 100ms;
+  animation-delay: 70ms;
 }
 
 .supplier-form-section:nth-of-type(3) {
-  animation-delay: 140ms;
+  animation-delay: 100ms;
 }
 
 .supplier-form-section:nth-of-type(4) {
-  animation-delay: 180ms;
+  animation-delay: 130ms;
 }
 
 .supplier-form-section__title {
@@ -12045,26 +12072,49 @@ a.exits-chip--primary:hover {
 .supplier-form-section__grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.65rem;
+  gap: 0.55rem 0.75rem;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .supplier-form-section__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .supplier-form-section__grid .supplier-form-field:has(.supplier-form-control--area),
-  .supplier-form-section__grid .supplier-form-field:has(#supplier-address1),
-  .supplier-form-section__grid .supplier-form-field:has(#supplier-address2) {
+  .supplier-form-section__grid .supplier-form-field--full,
+  .supplier-form-section__grid .supplier-form-field:has(.supplier-form-control--area) {
     grid-column: 1 / -1;
   }
 }
 
+@media (min-width: 1200px) {
+  .supplier-form-page {
+    gap: 0.75rem;
+  }
+
+  .supplier-form-card__body {
+    padding: 1rem 1.15rem;
+  }
+
+  .supplier-form-section {
+    gap: 0.5rem;
+    padding-block: 0.85rem;
+  }
+}
+
+.supplier-form-actions {
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+}
+
 .supplier-form-control {
   width: 100%;
+  min-height: var(--exits-control-height);
   transition:
     border-color var(--exits-motion-fast) ease,
     box-shadow var(--exits-motion-fast) ease;
+}
+
+.supplier-form-control--area {
+  min-height: 5.5rem;
 }
 
 .supplier-form-control:focus-visible {
