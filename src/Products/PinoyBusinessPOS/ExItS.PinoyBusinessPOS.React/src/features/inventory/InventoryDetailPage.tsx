@@ -1286,18 +1286,18 @@ export function InventoryDetailPage() {
                         {adjustApplyLabel}
                       </Button>
                     </div>
-                  </Card>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-fit"
-                    disabled={disableMutation.isPending || !canDisableInventory}
-                    onClick={() => disableMutation.mutate()}
-                    data-testid="inventory-disable"
-                  >
-                    {t("inventory.disable")}
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-fit"
+                      disabled={disableMutation.isPending || !canDisableInventory}
+                      onClick={() => disableMutation.mutate()}
+                      data-testid="inventory-disable"
+                    >
+                      {t("inventory.disable")}
+                    </Button>
+                  </Card>
                 </div>
               ) : null}
 
