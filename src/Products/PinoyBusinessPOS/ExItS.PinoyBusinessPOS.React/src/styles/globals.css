@@ -3256,7 +3256,11 @@ html:has(.admin-shell) #root {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  color: var(--exits-text-muted);
+  color: var(--exits-primary);
+}
+
+.inventory-detail-action-btn__icon svg {
+  stroke-width: 2.5;
 }
 
 .inventory-detail-action-btn__label {
