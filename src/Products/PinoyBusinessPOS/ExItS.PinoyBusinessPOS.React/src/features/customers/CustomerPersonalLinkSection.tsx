@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Clock, Link2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,8 @@ export type CustomerPersonalLinkSectionProps = {
   customerDisplayName: string;
   linkMeta: CustomerLinkStatusDto | undefined;
   linkHistoryItems: LinkHistoryItem[];
+  /** Optional peer card (e.g. Delivery) shown beside Connection history. */
+  historyPeer?: ReactNode;
   showAfterCreateHint: boolean;
   afterCreateHintDismissed: boolean;
   onDismissAfterCreateHint: () => void;
@@ -45,6 +48,7 @@ export function CustomerPersonalLinkSection({
   customerDisplayName,
   linkMeta,
   linkHistoryItems,
+  historyPeer,
   showAfterCreateHint,
   afterCreateHintDismissed,
   onDismissAfterCreateHint,
@@ -130,26 +134,6 @@ export function CustomerPersonalLinkSection({
           </div>
         </div>
 
-        {personalExItsId ? (
-          <div
-            className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-[var(--exits-border)] bg-[color-mix(in_srgb,var(--exits-surface)_92%,transparent)] px-3 py-2"
-            data-testid="customer-link-exits-id-panel"
-          >
-            <UserRound className="size-4 shrink-0 text-muted" aria-hidden />
-            <div className="min-w-0">
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("customers.exItsIdLabel")}
-              </p>
-              <p
-                className="mb-0 mt-0.5 font-mono text-[length:var(--exits-text-sm)] font-semibold tracking-wide"
-                data-testid="customer-exits-id"
-              >
-                {personalExItsId}
-              </p>
-            </div>
-          </div>
-        ) : null}
-
         {isPending ? (
           <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
             {t("customers.linkPendingExItsHint")}
@@ -221,33 +205,61 @@ export function CustomerPersonalLinkSection({
             ) : null}
           </div>
         ) : null}
-
-        {linkHistoryItems.length > 0 ? (
-          <section data-testid="customer-link-history" className="mt-4 min-w-0 border-t border-[var(--exits-border)] pt-3">
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("customers.linkHistoryTitle")}
-            </p>
-            <ul className="mb-0 mt-2 list-none space-y-1.5 p-0">
-              {linkHistoryItems.map((item) => {
-                const statusLabel = t(
-                  customerLinkStatusLabelKey(mapPlatformCustomerLinkStatus(item.status)),
-                );
-                return (
-                  <li
-                    key={item.id}
-                    className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[length:var(--exits-text-sm)]"
-                  >
-                    <span className="text-muted">
-                      {new Date(item.createdAtUtc).toLocaleString()}
-                    </span>
-                    <span>{statusLabel}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ) : null}
       </Card>
+
+      {personalExItsId || historyPeer || linkHistoryItems.length > 0 ? (
+        <div className="customer-link-peer-grid">
+          {personalExItsId ? (
+            <Card className="flex flex-col gap-3 p-4" data-testid="customer-link-exits-id-panel">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--exits-border)_60%,transparent)] text-muted"
+                  aria-hidden
+                >
+                  <UserRound className="size-4" />
+                </span>
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("customers.exItsIdLabel")}
+                </p>
+              </div>
+              <p
+                className="mb-0 font-mono text-[length:var(--exits-text-md)] font-semibold tracking-wide"
+                data-testid="customer-exits-id"
+              >
+                {personalExItsId}
+              </p>
+            </Card>
+          ) : null}
+
+          {historyPeer}
+
+          {linkHistoryItems.length > 0 ? (
+            <Card className="flex min-w-0 flex-col gap-3 p-4" data-testid="customer-link-history">
+              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                {t("customers.linkHistoryTitle")}
+              </p>
+              <ul className="mb-0 list-none space-y-1.5 p-0">
+                {linkHistoryItems.map((item) => {
+                  const statusLabel = t(
+                    customerLinkStatusLabelKey(mapPlatformCustomerLinkStatus(item.status)),
+                  );
+                  return (
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[length:var(--exits-text-sm)]"
+                    >
+                      <span className="text-muted">
+                        {new Date(item.createdAtUtc).toLocaleString()}
+                      </span>
+                      <span>{statusLabel}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }

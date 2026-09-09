@@ -2319,6 +2319,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.statementEmpty": "Awan ti lines iti daytoy a panahon",
 
   "customers.statementEmptyDetail": "Padasen ti mas lapad a date range.",
+  "customers.statementEntryFilter": "Klase ti entry",
+  "customers.statementFilterAll": "Amin",
+  "customers.statementFilterCredit": "Credit",
+  "customers.statementFilterRepayment": "Repayment",
 
   "customers.statementLede": "Statement para kti {name}.",
 

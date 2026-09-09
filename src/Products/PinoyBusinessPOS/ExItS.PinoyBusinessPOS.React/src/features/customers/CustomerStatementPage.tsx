@@ -5,12 +5,26 @@ import { getCustomer, getCustomerStatement } from "@/api/pos/pos-customers-clien
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
+
+type StatementEntryFilter = "all" | "credit" | "repayment";
+
+const ENTRY_FILTERS: ReadonlyArray<{
+  key: StatementEntryFilter;
+  labelKey: MessageKey;
+}> = [
+  { key: "all", labelKey: "customers.statementFilterAll" },
+  { key: "credit", labelKey: "customers.statementFilterCredit" },
+  { key: "repayment", labelKey: "customers.statementFilterRepayment" },
+];
 
 function defaultPeriod() {
   const end = new Date();
@@ -18,6 +32,20 @@ function defaultPeriod() {
   start.setDate(start.getDate() - 30);
   const toIsoDate = (value: Date) => value.toISOString().slice(0, 10);
   return { periodStart: toIsoDate(start), periodEnd: toIsoDate(end) };
+}
+
+function statementDescription(line: {
+  remarks?: string | null;
+  status: string;
+}): string {
+  return line.remarks?.trim() || line.status || "—";
+}
+
+function matchesEntryFilter(entryType: string, filter: StatementEntryFilter): boolean {
+  if (filter === "all") {
+    return true;
+  }
+  return entryType.trim().toLowerCase() === filter;
 }
 
 export function CustomerStatementPage() {
@@ -28,6 +56,7 @@ export function CustomerStatementPage() {
   const defaults = useMemo(() => defaultPeriod(), []);
   const [periodStart, setPeriodStart] = useState(defaults.periodStart);
   const [periodEnd, setPeriodEnd] = useState(defaults.periodEnd);
+  const [entryFilter, setEntryFilter] = useState<StatementEntryFilter>("all");
 
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
@@ -59,6 +88,11 @@ export function CustomerStatementPage() {
       ),
   });
 
+  const filteredLines = useMemo(() => {
+    const lines = statementQuery.data?.lines ?? [];
+    return lines.filter((line) => matchesEntryFilter(line.entryType, entryFilter));
+  }, [entryFilter, statementQuery.data?.lines]);
+
   if (!workspace || !customerId) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -86,35 +120,53 @@ export function CustomerStatementPage() {
         backTestId="page-header-back-customers"
       />
 
-      <Card className="flex flex-wrap gap-3">
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="statement-start"
-        >
-          {t("customers.periodStart")}
-          <input
-            id="statement-start"
-            data-testid="statement-period-start"
-            type="date"
-            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={periodStart}
-            onChange={(event) => setPeriodStart(event.target.value)}
-          />
-        </label>
-        <label
-          className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-          htmlFor="statement-end"
-        >
-          {t("customers.periodEnd")}
-          <input
-            id="statement-end"
-            data-testid="statement-period-end"
-            type="date"
-            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={periodEnd}
-            onChange={(event) => setPeriodEnd(event.target.value)}
-          />
-        </label>
+      <Card
+        className="customer-statement-toolbar flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+        data-testid="statement-filters"
+      >
+        <div className="flex min-w-0 flex-wrap gap-3">
+          <label
+            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+            htmlFor="statement-start"
+          >
+            {t("customers.periodStart")}
+            <input
+              id="statement-start"
+              data-testid="statement-period-start"
+              type="date"
+              className="exits-input"
+              value={periodStart}
+              onChange={(event) => setPeriodStart(event.target.value)}
+            />
+          </label>
+          <label
+            className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+            htmlFor="statement-end"
+          >
+            {t("customers.periodEnd")}
+            <input
+              id="statement-end"
+              data-testid="statement-period-end"
+              type="date"
+              className="exits-input"
+              value={periodEnd}
+              onChange={(event) => setPeriodEnd(event.target.value)}
+            />
+          </label>
+        </div>
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("customers.statementEntryFilter")}
+          testId="statement-entry-filters"
+          className="shrink-0 sm:ml-auto"
+          items={ENTRY_FILTERS.map((filter) => ({
+            key: filter.key,
+            label: t(filter.labelKey),
+            state: entryFilter === filter.key ? "active" : "idle",
+            testId: `statement-entry-filter-${filter.key}`,
+            onSelect: () => setEntryFilter(filter.key),
+          }))}
+        />
       </Card>
 
       {statementQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
@@ -158,24 +210,56 @@ export function CustomerStatementPage() {
               title={t("customers.statementEmpty")}
               detail={t("customers.statementEmptyDetail")}
             />
+          ) : filteredLines.length === 0 ? (
+            <EmptyState
+              title={t("customers.statementEmpty")}
+              detail={t("customers.statementEmptyDetail")}
+            />
           ) : (
-            <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="statement-lines">
-              {statementQuery.data.lines.map((line) => (
-                <li key={line.entryId}>
-                  <Card className="p-3">
-                    <div className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]">
-                      <div className="min-w-0">
-                        <p className="m-0 font-semibold">{line.entryType}</p>
-                        <p className="mb-0 mt-1 truncate text-muted">
-                          {line.remarks?.trim() || line.status}
-                        </p>
-                      </div>
-                      <MoneyDisplay amount={line.amount} />
-                    </div>
-                  </Card>
-                </li>
-              ))}
-            </ul>
+            <Card className="overflow-hidden p-0" data-testid="statement-lines">
+              <div className="min-w-0 overflow-x-auto">
+                <table className="customer-ledger-table w-full min-w-[32rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("inventory.movementCol.type")}
+                      </th>
+                      <th className="min-w-[14rem] px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("expense.description")}
+                      </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("expense.amount")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLines.map((line) => {
+                      const description = statementDescription(line);
+                      const isCredit = line.entryType.toLowerCase() === "credit";
+                      return (
+                        <tr
+                          key={line.entryId}
+                          className="border-b border-border last:border-b-0"
+                          data-testid={`statement-line-${line.entryId}`}
+                        >
+                          <td className="whitespace-nowrap px-3 py-2.5 align-middle">
+                            <StatusChip tone={isCredit ? "warning" : "success"}>
+                              {line.entryType}
+                            </StatusChip>
+                          </td>
+                          <td className="max-w-[24rem] px-3 py-2.5 align-middle text-muted">
+                            <span className="line-clamp-2">{description}</span>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right font-semibold tabular-nums">
+                            <MoneyDisplay amount={line.amount} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           )}
         </>
       ) : null}

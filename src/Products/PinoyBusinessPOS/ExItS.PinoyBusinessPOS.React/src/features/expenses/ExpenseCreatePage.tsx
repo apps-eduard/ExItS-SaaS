@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Banknote, Loader2, Receipt, Smartphone } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   EXPENSE_DESCRIPTION_MAX,
@@ -18,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -39,6 +39,11 @@ import {
   parseMoneyAmountInput,
 } from "@/lib/money-input";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const EXPENSE_PAYMENT_ICONS = {
+  Cash: Banknote,
+  ManualGCash: Smartphone,
+} as const satisfies Record<ExpensePaymentMethodCode, typeof Banknote>;
 
 function initialAmountText(raw: string | null): string {
   if (!raw?.trim()) {
@@ -238,7 +243,7 @@ export function ExpenseCreatePage() {
   }
 
   return (
-    <div className="exits-page flex min-w-0 flex-col gap-4 pb-24" data-testid="expense-create-page">
+    <div className="exits-page flex min-w-0 flex-col gap-4" data-testid="expense-create-page">
       <PageHeader
         title={t("expense.recordExpense")}
         description={t("expense.recordLede")}
@@ -276,148 +281,165 @@ export function ExpenseCreatePage() {
       {error ? <ErrorState title={t("expense.errorTitle")} detail={error} /> : null}
 
       {activeCategories.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="flex flex-col gap-3 p-3">
-            {scopeOptionsQuery.data
-            && createTarget
-            && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data) ? (
-              <label
-                className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                data-testid="expense-create-scope"
+        <Card className="flex flex-col gap-4 p-4" data-testid="expense-create-form-card">
+          <div className="flex flex-col gap-3">
+              <div
+                className={
+                  scopeOptionsQuery.data
+                  && createTarget
+                  && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data)
+                    ? "grid gap-3 sm:grid-cols-2"
+                    : "grid gap-3"
+                }
               >
-                <span className="font-medium">{t("expense.scope.createLabel")}</span>
-                <select
-                  className="exits-select"
-                  value={
-                    createTarget.kind === "organization"
-                      ? "organization"
-                      : `branch:${createTarget.branchId}`
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "organization") {
-                      setCreateTarget({ kind: "organization" });
-                      return;
-                    }
-                    if (value.startsWith("branch:")) {
-                      setCreateTarget({ kind: "branch", branchId: value.slice("branch:".length) });
-                    }
-                  }}
-                  data-testid="expense-create-scope-select"
-                >
-                  {scopeOptionsQuery.data.branches.map((branch) => (
-                    <option key={branch.branchId} value={`branch:${branch.branchId}`}>
-                      {branch.name}
-                    </option>
-                  ))}
-                  {scopeOptionsQuery.data.canCreateOrganizationWide ? (
-                    <option value="organization">{t("expense.scope.organization")}</option>
-                  ) : null}
-                </select>
-              </label>
-            ) : null}
-
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.category")}</span>
-              <select
-                className="exits-select"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                data-testid="expense-category"
-              >
-                <option value="">{t("expense.categoryPlaceholder")}</option>
-                {activeCategories.map((cat) => (
-                  <option key={cat.categoryId} value={cat.categoryId}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <fieldset className="m-0 border-0 p-0">
-              <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
-                {t("expense.paymentMethod")}
-              </legend>
-              <div className="flex flex-wrap gap-2" data-testid="expense-payment-method">
-                {EXPENSE_PAYMENT_METHODS.map((method) => (
-                  <Button
-                    key={method}
-                    type="button"
-                    variant={paymentMethod === method ? "default" : "outline"}
-                    data-testid={`expense-payment-${method}`}
-                    aria-pressed={paymentMethod === method}
-                    onClick={() => setPaymentMethod(method)}
+                {scopeOptionsQuery.data
+                && createTarget
+                && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data) ? (
+                  <label
+                    className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                    data-testid="expense-create-scope"
                   >
-                    {t(expensePaymentLabelKey(method))}
-                  </Button>
-                ))}
+                    <span className="font-medium">{t("expense.scope.createLabel")}</span>
+                    <select
+                      className="exits-select"
+                      value={
+                        createTarget.kind === "organization"
+                          ? "organization"
+                          : `branch:${createTarget.branchId}`
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "organization") {
+                          setCreateTarget({ kind: "organization" });
+                          return;
+                        }
+                        if (value.startsWith("branch:")) {
+                          setCreateTarget({
+                            kind: "branch",
+                            branchId: value.slice("branch:".length),
+                          });
+                        }
+                      }}
+                      data-testid="expense-create-scope-select"
+                    >
+                      {scopeOptionsQuery.data.branches.map((branch) => (
+                        <option key={branch.branchId} value={`branch:${branch.branchId}`}>
+                          {branch.name}
+                        </option>
+                      ))}
+                      {scopeOptionsQuery.data.canCreateOrganizationWide ? (
+                        <option value="organization">{t("expense.scope.organization")}</option>
+                      ) : null}
+                    </select>
+                  </label>
+                ) : null}
+
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.category")}</span>
+                  <select
+                    className="exits-select"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    data-testid="expense-category"
+                  >
+                    <option value="">{t("expense.categoryPlaceholder")}</option>
+                    {activeCategories.map((cat) => (
+                      <option key={cat.categoryId} value={cat.categoryId}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            </fieldset>
 
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.expenseDate")}</span>
-              <input
-                type="date"
-                className="exits-input"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
-                data-testid="expense-date"
-              />
-            </label>
-          </Card>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">
+                    {t("expense.payee")}{" "}
+                    <span className="font-normal text-muted">({t("expense.optional")})</span>
+                  </span>
+                  <input
+                    className="exits-input"
+                    value={payee}
+                    maxLength={EXPENSE_PAYEE_MAX}
+                    onChange={(e) => setPayee(e.target.value)}
+                    data-testid="expense-payee"
+                  />
+                </label>
 
-          <Card className="flex flex-col gap-3 p-3">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.amount")}</span>
-              <input
-                inputMode="decimal"
-                className="exits-input tabular-nums"
-                value={amountText}
-                onChange={(e) => setAmountText(normalizeMoneyAmountTyping(e.target.value))}
-                onBlur={() => {
-                  const parsed = parseMoneyAmountInput(amountText);
-                  if (parsed !== null) {
-                    setAmountText(formatMoneyAmountInput(parsed));
-                  }
-                }}
-                placeholder="0.00"
-                data-testid="expense-amount"
-                autoComplete="off"
-              />
-            </label>
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.amount")}</span>
+                  <input
+                    inputMode="decimal"
+                    className="exits-input tabular-nums"
+                    value={amountText}
+                    onChange={(e) => setAmountText(normalizeMoneyAmountTyping(e.target.value))}
+                    onBlur={() => {
+                      const parsed = parseMoneyAmountInput(amountText);
+                      if (parsed !== null) {
+                        setAmountText(formatMoneyAmountInput(parsed));
+                      }
+                    }}
+                    placeholder="0.00"
+                    data-testid="expense-amount"
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
 
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">
-                {t("expense.payee")}{" "}
-                <span className="font-normal text-muted">({t("expense.optional")})</span>
-              </span>
-              <input
-                className="exits-input"
-                value={payee}
-                maxLength={EXPENSE_PAYEE_MAX}
-                onChange={(e) => setPayee(e.target.value)}
-                data-testid="expense-payee"
-              />
-            </label>
+              <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
+                    {t("expense.paymentMethod")}
+                  </legend>
+                  <div
+                    className="flex flex-wrap items-end gap-2"
+                    data-testid="expense-payment-method"
+                  >
+                    {EXPENSE_PAYMENT_METHODS.map((method) => {
+                      const Icon = EXPENSE_PAYMENT_ICONS[method];
+                      return (
+                        <Button
+                          key={method}
+                          type="button"
+                          variant={paymentMethod === method ? "default" : "outline"}
+                          data-testid={`expense-payment-${method}`}
+                          aria-pressed={paymentMethod === method}
+                          onClick={() => setPaymentMethod(method)}
+                        >
+                          <Icon className="size-4 shrink-0" aria-hidden />
+                          {t(expensePaymentLabelKey(method))}
+                        </Button>
+                      );
+                    })}
+                    {paymentMethod === "ManualGCash" ? (
+                      <input
+                        className="exits-input min-w-[12rem] flex-1"
+                        value={gCashReference}
+                        maxLength={EXPENSE_GCASH_REFERENCE_MAX}
+                        onChange={(e) => setGCashReference(e.target.value)}
+                        placeholder={`${t("expense.gCashReference")} (${t("expense.optional")})`}
+                        aria-label={`${t("expense.gCashReference")} (${t("expense.optional")})`}
+                        data-testid="expense-gcash-reference"
+                      />
+                    ) : null}
+                  </div>
+                </fieldset>
 
-            {paymentMethod === "ManualGCash" ? (
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                <span className="font-medium">
-                  {t("expense.gCashReference")}{" "}
-                  <span className="font-normal text-muted">({t("expense.optional")})</span>
-                </span>
-                <input
-                  className="exits-input"
-                  value={gCashReference}
-                  maxLength={EXPENSE_GCASH_REFERENCE_MAX}
-                  onChange={(e) => setGCashReference(e.target.value)}
-                  data-testid="expense-gcash-reference"
-                />
-              </label>
-            ) : null}
-          </Card>
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.expenseDate")}</span>
+                  <input
+                    type="date"
+                    className="exits-input"
+                    value={expenseDate}
+                    onChange={(e) => setExpenseDate(e.target.value)}
+                    data-testid="expense-date"
+                  />
+                </label>
+              </div>
+            </div>
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)] lg:col-span-2">
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span className="font-medium">{t("expense.description")}</span>
             <textarea
               className="exits-input min-h-24"
@@ -430,21 +452,24 @@ export function ExpenseCreatePage() {
               {description.trim().length}/{EXPENSE_DESCRIPTION_MAX}
             </span>
           </label>
-        </div>
-      ) : null}
 
-      {activeCategories.length > 0 ? (
-        <StickyActionBar>
-          <Button
-            type="button"
-            className="w-full sm:w-auto"
-            disabled={!online || submitting}
-            onClick={() => void onSubmit()}
-            data-testid="expense-submit"
-          >
-            {submitting ? t("expense.recording") : t("expense.recordExpense")}
-          </Button>
-        </StickyActionBar>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              disabled={!online || submitting}
+              onClick={() => void onSubmit()}
+              data-testid="expense-submit"
+            >
+              {submitting ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <Receipt className="size-4 shrink-0" aria-hidden />
+              )}
+              {submitting ? t("expense.recording") : t("expense.recordExpense")}
+            </Button>
+          </div>
+        </Card>
       ) : null}
     </div>
   );

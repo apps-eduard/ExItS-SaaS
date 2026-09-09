@@ -2319,6 +2319,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.statementEmpty": "Walang lines sa period na ito",
 
   "customers.statementEmptyDetail": "Subukan ang mas malawak na date range.",
+  "customers.statementEntryFilter": "Uri ng entry",
+  "customers.statementFilterAll": "Lahat",
+  "customers.statementFilterCredit": "Credit",
+  "customers.statementFilterRepayment": "Repayment",
 
   "customers.statementLede": "Statement para kay {name}.",
 

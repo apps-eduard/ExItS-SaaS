@@ -2319,6 +2319,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.statementEmpty": "Walay lines niining panahon",
 
   "customers.statementEmptyDetail": "Sulayi ang mas lapad nga date range.",
+  "customers.statementEntryFilter": "Klase sa entry",
+  "customers.statementFilterAll": "Tanan",
+  "customers.statementFilterCredit": "Credit",
+  "customers.statementFilterRepayment": "Repayment",
 
   "customers.statementLede": "Statement para kang {name}.",
 

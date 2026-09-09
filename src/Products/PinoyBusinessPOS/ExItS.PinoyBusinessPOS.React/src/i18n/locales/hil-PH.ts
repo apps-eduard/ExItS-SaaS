@@ -2319,6 +2319,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.statementEmpty": "Wala sing lines sa sini nga panahon",
 
   "customers.statementEmptyDetail": "Tilawi ang mas lapad nga date range.",
+  "customers.statementEntryFilter": "Klase sang entry",
+  "customers.statementFilterAll": "Tanan",
+  "customers.statementFilterCredit": "Credit",
+  "customers.statementFilterRepayment": "Repayment",
 
   "customers.statementLede": "Statement para kang {name}.",
 

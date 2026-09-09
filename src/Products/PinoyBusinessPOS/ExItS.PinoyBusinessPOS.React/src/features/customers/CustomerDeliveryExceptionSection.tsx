@@ -26,11 +26,6 @@ export function CustomerDeliveryExceptionSection({
       data-testid="customer-delivery-section"
     >
       <h2 className="catalog-form-section__title">{t("customers.delivery.title")}</h2>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {allowBeyond
-          ? t("customers.delivery.exceptionOnLede")
-          : t("customers.delivery.normalLede")}
-      </p>
       <BranchFulfillmentSwitch
         checked={allowBeyond}
         disabled={!canEdit}
