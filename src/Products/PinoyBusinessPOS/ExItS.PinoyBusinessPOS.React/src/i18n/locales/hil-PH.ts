@@ -2973,7 +2973,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
     "I-on ang expiration tracking para ma-record ang expiry dates sang stock lots kag near-expiry warnings.",
 
-  "inventory.expirationSetupRequired": "Kinahanglan ang expiration setup",
+  "inventory.expirationSetupRequired": "Missing expiry",
 
   "inventory.expirationSetupRequiredDetail":
 
@@ -2983,7 +2983,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
     "{qty} {uom} on hand kinahanglan sang expiry dates antes makita ang Good / Near expiry / Expired.",
 
-  "inventory.assignExpirationDates": "Mag-assign sang expiration dates",
+  "inventory.assignExpirationDates": "Assign expiry",
 
   "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
 
@@ -4281,6 +4281,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.trackingFilter": "Tracking status",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
+  "inventory.missingExpirationShort": "Missing expiry",
+  "inventory.expirationIncompleteShort": "Expiry information incomplete",
 
   "inventory.untrackedHint": "Ang not tracked pasabot nga naka-off ang inventory enforcement ??? indi zero stock.",
 

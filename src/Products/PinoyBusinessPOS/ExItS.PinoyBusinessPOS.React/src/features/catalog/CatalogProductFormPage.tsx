@@ -937,77 +937,53 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           <h2 className="catalog-form-section__title">{t("catalog.sectionBasics")}</h2>
 
           <div className="catalog-form-section__grid">
-            <div className="catalog-form-field--full">
-              <Input
-                label={t("catalog.name")}
+            <Input
+              label={t("catalog.name")}
+              name="productName"
+              required
+              value={name}
+              disabled={readOnly}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-                name="productName"
-
-                required
-
-                value={name}
-
-                disabled={readOnly}
-
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+            <Input
+              label={t("catalog.description")}
+              name="productDescription"
+              value={description}
+              disabled={readOnly}
+              onChange={(e) => setDescription(e.target.value)}
+            />
 
             {nameConflictQuery.data?.isDuplicate ? (
-              <CatalogProductNameConflictPanel conflict={nameConflictQuery.data} />
+              <div className="catalog-form-field--full">
+                <CatalogProductNameConflictPanel conflict={nameConflictQuery.data} />
+              </div>
             ) : null}
-
-            <div className="catalog-form-field--full">
-              <Input
-                label={t("catalog.description")}
-
-                name="productDescription"
-
-                value={description}
-
-                disabled={readOnly}
-
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
 
             <Input
               label={t("catalog.sku")}
-
               name="productSku"
-
               value={sku}
-
               disabled={readOnly}
-
               onChange={(e) => setSku(e.target.value)}
             />
 
             <Input
               label={t("catalog.barcode")}
-
               name="productBarcode"
-
               value={barcode}
-
               disabled={readOnly}
-
               onChange={(e) => setBarcode(e.target.value)}
             />
 
             <FormSelect
               label={t("catalog.category")}
-
               name="productCategory"
-
               value={categoryId}
-
               disabled={readOnly}
-
               onChange={setCategoryId}
             >
               <option value="">{t("catalog.noCategory")}</option>
-
               {categoriesQuery.data?.items.map((category) => (
                 <option key={category.categoryId} value={category.categoryId}>
                   {category.name}
@@ -1017,19 +993,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
             <FormSelect
               label={t("catalog.brand")}
-
               name="productBrand"
-
               testId="catalog-product-brand"
-
               value={brandId}
-
               disabled={readOnly}
-
               onChange={setBrandId}
             >
               <option value="">{t("catalog.noBrand")}</option>
-
               {brandOptions.map((brand) => (
                 <option key={brand.brandId} value={brand.brandId}>
                   {brand.name}
@@ -1060,88 +1030,96 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           ) : null}
 
           {!readOnly ? (
-            <>
-          <div className="catalog-form-quick-add">
-            <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
-            <div className="catalog-form-quick-add__row">
-              <div className="catalog-form-quick-add__field">
-                <Input
-                  label={t("catalog.newCategoryPlaceholder")}
-                  name="inlineCategoryName"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder={t("catalog.newCategoryPlaceholder")}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") {
-                      return;
+            <div className="catalog-form-quick-add-grid">
+              <div className="catalog-form-quick-add">
+                <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
+                <div className="catalog-form-quick-add__row">
+                  <div className="catalog-form-quick-add__field">
+                    <Input
+                      label={t("catalog.newCategoryPlaceholder")}
+                      name="inlineCategoryName"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder={t("catalog.newCategoryPlaceholder")}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") {
+                          return;
+                        }
+                        event.preventDefault();
+                        if (newCategoryName.trim() && !createCategoryMutation.isPending) {
+                          createCategoryMutation.mutate();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="catalog-form-quick-add__button catalog-form-quick-add__button--icon"
+                    data-testid="catalog-add-category"
+                    disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                    aria-label={
+                      createCategoryMutation.isPending
+                        ? t("catalog.addingCategory")
+                        : t("catalog.addCategory")
                     }
-                    event.preventDefault();
-                    if (newCategoryName.trim() && !createCategoryMutation.isPending) {
-                      createCategoryMutation.mutate();
-                    }
-                  }}
-                />
+                    onClick={() => createCategoryMutation.mutate()}
+                  >
+                    {createCategoryMutation.isPending ? (
+                      <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    ) : (
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="catalog-form-quick-add__button"
-                data-testid="catalog-add-category"
-                disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
-                onClick={() => createCategoryMutation.mutate()}
-              >
-                {createCategoryMutation.isPending ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                ) : (
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                )}
-                {createCategoryMutation.isPending
-                  ? t("catalog.addingCategory")
-                  : t("catalog.addCategory")}
-              </Button>
-            </div>
-          </div>
 
-          <div className="catalog-form-quick-add">
-            <p className="catalog-form-quick-add__label">{t("catalog.sectionBrandQuickAdd")}</p>
-            <div className="catalog-form-quick-add__row">
-              <div className="catalog-form-quick-add__field">
-                <Input
-                  label={t("catalog.newBrandPlaceholder")}
-                  name="inlineBrandName"
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  placeholder={t("catalog.newBrandPlaceholder")}
-                  data-testid="catalog-inline-brand-name"
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") {
-                      return;
+              <div className="catalog-form-quick-add">
+                <p className="catalog-form-quick-add__label">{t("catalog.sectionBrandQuickAdd")}</p>
+                <div className="catalog-form-quick-add__row">
+                  <div className="catalog-form-quick-add__field">
+                    <Input
+                      label={t("catalog.newBrandPlaceholder")}
+                      name="inlineBrandName"
+                      value={newBrandName}
+                      onChange={(e) => setNewBrandName(e.target.value)}
+                      placeholder={t("catalog.newBrandPlaceholder")}
+                      data-testid="catalog-inline-brand-name"
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") {
+                          return;
+                        }
+                        event.preventDefault();
+                        if (newBrandName.trim() && !createBrandMutation.isPending) {
+                          createBrandMutation.mutate();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="catalog-form-quick-add__button catalog-form-quick-add__button--icon"
+                    data-testid="catalog-add-brand"
+                    disabled={!newBrandName.trim() || createBrandMutation.isPending}
+                    aria-label={
+                      createBrandMutation.isPending
+                        ? t("catalog.addingBrand")
+                        : t("catalog.addBrand")
                     }
-                    event.preventDefault();
-                    if (newBrandName.trim() && !createBrandMutation.isPending) {
-                      createBrandMutation.mutate();
-                    }
-                  }}
-                />
+                    onClick={() => createBrandMutation.mutate()}
+                  >
+                    {createBrandMutation.isPending ? (
+                      <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    ) : (
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="catalog-form-quick-add__button"
-                data-testid="catalog-add-brand"
-                disabled={!newBrandName.trim() || createBrandMutation.isPending}
-                onClick={() => createBrandMutation.mutate()}
-              >
-                {createBrandMutation.isPending ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                ) : (
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                )}
-                {createBrandMutation.isPending ? t("catalog.addingBrand") : t("catalog.addBrand")}
-              </Button>
             </div>
-          </div>
-            </>
           ) : null}
         </section>
 
@@ -1638,48 +1616,47 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           ) : null}
         </section>
 
-        {mode === "edit" && productId && workspace ? (
-          <CatalogBranchAvailabilitySection
-            workspace={workspace}
-            productId={productId}
-            product={productQuery.data}
-            canGovern={canGovern}
-          />
-        ) : null}
+        {mode === "edit" && productId ? (
+          <div className="catalog-form-section-row">
+            {workspace ? (
+              <CatalogBranchAvailabilitySection
+                workspace={workspace}
+                productId={productId}
+                product={productQuery.data}
+                canGovern={canGovern}
+              />
+            ) : null}
 
-        {mode === "edit" && productId && !readOnly ? (
-          <section className="catalog-form-section exits-animate-panel">
-            <h2 className="catalog-form-section__title">{t("catalog.sectionImage")}</h2>
+            {!readOnly ? (
+              <section className="catalog-form-section exits-animate-panel">
+                <h2 className="catalog-form-section__title">{t("catalog.sectionImage")}</h2>
 
-            <Input
-              label={t("catalog.image")}
+                <Input
+                  label={t("catalog.image")}
+                  name="productImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
 
-              name="productImage"
+                    if (!file || !workspace) {
+                      return;
+                    }
 
-              type="file"
-
-              accept="image/jpeg,image/png,image/webp"
-
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-
-                if (!file || !workspace) {
-                  return;
-                }
-
-                void uploadCatalogProductImage(workspace, productId, file)
-                  .then(() => queryClient.invalidateQueries({ queryKey: ["catalog"] }))
-
-                  .catch((err) =>
-                    setError(
-                      err instanceof PosApiError
-                        ? (err.problem.detail ?? err.message)
-                        : (err as Error).message,
-                    ),
-                  );
-              }}
-            />
-          </section>
+                    void uploadCatalogProductImage(workspace, productId, file)
+                      .then(() => queryClient.invalidateQueries({ queryKey: ["catalog"] }))
+                      .catch((err) =>
+                        setError(
+                          err instanceof PosApiError
+                            ? (err.problem.detail ?? err.message)
+                            : (err as Error).message,
+                        ),
+                      );
+                  }}
+                />
+              </section>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="catalog-form-actions" data-testid="catalog-form-actions">

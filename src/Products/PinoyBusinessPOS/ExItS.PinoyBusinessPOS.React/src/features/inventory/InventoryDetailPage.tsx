@@ -46,6 +46,8 @@ import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
+  hasMissingExpiry,
+  hasValidExpiryDateInput,
 } from "@/features/inventory/inventory-lot-status";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -132,7 +134,8 @@ export function InventoryDetailPage() {
     enabled:
       Boolean(workspace) &&
       Boolean(productId) &&
-      accountQuery.data?.isTracked === false,
+      Boolean(accountQuery.data) &&
+      (accountQuery.data.isTracked === false || canAddOpeningStock(accountQuery.data)),
     queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
 
@@ -458,13 +461,78 @@ export function InventoryDetailPage() {
     openingUnitCost,
     effectiveSelling?.amount,
   );
+  const sellingPriceAwareness = effectiveSelling ? (
+    <div
+      className="inventory-detail-selling-price flex flex-col gap-0.5"
+      data-testid="inventory-current-selling-price"
+    >
+      <span className="text-[length:var(--exits-text-sm)] font-semibold">
+        {t("inventory.currentSellingPrice")}
+      </span>
+      <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
+        {formatPeso(effectiveSelling.amount)} / {account.unitOfMeasure}
+      </p>
+      <span
+        className="text-[length:var(--exits-text-xs)] text-muted"
+        data-testid="inventory-selling-price-source"
+      >
+        {effectiveSelling.source === "branch"
+          ? t("inventory.sellingPriceBranch")
+          : t("inventory.sellingPriceOrganization")}
+      </span>
+      <Button asChild type="button" variant="ghost" className="mt-1 w-fit px-0">
+        <Link
+          to={`/catalog/products/${account.productId}/edit`}
+          data-testid="inventory-review-selling-price"
+        >
+          {t("inventory.reviewSellingPrice")}
+        </Link>
+      </Button>
+    </div>
+  ) : null;
+  const purchaseCostAwareness =
+    purchaseCostFeedback.kind === "zeroMargin" ? (
+      <p
+        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+        data-testid="inventory-purchase-cost-zero-margin"
+      >
+        {t("inventory.purchaseCostZeroMargin")}
+      </p>
+    ) : purchaseCostFeedback.kind === "higherCost" ? (
+      <p
+        className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,#b45309)]"
+        role="status"
+        data-testid="inventory-purchase-cost-high-warning"
+      >
+        {t("inventory.purchaseCostHigherThanSelling")}{" "}
+        {t("inventory.purchaseCostHigherBy").replace(
+          "{amount}",
+          formatPeso(purchaseCostFeedback.difference),
+        )}
+      </p>
+    ) : null;
   const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
   const lotTotal = lots.reduce((sum, lot) => sum + (lot.quantityOnHand ?? 0), 0);
-  const needsExpirationSetup =
+  const needsExpirationSetup = hasMissingExpiry(
+    tracksExpiration,
+    account.onHandQuantity,
+    lotsQuery.isLoading ? null : lotTotal,
+  );
+  const openingQuantityValue = Number(openingQty);
+  const openingRequiresExpiry = requiresOpeningExpirationDate(
+    tracksExpiration,
+    openingQuantityValue,
+  );
+  const openingExpiryReady =
+    !openingRequiresExpiry || hasValidExpiryDateInput(openingExpiry);
+  const adjustQuantityValue = Number(adjustQty);
+  const adjustInRequiresExpiry =
     tracksExpiration &&
-    account.onHandQuantity > 0 &&
-    !lotsQuery.isLoading &&
-    lotTotal === 0;
+    adjustDirection === "In" &&
+    Number.isFinite(adjustQuantityValue) &&
+    adjustQuantityValue > 0;
+  const adjustExpiryReady =
+    !adjustInRequiresExpiry || hasValidExpiryDateInput(adjustExpiry);
 
   const lotsSection =
     tracksExpiration && !showAddOpeningStock ? (
@@ -474,7 +542,7 @@ export function InventoryDetailPage() {
           data-testid="inventory-expiration-pending"
         >
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("inventory.expirationInventory")}
+            {t("inventory.missingExpirationShort")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.expirationPendingSummary")
@@ -755,8 +823,11 @@ export function InventoryDetailPage() {
                     className="flex flex-col gap-2"
                     data-testid="inventory-expiration-setup-required"
                   >
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                      {t("inventory.expirationSetupRequired")}
+                    <p
+                      className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                      data-testid="inventory-missing-expiry-badge"
+                    >
+                      {t("inventory.missingExpirationShort")}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                       {t("inventory.expirationSetupRequiredDetail")}
@@ -777,7 +848,7 @@ export function InventoryDetailPage() {
       </Card>
 
       {account.isTracked && allowManageInventory ? (
-        <div className="flex flex-col gap-2" data-testid="inventory-quick-actions">
+        <div className="inventory-detail-quick-actions" data-testid="inventory-quick-actions">
           {needsExpirationSetup ? (
             <>
               <Button asChild type="button" className="w-full">
@@ -816,24 +887,22 @@ export function InventoryDetailPage() {
               </Link>
             </Button>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <Button asChild type="button" variant="outline" className="w-full">
-              <Link
-                to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
-                data-testid="inventory-record-stock-use"
-              >
-                {t("inventory.recordStockUse")}
-              </Link>
-            </Button>
-            <Button asChild type="button" variant="outline" className="w-full">
-              <Link
-                to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
-                data-testid="inventory-record-waste-loss"
-              >
-                {t("inventory.recordWasteLoss")}
-              </Link>
-            </Button>
-          </div>
+          <Button asChild type="button" variant="outline" className="w-full">
+            <Link
+              to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
+              data-testid="inventory-record-stock-use"
+            >
+              {t("inventory.recordStockUse")}
+            </Link>
+          </Button>
+          <Button asChild type="button" variant="outline" className="w-full">
+            <Link
+              to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
+              data-testid="inventory-record-waste-loss"
+            >
+              {t("inventory.recordWasteLoss")}
+            </Link>
+          </Button>
         </div>
       ) : null}
 
@@ -843,47 +912,15 @@ export function InventoryDetailPage() {
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.enableTracking")}
           </h2>
-          <Input
-            label={t("inventory.openingQuantityOptional")}
-            name="openingQuantity"
-            inputMode="decimal"
-            value={openingQty}
-            onChange={(e) => setOpeningQty(e.target.value)}
-          />
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("inventory.openingHint")}
-          </p>
-          {effectiveSelling ? (
-            <div
-              className="flex flex-col gap-0.5"
-              data-testid="inventory-current-selling-price"
-            >
-              <span className="text-[length:var(--exits-text-sm)] font-semibold">
-                {t("inventory.currentSellingPrice")}
-              </span>
-              <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
-                {formatPeso(effectiveSelling.amount)} / {account.unitOfMeasure}
-              </p>
-              <span
-                className="text-[length:var(--exits-text-xs)] text-muted"
-                data-testid="inventory-selling-price-source"
-              >
-                {effectiveSelling.source === "branch"
-                  ? t("inventory.sellingPriceBranch")
-                  : t("inventory.sellingPriceOrganization")}
-              </span>
-              <Button asChild type="button" variant="ghost" className="mt-1 w-fit px-0">
-                <Link
-                  to={`/catalog/products/${account.productId}/edit`}
-                  data-testid="inventory-review-selling-price"
-                >
-                  {t("inventory.reviewSellingPrice")}
-                </Link>
-              </Button>
-            </div>
-          ) : null}
-          {Number(openingQty) > 0 ? (
-            <>
+          <div className="inventory-detail-opening-fields">
+            <Input
+              label={t("inventory.openingQuantityOptional")}
+              name="openingQuantity"
+              inputMode="decimal"
+              value={openingQty}
+              onChange={(e) => setOpeningQty(e.target.value)}
+            />
+            {Number(openingQty) > 0 ? (
               <Input
                 label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
                 name="openingUnitCost"
@@ -892,30 +929,18 @@ export function InventoryDetailPage() {
                 onChange={(e) => setOpeningUnitCost(e.target.value)}
                 data-testid="inventory-enable-unit-cost"
               />
+            ) : null}
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("inventory.openingHint")}
+          </p>
+          {sellingPriceAwareness}
+          {Number(openingQty) > 0 ? (
+            <>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("openingStock.unitCostHelper")}
               </p>
-              {purchaseCostFeedback.kind === "zeroMargin" ? (
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="inventory-purchase-cost-zero-margin"
-                >
-                  {t("inventory.purchaseCostZeroMargin")}
-                </p>
-              ) : null}
-              {purchaseCostFeedback.kind === "higherCost" ? (
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,#b45309)]"
-                  role="status"
-                  data-testid="inventory-purchase-cost-high-warning"
-                >
-                  {t("inventory.purchaseCostHigherThanSelling")}{" "}
-                  {t("inventory.purchaseCostHigherBy").replace(
-                    "{amount}",
-                    formatPeso(purchaseCostFeedback.difference),
-                  )}
-                </p>
-              ) : null}
+              {purchaseCostAwareness}
               {openingStockValue !== null ? (
                 <p
                   className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
@@ -928,20 +953,22 @@ export function InventoryDetailPage() {
           ) : null}
           {tracksExpiration && Number(openingQty) > 0 ? (
             <>
-              <Input
-                label={t("inventory.expirationDate")}
-                name="openingExpirationDate"
-                type="date"
-                value={openingExpiry}
-                onChange={(e) => setOpeningExpiry(e.target.value)}
-                data-testid="inventory-opening-expiry"
-              />
-              <Input
-                label={t("inventory.batchLotNumber")}
-                name="openingLotNumber"
-                value={openingLotNumber}
-                onChange={(e) => setOpeningLotNumber(e.target.value)}
-              />
+              <div className="inventory-detail-opening-fields">
+                <Input
+                  label={t("inventory.expirationDate")}
+                  name="openingExpirationDate"
+                  type="date"
+                  value={openingExpiry}
+                  onChange={(e) => setOpeningExpiry(e.target.value)}
+                  data-testid="inventory-opening-expiry"
+                />
+                <Input
+                  label={t("inventory.batchLotNumber")}
+                  name="openingLotNumber"
+                  value={openingLotNumber}
+                  onChange={(e) => setOpeningLotNumber(e.target.value)}
+                />
+              </div>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("inventory.openingExpiryHint")}
               </p>
@@ -949,7 +976,14 @@ export function InventoryDetailPage() {
           ) : null}
           <Button
             type="button"
-            disabled={enableMutation.isPending}
+            disabled={
+              enableMutation.isPending ||
+              (Number(openingQty) > 0 &&
+                (!openingUnitCost.trim() ||
+                  !Number.isFinite(Number(openingUnitCost)) ||
+                  Number(openingUnitCost) <= 0)) ||
+              !openingExpiryReady
+            }
             onClick={() => enableMutation.mutate()}
             data-testid="inventory-enable"
           >
@@ -972,25 +1006,29 @@ export function InventoryDetailPage() {
             >
               {t("inventory.openingVsPurchaseHint")}
             </p>
-            <Input
-              label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
-              name="openingQuantity"
-              inputMode="decimal"
-              value={openingQty}
-              onChange={(e) => setOpeningQty(e.target.value)}
-              data-testid="inventory-opening-quantity"
-            />
-            <Input
-              label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
-              name="openingUnitCost"
-              inputMode="decimal"
-              value={openingUnitCost}
-              onChange={(e) => setOpeningUnitCost(e.target.value)}
-              data-testid="inventory-opening-unit-cost"
-            />
+            {sellingPriceAwareness}
+            <div className="inventory-detail-opening-fields">
+              <Input
+                label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
+                name="openingQuantity"
+                inputMode="decimal"
+                value={openingQty}
+                onChange={(e) => setOpeningQty(e.target.value)}
+                data-testid="inventory-opening-quantity"
+              />
+              <Input
+                label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
+                name="openingUnitCost"
+                inputMode="decimal"
+                value={openingUnitCost}
+                onChange={(e) => setOpeningUnitCost(e.target.value)}
+                data-testid="inventory-opening-unit-cost"
+              />
+            </div>
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("openingStock.unitCostHelper")}
             </p>
+            {purchaseCostAwareness}
             {openingStockValue !== null ? (
               <p
                 className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
@@ -999,22 +1037,24 @@ export function InventoryDetailPage() {
                 {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
               </p>
             ) : null}
-            {tracksExpiration ? (
+            {tracksExpiration && Number(openingQty) > 0 ? (
               <>
-                <Input
-                  label={t("inventory.expirationDate")}
-                  name="openingExpirationDate"
-                  type="date"
-                  value={openingExpiry}
-                  onChange={(e) => setOpeningExpiry(e.target.value)}
-                  data-testid="inventory-opening-expiry"
-                />
-                <Input
-                  label={t("inventory.batchLotNumber")}
-                  name="openingLotNumber"
-                  value={openingLotNumber}
-                  onChange={(e) => setOpeningLotNumber(e.target.value)}
-                />
+                <div className="inventory-detail-opening-fields">
+                  <Input
+                    label={t("inventory.expirationDate")}
+                    name="openingExpirationDate"
+                    type="date"
+                    value={openingExpiry}
+                    onChange={(e) => setOpeningExpiry(e.target.value)}
+                    data-testid="inventory-opening-expiry"
+                  />
+                  <Input
+                    label={t("inventory.batchLotNumber")}
+                    name="openingLotNumber"
+                    value={openingLotNumber}
+                    onChange={(e) => setOpeningLotNumber(e.target.value)}
+                  />
+                </div>
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("inventory.openingExpiryHint")}
                 </p>
@@ -1023,7 +1063,14 @@ export function InventoryDetailPage() {
             <Button
               type="button"
               className="w-fit"
-              disabled={addOpeningStockMutation.isPending}
+              disabled={
+                addOpeningStockMutation.isPending ||
+                !(openingQuantityValue > 0) ||
+                !openingUnitCost.trim() ||
+                !Number.isFinite(Number(openingUnitCost)) ||
+                Number(openingUnitCost) <= 0 ||
+                !openingExpiryReady
+              }
               onClick={() => addOpeningStockMutation.mutate()}
               data-testid="inventory-add-opening-stock-submit"
             >
@@ -1102,20 +1149,22 @@ export function InventoryDetailPage() {
                 <h3 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
                   {t("inventory.stockDetails")}
                 </h3>
-                <Input
-                  label={t("inventory.expirationDateRequiredLabel")}
-                  name="adjustExpirationDate"
-                  type="date"
-                  value={adjustExpiry}
-                  onChange={(e) => setAdjustExpiry(e.target.value)}
-                  data-testid="inventory-adjust-expiry"
-                />
-                <Input
-                  label={t("inventory.batchLotNumber")}
-                  name="adjustLotNumber"
-                  value={adjustLotNumber}
-                  onChange={(e) => setAdjustLotNumber(e.target.value)}
-                />
+                <div className="inventory-detail-opening-fields">
+                  <Input
+                    label={t("inventory.expirationDateRequiredLabel")}
+                    name="adjustExpirationDate"
+                    type="date"
+                    value={adjustExpiry}
+                    onChange={(e) => setAdjustExpiry(e.target.value)}
+                    data-testid="inventory-adjust-expiry"
+                  />
+                  <Input
+                    label={t("inventory.batchLotNumber")}
+                    name="adjustLotNumber"
+                    value={adjustLotNumber}
+                    onChange={(e) => setAdjustLotNumber(e.target.value)}
+                  />
+                </div>
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("inventory.stockInExpiryHint")}
                 </p>
@@ -1188,7 +1237,16 @@ export function InventoryDetailPage() {
 
             <Button
               type="button"
-              disabled={adjusting || statusLocked || !adjustQty.trim()}
+              disabled={
+                adjusting ||
+                statusLocked ||
+                !adjustQty.trim() ||
+                !adjustExpiryReady ||
+                (tracksExpiration &&
+                  adjustDirection === "Out" &&
+                  deductMode === "manual" &&
+                  !selectedLotId)
+              }
               onClick={() => void onAdjust()}
               data-testid="inventory-adjust"
             >

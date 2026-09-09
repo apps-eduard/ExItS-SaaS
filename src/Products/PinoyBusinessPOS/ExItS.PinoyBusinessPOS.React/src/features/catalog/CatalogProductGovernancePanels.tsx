@@ -58,8 +58,8 @@ export function CatalogCreateScopeFields(props: {
       <legend className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
         {t("catalog.governance.productType")}
       </legend>
-      <div className="flex flex-col gap-2">
-        <label className="flex cursor-pointer gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-2.5">
+      <div className="catalog-choice-options catalog-choice-options--2">
+        <label className="catalog-choice-options__item">
           <input
             type="radio"
             name="catalogCreateScope"
@@ -68,14 +68,14 @@ export function CatalogCreateScopeFields(props: {
             data-testid="catalog-create-scope-OrganizationStandard"
             onChange={() => onCreateScopeChange("OrganizationStandard")}
           />
-          <span>
+          <span className="min-w-0">
             <span className="block font-semibold">{t("catalog.governance.organizationProduct")}</span>
             <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
               {t("catalog.governance.productTypeOrganizationHint")}
             </span>
           </span>
         </label>
-        <label className="flex cursor-pointer gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-2.5">
+        <label className="catalog-choice-options__item">
           <input
             type="radio"
             name="catalogCreateScope"
@@ -84,7 +84,7 @@ export function CatalogCreateScopeFields(props: {
             data-testid="catalog-create-scope-BranchLocal"
             onChange={() => onCreateScopeChange("BranchLocal")}
           />
-          <span>
+          <span className="min-w-0">
             <span className="block font-semibold">
               {t("catalog.governance.branchProduct")}
               {branchName ? ` · ${branchName}` : ""}

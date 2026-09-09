@@ -120,6 +120,12 @@ export function PurchaseOrderReceivePage() {
     isPurchaseOrderReceivable(po) &&
     (lines?.some((l) => l.outstandingQty > 0) ?? false);
 
+  const hasMissingExpiryOnReceive =
+    lines?.some((line) => {
+      const good = parseNonNegativeQty(line.goodText) ?? 0;
+      return line.tracksExpiration && good > 0 && !line.expiryDate.trim();
+    }) ?? false;
+
   const untrackedReceivingLines = useMemo(
     () => (lines ? selectUntrackedReceivingLines(lines) : []),
     [lines],
@@ -732,7 +738,7 @@ export function PurchaseOrderReceivePage() {
             ) : (
               <Button
                 type="button"
-                disabled={!canReceive || busy}
+                disabled={!canReceive || busy || hasMissingExpiryOnReceive}
                 onClick={onReview}
                 data-testid="receive-review"
               >

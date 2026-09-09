@@ -681,6 +681,11 @@ export function ReceiveStockPage() {
                         <Button
                           type="button"
                           className="w-full sm:ml-auto sm:w-auto"
+                          disabled={
+                            tracksExpiration &&
+                            Number(draft.qty) > 0 &&
+                            !draft.expiry.trim()
+                          }
                           onClick={() => addProductRow(product)}
                           data-testid={`direct-add-${product.productId}`}
                         >

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Save } from "lucide-react";
+import { Check, Loader2, RotateCcw, Save } from "lucide-react";
 import {
   getBranchProductPricing,
   removeBranchProductPriceOverride,
@@ -144,56 +144,54 @@ function BranchPricingRow(props: {
           {props.branchSellingPriceLabel.replace("{branch}", props.branchLabel)}
         </p>
 
-        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0" disabled={props.disabled}>
-          <label
-            className={cn(
-              "flex cursor-pointer items-start gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5",
-              props.mode === "inherit"
-                ? "border-primary bg-primary/5"
-                : "border-[color:var(--exits-border)]",
-            )}
-          >
-            <input
-              type="radio"
-              name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
-              checked={props.mode === "inherit"}
-              onChange={() => props.onModeChange("inherit")}
-              className="mt-1 shrink-0"
-              data-testid={`${props.draft.productUnitId ?? "base"}-mode-inherit`}
-            />
-            <span className="min-w-0">
-              <span className="block text-[length:var(--exits-text-sm)] font-semibold">
-                {props.useOrganizationDefaultModeLabel}
-              </span>
-              {props.mode === "inherit" ? (
-                <span className="mt-1 flex items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
-                  <Check className="size-4 shrink-0 text-primary" aria-hidden />
-                  {props.inheritModeLabel}
+        <fieldset className="m-0 border-0 p-0" disabled={props.disabled}>
+          <div className="catalog-choice-options catalog-choice-options--2">
+            <label
+              className={cn(
+                "catalog-choice-options__item",
+                props.mode === "inherit" && "catalog-choice-options__item--selected",
+              )}
+            >
+              <input
+                type="radio"
+                name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
+                checked={props.mode === "inherit"}
+                onChange={() => props.onModeChange("inherit")}
+                className="mt-1 shrink-0"
+                data-testid={`${props.draft.productUnitId ?? "base"}-mode-inherit`}
+              />
+              <span className="min-w-0">
+                <span className="block text-[length:var(--exits-text-sm)] font-semibold">
+                  {props.useOrganizationDefaultModeLabel}
                 </span>
-              ) : null}
-            </span>
-          </label>
+                {props.mode === "inherit" ? (
+                  <span className="mt-1 flex items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
+                    <Check className="size-4 shrink-0 text-primary" aria-hidden />
+                    {props.inheritModeLabel}
+                  </span>
+                ) : null}
+              </span>
+            </label>
 
-          <label
-            className={cn(
-              "flex cursor-pointer items-start gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5",
-              props.mode === "custom"
-                ? "border-primary bg-primary/5"
-                : "border-[color:var(--exits-border)]",
-            )}
-          >
-            <input
-              type="radio"
-              name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
-              checked={props.mode === "custom"}
-              onChange={() => props.onModeChange("custom")}
-              className="mt-1 shrink-0"
-              data-testid={`${props.draft.productUnitId ?? "base"}-mode-custom`}
-            />
-            <span className="block text-[length:var(--exits-text-sm)] font-semibold">
-              {props.customBranchPriceModeLabel}
-            </span>
-          </label>
+            <label
+              className={cn(
+                "catalog-choice-options__item",
+                props.mode === "custom" && "catalog-choice-options__item--selected",
+              )}
+            >
+              <input
+                type="radio"
+                name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
+                checked={props.mode === "custom"}
+                onChange={() => props.onModeChange("custom")}
+                className="mt-1 shrink-0"
+                data-testid={`${props.draft.productUnitId ?? "base"}-mode-custom`}
+              />
+              <span className="block text-[length:var(--exits-text-sm)] font-semibold">
+                {props.customBranchPriceModeLabel}
+              </span>
+            </label>
+          </div>
         </fieldset>
 
         {showCustomInput ? (
@@ -248,14 +246,16 @@ function BranchPricingRow(props: {
           {props.draft.hasBranchPriceOverride || props.mode === "custom" ? (
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               disabled={props.disabled || props.saving || props.removing}
               data-testid={`${props.draft.productUnitId ?? "base"}-use-organization-default`}
               onClick={props.onUseOrganizationDefault}
             >
               {props.removing ? (
                 <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-              ) : null}
+              ) : (
+                <RotateCcw className="size-4 shrink-0" aria-hidden />
+              )}
               {props.removing ? props.removingLabel : props.useOrganizationDefaultLabel}
             </Button>
           ) : null}

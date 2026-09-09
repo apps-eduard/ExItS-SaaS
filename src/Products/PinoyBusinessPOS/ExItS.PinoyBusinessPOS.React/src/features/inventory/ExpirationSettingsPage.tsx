@@ -21,6 +21,7 @@ import {
   expirationSettingsHighlightClass,
   parseExpirationSettingsFocus,
 } from "@/features/inventory/expiration-settings-routes";
+import { hasMissingExpiry } from "@/features/inventory/inventory-lot-status";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -87,8 +88,11 @@ export function ExpirationSettingsPage() {
 
   const lotsReady = !tracksExpiration || !lotsQuery.isLoading;
   const onHand = accountQuery.data?.onHandQuantity ?? 0;
-  const needsRepair =
-    tracksExpiration && onHand > 0 && lotsReady && lotTotal === 0 && !lotsQuery.isFetching;
+  const needsRepair = hasMissingExpiry(
+    tracksExpiration,
+    onHand,
+    lotsReady && !lotsQuery.isFetching ? lotTotal : null,
+  );
 
   const focus = parseExpirationSettingsFocus(search);
   const highlightAssign = focus === "assign" && needsRepair;
@@ -288,7 +292,7 @@ export function ExpirationSettingsPage() {
           data-highlighted={highlightAssign ? "true" : undefined}
         >
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("inventory.expirationSetupRequired")}
+            {t("inventory.missingExpirationShort")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.expirationSetupRequiredDetail")}

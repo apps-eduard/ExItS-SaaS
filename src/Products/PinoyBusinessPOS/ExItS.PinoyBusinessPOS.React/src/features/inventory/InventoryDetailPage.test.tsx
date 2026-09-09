@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -501,10 +501,12 @@ describe("InventoryDetailPage expiration UX", () => {
 
     await user.type(screen.getByLabelText(/Quantity/i), "24");
     await user.type(screen.getByLabelText(/Reason/i), "Stock count correction");
-    await user.click(screen.getByTestId("inventory-adjust"));
-    expect(await screen.findByText(/Expiration date is required/i)).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-adjust")).toBeDisabled();
 
-    await user.type(screen.getByTestId("inventory-adjust-expiry"), "2027-12-30");
+    fireEvent.change(screen.getByTestId("inventory-adjust-expiry"), {
+      target: { value: "2027-12-30" },
+    });
+    expect(screen.getByTestId("inventory-adjust")).toBeEnabled();
     await user.click(screen.getByTestId("inventory-adjust"));
 
     await waitFor(() =>
@@ -571,8 +573,7 @@ describe("InventoryDetailPage expiration UX", () => {
     await user.click(screen.getByTestId("inventory-deduct-manual"));
     await user.type(screen.getByLabelText(/Quantity/i), "5");
     await user.type(screen.getByLabelText(/Reason/i), "Expired");
-    await user.click(screen.getByTestId("inventory-adjust"));
-    expect(await screen.findByText(/Select a lot/i)).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-adjust")).toBeDisabled();
   });
 
   it("links manage expiration to settings page and hides disable on detail", async () => {
@@ -608,6 +609,7 @@ describe("InventoryDetailPage expiration UX", () => {
     renderPage();
     await expandStatusDetails();
     await screen.findByTestId("inventory-expiration-setup-required");
+    expect(screen.getByTestId("inventory-missing-expiry-badge")).toHaveTextContent(/Missing expiry/i);
     expect(screen.getByTestId("inventory-expiration-setup-assign")).toHaveAttribute(
       "href",
       `/inventory/${productId}/expiration?focus=assign`,
@@ -620,6 +622,72 @@ describe("InventoryDetailPage expiration UX", () => {
     expect(screen.queryByTestId("inventory-expiry-totals")).not.toBeInTheDocument();
     expect(screen.queryByText(/No lots on hand yet/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("enable-expiration-tracking-dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not show missing expiry when tracks expiry with zero on hand", async () => {
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({
+        tracksExpiration: true,
+        onHandQuantity: 0,
+        stockStatus: "OutOfStock",
+        expirationWarningDays: 7,
+      }) as never,
+    );
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    renderPage();
+    await expandStatusDetails();
+    expect(screen.queryByTestId("inventory-expiration-setup-required")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-missing-expiry-badge")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inventory-expiration-pending")).not.toBeInTheDocument();
+    expect(screen.getByTestId("inventory-manage-expiration")).toBeInTheDocument();
+  });
+
+  it("disables add opening stock until expiry is provided for tracked products", async () => {
+    const user = userEvent.setup();
+    vi.mocked(inventoryClient.getInventoryProduct).mockResolvedValue(
+      baseAccount({
+        tracksExpiration: true,
+        onHandQuantity: 0,
+        hasOpeningStock: false,
+        stockStatus: "OutOfStock",
+      }) as never,
+    );
+    vi.mocked(inventoryClient.listProductLots).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    vi.spyOn(catalogClient, "getCatalogProduct").mockResolvedValue({
+      productId,
+      organizationId: workspace.organizationId,
+      name: "Soap",
+      unitOfMeasure: "Bottle",
+      sellingMode: "Each",
+      sellingPrice: 10,
+      effectiveSellingPrice: 10,
+      hasBranchPriceOverride: false,
+      status: "Active",
+      createdAtUtc: "2026-01-01T00:00:00Z",
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    } as never);
+    renderPage();
+    await screen.findByTestId("inventory-add-opening-stock");
+    const submit = screen.getByTestId("inventory-add-opening-stock-submit");
+    expect(submit).toBeDisabled();
+    await user.clear(screen.getByTestId("inventory-opening-quantity"));
+    await user.type(screen.getByTestId("inventory-opening-quantity"), "5");
+    await user.type(screen.getByTestId("inventory-opening-unit-cost"), "8");
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByTestId("inventory-opening-expiry"), {
+      target: { value: "2026-12-01" },
+    });
+    expect(submit).toBeEnabled();
   });
 
   it("disables inventory disable tracking when on hand is positive", async () => {

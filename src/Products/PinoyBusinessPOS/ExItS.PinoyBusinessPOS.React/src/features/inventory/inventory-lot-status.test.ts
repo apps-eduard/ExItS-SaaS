@@ -4,6 +4,8 @@ import {
   calendarDaysBetween,
   daysUntilExpiration,
   formatLocalDateOnly,
+  hasMissingExpiry,
+  hasValidExpiryDateInput,
   parseBusinessDate,
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
@@ -52,6 +54,22 @@ describe("inventory-lot-status", () => {
     expect(requiresOpeningExpirationDate(true, 0)).toBe(false);
     expect(requiresOpeningExpirationDate(true, null)).toBe(false);
     expect(requiresOpeningExpirationDate(true, 5)).toBe(true);
+  });
+
+  it("flags missing expiry only for positive unassigned stock", () => {
+    expect(hasMissingExpiry(false, 10, 0)).toBe(false);
+    expect(hasMissingExpiry(true, 0, 0)).toBe(false);
+    expect(hasMissingExpiry(true, 10, null)).toBe(false);
+    expect(hasMissingExpiry(true, 10, 0)).toBe(true);
+    expect(hasMissingExpiry(true, 10, 10)).toBe(false);
+    expect(hasMissingExpiry(true, 10, 4)).toBe(false);
+  });
+
+  it("validates expiry date input", () => {
+    expect(hasValidExpiryDateInput("")).toBe(false);
+    expect(hasValidExpiryDateInput("  ")).toBe(false);
+    expect(hasValidExpiryDateInput("2026-12-01")).toBe(true);
+    expect(hasValidExpiryDateInput("not-a-date")).toBe(false);
   });
 
   it("formats and shifts local date-only values", () => {

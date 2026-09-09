@@ -3145,6 +3145,46 @@ html:has(.admin-shell) #root {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.inventory-detail-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.inventory-detail-opening-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .inventory-detail-quick-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .inventory-detail-quick-actions:has(> :nth-child(4)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-detail-opening-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .inventory-detail-opening-fields:not(:has(> :nth-child(2))) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .inventory-detail-quick-actions:has(> :nth-child(4)) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .inventory-filters {
   display: flex;
   min-width: 0;
@@ -9565,6 +9605,19 @@ select.pc-field__control:disabled {
   background: color-mix(in srgb, var(--exits-success) 16%, var(--exits-surface));
 }
 
+.catalog-form-quick-add-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--exits-border);
+}
+
+.catalog-form-quick-add-grid > .catalog-form-quick-add {
+  padding-top: 0;
+  border-top: none;
+}
+
 .catalog-form-quick-add {
   display: flex;
   flex-direction: column;
@@ -9599,6 +9652,14 @@ select.pc-field__control:disabled {
   font-size: var(--exits-text-sm);
 }
 
+.catalog-form-quick-add__button--icon {
+  width: var(--exits-control-height);
+  min-width: var(--exits-control-height);
+  max-width: var(--exits-control-height);
+  padding: 0;
+  flex-shrink: 0;
+}
+
 .catalog-form-quick-add__button--primary {
   font-weight: 600;
   box-shadow: var(--exits-shadow-sm);
@@ -9606,6 +9667,32 @@ select.pc-field__control:disabled {
 
 .catalog-form-quick-add__button--primary:hover:not(:disabled) {
   box-shadow: var(--exits-shadow-md);
+}
+
+.catalog-choice-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.catalog-choice-options__item {
+  display: flex;
+  min-width: 0;
+  cursor: pointer;
+  gap: 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  padding: 0.65rem 0.75rem;
+}
+
+.catalog-choice-options__item--selected {
+  border-color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 5%, transparent);
+}
+
+.catalog-choice-options__item:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .catalog-categories-page .catalog-form-section,
@@ -9622,6 +9709,11 @@ select.pc-field__control:disabled {
 }
 
 @media (min-width: 640px) {
+  .catalog-form-quick-add-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
   .catalog-form-quick-add__row {
     flex-direction: row;
     align-items: flex-end;
@@ -9631,6 +9723,20 @@ select.pc-field__control:disabled {
     width: auto;
     min-width: 10.5rem;
     flex-shrink: 0;
+  }
+
+  .catalog-form-quick-add__button--icon {
+    width: var(--exits-control-height);
+    min-width: var(--exits-control-height);
+    max-width: var(--exits-control-height);
+  }
+
+  .catalog-choice-options--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalog-choice-options--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -11389,6 +11495,18 @@ a.exits-chip--primary:hover {
   gap: 0.65rem;
 }
 
+.catalog-form-section-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.catalog-form-section-row > .catalog-form-section {
+  min-width: 0;
+  height: 100%;
+}
+
 @media (min-width: 640px) {
   .catalog-form-section__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11396,6 +11514,11 @@ a.exits-chip--primary:hover {
 
   .catalog-form-section__grid .catalog-form-field--full {
     grid-column: 1 / -1;
+  }
+
+  .catalog-form-section-row:has(> :nth-child(2)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
   }
 }
 

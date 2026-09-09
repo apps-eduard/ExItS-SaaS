@@ -2973,7 +2973,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
     "I-on ang expiration tracking aron i-record ang expiry dates sa stock lots ug near-expiry warnings.",
 
-  "inventory.expirationSetupRequired": "Gikinahanglan ang expiration setup",
+  "inventory.expirationSetupRequired": "Missing expiry",
 
   "inventory.expirationSetupRequiredDetail":
 
@@ -2983,7 +2983,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
     "{qty} {uom} on hand nanginahanglan og expiry dates sa wala pa makita ang Good / Near expiry / Expired.",
 
-  "inventory.assignExpirationDates": "Mag-assign og expiration dates",
+  "inventory.assignExpirationDates": "Assign expiry",
 
   "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
 
@@ -4281,6 +4281,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.trackingFilter": "Tracking status",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
+  "inventory.missingExpirationShort": "Missing expiry",
+  "inventory.expirationIncompleteShort": "Expiry information incomplete",
 
   "inventory.untrackedHint": "Ang not tracked pasabot nga naka-off ang inventory enforcement ??? dili zero stock.",
 

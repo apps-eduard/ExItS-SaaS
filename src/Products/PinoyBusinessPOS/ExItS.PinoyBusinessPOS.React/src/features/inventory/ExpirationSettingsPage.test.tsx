@@ -121,7 +121,7 @@ describe("ExpirationSettingsPage", () => {
 
     renderPage();
     await screen.findByTestId("expiration-settings-repair-banner");
-    expect(screen.getByText(/Expiration setup required/i)).toBeInTheDocument();
+    expect(screen.getByText(/Missing expiry/i)).toBeInTheDocument();
     expect(screen.getByTestId("assign-expiration-lots-form")).toBeInTheDocument();
     expect(screen.queryByTestId("expiration-settings-repair")).not.toBeInTheDocument();
     await waitFor(() => {

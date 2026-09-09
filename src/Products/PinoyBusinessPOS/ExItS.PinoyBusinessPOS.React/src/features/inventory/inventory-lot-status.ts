@@ -82,6 +82,36 @@ export function requiresOpeningExpirationDate(
   return openingQuantity != null && !Number.isNaN(openingQuantity) && openingQuantity > 0;
 }
 
+/**
+ * Tracks-expiry is product configuration. "Missing expiry" is only when positive
+ * on-hand stock exists with no assigned lot quantity (unassigned stock).
+ * Pass `assignedLotQuantity: null` while lot totals are still loading.
+ */
+export function hasMissingExpiry(
+  tracksExpiration: boolean,
+  onHandQuantity: number,
+  assignedLotQuantity: number | null,
+): boolean {
+  if (!tracksExpiration) {
+    return false;
+  }
+  if (!(onHandQuantity > 0)) {
+    return false;
+  }
+  if (assignedLotQuantity == null || !Number.isFinite(assignedLotQuantity)) {
+    return false;
+  }
+  return assignedLotQuantity <= 0;
+}
+
+/** True when a non-empty yyyy-MM-dd (or ISO date prefix) expiry value is present. */
+export function hasValidExpiryDateInput(value: string | null | undefined): boolean {
+  if (!value?.trim()) {
+    return false;
+  }
+  return parseBusinessDate(value) != null;
+}
+
 export const EXPIRY_WINDOWS = ["Expired", "Days7", "Days14", "Days30", "Custom"] as const;
 export type ExpiryWindowCode = (typeof EXPIRY_WINDOWS)[number];
 

@@ -3243,6 +3243,8 @@ export const en = {
   "inventory.filterUntracked": "Not tracked",
   "inventory.lowStock": "Low stock",
   "inventory.tracksExpirationShort": "Tracks expiry",
+  "inventory.missingExpirationShort": "Missing expiry",
+  "inventory.expirationIncompleteShort": "Expiry information incomplete",
   "inventory.expirationTitle": "Expiring stock",
   "inventory.expirationLede":
     "See expired and near-expiry lots. Write off expired stock into Waste / Loss when you confirm the physical quantity.",
@@ -3297,12 +3299,12 @@ export const en = {
   "inventory.expirationSettingsTitle": "Expiration settings",
   "inventory.expirationSettingsEnableHint":
     "Turn on expiration tracking to record expiry dates for stock lots and near-expiry warnings.",
-  "inventory.expirationSetupRequired": "Expiration setup required",
+  "inventory.expirationSetupRequired": "Missing expiry",
   "inventory.expirationSetupRequiredDetail":
-    "This product tracks expiration and has stock on hand, but no stock lots are assigned yet. Assign expiry dates to match the current on-hand quantity.",
+    "This product has stock on hand without expiry lots. Assign expiry dates to match the current on-hand quantity.",
   "inventory.expirationPendingSummary":
     "{qty} {uom} on hand need expiry dates before Good / Near expiry / Expired totals can be shown.",
-  "inventory.assignExpirationDates": "Assign expiration dates",
+  "inventory.assignExpirationDates": "Assign expiry",
   "inventory.expirationLotsAssigned": "Expiration dates assigned.",
   "inventory.viewStockLots": "View stock lots",
   "inventory.saveNearExpiryWarning": "Save near-expiry warning",

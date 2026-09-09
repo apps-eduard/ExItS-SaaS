@@ -59,15 +59,11 @@ export function ProductCapabilitySelector({ value, onChange, disabled = false }:
       <legend className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
         {t("catalog.capability.question")}
       </legend>
-      <div className="flex flex-col gap-2">
+      <div className="catalog-choice-options catalog-choice-options--3">
         {options.map((option) => {
           const id = `catalog-capability-${option.key}`;
           return (
-            <label
-              key={option.key}
-              htmlFor={id}
-              className="flex cursor-pointer gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-2.5"
-            >
+            <label key={option.key} htmlFor={id} className="catalog-choice-options__item">
               <input
                 id={id}
                 type="checkbox"

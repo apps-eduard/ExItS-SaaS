@@ -2973,7 +2973,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
     "I-on ti expiration tracking tapno mairekord ti expiry dates dagiti stock lots ken near-expiry warnings.",
 
-  "inventory.expirationSetupRequired": "Masapul ti expiration setup",
+  "inventory.expirationSetupRequired": "Missing expiry",
 
   "inventory.expirationSetupRequiredDetail":
 
@@ -2983,7 +2983,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
     "{qty} {uom} on hand ket masapul ti expiry dates sakbay a maipakita ti Good / Near expiry / Expired.",
 
-  "inventory.assignExpirationDates": "Mag-assign ti expiration dates",
+  "inventory.assignExpirationDates": "Assign expiry",
 
   "inventory.expirationLotsAssigned": "Na-assign ti expiration dates.",
 
@@ -4281,6 +4281,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.trackingFilter": "Tracking status",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
+  "inventory.missingExpirationShort": "Missing expiry",
+  "inventory.expirationIncompleteShort": "Expiry information incomplete",
 
   "inventory.untrackedHint": "Ti not tracked pasabot a naka-off ti inventory enforcement ??? saan a zero stock.",
 

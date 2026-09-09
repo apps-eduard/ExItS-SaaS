@@ -198,3 +198,66 @@ describe("InventoryDetailPage enable tracking selling price", () => {
     expect(screen.getByTestId("inventory-enable")).not.toBeDisabled();
   });
 });
+
+describe("InventoryDetailPage opening stock selling price", () => {
+  beforeEach(() => {
+    workspaceState.boundWorkspace = { ...workspace };
+    vi.spyOn(inventoryClient, "getInventoryProduct").mockResolvedValue({
+      productId,
+      organizationId: workspace.organizationId,
+      name: "Biscuit Pack",
+      unitOfMeasure: "Pack",
+      productStatus: "Active",
+      isTracked: true,
+      onHandQuantity: 0,
+      hasOpeningStock: false,
+      stockStatus: "OutOfStock",
+      isLowStock: false,
+      tracksExpiration: false,
+      createdAtUtc: "2026-01-01T00:00:00Z",
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    } as never);
+    vi.spyOn(inventoryClient, "listInventoryMovements").mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    } as never);
+    vi.spyOn(inventoryClient, "listProductLots").mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    } as never);
+  });
+
+  it("shows current selling price on add opening stock", async () => {
+    vi.spyOn(catalogClient, "getCatalogProduct").mockResolvedValue({
+      productId,
+      organizationId: workspace.organizationId,
+      name: "Biscuit Pack",
+      unitOfMeasure: "Pack",
+      sellingMode: "Each",
+      sellingPrice: 25,
+      effectiveSellingPrice: 25,
+      hasBranchPriceOverride: false,
+      status: "Active",
+      createdAtUtc: "2026-01-01T00:00:00Z",
+      updatedAtUtc: "2026-01-01T00:00:00Z",
+    } as never);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("inventory-add-opening-stock")).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("inventory-current-selling-price")).toHaveTextContent(
+        `${formatPeso(25)} / Pack`,
+      );
+    });
+    expect(screen.getByTestId("inventory-selling-price-source")).toHaveTextContent(
+      "Organization price",
+    );
+  });
+});
