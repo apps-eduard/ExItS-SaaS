@@ -248,7 +248,7 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
           <textarea
             id={field.testId}
             data-testid={field.testId}
-            className="supplier-form-control supplier-form-control--area rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+            className="supplier-form-control supplier-form-control--area rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             rows={2}
             value={form[field.key]}
             disabled={saving}

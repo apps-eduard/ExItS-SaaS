@@ -12140,10 +12140,13 @@ a.exits-chip--primary:hover {
 }
 
 .supplier-form-control--area {
-  min-height: calc(var(--exits-control-height) * 2);
-  max-height: calc(var(--exits-control-height) * 2 + 0.5rem);
-  resize: vertical;
-  line-height: 1.35;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  max-height: 2.75rem;
+  padding-block: 0.35rem;
+  resize: none;
+  line-height: 1.25;
+  overflow-y: auto;
 }
 
 .supplier-form-control:focus-visible {
