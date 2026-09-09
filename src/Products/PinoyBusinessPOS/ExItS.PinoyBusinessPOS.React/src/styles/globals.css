@@ -12054,7 +12054,6 @@ a.exits-chip--primary:hover {
   }
 
   .supplier-form-section__grid .supplier-form-field:has(.supplier-form-control--area),
-  .supplier-form-section__grid .supplier-form-field:has(#supplier-name),
   .supplier-form-section__grid .supplier-form-field:has(#supplier-address1),
   .supplier-form-section__grid .supplier-form-field:has(#supplier-address2) {
     grid-column: 1 / -1;
