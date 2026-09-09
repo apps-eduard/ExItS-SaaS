@@ -1270,7 +1270,7 @@ export function InventoryDetailPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="inventory-adjust-form__disable w-fit"
+                        className="inventory-adjust-form__disable h-auto min-h-[var(--exits-control-height)] max-w-[calc(100%-10.5rem)] flex-1 justify-start whitespace-normal px-1.5 text-left leading-snug"
                         disabled={disableMutation.isPending || !canDisableInventory}
                         onClick={() => disableMutation.mutate()}
                         data-testid="inventory-disable"
@@ -1279,7 +1279,7 @@ export function InventoryDetailPage() {
                       </Button>
                       <Button
                         type="button"
-                        className="inventory-adjust-form__submit"
+                        className="inventory-adjust-form__submit shrink-0"
                         disabled={
                           adjusting ||
                           statusLocked ||
