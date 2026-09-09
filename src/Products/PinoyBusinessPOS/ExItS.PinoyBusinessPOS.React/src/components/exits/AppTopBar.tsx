@@ -129,14 +129,22 @@ export function AppTopBar() {
         disabled={!canSwitchWorkspace}
       >
         <LocationIcon className="app-top-bar__workspace-icon" aria-hidden />
-        <span className="app-top-bar__workspace-text app-top-bar__workspace-text--stacked">
+        <span className="app-top-bar__workspace-text">
           <span className="app-top-bar__workspace-primary" data-testid={`${testId}-primary`}>
             {indicator.primary}
           </span>
           {indicator.secondary ? (
-            <span className="app-top-bar__workspace-secondary" data-testid={`${testId}-secondary`}>
-              {indicator.secondary}
-            </span>
+            <>
+              <span className="app-top-bar__workspace-sep" aria-hidden>
+                ·
+              </span>
+              <span
+                className="app-top-bar__workspace-secondary"
+                data-testid={`${testId}-secondary`}
+              >
+                {indicator.secondary}
+              </span>
+            </>
           ) : null}
         </span>
         {canSwitchWorkspace ? (

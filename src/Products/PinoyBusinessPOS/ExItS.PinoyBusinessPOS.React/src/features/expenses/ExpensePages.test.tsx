@@ -616,15 +616,23 @@ describe("Expense React CRUD", () => {
     );
 
     await screen.findByTestId("expense-categories-page");
+    await screen.findByTestId(`expense-category-row-${categoryId}`);
+    expect(screen.getByTestId("expense-category-create")).toBeInTheDocument();
+    expect(screen.getByTestId("expense-categories-search")).toBeInTheDocument();
+    expect(screen.getByTestId("expense-category-status-filters")).toBeInTheDocument();
+    expect(screen.getByTestId("expense-categories-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("expense-category-status-filter")).not.toBeInTheDocument();
+
     await user.type(screen.getByTestId("expense-category-name"), "Electricity");
     await user.click(screen.getByTestId("expense-category-create-submit"));
     await waitFor(() => expect(createSpy).toHaveBeenCalled());
 
-    await user.click(screen.getByTestId(`expense-category-edit-${categoryId}`));
-    const nameInput = screen.getByTestId("expense-category-edit-name");
+    const renameButtons = screen.getAllByTestId(`expense-category-rename-${categoryId}`);
+    await user.click(renameButtons[0]!);
+    const nameInput = screen.getAllByTestId(`expense-category-rename-input-${categoryId}`)[0]!;
     await user.clear(nameInput);
     await user.type(nameInput, "Utilities");
-    await user.click(screen.getByTestId("expense-category-save"));
+    await user.click(screen.getAllByTestId(`expense-category-rename-save-${categoryId}`)[0]!);
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalledWith(
         expect.anything(),
@@ -637,10 +645,12 @@ describe("Expense React CRUD", () => {
     });
 
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    await user.click(screen.getByTestId(`expense-category-deactivate-${categoryId}`));
+    const deactivateButtons = screen.getAllByTestId(`expense-category-deactivate-${categoryId}`);
+    await user.click(deactivateButtons[0]!);
     await waitFor(() => expect(deactivateSpy).toHaveBeenCalledWith(expect.anything(), categoryId));
 
-    await user.click(screen.getByTestId(`expense-category-reactivate-${categoryId}`));
+    const reactivateButtons = screen.getAllByTestId(`expense-category-reactivate-${categoryId}`);
+    await user.click(reactivateButtons[0]!);
     await waitFor(() => expect(reactivateSpy).toHaveBeenCalledWith(expect.anything(), categoryId));
   });
 

@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, Eye, EyeOff } from "lucide-react";
+import {
+  CircleAlert,
+  Eye,
+  EyeOff,
+  Hash,
+  MapPin,
+  MonitorSmartphone,
+  Package,
+  Store,
+  Truck,
+  Users,
+} from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
@@ -535,31 +546,46 @@ export function BranchManagementDetailPage() {
 
       {activeTab === "overview" ? (
         <div className="flex flex-col gap-3" data-testid="branch-mgmt-overview">
-          <section className="catalog-form-section exits-animate-panel gap-2">
+          <section className="catalog-form-section exits-animate-panel branch-mgmt-overview gap-3">
             <h2 className="catalog-form-section__title">{t(copy.overviewTab)}</h2>
-            <dl className="branch-mgmt-card__meta">
-              <div>
-                <dt>{t(copy.nameLabel)}</dt>
+            <dl className="branch-mgmt-overview__grid">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Store className="branch-mgmt-overview__icon" aria-hidden />
+                  <span>{t(copy.nameLabel)}</span>
+                </dt>
                 <dd>{branch.name}</dd>
               </div>
-              <div>
-                <dt>{t(copy.codeLabel)}</dt>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Hash className="branch-mgmt-overview__icon" aria-hidden />
+                  <span>{t(copy.codeLabel)}</span>
+                </dt>
                 <dd>{branch.code}</dd>
               </div>
-              <div>
-                <dt>{t("areas.singular")}</dt>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <MapPin className="branch-mgmt-overview__icon" aria-hidden />
+                  <span>{t("areas.singular")}</span>
+                </dt>
                 <dd data-testid="branch-detail-area">
                   {summary?.areaName ?? t("areas.unassigned")}
                 </dd>
               </div>
-              <div>
-                <dt>{t("branches.mgmt.staffAccess")}</dt>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Users className="branch-mgmt-overview__icon" aria-hidden />
+                  <span>{t("branches.mgmt.staffAccess")}</span>
+                </dt>
                 <dd data-testid="branch-detail-staff-count">
                   {summary?.assignedStaffCount ?? "—"}
                 </dd>
               </div>
-              <div>
-                <dt>{t(copy.devicesLabel)}</dt>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <MonitorSmartphone className="branch-mgmt-overview__icon" aria-hidden />
+                  <span>{t(copy.devicesLabel)}</span>
+                </dt>
                 <dd data-testid="branch-detail-device-count">
                   {t("branches.mgmt.devicesActive").replace(
                     "{count}",
@@ -569,24 +595,39 @@ export function BranchManagementDetailPage() {
               </div>
               {!isWarehouse ? (
                 <>
-                  <div>
-                    <dt>{t("branches.mgmt.pickup")}</dt>
-                    <dd>
-                      {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                      {summary?.pickupSectionsComplete ?? 0}/{summary?.pickupSectionsTotal ?? 2}
+                  <div className="branch-mgmt-overview__item">
+                    <dt>
+                      <Package className="branch-mgmt-overview__icon" aria-hidden />
+                      <span>{t("branches.mgmt.pickup")}</span>
+                    </dt>
+                    <dd className="branch-mgmt-overview__value--status">
+                      <StatusChip tone={branch.pickupEnabled ? "success" : "neutral"}>
+                        {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                      </StatusChip>
+                      <span className="branch-mgmt-overview__progress">
+                        {summary?.pickupSectionsComplete ?? 0}/{summary?.pickupSectionsTotal ?? 2}
+                      </span>
                     </dd>
                   </div>
-                  <div>
-                    <dt>{t("branches.mgmt.delivery")}</dt>
-                    <dd>
-                      {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                      {summary?.deliverySectionsComplete ?? 0}/{summary?.deliverySectionsTotal ?? 5}
+                  <div className="branch-mgmt-overview__item">
+                    <dt>
+                      <Truck className="branch-mgmt-overview__icon" aria-hidden />
+                      <span>{t("branches.mgmt.delivery")}</span>
+                    </dt>
+                    <dd className="branch-mgmt-overview__value--status">
+                      <StatusChip tone={branch.deliveryEnabled ? "success" : "neutral"}>
+                        {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                      </StatusChip>
+                      <span className="branch-mgmt-overview__progress">
+                        {summary?.deliverySectionsComplete ?? 0}/
+                        {summary?.deliverySectionsTotal ?? 5}
+                      </span>
                     </dd>
                   </div>
                 </>
               ) : null}
             </dl>
-            <div className="flex flex-wrap gap-2">
+            <div className="branch-mgmt-overview__actions">
               <Button type="button" variant="outline" onClick={() => selectTab("details")}>
                 {t(copy.detailsTab)}
               </Button>

@@ -119,13 +119,15 @@ describe("POS-MANAGER-OPERATIONS-SHELL authority matrix", () => {
 });
 
 describe("operations navigation", () => {
-  it("Retail bottom nav: Home Sell Inventory Orders More when permitted", () => {
+  it("Retail bottom nav: Home Inventory Sell Orders More when permitted", () => {
     const tabs = buildOperationsBottomNavTabs({
       grant: storeManager,
       experience: "operations",
       branchType: "Retail",
     });
-    expect(tabs.map((t) => t.id)).toEqual(["home", "sell", "inventory", "orders", "more"]);
+    expect(tabs.map((t) => t.id)).toEqual(["home", "inventory", "sell", "orders", "more"]);
+    expect(tabs[2]?.id).toBe("sell");
+    expect(tabs.find((t) => t.id === "sell")?.primary).toBe(true);
     expect(tabs[0]?.to).toBe("/role/manager");
     expect(tabs.some((t) => t.id === "sell")).toBe(true);
     expect(tabs.some((t) => t.id === "inventory")).toBe(true);

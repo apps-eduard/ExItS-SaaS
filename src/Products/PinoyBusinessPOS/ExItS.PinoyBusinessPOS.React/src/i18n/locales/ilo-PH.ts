@@ -774,7 +774,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "catalog.categoriesLede": "Organisaha ti products ngadto iti categories.",
 
-  "catalog.categoriesTitle": "Categories",
+  "catalog.categoriesTitle": "Dagiti kategoria ti produkto",
 
   "catalog.category": "Category",
 
@@ -11272,6 +11272,36 @@ export const iloPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.outbound": "Outbound",
   "warehouseDashboard.inbound": "Inbound",
   "nav.backToWarehouseHome": "Back to Warehouse home",
+
+  "catalog.cancel": "Kanselaen",
+  "catalog.category.creating": "Creating…",
+  "catalog.category.deactivateConfirm": "Deactivate this category? It will remain on historical products but cannot be assigned to new products.",
+  "catalog.categoryCreateFailed": "Could not create the category.",
+  "catalog.categoryDeactivateFailed": "Could not deactivate the category.",
+  "catalog.categoryReactivateFailed": "Could not reactivate the category.",
+  "catalog.categoryUpdateFailed": "Could not update the category.",
+  "catalog.createCategory": "Agaramid ti kategoria",
+  "catalog.editCategory": "I-edit ti kategoria",
+  "catalog.validation.categoryNameRequired": "Category name is required.",
+  "production.recipes.estimatedCostPartialManual": "Estimated cost incomplete. Selling price must be entered manually.",
+  "production.recipes.estimatedGrossProfit": "Estimated gross profit",
+  "production.recipes.estimatedGrossProfitValue": "{amount} / {uom}",
+  "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
+  "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
+  "production.recipes.lowMarginWarning": "Low estimated gross margin.",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} · Selling price: {price} · Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
+  "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
+  "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
+  "production.recipes.suggestedPriceUnavailableReason": "Some ingredient costs are missing.",
+  "production.recipes.suggestedPriceValue": "{price} / {uom}",
+  "production.recipes.suggestedSellingPrice": "Suggested selling price",
+  "production.recipes.targetGrossMargin": "Target gross margin",
+  "production.recipes.targetMarginCustom": "Custom",
+  "production.recipes.useSuggestedPrice": "Use suggested price",
+  "catalog.offline": "Categories need a connection. Reconnect to manage product categories.",
+  "catalog.categoriesLoadFailed": "Could not load product categories.",
+  "catalog.emptyCategoriesReadonly": "No available categories.",
 };
 
 

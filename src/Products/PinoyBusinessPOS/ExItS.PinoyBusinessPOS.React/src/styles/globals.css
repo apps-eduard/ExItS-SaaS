@@ -8040,75 +8040,8 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text);
 }
 
-/* Catalog categories */
-.catalog-categories-page > header {
-  animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.catalog-categories-toolbar {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.75rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: var(--exits-shadow-sm);
-}
-
-@media (min-width: 768px) {
-  .catalog-categories-toolbar {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .catalog-categories-toolbar__filters {
-    flex-wrap: nowrap;
-  }
-}
-
-:root:not([data-theme="dark"]) .catalog-categories-toolbar,
-[data-theme="light"] .catalog-categories-toolbar {
-  background: #fff;
-  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
-}
-
-.catalog-categories-results {
-  min-width: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-lg);
-  background: var(--exits-surface-elevated);
-  box-shadow: var(--exits-shadow-sm);
-}
-
-:root:not([data-theme="dark"]) .catalog-categories-results,
-[data-theme="light"] .catalog-categories-results {
-  background: #fff;
-  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
-  box-shadow: var(--exits-shadow-md);
-}
-
-.catalog-categories-table-shell {
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: var(--exits-shadow-sm);
-}
-
-.catalog-categories-table__head {
-  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
-}
-
-.catalog-categories-table__row:last-child {
-  border-bottom: 0;
-}
-
-.catalog-categories-table__row:hover {
-  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
-}
+/* Shared taxonomy admin chrome: Brands + Product categories + Expense categories.
+   Row helpers (`.catalog-category-row*` / `.catalog-brand-row*`) stay parallel. */
 
 .catalog-category-row {
   display: flex;
@@ -8119,14 +8052,6 @@ a.dashboard-metric-card:focus-visible {
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
   box-shadow: var(--exits-shadow-sm);
-}
-
-.catalog-categories-page .catalog-category-row.exits-list__card:hover,
-.catalog-categories-page .catalog-category-row.exits-list__card:active {
-  background: #fff;
-  transform: none;
-  border-color: var(--exits-border-strong);
-  box-shadow: var(--exits-shadow-md);
 }
 
 @media (min-width: 640px) {
@@ -8153,11 +8078,6 @@ a.dashboard-metric-card:focus-visible {
 .catalog-category-row__heading .exits-list__name {
   flex: 1;
   min-width: 0;
-}
-
-/* Category cards carry actions â€” keep one column so names are not squeezed on wide screens. */
-.catalog-categories-list {
-  grid-template-columns: 1fr;
 }
 
 .catalog-category-row__rename {
@@ -8225,12 +8145,16 @@ a.dashboard-metric-card:focus-visible {
   justify-content: flex-end;
 }
 
-/* Catalog brands â€” same layout language as categories */
-.catalog-brands-page > header {
+/* Taxonomy admin pages (Brands / Product categories / Expense categories) */
+.catalog-brands-page > header,
+.catalog-categories-page > header,
+.expense-categories-page > header {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.catalog-brands-toolbar {
+.catalog-brands-toolbar,
+.catalog-categories-toolbar,
+.expense-categories-toolbar {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -8243,24 +8167,34 @@ a.dashboard-metric-card:focus-visible {
 }
 
 @media (min-width: 768px) {
-  .catalog-brands-toolbar {
+  .catalog-brands-toolbar,
+  .catalog-categories-toolbar,
+  .expense-categories-toolbar {
     flex-direction: row;
     align-items: center;
     gap: 0.75rem;
   }
 
-  .catalog-brands-toolbar__filters {
+  .catalog-brands-toolbar__filters,
+  .catalog-categories-toolbar__filters,
+  .expense-categories-toolbar__filters {
     flex-wrap: nowrap;
   }
 }
 
 :root:not([data-theme="dark"]) .catalog-brands-toolbar,
-[data-theme="light"] .catalog-brands-toolbar {
+:root:not([data-theme="dark"]) .catalog-categories-toolbar,
+:root:not([data-theme="dark"]) .expense-categories-toolbar,
+[data-theme="light"] .catalog-brands-toolbar,
+[data-theme="light"] .catalog-categories-toolbar,
+[data-theme="light"] .expense-categories-toolbar {
   background: #fff;
   border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
 }
 
-.catalog-brands-results {
+.catalog-brands-results,
+.catalog-categories-results,
+.expense-categories-results {
   min-width: 0;
   padding: 0.75rem;
   border: 1px solid var(--exits-border);
@@ -8270,28 +8204,40 @@ a.dashboard-metric-card:focus-visible {
 }
 
 :root:not([data-theme="dark"]) .catalog-brands-results,
-[data-theme="light"] .catalog-brands-results {
+:root:not([data-theme="dark"]) .catalog-categories-results,
+:root:not([data-theme="dark"]) .expense-categories-results,
+[data-theme="light"] .catalog-brands-results,
+[data-theme="light"] .catalog-categories-results,
+[data-theme="light"] .expense-categories-results {
   background: #fff;
   border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
   box-shadow: var(--exits-shadow-md);
 }
 
-.catalog-brands-table-shell {
+.catalog-brands-table-shell,
+.catalog-categories-table-shell,
+.expense-categories-table-shell {
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
   box-shadow: var(--exits-shadow-sm);
 }
 
-.catalog-brands-table__head {
+.catalog-brands-table__head,
+.catalog-categories-table__head,
+.expense-categories-table__head {
   background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
 }
 
-.catalog-brands-table__row:last-child {
+.catalog-brands-table__row:last-child,
+.catalog-categories-table__row:last-child,
+.expense-categories-table__row:last-child {
   border-bottom: 0;
 }
 
-.catalog-brands-table__row:hover {
+.catalog-brands-table__row:hover,
+.catalog-categories-table__row:hover,
+.expense-categories-table__row:hover {
   background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
 }
 
@@ -8307,7 +8253,11 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .catalog-brands-page .catalog-brand-row.exits-list__card:hover,
-.catalog-brands-page .catalog-brand-row.exits-list__card:active {
+.catalog-brands-page .catalog-brand-row.exits-list__card:active,
+.catalog-categories-page .catalog-category-row.exits-list__card:hover,
+.catalog-categories-page .catalog-category-row.exits-list__card:active,
+.expense-categories-page .catalog-category-row.exits-list__card:hover,
+.expense-categories-page .catalog-category-row.exits-list__card:active {
   background: #fff;
   transform: none;
   border-color: var(--exits-border-strong);
@@ -8340,7 +8290,9 @@ a.dashboard-metric-card:focus-visible {
   min-width: 0;
 }
 
-.catalog-brands-list {
+.catalog-brands-list,
+.catalog-categories-list,
+.expense-categories-list {
   grid-template-columns: 1fr;
 }
 
@@ -8998,8 +8950,9 @@ a.dashboard-metric-card:focus-visible {
 .catalog-page > header p,
 .catalog-import-page > header p,
 .catalog-global-page > header p,
-.catalog-categories-page > header p,
 .catalog-brands-page > header p,
+.catalog-categories-page > header p,
+.expense-categories-page > header p,
 .catalog-prices-page > header p,
 .inventory-list-page > header p,
 .inventory-expiration-page > header p,
@@ -9323,21 +9276,15 @@ a.dashboard-metric-card:focus-visible {
 .app-top-bar__workspace-text {
   display: inline-flex;
   min-width: 0;
-  align-items: baseline;
+  align-items: center;
+  gap: 0.3rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-top-bar__workspace-text--stacked {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.05rem;
-  white-space: normal;
-}
-
 .app-top-bar__workspace-primary {
-  display: block;
+  display: inline;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9349,15 +9296,21 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .app-top-bar__workspace-secondary {
-  display: block;
-  max-width: 100%;
+  display: inline;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--exits-text-xs);
+  font-size: var(--exits-text-sm);
   font-weight: 400;
   line-height: 1.2;
   color: var(--exits-text-muted);
+}
+
+.app-top-bar__workspace-sep {
+  flex-shrink: 0;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+  line-height: 1;
 }
 
 .app-top-bar__workspace-org {
@@ -9369,11 +9322,6 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text);
 }
 
-.app-top-bar__workspace-sep {
-  margin-inline: 0.35rem;
-  color: var(--exits-text-muted);
-}
-
 .app-top-bar__workspace-branch {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9382,16 +9330,9 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text-muted);
 }
 
-.app-top-bar__workspace--stacked .app-top-bar__workspace-branch {
-  font-size: var(--exits-text-xs);
-}
-
-.app-top-bar__workspace--stacked .app-top-bar__workspace-secondary {
-  display: block;
-}
-
 @media (max-width: 379px) {
-  .app-top-bar__workspace--stacked .app-top-bar__workspace-secondary {
+  .app-top-bar__workspace--stacked .app-top-bar__workspace-secondary,
+  .app-top-bar__workspace--stacked .app-top-bar__workspace-sep {
     display: none;
   }
 }
@@ -10184,15 +10125,18 @@ select.pc-field__control:disabled {
   opacity: 0.7;
 }
 
+.catalog-brands-page .catalog-form-section,
 .catalog-categories-page .catalog-form-section,
-.catalog-brands-page .catalog-form-section {
+.expense-categories-page .catalog-form-section {
   box-shadow: var(--exits-shadow-sm);
 }
 
-:root:not([data-theme="dark"]) .catalog-categories-page .catalog-form-section,
-[data-theme="light"] .catalog-categories-page .catalog-form-section,
 :root:not([data-theme="dark"]) .catalog-brands-page .catalog-form-section,
-[data-theme="light"] .catalog-brands-page .catalog-form-section {
+:root:not([data-theme="dark"]) .catalog-categories-page .catalog-form-section,
+:root:not([data-theme="dark"]) .expense-categories-page .catalog-form-section,
+[data-theme="light"] .catalog-brands-page .catalog-form-section,
+[data-theme="light"] .catalog-categories-page .catalog-form-section,
+[data-theme="light"] .expense-categories-page .catalog-form-section {
   background: #fff;
   border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
 }
@@ -10245,8 +10189,9 @@ select.pc-field__control:disabled {
 .catalog-page__search input,
 .catalog-import-page__search input,
 .catalog-global-page__search input,
-.catalog-categories-page__search input,
 .catalog-brands-page__search input,
+.catalog-categories-page__search input,
+.expense-categories-page__search input,
 .catalog-prices-page__search input,
 .inventory-list-page__search input,
 .inventory-expiration-page__search input,
@@ -10451,12 +10396,29 @@ select.pc-field__control:disabled {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
   scroll-padding-inline: 0.25rem;
   padding-bottom: 0.125rem;
+  scrollbar-width: thin;
+}
+
+.exits-chip-bar--scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.exits-chip-bar--scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--exits-border) 80%, transparent);
+  border-radius: 999px;
 }
 
 .exits-chip-bar--scroll .exits-chip {
   max-width: none;
+  scroll-snap-align: start;
+}
+
+.catalog-global-page__categories {
+  width: 100%;
+  min-width: 0;
 }
 
 .exits-animate-toolbar,
@@ -13783,6 +13745,107 @@ a.exits-chip--primary:hover {
   gap: var(--exits-entity-card-gap);
 }
 
+.branch-mgmt-overview__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .branch-mgmt-overview__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .branch-mgmt-overview__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.branch-mgmt-overview__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 45%, var(--exits-surface));
+}
+
+.branch-mgmt-overview__item dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text-muted);
+}
+
+.branch-mgmt-overview__icon {
+  flex-shrink: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--exits-text-subtle);
+}
+
+.branch-mgmt-overview__item dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text);
+  overflow-wrap: anywhere;
+}
+
+.branch-mgmt-overview__value--status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.4rem;
+  font-weight: var(--exits-font-weight-medium);
+}
+
+.branch-mgmt-overview__progress {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-regular);
+  color: var(--exits-text-muted);
+}
+
+.branch-mgmt-overview__progress::before {
+  content: "·";
+  margin-right: 0.35rem;
+  color: var(--exits-text-muted);
+}
+
+.branch-mgmt-overview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.branch-mgmt-overview__actions > .inline-flex,
+.branch-mgmt-overview__actions > button {
+  flex: 0 1 auto;
+}
+
+@media (max-width: 639px) {
+  .branch-mgmt-overview__actions > .inline-flex,
+  .branch-mgmt-overview__actions > button {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 8.5rem;
+  }
+}
+
 @media (max-width: 360px) {
   .branch-mgmt-toolbar {
     flex-direction: column;
@@ -13791,6 +13854,11 @@ a.exits-chip--primary:hover {
 
   .branch-mgmt-add {
     width: 100%;
+  }
+
+  .branch-mgmt-overview__actions > .inline-flex,
+  .branch-mgmt-overview__actions > button {
+    flex: 1 1 100%;
   }
 }
 

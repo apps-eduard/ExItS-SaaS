@@ -193,6 +193,7 @@ export function CatalogGlobalBrowsePage() {
           variant="filter"
           ariaLabel={t("catalogGlobal.categoryFilter")}
           testId="catalog-global-category-filters"
+          className="exits-chip-bar--scroll catalog-global-page__categories"
           items={categoryFilters.map((filter) => ({
             key: filter.key,
             label: filter.label,

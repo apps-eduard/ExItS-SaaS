@@ -134,8 +134,9 @@ function retailHomeTo(experience: WorkingExperience): string {
 }
 
 /**
- * Retail mobile/tablet bottom nav (max 5):
- * Home · Sell · Inventory · Orders · More
+ * Retail mobile/tablet bottom nav (max 5).
+ * Sell is always placed in the center when present (primary POS action):
+ * Home · Inventory · Sell · Orders · More
  */
 export function buildOperationsBottomNavTabs(input: {
   grant: PosSessionGrantFacts | null | undefined;
@@ -147,7 +148,7 @@ export function buildOperationsBottomNavTabs(input: {
   }
 
   const homeTo = retailHomeTo(input.experience);
-  const tabs: OperationsNavTab[] = [
+  const left: OperationsNavTab[] = [
     {
       id: "home",
       to: homeTo,
@@ -156,20 +157,10 @@ export function buildOperationsBottomNavTabs(input: {
       testId: "ops-nav-home",
     },
   ];
-
-  if (canCreateSale(input.grant, input.branchType)) {
-    tabs.push({
-      id: "sell",
-      to: "/sell",
-      end: false,
-      labelKey: "org.nav.sell",
-      testId: "ops-nav-sell",
-      primary: true,
-    });
-  }
+  const right: OperationsNavTab[] = [];
 
   if (canViewInventory(input.grant)) {
-    tabs.push({
+    left.push({
       id: "inventory",
       to: "/inventory",
       end: false,
@@ -179,7 +170,7 @@ export function buildOperationsBottomNavTabs(input: {
   }
 
   if (canViewCustomerOrders(input.grant)) {
-    tabs.push({
+    right.push({
       id: "orders",
       to: "/orders",
       end: false,
@@ -188,7 +179,7 @@ export function buildOperationsBottomNavTabs(input: {
     });
   }
 
-  tabs.push({
+  right.push({
     id: "more",
     to: "/more",
     end: false,
@@ -196,7 +187,22 @@ export function buildOperationsBottomNavTabs(input: {
     testId: "ops-nav-more",
   });
 
-  return tabs.slice(0, 5);
+  const sell: OperationsNavTab | null = canCreateSale(input.grant, input.branchType)
+    ? {
+        id: "sell",
+        to: "/sell",
+        end: false,
+        labelKey: "org.nav.sell",
+        testId: "ops-nav-sell",
+        primary: true,
+      }
+    : null;
+
+  if (sell) {
+    return [...left, sell, ...right].slice(0, 5);
+  }
+
+  return [...left, ...right].slice(0, 5);
 }
 
 /** Warehouse: Home · Inventory · Transfers · Purchasing · More — never Sell. */

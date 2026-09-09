@@ -4,9 +4,10 @@ import {
   useContext,
   useMemo,
   useState,
+  type MouseEvent,
   type ReactNode,
 } from "react";
-import { Link } from "react-router-dom";
+import { getToastNavigate } from "@/components/exits/toast-navigation";
 import { cn } from "@/lib/cn";
 
 export type ToastTone = "success" | "error";
@@ -44,6 +45,43 @@ const AUTO_DISMISS_MS = 4200;
 
 function isToastPayload(value: string | ToastPayload): value is ToastPayload {
   return typeof value === "object" && value !== null && "title" in value;
+}
+
+/**
+ * Toast UI lives in ToastProvider, which wraps RouterProvider in AppProviders.
+ * react-router `Link` requires Router context and crashes there — use a plain
+ * anchor and SPA-navigate via ToastNavigateBridge when the router is mounted.
+ */
+function ToastActionLink({ href, label }: { href: string; label: string }) {
+  function onClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+    const navigate = getToastNavigate();
+    if (!navigate) {
+      return;
+    }
+    event.preventDefault();
+    void navigate(href);
+  }
+
+  return (
+    <a
+      href={href}
+      className="exits-toast__action"
+      data-testid="exits-toast-action"
+      onClick={onClick}
+    >
+      {label}
+    </a>
+  );
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -98,13 +136,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div className="exits-toast__description">{toast.description}</div>
             ) : null}
             {toast.action ? (
-              <Link
-                to={toast.action.href}
-                className="exits-toast__action"
-                data-testid="exits-toast-action"
-              >
-                {toast.action.label}
-              </Link>
+              <ToastActionLink href={toast.action.href} label={toast.action.label} />
             ) : null}
           </div>
         ))}

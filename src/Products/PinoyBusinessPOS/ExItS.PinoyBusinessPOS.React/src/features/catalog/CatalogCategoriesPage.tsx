@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { canManageCatalog } from "@/access/pos-capabilities";
 import {
   createCatalogCategory,
   deactivateCatalogCategory,
@@ -19,10 +20,15 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Input } from "@/components/ui/input";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+/** Matches product-category name max length on the API / DB. */
+const CATALOG_CATEGORY_NAME_MAX = 128;
 
 type StatusFilter = "Active" | "Inactive" | "";
 
@@ -36,10 +42,19 @@ const STATUS_FILTERS: Array<{
   { value: "", key: "all", labelKey: "catalog.statusAll" },
 ];
 
+/**
+ * Product categories admin — same layout/interaction pattern as CatalogBrandsPage.
+ * Route: `/catalog/categories` (RequireManageCatalog).
+ */
 export function CatalogCategoriesPage() {
   const { t } = useI18n();
+  const online = useBrowserOnline();
   const queryClient = useQueryClient();
   const workspace = usePosWorkspaceScope();
+  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const allowManage = canManageCatalog(sessionGrant);
+  const organizationId = boundWorkspace?.organizationId ?? null;
+
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -55,23 +70,36 @@ export function CatalogCategoriesPage() {
     return () => window.clearTimeout(handle);
   }, [search]);
 
+  useEffect(() => {
+    setStatus("Active");
+    setName("");
+    setSearch("");
+    setDebounced("");
+    setRenamingId(null);
+    setRenameDraft("");
+    setRenameOriginal("");
+    setError(null);
+  }, [organizationId]);
+
   const query = useQuery({
     queryKey: [
       "catalog",
       "categories",
       "all",
-      workspace?.organizationId,
+      organizationId,
       workspace?.branchId,
       debounced,
       status,
     ],
-    enabled: Boolean(workspace),
+    enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
       listCatalogCategories(
         workspace!,
         {
           search: debounced || undefined,
+          // Empty string omits the query param (All). Do not pass undefined — client defaults to Active.
           status: status === "" ? "" : status,
+          page: 1,
           pageSize: 100,
         },
         signal,
@@ -87,7 +115,9 @@ export function CatalogCategoriesPage() {
     },
     onError: (err) => {
       setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("catalog.categoryCreateFailed"))
+          : t("catalog.categoryCreateFailed"),
       );
     },
   });
@@ -101,7 +131,11 @@ export function CatalogCategoriesPage() {
       categoryId: string;
       nextName: string;
       expectedUpdatedAtUtc: string;
-    }) => updateCatalogCategory(workspace!, categoryId, { name: nextName, expectedUpdatedAtUtc }),
+    }) =>
+      updateCatalogCategory(workspace!, categoryId, {
+        name: nextName,
+        expectedUpdatedAtUtc,
+      }),
     onSuccess: async () => {
       setRenamingId(null);
       setRenameDraft("");
@@ -111,25 +145,37 @@ export function CatalogCategoriesPage() {
     },
     onError: (err) => {
       setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("catalog.categoryUpdateFailed"))
+          : t("catalog.categoryUpdateFailed"),
       );
     },
   });
 
-  async function handleStatusToggle(categoryId: string, isActive: boolean) {
-    if (!workspace) return;
-    setActingId(categoryId);
+  async function handleStatusToggle(category: PosProductCategoryDto, isActive: boolean) {
+    if (!workspace || !allowManage || !online) return;
+    if (isActive && !window.confirm(t("catalog.category.deactivateConfirm"))) {
+      return;
+    }
+    setActingId(category.categoryId);
     setError(null);
     try {
       if (isActive) {
-        await deactivateCatalogCategory(workspace, categoryId);
+        await deactivateCatalogCategory(workspace, category.categoryId);
       } else {
-        await reactivateCatalogCategory(workspace, categoryId);
+        await reactivateCatalogCategory(workspace, category.categoryId);
       }
       await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
     } catch (err) {
       setError(
-        err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
+        err instanceof PosApiError
+          ? (err.problem.detail ??
+              (isActive
+                ? t("catalog.categoryDeactivateFailed")
+                : t("catalog.categoryReactivateFailed")))
+          : isActive
+            ? t("catalog.categoryDeactivateFailed")
+            : t("catalog.categoryReactivateFailed"),
       );
     } finally {
       setActingId(null);
@@ -158,6 +204,7 @@ export function CatalogCategoriesPage() {
   }
 
   const items = query.data?.items ?? [];
+  const canCreate = allowManage && online && !createMutation.isPending && Boolean(name.trim());
 
   return (
     <div
@@ -172,43 +219,57 @@ export function CatalogCategoriesPage() {
         backTestId="page-header-back-catalog"
       />
 
+      {!online ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("catalog.offline")}</p>
+      ) : null}
+
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
 
-      <section className="catalog-form-section exits-animate-panel">
-        <h2 className="catalog-form-section__title">{t("catalog.sectionCategoryQuickAdd")}</h2>
-        <form
-          className="catalog-form-quick-add__row"
-          onSubmit={(event) => {
-            event.preventDefault();
-            createMutation.mutate();
-          }}
-        >
-          <div className="catalog-form-quick-add__field">
-            <Input
-              label={t("catalog.newCategoryPlaceholder")}
-              name="newCategoryName"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("catalog.newCategoryPlaceholder")}
-            />
-          </div>
-          <Button
-            type="submit"
-            variant="default"
-            className="catalog-form-quick-add__button catalog-form-quick-add__button--primary"
-            data-testid="catalog-add-category"
-            disabled={!name.trim() || createMutation.isPending}
+      {allowManage ? (
+        <section className="catalog-form-section exits-animate-panel" data-testid="catalog-category-create">
+          <h2 className="catalog-form-section__title">{t("catalog.sectionCategoryQuickAdd")}</h2>
+          <form
+            className="catalog-form-quick-add__row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!canCreate) {
+                if (!name.trim()) {
+                  setError(t("catalog.validation.categoryNameRequired"));
+                }
+                return;
+              }
+              createMutation.mutate();
+            }}
           >
-            {createMutation.isPending ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            ) : (
-              <Plus className="size-4 shrink-0" aria-hidden />
-            )}
-            {createMutation.isPending ? t("catalog.addingCategory") : t("catalog.addCategory")}
-          </Button>
-        </form>
-      </section>
+            <div className="catalog-form-quick-add__field">
+              <Input
+                label={t("catalog.newCategoryPlaceholder")}
+                name="newCategoryName"
+                required
+                maxLength={CATALOG_CATEGORY_NAME_MAX}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("catalog.newCategoryPlaceholder")}
+                data-testid="catalog-category-name"
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="default"
+              className="catalog-form-quick-add__button catalog-form-quick-add__button--primary"
+              data-testid="catalog-category-create-submit"
+              disabled={!canCreate}
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <Plus className="size-4 shrink-0" aria-hidden />
+              )}
+              {createMutation.isPending ? t("catalog.addingCategory") : t("catalog.addCategory")}
+            </Button>
+          </form>
+        </section>
+      ) : null}
 
       <div className="catalog-categories-toolbar" data-testid="catalog-categories-toolbar">
         <SearchField
@@ -237,12 +298,14 @@ export function CatalogCategoriesPage() {
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isError ? (
-        <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
+        <ErrorState title={t("error.title")} detail={t("catalog.categoriesLoadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
           title={t("catalog.emptyCategories")}
-          detail={t("catalog.emptyCategoriesDetail")}
+          detail={
+            allowManage ? t("catalog.emptyCategoriesDetail") : t("catalog.emptyCategoriesReadonly")
+          }
         />
       ) : null}
 
@@ -250,13 +313,14 @@ export function CatalogCategoriesPage() {
         <div className="catalog-categories-results">
           <ul
             className="catalog-categories-list m-0 grid list-none gap-2 p-0 lg:hidden"
-            data-testid="catalog-categories-list"
+            data-testid="catalog-category-list"
           >
             {items.map((category) => (
               <li key={category.categoryId}>
                 <CategoryCard
                   category={category}
                   t={t}
+                  allowManage={allowManage}
                   isRenaming={renamingId === category.categoryId}
                   renameDraft={renameDraft}
                   renameOriginal={renameOriginal}
@@ -274,7 +338,7 @@ export function CatalogCategoriesPage() {
                     })
                   }
                   onToggleStatus={() =>
-                    void handleStatusToggle(category.categoryId, category.status === "Active")
+                    void handleStatusToggle(category, category.status === "Active")
                   }
                 />
               </li>
@@ -341,7 +405,7 @@ export function CatalogCategoriesPage() {
                         </StatusChip>
                       </td>
                       <td className="px-3 py-2.5 align-middle">
-                        {!isRenaming ? (
+                        {!isRenaming && allowManage ? (
                           <div className="catalog-category-row__actions catalog-category-row__actions--table justify-end">
                             <CategoryActionButtons
                               categoryId={category.categoryId}
@@ -349,9 +413,7 @@ export function CatalogCategoriesPage() {
                               isActing={isActing}
                               t={t}
                               onBeginRename={() => beginRename(category.categoryId, category.name)}
-                              onToggleStatus={() =>
-                                void handleStatusToggle(category.categoryId, isActive)
-                              }
+                              onToggleStatus={() => void handleStatusToggle(category, isActive)}
                             />
                           </div>
                         ) : null}
@@ -400,6 +462,7 @@ function CategoryRenameEditor({
         <Input
           label={t("catalog.renamePrompt")}
           name={`rename-${categoryId}`}
+          maxLength={CATALOG_CATEGORY_NAME_MAX}
           value={renameDraft}
           onChange={(event) => onRenameDraftChange(event.target.value)}
           data-testid={`catalog-category-rename-input-${categoryId}`}
@@ -519,6 +582,7 @@ function CategoryActionButtons({
 function CategoryCard({
   category,
   t,
+  allowManage,
   isRenaming,
   renameDraft,
   renameOriginal,
@@ -533,6 +597,7 @@ function CategoryCard({
 }: {
   category: PosProductCategoryDto;
   t: Translate;
+  allowManage: boolean;
   isRenaming: boolean;
   renameDraft: string;
   renameOriginal: string;
@@ -573,7 +638,7 @@ function CategoryCard({
         )}
       </div>
 
-      {!isRenaming ? (
+      {!isRenaming && allowManage ? (
         <div className="catalog-category-row__actions">
           <CategoryActionButtons
             categoryId={category.categoryId}

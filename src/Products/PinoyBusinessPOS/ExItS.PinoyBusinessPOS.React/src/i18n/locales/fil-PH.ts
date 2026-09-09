@@ -772,9 +772,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "catalog.cancelRename": "Kanselahin",
 
-  "catalog.categoriesLede": "I-organize ang products sa categories.",
+  "catalog.categoriesLede": "I-organize ang products sa categories. Ang inactive categories ay nananatili sa history pero hindi maaaring i-assign sa bagong products.",
 
-  "catalog.categoriesTitle": "Mga kategorya",
+  "catalog.categoriesTitle": "Mga kategorya ng produkto",
 
   "catalog.category": "Category",
 
@@ -11270,6 +11270,36 @@ export const filPH: Record<keyof typeof en, string> = {
   "warehouseDashboard.outbound": "Outbound",
   "warehouseDashboard.inbound": "Inbound",
   "nav.backToWarehouseHome": "Back to Warehouse home",
+
+  "catalog.cancel": "Kanselahin",
+  "catalog.category.creating": "Gumagawa…",
+  "catalog.category.deactivateConfirm": "I-deactivate ang kategoryang ito? Mananatili ito sa historical products pero hindi maaaring i-assign sa bagong products.",
+  "catalog.categoryCreateFailed": "Hindi magawa ang kategorya.",
+  "catalog.categoryDeactivateFailed": "Hindi ma-deactivate ang kategorya.",
+  "catalog.categoryReactivateFailed": "Hindi ma-reactivate ang kategorya.",
+  "catalog.categoryUpdateFailed": "Hindi ma-update ang kategorya.",
+  "catalog.createCategory": "Gumawa ng kategorya",
+  "catalog.editCategory": "I-edit ang kategorya",
+  "catalog.validation.categoryNameRequired": "Kailangan ang pangalan ng kategorya.",
+  "production.recipes.estimatedCostPartialManual": "Estimated cost incomplete. Selling price must be entered manually.",
+  "production.recipes.estimatedGrossProfit": "Estimated gross profit",
+  "production.recipes.estimatedGrossProfitValue": "{amount} / {uom}",
+  "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
+  "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
+  "production.recipes.lowMarginWarning": "Low estimated gross margin.",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} · Selling price: {price} · Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
+  "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
+  "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
+  "production.recipes.suggestedPriceUnavailableReason": "Some ingredient costs are missing.",
+  "production.recipes.suggestedPriceValue": "{price} / {uom}",
+  "production.recipes.suggestedSellingPrice": "Suggested selling price",
+  "production.recipes.targetGrossMargin": "Target gross margin",
+  "production.recipes.targetMarginCustom": "Custom",
+  "production.recipes.useSuggestedPrice": "Use suggested price",
+  "catalog.offline": "Categories need a connection. Reconnect to manage product categories.",
+  "catalog.categoriesLoadFailed": "Could not load product categories.",
+  "catalog.emptyCategoriesReadonly": "No available categories.",
 };
 
 
