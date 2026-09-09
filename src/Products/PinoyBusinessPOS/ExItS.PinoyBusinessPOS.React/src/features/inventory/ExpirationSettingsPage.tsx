@@ -351,6 +351,7 @@ export function ExpirationSettingsPage() {
                 onClick={() => enableMutation.mutate()}
                 data-testid="expiration-settings-enable"
               >
+                <CalendarClock className="size-4 shrink-0" aria-hidden />
                 {t("inventory.enableExpirationTracking")}
               </Button>
               <Button
