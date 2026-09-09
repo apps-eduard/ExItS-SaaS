@@ -3846,6 +3846,14 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
+.purchasing-hub-page [data-testid="purchasing-toolbar"] .exits-chip__icon {
+  color: var(--exits-primary);
+}
+
+.purchasing-hub-page [data-testid="purchasing-toolbar"] .exits-chip__icon > svg {
+  stroke-width: 2.5;
+}
+
 .purchasing-row {
   display: flex;
   align-items: center;
