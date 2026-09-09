@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -19,9 +20,7 @@ import {
 } from "@/api/pos/pos-waste-loss-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -41,6 +40,7 @@ import {
   sortLotsForWasteLoss,
   wasteLossReasonLabelKey,
 } from "@/features/inventory/waste-loss-labels";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -120,6 +120,7 @@ export function WasteLossCreatePage() {
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const isLargeScreen = useMediaMin(1024);
   const fromExpiration = prefillSource === "expiration" && Boolean(prefillLotId);
 
   const [reason, setReason] = useState<WasteLossReasonCode>(() =>
@@ -234,6 +235,8 @@ export function WasteLossCreatePage() {
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
   }, [inventoryQuery.data?.items, catalogQuery.data?.items, t]);
+
+  const selectedIds = useMemo(() => new Set(lines.map((l) => l.productId)), [lines]);
 
   useEffect(() => {
     if (!workspace || !preselectProductId || !allowManage || !online) {
@@ -601,291 +604,524 @@ export function WasteLossCreatePage() {
     exactLotPrefill.status === "zero" ||
     exactLotPrefill.status === "missing";
 
+  const productRowClass =
+    "waste-loss-product-row flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2";
+  const actionIconClass = "waste-loss-action-btn shrink-0";
+  const actionIconSoftClass = "waste-loss-action-btn waste-loss-action-btn--soft shrink-0";
+  const qtyInputClass = "exits-input waste-loss-qty-input tabular-nums";
+  const pickerLoading = inventoryQuery.isLoading || catalogQuery.isLoading;
+
+  function renderLotPicker(line: DraftLine) {
+    if (!line.tracksExpiration) {
+      return null;
+    }
+    return (
+      <div className="flex flex-col gap-2" data-testid={`waste-loss-lots-${line.productId}`}>
+        <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">{t("wasteLoss.selectLot")}</p>
+        {line.lots.length === 0 ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("inventory.lotsEmpty")}</p>
+        ) : (
+          <InventoryLotList
+            lots={line.lots}
+            unitOfMeasure={line.uom}
+            formatStatus={(lot) => formatLotStatus(lot, t)}
+            selectable
+            selectedLotId={line.inventoryLotId}
+            onSelectLot={(lotId) => updateLineLot(line.productId, lotId)}
+            namePrefix={`waste-loss-lot-${line.productId}`}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="waste-loss-create-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      className="waste-loss-create-page exits-page mx-auto flex h-full min-h-0 w-full max-w-[80rem] min-w-0 flex-col gap-2.5 overflow-hidden"
       data-testid="waste-loss-create-page"
       data-quick-flow-source={prefillSource ?? undefined}
     >
-      <PageHeader
-        title={pageTitle}
-        description={t("wasteLoss.notASale")}
-        backTo={backTo}
-        backLabel={backLabel}
-        backTestId={fromExpiration ? "page-header-back-expiration" : "page-header-back-waste-loss"}
-      />
+      <div className="waste-loss-create-chrome flex shrink-0 min-w-0 flex-col gap-2.5">
+        <PageHeader
+          title={pageTitle}
+          description={t("wasteLoss.notASale")}
+          backTo={backTo}
+          backLabel={backLabel}
+          backTestId={fromExpiration ? "page-header-back-expiration" : "page-header-back-waste-loss"}
+        />
 
-      {!online ? (
-        <Card>
-          <p className="m-0">{t("wasteLoss.offline")}</p>
-        </Card>
-      ) : null}
-      {!allowManage ? (
-        <Card>
-          <p className="m-0">{t("wasteLoss.manageDenied")}</p>
-        </Card>
-      ) : null}
+        {!online ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("wasteLoss.offline")}</p>
+        ) : null}
+        {!allowManage ? (
+          <ErrorState title={t("wasteLoss.errorTitle")} detail={t("wasteLoss.manageDenied")} />
+        ) : null}
 
-      {exactLotPrefill.status === "loading" ? (
-        <LoadingState label={t("wasteLoss.loading")} />
-      ) : null}
+        {exactLotPrefill.status === "loading" ? (
+          <LoadingState label={t("wasteLoss.loading")} />
+        ) : null}
 
-      {exactLotPrefill.status === "missing" ? (
-        <Card data-testid="waste-loss-lot-unavailable">
-          <p className="m-0 font-medium">{t("wasteLoss.lotNoLongerAvailable")}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
-              <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
-            </Button>
-            <Button asChild data-testid="waste-loss-start-fresh">
-              <Link to="/inventory/waste-loss/new">{t("wasteLoss.recordWasteLoss")}</Link>
-            </Button>
-          </div>
-        </Card>
-      ) : null}
+        {exactLotPrefill.status === "missing" ? (
+          <Card data-testid="waste-loss-lot-unavailable">
+            <p className="m-0 font-medium">{t("wasteLoss.lotNoLongerAvailable")}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
+                <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
+              </Button>
+              <Button asChild data-testid="waste-loss-start-fresh">
+                <Link to="/inventory/waste-loss/new">{t("wasteLoss.recordWasteLoss")}</Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
-      {exactLotPrefill.status === "zero" ? (
-        <Card data-testid="waste-loss-lot-zero">
-          <p className="m-0 font-medium">{t("wasteLoss.noStockRemainsInLot")}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
-              <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
-            </Button>
-          </div>
-        </Card>
-      ) : null}
+        {exactLotPrefill.status === "zero" ? (
+          <Card data-testid="waste-loss-lot-zero">
+            <p className="m-0 font-medium">{t("wasteLoss.noStockRemainsInLot")}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button asChild variant="outline" data-testid="waste-loss-back-expiration">
+                <Link to="/inventory/expiration">{t("wasteLoss.backToExpiration")}</Link>
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
-      {exactLotPrefill.status === "ready" ? (
-        <Card data-testid="waste-loss-expired-context">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("wasteLoss.confirmPhysicalQuantity")}
-          </p>
-          <p className="m-0 mt-2 font-semibold text-foreground">{exactLotPrefill.productName}</p>
-          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-            {t("wasteLoss.lotLabel")}: {exactLotPrefill.lot.lotNumber ?? exactLotPrefill.lot.lotId}
-          </p>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("wasteLoss.expiredOn")}: {exactLotPrefill.lot.expirationDate}
-          </p>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="waste-loss-lot-available">
-            {t("wasteLoss.availableInLot")}: {exactLotPrefill.lot.quantityOnHand}{" "}
-            {exactLotPrefill.uom}
-          </p>
-          {lotNotExpiredNotice ? (
-            <p
-              className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,var(--exits-danger))]"
-              data-testid="waste-loss-lot-not-expired-notice"
-            >
-              {t("wasteLoss.lotNoLongerExpired")}
-            </p>
-          ) : null}
-        </Card>
-      ) : null}
-
-      {error ? <ErrorState title={t("wasteLoss.errorTitle")} detail={error} /> : null}
-
-      {!blockSubmit ? (
-        <>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("wasteLoss.reason")}
-            <select
-              className="exits-select"
-              value={reason}
-              onChange={(e) => setReason(e.target.value as WasteLossReasonCode)}
-              disabled={!allowManage || statusLocked}
-              data-testid="waste-loss-reason"
-            >
-              {WASTE_LOSS_REASONS.map((code) => (
-                <option key={code} value={code}>
-                  {t(wasteLossReasonLabelKey(code))}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {reason === "Expired" ? (
+        {exactLotPrefill.status === "ready" ? (
+          <Card data-testid="waste-loss-expired-context">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {fromExpiration
-                ? t("wasteLoss.expiredWriteOffHint")
-                : t("wasteLoss.expiredLotsFirst")}
+              {t("wasteLoss.confirmPhysicalQuantity")}
             </p>
-          ) : null}
-
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("wasteLoss.notes")}
-            <textarea
-              className="min-h-20 rounded-md border border-border bg-background px-3 py-2"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={!allowManage || statusLocked}
-              placeholder={
-                reason === "Other"
-                  ? t("wasteLoss.notesRequiredPlaceholder")
-                  : t("wasteLoss.notesOptional")
-              }
-              data-testid="waste-loss-notes"
-            />
-          </label>
-
-          <section className="flex flex-col gap-2" data-testid="waste-loss-draft-lines">
-            <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-              {t("wasteLoss.wastedStock")}
-            </h2>
-            {lines.length === 0 ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("wasteLoss.draftEmpty")}
+            <p className="m-0 mt-2 font-semibold text-foreground">{exactLotPrefill.productName}</p>
+            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {t("wasteLoss.lotLabel")}: {exactLotPrefill.lot.lotNumber ?? exactLotPrefill.lot.lotId}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("wasteLoss.expiredOn")}: {exactLotPrefill.lot.expirationDate}
+            </p>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="waste-loss-lot-available"
+            >
+              {t("wasteLoss.availableInLot")}: {exactLotPrefill.lot.quantityOnHand}{" "}
+              {exactLotPrefill.uom}
+            </p>
+            {lotNotExpiredNotice ? (
+              <p
+                className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,var(--exits-danger))]"
+                data-testid="waste-loss-lot-not-expired-notice"
+              >
+                {t("wasteLoss.lotNoLongerExpired")}
               </p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {lines.map((line) => (
-                  <li key={line.productId}>
-                    <Card className="flex flex-col gap-2 p-3">
-                      <div className="font-medium">{line.name}</div>
-                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                        {t("wasteLoss.available")}: {line.available} {line.uom}
-                      </p>
-                      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            ) : null}
+          </Card>
+        ) : null}
+
+        {error ? (
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)] text-danger"
+            role="alert"
+            data-testid="waste-loss-create-error"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        {!blockSubmit && allowManage ? (
+          <section
+            className="catalog-form-section waste-loss-section exits-animate-panel"
+            data-testid="waste-loss-create-fields"
+          >
+            <div className="waste-loss-create-meta grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-[minmax(12rem,18rem)_minmax(0,1fr)] sm:items-start">
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                  {t("wasteLoss.reason")}
+                </span>
+                <select
+                  className="exits-select catalog-form-select"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value as WasteLossReasonCode)}
+                  disabled={statusLocked}
+                  data-testid="waste-loss-reason"
+                >
+                  {WASTE_LOSS_REASONS.map((code) => (
+                    <option key={code} value={code}>
+                      {t(wasteLossReasonLabelKey(code))}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                  {t("wasteLoss.notes")}{" "}
+                  <span className="font-normal">
+                    (
+                    {reason === "Other"
+                      ? t("wasteLoss.notesRequiredPlaceholder")
+                      : t("wasteLoss.notesOptional")}
+                    )
+                  </span>
+                </span>
+                <textarea
+                  className="exits-input waste-loss-notes-input"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={statusLocked}
+                  placeholder={
+                    reason === "Other"
+                      ? t("wasteLoss.notesRequiredPlaceholder")
+                      : t("wasteLoss.notesOptional")
+                  }
+                  maxLength={512}
+                  rows={1}
+                  data-testid="waste-loss-notes"
+                />
+              </label>
+            </div>
+            {reason === "Expired" ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {fromExpiration
+                  ? t("wasteLoss.expiredWriteOffHint")
+                  : t("wasteLoss.expiredLotsFirst")}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+      </div>
+
+      {!blockSubmit && allowManage ? (
+        <section
+          className="catalog-form-section waste-loss-section waste-loss-section--products exits-animate-panel"
+          data-testid="waste-loss-draft-lines"
+        >
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="catalog-form-section__title m-0 flex min-w-0 items-baseline gap-2">
+              <span>{t("wasteLoss.wastedStock")}</span>
+              {lines.length > 0 ? (
+                <span className="text-[length:var(--exits-text-sm)] font-medium text-muted">
+                  ({lines.length})
+                </span>
+              ) : null}
+            </h2>
+            <Button
+              type="button"
+              variant="default"
+              className="w-full shrink-0 sm:w-auto"
+              disabled={!online || saving || statusLocked || lines.length === 0 || blockSubmit}
+              onClick={() => void submit()}
+              data-testid="waste-loss-submit"
+            >
+              {saving ? t("wasteLoss.recording") : t("wasteLoss.recordWasteLoss")}
+            </Button>
+          </div>
+
+          <div
+            className="waste-loss-create-products-scroll"
+            data-testid="waste-loss-products-scroll"
+          >
+            {lines.length === 0 ? (
+              <p className="waste-loss-empty m-0">{t("wasteLoss.draftEmpty")}</p>
+            ) : isLargeScreen ? (
+              <div
+                className="waste-loss-create-table-shell min-w-0 overflow-x-auto"
+                data-testid="waste-loss-selected-table"
+              >
+                <table className="waste-loss-create-table w-full min-w-[36rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                  <thead>
+                    <tr className="waste-loss-create-table__head border-b border-border">
+                      <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("stockCount.product")}
+                      </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("wasteLoss.available")}
+                      </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
                         {t("wasteLoss.quantityWasted")}
+                      </th>
+                      <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                        {t("catalog.col.actions")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((line) => (
+                      <Fragment key={line.productId}>
+                        <tr
+                          className="waste-loss-create-table__row border-b border-border"
+                          data-testid={`waste-loss-line-${line.productId}`}
+                        >
+                          <td className="max-w-[18rem] px-3 py-2.5 align-middle">
+                            <span className="block truncate font-semibold text-foreground">
+                              {line.name}
+                            </span>
+                            <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+                              {line.uom}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                            {line.available}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle">
+                            <div className="flex justify-end">
+                              <input
+                                type="number"
+                                min={0}
+                                step="any"
+                                className={qtyInputClass}
+                                value={qtyByProduct[line.productId] ?? String(line.quantity)}
+                                onChange={(e) => updateLineQty(line.productId, e.target.value)}
+                                disabled={statusLocked}
+                                aria-label={t("wasteLoss.quantityWasted")}
+                                data-testid={`waste-loss-line-qty-${line.productId}`}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5 align-middle">
+                            {!fromExpiration ? (
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className={actionIconSoftClass}
+                                  aria-label={t("wasteLoss.removeLine")}
+                                  onClick={() => removeLine(line.productId)}
+                                  disabled={statusLocked}
+                                  data-testid={`waste-loss-remove-${line.productId}`}
+                                >
+                                  <Trash2 className="size-4 shrink-0" aria-hidden />
+                                </Button>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                        {line.tracksExpiration ? (
+                          <tr className="border-b border-border">
+                            <td colSpan={4} className="waste-loss-lot-cell px-3 py-2.5">
+                              {renderLotPicker(line)}
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                {lines.map((line) => (
+                  <li
+                    key={line.productId}
+                    className={productRowClass}
+                    data-testid={`waste-loss-line-${line.productId}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 font-medium leading-snug">{line.name}</p>
+                      <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                        {line.uom} · {t("wasteLoss.available")}: {line.available}
+                      </p>
+                      <label className="mt-2 flex max-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                        <span className="text-muted">{t("wasteLoss.quantityWasted")}</span>
                         <input
                           type="number"
                           min={0}
                           step="any"
-                          className="rounded-md border border-border bg-background px-3"
+                          className={qtyInputClass}
                           value={qtyByProduct[line.productId] ?? String(line.quantity)}
                           onChange={(e) => updateLineQty(line.productId, e.target.value)}
                           disabled={statusLocked}
                           data-testid={`waste-loss-line-qty-${line.productId}`}
                         />
                       </label>
-                      {line.tracksExpiration ? (
-                        <div
-                          className="flex flex-col gap-2"
-                          data-testid={`waste-loss-lots-${line.productId}`}
-                        >
-                          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-                            {t("wasteLoss.selectLot")}
-                          </p>
-                          {line.lots.length === 0 ? (
-                            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                              {t("inventory.lotsEmpty")}
-                            </p>
-                          ) : (
-                            <InventoryLotList
-                              lots={line.lots}
-                              unitOfMeasure={line.uom}
-                              formatStatus={(lot) => formatLotStatus(lot, t)}
-                              selectable
-                              selectedLotId={line.inventoryLotId}
-                              onSelectLot={(lotId) => updateLineLot(line.productId, lotId)}
-                              namePrefix={`waste-loss-lot-${line.productId}`}
-                            />
-                          )}
-                        </div>
-                      ) : null}
-                      {!fromExpiration ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-fit"
-                          onClick={() => removeLine(line.productId)}
-                          disabled={statusLocked}
-                        >
-                          {t("wasteLoss.removeLine")}
-                        </Button>
-                      ) : null}
-                    </Card>
+                      <div className="mt-2">{renderLotPicker(line)}</div>
+                    </div>
+                    {!fromExpiration ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className={actionIconSoftClass}
+                        aria-label={t("wasteLoss.removeLine")}
+                        onClick={() => removeLine(line.productId)}
+                        disabled={statusLocked}
+                        data-testid={`waste-loss-remove-${line.productId}`}
+                      >
+                        <Trash2 className="size-4 shrink-0" aria-hidden />
+                      </Button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
             )}
-          </section>
 
-          {!fromExpiration ? (
-            <section className="flex flex-col gap-2">
-              <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-                {t("wasteLoss.addProduct")}
-              </h2>
-              <SearchField
-                label={t("wasteLoss.searchProducts")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onClear={() => setSearch("")}
-                placeholder={t("wasteLoss.searchProducts")}
-                data-testid="waste-loss-product-search"
-              />
-              {pickerRows.length === 0 && (debounced || inventoryQuery.isSuccess) ? (
-                <EmptyState
-                  title={t("wasteLoss.noProducts")}
-                  detail={t("wasteLoss.noProductsDetail")}
-                />
-              ) : null}
-              <ul
-                className="m-0 flex list-none flex-col gap-2 p-0"
-                data-testid="waste-loss-product-picker"
-              >
-                {pickerRows.map((row) => (
-                  <li key={row.productId}>
-                    <Card className="flex flex-col gap-2 p-3">
-                      <div className="min-w-0">
-                        <div className="font-medium">{row.name}</div>
-                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                          {row.usageLabel} · {t("wasteLoss.available")}: {row.onHand} {row.uom}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-end gap-2">
-                        <label className="flex min-w-[5.5rem] flex-1 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                          {t("wasteLoss.quantityWasted")}
-                          <input
-                            type="number"
-                            min={0}
-                            step="any"
-                            className="rounded-md border border-border bg-background px-3"
-                            value={qtyByProduct[row.productId] ?? "1"}
-                            onChange={(e) =>
-                              setQtyByProduct((prev) => ({
-                                ...prev,
-                                [row.productId]: e.target.value,
-                              }))
-                            }
-                            disabled={statusLocked || !allowManage}
-                            data-testid={`waste-loss-picker-qty-${row.productId}`}
-                          />
-                        </label>
-                        <Button
-                          type="button"
-                          disabled={!allowManage || !online || statusLocked || row.onHand <= 0}
-                          onClick={() => void addOrUpdateFromPicker(row)}
-                          data-testid={`waste-loss-add-${row.productId}`}
-                        >
-                          {t("wasteLoss.addProduct")}
-                        </Button>
-                      </div>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+            {!fromExpiration ? (
+              <div className="waste-loss-picker flex min-w-0 flex-col gap-2 border-t border-border pt-2.5">
+                <div className="waste-loss-create-toolbar flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <h3 className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+                    {t("wasteLoss.addProduct")}
+                  </h3>
+                  <SearchField
+                    label={t("wasteLoss.searchProducts")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onClear={() => setSearch("")}
+                    placeholder={t("wasteLoss.searchProducts")}
+                    containerClassName="min-w-0 flex-1 sm:max-w-[20rem]"
+                    data-testid="waste-loss-product-search"
+                  />
+                </div>
 
-          <StickyActionBar>
-            <Button
-              type="button"
-              className="w-full"
-              disabled={
-                !allowManage ||
-                !online ||
-                saving ||
-                statusLocked ||
-                lines.length === 0 ||
-                blockSubmit
-              }
-              onClick={() => void submit()}
-              data-testid="waste-loss-submit"
-            >
-              {saving ? t("wasteLoss.recording") : t("wasteLoss.recordWasteLoss")}
-            </Button>
-          </StickyActionBar>
-        </>
+                {pickerLoading ? <LoadingState label={t("wasteLoss.loading")} /> : null}
+
+                {!pickerLoading && pickerRows.length === 0 ? (
+                  <p className="waste-loss-empty m-0">{t("wasteLoss.noProductsDetail")}</p>
+                ) : null}
+
+                {pickerRows.length > 0 ? (
+                  isLargeScreen ? (
+                    <div
+                      className="waste-loss-create-table-shell min-w-0 overflow-x-auto"
+                      data-testid="waste-loss-product-picker"
+                    >
+                      <table className="waste-loss-create-table w-full min-w-[40rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+                        <thead>
+                          <tr className="waste-loss-create-table__head border-b border-border">
+                            <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                              {t("stockCount.product")}
+                            </th>
+                            <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                              {t("catalog.col.scope")}
+                            </th>
+                            <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                              {t("wasteLoss.available")}
+                            </th>
+                            <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                              {t("wasteLoss.quantityWasted")}
+                            </th>
+                            <th className="whitespace-nowrap px-3 py-2.5 text-right text-[length:var(--exits-text-xs)] font-medium text-muted">
+                              {t("catalog.col.actions")}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pickerRows.map((row) => {
+                            const already = selectedIds.has(row.productId);
+                            return (
+                              <tr
+                                key={row.productId}
+                                className="waste-loss-create-table__row border-b border-border"
+                              >
+                                <td className="max-w-[16rem] px-3 py-2.5 align-middle">
+                                  <span className="block truncate font-semibold text-foreground">
+                                    {row.name}
+                                  </span>
+                                  <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">
+                                    {row.uom}
+                                  </span>
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-2.5 align-middle text-muted">
+                                  {row.usageLabel}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-2.5 align-middle text-right tabular-nums text-muted">
+                                  {row.onHand}
+                                </td>
+                                <td className="px-3 py-2.5 align-middle">
+                                  <div className="flex justify-end">
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      step="any"
+                                      className={qtyInputClass}
+                                      value={qtyByProduct[row.productId] ?? "1"}
+                                      onChange={(e) =>
+                                        setQtyByProduct((prev) => ({
+                                          ...prev,
+                                          [row.productId]: e.target.value,
+                                        }))
+                                      }
+                                      disabled={statusLocked}
+                                      aria-label={t("wasteLoss.quantityWasted")}
+                                      data-testid={`waste-loss-picker-qty-${row.productId}`}
+                                    />
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2.5 align-middle">
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      variant={already ? "outline" : "default"}
+                                      size="icon"
+                                      className={already ? actionIconSoftClass : actionIconClass}
+                                      disabled={!online || statusLocked || row.onHand <= 0}
+                                      aria-label={t("wasteLoss.addProduct")}
+                                      onClick={() => void addOrUpdateFromPicker(row)}
+                                      data-testid={`waste-loss-add-${row.productId}`}
+                                    >
+                                      <Plus className="size-4 shrink-0" aria-hidden />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <ul
+                      className="m-0 flex list-none flex-col gap-1.5 p-0"
+                      data-testid="waste-loss-product-picker"
+                    >
+                      {pickerRows.map((row) => {
+                        const already = selectedIds.has(row.productId);
+                        return (
+                          <li key={row.productId} className={productRowClass}>
+                            <div className="min-w-0 flex-1">
+                              <p className="m-0 font-medium leading-snug">{row.name}</p>
+                              <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                                {row.usageLabel} · {t("wasteLoss.available")}: {row.onHand} {row.uom}
+                              </p>
+                              <label className="mt-2 flex max-w-[10rem] flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                                <span className="text-muted">{t("wasteLoss.quantityWasted")}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step="any"
+                                  className={qtyInputClass}
+                                  value={qtyByProduct[row.productId] ?? "1"}
+                                  onChange={(e) =>
+                                    setQtyByProduct((prev) => ({
+                                      ...prev,
+                                      [row.productId]: e.target.value,
+                                    }))
+                                  }
+                                  disabled={statusLocked}
+                                  data-testid={`waste-loss-picker-qty-${row.productId}`}
+                                />
+                              </label>
+                            </div>
+                            <Button
+                              type="button"
+                              variant={already ? "outline" : "default"}
+                              size="icon"
+                              className={already ? actionIconSoftClass : actionIconClass}
+                              disabled={!online || statusLocked || row.onHand <= 0}
+                              aria-label={t("wasteLoss.addProduct")}
+                              onClick={() => void addOrUpdateFromPicker(row)}
+                              data-testid={`waste-loss-add-${row.productId}`}
+                            >
+                              <Plus className="size-4 shrink-0" aria-hidden />
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </section>
       ) : null}
     </div>
   );

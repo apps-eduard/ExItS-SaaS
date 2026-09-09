@@ -3182,7 +3182,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "stockUse.noProductsDetail": "Sulayi ang laing search o All stock.",
 
-  "stockUse.loading": "Nag-load ang stock use???",
+  "stockUse.loading": "Nag-load ang stock use?",
 
   "stockUse.errorTitle": "Paggamit sa Stock",
 
@@ -3198,7 +3198,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "stockUse.saveFailed": "Dili ma-record ang stock use.",
 
-  "stockUse.recording": "Nag-record???",
+  "stockUse.recording": "Nag-record?",
 
   "stockUse.void": "I-kansela",
 

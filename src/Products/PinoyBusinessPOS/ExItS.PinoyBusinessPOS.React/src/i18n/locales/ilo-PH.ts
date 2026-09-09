@@ -3182,7 +3182,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "stockUse.noProductsDetail": "Padasem ti sabali a search wenno All stock.",
 
-  "stockUse.loading": "Agload ti stock use???",
+  "stockUse.loading": "Agload ti stock use?",
 
   "stockUse.errorTitle": "Stock Use",
 
@@ -3198,7 +3198,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "stockUse.saveFailed": "Saan a ma-record ti stock use.",
 
-  "stockUse.recording": "Ag-record???",
+  "stockUse.recording": "Ag-record?",
 
   "stockUse.void": "I-void",
 

@@ -204,7 +204,7 @@
   --exits-entity-card-gap: 0.55rem;
   --exits-entity-card-meta-gap: 0.35rem 0.85rem;
 
-  /* Read-only status/attribute pills — separate from interactive filter chips */
+  /* Read-only status/attribute pills â€” separate from interactive filter chips */
   --exits-status-chip-height: 1.625rem;
   --exits-status-chip-padding-x: 0.625rem;
   --exits-status-chip-font-size: 0.75rem;
@@ -289,7 +289,7 @@
   }
 }
 
-/* Density modes — visual control sizing (balance = default everyday density) */
+/* Density modes â€” visual control sizing (balance = default everyday density) */
 [data-density="balance"] {
   --exits-control-height: 2.25rem;
   --exits-control-padding-x: 0.875rem;
@@ -859,7 +859,7 @@ html:has(.admin-shell) #root {
   height: 100%;
 }
 
-/* Detail-items cart â€” dense list, footer pinned */
+/* Detail-items cart Ã¢â‚¬â€ dense list, footer pinned */
 .sell-cart-lines {
   display: flex;
   flex-direction: column;
@@ -1301,7 +1301,7 @@ html:has(.admin-shell) #root {
 }
 
 /* Sell floor uses nearly full viewport; other pages keep max-w-5xl.
-   Class is set from the router (AppShell sellFloor) — avoid CSS :has() which
+   Class is set from the router (AppShell sellFloor) â€” avoid CSS :has() which
    forces expensive ancestor style invalidation on every desktop DOM change. */
 .app-shell--sell-floor {
   max-width: min(100%, 100rem); /* ~1600px ceiling for ultra-wide */
@@ -1347,7 +1347,7 @@ html:has(.admin-shell) #root {
   }
 }
 
-/* Sell toolbar â€” title + exit only; status lives in banner strip below */
+/* Sell toolbar Ã¢â‚¬â€ title + exit only; status lives in banner strip below */
 .sell-floor-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1667,7 +1667,7 @@ html:has(.admin-shell) #root {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--exits-accent) 35%, transparent);
 }
 
-/* Request stock: no image media — replenishment facts fill Sell card density */
+/* Request stock: no image media â€” replenishment facts fill Sell card density */
 .sell-product-card--request {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -1956,7 +1956,7 @@ html:has(.admin-shell) #root {
   }
 }
 
-/* Category filter â€” compact horizontal chips */
+/* Category filter Ã¢â‚¬â€ compact horizontal chips */
 .sell-category-chip {
   display: inline-flex;
   flex-shrink: 0;
@@ -2006,7 +2006,7 @@ html:has(.admin-shell) #root {
   line-height: 1.2;
 }
 
-/* Legacy tile styles â€” kept for any external references */
+/* Legacy tile styles Ã¢â‚¬â€ kept for any external references */
 .sell-category-tile {
   display: flex;
   width: 5.5rem;
@@ -2991,7 +2991,7 @@ html:has(.admin-shell) #root {
   line-height: 1.35;
 }
 
-/* Org add customer: compact tiles — icon + label always on one row; two-up on all widths */
+/* Org add customer: compact tiles â€” icon + label always on one row; two-up on all widths */
 .customer-create-kind--compact .customer-create-kind__grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
@@ -3133,7 +3133,7 @@ html:has(.admin-shell) #root {
   font-size: var(--exits-text-md);
 }
 
-/* POS-EXPIRY — Expiring Stock page */
+/* POS-EXPIRY â€” Expiring Stock page */
 .inventory-expiration-page > header h1 {
   font-size: 1.5rem; /* ~24px */
   font-weight: 600;
@@ -7631,7 +7631,7 @@ a.dashboard-metric-card:focus-visible {
   min-width: 0;
 }
 
-/* Category cards carry actions — keep one column so names are not squeezed on wide screens. */
+/* Category cards carry actions â€” keep one column so names are not squeezed on wide screens. */
 .catalog-categories-list {
   grid-template-columns: 1fr;
 }
@@ -7685,7 +7685,7 @@ a.dashboard-metric-card:focus-visible {
   justify-content: flex-end;
 }
 
-/* Catalog brands — same layout language as categories */
+/* Catalog brands â€” same layout language as categories */
 .catalog-brands-page > header {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -8434,7 +8434,7 @@ a.dashboard-metric-card:focus-visible {
   }
 }
 
-/* Global page motion — shared by catalog, suppliers, inventory admin lists */
+/* Global page motion â€” shared by catalog, suppliers, inventory admin lists */
 .exits-page > header p,
 .suppliers-page > header p,
 .customers-page > header p,
@@ -8987,7 +8987,7 @@ textarea.exits-input {
   color: var(--exits-text-muted);
 }
 
-/* Text-like controls — shared min height (bare inputs often look compact without this). */
+/* Text-like controls â€” shared min height (bare inputs often look compact without this). */
 input:not([type]),
 input[type="text"],
 input[type="search"],
@@ -9000,7 +9000,7 @@ input[type="number"] {
   min-height: var(--exits-control-height);
 }
 
-/* Native date/time controls — match shared control height (often undersized without this). */
+/* Native date/time controls â€” match shared control height (often undersized without this). */
 input[type="date"],
 input[type="datetime-local"],
 input[type="time"],
@@ -9088,7 +9088,7 @@ input[type="week"]::-webkit-calendar-picker-indicator {
   }
 }
 
-/* Hide native number spinners — keep direct decimal typing */
+/* Hide native number spinners â€” keep direct decimal typing */
 .exits-input--no-spin,
 .exits-input--no-spin[type="number"] {
   -moz-appearance: textfield;
@@ -9101,7 +9101,7 @@ input[type="week"]::-webkit-calendar-picker-indicator {
   margin: 0;
 }
 
-/* Compact settings switch — shows ON when checked (default active look) */
+/* Compact settings switch â€” shows ON when checked (default active look) */
 .exits-switch {
   position: relative;
   display: inline-flex;
@@ -9342,7 +9342,7 @@ input[type="week"]::-webkit-calendar-picker-indicator {
 /*
  * Global native <select> closed-field visual (POS-REACT-GLOBAL-SELECT-VISUAL-NORMALIZATION-V1).
  * Height follows --exits-control-height only (Compact 32 / Balance 36 / Comfort 44).
- * Popup/options remain native browser/OS UI — no custom listbox.
+ * Popup/options remain native browser/OS UI â€” no custom listbox.
  */
 .exits-select,
 .catalog-form-select,
@@ -10073,7 +10073,7 @@ select.pc-field__control:disabled {
   line-height: 1.3;
 }
 
-/* Catalog product list row — name/meta left, status + price aligned right */
+/* Catalog product list row â€” name/meta left, status + price aligned right */
 .catalog-product-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -10244,7 +10244,7 @@ select.pc-field__control:disabled {
   }
 }
 
-/* Suppliers list — responsive toolbar, chips, cards */
+/* Suppliers list â€” responsive toolbar, chips, cards */
 
 @media (max-width: 520px) {
   .exits-chip-bar--actions .exits-chip {
@@ -10255,7 +10255,7 @@ select.pc-field__control:disabled {
   }
 }
 
-/* Global chip bar — density tokens (default = balance) drive size app-wide */
+/* Global chip bar â€” density tokens (default = balance) drive size app-wide */
 .exits-chip-bar {
   display: flex;
   flex-wrap: wrap;
@@ -10330,7 +10330,7 @@ select.pc-field__control:disabled {
   }
 }
 
-/* List-toolbar filter pills — shared height for Filters/Sort buttons and active chips */
+/* List-toolbar filter pills â€” shared height for Filters/Sort buttons and active chips */
 .exits-filter-pill {
   display: inline-flex;
   flex-shrink: 0;
@@ -10887,6 +10887,222 @@ a.exits-chip--primary:hover {
   color: var(--exits-text-muted);
 }
 
+.waste-loss-create-page .waste-loss-section {
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .waste-loss-create-page .waste-loss-section,
+[data-theme="light"] .waste-loss-create-page .waste-loss-section {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
+  box-shadow: var(--exits-shadow-md);
+}
+
+.waste-loss-empty {
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+}
+
+.waste-loss-product-row {
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .waste-loss-product-row,
+[data-theme="light"] .waste-loss-product-row {
+  background: #fff;
+}
+
+.waste-loss-create-table-shell {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.waste-loss-create-table__head {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.waste-loss-create-table__row:last-child {
+  border-bottom: 0;
+}
+
+.waste-loss-create-table__row:hover {
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.waste-loss-lot-cell {
+  background: color-mix(in srgb, var(--exits-surface-muted) 45%, var(--exits-surface));
+}
+
+.waste-loss-create-page .waste-loss-action-btn {
+  border-radius: 9999px;
+}
+
+.waste-loss-create-page .waste-loss-action-btn--soft {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.waste-loss-create-page .waste-loss-action-btn--soft:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-primary) 42%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+}
+
+.waste-loss-create-page .waste-loss-notes-input {
+  height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
+  padding-block: 0.35rem;
+  resize: none;
+  line-height: 1.25;
+}
+
+.waste-loss-create-page .waste-loss-qty-input {
+  width: 5.5rem;
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+.waste-loss-create-page .waste-loss-section--products {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.waste-loss-create-products-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.15rem;
+}
+
+.waste-loss-create-products-scroll .waste-loss-picker {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.waste-loss-create-products-scroll .waste-loss-create-table-shell {
+  max-height: none;
+}
+
+.stock-use-create-page .stock-use-section {
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .stock-use-create-page .stock-use-section,
+[data-theme="light"] .stock-use-create-page .stock-use-section {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
+  box-shadow: var(--exits-shadow-md);
+}
+
+.stock-use-empty {
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+}
+
+.stock-use-product-row {
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .stock-use-product-row,
+[data-theme="light"] .stock-use-product-row {
+  background: #fff;
+}
+
+.stock-use-create-table-shell {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.stock-use-create-table__head {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.stock-use-create-table__row:last-child {
+  border-bottom: 0;
+}
+
+.stock-use-create-table__row:hover {
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.stock-use-create-page .stock-use-action-btn {
+  border-radius: 9999px;
+}
+
+.stock-use-create-page .stock-use-action-btn--soft {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.stock-use-create-page .stock-use-action-btn--soft:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-primary) 42%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface));
+}
+
+.stock-use-create-page .stock-use-notes-input {
+  height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
+  padding-block: 0.35rem;
+  resize: none;
+  line-height: 1.25;
+}
+
+.stock-use-create-page .stock-use-qty-input {
+  width: 5.5rem;
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+.stock-use-create-page .stock-use-section--products {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.stock-use-create-products-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.15rem;
+}
+
+.stock-use-create-products-scroll .stock-use-picker {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.stock-use-create-products-scroll .stock-use-create-table-shell {
+  max-height: none;
+}
+
 .stock-count-create-page .stock-count-section {
   box-shadow: var(--exits-shadow-sm);
 }
@@ -11231,7 +11447,99 @@ a.exits-chip--primary:hover {
 /* Manager / Cashier role home */
 .manager-ops-home {
   width: 100%;
-  max-width: 72rem;
+  max-width: 80rem;
+}
+
+.manager-ops-home__section.catalog-form-section {
+  box-shadow: var(--exits-shadow-sm);
+}
+
+:root:not([data-theme="dark"]) .manager-ops-home__section.catalog-form-section,
+[data-theme="light"] .manager-ops-home__section.catalog-form-section {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
+  box-shadow: var(--exits-shadow-md);
+}
+
+.manager-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .manager-metric-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .manager-metric-strip:has(> :nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.manager-metric-cell {
+  min-width: 0;
+  border-right: 1px solid var(--exits-border);
+  border-bottom: 1px solid var(--exits-border);
+  background: transparent;
+}
+
+.manager-metric-strip > .manager-metric-cell:nth-child(2n) {
+  border-right: 0;
+}
+
+@media (min-width: 768px) {
+  .manager-metric-strip > .manager-metric-cell {
+    border-bottom: 0;
+  }
+
+  .manager-metric-strip > .manager-metric-cell:nth-child(2n) {
+    border-right: 1px solid var(--exits-border);
+  }
+
+  .manager-metric-strip > .manager-metric-cell:last-child {
+    border-right: 0;
+  }
+}
+
+.manager-metric-cell--attention {
+  background: color-mix(in srgb, var(--exits-warning, var(--exits-danger)) 8%, var(--exits-surface));
+}
+
+.manager-metric-cell--success {
+  background: color-mix(in srgb, var(--exits-success) 8%, var(--exits-surface));
+}
+
+.manager-metric-value--kpi {
+  font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.35rem);
+  line-height: 1.2;
+}
+
+.manager-snapshot-table {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  overflow: hidden;
+}
+
+.manager-snapshot-row {
+  border-bottom: 1px solid var(--exits-border);
+  background: transparent;
+  transition:
+    background-color var(--exits-motion-fast) ease,
+    border-color var(--exits-motion-fast) ease;
+}
+
+.manager-snapshot-row:last-child {
+  border-bottom: 0;
+}
+
+.manager-snapshot-row:hover {
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
 }
 
 .shifts-hub-page__shift-number {
@@ -11443,6 +11751,7 @@ a.exits-chip--primary:hover {
 [data-theme="light"] .catalog-products-card {
   box-shadow: var(--exits-shadow-sm);
 }
+
 
 .manager-ops-home__section {
   min-width: 0;
@@ -11830,7 +12139,7 @@ a.exits-chip--primary:hover {
   }
 }
 
-/* Org More hub — grouped panels (same motion language as manager home) */
+/* Org More hub â€” grouped panels (same motion language as manager home) */
 .org-more-page > header {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -12022,7 +12331,7 @@ a.exits-chip--primary:hover {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 18%, transparent);
 }
 
-/* Manage staff / assign role — reuse global exits motion */
+/* Manage staff / assign role â€” reuse global exits motion */
 .staff-page > header,
 .staff-assign-page > header,
 .staff-invite-page > header {
@@ -12051,7 +12360,7 @@ a.exits-chip--primary:hover {
   isolation: isolate;
 }
 
-/* Open ⋮ menu must stack above the page footnote (sibling of the list). */
+/* Open â‹® menu must stack above the page footnote (sibling of the list). */
 .staff-page .staff-list > li.staff-list__item--menu-open {
   z-index: 40;
 }
@@ -12063,7 +12372,7 @@ a.exits-chip--primary:hover {
   background: var(--exits-surface);
 }
 
-/* Staff cards are dense list rows — avoid hover lift that overlaps neighbors. */
+/* Staff cards are dense list rows â€” avoid hover lift that overlaps neighbors. */
 .staff-page .exits-list__card:hover,
 .staff-page .exits-list__card:active {
   transform: none;
@@ -12802,7 +13111,7 @@ a.exits-chip--primary:hover {
   animation-delay: 130ms;
 }
 
-/* Account context switch — Personal ↔ Organization profile change */
+/* Account context switch â€” Personal â†” Organization profile change */
 .exits-context-switch__visual {
   position: relative;
   width: 3.5rem;
@@ -13095,7 +13404,9 @@ a.exits-chip--primary:hover {
 .operations-shell--viewport-lock .customer-orders-page,
 .operations-shell--viewport-lock .catalog-page--products-scroll,
 .operations-shell--viewport-lock .inventory-list-page,
-.operations-shell--viewport-lock .stock-count-create-page {
+.operations-shell--viewport-lock .stock-count-create-page,
+.operations-shell--viewport-lock .stock-use-create-page,
+.operations-shell--viewport-lock .waste-loss-create-page {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
@@ -13105,7 +13416,7 @@ a.exits-chip--primary:hover {
 
 .operations-shell--viewport-lock .manager-ops-home {
   width: 100%;
-  max-width: 72rem;
+  max-width: 80rem;
   min-width: 0;
 }
 
@@ -13321,7 +13632,7 @@ a.exits-chip--primary:hover {
   background: var(--exits-warning);
 }
 
-/* Legacy aliases — shell panel meters now use .admin-usage-meter* */
+/* Legacy aliases â€” shell panel meters now use .admin-usage-meter* */
 .admin-context-panel__row {
   display: flex;
   justify-content: space-between;
@@ -13403,7 +13714,7 @@ a.exits-chip--primary:hover {
   font-weight: var(--exits-font-weight-medium);
 }
 
-/* Manage Business Overview V2 — command center */
+/* Manage Business Overview V2 â€” command center */
 .admin-overview-page--v2 {
   gap: 1rem;
 }

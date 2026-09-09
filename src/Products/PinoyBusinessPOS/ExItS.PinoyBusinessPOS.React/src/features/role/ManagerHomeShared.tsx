@@ -15,10 +15,10 @@ export function ManagerHomeSection({
 }) {
   return (
     <section
-      className="manager-ops-home__section exits-animate-panel flex min-w-0 flex-col gap-2"
+      className="manager-ops-home__section catalog-form-section exits-animate-panel flex min-w-0 flex-col gap-2"
       data-testid={testId}
     >
-      <h2 className="exits-type-section-title m-0 text-muted">{title}</h2>
+      <h2 className="catalog-form-section__title m-0 text-muted">{title}</h2>
       {children}
     </section>
   );
@@ -46,9 +46,9 @@ export function ManagerMetricCard({
   return (
     <div
       className={cn(
-        "exits-metric-surface flex min-w-0 flex-col gap-0.5 px-3 py-2.5",
-        tone === "attention" && "exits-alert-surface",
-        tone === "success" && "exits-alert-surface--success",
+        "manager-metric-cell flex min-w-0 flex-col gap-0.5 px-3 py-2",
+        tone === "attention" && "manager-metric-cell--attention",
+        tone === "success" && "manager-metric-cell--success",
       )}
       data-testid={testId}
       data-value-scale={valueScale}
@@ -63,15 +63,23 @@ export function ManagerMetricCard({
             "m-0 text-foreground",
             valueScale === "restrained"
               ? "manager-metric-value--restrained"
-              : "exits-type-kpi",
+              : "exits-type-kpi manager-metric-value--kpi",
           )}
         >
           {value}
         </span>
       ) : null}
       {hint ? (
-        <span className="m-0 text-[length:var(--exits-text-sm)] font-normal text-muted">{hint}</span>
+        <span className="m-0 text-[length:var(--exits-text-xs)] font-normal text-muted">{hint}</span>
       ) : null}
+    </div>
+  );
+}
+
+export function ManagerMetricStrip({ children }: { children: ReactNode }) {
+  return (
+    <div className="manager-metric-strip min-w-0 overflow-hidden" role="group">
+      {children}
     </div>
   );
 }
@@ -94,7 +102,7 @@ export type ManagerActionCardProps = {
 export function ManagerActionCard(props: ManagerActionCardProps) {
   const { label, detail, icon: Icon, testId, quiet = false, badge } = props;
   const classes = cn(
-    "manager-action-card inline-flex w-full min-w-0 items-center gap-2 border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 py-2.5 text-left no-underline text-foreground",
+    "manager-action-card inline-flex w-full min-w-0 items-center gap-2 border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 py-2 text-left no-underline text-foreground",
     "rounded-[var(--exits-radius-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     quiet && "manager-action-card--quiet",
   );
@@ -149,7 +157,10 @@ export function ManagerActionCard(props: ManagerActionCardProps) {
 
 export function ManagerActionGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="manager-action-grid grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2" role="group">
+    <div
+      className="manager-action-grid grid min-w-0 grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3"
+      role="group"
+    >
       {children}
     </div>
   );
@@ -169,7 +180,7 @@ export function ManagerAttentionLink({
   return (
     <Link
       to={href}
-      className="exits-alert-surface manager-nav-row flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 no-underline"
+      className="exits-alert-surface manager-nav-row flex min-w-0 items-center justify-between gap-2 px-3 py-2 no-underline"
       data-testid={testId}
     >
       <span className="min-w-0">
@@ -184,7 +195,7 @@ export function ManagerAttentionLink({
 export function ManagerHealthyAttention({ title, detail }: { title: string; detail: string }) {
   return (
     <div
-      className="exits-alert-surface--success exits-alert-surface flex min-w-0 flex-col gap-0.5 px-3 py-2.5"
+      className="exits-alert-surface--success exits-alert-surface flex min-w-0 flex-col gap-0.5 px-3 py-2"
       data-testid="manager-attention-healthy"
     >
       <span className="font-medium text-foreground">{title}</span>
@@ -207,15 +218,26 @@ export function ManagerSnapshotLink({
   return (
     <Link
       to={href}
-      className="exits-metric-surface manager-nav-row flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 no-underline"
+      className="manager-snapshot-row flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 no-underline"
       data-testid={testId}
+      role="listitem"
     >
       <span className="min-w-0">
-        <span className="block font-medium text-foreground">{title}</span>
-        <span className="block text-[length:var(--exits-text-sm)] text-muted">{detail}</span>
+        <span className="block text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {title}
+        </span>
+        <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">{detail}</span>
       </span>
       <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
     </Link>
+  );
+}
+
+export function ManagerSnapshotTable({ children }: { children: ReactNode }) {
+  return (
+    <div className="manager-snapshot-table min-w-0 overflow-hidden" role="list">
+      {children}
+    </div>
   );
 }
 

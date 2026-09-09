@@ -59,7 +59,9 @@ import {
   ManagerHomeSection,
   ManagerInsightCard,
   ManagerMetricCard,
+  ManagerMetricStrip,
   ManagerSnapshotLink,
+  ManagerSnapshotTable,
 } from "@/features/role/ManagerHomeShared";
 import { resolveReportDatePreset } from "@/features/reports/report-date-range";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
@@ -421,7 +423,7 @@ export function ManagerRetailHome() {
 
   return (
     <div
-      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-3"
+      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-2.5"
       data-testid="manager-home"
       data-home-variant="retail"
     >
@@ -449,7 +451,7 @@ export function ManagerRetailHome() {
       {!loading ? (
         <>
           <ManagerHomeSection title={t("managerHome.section.today")} testId="manager-home-today">
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+            <ManagerMetricStrip>
               <ManagerMetricCard
                 label={t("managerHome.today.sales")}
                 value={formatPeso(salesTotal)}
@@ -486,7 +488,7 @@ export function ManagerRetailHome() {
                   testId="manager-today-register"
                 />
               ) : null}
-            </div>
+            </ManagerMetricStrip>
           </ManagerHomeSection>
 
           <ManagerHomeSection
@@ -550,13 +552,7 @@ export function ManagerRetailHome() {
               title={t("managerHome.section.snapshot")}
               testId="manager-home-snapshot"
             >
-              <div
-                className={
-                  snapshotModules.length === 3
-                    ? "grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
-                    : "grid grid-cols-1 gap-2 sm:grid-cols-2"
-                }
-              >
+              <ManagerSnapshotTable>
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   if (mod.summaryKind === "inventory") {
@@ -605,7 +601,7 @@ export function ManagerRetailHome() {
                     />
                   );
                 })}
-              </div>
+              </ManagerSnapshotTable>
             </ManagerHomeSection>
           ) : null}
 

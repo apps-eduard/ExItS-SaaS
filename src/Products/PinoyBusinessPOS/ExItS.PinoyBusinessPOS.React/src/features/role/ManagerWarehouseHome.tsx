@@ -42,7 +42,9 @@ import {
   ManagerHomeSection,
   ManagerInsightCard,
   ManagerMetricCard,
+  ManagerMetricStrip,
   ManagerSnapshotLink,
+  ManagerSnapshotTable,
 } from "@/features/role/ManagerHomeShared";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -246,7 +248,7 @@ export function ManagerWarehouseHome({
 
   return (
     <div
-      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[72rem] min-w-0 flex-col gap-3"
+      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-2.5"
       data-testid={homeTestId}
       data-home-variant="warehouse"
     >
@@ -274,7 +276,7 @@ export function ManagerWarehouseHome({
       {!loading ? (
         <>
           <ManagerHomeSection title={t("managerHome.section.today")} testId="manager-home-today">
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            <ManagerMetricStrip>
               <ManagerMetricCard
                 label={t("managerHome.warehouse.incomingTransfers")}
                 value={incomingTransfers.length}
@@ -308,7 +310,7 @@ export function ManagerWarehouseHome({
                 tone={lowStock + expiry > 0 ? "attention" : "default"}
                 testId="manager-today-stock-alerts"
               />
-            </div>
+            </ManagerMetricStrip>
           </ManagerHomeSection>
 
           <ManagerHomeSection
@@ -360,13 +362,7 @@ export function ManagerWarehouseHome({
               title={t("managerHome.section.stockSnapshot")}
               testId="manager-home-snapshot"
             >
-              <div
-                className={
-                  snapshotModules.length === 3
-                    ? "grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"
-                    : "grid grid-cols-1 gap-2 sm:grid-cols-2"
-                }
-              >
+              <ManagerSnapshotTable>
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   let titleKey: MessageKey = "managerHome.snapshot.inventory";
@@ -407,7 +403,7 @@ export function ManagerWarehouseHome({
                     />
                   );
                 })}
-              </div>
+              </ManagerSnapshotTable>
             </ManagerHomeSection>
           ) : null}
 

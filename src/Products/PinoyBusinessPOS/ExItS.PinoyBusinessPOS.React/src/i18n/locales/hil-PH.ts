@@ -3182,7 +3182,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "stockUse.noProductsDetail": "Tilawi ang iban nga search ukon All stock.",
 
-  "stockUse.loading": "Nagaload ang stock use???",
+  "stockUse.loading": "Nagaload ang stock use?",
 
   "stockUse.errorTitle": "Stock Use",
 
@@ -3198,7 +3198,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "stockUse.saveFailed": "Indi ma-record ang stock use.",
 
-  "stockUse.recording": "Nagarecord???",
+  "stockUse.recording": "Nagarecord?",
 
   "stockUse.void": "I-void",
 
