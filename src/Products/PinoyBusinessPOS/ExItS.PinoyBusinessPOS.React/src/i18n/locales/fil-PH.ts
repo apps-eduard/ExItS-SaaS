@@ -6728,6 +6728,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.lede": "Subaybayan ang personal na Utang, to-do, at mga store.",
 
   "personal.merchantReceipt.backToStatement": "Bumalik sa aktibidad",
+  "personal.merchantReceipt.title": "Buod ng binili",
 
   "personal.merchantReceipt.errorTitle": "Hindi ma-load ang resibo",
 
@@ -6805,7 +6806,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.merchantStatement.openPurchases": "Mga bili at aktibidad",
 
-  "personal.merchantStatement.openReceipt": "Buksan ang resibo",
+  "personal.merchantStatement.openReceipt": "Tingnan ang buod ng binili",
 
   "personal.merchantStatement.outstandingLabel": "Kasalukuyang balanse",
 

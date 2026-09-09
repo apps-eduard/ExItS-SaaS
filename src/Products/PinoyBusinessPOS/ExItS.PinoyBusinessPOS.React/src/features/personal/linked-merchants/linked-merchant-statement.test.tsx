@@ -98,7 +98,13 @@ describe("LinkedMerchantStatementPage", () => {
       expect(screen.getByTestId("linked-merchant-statement-page")).toBeInTheDocument();
     });
     expect(screen.getByTestId("linked-merchant-outstanding")).toHaveTextContent("0.00 PHP");
-    expect(screen.getByTestId("linked-merchant-activity-receipt-link")).toBeInTheDocument();
+    const receiptLink = screen.getByTestId("linked-merchant-activity-receipt-link");
+    expect(receiptLink).toBeInTheDocument();
+    expect(receiptLink).toHaveAttribute(
+      "href",
+      `/personal/linked-merchants/${organizationId}/${businessCustomerId}/receipts/cccccccc-cccc-4ccc-8ccc-cccccccccccc`,
+    );
+    expect(receiptLink).toHaveTextContent(/purchase summary/i);
   });
 
   it("renders connected + history-not-ready when statement returns 404", async () => {

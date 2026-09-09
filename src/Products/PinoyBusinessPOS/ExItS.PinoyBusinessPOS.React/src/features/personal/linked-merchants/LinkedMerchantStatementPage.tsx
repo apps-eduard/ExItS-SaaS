@@ -74,10 +74,10 @@ function ActivityRow({
       <div className="pc-activity-row__main">
         <span className="pc-activity-row__title">{title}</span>
         {subtitle ? <span className="pc-activity-row__meta">{subtitle}</span> : null}
-        <span className="pc-activity-row__meta">
-          {meta}
-          {item.sourceSaleId && item.hasDetails ? ` · ${openReceiptLabel}` : ""}
-        </span>
+        <span className="pc-activity-row__meta">{meta}</span>
+        {item.sourceSaleId && item.hasDetails ? (
+          <span className="pc-activity-row__action">{openReceiptLabel}</span>
+        ) : null}
       </div>
       {amount ? (
         <span
@@ -92,7 +92,7 @@ function ActivityRow({
         </span>
       ) : null}
       {item.sourceSaleId && item.hasDetails ? (
-        <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+        <ChevronRight className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
       ) : null}
     </>
   );
@@ -103,6 +103,7 @@ function ActivityRow({
         to={`/personal/linked-merchants/${organizationId}/${businessCustomerId}/receipts/${item.sourceSaleId}`}
         className="pc-activity-row pc-activity-row--clickable"
         data-testid="linked-merchant-activity-receipt-link"
+        aria-label={`${openReceiptLabel}: ${title}`}
       >
         {content}
       </Link>

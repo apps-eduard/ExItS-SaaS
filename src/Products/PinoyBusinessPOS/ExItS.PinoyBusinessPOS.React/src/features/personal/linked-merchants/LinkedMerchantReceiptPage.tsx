@@ -166,8 +166,8 @@ export function LinkedMerchantReceiptPage() {
   return (
     <div className={pageShell} data-testid="linked-merchant-receipt-page">
       <PageHeader
-        title={receipt.receiptNumber}
-        description={t("personal.merchantReceipt.lede")}
+        title={t("personal.merchantReceipt.title")}
+        description={receipt.receiptNumber}
         backTo={backHref}
         backLabel={t("personal.merchantReceipt.backToStatement")}
         backTestId="page-header-back-merchant-receipt"

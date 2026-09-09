@@ -6730,6 +6730,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.lede": "Bantayan ti personal nga Utang, to-do, ken stores.",
 
   "personal.merchantReceipt.backToStatement": "Agsubli iti aktibidad",
+  "personal.merchantReceipt.title": "Purchase summary",
 
   "personal.merchantReceipt.errorTitle": "Saan a ma-load ti resibo",
 
@@ -6807,7 +6808,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "personal.merchantStatement.openPurchases": "Dagiti gatang ken aktibidad",
 
-  "personal.merchantStatement.openReceipt": "Lukatan ti resibo",
+  "personal.merchantStatement.openReceipt": "Kitaen ti purchase summary",
 
   "personal.merchantStatement.outstandingLabel": "Agdama a balanse",
 

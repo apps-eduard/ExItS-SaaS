@@ -6730,6 +6730,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.lede": "Sunda ang personal nga Utang, to-do, ug mga store.",
 
   "personal.merchantReceipt.backToStatement": "Balik sa aktibidad",
+  "personal.merchantReceipt.title": "Purchase summary",
 
   "personal.merchantReceipt.errorTitle": "Dili ma-load ang resibo",
 
@@ -6807,7 +6808,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "personal.merchantStatement.openPurchases": "Mga palit ug aktibidad",
 
-  "personal.merchantStatement.openReceipt": "Ablihi ang resibo",
+  "personal.merchantStatement.openReceipt": "Tan-awa ang purchase summary",
 
   "personal.merchantStatement.outstandingLabel": "Karon nga balanse",
 

@@ -5411,7 +5411,7 @@ export const en = {
     "Older settled digital records require the Personal extended-history entitlement.",
   "personal.merchantStatement.historyUnlock": "Open rewards",
   "personal.merchantStatement.loadMore": "Load more",
-  "personal.merchantStatement.openReceipt": "Open receipt",
+  "personal.merchantStatement.openReceipt": "View purchase summary",
   "personal.merchantStatement.errorTitle": "Could not load activity",
   "personal.merchantStatement.loadFailed": "The merchant activity could not be loaded. Try again.",
   "personal.merchantStatement.deniedTitle": "Access denied",
@@ -5429,6 +5429,7 @@ export const en = {
   "personal.merchantStatement.noActivityHint":
     "Shop with this store or visit again after your next in-store purchase.",
   "personal.merchantReceipt.backToStatement": "Back to activity",
+  "personal.merchantReceipt.title": "Purchase summary",
   "personal.merchantReceipt.lede": "Sale lines from the merchant ledger (read-only).",
   "personal.merchantReceipt.linesSection": "Lines",
   "personal.merchantReceipt.store": "Store",

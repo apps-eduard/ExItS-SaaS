@@ -6730,6 +6730,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.lede": "Bantayi ang personal nga Utang, to-do, kag mga store.",
 
   "personal.merchantReceipt.backToStatement": "Balik sa aktibidad",
+  "personal.merchantReceipt.title": "Purchase summary",
 
   "personal.merchantReceipt.errorTitle": "Indi ma-load ang resibo",
 
@@ -6807,7 +6808,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "personal.merchantStatement.openPurchases": "Mga bakalan kag aktibidad",
 
-  "personal.merchantStatement.openReceipt": "Abri ang resibo",
+  "personal.merchantStatement.openReceipt": "Tan-awa ang purchase summary",
 
   "personal.merchantStatement.outstandingLabel": "Karon nga balanse",
 
