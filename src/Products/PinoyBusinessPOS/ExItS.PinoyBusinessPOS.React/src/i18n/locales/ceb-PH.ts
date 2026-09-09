@@ -2861,6 +2861,14 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Kasaysayan sa movement",
 
+  "inventory.movementCol.when": "Kanus-a",
+
+  "inventory.movementCol.qty": "Qty",
+
+  "inventory.movementCol.type": "Klase",
+
+  "inventory.movementCol.batch": "Expiry / Lot",
+
   "inventory.nearExpiryQty": "Hapit mo-expire",
 
   "inventory.notFound": "Wala makita ang inventory account.",

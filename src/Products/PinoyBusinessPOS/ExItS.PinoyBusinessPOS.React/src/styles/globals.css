@@ -7338,6 +7338,31 @@ a.dashboard-metric-card:focus-visible {
   font-weight: 600;
 }
 
+.inventory-movements-table-shell {
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: var(--exits-shadow-sm);
+}
+
+.inventory-movements-table__head {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+}
+
+.inventory-movements-table__row:last-child {
+  border-bottom: 0;
+}
+
+.inventory-movements-table__row:hover {
+  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+:root:not([data-theme="dark"]) .inventory-movements-table-shell,
+[data-theme="light"] .inventory-movements-table-shell {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--exits-border) 75%, #fff);
+}
+
 .inventory-lot-badge {
   display: inline-flex;
   align-items: center;

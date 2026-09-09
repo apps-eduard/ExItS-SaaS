@@ -43,19 +43,14 @@ import {
 } from "@/features/inventory/inventory-branch-labels";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
+import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
 import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
   hasMissingExpiry,
   hasValidExpiryDateInput,
 } from "@/features/inventory/inventory-lot-status";
-import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
-import {
-  inventoryMovementTypeLabelKey,
-  resolveMovementStockValue,
-} from "@/features/purchasing/purchase-cost-display";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -1278,61 +1273,12 @@ export function InventoryDetailPage() {
           {t("inventory.movements")}
         </h2>
         {movementsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        <ul className="mt-2 mb-0 flex list-none flex-col gap-2 p-0">
-          {movementsQuery.data?.items.map((movement) => (
-            <li key={movement.movementId}>
-              <Card className="p-3">
-                <p className="m-0 font-semibold">
-                  {movement.quantityEffect > 0 ? "+" : ""}
-                  {movement.quantityEffect} {account.unitOfMeasure}
-                </p>
-                <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t(inventoryMovementTypeLabelKey(movement.movementType))}
-                </p>
-                {movement.unitCost != null ? (
-                  <dl
-                    className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]"
-                    data-testid={`inventory-movement-cost-${movement.movementId}`}
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("inventory.unitPurchaseCost")}</dt>
-                      <dd className="m-0">
-                        <MoneyDisplay amount={movement.unitCost} />
-                        <span className="text-muted"> / {account.unitOfMeasure}</span>
-                      </dd>
-                    </div>
-                    {resolveMovementStockValue(movement) != null ? (
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <dt className="text-muted">{t("inventory.stockValue")}</dt>
-                        <dd className="m-0">
-                          <MoneyDisplay amount={resolveMovementStockValue(movement)!} />
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                ) : null}
-                {movement.expirationDate ? (
-                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.movementExpiry")}: {movement.expirationDate}
-                    {movement.lotNumber
-                      ? ` · ${t("inventory.movementLot")}: ${movement.lotNumber}`
-                      : ""}
-                  </p>
-                ) : null}
-                <div className="mt-2">
-                  <ActorAttribution
-                    labelKey="common.recordedBy"
-                    actorId={movement.recordedBy}
-                    occurredAtUtc={movement.recordedAtUtc}
-                    resolved={actors.resolve(movement.recordedBy)}
-                    isLoading={actors.isResolving}
-                    testId={`inventory-movement-actor-${movement.movementId}`}
-                  />
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <InventoryMovementsResponsiveList
+          movements={movementsQuery.data?.items ?? []}
+          unitOfMeasure={account.unitOfMeasure}
+          resolveActor={(actorId) => actors.resolve(actorId)}
+          actorsLoading={actors.isResolving}
+        />
       </div>
     </div>
   );

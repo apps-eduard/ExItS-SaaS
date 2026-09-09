@@ -2861,6 +2861,14 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Kasaysayan iti movement",
 
+  "inventory.movementCol.when": "Idi",
+
+  "inventory.movementCol.qty": "Qty",
+
+  "inventory.movementCol.type": "Klase",
+
+  "inventory.movementCol.batch": "Expiry / Lot",
+
   "inventory.nearExpiryQty": "Hapit mo-expire",
 
   "inventory.notFound": "Awan makita ti inventory account.",

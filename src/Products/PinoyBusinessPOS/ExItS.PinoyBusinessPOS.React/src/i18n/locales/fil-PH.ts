@@ -2861,6 +2861,14 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Movement history",
 
+  "inventory.movementCol.when": "When",
+
+  "inventory.movementCol.qty": "Qty",
+
+  "inventory.movementCol.type": "Type",
+
+  "inventory.movementCol.batch": "Expiry / Lot",
+
   "inventory.nearExpiryQty": "Near expiry",
 
   "inventory.notFound": "Hindi makita ang inventory account.",
