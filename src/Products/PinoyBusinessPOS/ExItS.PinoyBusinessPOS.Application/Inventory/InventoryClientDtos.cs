@@ -24,7 +24,12 @@ public sealed record PosInventoryAccountDto(
     decimal? ExpiredQuantity = null,
     decimal? NearExpiryQuantity = null,
     bool HasOpeningStock = false,
-    decimal? OrganizationOnHandQuantity = null);
+    decimal? OrganizationOnHandQuantity = null,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? CategoryId = null,
+    string? CategoryName = null,
+    string MonitoringMode = "BranchDefault");
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,
@@ -129,6 +134,44 @@ public sealed record SetInventoryReorderRequest(
     decimal? ReorderQuantity,
     string Reason);
 
+public sealed record PosInventoryBranchReorderDefaultDto(
+    Guid OrganizationId,
+    Guid BranchId,
+    decimal? ReorderLevel,
+    decimal? ReorderQuantity,
+    DateTimeOffset? UpdatedAtUtc,
+    Guid? UpdatedBy);
+
+public sealed record SetInventoryBranchReorderDefaultRequest(
+    decimal? ReorderLevel,
+    decimal? ReorderQuantity);
+
+public sealed record BulkSetInventoryReorderRequest(
+    string Mode,
+    IReadOnlyList<Guid>? ProductIds = null,
+    bool ApplyToFiltered = false,
+    decimal? ReorderLevel = null,
+    decimal? ReorderQuantity = null,
+    string? Reason = null,
+    string? Search = null,
+    string? StockStatus = null,
+    string? MonitoringMode = null,
+    Guid? CategoryId = null);
+
+public sealed record BulkSetInventoryReorderResultItem(
+    Guid ProductId,
+    bool Succeeded,
+    string Outcome,
+    string? ErrorCode,
+    string? ErrorMessage);
+
+public sealed record BulkSetInventoryReorderResponse(
+    int RequestedCount,
+    int SucceededCount,
+    int SkippedCount,
+    int FailedCount,
+    IReadOnlyList<BulkSetInventoryReorderResultItem> Results);
+
 public sealed record PosInventoryReconciliationDto(
     Guid ProductId,
     decimal OrganizationOnHandQuantity,
@@ -211,6 +254,9 @@ public sealed record InventoryAccountFilter(
     bool? TrackedOnly = null,
     bool? LowStockOnly = null,
     bool? ReorderSuggestedOnly = null,
-    string? ProductStatus = null);
+    string? ProductStatus = null,
+    string? StockStatus = null,
+    string? MonitoringMode = null,
+    Guid? CategoryId = null);
 
 public sealed record StockCountFilter(string? Status = null, string? CountNumber = null);

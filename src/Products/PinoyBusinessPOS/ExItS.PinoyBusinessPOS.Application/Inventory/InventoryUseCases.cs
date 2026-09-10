@@ -138,7 +138,10 @@ public sealed class InventoryQueryService
             filter.TrackedOnly,
             filter.LowStockOnly,
             filter.ReorderSuggestedOnly,
-            filter.ProductStatus);
+            filter.ProductStatus,
+            filter.StockStatus,
+            filter.MonitoringMode,
+            filter.CategoryId);
         var (rows, total) = await _branchInventory
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
@@ -316,10 +319,15 @@ public sealed class InventoryQueryService
 
     private static PosInventoryAccountDto MapFromBranchRow(BranchInventoryListRow row)
     {
-        var stockStatus = row.IsTracked
-            ? InventoryStockStatuses.ToCode(
-                InventoryStockStatuses.Derive(row.IsTracked, row.BranchOnHand, row.ReorderLevel))
-            : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
+        var stockStatus = string.Equals(
+                row.MonitoringMode,
+                InventoryReorderMonitoringModes.NotMonitored,
+                StringComparison.Ordinal)
+            ? "—"
+            : row.IsTracked
+                ? InventoryStockStatuses.ToCode(
+                    InventoryStockStatuses.Derive(row.IsTracked, row.BranchOnHand, row.ReorderLevel))
+                : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
             row.ProductId,
@@ -345,7 +353,12 @@ public sealed class InventoryQueryService
             null,
             null,
             row.HasOpeningStock,
-            row.OrganizationOnHand);
+            row.OrganizationOnHand,
+            row.Sku,
+            row.Barcode,
+            row.CategoryId,
+            row.CategoryName,
+            row.MonitoringMode);
     }
 
     public static PosInventoryAccountDto Map(

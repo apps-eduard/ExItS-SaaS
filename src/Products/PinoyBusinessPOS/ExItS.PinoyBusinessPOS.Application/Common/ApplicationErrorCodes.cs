@@ -222,6 +222,9 @@ public static class ApplicationErrorCodes
     public const string SaleBranchRequired = "pos.sale.branch_required";
     public const string WarehouseBranchSalesForbidden = "pos.sale.warehouse_branch_forbidden";
     public const string InventoryBranchRequired = "pos.inventory.branch_required";
+    public const string InventoryReorderBulkEmpty = "pos.inventory.reorder.bulk_empty";
+    public const string InventoryReorderBulkValidation = "pos.inventory.reorder.bulk_validation";
+    public const string InventoryReorderBulkTooLarge = "pos.inventory.reorder.bulk_too_large";
     public const string InventoryBranchAuthorityMismatch = "pos.inventory.branch_authority_mismatch";
     public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
     public const string InventoryBranchReservationCutoverUnresolvedSaleBranch =

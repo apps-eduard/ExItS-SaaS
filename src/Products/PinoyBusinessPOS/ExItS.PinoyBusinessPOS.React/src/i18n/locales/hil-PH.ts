@@ -2848,7 +2848,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} ?? Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Ipakita ang window",
 
@@ -2877,6 +2877,52 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.lotsEmpty": "Wala pa sing lots nga naay stock.",
 
   "inventory.lowStock": "Low stock",
+  "lowStockSettings.title": "Low stock settings",
+  "lowStockSettings.branchLabel": "Branch: {branch}",
+  "lowStockSettings.branchDefault": "Branch default",
+  "lowStockSettings.editDefault": "Edit default",
+  "lowStockSettings.defaultSaved": "Branch default saved.",
+  "lowStockSettings.rowSaved": "Low stock setting saved.",
+  "lowStockSettings.bulkDone": "Updated {ok}, skipped {skip}, failed {fail}.",
+  "lowStockSettings.search": "Search product / SKU / barcode",
+  "lowStockSettings.category": "Category",
+  "lowStockSettings.allCategories": "All categories",
+  "lowStockSettings.stockStatus": "Stock status",
+  "lowStockSettings.monitoring": "Monitoring",
+  "lowStockSettings.filterAll": "All",
+  "lowStockSettings.inStock": "In stock",
+  "lowStockSettings.lowStock": "Low stock",
+  "lowStockSettings.outOfStock": "Out of stock",
+  "lowStockSettings.monitoringBranchDefault": "Branch default",
+  "lowStockSettings.monitoringCustom": "Custom",
+  "lowStockSettings.monitoringNotMonitored": "Not monitored",
+  "lowStockSettings.selectedCount": "{count} products selected",
+  "lowStockSettings.setLowStockLevel": "Set low-stock level",
+  "lowStockSettings.useBranchDefault": "Use branch default",
+  "lowStockSettings.dontMonitor": "Don't monitor",
+  "lowStockSettings.pageSelected": "{count} products on this page selected.",
+  "lowStockSettings.selectAllFiltered": "Select all {count} products matching these filters",
+  "lowStockSettings.allFilteredSelected": "All {count} products matching these filters selected.",
+  "lowStockSettings.selectPage": "Select page",
+  "lowStockSettings.product": "Product",
+  "lowStockSettings.skuBarcode": "SKU / Barcode",
+  "lowStockSettings.onHand": "On hand",
+  "lowStockSettings.lowStockAt": "Low stock at",
+  "lowStockSettings.reorderQty": "Reorder qty",
+  "lowStockSettings.reorderQtyOptional": "Optional reorder quantity",
+  "lowStockSettings.lowStockWhen": "Low stock when quantity reaches",
+  "lowStockSettings.status": "Status",
+  "lowStockSettings.actions": "Actions",
+  "lowStockSettings.empty": "No tracked products",
+  "lowStockSettings.emptyDetail": "Try a different search or filter.",
+  "lowStockSettings.applyToCount": "Apply to {count} products",
+  "lowStockSettings.customThreshold": "Custom threshold",
+  "lowStockSettings.open": "Low stock settings",
+  "lowStockSettings.cancel": "Cancel",
+  "lowStockSettings.save": "Save",
+  "lowStockSettings.edit": "Edit",
+  "lowStockSettings.previous": "Previous",
+  "lowStockSettings.next": "Next",
 
   "inventory.movements": "Kasaysayan sa movement",
 
@@ -3020,7 +3066,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON ?? {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON · {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
 
@@ -4551,9 +4597,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt / resibo sang PO",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment ??? dugang",
+  "inventory.movementType.manualIncrease": "Stock adjustment — dugang",
 
-  "inventory.movementType.manualDecrease": "Stock adjustment ??? bawas",
+  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
 
   "inventory.movementType.sale": "Baligya",
 
@@ -4567,9 +4613,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.transferCancel": "Pagbalik gikan sa ginsibat nga transfer",
 
-  "inventory.movementType.stockCountIncrease": "Stock count ??? dugang",
+  "inventory.movementType.stockCountIncrease": "Stock count — dugang",
 
-  "inventory.movementType.stockCountDecrease": "Stock count ??? bawas",
+  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
 
   "inventory.movementType.stockUse": "Paggamit sang stock",
 

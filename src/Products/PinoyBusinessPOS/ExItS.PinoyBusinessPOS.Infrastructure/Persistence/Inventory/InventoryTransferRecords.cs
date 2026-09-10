@@ -130,3 +130,14 @@ internal sealed class InventoryBranchReorderSettingRecord
     public Guid UpdatedBy { get; set; }
     public uint Xmin { get; set; }
 }
+
+internal sealed class InventoryBranchReorderDefaultRecord
+{
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
+    public decimal? ReorderLevel { get; set; }
+    public decimal? ReorderQuantity { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public Guid UpdatedBy { get; set; }
+    public uint Xmin { get; set; }
+}

@@ -12,13 +12,16 @@ public sealed class BranchInventoryReadService
 {
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly IInventoryBranchReorderRepository _reorder;
+    private readonly IInventoryBranchReorderDefaultRepository? _branchDefaults;
 
     public BranchInventoryReadService(
         IInventoryBranchBalanceRepository balances,
-        IInventoryBranchReorderRepository reorder)
+        IInventoryBranchReorderRepository reorder,
+        IInventoryBranchReorderDefaultRepository? branchDefaults = null)
     {
         _balances = balances;
         _reorder = reorder;
+        _branchDefaults = branchDefaults;
     }
 
     public async Task<IReadOnlyDictionary<Guid, BranchInventoryProductRead>> ResolveAsync(
@@ -42,6 +45,9 @@ public sealed class BranchInventoryReadService
             .ListByBranchAndProductIdsAsync(orgId, branchId, productIds, cancellationToken)
             .ConfigureAwait(false);
         var reorderByProduct = reorderSettings.ToDictionary(s => s.ProductId.Value);
+        var branchDefault = _branchDefaults is null
+            ? null
+            : await _branchDefaults.GetAsync(orgId, branchId, cancellationToken).ConfigureAwait(false);
 
         var balancesByProduct = balances
             .GroupBy(b => b.ProductId.Value)
@@ -70,7 +76,8 @@ public sealed class BranchInventoryReadService
             var (reorderLevel, reorderQuantity) = ResolveReorderConfiguration(
                 context,
                 branchReorder,
-                account);
+                account,
+                branchDefault);
 
             var isLow = account.IsTracked
                 && reorderLevel is not null
@@ -110,11 +117,18 @@ public sealed class BranchInventoryReadService
     public static (decimal? ReorderLevel, decimal? ReorderQuantity) ResolveReorderConfiguration(
         BranchInventoryContext context,
         InventoryBranchReorderSetting? branchSetting,
-        InventoryAccount account)
+        InventoryAccount account,
+        InventoryBranchReorderDefault? branchDefault = null)
     {
         if (branchSetting is not null)
         {
             return (branchSetting.ReorderLevel, branchSetting.ReorderQuantity);
+        }
+
+        if (branchDefault is not null
+            && (branchDefault.ReorderLevel is not null || branchDefault.ReorderQuantity is not null))
+        {
+            return (branchDefault.ReorderLevel, branchDefault.ReorderQuantity);
         }
 
         var isPrimary = context.PrimaryBranchId is not null

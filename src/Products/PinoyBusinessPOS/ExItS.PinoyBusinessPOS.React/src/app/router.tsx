@@ -117,6 +117,7 @@ import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsP
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
+import { LowStockSettingsPage } from "@/features/inventory/LowStockSettingsPage";
 import { ProductionDefinitionDetailPage } from "@/features/inventory/ProductionDefinitionDetailPage";
 import { ProductionDefinitionFormPage } from "@/features/inventory/ProductionDefinitionFormPage";
 import { ProductionDefinitionListPage } from "@/features/inventory/ProductionDefinitionListPage";
@@ -706,6 +707,7 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <InventoryListPage /> },
+              { path: "low-stock-settings", element: <LowStockSettingsPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
               { path: "stock-counts", element: <StockCountListPage /> },
               { path: "stock-counts/new", element: <StockCountCreatePage /> },

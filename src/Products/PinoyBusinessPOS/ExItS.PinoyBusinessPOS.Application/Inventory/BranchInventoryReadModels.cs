@@ -25,7 +25,12 @@ public sealed record BranchInventoryListFilter(
     bool? TrackedOnly = null,
     bool? LowStockOnly = null,
     bool? ReorderSuggestedOnly = null,
-    string? ProductStatus = null);
+    string? ProductStatus = null,
+    /// <summary>All | InStock | LowStock | OutOfStock</summary>
+    string? StockStatus = null,
+    /// <summary>All | BranchDefault | Custom | NotMonitored</summary>
+    string? MonitoringMode = null,
+    Guid? CategoryId = null);
 
 /// <summary>Stock filter for replenishment catalog: <c>all</c>, <c>low</c>, or <c>out</c>.</summary>
 public static class ReplenishmentStockFilters
@@ -95,4 +100,9 @@ public sealed record BranchInventoryListRow(
     DateTimeOffset UpdatedAtUtc,
     bool TracksExpiration,
     int? ExpirationWarningDays,
-    bool HasOpeningStock);
+    bool HasOpeningStock,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? CategoryId = null,
+    string? CategoryName = null,
+    string MonitoringMode = "BranchDefault");

@@ -111,6 +111,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<WasteLossNumberSequenceRecord> WasteLossNumberSequences => Set<WasteLossNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryBranchReorderSettingRecord> InventoryBranchReorderSettings => Set<InventoryBranchReorderSettingRecord>();
+    internal DbSet<InventoryBranchReorderDefaultRecord> InventoryBranchReorderDefaults => Set<InventoryBranchReorderDefaultRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
@@ -3525,6 +3526,25 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_branch_reorder_settings_products");
+        });
+
+        modelBuilder.Entity<InventoryBranchReorderDefaultRecord>(entity =>
+        {
+            entity.ToTable("inventory_branch_reorder_defaults");
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId })
+                .HasName("pk_inventory_branch_reorder_defaults");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ReorderLevel)
+                .HasColumnName("reorder_level")
+                .HasPrecision(18, 3);
+            entity.Property(e => e.ReorderQuantity)
+                .HasColumnName("reorder_quantity")
+                .HasPrecision(18, 3);
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.Xmin).HasColumnName("xmin").IsRowVersion();
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

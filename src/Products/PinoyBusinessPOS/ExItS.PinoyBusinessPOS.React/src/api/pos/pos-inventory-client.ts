@@ -17,8 +17,11 @@ export type PosInventoryAccountDto = {
   onHandQuantity: number;
   organizationOnHandQuantity?: number | null;
   reorderLevel?: number | null;
+  reorderQuantity?: number | null;
   stockStatus: string;
   isLowStock: boolean;
+  isReorderSuggested?: boolean;
+  suggestedOrderQuantity?: number | null;
   createdAtUtc: string;
   updatedAtUtc: string;
   tracksExpiration?: boolean;
@@ -27,6 +30,51 @@ export type PosInventoryAccountDto = {
   expiredQuantity?: number | null;
   nearExpiryQuantity?: number | null;
   hasOpeningStock?: boolean;
+  sku?: string | null;
+  barcode?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  monitoringMode?: "BranchDefault" | "Custom" | "NotMonitored" | string;
+};
+
+export type PosInventoryBranchReorderDefaultDto = {
+  organizationId: string;
+  branchId: string;
+  reorderLevel?: number | null;
+  reorderQuantity?: number | null;
+  updatedAtUtc?: string | null;
+  updatedBy?: string | null;
+};
+
+export type BulkSetInventoryReorderMode = "Custom" | "NotMonitored" | "BranchDefault";
+
+export type BulkSetInventoryReorderRequest = {
+  mode: BulkSetInventoryReorderMode;
+  productIds?: string[];
+  applyToFiltered?: boolean;
+  reorderLevel?: number | null;
+  reorderQuantity?: number | null;
+  reason?: string;
+  search?: string;
+  stockStatus?: string;
+  monitoringMode?: string;
+  categoryId?: string;
+};
+
+export type BulkSetInventoryReorderResultItem = {
+  productId: string;
+  succeeded: boolean;
+  outcome: string;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+};
+
+export type BulkSetInventoryReorderResponse = {
+  requestedCount: number;
+  succeededCount: number;
+  skippedCount: number;
+  failedCount: number;
+  results: BulkSetInventoryReorderResultItem[];
 };
 
 export type PosStockMovementDto = {
@@ -207,6 +255,9 @@ export function listInventory(
     tracked?: boolean;
     /** When true, server returns only low-stock tracked accounts. */
     lowStock?: boolean;
+    stockStatus?: string;
+    monitoringMode?: string;
+    categoryId?: string;
   } = {},
   signal?: AbortSignal,
 ): Promise<PosInventoryPagedResult> {
@@ -220,6 +271,9 @@ export function listInventory(
       pageSize: options.pageSize ?? 50,
       tracked: options.tracked,
       lowStock: options.lowStock,
+      stockStatus: options.stockStatus,
+      monitoringMode: options.monitoringMode,
+      categoryId: options.categoryId,
     }),
   });
 }
@@ -454,5 +508,73 @@ export function listExpiringLots(
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 50,
     }),
+  });
+}
+
+export function getInventoryReorderDefault(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosInventoryBranchReorderDefaultDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/reorder-default`,
+  });
+}
+
+export function setInventoryReorderDefault(
+  workspace: PosWorkspaceScope,
+  body: { reorderLevel?: number | null; reorderQuantity?: number | null },
+  signal?: AbortSignal,
+): Promise<PosInventoryBranchReorderDefaultDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/reorder-default`,
+    body,
+  });
+}
+
+export function setInventoryReorder(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  body: { reorderLevel?: number | null; reorderQuantity?: number | null; reason: string },
+  signal?: AbortSignal,
+): Promise<PosInventoryAccountDto> {
+  return posRequest({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/reorder`,
+    body,
+  });
+}
+
+export function clearInventoryReorderOverride(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosInventoryAccountDto> {
+  return posRequest({
+    method: "DELETE",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/reorder`,
+  });
+}
+
+export function bulkSetInventoryReorder(
+  workspace: PosWorkspaceScope,
+  body: BulkSetInventoryReorderRequest,
+  signal?: AbortSignal,
+): Promise<BulkSetInventoryReorderResponse> {
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/reorder/bulk`,
+    body,
   });
 }

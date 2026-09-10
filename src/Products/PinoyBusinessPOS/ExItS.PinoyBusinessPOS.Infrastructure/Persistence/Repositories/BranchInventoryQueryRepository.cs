@@ -21,115 +21,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         int take,
         CancellationToken cancellationToken = default)
     {
-        var orgId = context.OrganizationId;
-        var branchId = context.BranchId;
-        var primaryBranchId = context.PrimaryBranchId;
-        var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
+        var (query, total) = await BuildFilteredListQueryAsync(context, filter, cancellationToken)
+            .ConfigureAwait(false);
 
-        var products = _db.CatalogProducts.AsNoTracking()
-            .Where(p => p.OrganizationId == orgId);
-
-        if (!context.OrganizationGovernance)
-        {
-            products = products.Where(p => p.Scope != localScope || p.OriginBranchId == branchId);
-        }
-
-        if (!string.IsNullOrWhiteSpace(filter.ProductStatus)
-            && Enum.TryParse<CatalogProductStatus>(filter.ProductStatus.Trim(), ignoreCase: true, out var status))
-        {
-            var statusName = status.ToString();
-            products = products.Where(p => p.Status == statusName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(filter.Search))
-        {
-            var term = filter.Search.Trim().ToLowerInvariant();
-            products = products.Where(p =>
-                p.Name.ToLower().Contains(term)
-                || (p.Sku != null && p.Sku.ToLower().Contains(term))
-                || (p.Barcode != null && p.Barcode.Contains(term)));
-        }
-
-        var explicitBalances = _db.InventoryBranchBalances.AsNoTracking()
-            .Where(b => b.OrganizationId == orgId && b.BranchId == branchId);
-
-        var branchReorder = _db.InventoryBranchReorderSettings.AsNoTracking()
-            .Where(r => r.OrganizationId == orgId && r.BranchId == branchId);
-
-        var query =
-            from p in products
-            join a in _db.InventoryAccounts.AsNoTracking()
-                on new { p.OrganizationId, ProductId = p.Id }
-                equals new { a.OrganizationId, a.ProductId }
-                into accountJoin
-            from a in accountJoin.DefaultIfEmpty()
-            join explicitBal in explicitBalances on p.Id equals explicitBal.ProductId into explicitJoin
-            from explicitBal in explicitJoin.DefaultIfEmpty()
-            join reorder in branchReorder on p.Id equals reorder.ProductId into reorderJoin
-            from reorder in reorderJoin.DefaultIfEmpty()
-            let orgOnHand = a != null ? a.OnHandQuantity : 0m
-            let otherSum = _db.InventoryBranchBalances
-                .Where(b => b.OrganizationId == orgId && b.BranchId != branchId && b.ProductId == p.Id)
-                .Select(b => (decimal?)b.OnHandQuantity)
-                .Sum() ?? 0m
-            let unallocated = orgOnHand - otherSum < 0m ? 0m : orgOnHand - otherSum
-            let branchOnHand = explicitBal != null
-                ? explicitBal.OnHandQuantity
-                : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
-            let reorderLevel = reorder != null
-                ? reorder.ReorderLevel
-                : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderLevel : null)
-            let reorderQuantity = reorder != null
-                ? reorder.ReorderQuantity
-                : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderQuantity : null)
-            let isTracked = a != null && a.IsTracked
-            select new
-            {
-                ProductId = p.Id,
-                OrganizationId = p.OrganizationId,
-                Name = p.Name,
-                UnitOfMeasure = p.UnitOfMeasure,
-                ProductStatus = p.Status,
-                TracksExpiration = p.TracksExpiration,
-                ExpirationWarningDays = p.ExpirationWarningDays,
-                IsTracked = isTracked,
-                BranchOnHand = branchOnHand,
-                OrgOnHand = orgOnHand,
-                ReorderLevel = reorderLevel,
-                ReorderQuantity = reorderQuantity,
-                CreatedAtUtc = a != null ? a.CreatedAtUtc : p.CreatedAtUtc,
-                UpdatedAtUtc = a != null ? a.UpdatedAtUtc : p.UpdatedAtUtc,
-            };
-
-        if (filter.TrackedOnly == true)
-        {
-            query = query.Where(x => x.IsTracked);
-        }
-        else if (filter.TrackedOnly == false)
-        {
-            query = query.Where(x => !x.IsTracked);
-        }
-
-        if (filter.LowStockOnly == true)
-        {
-            query = query.Where(x =>
-                x.IsTracked
-                && x.ReorderLevel != null
-                && x.BranchOnHand > 0m
-                && x.BranchOnHand <= x.ReorderLevel);
-        }
-
-        if (filter.ReorderSuggestedOnly == true)
-        {
-            query = query.Where(x =>
-                x.IsTracked
-                && x.ReorderLevel != null
-                && x.ReorderQuantity != null
-                && x.ReorderQuantity > 0m
-                && x.BranchOnHand <= x.ReorderLevel);
-        }
-
-        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var rows = await query
             .OrderBy(x => x.Name)
             .ThenBy(x => x.ProductId)
@@ -144,12 +38,13 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         }
 
         var productIds = rows.Select(r => CatalogProductId.From(r.ProductId)).ToList();
-        var summaries = await LoadMovementSummariesAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+        var summaries = await LoadMovementSummariesAsync(context.OrganizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
         var openingFlags = await LoadOpeningFlagsAsync(
-                orgId,
+                context.OrganizationId,
                 productIds,
-                branchId,
-                primaryBranchId,
+                context.BranchId,
+                context.PrimaryBranchId,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -190,11 +85,239 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.UpdatedAtUtc,
                 row.TracksExpiration,
                 row.ExpirationWarningDays,
-                hasOpening);
+                hasOpening,
+                row.Sku,
+                row.Barcode,
+                row.CategoryId,
+                row.CategoryName,
+                row.MonitoringMode);
         }).ToList();
 
         return (items, total);
     }
+
+    public async Task<(IReadOnlyList<Guid> ProductIds, int TotalCount)> ListProductIdsAsync(
+        BranchInventoryContext context,
+        BranchInventoryListFilter filter,
+        int maxTake,
+        CancellationToken cancellationToken = default)
+    {
+        var (query, total) = await BuildFilteredListQueryAsync(context, filter, cancellationToken)
+            .ConfigureAwait(false);
+        var ids = await query
+            .OrderBy(x => x.Name)
+            .ThenBy(x => x.ProductId)
+            .Select(x => x.ProductId)
+            .Take(maxTake)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return (ids, total);
+    }
+
+    private async Task<(IQueryable<BranchInventoryListQueryRow> Query, int TotalCount)> BuildFilteredListQueryAsync(
+        BranchInventoryContext context,
+        BranchInventoryListFilter filter,
+        CancellationToken cancellationToken)
+    {
+        var orgId = context.OrganizationId;
+        var branchId = context.BranchId;
+        var primaryBranchId = context.PrimaryBranchId;
+        var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
+
+        var branchDefault = await _db.InventoryBranchReorderDefaults.AsNoTracking()
+            .FirstOrDefaultAsync(
+                d => d.OrganizationId == orgId && d.BranchId == branchId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var defaultLevel = branchDefault?.ReorderLevel;
+        var defaultQuantity = branchDefault?.ReorderQuantity;
+        var hasBranchDefault = defaultLevel is not null || defaultQuantity is not null;
+
+        var products = _db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == orgId);
+
+        if (!context.OrganizationGovernance)
+        {
+            products = products.Where(p => p.Scope != localScope || p.OriginBranchId == branchId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.ProductStatus)
+            && Enum.TryParse<CatalogProductStatus>(filter.ProductStatus.Trim(), ignoreCase: true, out var status))
+        {
+            var statusName = status.ToString();
+            products = products.Where(p => p.Status == statusName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim().ToLowerInvariant();
+            products = products.Where(p =>
+                p.Name.ToLower().Contains(term)
+                || (p.Sku != null && p.Sku.ToLower().Contains(term))
+                || (p.Barcode != null && p.Barcode.Contains(term)));
+        }
+
+        if (filter.CategoryId is Guid categoryId)
+        {
+            products = products.Where(p => p.CategoryId == categoryId);
+        }
+
+        var explicitBalances = _db.InventoryBranchBalances.AsNoTracking()
+            .Where(b => b.OrganizationId == orgId && b.BranchId == branchId);
+
+        var branchReorder = _db.InventoryBranchReorderSettings.AsNoTracking()
+            .Where(r => r.OrganizationId == orgId && r.BranchId == branchId);
+
+        var query =
+            from p in products
+            join a in _db.InventoryAccounts.AsNoTracking()
+                on new { p.OrganizationId, ProductId = p.Id }
+                equals new { a.OrganizationId, a.ProductId }
+                into accountJoin
+            from a in accountJoin.DefaultIfEmpty()
+            join explicitBal in explicitBalances on p.Id equals explicitBal.ProductId into explicitJoin
+            from explicitBal in explicitJoin.DefaultIfEmpty()
+            join reorder in branchReorder on p.Id equals reorder.ProductId into reorderJoin
+            from reorder in reorderJoin.DefaultIfEmpty()
+            join cat in _db.ProductCategories.AsNoTracking() on p.CategoryId equals cat.Id into catJoin
+            from cat in catJoin.DefaultIfEmpty()
+            let orgOnHand = a != null ? a.OnHandQuantity : 0m
+            let otherSum = _db.InventoryBranchBalances
+                .Where(b => b.OrganizationId == orgId && b.BranchId != branchId && b.ProductId == p.Id)
+                .Select(b => (decimal?)b.OnHandQuantity)
+                .Sum() ?? 0m
+            let unallocated = orgOnHand - otherSum < 0m ? 0m : orgOnHand - otherSum
+            let branchOnHand = explicitBal != null
+                ? explicitBal.OnHandQuantity
+                : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
+            let monitoringMode = reorder != null
+                ? (reorder.ReorderLevel == null
+                    ? InventoryReorderMonitoringModes.NotMonitored
+                    : InventoryReorderMonitoringModes.Custom)
+                : InventoryReorderMonitoringModes.BranchDefault
+            let reorderLevel = reorder != null
+                ? reorder.ReorderLevel
+                : (hasBranchDefault
+                    ? defaultLevel
+                    : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderLevel : null))
+            let reorderQuantity = reorder != null
+                ? reorder.ReorderQuantity
+                : (hasBranchDefault
+                    ? defaultQuantity
+                    : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderQuantity : null))
+            let isTracked = a != null && a.IsTracked
+            select new BranchInventoryListQueryRow(
+                p.Id,
+                p.OrganizationId,
+                p.Name,
+                p.UnitOfMeasure,
+                p.Status,
+                isTracked,
+                branchOnHand,
+                orgOnHand,
+                reorderLevel,
+                reorderQuantity,
+                a != null ? a.CreatedAtUtc : p.CreatedAtUtc,
+                a != null ? a.UpdatedAtUtc : p.UpdatedAtUtc,
+                p.TracksExpiration,
+                p.ExpirationWarningDays,
+                p.Sku,
+                p.Barcode,
+                p.CategoryId,
+                cat != null ? cat.Name : null,
+                monitoringMode);
+
+        if (filter.TrackedOnly == true)
+        {
+            query = query.Where(x => x.IsTracked);
+        }
+        else if (filter.TrackedOnly == false)
+        {
+            query = query.Where(x => !x.IsTracked);
+        }
+
+        if (filter.LowStockOnly == true)
+        {
+            query = query.Where(x =>
+                x.IsTracked
+                && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
+                && x.ReorderLevel != null
+                && x.BranchOnHand > 0m
+                && x.BranchOnHand <= x.ReorderLevel);
+        }
+
+        if (filter.ReorderSuggestedOnly == true)
+        {
+            query = query.Where(x =>
+                x.IsTracked
+                && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
+                && x.ReorderLevel != null
+                && x.ReorderQuantity != null
+                && x.ReorderQuantity > 0m
+                && x.BranchOnHand <= x.ReorderLevel);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.MonitoringMode)
+            && !string.Equals(filter.MonitoringMode, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            var mode = filter.MonitoringMode.Trim();
+            query = query.Where(x => x.MonitoringMode == mode);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.StockStatus)
+            && !string.Equals(filter.StockStatus, "All", StringComparison.OrdinalIgnoreCase))
+        {
+            var stockStatus = filter.StockStatus.Trim();
+            if (string.Equals(stockStatus, nameof(InventoryStockStatus.OutOfStock), StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(x =>
+                    x.IsTracked
+                    && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
+                    && x.BranchOnHand == 0m);
+            }
+            else if (string.Equals(stockStatus, nameof(InventoryStockStatus.LowStock), StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(x =>
+                    x.IsTracked
+                    && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
+                    && x.ReorderLevel != null
+                    && x.BranchOnHand > 0m
+                    && x.BranchOnHand <= x.ReorderLevel);
+            }
+            else if (string.Equals(stockStatus, nameof(InventoryStockStatus.InStock), StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(x =>
+                    x.IsTracked
+                    && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
+                    && x.BranchOnHand > 0m
+                    && (x.ReorderLevel == null || x.BranchOnHand > x.ReorderLevel));
+            }
+        }
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        return (query, total);
+    }
+
+    private sealed record BranchInventoryListQueryRow(
+        Guid ProductId,
+        Guid OrganizationId,
+        string Name,
+        string UnitOfMeasure,
+        string ProductStatus,
+        bool IsTracked,
+        decimal BranchOnHand,
+        decimal OrgOnHand,
+        decimal? ReorderLevel,
+        decimal? ReorderQuantity,
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset UpdatedAtUtc,
+        bool TracksExpiration,
+        int? ExpirationWarningDays,
+        string? Sku,
+        string? Barcode,
+        Guid? CategoryId,
+        string? CategoryName,
+        string MonitoringMode);
 
     private async Task<Dictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> LoadMovementSummariesAsync(
         Guid organizationId,

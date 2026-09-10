@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
 import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -69,6 +69,14 @@ export function InventoryListPage() {
 
   const inventoryToolbarItems = useMemo((): ExitsChipItem[] => {
     const items: ExitsChipItem[] = [
+      {
+        key: "low-stock-settings",
+        label: t("lowStockSettings.open"),
+        icon: <Settings2 />,
+        href: "/inventory/low-stock-settings",
+        testId: "open-low-stock-settings",
+        emphasis: "primary",
+      },
       {
         key: "expiring",
         label: t("inventory.openExpiring"),

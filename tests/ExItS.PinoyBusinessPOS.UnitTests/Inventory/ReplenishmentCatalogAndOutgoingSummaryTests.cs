@@ -271,6 +271,13 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<(IReadOnlyList<Guid> ProductIds, int TotalCount)> ListProductIdsAsync(
+            BranchInventoryContext context,
+            BranchInventoryListFilter filter,
+            int maxTake,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(
             BranchInventoryContext retailContext,
             ReplenishmentCatalogFilter filter,
