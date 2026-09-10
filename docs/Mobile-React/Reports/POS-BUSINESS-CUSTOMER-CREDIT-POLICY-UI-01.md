@@ -7,7 +7,7 @@ POS-BUSINESS-CUSTOMER-CREDIT-POLICY-UI-01 — Business Customer Credit & Payment
 `6c28ffd74f7b98a67bce0481bc8b2b747c119960`
 
 ## FINAL_SHA
-_(recorded after commit)_
+`1a5873054aebcbc74d757c90f7ac1067f05066ab`
 
 ## BRANCH
 `feat/organization`
