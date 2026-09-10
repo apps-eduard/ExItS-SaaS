@@ -179,7 +179,7 @@ export function ConnectedSharedProductsPage() {
     setMessage(null);
     try {
       const input = {
-        mode: (percentMode === "discount" ? "DiscountPercent" : "MarkupPercent") as const,
+        mode: percentMode === "discount" ? ("DiscountPercent" as const) : ("MarkupPercent" as const),
         productIds: [...selected],
         percent,
       };

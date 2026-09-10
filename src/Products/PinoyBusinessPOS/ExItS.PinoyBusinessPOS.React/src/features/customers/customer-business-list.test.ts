@@ -36,6 +36,7 @@ function connection(
     organizationPublicId: "ORG000001",
     relationshipStatus: "Active",
     catalogSharingMode: "SelectedOnly",
+    initiatedByParty: "Supplier",
     customerDiscountPercent: null,
     eligibleCount: 0,
     sharedCount: 0,

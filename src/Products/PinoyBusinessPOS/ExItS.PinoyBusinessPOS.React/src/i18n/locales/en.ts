@@ -4138,6 +4138,7 @@ export const en = {
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
   "customers.orgSendConnectionRequest": "Send connection request",
+  "customers.orgInviteCatalogDefaultsNote": "After this business accepts, your eligible products will be shared using your standard selling prices. You can change product sharing and pricing afterward.",
   "customers.orgInviteSent": "Connection request sent. Waiting for the business to accept.",
   "customers.orgInviteAlreadyPending": "A connection request is already pending for this business.",
   "customers.orgPendingBuyerRequest":
@@ -4177,7 +4178,7 @@ export const en = {
   "customers.business.customerPricing": "Customer pricing",
   "customers.business.discountOff": "{percent}% off selling price",
   "customers.business.discountShort": "{percent}% off",
-  "customers.business.noDiscount": "No customer discount",
+  "customers.business.noDiscount": "Standard pricing",
   "customers.business.sharedCount": "{count} products shared",
   "customers.business.sharedCountShort": "{count} shared",
   "customers.business.manageCatalog": "Manage catalog & pricing",

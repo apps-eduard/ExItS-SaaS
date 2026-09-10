@@ -98,6 +98,7 @@ function businessCustomer(
     organizationPublicId: "ORGKIZY01",
     relationshipStatus: "Active",
     catalogSharingMode: "SelectedOnly",
+    initiatedByParty: "Supplier",
     customerDiscountPercent: 5,
     eligibleCount: 10,
     sharedCount: 4,
@@ -158,6 +159,11 @@ describe("Business Customer identity display", () => {
     expect(screen.getByTestId("page-header-back-customers")).toHaveAttribute(
       "href",
       "/customers?kind=businesses",
+    );
+    const manageCatalog = screen.getByTestId("business-customer-manage-catalog");
+    expect(manageCatalog).toHaveAttribute(
+      "href",
+      `/suppliers/connected/buyers/${connectionId}/shared-products`,
     );
   });
 

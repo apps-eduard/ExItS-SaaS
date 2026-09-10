@@ -2314,7 +2314,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "customers.business.discountOff": "{percent}% off selling price",
 
-  "customers.business.noDiscount": "No customer discount",
+  "customers.business.noDiscount": "Standard pricing",
 
   "customers.business.sharedCount": "{count} products shared",
 
@@ -11603,6 +11603,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.pendingNeedsApprovalToast":
     "Connection needs approval. This business connection must be accepted by an Owner or Manager before it can be used for a B2B direct sale.",
   "customers.orgSendConnectionRequest": "Send connection request",
+  "customers.orgInviteCatalogDefaultsNote": "After this business accepts, your eligible products will be shared using your standard selling prices. You can change product sharing and pricing afterward.",
   "customers.orgInviteSent": "Connection request sent. Waiting for the business to accept.",
   "customers.orgInviteAlreadyPending": "A connection request is already pending for this business.",
   "customers.orgPendingBuyerRequest":

@@ -301,6 +301,14 @@ export function CustomerBusinessOrgConnectPage() {
             )}
             {actionLabel}
           </Button>
+          {!resolved.existingConnectionId && !resolved.existingCustomerId ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="customer-org-invite-catalog-note"
+            >
+              {t("customers.orgInviteCatalogDefaultsNote")}
+            </p>
+          ) : null}
         </section>
       ) : null}
     </div>

@@ -180,6 +180,8 @@ public sealed class BusinessConnectionConsentLifecycleTests
             new RespondConnectionRequest());
         Assert.True(result.IsSuccess);
         Assert.Equal(ConnectedSupplierRelationshipStatus.Active, (await repo.GetAsync(invite.Id))!.Status);
+        Assert.Equal(CatalogSharingMode.AllEligible, (await repo.GetAsync(invite.Id))!.CatalogSharingMode);
+        Assert.Null((await repo.GetAsync(invite.Id))!.CustomerDiscountPercent);
         Assert.Single(suppliers.Items);
         Assert.Equal(invite.Id, suppliers.Items[0].ConnectedRelationshipId);
 

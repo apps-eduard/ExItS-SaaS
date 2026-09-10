@@ -833,7 +833,24 @@ public sealed class RespondConnection
                 }
                 else
                 {
+                    // Seller-initiated: buyer consent only — apply supplier AllEligible defaults
+                    // (no discount) and bootstrap exposures from DefaultConnectedPoPrice / SellingPrice.
                     r.Approve(utcNow, request.RespondedByUserId);
+                    r.ConfigureCatalogSharing(
+                        CatalogSharingMode.AllEligible,
+                        customerDiscountPercent: null,
+                        utcNow);
+                    if (_products is not null && _exposures is not null)
+                    {
+                        await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                                r.SupplierOrganizationId,
+                                _products,
+                                _exposures,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+                    }
+
                     if (_suppliers is not null)
                     {
                         await BuyerConnectedSupplierMaster
