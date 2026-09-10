@@ -319,6 +319,12 @@ export const checkoutCustomerSearchItemSchema = z.object({
   buyerPublicOrganizationId: z.string().nullable().optional(),
   partyKind: z.string().nullable().optional(),
   initiatedByParty: z.string().nullable().optional(),
+  /** Person rows only — NotConfigured | PendingApproval | Approved | Disabled */
+  creditStatus: z.string().nullable().optional(),
+  creditLimit: z.number().nullable().optional(),
+  outstandingAmount: z.number().nullable().optional(),
+  availableCredit: z.number().nullable().optional(),
+  defaultTermDays: z.number().int().nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({
@@ -334,9 +340,10 @@ export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearch
 /**
  * Narrow checkout counterparty search (people + Active/Pending B2B businesses).
  * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory / ViewSuppliers.
- * Search term must be non-blank for kind=All; kind=Business and kind=Customer allow idle browse
- * (pageSize capped at 20 server-side).
+ * Blank search is valid for All / Customer / Business (first page of Active, checkout-visible rows).
+ * pageSize capped at 20 server-side. Shared by Cash, GCash, and Utang.
  * Pending businesses are visible but not selectable for CreateSale (server also guards Active-only).
+ * Person rows may include credit projection for Utang eligibility overlay (not a hide filter).
  */
 export async function searchCheckoutCustomers(
   workspace: PosWorkspaceScope,
@@ -350,10 +357,6 @@ export async function searchCheckoutCustomers(
 ): Promise<CheckoutCustomerSearchResult> {
   const search = options.search?.trim() ?? "";
   const kind = options.kind ?? "All";
-  // Idle browse: Business (Cash/GCash) and Customer (Utang people). Kind=All still needs a term.
-  if (!search && kind === "All") {
-    return { items: [], totalCount: 0, page: 1, pageSize: Math.min(options.pageSize ?? 20, 20) };
-  }
 
   const raw = await posRequest<unknown>({
     method: "GET",

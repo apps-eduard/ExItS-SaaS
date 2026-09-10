@@ -61,6 +61,7 @@ public sealed record PosCustomerPagedResult(
 /// Kind=Customer: POS people or POS Business party (attach via customerId).
 /// Kind=Business: Active B2B Organization counterparty (no POSCustomer; BuyerConnectionId).
 /// PartyKind is set for POS Business party Customer rows so the Businesses filter can show them.
+/// Credit* fields are populated only for Kind=Customer person rows (NotConfigured when no policy row).
 /// </summary>
 public sealed record CheckoutCustomerSearchItemDto(
     string Kind,
@@ -72,7 +73,12 @@ public sealed record CheckoutCustomerSearchItemDto(
     Guid? BuyerOrganizationId = null,
     string? BuyerPublicOrganizationId = null,
     string? PartyKind = null,
-    string? InitiatedByParty = null)
+    string? InitiatedByParty = null,
+    string? CreditStatus = null,
+    decimal? CreditLimit = null,
+    decimal? OutstandingAmount = null,
+    decimal? AvailableCredit = null,
+    int? DefaultTermDays = null)
 {
     public const string KindCustomer = "Customer";
     public const string KindBusiness = "Business";

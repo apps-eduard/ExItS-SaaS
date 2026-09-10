@@ -75,7 +75,7 @@ describe("credit-policy helpers", () => {
         policyError: false,
         thisSaleAmount: 100,
       }),
-    ).toBe("not_approved");
+    ).toBe("not_configured");
 
     expect(
       resolveUtangCreditPolicyBlock({
@@ -86,7 +86,7 @@ describe("credit-policy helpers", () => {
         policyError: false,
         thisSaleAmount: 100,
       }),
-    ).toBe("not_approved");
+    ).toBe("pending_approval");
 
     expect(
       resolveUtangCreditPolicyBlock({
@@ -97,7 +97,7 @@ describe("credit-policy helpers", () => {
         policyError: false,
         thisSaleAmount: 100,
       }),
-    ).toBe("not_approved");
+    ).toBe("disabled");
 
     expect(
       resolveUtangCreditPolicyBlock({
@@ -131,8 +131,14 @@ describe("credit-policy helpers", () => {
       }),
     ).toBeNull();
 
-    expect(creditPolicyCheckoutBlockMessageKey("not_approved")).toBe(
-      "checkout.creditPolicy.notApproved",
+    expect(creditPolicyCheckoutBlockMessageKey("pending_approval")).toBe(
+      "checkout.creditPolicy.pendingApproval",
+    );
+    expect(creditPolicyCheckoutBlockMessageKey("not_configured")).toBe(
+      "checkout.creditPolicy.notConfigured",
+    );
+    expect(creditPolicyCheckoutBlockMessageKey("disabled")).toBe(
+      "checkout.creditPolicy.disabled",
     );
     expect(creditPolicyCheckoutBlockMessageKey("over_limit")).toBe(
       "checkout.creditPolicy.overLimit",

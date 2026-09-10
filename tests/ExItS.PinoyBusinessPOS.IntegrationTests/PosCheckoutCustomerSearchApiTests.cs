@@ -41,12 +41,18 @@ public sealed class PosCheckoutCustomerSearchApiTests(PosPostgreSqlFixture fixtu
 
         using var blank = Scoped(
             HttpMethod.Get,
-            "/api/v1/pos/customers/checkout-search?search=%20",
+            "/api/v1/pos/customers/checkout-search?search=&kind=All&pageSize=20",
             org,
             PosSubscriptionStatuses.Active,
             CashierGrants);
         using var blankResponse = await client.SendAsync(blank);
-        Assert.Equal(HttpStatusCode.BadRequest, blankResponse.StatusCode);
+        blankResponse.EnsureSuccessStatusCode();
+        var blankPage = JsonSerializer.Deserialize<CheckoutCustomerSearchResult>(
+            await blankResponse.Content.ReadAsStringAsync(),
+            JsonOptions);
+        Assert.NotNull(blankPage);
+        Assert.Contains(blankPage!.Items, i => i.DisplayName == "Aling Rosa");
+        Assert.True(blankPage.PageSize <= 20);
 
         using var search = Scoped(
             HttpMethod.Get,
@@ -63,6 +69,7 @@ public sealed class PosCheckoutCustomerSearchApiTests(PosPostgreSqlFixture fixtu
         var hit = Assert.Single(page.Items);
         Assert.Equal("Aling Rosa", hit.DisplayName);
         Assert.Equal("Active", hit.Status);
+        Assert.Equal("NotConfigured", hit.CreditStatus);
         Assert.DoesNotContain("\"notes\"", raw, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"address\"", raw, StringComparison.OrdinalIgnoreCase);
 

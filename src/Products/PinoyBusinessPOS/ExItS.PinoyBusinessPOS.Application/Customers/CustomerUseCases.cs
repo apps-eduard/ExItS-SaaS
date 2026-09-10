@@ -1,9 +1,12 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 
@@ -38,17 +41,23 @@ public sealed class POSCustomerQueryService
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ICustomerCreditPolicyRepository _creditPolicies;
+    private readonly IOutstandingBalanceService _outstanding;
 
     public POSCustomerQueryService(
         IPOSCustomerRepository customers,
         PartyBranchAccessService branchAccess,
         IPartyBranchAccessActorAccessor actorAccessor,
-        IConnectedSupplierRelationshipRepository relationships)
+        IConnectedSupplierRelationshipRepository relationships,
+        ICustomerCreditPolicyRepository creditPolicies,
+        IOutstandingBalanceService outstanding)
     {
         _customers = customers;
         _branchAccess = branchAccess;
         _actorAccessor = actorAccessor;
         _relationships = relationships;
+        _creditPolicies = creditPolicies;
+        _outstanding = outstanding;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -190,8 +199,8 @@ public sealed class POSCustomerQueryService
     /// Narrow Active-only checkout counterparty search for CreateSale (pageSize capped at 20).
     /// Includes POS people and Active B2B Organization relationships (no ViewSuppliers required).
     /// <paramref name="kind"/>: All | Customer | Business (default All).
-    /// Blank search is allowed for Business (Cash/GCash) and Customer (Utang people idle browse).
-    /// Kind=All still requires a non-blank search term.
+    /// Blank search is allowed for All, Business (Cash/GCash), and Customer (Utang people idle browse)
+    /// so Active person/B2B discoverability does not diverge by payment method.
     /// </summary>
     public async Task<ApplicationResult<CheckoutCustomerSearchResult>> SearchForCheckoutAsync(
         Guid organizationId,
@@ -208,15 +217,6 @@ public sealed class POSCustomerQueryService
         var term = search?.Trim() ?? string.Empty;
         var hasTerm = term.Length > 0;
 
-        // Idle browse is allowed for Business (Cash/GCash) and Customer (Utang people).
-        // Kind=All still requires a search term so optional Cash counterparty stays intentional.
-        if (!hasTerm && normalizedKind is "All")
-        {
-            return ApplicationResult<CheckoutCustomerSearchResult>.Failure(
-                ApplicationErrorCodes.CheckoutCustomerSearchRequired,
-                "Checkout customer search requires a non-blank search term.");
-        }
-
         var includePeople = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindCustomer;
         var includeBusiness = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindBusiness;
 
@@ -224,7 +224,8 @@ public sealed class POSCustomerQueryService
         var peopleTotal = 0;
         var businessTotal = 0;
 
-        if (includePeople && (hasTerm || normalizedKind == CheckoutCustomerSearchItemDto.KindCustomer))
+        // Idle people browse for kind Customer and kind All (Cash/GCash idle All parity with Utang).
+        if (includePeople)
         {
             var restrict = await _branchAccess
                 .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
@@ -312,6 +313,11 @@ public sealed class POSCustomerQueryService
             .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
         var pageItems = ordered.Skip(skip).Take(take).ToList();
+        pageItems = await ProjectCheckoutCreditAsync(
+                PosOrganizationId.From(organizationId),
+                pageItems,
+                cancellationToken)
+            .ConfigureAwait(false);
         var totalCount = includePeople && includeBusiness
             ? peopleTotal + businessTotal
             : includePeople
@@ -321,6 +327,71 @@ public sealed class POSCustomerQueryService
         return ApplicationResult<CheckoutCustomerSearchResult>.Success(
             new CheckoutCustomerSearchResult(pageItems, totalCount, pageNumber, take));
     }
+
+    private async Task<List<CheckoutCustomerSearchItemDto>> ProjectCheckoutCreditAsync(
+        PosOrganizationId organizationId,
+        List<CheckoutCustomerSearchItemDto> pageItems,
+        CancellationToken cancellationToken)
+    {
+        // Person rows only: Kind=Customer without Business PartyKind.
+        var personCustomerIds = pageItems
+            .Where(IsCheckoutPersonCustomerRow)
+            .Select(i => i.CustomerId!.Value)
+            .Distinct()
+            .ToList();
+        if (personCustomerIds.Count == 0)
+        {
+            return pageItems;
+        }
+
+        var policies = await _creditPolicies
+            .ListByCustomerIdsAsync(organizationId, personCustomerIds, cancellationToken)
+            .ConfigureAwait(false);
+        var policyByCustomer = policies.ToDictionary(p => p.CustomerId.Value);
+        var outstandingByCustomer = await _outstanding
+            .GetOutstandingBatchAsync(organizationId, personCustomerIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        return pageItems.Select(item =>
+        {
+            if (!IsCheckoutPersonCustomerRow(item))
+            {
+                return item;
+            }
+
+            var customerId = item.CustomerId!.Value;
+            outstandingByCustomer.TryGetValue(customerId, out var outstanding);
+            if (!policyByCustomer.TryGetValue(customerId, out var policy))
+            {
+                return item with
+                {
+                    CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
+                    CreditLimit = null,
+                    OutstandingAmount = outstanding,
+                    AvailableCredit = 0m,
+                    DefaultTermDays = null
+                };
+            }
+
+            return item with
+            {
+                CreditStatus = policy.Status.ToString(),
+                CreditLimit = policy.CreditLimit,
+                OutstandingAmount = outstanding,
+                AvailableCredit = CustomerCreditPolicy.AvailableCredit(
+                    policy.Status,
+                    policy.CreditLimit,
+                    outstanding),
+                DefaultTermDays = policy.DefaultTermDays
+            };
+        }).ToList();
+    }
+
+    private static bool IsCheckoutPersonCustomerRow(CheckoutCustomerSearchItemDto item) =>
+        item.Kind == CheckoutCustomerSearchItemDto.KindCustomer
+        && item.CustomerId is not null
+        && (item.PartyKind is null
+            || item.PartyKind.Equals(nameof(CustomerPartyKind.Person), StringComparison.OrdinalIgnoreCase));
 
     private static string NormalizeCheckoutSearchKind(string? kind)
     {

@@ -27,6 +27,24 @@ internal sealed class CustomerCreditPolicyRepository : ICustomerCreditPolicyRepo
         return record is null ? null : CustomerCreditPolicyEntityMapper.ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<CustomerCreditPolicy>> ListByCustomerIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> customerIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = customerIds as IList<Guid> ?? customerIds.ToList();
+        var records = await _db.CustomerCreditPolicies.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value && ids.Contains(p.CustomerId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(CustomerCreditPolicyEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default)
     {
         _db.CustomerCreditPolicies.Add(CustomerCreditPolicyEntityMapper.ToRecord(policy));

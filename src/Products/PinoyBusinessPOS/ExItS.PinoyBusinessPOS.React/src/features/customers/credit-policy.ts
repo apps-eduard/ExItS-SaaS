@@ -5,6 +5,9 @@ import type { MessageKey } from "@/i18n/messages";
 export const CREDIT_TERM_PRESETS = [7, 15, 30, 60, 90] as const;
 
 export type CreditPolicyCheckoutBlockReason =
+  | "pending_approval"
+  | "not_configured"
+  | "disabled"
   | "not_approved"
   | "over_limit"
   | "loading"
@@ -83,8 +86,15 @@ export function resolveUtangCreditPolicyBlock(args: {
   if (args.policyError || !args.policy) {
     return "error";
   }
-  if (!isCreditPolicyApproved(args.policy)) {
-    return "not_approved";
+  const status = (args.policy.status ?? "").trim();
+  if (status === "PendingApproval") {
+    return "pending_approval";
+  }
+  if (status === "Disabled") {
+    return "disabled";
+  }
+  if (status === "NotConfigured" || status !== "Approved") {
+    return status === "NotConfigured" ? "not_configured" : "not_approved";
   }
   const available = args.policy.availableCredit ?? 0;
   if (args.thisSaleAmount > available + 1e-9) {
@@ -97,6 +107,12 @@ export function creditPolicyCheckoutBlockMessageKey(
   reason: CreditPolicyCheckoutBlockReason,
 ): MessageKey | null {
   switch (reason) {
+    case "pending_approval":
+      return "checkout.creditPolicy.pendingApproval";
+    case "not_configured":
+      return "checkout.creditPolicy.notConfigured";
+    case "disabled":
+      return "checkout.creditPolicy.disabled";
     case "not_approved":
       return "checkout.creditPolicy.notApproved";
     case "over_limit":

@@ -168,6 +168,7 @@ describe("CheckoutPersonalCustomerPicker", () => {
 
     await waitFor(() => {
       expect(onCustomerSelected).toHaveBeenCalledWith({
+        kind: "Customer",
         customerId,
         displayName: "Rosa Santos",
         mobileNumber: "09171234567",

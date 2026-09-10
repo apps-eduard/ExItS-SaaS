@@ -156,6 +156,71 @@ describe("CheckoutCustomerDirectory", () => {
     expect(screen.getByTestId("customer-list-badge-pending")).toHaveTextContent("Pending");
     expect(screen.queryByTestId("customer-list-badge-connected")).not.toBeInTheDocument();
   });
+
+  it("shows Utang credit overlay without hiding ineligible people", () => {
+    const pending: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      displayName: "Maria Santos",
+      status: "Active",
+      creditStatus: "PendingApproval",
+    };
+    const approved: CheckoutCustomerOption = {
+      ...named,
+      creditStatus: "Approved",
+      availableCredit: 12500,
+    };
+
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[approved, pending]}
+          customersLoading={false}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+          includeWalkInsWhenIdle
+          showCreditStatus
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId(`checkout-customer-${approved.customerId}`)).toHaveTextContent(
+      "Approved",
+    );
+    expect(screen.getByTestId(`checkout-customer-${pending.customerId}`)).toHaveTextContent(
+      "Pending approval",
+    );
+    expect(screen.getAllByTestId("checkout-customer-credit-line")).toHaveLength(2);
+  });
+
+  it("shows load error instead of empty when the directory request failed", () => {
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[]}
+          customersLoading={false}
+          customersError
+          onRetryLoad={vi.fn()}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("checkout-customer-load-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("checkout-customer-empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("checkout-customer-retry")).toBeInTheDocument();
+  });
 });
 
 describe("CheckoutCustomerSelectedCard", () => {

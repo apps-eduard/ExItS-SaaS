@@ -5,11 +5,9 @@ import {
   canCreateSale,
   canMutateDueDate,
   canOverrideSalePrice,
-  canViewCustomers,
 } from "@/access/pos-capabilities";
-import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
+import { searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
 import { getCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client";
-import { isPersonPosCustomer } from "@/features/customers/customer-business-list";
 import {
   computeCreditPolicyDueDate,
   creditPolicyCheckoutBlockMessageKey,
@@ -57,7 +55,6 @@ import {
 } from "@/features/checkout/CheckoutCustomerDirectory";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import { checkoutCustomerTitle } from "@/features/customers/format-pos-customer-label";
-import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 import {
   CHECKOUT_PAYMENT_ICONS,
@@ -148,6 +145,8 @@ export function CheckoutCashPage() {
   const [customerKindFilter, setCustomerKindFilter] = useState<KindFilter>("all");
   const [customers, setCustomers] = useState<CheckoutCustomerOption[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [customersError, setCustomersError] = useState(false);
+  const [customersReloadToken, setCustomersReloadToken] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
   const [customerPanelOpen, setCustomerPanelOpen] = useState(false);
   const [dueDate, setDueDate] = useState("");
@@ -185,11 +184,10 @@ export function CheckoutCashPage() {
   const allowSale = canCreateSale(sessionGrant);
   const allowDiscount = canApplyCommercialDiscount(sessionGrant);
   const allowOverride = canOverrideSalePrice(sessionGrant);
-  const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
   const allowCreateCustomer = canCreateCustomer(sessionGrant);
   const allowMutateDueDate = canMutateDueDate(sessionGrant);
-  /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
+  /** Cashier checkout uses CreateSale + checkout-search — not ViewCustomersAndHistory. */
   const allowCheckoutCustomerSearch = allowSale;
   const moneyReady = sellReadiness.moneyPostReady === true;
   const deviceReady = sellReadiness.deviceReady;
@@ -486,7 +484,7 @@ export function CheckoutCashPage() {
       return;
     }
     const isUtang = paymentChoice === "Utang";
-    // Cash/GCash optional counterparty: CreateSale (cashier checkout-search) — not ViewCustomers.
+    // Cash/GCash/Utang share one checkout-safe directory (CreateSale → checkout-search).
     const isOptionalCashCustomer =
       (paymentChoice === "Cash" || paymentChoice === "GCash") && allowCheckoutCustomerSearch;
     if (!isUtang && !isOptionalCashCustomer) {
@@ -502,36 +500,11 @@ export function CheckoutCashPage() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       const trimmed = customerSearch.trim();
-      // Utang is people-only (no B2B). Cash/GCash keep All/People/Businesses tabs.
-      const kindFilter: KindFilter = isUtang ? "people" : customerKindFilter;
-      const wantBusinessDirectory =
-        kindFilter === "businesses" || (kindFilter === "all" && !trimmed);
-      // People idle browse uses checkout-search kind=Customer (CreateSale). Business idle uses kind=Business.
-      // Kind=All idle still skips people (optional Cash counterparty shows B2B first).
+      // Same All/People/Businesses filter for every payment method — payment changes eligibility, not discoverability.
+      const kindFilter: KindFilter = customerKindFilter;
 
       setCustomersLoading(true);
-
-      const mapPeopleFromList = (page: Awaited<ReturnType<typeof listCustomers>>) =>
-        page.items
-          .filter(isPersonPosCustomer)
-          .map((c) =>
-            mapCheckoutSearchItemToOption({
-              kind: "Customer",
-              customerId: c.customerId,
-              displayName: c.displayName,
-              mobileNumber: c.mobileNumber,
-              status: c.status,
-              linkedPersonalPublicUserId: resolveDisplayedPersonalExItsId({
-                linkedPersonalPublicUserId: c.linkedPersonalPublicUserId,
-                notes: c.notes,
-              }),
-              platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
-              buyerOrganizationId: c.linkedBuyerOrganizationId ?? null,
-              buyerPublicOrganizationId: c.linkedBuyerPublicOrganizationId ?? null,
-              partyKind: c.partyKind ?? null,
-            }),
-          )
-          .filter((x): x is CheckoutCustomerOption => x != null);
+      setCustomersError(false);
 
       const loadSearch = (kind: "All" | "Customer" | "Business") =>
         searchCheckoutCustomers(
@@ -548,47 +521,26 @@ export function CheckoutCashPage() {
             .filter((x): x is CheckoutCustomerOption => x != null),
         );
 
-      let load: Promise<CheckoutCustomerOption[]>;
-      if (isUtang) {
-        // Always CreateSale checkout-search people browse — same capability as Cashier Utang.
-        // Do not use listCustomers here: first page can be filled with business-party rows.
-        load = loadSearch("Customer");
-      } else if (allowViewCustomers && kindFilter !== "businesses") {
-        const peoplePromise =
-          kindFilter === "people" || trimmed || !wantBusinessDirectory
-            ? listCustomers(
-                workspaceScope,
-                { status: "Active", search: trimmed || undefined, pageSize: 20 },
-                controller.signal,
-              ).then(mapPeopleFromList)
-            : Promise.resolve([] as CheckoutCustomerOption[]);
-        const businessPromise =
-          kindFilter === "all"
-            ? loadSearch("Business")
-            : Promise.resolve([] as CheckoutCustomerOption[]);
-        load = Promise.all([peoplePromise, businessPromise]).then(([people, businesses]) => [
-          ...people,
-          ...businesses,
-        ]);
-      } else if (kindFilter === "businesses") {
-        load = loadSearch("Business");
-      } else if (kindFilter === "people") {
-        load = loadSearch("Customer");
-      } else {
-        load = trimmed ? loadSearch("All") : loadSearch("Business");
-      }
+      const load =
+        kindFilter === "businesses"
+          ? loadSearch("Business")
+          : kindFilter === "people"
+            ? loadSearch("Customer")
+            : loadSearch("All");
 
       void load
         .then((items) => {
           if (!controller.signal.aborted) {
             setCustomers(items);
             setCustomersLoading(false);
+            setCustomersError(false);
           }
         })
         .catch(() => {
           if (!controller.signal.aborted) {
             setCustomers([]);
             setCustomersLoading(false);
+            setCustomersError(true);
           }
         });
     }, 250);
@@ -600,9 +552,9 @@ export function CheckoutCashPage() {
   }, [
     allowCheckoutCustomerSearch,
     allowCreateCredit,
-    allowViewCustomers,
     customerKindFilter,
     customerSearch,
+    customersReloadToken,
     online,
     paymentChoice,
     selectedCustomer,
@@ -615,12 +567,8 @@ export function CheckoutCashPage() {
     }
   }, [online, selectedCustomer]);
 
-  useEffect(() => {
-    if (paymentChoice === "Utang" && isCheckoutBusiness(selectedCustomer)) {
-      setSelectedCustomer(null);
-    }
-  }, [paymentChoice, selectedCustomer]);
-
+  // Keep selectedCustomer across Cash ↔ GCash ↔ Utang. B2B stays selected on Utang so the
+  // cashier sees why confirm is blocked (utangB2bBlocked) instead of a mysterious clear.
   function addDiscount() {
     setDiscountFormError(null);
     const reason = discountReason.trim();
@@ -1434,6 +1382,8 @@ export function CheckoutCashPage() {
                 onSearchChange={setCustomerSearch}
                 customers={customers}
                 customersLoading={customersLoading}
+                customersError={customersError}
+                onRetryLoad={() => setCustomersReloadToken((n) => n + 1)}
                 selectedCustomer={selectedCustomer}
                 overlay={customerLinkOverlay}
                 disabled={saving}
@@ -1521,15 +1471,36 @@ export function CheckoutCashPage() {
                   searchLabel={t("checkout.utangCustomerSearch")}
                   searchValue={customerSearch}
                   onSearchChange={setCustomerSearch}
-                  customers={customers.filter((c) => c.kind === "Customer")}
+                  customers={customers}
                   customersLoading={customersLoading}
+                  customersError={customersError}
+                  onRetryLoad={() => setCustomersReloadToken((n) => n + 1)}
                   selectedCustomer={selectedCustomer}
                   overlay={customerLinkOverlay}
                   disabled={saving}
-                  kindFilter="people"
+                  kindFilter={customerKindFilter}
+                  onKindFilterChange={setCustomerKindFilter}
                   includeWalkInsWhenIdle
+                  showCreditStatus
                   idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}
-                  onSelect={setSelectedCustomer}
+                  onSelect={(customer) => {
+                    if (
+                      customer.kind === "Business" &&
+                      customer.status.trim().toLowerCase() === "pending"
+                    ) {
+                      const name = customer.displayName.trim() || t("checkout.businessFallback");
+                      const sellerInitiated =
+                        (customer.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
+                      showToast(
+                        sellerInitiated
+                          ? t("checkout.pendingConnectionToast").replace("{name}", name)
+                          : t("checkout.pendingNeedsApprovalToast").replace("{name}", name),
+                        "success",
+                      );
+                      return;
+                    }
+                    setSelectedCustomer(customer);
+                  }}
                 />
               ) : null}
               {personCustomerSelected && utangPersonCustomerId ? (

@@ -1322,6 +1322,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "checkout.creditPolicy.notApproved":
     "Naka-block ang Utang hasta Approved ang credit policy sang customer.",
+  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval.",
+  "checkout.creditPolicy.notConfigured": "Utang is not approved for this customer.",
+  "checkout.creditPolicy.disabled": "Customer credit is disabled.",
 
   "checkout.creditPolicy.outstanding": "Outstanding",
 
@@ -1346,6 +1349,8 @@ export const hilPH: Record<keyof typeof en, string> = {
     "Wala pa business. Ang Active B2B connections kag ORG-linked business customers magapakita diri.",
 
   "checkout.customerLoading": "Nagakarga sang customers?",
+  "checkout.customerLoadError": "Could not load customers. Try again.",
+  "checkout.customerRetry": "Retry",
 
   "checkout.customerNotLinked": "Wala naka-link ang customer sa sini nga negosyo",
 
@@ -1528,7 +1533,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.utangDueDate": "Due date (opsyonal)",
 
   "checkout.utangCustomerIdleEmpty":
-    "Wala pa sing person customers. Ang mga business sa Cash/GCash (pareho sang B2B orgs) indi magamit sang Utang — magdugang sing person ukon pangita paagi sa ngalan/phone.",
+    "No checkout customers yet. People and businesses share this directory — Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved • Available {amount}",
+  "checkout.directoryCredit.pending": "Pending approval",
+  "checkout.directoryCredit.notConfigured": "Utang not approved",
+  "checkout.directoryCredit.disabled": "Credit disabled",
+  "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
 
   "checkout.utangDueDateOverride": "Due date override (opsyonal)",
 

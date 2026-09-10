@@ -1,9 +1,10 @@
 import { CheckoutCustomerIdentity } from "@/features/checkout/CheckoutCustomerIdentity";
-import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import type { CheckoutCustomerOption, CheckoutPersonOption } from "@/features/checkout/checkout-customer-option";
 import {
   checkoutOptionKey,
   isCheckoutBusiness,
   isCheckoutBusinessDirectoryRow,
+  isCheckoutPerson,
 } from "@/features/checkout/checkout-customer-option";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 import type { KindFilter } from "@/features/customers/customers-kind";
@@ -14,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/exits/SearchField";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
+import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 
 type CheckoutCustomerSelectedCardProps = {
@@ -51,6 +54,29 @@ export function CheckoutCustomerSelectedCard({
   );
 }
 
+function directoryCreditLine(
+  customer: CheckoutPersonOption,
+  t: (key: MessageKey) => string,
+): string {
+  if (isCheckoutBusinessDirectoryRow(customer)) {
+    return t("checkout.directoryCredit.b2bBlocked");
+  }
+  switch (customer.creditStatus) {
+    case "Approved":
+      return t("checkout.directoryCredit.approvedAvailable").replace(
+        "{amount}",
+        formatPeso(customer.availableCredit ?? 0),
+      );
+    case "PendingApproval":
+      return t("checkout.directoryCredit.pending");
+    case "Disabled":
+      return t("checkout.directoryCredit.disabled");
+    case "NotConfigured":
+    default:
+      return t("checkout.directoryCredit.notConfigured");
+  }
+}
+
 type CheckoutCustomerDirectoryProps = {
   searchId: string;
   searchTestId: string;
@@ -59,6 +85,8 @@ type CheckoutCustomerDirectoryProps = {
   onSearchChange: (value: string) => void;
   customers: CheckoutCustomerOption[];
   customersLoading: boolean;
+  customersError?: boolean;
+  onRetryLoad?: () => void;
   selectedCustomer: CheckoutCustomerOption | null;
   overlay?: CustomerListConnectionOverlay | null;
   onSelect: (customer: CheckoutCustomerOption) => void;
@@ -69,6 +97,8 @@ type CheckoutCustomerDirectoryProps = {
   includeWalkInsWhenIdle?: boolean;
   /** Override idle empty copy (e.g. Utang people-only explanation). */
   idleEmptyMessage?: string;
+  /** Utang: compact credit status under person rows (does not hide ineligible customers). */
+  showCreditStatus?: boolean;
 };
 
 export function CheckoutCustomerDirectory({
@@ -79,6 +109,8 @@ export function CheckoutCustomerDirectory({
   onSearchChange,
   customers,
   customersLoading,
+  customersError = false,
+  onRetryLoad,
   selectedCustomer,
   overlay = null,
   onSelect,
@@ -87,6 +119,7 @@ export function CheckoutCustomerDirectory({
   onKindFilterChange,
   includeWalkInsWhenIdle = false,
   idleEmptyMessage,
+  showCreditStatus = false,
 }: CheckoutCustomerDirectoryProps) {
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
@@ -167,6 +200,24 @@ export function CheckoutCustomerDirectory({
         <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
           {t("checkout.customerLoading")}
         </p>
+      ) : customersError ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="checkout-customer-load-error">
+          <p className="mb-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+            {t("checkout.customerLoadError")}
+          </p>
+          {onRetryLoad ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9"
+              data-testid="checkout-customer-retry"
+              disabled={disabled}
+              onClick={onRetryLoad}
+            >
+              {t("checkout.customerRetry")}
+            </Button>
+          ) : null}
+        </div>
       ) : visible.length === 0 ? (
         <p
           data-testid="checkout-customer-empty"
@@ -180,6 +231,10 @@ export function CheckoutCustomerDirectory({
             const key = checkoutOptionKey(customer);
             const selected =
               selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
+            const creditLine =
+              showCreditStatus && isCheckoutPerson(customer)
+                ? directoryCreditLine(customer, t)
+                : null;
             return (
               <li key={key}>
                 <button
@@ -204,6 +259,14 @@ export function CheckoutCustomerDirectory({
                     overlay={overlay}
                     selected={selected}
                   />
+                  {creditLine ? (
+                    <p
+                      className="checkout-customer-row__credit mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid="checkout-customer-credit-line"
+                    >
+                      {creditLine}
+                    </p>
+                  ) : null}
                 </button>
               </li>
             );

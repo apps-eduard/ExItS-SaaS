@@ -179,6 +179,15 @@ public sealed class BusinessUtangConnectionIndependenceTests
             Task.FromResult(_policies.FirstOrDefault(p =>
                 p.OrganizationId == organizationId && p.CustomerId == customerId));
 
+        public Task<IReadOnlyList<CustomerCreditPolicy>> ListByCustomerIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> customerIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerCreditPolicy>>(
+                _policies
+                    .Where(p => p.OrganizationId == organizationId && customerIds.Contains(p.CustomerId.Value))
+                    .ToList());
+
         public Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default)
         {
             _policies.Add(policy);

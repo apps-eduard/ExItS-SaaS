@@ -2223,16 +2223,26 @@ export const en = {
   "checkout.creditPolicy.loadError": "Could not load credit policy. Try again.",
   "checkout.creditPolicy.notApproved":
     "Utang is blocked until this customer's credit policy is Approved.",
+  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval.",
+  "checkout.creditPolicy.notConfigured": "Utang is not approved for this customer.",
+  "checkout.creditPolicy.disabled": "Customer credit is disabled.",
   "checkout.creditPolicy.overLimit":
     "This sale exceeds the customer's available credit.",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",
   "checkout.utangDebtHint": "Debt recorded equals Amount to Pay.",
   "checkout.customerLoading": "Loading customers…",
+  "checkout.customerLoadError": "Could not load customers. Try again.",
+  "checkout.customerRetry": "Retry",
   "checkout.customerEmpty": "No active customers matched.",
   "checkout.customerEmptyBusinesses": "No businesses matched. Try the business name or ORG######.",
   "checkout.customerIdleEmpty": "Search by name or phone to find a walk-in, or scan an ExItS ID.",
   "checkout.utangCustomerIdleEmpty":
-    "No person customers yet. Businesses shown on Cash/GCash (like B2B orgs) cannot use Utang — add a person or search by name/phone.",
+    "No checkout customers yet. People and businesses share this directory — Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved • Available {amount}",
+  "checkout.directoryCredit.pending": "Pending approval",
+  "checkout.directoryCredit.notConfigured": "Utang not approved",
+  "checkout.directoryCredit.disabled": "Credit disabled",
+  "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
   "checkout.customerIdleEmptyBusinesses":
     "No businesses yet. Active B2B connections and ORG-linked business customers appear here.",
   "checkout.customerSearchHint": "Search by name or phone. Scan ExItS ID for a linked customer.",

@@ -13,9 +13,16 @@ describe("checkout-customer-option", () => {
       displayName: "Juan",
       status: "Active",
       mobileNumber: "0917",
+      creditStatus: "Approved",
+      availableCredit: 12500,
+      creditLimit: 50000,
+      outstandingAmount: 37500,
+      defaultTermDays: 90,
     });
     expect(person?.kind).toBe("Customer");
     expect(person && checkoutOptionKey(person)).toBe("c:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+    expect(person && person.kind === "Customer" && person.creditStatus).toBe("Approved");
+    expect(person && person.kind === "Customer" && person.availableCredit).toBe(12500);
 
     const business = mapCheckoutSearchItemToOption({
       kind: "Business",

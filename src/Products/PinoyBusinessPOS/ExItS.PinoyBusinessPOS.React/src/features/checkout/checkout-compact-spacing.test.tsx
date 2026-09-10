@@ -31,13 +31,16 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     );
   });
 
-  it("CheckoutCashPage Utang loads people customers, not idle B2B-only", () => {
+  it("CheckoutCashPage uses one checkout-search directory for Cash/GCash/Utang", () => {
     const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
-    expect(source).toContain('const kindFilter: KindFilter = isUtang ? "people" : customerKindFilter');
-    expect(source).toContain('kindFilter="people"');
+    expect(source).toContain("const kindFilter: KindFilter = customerKindFilter");
+    expect(source).toContain("loadSearch(\"All\")");
+    expect(source).toContain("showCreditStatus");
     expect(source).toContain("includeWalkInsWhenIdle");
     expect(source).toContain('idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}');
-    expect(source).toMatch(/if \(isUtang\) \{[\s\S]*?load = loadSearch\("Customer"\)/);
+    expect(source).not.toContain("listCustomers(");
+    expect(source).not.toContain('isUtang ? "people"');
+    expect(source).toContain("Keep selectedCustomer across Cash");
   });
 
   it("CheckoutCashPage toasts payment success before opening summary", () => {

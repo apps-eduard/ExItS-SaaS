@@ -1,5 +1,11 @@
 export type CheckoutCustomerKind = "Customer" | "Business";
 
+export type CheckoutCreditStatus =
+  | "NotConfigured"
+  | "PendingApproval"
+  | "Approved"
+  | "Disabled";
+
 /** POS person/local customer selectable at checkout. */
 export type CheckoutPersonOption = {
   kind: "Customer";
@@ -18,6 +24,12 @@ export type CheckoutPersonOption = {
   linkedBuyerPublicOrganizationId?: string | null;
   /** Person (default) or Business party — Business rows appear under the Businesses filter. */
   partyKind?: "Person" | "Business" | null;
+  /** Batched checkout credit projection (person rows). Eligibility overlay — not a hide filter. */
+  creditStatus?: CheckoutCreditStatus | null;
+  creditLimit?: number | null;
+  outstandingAmount?: number | null;
+  availableCredit?: number | null;
+  defaultTermDays?: number | null;
 };
 
 /** Active or Pending B2B Organization counterparty — no POSCustomer row. */
@@ -68,6 +80,20 @@ export function checkoutOptionKey(option: CheckoutCustomerOption): string {
   return option.kind === "Business" ? `b:${option.connectionId}` : `c:${option.customerId}`;
 }
 
+function normalizeCheckoutCreditStatus(
+  raw: string | null | undefined,
+): CheckoutCreditStatus | null {
+  switch ((raw ?? "").trim()) {
+    case "Approved":
+    case "PendingApproval":
+    case "Disabled":
+    case "NotConfigured":
+      return raw as CheckoutCreditStatus;
+    default:
+      return null;
+  }
+}
+
 /** Map API checkout-search row → selector option. Drops incomplete Business rows. */
 export function mapCheckoutSearchItemToOption(item: {
   kind?: string;
@@ -83,6 +109,11 @@ export function mapCheckoutSearchItemToOption(item: {
   resolvedPersonalDisplayName?: string | null;
   partyKind?: string | null;
   initiatedByParty?: string | null;
+  creditStatus?: string | null;
+  creditLimit?: number | null;
+  outstandingAmount?: number | null;
+  availableCredit?: number | null;
+  defaultTermDays?: number | null;
 }): CheckoutCustomerOption | null {
   if (item.kind === "Business") {
     if (!item.connectionId || !item.buyerOrganizationId) {
@@ -113,6 +144,8 @@ export function mapCheckoutSearchItemToOption(item: {
           ? ("Business" as const)
           : null;
 
+  const creditStatus = normalizeCheckoutCreditStatus(item.creditStatus);
+
   return {
     kind: "Customer",
     customerId: item.customerId,
@@ -125,5 +158,10 @@ export function mapCheckoutSearchItemToOption(item: {
     linkedBuyerOrganizationId: item.buyerOrganizationId ?? null,
     linkedBuyerPublicOrganizationId: item.buyerPublicOrganizationId ?? null,
     partyKind,
+    creditStatus,
+    creditLimit: item.creditLimit ?? null,
+    outstandingAmount: item.outstandingAmount ?? null,
+    availableCredit: item.availableCredit ?? null,
+    defaultTermDays: item.defaultTermDays ?? null,
   };
 }

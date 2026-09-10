@@ -1322,6 +1322,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "checkout.creditPolicy.notApproved":
     "Naka-block ang Utang hanggang Approved ang credit policy ng customer na ito.",
+  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval.",
+  "checkout.creditPolicy.notConfigured": "Utang is not approved for this customer.",
+  "checkout.creditPolicy.disabled": "Customer credit is disabled.",
 
   "checkout.creditPolicy.outstanding": "Outstanding",
 
@@ -1343,12 +1346,19 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerIdleEmpty": "Maghanap sa pangalan o numero para sa walk-in, o i-scan ang ExItS ID.",
 
   "checkout.utangCustomerIdleEmpty":
-    "Wala pang person customer. Ang businesses sa Cash/GCash (tulad ng B2B) hindi pwedeng Utang — magdagdag ng person o maghanap sa pangalan/numero.",
+    "No checkout customers yet. People and businesses share this directory — Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved • Available {amount}",
+  "checkout.directoryCredit.pending": "Pending approval",
+  "checkout.directoryCredit.notConfigured": "Utang not approved",
+  "checkout.directoryCredit.disabled": "Credit disabled",
+  "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
 
   "checkout.customerIdleEmptyBusinesses":
     "Wala pang business. Ang Active B2B connections at ORG-linked business customers ay lalabas dito.",
 
   "checkout.customerLoading": "Naglo-load ng customers?",
+  "checkout.customerLoadError": "Could not load customers. Try again.",
+  "checkout.customerRetry": "Retry",
 
   "checkout.customerNotLinked": "Hindi naka-link ang customer sa negosyong ito",
 

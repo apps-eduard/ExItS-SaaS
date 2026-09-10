@@ -63,6 +63,49 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
         return credits - repayments - writeOffs;
     }
 
+    /// <summary>
+    /// One query path each: active credits via org list + group; repayments/write-offs via
+    /// existing org group-by sums; filter to the requested id set (checkout pageSize ≤ 20).
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, decimal>> GetOutstandingBatchAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> customerIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerIds.Count == 0)
+        {
+            return new Dictionary<Guid, decimal>();
+        }
+
+        var idSet = customerIds as HashSet<Guid> ?? customerIds.ToHashSet();
+
+        var activeCredits = await _credits
+            .ListActiveByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var creditByCustomer = activeCredits
+            .Where(e => idSet.Contains(e.CustomerId.Value))
+            .GroupBy(e => e.CustomerId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+
+        var repaymentByCustomer = await _repayments
+            .SumActiveAmountsByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var writeOffByCustomer = await _writeOffs
+            .SumActiveAmountsByOrganizationAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var result = new Dictionary<Guid, decimal>(idSet.Count);
+        foreach (var id in idSet)
+        {
+            creditByCustomer.TryGetValue(id, out var credits);
+            repaymentByCustomer.TryGetValue(id, out var repayments);
+            writeOffByCustomer.TryGetValue(id, out var writeOffs);
+            result[id] = credits - repayments - writeOffs;
+        }
+
+        return result;
+    }
+
     public async Task<CustomerUtangSummaryDto> GetSummaryAsync(
         Guid organizationId,
         Guid customerId,

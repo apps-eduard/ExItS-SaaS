@@ -10,6 +10,14 @@ public interface ICustomerCreditPolicyRepository
         POSCustomerId customerId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch load policies for the given customer ids (single query). Empty ids → empty list.
+    /// </summary>
+    Task<IReadOnlyList<CustomerCreditPolicy>> ListByCustomerIdsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> customerIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default);

@@ -17,7 +17,13 @@ public sealed class LinkedPersonalCustomerQueryTests
         var publicId = "EX-4827-1936";
         var repo = new LinkedPersonalInMemoryCustomerRepository();
         var (service, actor) = PartyBranchAccessTestSupport.Create();
-        var queries = new POSCustomerQueryService(repo, service, actor, new EmptyRelationships());
+        var queries = new POSCustomerQueryService(
+            repo,
+            service,
+            actor,
+            new EmptyRelationships(),
+            new EmptyCreditPolicies(),
+            new ZeroOutstanding());
 
         var now = DateTimeOffset.Parse("2026-08-01T00:00:00Z");
         var active = POSCustomer.Create(
@@ -159,5 +165,73 @@ public sealed class LinkedPersonalCustomerQueryTests
 
         public Task UpdateAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class EmptyCreditPolicies : ExItS.PinoyBusinessPOS.Application.Credit.ICustomerCreditPolicyRepository
+    {
+        public Task<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy?> GetByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy?>(null);
+
+        public Task<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy>> ListByCustomerIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> customerIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy>>([]);
+
+        public Task AddAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy policy,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicy policy,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicyChange change,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<(IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(
+                ((IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicyChange>)
+                    Array.Empty<ExItS.PinoyBusinessPOS.Domain.Credit.CustomerCreditPolicyChange>(), 0));
+
+        public Task AcquireCustomerCreditLockAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class ZeroOutstanding : ExItS.PinoyBusinessPOS.Application.Payments.IOutstandingBalanceService
+    {
+        public Task<decimal> GetOutstandingAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> GetOutstandingBatchAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> customerIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(
+                customerIds.ToDictionary(id => id, _ => 0m));
+
+        public Task<ExItS.PinoyBusinessPOS.Application.Payments.CustomerUtangSummaryDto> GetSummaryAsync(
+            Guid organizationId,
+            Guid customerId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 }
