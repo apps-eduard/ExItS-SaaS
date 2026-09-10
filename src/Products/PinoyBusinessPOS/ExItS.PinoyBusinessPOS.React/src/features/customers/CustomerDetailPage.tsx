@@ -633,6 +633,9 @@ export function CustomerDetailPage() {
           online={online}
           canManage={allowManageCreditPolicy}
           canApprove={allowApproveCreditPolicy}
+          subjectIdentity={[customer.displayName, personalExItsId]
+            .filter((part): part is string => Boolean(part))
+            .join(" · ")}
         />
       ) : null}
 

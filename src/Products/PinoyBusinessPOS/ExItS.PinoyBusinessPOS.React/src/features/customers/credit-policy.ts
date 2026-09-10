@@ -55,11 +55,53 @@ export function creditPolicyStatusLabelKey(status: string | null | undefined): M
   }
 }
 
+/** Detail-page / dialog action label when opening the configure form. */
+export function creditPolicyConfigureActionLabelKey(
+  status: string | null | undefined,
+): MessageKey {
+  switch ((status ?? "").trim()) {
+    case "PendingApproval":
+      return "customers.creditPolicy.editProposedTerms";
+    case "Approved":
+      return "customers.creditPolicy.editCreditTerms";
+    case "Disabled":
+      return "customers.creditPolicy.setNewCreditTerms";
+    case "NotConfigured":
+    default:
+      return "customers.creditPolicy.setCreditTerms";
+  }
+}
+
+/** Primary submit label for the configure dialog. */
+export function creditPolicyConfigureSubmitLabelKey(
+  status: string | null | undefined,
+): MessageKey {
+  return (status ?? "").trim() === "PendingApproval"
+    ? "customers.creditPolicy.updateProposedTerms"
+    : "customers.creditPolicy.saveForApproval";
+}
+
 export function termDaysHelperLabelKey(days: number | null | undefined): MessageKey | null {
   if (days === 90) {
     return "customers.creditPolicy.termAbout3Months";
   }
   return null;
+}
+
+/** Format subject line under dialog title: "Name · PUBLICID". */
+export function formatCreditPolicySubjectIdentity(
+  name: string | null | undefined,
+  publicId: string | null | undefined,
+): string | null {
+  const display = (name ?? "").trim();
+  const id = (publicId ?? "").trim();
+  if (!display && !id) {
+    return null;
+  }
+  if (display && id) {
+    return `${display} · ${id}`;
+  }
+  return display || id;
 }
 
 export function isCreditPolicyApproved(policy: PosCustomerCreditPolicy | null | undefined): boolean {

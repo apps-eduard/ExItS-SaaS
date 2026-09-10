@@ -61,7 +61,7 @@ function wrap(ui: ReactNode) {
 }
 
 describe("BusinessCreditPolicySection", () => {
-  it("renders NotConfigured with Configure credit", () => {
+  it("renders NotConfigured with Set credit terms", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -75,11 +75,13 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
       "customers.creditPolicy.status.NotConfigured",
     );
-    expect(screen.getByTestId("business-credit-policy-configure")).toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
+      "customers.creditPolicy.setCreditTerms",
+    );
     expect(screen.getByText("customers.business.creditPolicy.notApprovedHint")).toBeInTheDocument();
   });
 
-  it("renders PendingApproval with Approve", () => {
+  it("renders PendingApproval with Approve credit and Edit proposed terms", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -95,11 +97,18 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-approve")).toBeInTheDocument();
-    expect(screen.getByTestId("business-credit-policy-disable")).toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-approve")).toHaveTextContent(
+      "customers.creditPolicy.approveCredit",
+    );
+    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
+      "customers.creditPolicy.editProposedTerms",
+    );
+    expect(screen.getByTestId("business-credit-policy-disable")).toHaveTextContent(
+      "customers.creditPolicy.pauseCredit",
+    );
   });
 
-  it("renders Approved with limit term and Edit", () => {
+  it("renders Approved with Utang allowed, Edit credit terms, and Pause credit", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -119,12 +128,93 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
-      "customers.creditPolicy.edit",
+    expect(screen.getByTestId("business-credit-policy-utang-allowed")).toHaveTextContent(
+      "customers.creditPolicy.utangAllowed",
     );
-    expect(screen.getByTestId("business-credit-policy-limit")).toBeInTheDocument();
-    expect(screen.getByTestId("business-credit-policy-term")).toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
+      "customers.creditPolicy.editCreditTerms",
+    );
+    expect(screen.getByTestId("business-credit-policy-disable")).toHaveTextContent(
+      "customers.creditPolicy.pauseCredit",
+    );
     expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
+  });
+
+  it("renders Disabled as Paused with Set new credit terms", () => {
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+        policyOverride={policy({
+          status: "Disabled",
+          creditLimit: 1000,
+          defaultTermDays: 15,
+          expectedUpdatedAtUtc: "2026-09-10T00:00:00Z",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Disabled",
+    );
+    expect(screen.getByText("customers.business.creditPolicy.disabledHint")).toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
+      "customers.creditPolicy.setNewCreditTerms",
+    );
+  });
+
+  it("opens Edit credit terms with term presets, custom input, approval warning, and disabled save until changed", async () => {
+    const user = userEvent.setup();
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+        subjectIdentity="Kizy Bakery · ORG436352"
+        policyOverride={policy({
+          status: "Approved",
+          creditLimit: 5000,
+          defaultTermDays: 30,
+          expectedUpdatedAtUtc: "2026-09-10T00:00:00Z",
+        })}
+      />,
+    );
+
+    await user.click(screen.getByTestId("business-credit-policy-configure"));
+
+    const dialog = screen.getByTestId("business-credit-policy-dialog-configure");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("customers.creditPolicy.editCreditTerms");
+    expect(screen.getByTestId("business-credit-policy-dialog-subject")).toHaveTextContent(
+      "Kizy Bakery · ORG436352",
+    );
+    expect(screen.getByTestId("business-credit-policy-reapproval-warning")).toHaveTextContent(
+      "customers.creditPolicy.reapprovalWarning",
+    );
+    expect(dialog).toHaveTextContent("customers.creditPolicy.term");
+    expect(dialog).toHaveTextContent("customers.creditPolicy.termExampleHelper");
+    for (const days of [7, 15, 30, 60, 90]) {
+      expect(screen.getByTestId(`business-credit-policy-term-${days}`)).toHaveTextContent(
+        String(days),
+      );
+    }
+    expect(screen.getByTestId("business-credit-policy-dialog-submit")).toBeDisabled();
+    expect(screen.getByTestId("business-credit-policy-dialog-submit")).toHaveTextContent(
+      "customers.creditPolicy.saveForApproval",
+    );
+
+    await user.click(screen.getByTestId("business-credit-policy-term-custom"));
+    expect(dialog).toHaveTextContent("customers.creditPolicy.customTerm");
+    expect(screen.getByTestId("business-credit-policy-term-custom-input")).toBeInTheDocument();
+
+    await user.clear(screen.getByTestId("business-credit-policy-reason"));
+    await user.type(screen.getByTestId("business-credit-policy-reason"), "Adjust terms");
+    await user.click(screen.getByTestId("business-credit-policy-term-15"));
+    expect(screen.getByTestId("business-credit-policy-dialog-submit")).not.toBeDisabled();
   });
 
   it("hides management actions for Cashier", () => {

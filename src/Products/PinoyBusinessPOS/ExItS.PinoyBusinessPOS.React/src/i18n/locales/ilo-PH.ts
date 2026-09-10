@@ -2092,14 +2092,19 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.creditPolicy.limit": "Credit limit",
 
+  "customers.creditPolicy.limitHelper":
+    "Maximum a di pay nabayadan a credit a mabalin nga adda iti customer iti maysa a tiempo.",
+
   "customers.creditPolicy.nextPage": "Sumaruno",
 
   "customers.creditPolicy.offline": "Masapul ti online connection para iti credit policy.",
   "customers.creditPolicy.loadFailed": "Credit policy could not be loaded.",
   "customers.creditPolicy.retry": "Retry",
   "customers.creditPolicy.notApprovedHint": "Utang is not approved for this customer.",
-  "customers.creditPolicy.pendingHint": "Customer credit is pending approval. New Utang is blocked until approved.",
-  "customers.creditPolicy.disabledHint": "Customer credit is disabled. Existing balance remains payable.",
+  "customers.creditPolicy.pendingHint":
+    "Utang is not yet allowed. Credit terms are pending approval.",
+  "customers.creditPolicy.disabledHint":
+    "New Utang is paused. Existing balances can still be paid.",
 
   "customers.creditPolicy.outstanding": "Outstanding",
 
@@ -2108,28 +2113,60 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.creditPolicy.prevPage": "Previous",
 
+  "customers.creditPolicy.reasonForChange": "Rason ti panagbaliw",
+
+  "customers.creditPolicy.reasonForChangeHelper":
+    "Required. Ma-record iti credit audit history.",
+
   "customers.creditPolicy.reasonRequired": "Isurat ti reason.",
 
   "customers.creditPolicy.reapprovalWarning":
-    "Masapul ti re-approval kalpasan ti panag-edit ti Approved policy sakbay a mapalubusan ti baro nga Utang.",
+    "Changing these terms will require approval again.\nNew Utang will be paused until approved.",
 
   "customers.creditPolicy.save": "I-save",
 
+  "customers.creditPolicy.saveForApproval": "I-save para sa pag-apruba",
+
+  "customers.creditPolicy.setCreditTerms": "I-set ti credit terms",
+
+  "customers.creditPolicy.setNewCreditTerms": "I-set ti baro a credit terms",
+
+  "customers.creditPolicy.editCreditTerms": "I-edit ti credit terms",
+
+  "customers.creditPolicy.editProposedTerms": "I-edit ti proposed terms",
+
+  "customers.creditPolicy.approveCredit": "I-apruba ti credit",
+
+  "customers.creditPolicy.pauseCredit": "I-pause ti credit",
+
+  "customers.creditPolicy.updateProposedTerms": "I-update ti proposed terms",
+
+  "customers.creditPolicy.utangAllowed": "Mapalubusan ti Utang",
+
+  "customers.creditPolicy.utangAllowedYes": "Wen",
+
+  "customers.creditPolicy.customTerm": "Custom a term",
+
   "customers.creditPolicy.status.Approved": "Approved",
 
-  "customers.creditPolicy.status.Disabled": "Disabled",
+  "customers.creditPolicy.status.Disabled": "Paused",
 
   "customers.creditPolicy.status.NotConfigured": "Saan pay a na-configure",
 
   "customers.creditPolicy.status.PendingApproval": "Pending approval",
 
-  "customers.creditPolicy.term": "Default term",
+  "customers.creditPolicy.term": "Default payment term (in days)",
 
   "customers.creditPolicy.termAbout3Months": "agarup 3 a bulan",
 
   "customers.creditPolicy.termCustom": "Custom",
 
   "customers.creditPolicy.termDays": "{days} nga aldaw",
+
+  "customers.creditPolicy.termDaysUnit": "nga aldaw",
+
+  "customers.creditPolicy.termExampleHelper":
+    "Pagarigan: ti 90 nga aldaw ket agarup 3 a bulan.",
 
   "customers.creditPolicy.title": "Credit policy",
 
@@ -2249,8 +2286,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.business.manageCatalog": "Manage catalog & pricing",
   "customers.business.creditPolicy.title": "Credit & payment terms",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
-  "customers.business.creditPolicy.pendingHint": "This business cannot use Utang until credit is approved.",
-  "customers.business.creditPolicy.disabledHint": "New Utang is disabled. Existing balance remains payable.",
+  "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
+  "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
   "customers.business.creditPolicy.checkoutNote": "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
 
   "customers.business.identityNote": "This is the buyer's Organization identity. You manage relationship settings only ? not their business name or logo.",

@@ -3,8 +3,11 @@ import type { PosCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client
 import {
   computeCreditPolicyDueDate,
   creditPolicyCheckoutBlockMessageKey,
+  creditPolicyConfigureActionLabelKey,
+  creditPolicyConfigureSubmitLabelKey,
   creditPolicyStatusLabelKey,
   creditPolicyStatusTone,
+  formatCreditPolicySubjectIdentity,
   outstandingExceedsNewLimit,
   resolveUtangCreditPolicyBlock,
   termDaysHelperLabelKey,
@@ -52,6 +55,36 @@ describe("credit-policy helpers", () => {
   it("flags 90-day term helper", () => {
     expect(termDaysHelperLabelKey(90)).toBe("customers.creditPolicy.termAbout3Months");
     expect(termDaysHelperLabelKey(30)).toBeNull();
+  });
+
+  it("maps configure action and submit wording by status", () => {
+    expect(creditPolicyConfigureActionLabelKey("NotConfigured")).toBe(
+      "customers.creditPolicy.setCreditTerms",
+    );
+    expect(creditPolicyConfigureActionLabelKey("PendingApproval")).toBe(
+      "customers.creditPolicy.editProposedTerms",
+    );
+    expect(creditPolicyConfigureActionLabelKey("Approved")).toBe(
+      "customers.creditPolicy.editCreditTerms",
+    );
+    expect(creditPolicyConfigureActionLabelKey("Disabled")).toBe(
+      "customers.creditPolicy.setNewCreditTerms",
+    );
+    expect(creditPolicyConfigureSubmitLabelKey("PendingApproval")).toBe(
+      "customers.creditPolicy.updateProposedTerms",
+    );
+    expect(creditPolicyConfigureSubmitLabelKey("Approved")).toBe(
+      "customers.creditPolicy.saveForApproval",
+    );
+  });
+
+  it("formats dialog subject identity", () => {
+    expect(formatCreditPolicySubjectIdentity("Kizy Bakery", "ORG436352")).toBe(
+      "Kizy Bakery · ORG436352",
+    );
+    expect(formatCreditPolicySubjectIdentity("Kizy Bakery", null)).toBe("Kizy Bakery");
+    expect(formatCreditPolicySubjectIdentity("", "ORG436352")).toBe("ORG436352");
+    expect(formatCreditPolicySubjectIdentity(null, null)).toBeNull();
   });
 
   it("computes due date from term days", () => {

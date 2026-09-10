@@ -200,6 +200,9 @@ export function BusinessCustomerDetailPage() {
           online={online}
           canManage={allowManageCredit}
           canApprove={allowApproveCredit}
+          subjectIdentity={[name, customer.organizationPublicId?.trim()]
+            .filter((part): part is string => Boolean(part))
+            .join(" · ")}
         />
       ) : null}
 

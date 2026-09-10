@@ -4164,9 +4164,9 @@ export const en = {
   "customers.business.creditPolicy.notApprovedHint":
     "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint":
-    "This business cannot use Utang until credit is approved.",
+    "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint":
-    "New Utang is disabled. Existing balance remains payable.",
+    "New Utang is paused. Existing balances can still be paid.",
   "customers.business.creditPolicy.checkoutNote":
     "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
   "customers.business.identityNote":
@@ -4288,21 +4288,35 @@ export const en = {
   "customers.creditPolicy.retry": "Retry",
   "customers.creditPolicy.notApprovedHint": "Utang is not approved for this customer.",
   "customers.creditPolicy.pendingHint":
-    "Customer credit is pending approval. New Utang is blocked until approved.",
+    "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.creditPolicy.disabledHint":
-    "Customer credit is disabled. Existing balance remains payable.",
+    "New Utang is paused. Existing balances can still be paid.",
   "customers.creditPolicy.limit": "Credit limit",
+  "customers.creditPolicy.limitHelper":
+    "Maximum unpaid credit this customer may have at one time.",
   "customers.creditPolicy.outstanding": "Outstanding",
   "customers.creditPolicy.available": "Available credit",
-  "customers.creditPolicy.term": "Default term",
+  "customers.creditPolicy.utangAllowed": "Utang allowed",
+  "customers.creditPolicy.utangAllowedYes": "Yes",
+  "customers.creditPolicy.term": "Default payment term (in days)",
   "customers.creditPolicy.termDays": "{days} days",
   "customers.creditPolicy.termAbout3Months": "about 3 months",
+  "customers.creditPolicy.termExampleHelper":
+    "Example: 90 days is approximately 3 months.",
   "customers.creditPolicy.termCustom": "Custom",
+  "customers.creditPolicy.customTerm": "Custom term",
+  "customers.creditPolicy.termDaysUnit": "days",
   "customers.creditPolicy.approvedBy": "Approved by",
   "customers.creditPolicy.configure": "Configure",
+  "customers.creditPolicy.setCreditTerms": "Set credit terms",
+  "customers.creditPolicy.setNewCreditTerms": "Set new credit terms",
   "customers.creditPolicy.edit": "Edit",
+  "customers.creditPolicy.editCreditTerms": "Edit credit terms",
+  "customers.creditPolicy.editProposedTerms": "Edit proposed terms",
   "customers.creditPolicy.approve": "Approve",
+  "customers.creditPolicy.approveCredit": "Approve credit",
   "customers.creditPolicy.disable": "Disable",
+  "customers.creditPolicy.pauseCredit": "Pause credit",
   "customers.creditPolicy.history": "History",
   "customers.creditPolicy.hideHistory": "Hide history",
   "customers.creditPolicy.historyEmpty": "No policy changes yet.",
@@ -4312,18 +4326,23 @@ export const en = {
   "customers.creditPolicy.nextPage": "Next",
   "customers.creditPolicy.cancel": "Cancel",
   "customers.creditPolicy.save": "Save",
+  "customers.creditPolicy.saveForApproval": "Save for approval",
+  "customers.creditPolicy.updateProposedTerms": "Update proposed terms",
+  "customers.creditPolicy.reasonForChange": "Reason for change",
+  "customers.creditPolicy.reasonForChangeHelper":
+    "Required. Recorded in credit audit history.",
   "customers.creditPolicy.reasonRequired": "Enter a reason.",
   "customers.creditPolicy.invalidLimit": "Enter a valid credit limit (max 2 decimal places).",
   "customers.creditPolicy.invalidTerm": "Term days must be between 1 and 365.",
   "customers.creditPolicy.concurrencyReload": "Reload the credit policy and try again.",
   "customers.creditPolicy.reapprovalWarning":
-    "Saving changes to an Approved policy requires re-approval before new Utang is allowed.",
+    "Changing these terms will require approval again.\nNew Utang will be paused until approved.",
   "customers.creditPolicy.outstandingOverLimitWarning":
     "Outstanding is greater than the new limit. Available credit will be zero until the balance drops.",
   "customers.creditPolicy.status.NotConfigured": "Not configured",
   "customers.creditPolicy.status.PendingApproval": "Pending approval",
   "customers.creditPolicy.status.Approved": "Approved",
-  "customers.creditPolicy.status.Disabled": "Disabled",
+  "customers.creditPolicy.status.Disabled": "Paused",
   "customers.paymentsTitle": "Payments",
   "customers.paymentsEmpty": "No payments yet",
   "customers.paymentsEmptyDetail": "Record a payment when the customer pays toward Amount owed.",
