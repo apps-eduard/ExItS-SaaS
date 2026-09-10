@@ -72,3 +72,11 @@ Detail may refresh display name via Platform public organization resolve (snapsh
 Organization buyer direct-sale history was implemented later by
 **POS-B2B-DIRECT-PURCHASE-HISTORY-01** (buyer Direct Purchases unified history; seller Sale remains authoritative).
 See [POS-B2B-DIRECT-PURCHASE-HISTORY-01.md](./POS-B2B-DIRECT-PURCHASE-HISTORY-01.md).
+
+Seller-initiated Business Customer invitations, `InitiatedByParty`, unified Connection requests inbox,
+Pending checkout visibility (non-selectable), and Accept/Decline consent gating were implemented later by
+**POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01** (2026-09-10).
+See [POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01.md](./POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01.md).
+
+Historical note: this report's Active-only Business Customer / checkout-search language described the
+then-current surface; Pending is now included for consent discoverability without selectable checkout.

@@ -519,13 +519,29 @@ export function CustomersListPage() {
                               {row.publicOrganizationId}
                             </span>
                           ) : null}
-                          <span>
-                            {t("customers.business.sharedCountShort").replace(
-                              "{count}",
-                              String(row.connection.sharedCount),
-                            )}
-                          </span>
-                          {pricing ? <span>{pricing}</span> : null}
+                          {row.relationshipStatus.toLowerCase() === "pending" ? (
+                            <span data-testid={`business-customer-pending-hint-${row.connection.connectionId}`}>
+                              {row.connection.actionRequired
+                                ? t("customers.business.actionRequired").replace(
+                                    "{name}",
+                                    row.displayName,
+                                  )
+                                : t("customers.business.waitingForAccept").replace(
+                                    "{name}",
+                                    row.displayName,
+                                  )}
+                            </span>
+                          ) : (
+                            <span>
+                              {t("customers.business.sharedCountShort").replace(
+                                "{count}",
+                                String(row.connection.sharedCount),
+                              )}
+                            </span>
+                          )}
+                          {pricing && row.relationshipStatus.toLowerCase() !== "pending" ? (
+                            <span>{pricing}</span>
+                          ) : null}
                         </span>
                       ) : row.publicOrganizationId ? (
                         <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">

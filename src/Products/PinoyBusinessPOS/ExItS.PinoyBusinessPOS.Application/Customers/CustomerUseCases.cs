@@ -248,9 +248,12 @@ public sealed class POSCustomerQueryService
                 .ListAsync(supplier, supplierView: true, cancellationToken)
                 .ConfigureAwait(false);
             var businesses = rows
-                .Where(r => r.Status == ConnectedSupplierRelationshipStatus.Active)
+                .Where(r =>
+                    r.Status == ConnectedSupplierRelationshipStatus.Active
+                    || r.Status == ConnectedSupplierRelationshipStatus.Pending)
                 .Where(r => !hasTerm || MatchesBusinessSearch(r, term))
-                .OrderBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
+                .OrderBy(r => r.Status == ConnectedSupplierRelationshipStatus.Active ? 0 : 1)
+                .ThenBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var connectedBuyerIds = businesses
@@ -258,9 +261,9 @@ public sealed class POSCustomerQueryService
                 .ToHashSet();
             merged.AddRange(businesses.Select(MapBusinessCheckoutItem));
 
-            // POS Business party rows (e.g. ORG-linked customers) so Cashiers can attach them on
-            // Cash/GCash even before / without an Active OrganizationConnection. Prefer the
-            // connection row when both exist for the same buyer org.
+            // Legacy ORG-linked POS Business party rows without an open B2B relationship.
+            // Do not treat them as Active B2B; keep for historical Cash attach only when no
+            // Active/Pending ConnectedSupplierRelationship exists for that buyer org.
             var restrict = await _branchAccess
                 .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
                 .ConfigureAwait(false);
@@ -287,7 +290,15 @@ public sealed class POSCustomerQueryService
         }
 
         var ordered = merged
-            .OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x =>
+                x.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+                && string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                    ? 0
+                    : x.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+                      && string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                        ? 1
+                        : 2)
+            .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
         var pageItems = ordered.Skip(skip).Take(take).ToList();
         var totalCount = includePeople && includeBusiness
@@ -358,7 +369,9 @@ public sealed class POSCustomerQueryService
             MobileNumber: null,
             ConnectionId: r.Id.Value,
             BuyerOrganizationId: r.BuyerOrganizationId.Value,
-            BuyerPublicOrganizationId: r.BuyerPublicOrganizationIdSnapshot);
+            BuyerPublicOrganizationId: r.BuyerPublicOrganizationIdSnapshot,
+            PartyKind: null,
+            InitiatedByParty: r.InitiatedByParty.ToString());
 
     /// <summary>
     /// POS Business party for checkout attach (Cash/GCash via customerId). Not Direct B2B Organization

@@ -318,6 +318,7 @@ export const checkoutCustomerSearchItemSchema = z.object({
   buyerOrganizationId: guidSchema.nullable().optional(),
   buyerPublicOrganizationId: z.string().nullable().optional(),
   partyKind: z.string().nullable().optional(),
+  initiatedByParty: z.string().nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({
@@ -331,9 +332,10 @@ export type CheckoutCustomerSearchItem = z.infer<typeof checkoutCustomerSearchIt
 export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearchResultSchema>;
 
 /**
- * Narrow Active-only checkout counterparty search (people + Active B2B businesses).
+ * Narrow checkout counterparty search (people + Active/Pending B2B businesses).
  * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory / ViewSuppliers.
  * Search term must be non-blank unless kind=Business; pageSize capped at 20 server-side.
+ * Pending businesses are visible but not selectable for CreateSale (server also guards Active-only).
  */
 export async function searchCheckoutCustomers(
   workspace: PosWorkspaceScope,

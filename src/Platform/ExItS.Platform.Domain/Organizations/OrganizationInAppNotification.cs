@@ -199,11 +199,27 @@ public static class SupplierConnectionNotificationTypes
         || string.Equals(relatedType, DeclinedConfirmation, StringComparison.Ordinal);
 }
 
+/// <summary>Seller-initiated Business Customer invitation lifecycle.</summary>
+public static class BusinessCustomerConnectionNotificationTypes
+{
+    public const string Requested = "BusinessCustomerConnectionRequested";
+    public const string Accepted = "BusinessCustomerConnectionAccepted";
+    public const string Declined = "BusinessCustomerConnectionDeclined";
+    public const string Cancelled = "BusinessCustomerConnectionCancelled";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Requested, StringComparison.Ordinal)
+        || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Cancelled, StringComparison.Ordinal);
+}
+
 /// <summary>Allowlisted RelatedType values products may publish into the organization inbox.</summary>
 public static class OrganizationBusinessNotificationTypes
 {
     public static bool IsPublishable(string? relatedType) =>
         SupplierConnectionNotificationTypes.IsKnown(relatedType)
+        || BusinessCustomerConnectionNotificationTypes.IsKnown(relatedType)
         || CustomerOrderNotificationTypes.IsKnown(relatedType)
         || ConnectedPurchaseOrderNotificationTypes.IsKnown(relatedType)
         || StockRequestNotificationTypes.IsKnown(relatedType)

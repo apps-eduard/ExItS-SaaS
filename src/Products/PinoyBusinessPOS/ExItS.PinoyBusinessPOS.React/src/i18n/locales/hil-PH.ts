@@ -4945,7 +4945,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "offline.requiredPersonalPeople": "People changes need internet on this Web app.",
 
-"offline.todoWillQueue": "Offline ka. Magapabilin ini nga to-do sa device tubtob makakonektar ka.",
+  "offline.todoWillQueue": "Offline ka. Magapabilin ini nga to-do sa device tubtob makakonektar ka.",
 
   "offline.tryAgain": "Sulayi liwat",
 
@@ -11404,6 +11404,32 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.offline": "Categories need a connection. Reconnect to manage product categories.",
   "catalog.categoriesLoadFailed": "Could not load product categories.",
   "catalog.emptyCategoriesReadonly": "No available categories.",
+  "checkout.badge.pending": "Pending",
+  "checkout.badge.active": "Active",
+  "checkout.businessFallback": "This business",
+  "checkout.pendingConnectionToast":
+    "Connection pending. Waiting for {name} to accept the business connection before it can be used for a B2B direct sale.",
+  "checkout.pendingNeedsApprovalToast":
+    "Connection needs approval. This business connection must be accepted by an Owner or Manager before it can be used for a B2B direct sale.",
+  "customers.orgSendConnectionRequest": "Send connection request",
+  "customers.orgInviteSent": "Connection request sent. Waiting for the business to accept.",
+  "customers.orgInviteAlreadyPending": "A connection request is already pending for this business.",
+  "customers.orgPendingBuyerRequest":
+    "This business already sent your business a connection request. Review it under Connection requests.",
+  "customers.orgReviewIncomingRequest": "Review request",
+  "customers.orgOpenPendingConnection": "Open pending connection",
+  "customers.business.waitingForAccept": "Waiting for {name} to accept.",
+  "customers.business.actionRequired": "Action required — {name} wants to connect.",
+  "customers.business.reviewRequest": "Review request",
+  "customers.badge.pending": "Pending",
+  "customers.badge.active": "Active",
+  "connected.connectionRequestsTitle": "Connection requests",
+  "connected.connectionRequestsHelp":
+    "Review pending B2B connection requests where your business must Accept or Decline.",
+  "connected.incomingBuyerRequestMessage": "{name} wants to connect and buy from your business.",
+  "connected.incomingSupplierInviteMessage":
+    "{name} wants to connect as a supplier to your business.",
+  "connected.incomingKindBuyerRequest": "Buyer request",
+  "connected.incomingKindSupplierInvite": "Supplier invitation",
+  "connected.reviewAndAccept": "Review & accept",
 };
-
-

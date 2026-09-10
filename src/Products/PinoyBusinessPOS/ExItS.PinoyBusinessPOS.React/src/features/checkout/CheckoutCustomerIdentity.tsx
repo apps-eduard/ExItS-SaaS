@@ -43,6 +43,8 @@ export function CheckoutCustomerIdentity({
         ? customer.buyerPublicOrganizationId?.trim() || null
         : customer.linkedBuyerPublicOrganizationId?.trim() || null;
     const isDirectB2b = isCheckoutBusiness(customer);
+    const pending =
+      isDirectB2b && customer.status.trim().toLowerCase() === "pending";
     return (
       <span
         className={cn("checkout-customer-identity", className)}
@@ -56,6 +58,11 @@ export function CheckoutCustomerIdentity({
           {orgId ? <span className="checkout-customer-identity__meta">{orgId}</span> : null}
           <span className="checkout-customer-identity__chips">
             <StatusChip tone="success">{t("checkout.badge.b2b")}</StatusChip>
+            {pending ? (
+              <StatusChip tone="warning">{t("checkout.badge.pending")}</StatusChip>
+            ) : isDirectB2b ? (
+              <StatusChip tone="success">{t("checkout.badge.active")}</StatusChip>
+            ) : null}
           </span>
         </span>
         {selected ? (

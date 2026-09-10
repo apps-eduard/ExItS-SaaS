@@ -20,7 +20,7 @@ export type CheckoutPersonOption = {
   partyKind?: "Person" | "Business" | null;
 };
 
-/** Active B2B Organization counterparty — no POSCustomer row. */
+/** Active or Pending B2B Organization counterparty — no POSCustomer row. */
 export type CheckoutBusinessOption = {
   kind: "Business";
   connectionId: string;
@@ -28,6 +28,7 @@ export type CheckoutBusinessOption = {
   buyerPublicOrganizationId: string | null;
   displayName: string;
   status: string;
+  initiatedByParty?: string | null;
 };
 
 export type CheckoutCustomerOption = CheckoutPersonOption | CheckoutBusinessOption;
@@ -81,6 +82,7 @@ export function mapCheckoutSearchItemToOption(item: {
   platformBusinessCustomerId?: string | null;
   resolvedPersonalDisplayName?: string | null;
   partyKind?: string | null;
+  initiatedByParty?: string | null;
 }): CheckoutCustomerOption | null {
   if (item.kind === "Business") {
     if (!item.connectionId || !item.buyerOrganizationId) {
@@ -93,6 +95,7 @@ export function mapCheckoutSearchItemToOption(item: {
       buyerPublicOrganizationId: item.buyerPublicOrganizationId ?? null,
       displayName: item.displayName,
       status: item.status,
+      initiatedByParty: item.initiatedByParty ?? null,
     };
   }
 

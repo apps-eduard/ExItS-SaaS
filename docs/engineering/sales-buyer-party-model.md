@@ -15,6 +15,19 @@ The buyer is a **counterparty**, never the transaction owner.
 | Personal | ExItS Personal public identity (`EX-…`) as buyer |
 | Organization | ExItS Business identity (`ORG######`) as buyer |
 
+### Organization buyer consent (POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01)
+
+Direct B2B Organization checkout requires an **Active** `ConnectedSupplierRelationship` where:
+
+- `SupplierOrganizationId` = selling organization
+- `BuyerOrganizationId` = selected buyer organization
+
+Pending relationships may appear in Checkout → Businesses for discoverability but are **not selectable**. Server `B2bCheckoutBuyerAuthorization` rejects Pending/Declined/Disconnected/forged buyer ids at Sale checkout.
+
+Seller **Add business** creates a Pending supplier-initiated invitation only (`InitiatedByParty=Supplier`) — never a POSCustomer stub and never an immediately Active relationship.
+
+Legacy ORG-linked POSCustomer rows remain for historical Cash attach when no open B2B relationship exists; they do not bypass consent for Organization buyer party Sales.
+
 Actor (`RecordedBy`) is who operated the till. It does not own the sale.
 
 Operational mutations (sales, inventory, orders, shifts) store actor GUIDs on authoritative aggregates — not client-supplied ids. Fulfillment handoffs store `ReadyBy`, `DeliveredBy`, etc. Provider payment finalization uses `ProviderFinalizedBySystem` instead of attributing gateway work to a fake user. See [P28-WP15D operational actor traceability](../reports/P28-WP15D-operational-actor-traceability.md).

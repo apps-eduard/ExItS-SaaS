@@ -1385,6 +1385,21 @@ export function CheckoutCashPage() {
                 kindFilter={customerKindFilter}
                 onKindFilterChange={setCustomerKindFilter}
                 onSelect={(customer) => {
+                  if (
+                    customer.kind === "Business" &&
+                    customer.status.trim().toLowerCase() === "pending"
+                  ) {
+                    const name = customer.displayName.trim() || t("checkout.businessFallback");
+                    const sellerInitiated =
+                      (customer.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
+                    showToast(
+                      sellerInitiated
+                        ? t("checkout.pendingConnectionToast").replace("{name}", name)
+                        : t("checkout.pendingNeedsApprovalToast").replace("{name}", name),
+                      "success",
+                    );
+                    return;
+                  }
                   setSelectedCustomer(customer);
                   setCustomerPanelOpen(false);
                 }}

@@ -71,7 +71,8 @@ public sealed record CheckoutCustomerSearchItemDto(
     Guid? ConnectionId = null,
     Guid? BuyerOrganizationId = null,
     string? BuyerPublicOrganizationId = null,
-    string? PartyKind = null)
+    string? PartyKind = null,
+    string? InitiatedByParty = null)
 {
     public const string KindCustomer = "Customer";
     public const string KindBusiness = "Business";

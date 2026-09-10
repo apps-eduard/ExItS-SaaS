@@ -41,6 +41,21 @@ export function resolveOrganizationNotificationHref(
     return "/suppliers/connected/requests";
   }
 
+  if (type === "BusinessCustomerConnectionRequested") {
+    return "/suppliers/connected/requests";
+  }
+  if (type === "BusinessCustomerConnectionAccepted") {
+    return relatedId ? `/customers/business/${relatedId}` : "/customers?kind=businesses";
+  }
+  if (
+    type === "BusinessCustomerConnectionDeclined" ||
+    type === "BusinessCustomerConnectionCancelled"
+  ) {
+    return type === "BusinessCustomerConnectionCancelled"
+      ? "/suppliers"
+      : "/customers?kind=businesses";
+  }
+
   if (type === "ConnectedPurchaseOrderSubmitted" && relatedId) {
     return `/purchasing/incoming-orders/${relatedId}`;
   }

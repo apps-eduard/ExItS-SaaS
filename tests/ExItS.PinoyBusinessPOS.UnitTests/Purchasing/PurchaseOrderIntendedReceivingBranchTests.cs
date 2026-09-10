@@ -304,6 +304,11 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
         }
         public Task<string> AllocateNextSupplierCodeAsync(PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult("SUP-000001");
+        public Task<Supplier?> FindByConnectedRelationshipIdAsync(
+            PosOrganizationId organizationId,
+            ConnectedSupplierRelationshipId relationshipId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Supplier?>(null);
         public Task<Supplier?> FindActiveByNormalizedEmailAsync(PosOrganizationId organizationId, string normalizedEmail, CancellationToken cancellationToken = default) =>
             Task.FromResult<Supplier?>(null);
         public Task<Supplier?> FindActiveByNormalizedMobileAsync(PosOrganizationId organizationId, string normalizedMobile, CancellationToken cancellationToken = default) =>

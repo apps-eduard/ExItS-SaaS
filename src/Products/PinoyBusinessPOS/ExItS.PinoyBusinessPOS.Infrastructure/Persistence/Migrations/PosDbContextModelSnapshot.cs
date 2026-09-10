@@ -2025,6 +2025,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("disconnected_at_utc");
 
+                    b.Property<int>("InitiatedByParty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("initiated_by_party");
+
                     b.Property<DateTimeOffset>("RequestedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_at_utc");
@@ -2097,6 +2103,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("connected_supplier_relationships", "pos", t =>
                         {
                             t.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
+
+                            t.HasCheckConstraint("ck_connected_supplier_relationships_initiated_by_party", "initiated_by_party BETWEEN 0 AND 1");
 
                             t.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
                         });

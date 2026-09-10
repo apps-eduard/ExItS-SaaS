@@ -33,6 +33,8 @@ public static class ConnectedSupplierErrorCodes
     /// <summary>Caller attempted to read supplier requests for a branch they cannot access.</summary>
     public const string BranchReadForbidden = "pos.connected_supplier.branch_read_forbidden";
     public const string OutOfStockSupplierProduct = "pos.connected_supplier.out_of_stock";
+    /// <summary>Seller invite blocked because the buyer already has a Pending request to this supplier.</summary>
+    public const string PendingBuyerRequestExists = "pos.connected_supplier.pending_buyer_request_exists";
     public const string InsufficientSupplierStock = "pos.connected_supplier.insufficient_stock";
 }
 
@@ -53,7 +55,8 @@ public sealed record ConnectedSupplierRelationshipDto(
     string CatalogSharingMode = "SelectedOnly",
     decimal? CustomerDiscountPercent = null,
     Guid? SupplierBranchId = null,
-    string? SupplierBranchName = null);
+    string? SupplierBranchName = null,
+    string InitiatedByParty = "Buyer");
 public sealed record RequestConnectionRequest(
     Guid? SupplierOrganizationId = null,
     string? SupplierPublicOrganizationIdOrQrPayload = null,
@@ -187,7 +190,8 @@ public static class ConnectedSupplierMapper
         CatalogSharingMode: x.CatalogSharingMode.ToString(),
         CustomerDiscountPercent: x.CustomerDiscountPercent,
         SupplierBranchId: x.SupplierBranchId,
-        SupplierBranchName: x.SupplierBranchNameSnapshot);
+        SupplierBranchName: x.SupplierBranchNameSnapshot,
+        InitiatedByParty: x.InitiatedByParty.ToString());
     public static SupplierProductExposureDto Map(SupplierProductExposure x) => new(x.Id.Value,x.SupplierOrganizationId.Value,
         x.ProductId.Value,x.SkuSnapshot,x.NameSnapshot,x.CategoryNameSnapshot,x.UnitOfMeasureCode,x.SupplierOrderPrice,
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
@@ -736,6 +740,7 @@ public sealed class RespondConnection
     private readonly IAuthorizedBranchGroupingDirectory _branchAccess;
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
+    private readonly ISupplierRepository? _suppliers;
     private readonly TimeProvider _clock;
 
     public RespondConnection(
@@ -746,7 +751,8 @@ public sealed class RespondConnection
         IOrganizationBusinessNotificationPublisher? notifications = null,
         TimeProvider? clock = null,
         ICatalogProductRepository? products = null,
-        ISupplierProductExposureRepository? exposures = null)
+        ISupplierProductExposureRepository? exposures = null,
+        ISupplierRepository? suppliers = null)
     {
         _relationships = relationships;
         _uow = uow;
@@ -756,6 +762,7 @@ public sealed class RespondConnection
         _clock = clock ?? TimeProvider.System;
         _products = products;
         _exposures = exposures;
+        _suppliers = suppliers;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -775,64 +782,75 @@ public sealed class RespondConnection
 
         var r = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct);
         var org = PosOrganizationId.From(orgId);
-        if (r is null || r.SupplierOrganizationId != org)
+        if (r is null || !r.IsRecipient(org))
         {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
                 ConnectedSupplierErrorCodes.NotFound,
                 "This connection request is no longer available.");
         }
 
-        var respondScope = await _branchAccess.ListAuthorizedAsync(orgId, ct).ConfigureAwait(false);
-        if (!SupplierConnectionBranchRouting.CanRespondForSupplierBranch(
-                r.SupplierBranchId,
-                respondScope.IsOrganizationWide,
-                respondScope.Branches.Select(b => b.BranchId)))
+        if (r.InitiatedByParty == ConnectionInitiatedByParty.Buyer)
         {
-            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
-                ConnectedSupplierErrorCodes.BranchResponseForbidden,
-                "You cannot respond to a connection request for this supplier location.");
+            var respondScope = await _branchAccess.ListAuthorizedAsync(orgId, ct).ConfigureAwait(false);
+            if (!SupplierConnectionBranchRouting.CanRespondForSupplierBranch(
+                    r.SupplierBranchId,
+                    respondScope.IsOrganizationWide,
+                    respondScope.Branches.Select(b => b.BranchId)))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    ConnectedSupplierErrorCodes.BranchResponseForbidden,
+                    "You cannot respond to a connection request for this supplier location.");
+            }
         }
 
         try
         {
+            var utcNow = _clock.GetUtcNow();
             if (approve)
             {
-                var mode = ParseCatalogSharingMode(request.CatalogSharingMode) ?? CatalogSharingMode.SelectedOnly;
-                if (mode == CatalogSharingMode.AllEligible && !request.ConfirmCatalogSharing)
+                if (r.InitiatedByParty == ConnectionInitiatedByParty.Buyer)
                 {
-                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
-                        ConnectedSupplierErrorCodes.BulkValidation,
-                        "Confirm catalog sharing to share all eligible products with this customer.");
-                }
+                    var mode = ParseCatalogSharingMode(request.CatalogSharingMode) ?? CatalogSharingMode.SelectedOnly;
+                    if (mode == CatalogSharingMode.AllEligible && !request.ConfirmCatalogSharing)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                            ConnectedSupplierErrorCodes.BulkValidation,
+                            "Confirm catalog sharing to share all eligible products with this customer.");
+                    }
 
-                r.Approve(_clock.GetUtcNow(), request.RespondedByUserId);
-                r.ConfigureCatalogSharing(mode, request.CustomerDiscountPercent, _clock.GetUtcNow());
-                if (mode == CatalogSharingMode.AllEligible)
+                    r.Approve(utcNow, request.RespondedByUserId);
+                    r.ConfigureCatalogSharing(mode, request.CustomerDiscountPercent, utcNow);
+                    if (mode == CatalogSharingMode.AllEligible && _products is not null && _exposures is not null)
+                    {
+                        await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                                org,
+                                _products,
+                                _exposures,
+                                utcNow,
+                                ct)
+                            .ConfigureAwait(false);
+                    }
+                }
+                else
                 {
-                    await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
-                            org,
-                            _products,
-                            _exposures,
-                            _clock.GetUtcNow(),
-                            ct)
-                        .ConfigureAwait(false);
+                    r.Approve(utcNow, request.RespondedByUserId);
+                    if (_suppliers is not null)
+                    {
+                        await BuyerConnectedSupplierMaster
+                            .EnsureAsync(_suppliers, r, utcNow, ct)
+                            .ConfigureAwait(false);
+                    }
                 }
             }
             else
             {
-                r.Decline(_clock.GetUtcNow(), request.RespondedByUserId);
+                r.Decline(utcNow, request.RespondedByUserId);
             }
 
             await _relationships.UpdateAsync(r, ct);
             await _uow.SaveChangesAsync(ct);
 
             var relatedId = r.Id.Value.ToString("D");
-            await _notifications.MarkRelatedReadAsync(
-                orgId,
-                SupplierConnectionNotificationTypes.Requested,
-                relatedId,
-                ct).ConfigureAwait(false);
-
             var supplierName = string.IsNullOrWhiteSpace(r.SupplierDisplayNameSnapshot)
                 ? (r.SupplierPublicOrganizationIdSnapshot ?? "The supplier")
                 : r.SupplierDisplayNameSnapshot;
@@ -840,50 +858,86 @@ public sealed class RespondConnection
                 ? (r.BuyerPublicOrganizationIdSnapshot ?? "A business")
                 : r.BuyerDisplayNameSnapshot;
 
-            if (approve)
+            if (r.InitiatedByParty == ConnectionInitiatedByParty.Buyer)
             {
-                await _notifications.PublishAsync(
+                await _notifications.MarkRelatedReadAsync(
                     orgId,
-                    r.BuyerOrganizationId.Value,
-                    SupplierConnectionNotificationTypes.Accepted,
+                    SupplierConnectionNotificationTypes.Requested,
                     relatedId,
-                    "Supplier connection accepted",
-                    $"{supplierName} accepted your supplier connection request.",
                     ct).ConfigureAwait(false);
 
-                // Supplier-side inbox history (same org). Requested may be missing if publish failed earlier.
-                await _notifications.PublishAsync(
-                    orgId,
-                    orgId,
-                    SupplierConnectionNotificationTypes.AcceptedConfirmation,
-                    relatedId,
-                    "Connection accepted",
-                    $"{buyerName} is now a connected buyer.",
-                    ct).ConfigureAwait(false);
+                if (approve)
+                {
+                    await _notifications.PublishAsync(
+                        orgId,
+                        r.BuyerOrganizationId.Value,
+                        SupplierConnectionNotificationTypes.Accepted,
+                        relatedId,
+                        "Supplier connection accepted",
+                        $"{supplierName} accepted your supplier connection request.",
+                        ct).ConfigureAwait(false);
+                    await _notifications.PublishAsync(
+                        orgId,
+                        orgId,
+                        SupplierConnectionNotificationTypes.AcceptedConfirmation,
+                        relatedId,
+                        "Connection accepted",
+                        $"{buyerName} is now a connected buyer.",
+                        ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _notifications.PublishAsync(
+                        orgId,
+                        r.BuyerOrganizationId.Value,
+                        SupplierConnectionNotificationTypes.Declined,
+                        relatedId,
+                        "Supplier connection declined",
+                        $"{supplierName} declined your supplier connection request.",
+                        ct).ConfigureAwait(false);
+                    await _notifications.PublishAsync(
+                        orgId,
+                        orgId,
+                        SupplierConnectionNotificationTypes.DeclinedConfirmation,
+                        relatedId,
+                        "Connection declined",
+                        $"You declined the connection request from {buyerName}.",
+                        ct).ConfigureAwait(false);
+                }
             }
             else
             {
-                await _notifications.PublishAsync(
+                await _notifications.MarkRelatedReadAsync(
                     orgId,
-                    r.BuyerOrganizationId.Value,
-                    SupplierConnectionNotificationTypes.Declined,
+                    BusinessCustomerConnectionNotificationTypes.Requested,
                     relatedId,
-                    "Supplier connection declined",
-                    $"{supplierName} declined your supplier connection request.",
                     ct).ConfigureAwait(false);
-
-                await _notifications.PublishAsync(
-                    orgId,
-                    orgId,
-                    SupplierConnectionNotificationTypes.DeclinedConfirmation,
-                    relatedId,
-                    "Connection declined",
-                    $"You declined the connection request from {buyerName}.",
-                    ct).ConfigureAwait(false);
+                if (approve)
+                {
+                    await _notifications.PublishAsync(
+                        orgId,
+                        r.SupplierOrganizationId.Value,
+                        BusinessCustomerConnectionNotificationTypes.Accepted,
+                        relatedId,
+                        "Business connection accepted",
+                        $"{buyerName} accepted your business connection request.",
+                        ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _notifications.PublishAsync(
+                        orgId,
+                        r.SupplierOrganizationId.Value,
+                        BusinessCustomerConnectionNotificationTypes.Declined,
+                        relatedId,
+                        "Business connection declined",
+                        $"{buyerName} declined your business connection request.",
+                        ct).ConfigureAwait(false);
+                }
             }
 
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
-                ConnectedSupplierMapper.Map(r, supplierView: true));
+                ConnectedSupplierMapper.Map(r, supplierView: r.SupplierOrganizationId == org));
         }
         catch (DomainException ex)
         {
@@ -970,7 +1024,7 @@ public sealed class CancelPendingConnection
             .GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
             .ConfigureAwait(false);
 
-        if (r is null || r.BuyerOrganizationId != org)
+        if (r is null || !r.IsInitiator(org))
         {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
                 ConnectedSupplierErrorCodes.NotFound,
@@ -990,16 +1044,39 @@ public sealed class CancelPendingConnection
             await _relationships.UpdateAsync(r, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
-            // Ensure supplier-side incoming request UI/notifications no longer show this as actionable.
             var relatedId = r.Id.Value.ToString("D");
-            await _notifications.MarkRelatedReadAsync(
-                r.SupplierOrganizationId.Value,
-                SupplierConnectionNotificationTypes.Requested,
-                relatedId,
-                ct).ConfigureAwait(false);
+            var recipientOrgId = r.RecipientOrganizationId.Value;
+            if (r.InitiatedByParty == ConnectionInitiatedByParty.Buyer)
+            {
+                await _notifications.MarkRelatedReadAsync(
+                    recipientOrgId,
+                    SupplierConnectionNotificationTypes.Requested,
+                    relatedId,
+                    ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await _notifications.MarkRelatedReadAsync(
+                    recipientOrgId,
+                    BusinessCustomerConnectionNotificationTypes.Requested,
+                    relatedId,
+                    ct).ConfigureAwait(false);
+
+                var supplierName = string.IsNullOrWhiteSpace(r.SupplierDisplayNameSnapshot)
+                    ? (r.SupplierPublicOrganizationIdSnapshot ?? "The supplier")
+                    : r.SupplierDisplayNameSnapshot;
+                await _notifications.PublishAsync(
+                    orgId,
+                    recipientOrgId,
+                    BusinessCustomerConnectionNotificationTypes.Cancelled,
+                    relatedId,
+                    "Business connection cancelled",
+                    $"{supplierName} cancelled the business connection request.",
+                    ct).ConfigureAwait(false);
+            }
 
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
-                ConnectedSupplierMapper.Map(r, supplierView: false));
+                ConnectedSupplierMapper.Map(r, supplierView: r.SupplierOrganizationId == org));
         }
         catch (DomainException ex)
         {

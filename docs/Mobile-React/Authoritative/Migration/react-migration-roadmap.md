@@ -362,7 +362,7 @@ Visual packages below depend on **RMAP-00** unless noted non-UI.
 | Objective    | Connect, expose≠share, buyer prices, links                                                                                                        |
 | Dependencies | RMAP-15, RMAP-04, RMAP-00                                                                                                                         |
 | Invariants   | EXPOSABLE≠SHARED; no inventory on share                                                                                                           |
-| Status       | **COMPLETE** — React connected suppliers UI ([report](../../Reports/POS-REACT-RMAP-16-connected-suppliers.md)); `RMAP_16_NATIVE_SPEAKER=PENDING`. |
+| Status       | **COMPLETE** — React connected suppliers UI ([report](../../Reports/POS-REACT-RMAP-16-connected-suppliers.md)); `RMAP_16_NATIVE_SPEAKER=PENDING`. Seller-initiated invite + consent lifecycle: [POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01](../../Reports/POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01.md). |
 | Next         | RMAP-17 authorized and completed after this package.                                                                                              |
 
 ### RMAP-17 — Purchasing + goods receipt

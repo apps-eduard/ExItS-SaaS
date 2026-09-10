@@ -6,7 +6,7 @@ import { canManageSuppliers } from "@/access/pos-capabilities";
 import {
   approveConnection,
   declineConnection,
-  listRelationships,
+  listIncomingConnectionRequests,
   type ConnectedSupplierRelationship,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -78,10 +78,7 @@ export function ConnectedIncomingRequestsPage() {
   const query = useQuery({
     queryKey: ["connected-suppliers", "incoming", workspace?.organizationId, workspace?.branchId],
     enabled: Boolean(workspace),
-    queryFn: async ({ signal }) => {
-      const rows = await listRelationships(workspace!, "supplier", signal);
-      return rows.filter((row) => row.status.toLowerCase() === "pending");
-    },
+    queryFn: async ({ signal }) => listIncomingConnectionRequests(workspace!, signal),
   });
 
   const items = useMemo(() => {
@@ -89,22 +86,38 @@ export function ConnectedIncomingRequestsPage() {
     return rows.filter((item) => matchesIncomingSearch(item, debounced));
   }, [query.data, debounced]);
 
-  async function respond(relationshipId: string, accept: boolean, name: string) {
+  function isSupplierInvitation(item: ConnectedSupplierRelationship): boolean {
+    return (item.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
+  }
+
+  async function respond(item: ConnectedSupplierRelationship, accept: boolean) {
     if (!workspace || !allowManage || busyId) {
       return;
     }
-    if (accept) {
-      setAcceptSetup({ relationshipId, name });
+    const name = item.counterpartyDisplayName?.trim() || t("connected.requestingBusiness");
+    if (accept && !isSupplierInvitation(item)) {
+      setAcceptSetup({ relationshipId: item.relationshipId, name });
       setSharingMode("AllEligible");
       setDiscountPercent("");
       setActionError(null);
       return;
     }
-    setBusyId(relationshipId);
+    setBusyId(item.relationshipId);
     setActionError(null);
     try {
-      await declineConnection(workspace, relationshipId);
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      if (accept) {
+        await approveConnection(workspace, item.relationshipId);
+      } else {
+        await declineConnection(workspace, item.relationshipId);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkout-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+      ]);
     } catch (err) {
       setActionError(
         err instanceof PosApiError
@@ -142,7 +155,14 @@ export function ConnectedIncomingRequestsPage() {
         name: acceptSetup.name,
       });
       setAcceptSetup(null);
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkout-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+      ]);
     } catch (err) {
       setActionError(
         err instanceof PosApiError
@@ -169,8 +189,8 @@ export function ConnectedIncomingRequestsPage() {
       data-testid="connected-incoming-page"
     >
       <PageHeader
-        title={t("connected.incomingTitle")}
-        description={t("connected.incomingHelp")}
+        title={t("connected.connectionRequestsTitle")}
+        description={t("connected.connectionRequestsHelp")}
         backTo={pageBackNav.suppliers.to}
         backLabel={t("connected.backToSuppliers")}
         backTestId="page-header-back-suppliers"
@@ -352,6 +372,7 @@ export function ConnectedIncomingRequestsPage() {
             preferences.locale,
           );
           const isBusy = busyId === item.relationshipId;
+          const supplierInvite = isSupplierInvitation(item);
 
           return (
             <li key={item.relationshipId}>
@@ -368,9 +389,16 @@ export function ConnectedIncomingRequestsPage() {
                       </span>
                     ) : null}
                     <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
-                      {t("connected.incomingMessage").replace("{name}", name)}
+                      {supplierInvite
+                        ? t("connected.incomingSupplierInviteMessage").replace("{name}", name)
+                        : t("connected.incomingBuyerRequestMessage").replace("{name}", name)}
                     </span>
-                    {item.supplierBranchName ? (
+                    <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
+                      {supplierInvite
+                        ? t("connected.incomingKindSupplierInvite")
+                        : t("connected.incomingKindBuyerRequest")}
+                    </span>
+                    {item.supplierBranchName && !supplierInvite ? (
                       <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
                         {t("connected.incomingLocation").replace("{name}", item.supplierBranchName)}
                       </span>
@@ -381,31 +409,32 @@ export function ConnectedIncomingRequestsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <StatusChip tone="warning">{item.status}</StatusChip>
+                  <StatusChip tone="warning">{t("customers.badge.pending")}</StatusChip>
                 </div>
 
                 {allowManage ? (
                   <div className="connected-incoming-row__actions">
                     <Button
                       type="button"
-                      variant="outline"
                       data-testid={`connected-approve-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
-                      onClick={() => void respond(item.relationshipId, true, name)}
+                      onClick={() => void respond(item, true)}
                     >
                       {isBusy ? (
                         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
                       ) : (
                         <Check className="size-4 shrink-0" aria-hidden />
                       )}
-                      {t("connected.accept")}
+                      {supplierInvite
+                        ? t("connected.accept")
+                        : t("connected.reviewAndAccept")}
                     </Button>
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="outline"
                       data-testid={`connected-decline-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
-                      onClick={() => void respond(item.relationshipId, false, name)}
+                      onClick={() => void respond(item, false)}
                     >
                       {isBusy ? (
                         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />

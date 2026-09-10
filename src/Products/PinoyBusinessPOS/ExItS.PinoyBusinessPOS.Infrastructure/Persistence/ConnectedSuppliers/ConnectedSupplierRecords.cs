@@ -11,6 +11,8 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public int Status { get; set; } public DateTimeOffset RequestedAtUtc { get; set; } public Guid? RequestedByUserId { get; set; }
     public DateTimeOffset? RespondedAtUtc { get; set; } public Guid? RespondedByUserId { get; set; }
     public DateTimeOffset? DisconnectedAtUtc { get; set; }
+    /// <summary>0 = Buyer (legacy default), 1 = Supplier (Business Customer invitation).</summary>
+    public int InitiatedByParty { get; set; }
     public string? BuyerDisplayNameSnapshot { get; set; }
     public string? BuyerPublicOrganizationIdSnapshot { get; set; }
     public string? SupplierDisplayNameSnapshot { get; set; }
@@ -99,11 +101,13 @@ internal static class ConnectedSupplierEntityMapper
         (CatalogSharingMode)r.CatalogSharingMode,
         r.CustomerDiscountPercent,
         r.SupplierBranchId,
-        r.SupplierBranchNameSnapshot);
+        r.SupplierBranchNameSnapshot,
+        (ConnectionInitiatedByParty)r.InitiatedByParty);
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
         RespondedByUserId=x.RespondedByUserId,DisconnectedAtUtc=x.DisconnectedAtUtc,
+        InitiatedByParty=(int)x.InitiatedByParty,
         BuyerDisplayNameSnapshot=x.BuyerDisplayNameSnapshot,BuyerPublicOrganizationIdSnapshot=x.BuyerPublicOrganizationIdSnapshot,
         SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode=(int)x.CatalogSharingMode,CustomerDiscountPercent=x.CustomerDiscountPercent,
@@ -111,6 +115,7 @@ internal static class ConnectedSupplierEntityMapper
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;
+     r.InitiatedByParty=(int)x.InitiatedByParty;
      r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;
      r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;r.UpdatedAtUtc=x.UpdatedAtUtc;}
 

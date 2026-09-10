@@ -62,6 +62,33 @@ describe("resolveOrganizationNotificationHref", () => {
     ).toBe("/inventory/transfers/66666666-6666-6666-6666-666666666666");
   });
 
+  it("routes business customer connection notifications", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionRequested",
+        relatedId: "77777777-7777-7777-7777-777777777777",
+      }),
+    ).toBe("/suppliers/connected/requests");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionAccepted",
+        relatedId: "77777777-7777-7777-7777-777777777777",
+      }),
+    ).toBe("/customers/business/77777777-7777-7777-7777-777777777777");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionDeclined",
+        relatedId: null,
+      }),
+    ).toBe("/customers?kind=businesses");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionCancelled",
+        relatedId: null,
+      }),
+    ).toBe("/suppliers");
+  });
+
   it("returns null for unknown types", () => {
     expect(
       resolveOrganizationNotificationHref({

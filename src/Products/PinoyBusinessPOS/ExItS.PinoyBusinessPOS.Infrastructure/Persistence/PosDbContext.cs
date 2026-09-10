@@ -4747,6 +4747,7 @@ public sealed class PosDbContext : DbContext
             {
                 tb.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
                 tb.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
+                tb.HasCheckConstraint("ck_connected_supplier_relationships_initiated_by_party", "initiated_by_party BETWEEN 0 AND 1");
             });
             entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
@@ -4754,6 +4755,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.Status).HasColumnName("status"); entity.Property(x=>x.RequestedAtUtc).HasColumnName("requested_at_utc");
             entity.Property(x=>x.RequestedByUserId).HasColumnName("requested_by_user_id"); entity.Property(x=>x.RespondedAtUtc).HasColumnName("responded_at_utc");
             entity.Property(x=>x.RespondedByUserId).HasColumnName("responded_by_user_id"); entity.Property(x=>x.DisconnectedAtUtc).HasColumnName("disconnected_at_utc");
+            entity.Property(x=>x.InitiatedByParty).HasColumnName("initiated_by_party").HasDefaultValue(0);
             entity.Property(x=>x.BuyerDisplayNameSnapshot).HasColumnName("buyer_display_name_snapshot").HasMaxLength(128);
             entity.Property(x=>x.BuyerPublicOrganizationIdSnapshot).HasColumnName("buyer_public_organization_id_snapshot").HasMaxLength(32);
             entity.Property(x=>x.SupplierDisplayNameSnapshot).HasColumnName("supplier_display_name_snapshot").HasMaxLength(128);

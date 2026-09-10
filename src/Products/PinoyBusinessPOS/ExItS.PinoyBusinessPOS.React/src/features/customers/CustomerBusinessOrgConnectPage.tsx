@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CheckCircle2, Info } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Building2, CheckCircle2, Send } from "lucide-react";
 import {
+  inviteBusinessCustomerConnection,
   listBusinessCustomers,
   listRelationships,
 } from "@/api/pos/pos-connected-suppliers-client";
@@ -14,6 +16,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { parseConnectedSupplierScanPayload } from "@/features/suppliers/connected-supplier-scan";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -28,19 +31,24 @@ type ResolvedBuyerOrg = {
   displayName: string;
   alsoSupplier: boolean;
   existingConnectionId: string | null;
+  existingConnectionStatus: string | null;
+  existingActionRequired: boolean;
   existingCustomerId: string | null;
 };
 
 /**
- * Find/connect an ExItS Organization as a Business Customer.
- * Reuses canonical org identity; never duplicates an existing POS customer or connection.
+ * Invite an ExItS Organization as a Business Customer (seller-initiated Pending).
+ * Never creates a POSCustomer or an immediately Active relationship.
  */
 export function CustomerBusinessOrgConnectPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const { boundWorkspace } = useWorkspace();
   const [error, setError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [resolved, setResolved] = useState<ResolvedBuyerOrg | null>(null);
 
   const workspace = useMemo(
@@ -76,9 +84,6 @@ export function CustomerBusinessOrgConnectPage() {
       if (!(err instanceof ExItsQrParseError) && !/^ORG\d{6}$/i.test(trimmed)) {
         setError(t("customers.orgIdRequired"));
         return;
-      }
-      if (!/^ORG\d{6}$/i.test(trimmed) && !/^ORG/i.test(trimmed)) {
-        // bare typed ORG id still allowed
       }
     }
 
@@ -117,6 +122,8 @@ export function CustomerBusinessOrgConnectPage() {
         displayName: org.displayName,
         alsoSupplier,
         existingConnectionId: existingConnection?.connectionId ?? null,
+        existingConnectionStatus: existingConnection?.relationshipStatus ?? null,
+        existingActionRequired: existingConnection?.actionRequired ?? false,
         existingCustomerId: existingCustomer?.customerId ?? null,
       });
     } catch (err) {
@@ -136,6 +143,10 @@ export function CustomerBusinessOrgConnectPage() {
     if (!resolved || !workspace) return;
 
     if (resolved.existingConnectionId) {
+      if (resolved.existingActionRequired) {
+        navigate("/suppliers/connected/requests", { replace: true });
+        return;
+      }
       navigate(`/customers/business/${resolved.existingConnectionId}`, { replace: true });
       return;
     }
@@ -144,17 +155,53 @@ export function CustomerBusinessOrgConnectPage() {
       return;
     }
 
-    // Direct B2B Business Customers are Active OrganizationConnections only.
-    // Do not create a POSCustomer stub — it appears under Customers but not as a
-    // Direct Organization counterparty until the buyer connects via Suppliers.
-    setError(t("customers.orgNeedsBuyerConnection"));
+    setSending(true);
+    setError(null);
+    try {
+      await inviteBusinessCustomerConnection(workspace, {
+        buyerPublicOrganizationIdOrQrPayload: resolved.publicOrganizationId,
+        buyerOrganizationId: resolved.organizationId,
+        supplierBranchId: workspace.branchId,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkout-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization", "notifications"] }),
+      ]);
+      showToast(t("customers.orgInviteSent"), "success");
+      navigate("/customers?kind=businesses", { replace: true });
+    } catch (err) {
+      if (err instanceof PosApiError) {
+        const code = err.errorCode ?? "";
+        if (code.includes("pending_buyer_request_exists")) {
+          setError(t("customers.orgPendingBuyerRequest"));
+          return;
+        }
+        if (code.includes("duplicate")) {
+          setError(err.problem.detail ?? t("customers.orgInviteAlreadyPending"));
+          return;
+        }
+        setError(err.problem.detail ?? err.message);
+        return;
+      }
+      setError(err instanceof Error ? err.message : t("error.detail"));
+    } finally {
+      setSending(false);
+    }
   }
 
+  const statusLower = resolved?.existingConnectionStatus?.toLowerCase() ?? "";
   const actionLabel = resolved?.existingConnectionId
-    ? t("customers.orgOpenExistingConnection")
+    ? resolved.existingActionRequired
+      ? t("customers.orgReviewIncomingRequest")
+      : statusLower === "pending"
+        ? t("customers.orgOpenPendingConnection")
+        : t("customers.orgOpenExistingConnection")
     : resolved?.existingCustomerId
       ? t("customers.orgOpenExistingCustomer")
-      : t("customers.orgNeedsConnectionAction");
+      : t("customers.orgSendConnectionRequest");
 
   return (
     <div
@@ -182,7 +229,7 @@ export function CustomerBusinessOrgConnectPage() {
 
       <QrScanOrEnter
         expectedPurpose="organization"
-        disabled={resolving}
+        disabled={resolving || sending}
         parseRawPayload={(raw) => {
           const parsed = parseConnectedSupplierScanPayload(raw);
           return parsed.publicOrganizationId;
@@ -202,6 +249,17 @@ export function CustomerBusinessOrgConnectPage() {
         </p>
       ) : null}
 
+      {error && error === t("customers.orgPendingBuyerRequest") ? (
+        <Button
+          type="button"
+          variant="outline"
+          data-testid="customer-org-review-incoming"
+          onClick={() => navigate("/suppliers/connected/requests")}
+        >
+          {t("customers.orgReviewIncomingRequest")}
+        </Button>
+      ) : null}
+
       {resolved ? (
         <section
           className="catalog-form-section exits-animate-panel gap-3"
@@ -218,8 +276,10 @@ export function CustomerBusinessOrgConnectPage() {
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <StatusChip tone="info">{t("customers.badge.exitsOrganization")}</StatusChip>
-                {resolved.existingConnectionId || resolved.existingCustomerId ? (
-                  <StatusChip tone="success">{t("customers.badge.connected")}</StatusChip>
+                {resolved.existingConnectionId ? (
+                  <StatusChip tone={statusLower === "active" ? "success" : "warning"}>
+                    {resolved.existingConnectionStatus ?? t("customers.badge.connected")}
+                  </StatusChip>
                 ) : null}
                 {resolved.alsoSupplier ? (
                   <StatusChip tone="warning">{t("customers.badge.alsoSupplier")}</StatusChip>
@@ -231,12 +291,13 @@ export function CustomerBusinessOrgConnectPage() {
           <Button
             type="button"
             data-testid="customer-org-connect-submit"
+            disabled={sending}
             onClick={() => void connectOrOpen()}
           >
             {resolved.existingConnectionId || resolved.existingCustomerId ? (
               <CheckCircle2 className="size-4" aria-hidden />
             ) : (
-              <Info className="size-4" aria-hidden />
+              <Send className="size-4" aria-hidden />
             )}
             {actionLabel}
           </Button>

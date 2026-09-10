@@ -45,6 +45,7 @@ export const connectedSupplierRelationshipSchema = z.object({
   customerDiscountPercent: z.number().nullable().optional().default(null),
   supplierBranchId: guidSchema.nullable().optional(),
   supplierBranchName: z.string().nullable().optional(),
+  initiatedByParty: z.string().optional().default("Buyer"),
 });
 
 export const connectionCatalogSettingsSchema = z.object({
@@ -403,6 +404,44 @@ export async function requestConnection(
     },
   });
   return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+/** Seller invites a buyer Organization (Pending). Does not create a POSCustomer. */
+export async function inviteBusinessCustomerConnection(
+  workspace: PosWorkspaceScope,
+  input: {
+    buyerPublicOrganizationIdOrQrPayload: string;
+    buyerOrganizationId?: string | null;
+    supplierBranchId?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/relationships/invite-buyer`,
+    body: {
+      buyerPublicOrganizationIdOrQrPayload: input.buyerPublicOrganizationIdOrQrPayload.trim(),
+      buyerOrganizationId: input.buyerOrganizationId ?? null,
+      supplierBranchId: input.supplierBranchId ?? null,
+    },
+  });
+  return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+/** Pending requests where the current organization is the recipient. */
+export async function listIncomingConnectionRequests(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/relationships/incoming`,
+  });
+  return z.array(connectedSupplierRelationshipSchema).parse(raw);
 }
 
 export async function updateSupplierLocation(
@@ -953,6 +992,8 @@ export const businessCustomerSchema = z.object({
   createdAtUtc: isoDateSchema,
   updatedAtUtc: isoDateSchema,
   displayNameIsLive: z.boolean().optional().default(false),
+  initiatedByParty: z.string().optional().default("Buyer"),
+  actionRequired: z.boolean().optional().default(false),
 });
 
 export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;

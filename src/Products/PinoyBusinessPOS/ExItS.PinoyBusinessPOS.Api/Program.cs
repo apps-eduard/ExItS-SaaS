@@ -415,6 +415,8 @@ builder.Services.AddScoped<UpdateSupplier>();
 builder.Services.AddScoped<ActivateSupplier>();
 builder.Services.AddScoped<DeactivateSupplier>();
 builder.Services.AddScoped<RequestConnection>();
+builder.Services.AddScoped<InviteBusinessCustomerConnection>();
+builder.Services.AddScoped<ListIncomingConnectionRequests>();
 builder.Services.AddScoped<RespondConnection>();
 builder.Services.AddScoped<GetConnectionCatalogSettings>();
 builder.Services.AddScoped<UpdateConnectionCatalogSettings>();

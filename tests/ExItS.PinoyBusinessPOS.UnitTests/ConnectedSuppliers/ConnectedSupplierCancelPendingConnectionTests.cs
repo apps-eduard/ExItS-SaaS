@@ -137,7 +137,12 @@ public sealed class ConnectedSupplierCancelPendingConnectionTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<Supplier?>(null);
 
-        public Task<string> AllocateNextSupplierCodeAsync(
+                public Task<Supplier?> FindByConnectedRelationshipIdAsync(
+            PosOrganizationId organizationId,
+            ConnectedSupplierRelationshipId relationshipId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Supplier?>(null);
+public Task<string> AllocateNextSupplierCodeAsync(
             PosOrganizationId organizationId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult($"SUP-{++_n:D6}");

@@ -26,7 +26,9 @@ public sealed record BusinessCustomerDto(
     DateTimeOffset? ConnectedSinceUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    bool DisplayNameIsLive = false);
+    bool DisplayNameIsLive = false,
+    string InitiatedByParty = "Buyer",
+    bool ActionRequired = false);
 
 /// <summary>
 /// Identity display policy for Business Customer list and detail.
@@ -41,8 +43,8 @@ public static class BusinessCustomerIdentityDisplay
 }
 
 /// <summary>
-/// Lists supplier Business Customers = Active (or optionally disconnected) buyer relationships.
-/// Catalog aggregates are batch-loaded (no per-row N+1).
+/// Lists supplier Business Customers = Active and Pending buyer relationships
+/// (optionally Disconnected/Declined history). Catalog aggregates are batch-loaded.
 /// Primary identity = relationship buyer snapshot (same as detail).
 /// </summary>
 public sealed class ListBusinessCustomers
@@ -80,7 +82,10 @@ public sealed class ListBusinessCustomers
         var filtered = rows
             .Where(r =>
                 r.Status == ConnectedSupplierRelationshipStatus.Active
-                || (includeDisconnected && r.Status == ConnectedSupplierRelationshipStatus.Disconnected))
+                || r.Status == ConnectedSupplierRelationshipStatus.Pending
+                || (includeDisconnected
+                    && (r.Status == ConnectedSupplierRelationshipStatus.Disconnected
+                        || r.Status == ConnectedSupplierRelationshipStatus.Declined)))
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -90,6 +95,12 @@ public sealed class ListBusinessCustomers
                 .Where(r => MatchesSearch(r, term))
                 .ToList();
         }
+
+        filtered = filtered
+            .OrderBy(r => r.Status == ConnectedSupplierRelationshipStatus.Active ? 0
+                : r.Status == ConnectedSupplierRelationshipStatus.Pending ? 1 : 2)
+            .ThenBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty)
+            .ToList();
 
         var eligibleCount = filtered.Count == 0
             ? 0
@@ -151,6 +162,9 @@ public sealed class ListBusinessCustomers
             ? Math.Max(0, eligibleCount - stats.ExcludedCount)
             : stats.ExplicitSharedCount;
 
+        var actionRequired = r.Status == ConnectedSupplierRelationshipStatus.Pending
+            && r.IsRecipient(r.SupplierOrganizationId);
+
         return new BusinessCustomerDto(
             r.Id.Value,
             r.SupplierOrganizationId.Value,
@@ -171,7 +185,9 @@ public sealed class ListBusinessCustomers
             r.RespondedAtUtc ?? r.CreatedAtUtc,
             r.CreatedAtUtc,
             r.UpdatedAtUtc,
-            displayNameIsLive);
+            displayNameIsLive,
+            r.InitiatedByParty.ToString(),
+            actionRequired);
     }
 }
 

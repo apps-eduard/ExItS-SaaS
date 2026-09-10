@@ -10,6 +10,17 @@ public enum ConnectedSupplierRelationshipStatus { Pending = 0, Active = 1, Decli
 public enum SupplierConnectionType { External = 0, ConnectedOrganization = 1 }
 
 /// <summary>
+/// Which organization party created the Pending connection request.
+/// Historical rows are Buyer-initiated; seller Business Customer invitations use Supplier.
+/// </summary>
+public enum ConnectionInitiatedByParty
+{
+    Buyer = 0,
+    Supplier = 1
+}
+
+
+/// <summary>
 /// How a supplier-buyer connection publishes eligible catalog products.
 /// Legacy connections default to <see cref="SelectedOnly"/> so visibility does not broaden on migration.
 /// </summary>
@@ -141,6 +152,8 @@ public sealed class ConnectedSupplierRelationship
     public PosOrganizationId BuyerOrganizationId { get; }
     public PosOrganizationId SupplierOrganizationId { get; }
     public ConnectedSupplierRelationshipStatus Status { get; private set; }
+    /// <summary>Who opened the Pending request — Buyer (classic) or Supplier (Business Customer invite).</summary>
+    public ConnectionInitiatedByParty InitiatedByParty { get; }
     public DateTimeOffset RequestedAtUtc { get; }
     public Guid? RequestedByUserId { get; }
     public DateTimeOffset? RespondedAtUtc { get; private set; }
@@ -167,6 +180,22 @@ public sealed class ConnectedSupplierRelationship
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
+    public PosOrganizationId InitiatorOrganizationId =>
+        InitiatedByParty == ConnectionInitiatedByParty.Supplier
+            ? SupplierOrganizationId
+            : BuyerOrganizationId;
+
+    public PosOrganizationId RecipientOrganizationId =>
+        InitiatedByParty == ConnectionInitiatedByParty.Supplier
+            ? BuyerOrganizationId
+            : SupplierOrganizationId;
+
+    public bool IsInitiator(PosOrganizationId organizationId) =>
+        organizationId == InitiatorOrganizationId;
+
+    public bool IsRecipient(PosOrganizationId organizationId) =>
+        organizationId == RecipientOrganizationId;
+
     private ConnectedSupplierRelationship(ConnectedSupplierRelationshipId id, PosOrganizationId buyerOrganizationId,
         PosOrganizationId supplierOrganizationId, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedByUserId, DateTimeOffset? respondedAtUtc, Guid? respondedByUserId,
@@ -176,10 +205,12 @@ public sealed class ConnectedSupplierRelationship
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null)
+        string? supplierBranchNameSnapshot = null,
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
-        Status = status; RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
+        Status = status; InitiatedByParty = initiatedByParty;
+        RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
         RespondedAtUtc = respondedAtUtc; RespondedByUserId = respondedByUserId; DisconnectedAtUtc = disconnectedAtUtc;
         BuyerDisplayNameSnapshot = CleanSnapshot(buyerDisplayNameSnapshot, 128);
         BuyerPublicOrganizationIdSnapshot = CleanSnapshot(buyerPublicOrganizationIdSnapshot, 32);
@@ -192,11 +223,41 @@ public sealed class ConnectedSupplierRelationship
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
+    /// <summary>Buyer-initiated request (classic Suppliers → Connect).</summary>
     public static ConnectedSupplierRelationship Request(PosOrganizationId buyer, PosOrganizationId supplier,
         DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
         string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
         string? supplierDisplayName = null, string? supplierPublicOrganizationId = null,
-        Guid? supplierBranchId = null, string? supplierBranchName = null)
+        Guid? supplierBranchId = null, string? supplierBranchName = null) =>
+        CreatePending(
+            buyer, supplier, ConnectionInitiatedByParty.Buyer, utcNow, requestedByUserId, id,
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
+            supplierBranchId, supplierBranchName);
+
+    /// <summary>Supplier-initiated Business Customer invitation (Customers → Add business).</summary>
+    public static ConnectedSupplierRelationship InviteBuyer(PosOrganizationId buyer, PosOrganizationId supplier,
+        DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
+        string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
+        string? supplierDisplayName = null, string? supplierPublicOrganizationId = null,
+        Guid? supplierBranchId = null, string? supplierBranchName = null) =>
+        CreatePending(
+            buyer, supplier, ConnectionInitiatedByParty.Supplier, utcNow, requestedByUserId, id,
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
+            supplierBranchId, supplierBranchName);
+
+    private static ConnectedSupplierRelationship CreatePending(
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        ConnectionInitiatedByParty initiatedByParty,
+        DateTimeOffset utcNow,
+        Guid? requestedByUserId,
+        ConnectedSupplierRelationshipId? id,
+        string? buyerDisplayName,
+        string? buyerPublicOrganizationId,
+        string? supplierDisplayName,
+        string? supplierPublicOrganizationId,
+        Guid? supplierBranchId,
+        string? supplierBranchName)
     {
         EnsureUtc(utcNow);
         if (buyer == supplier)
@@ -210,7 +271,7 @@ public sealed class ConnectedSupplierRelationship
             ConnectedSupplierRelationshipStatus.Pending, utcNow, requestedByUserId, null, null, null, utcNow, utcNow,
             buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
             CatalogSharingMode.SelectedOnly, customerDiscountPercent: null,
-            supplierBranchId, supplierBranchName);
+            supplierBranchId, supplierBranchName, initiatedByParty);
     }
 
     /// <summary>Sets or changes the operational supplier source branch (Pending or Active only).</summary>
@@ -279,11 +340,13 @@ public sealed class ConnectedSupplierRelationship
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null) =>
+        string? supplierBranchNameSnapshot = null,
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
-            catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot);
+            catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot,
+            initiatedByParty);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;
