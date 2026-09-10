@@ -6,7 +6,8 @@ STATUS=CODE_COMPLETE (targeted tests PASS; manual owner acceptance of MICA↔KIZ
 
 START_SHA=595b2ffd (package start; DP fix preserved as `6da698e8`)
 
-FINAL_SHA=ba5234d6e284dd53ed649a75e0aef114b173bce6
+FINAL_SHA=0e851ef32601dc5220761895a7af435b86050986
+FEATURE_SHA=ba5234d6e284dd53ed649a75e0aef114b173bce6
 
 ## Decisions
 
