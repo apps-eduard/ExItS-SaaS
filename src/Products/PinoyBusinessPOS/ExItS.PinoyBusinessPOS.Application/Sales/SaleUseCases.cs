@@ -285,6 +285,7 @@ public sealed class CheckoutSale
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _credits;
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
+    private readonly CustomerCreditAuthorizationService _creditAuthorization;
     private readonly ISaleStockService _saleStock;
     private readonly ICashierShiftRepository _shifts;
     private readonly IPosOperationalSetupRepository _operationalSetups;
@@ -305,6 +306,7 @@ public sealed class CheckoutSale
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
         ICreditDueDateChangeRepository dueDateChanges,
+        CustomerCreditAuthorizationService creditAuthorization,
         ISaleStockService saleStock,
         ICashierShiftRepository shifts,
         IPosOperationalSetupRepository operationalSetups,
@@ -326,6 +328,7 @@ public sealed class CheckoutSale
         _customers = customers;
         _credits = credits;
         _dueDateChanges = dueDateChanges;
+        _creditAuthorization = creditAuthorization;
         _saleStock = saleStock;
         _shifts = shifts;
         _operationalSetups = operationalSetups;
@@ -360,6 +363,7 @@ public sealed class CheckoutSale
         IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
         bool allowUnlimitedSalePriceOverride = false,
         Guid? buyerConnectionId = null,
+        bool allowDueDateOverride = false,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -621,6 +625,7 @@ public sealed class CheckoutSale
             var capturedCreditEntryId = linkedCreditEntryId;
             var capturedDueDate = dueDate;
             var capturedActorId = actorId;
+            var capturedAllowDueDateOverride = allowDueDateOverride;
             var productsById = byId;
 
             // Tax must be computed from the NET (post-discount) subtotal, so override + discount math
@@ -703,6 +708,39 @@ public sealed class CheckoutSale
                             return;
                         }
 
+                        var auth = await _creditAuthorization
+                            .AuthorizeNewCreditAsync(
+                                orgId,
+                                capturedCustomerId!,
+                                createdSale.Total,
+                                SaleNumbers.BusinessDateOf(utcNow),
+                                ct)
+                            .ConfigureAwait(false);
+                        if (!auth.IsSuccess || auth.Value is null)
+                        {
+                            throw new DomainException(auth.ErrorCode!, auth.ErrorMessage!);
+                        }
+
+                        var defaultDue = auth.Value.DefaultDueDate;
+                        DateOnly? appliedDue;
+                        string dueReason;
+                        if (capturedDueDate is null || capturedDueDate == defaultDue)
+                        {
+                            appliedDue = defaultDue;
+                            dueReason = ProductBasedUtangRemarks.InitialDueDateFromPolicyReason;
+                        }
+                        else if (!capturedAllowDueDateOverride)
+                        {
+                            throw new DomainException(
+                                ApplicationErrorCodes.CustomerCreditDueDateOverrideDenied,
+                                "Manual due date override is not permitted for this actor.");
+                        }
+                        else
+                        {
+                            appliedDue = capturedDueDate;
+                            dueReason = ProductBasedUtangRemarks.ManualDueDateOverrideReason;
+                        }
+
                         var entry = CreditEntry.Create(
                             orgId,
                             capturedCustomerId!,
@@ -712,20 +750,17 @@ public sealed class CheckoutSale
                             capturedCreditEntryId,
                             createdSale.Id);
 
-                        if (capturedDueDate is not null)
-                        {
-                            var change = CreditDueDateChange.Create(
-                                orgId,
-                                entry.Id,
-                                entry.CustomerId,
-                                previousDueDate: null,
-                                newDueDate: capturedDueDate,
-                                ProductBasedUtangRemarks.InitialDueDateReason,
-                                capturedActorId,
-                                utcNow);
-                            entry.ApplyCurrentDueDate(capturedDueDate);
-                            await _dueDateChanges.AddAsync(change, ct).ConfigureAwait(false);
-                        }
+                        var change = CreditDueDateChange.Create(
+                            orgId,
+                            entry.Id,
+                            entry.CustomerId,
+                            previousDueDate: null,
+                            newDueDate: appliedDue,
+                            dueReason,
+                            capturedActorId,
+                            utcNow);
+                        entry.ApplyCurrentDueDate(appliedDue);
+                        await _dueDateChanges.AddAsync(change, ct).ConfigureAwait(false);
 
                         await _credits.AddAsync(entry, ct).ConfigureAwait(false);
                     },

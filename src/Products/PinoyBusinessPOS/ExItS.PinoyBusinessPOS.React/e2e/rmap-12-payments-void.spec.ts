@@ -103,8 +103,10 @@ async function mockCustomersApi(page: import("@playwright/test").Page, allowFull
     const method = route.request().method();
 
     if (method === "GET" && pathname.endsWith("/customers/checkout-search")) {
-      const search = new URL(route.request().url()).searchParams.get("search") ?? "";
-      if (!search.trim()) {
+      const url = new URL(route.request().url());
+      const search = url.searchParams.get("search") ?? "";
+      const kind = (url.searchParams.get("kind") ?? "All").toLowerCase();
+      if (!search.trim() && kind === "all") {
         return route.fulfill({
           status: 400,
           contentType: "application/json",
@@ -114,12 +116,20 @@ async function mockCustomersApi(page: import("@playwright/test").Page, allowFull
           }),
         });
       }
+      if (!search.trim() && kind === "business") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: [], totalCount: 0, page: 1, pageSize: 20 }),
+        });
+      }
       return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           items: [
             {
+              kind: "Customer",
               customerId: CUSTOMER_ID,
               displayName: "Juan Dela Cruz",
               mobileNumber: "09171234567",

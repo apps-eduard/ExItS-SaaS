@@ -57,6 +57,7 @@ internal static class PosApiResults
         ApplicationErrorCodes.CustomerNotFound
             or ApplicationErrorCodes.LinkedCustomerNotFound
             or ApplicationErrorCodes.CreditEntryNotFound
+            or ApplicationErrorCodes.CustomerCreditPolicyNotFound
             or ApplicationErrorCodes.RepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound
             or ApplicationErrorCodes.ProductNotFound
@@ -77,6 +78,15 @@ internal static class PosApiResults
             or DomainErrorCodes.InvalidPlatformBusinessCustomerId
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.CustomerConcurrencyConflict
+            or ApplicationErrorCodes.CustomerCreditPolicyConcurrencyConflict
+            or ApplicationErrorCodes.CustomerCreditNotApproved
+            or ApplicationErrorCodes.CustomerCreditLimitExceeded
+            or ApplicationErrorCodes.CustomerCreditDueDateOverrideDenied
+            or DomainErrorCodes.CustomerCreditNotApproved
+            or DomainErrorCodes.CustomerCreditLimitExceeded
+            or DomainErrorCodes.CustomerCreditDueDateOverrideDenied
+            or DomainErrorCodes.InvalidCustomerCreditPolicyStatusTransition
+            or DomainErrorCodes.CustomerCreditPolicyUnchanged
             or DomainErrorCodes.InvalidCustomerStatusTransition
             or DomainErrorCodes.CustomerNotActive
             or DomainErrorCodes.InvalidCreditEntryStatusTransition

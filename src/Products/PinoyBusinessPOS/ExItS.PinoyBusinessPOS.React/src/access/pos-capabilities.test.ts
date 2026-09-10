@@ -17,6 +17,9 @@ import {
   canManageShifts,
   canProcessReturn,
   canRecordRepayment,
+  canManageCustomerCreditPolicy,
+  canApproveCustomerCreditPolicy,
+  canMutateDueDate,
   canSelectExperienceMode,
   canUseAdminExperience,
   canUseOperationsExperience,
@@ -45,6 +48,7 @@ import {
   canUseWarehouseBranches,
   FEATURE_STORE_AREA_MANAGEMENT,
   FEATURE_STORE_WAREHOUSE,
+  FEATURE_CUSTOMER_CREDIT_CREATE,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
   resolveEffectivePosRoleCode,
@@ -330,6 +334,42 @@ describe("pos-capabilities", () => {
     expect(canCreateCredit(owner)).toBe(true);
     expect(canCreateCredit(manager)).toBe(true);
     expect(canCreateCredit(cashier)).toBe(true);
+
+    expect(canManageCustomerCreditPolicy(owner)).toBe(true);
+    expect(canManageCustomerCreditPolicy(manager)).toBe(true);
+    expect(canManageCustomerCreditPolicy(cashier)).toBe(false);
+    expect(canApproveCustomerCreditPolicy(owner)).toBe(true);
+    expect(canApproveCustomerCreditPolicy(manager)).toBe(true);
+    expect(canApproveCustomerCreditPolicy(cashier)).toBe(false);
+    expect(canMutateDueDate(owner)).toBe(true);
+    expect(canMutateDueDate(cashier)).toBe(false);
+
+    const cashierNoCreditFeature = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      featureCodes: [],
+      grantedFeatureCodes: ["store-sales-view"],
+    });
+    expect(canCreateCredit(cashierNoCreditFeature)).toBe(false);
+
+    const managerNoCreditFeature = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-sales-view"],
+      grantedFeatureCodes: [],
+    });
+    expect(canManageCustomerCreditPolicy(managerNoCreditFeature)).toBe(false);
+    expect(canApproveCustomerCreditPolicy(managerNoCreditFeature)).toBe(false);
+
+    const managerWithCreditFeature = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+      featureCodes: [FEATURE_CUSTOMER_CREDIT_CREATE],
+    });
+    expect(canManageCustomerCreditPolicy(managerWithCreditFeature)).toBe(true);
   });
 
   it("CreateCustomer / EditCustomer / RecordRepayment / ViewStatement mirror PosRoleMatrix", () => {

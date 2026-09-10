@@ -122,7 +122,13 @@ public enum UtangCapability
     WriteOff = 44,
 
     /// <summary>Reverse a prior write-off with an explicit reason. Cashier DENY.</summary>
-    ReverseWriteOff = 45
+    ReverseWriteOff = 45,
+
+    /// <summary>Configure or update a customer credit policy (PendingApproval). Cashier DENY.</summary>
+    ManageCustomerCreditPolicy = 46,
+
+    /// <summary>Approve a pending customer credit policy. Cashier DENY.</summary>
+    ApproveCustomerCreditPolicy = 47
 }
 
 /// <summary>
@@ -194,7 +200,9 @@ public static class UtangCapabilityPolicy
             UtangCapability.CreateCustomer
                 or UtangCapability.EditCustomer
                 or UtangCapability.CreateCredit
-                or UtangCapability.MutateDueDate =>
+                or UtangCapability.MutateDueDate
+                or UtangCapability.ManageCustomerCreditPolicy
+                or UtangCapability.ApproveCustomerCreditPolicy =>
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.CustomerCreditCreate),
 

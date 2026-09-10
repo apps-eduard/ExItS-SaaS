@@ -1308,6 +1308,30 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "checkout.confirming": "Nire-record ang sale?",
 
+  "checkout.creditPolicy.afterSale": "Pagkatapos ng sale na ito",
+
+  "checkout.creditPolicy.available": "Available",
+
+  "checkout.creditPolicy.due": "Due",
+
+  "checkout.creditPolicy.limit": "Limit",
+
+  "checkout.creditPolicy.loadError": "Hindi ma-load ang credit policy. Subukan ulit.",
+
+  "checkout.creditPolicy.loading": "Nilo-load ang credit policy…",
+
+  "checkout.creditPolicy.notApproved":
+    "Naka-block ang Utang hanggang Approved ang credit policy ng customer na ito.",
+
+  "checkout.creditPolicy.outstanding": "Outstanding",
+
+  "checkout.creditPolicy.overLimit":
+    "Lampas ang sale na ito sa available credit ng customer.",
+
+  "checkout.creditPolicy.thisSale": "Sale na ito",
+
+  "checkout.creditPolicy.title": "Customer credit",
+
   "checkout.customerAlreadyInContacts": "Nasa contacts na si {name}.",
 
   "checkout.customerClear": "Alisin ang customer",
@@ -1317,6 +1341,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerEmptyBusinesses": "Walang tumugmang business. Subukan ang pangalan o ORG######.",
 
   "checkout.customerIdleEmpty": "Maghanap sa pangalan o numero para sa walk-in, o i-scan ang ExItS ID.",
+
+  "checkout.utangCustomerIdleEmpty":
+    "Wala pang person customer. Ang businesses sa Cash/GCash (tulad ng B2B) hindi pwedeng Utang — magdagdag ng person o maghanap sa pangalan/numero.",
 
   "checkout.customerIdleEmptyBusinesses":
     "Wala pang business. Ang Active B2B connections at ORG-linked business customers ay lalabas dito.",
@@ -1502,6 +1529,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.utangDebtHint": "Ang utang na nire-record ay katumbas ng Amount to Pay.",
 
   "checkout.utangDueDate": "Due date (opsyonal)",
+
+  "checkout.utangDueDateOverride": "Due date override (opsyonal)",
+
+  "checkout.utangDueFromPolicy": "Due mula sa credit policy",
 
   "checkout.utangZeroBlocked": "Kailangan ng Amount to Pay na higit sa zero para sa Utang.",
 
@@ -2018,6 +2049,74 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.createKindWalkIn": "Walang ExItS ID",
 
   "customers.createKindWalkInHint": "Pangalan at opsyonal na contact lang. Walang Personal account link.",
+
+  "customers.creditPolicy.approve": "I-approve",
+
+  "customers.creditPolicy.approvedBy": "In-approve ni",
+
+  "customers.creditPolicy.available": "Available credit",
+
+  "customers.creditPolicy.cancel": "Cancel",
+
+  "customers.creditPolicy.concurrencyReload": "I-reload ang credit policy at subukan ulit.",
+
+  "customers.creditPolicy.configure": "I-configure",
+
+  "customers.creditPolicy.disable": "I-disable",
+
+  "customers.creditPolicy.edit": "I-edit",
+
+  "customers.creditPolicy.hideHistory": "Itago ang history",
+
+  "customers.creditPolicy.history": "History",
+
+  "customers.creditPolicy.historyAction": "Action",
+
+  "customers.creditPolicy.historyEmpty": "Wala pang pagbabago sa policy.",
+
+  "customers.creditPolicy.historyStatus": "Status",
+
+  "customers.creditPolicy.invalidLimit": "Maglagay ng valid na credit limit (max 2 decimal places).",
+
+  "customers.creditPolicy.invalidTerm": "Ang term days ay dapat 1 hanggang 365.",
+
+  "customers.creditPolicy.limit": "Credit limit",
+
+  "customers.creditPolicy.nextPage": "Susunod",
+
+  "customers.creditPolicy.offline": "Kailangan ng online connection para sa credit policy.",
+
+  "customers.creditPolicy.outstanding": "Outstanding",
+
+  "customers.creditPolicy.outstandingOverLimitWarning":
+    "Mas malaki ang outstanding kaysa sa bagong limit. Zero ang available credit hanggang bumaba ang balance.",
+
+  "customers.creditPolicy.prevPage": "Previous",
+
+  "customers.creditPolicy.reasonRequired": "Maglagay ng reason.",
+
+  "customers.creditPolicy.reapprovalWarning":
+    "Kailangan ng re-approval pagkatapos mag-edit ng Approved policy bago payagan ang bagong Utang.",
+
+  "customers.creditPolicy.save": "I-save",
+
+  "customers.creditPolicy.status.Approved": "Approved",
+
+  "customers.creditPolicy.status.Disabled": "Disabled",
+
+  "customers.creditPolicy.status.NotConfigured": "Hindi pa naka-configure",
+
+  "customers.creditPolicy.status.PendingApproval": "Pending approval",
+
+  "customers.creditPolicy.term": "Default term",
+
+  "customers.creditPolicy.termAbout3Months": "mga 3 buwan",
+
+  "customers.creditPolicy.termCustom": "Custom",
+
+  "customers.creditPolicy.termDays": "{days} araw",
+
+  "customers.creditPolicy.title": "Credit policy",
 
   "customers.creditsEmpty": "Wala pang charges",
 

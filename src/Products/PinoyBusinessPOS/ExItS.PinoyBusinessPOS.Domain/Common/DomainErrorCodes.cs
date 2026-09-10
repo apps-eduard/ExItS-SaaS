@@ -545,4 +545,18 @@ public static class DomainErrorCodes
         "pos.direct_purchase_receipt.supplier.required_for_credit";
     public const string SupplierPayableReceiptReversalBlocked =
         "pos.supplier_payable.receipt_reversal.blocked_by_payments";
+
+    public const string InvalidCustomerCreditPolicyId = "pos.customer_credit_policy.id.invalid";
+    public const string InvalidCustomerCreditPolicyChangeId = "pos.customer_credit_policy_change.id.invalid";
+    public const string InvalidCustomerCreditLimit = "pos.customer_credit_policy.limit.invalid";
+    public const string InvalidCustomerCreditTermDays = "pos.customer_credit_policy.term_days.invalid";
+    public const string InvalidCustomerCreditPolicyReason = "pos.customer_credit_policy.reason.invalid";
+    public const string InvalidCustomerCreditPolicyActor = "pos.customer_credit_policy.actor.invalid";
+    public const string InvalidCustomerCreditPolicyStatusTransition =
+        "pos.customer_credit_policy.status.invalid_transition";
+    public const string CustomerCreditPolicyUnchanged = "pos.customer_credit_policy.unchanged";
+    public const string CustomerCreditNotApproved = "pos.customer_credit.not_approved";
+    public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
+    public const string CustomerCreditDueDateOverrideDenied =
+        "pos.customer_credit.due_date_override_denied";
 }

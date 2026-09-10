@@ -1308,6 +1308,30 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "checkout.confirming": "Gina-record ang sale?",
 
+  "checkout.creditPolicy.afterSale": "Human niini nga sale",
+
+  "checkout.creditPolicy.available": "Available",
+
+  "checkout.creditPolicy.due": "Due",
+
+  "checkout.creditPolicy.limit": "Limit",
+
+  "checkout.creditPolicy.loadError": "Dili ma-load ang credit policy. Sulayi pag-usab.",
+
+  "checkout.creditPolicy.loading": "Gina-load ang credit policy...",
+
+  "checkout.creditPolicy.notApproved":
+    "Giblock ang Utang hangtod Approved ang credit policy niining customer.",
+
+  "checkout.creditPolicy.outstanding": "Outstanding",
+
+  "checkout.creditPolicy.overLimit":
+    "Molapas kini nga sale sa available credit sa customer.",
+
+  "checkout.creditPolicy.thisSale": "Kini nga sale",
+
+  "checkout.creditPolicy.title": "Customer credit",
+
   "checkout.customerAlreadyInContacts": "Na-add na si {name} sa imong contacts.",
 
   "checkout.customerClear": "Kuhaa ang customer",
@@ -1502,6 +1526,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.utangDebtHint": "Ang natala nga utang pareho sa Amount to Pay.",
 
   "checkout.utangDueDate": "Due date (opsyonal)",
+
+  "checkout.utangCustomerIdleEmpty":
+    "Walay person customers pa. Ang mga business sa Cash/GCash (sama sa B2B orgs) dili magamit og Utang — pagdugang og person o pangita pinaagi sa ngalan/phone.",
+
+  "checkout.utangDueDateOverride": "Due date override (opsyonal)",
+
+  "checkout.utangDueFromPolicy": "Due gikan sa credit policy",
 
   "checkout.utangZeroBlocked": "Ang Utang kinahanglan og Amount to Pay nga labaw sa zero.",
 
@@ -2018,6 +2049,74 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.createKindWalkIn": "Walay ExItS ID",
 
   "customers.createKindWalkInHint": "Ngalan ug opsyonal nga contact lang. Walay Personal account link.",
+
+  "customers.creditPolicy.approve": "I-approve",
+
+  "customers.creditPolicy.approvedBy": "Gi-approve ni",
+
+  "customers.creditPolicy.available": "Available credit",
+
+  "customers.creditPolicy.cancel": "Cancel",
+
+  "customers.creditPolicy.concurrencyReload": "I-reload ang credit policy ug sulayi pag-usab.",
+
+  "customers.creditPolicy.configure": "I-configure",
+
+  "customers.creditPolicy.disable": "I-disable",
+
+  "customers.creditPolicy.edit": "I-edit",
+
+  "customers.creditPolicy.hideHistory": "Tagoa ang history",
+
+  "customers.creditPolicy.history": "History",
+
+  "customers.creditPolicy.historyAction": "Action",
+
+  "customers.creditPolicy.historyEmpty": "Wala pay kausaban sa policy.",
+
+  "customers.creditPolicy.historyStatus": "Status",
+
+  "customers.creditPolicy.invalidLimit": "Isulod ang valid nga credit limit (max 2 decimal places).",
+
+  "customers.creditPolicy.invalidTerm": "Ang term days kinahanglan 1 hangtod 365.",
+
+  "customers.creditPolicy.limit": "Credit limit",
+
+  "customers.creditPolicy.nextPage": "Sunod",
+
+  "customers.creditPolicy.offline": "Kinahanglan og online connection para sa credit policy.",
+
+  "customers.creditPolicy.outstanding": "Outstanding",
+
+  "customers.creditPolicy.outstandingOverLimitWarning":
+    "Mas dako ang outstanding kay sa bag-ong limit. Zero ang available credit hangtod mohinay ang balance.",
+
+  "customers.creditPolicy.prevPage": "Previous",
+
+  "customers.creditPolicy.reasonRequired": "Isulod ang reason.",
+
+  "customers.creditPolicy.reapprovalWarning":
+    "Kinahanglan og re-approval human mag-edit sa Approved policy sa dili pa tugotan ang bag-ong Utang.",
+
+  "customers.creditPolicy.save": "I-save",
+
+  "customers.creditPolicy.status.Approved": "Approved",
+
+  "customers.creditPolicy.status.Disabled": "Disabled",
+
+  "customers.creditPolicy.status.NotConfigured": "Wala pa na-configure",
+
+  "customers.creditPolicy.status.PendingApproval": "Pending approval",
+
+  "customers.creditPolicy.term": "Default term",
+
+  "customers.creditPolicy.termAbout3Months": "mga 3 ka bulan",
+
+  "customers.creditPolicy.termCustom": "Custom",
+
+  "customers.creditPolicy.termDays": "{days} ka adlaw",
+
+  "customers.creditPolicy.title": "Credit policy",
 
   "customers.creditsEmpty": "Wala pay charges",
 

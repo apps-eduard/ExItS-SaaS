@@ -46,6 +46,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
         var product = await CreateProductAsync(client, org, "Bigas", "Kilogram", 62m, sku: "utang-rice-1");
         var customer = await CreateCustomerAsync(client, org, "Aling Utang");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId);
         var dueDate = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(7));
         var saleId = Guid.NewGuid();
         var creditEntryId = Guid.NewGuid();
@@ -162,6 +163,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
         var product = await CreateProductAsync(client, org, "Kape", "Sachet", 8.50m, sku: "utang-kape-1");
         var customer = await CreateCustomerAsync(client, org, "Idempotent Utang");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId);
         var body = new CheckoutSaleRequest(
             [new CheckoutSaleLineRequest(product.ProductId, 2m)],
             PosSaleOptions.UtangPaymentMethod,
@@ -200,6 +202,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
         var product = await CreateProductAsync(client, org, "Tinapay", "Piece", 5m, sku: "utang-pan-1");
         var customer = await CreateCustomerAsync(client, org, "Mismatch Utang");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId);
         var body = new CheckoutSaleRequest(
             [new CheckoutSaleLineRequest(product.ProductId, 1m)],
             PosSaleOptions.UtangPaymentMethod,
@@ -240,6 +243,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
         var product = await CreateProductAsync(client, org, "Mantika", "Liter", 90m, sku: "utang-oil-1");
         var customer = await CreateCustomerAsync(client, org, "Void Utang");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId);
         var sale = await CheckoutAsync(
             client,
             org,
@@ -293,6 +297,7 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
 
         var product = await CreateProductAsync(client, org, "Gatas", "Can", 40m, sku: "utang-milk-1");
         var customer = await CreateCustomerAsync(client, org, "Repay Utang");
+        await ApproveCustomerCreditAsync(client, org, customer.CustomerId);
         var sale = await CheckoutAsync(
             client,
             org,
@@ -385,6 +390,52 @@ public sealed class PosProductBasedUtangApiTests(PosPostgreSqlFixture fixture)
         Assert.Null(sale.LinkedCreditEntryId);
         Assert.Equal(100m, sale.Total);
         Assert.Equal(0m, sale.ChangeAmount);
+    }
+
+    [Fact]
+    public async Task Utang_checkout_rejected_when_credit_policy_not_approved()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        var product = await CreateProductAsync(client, org, "No Policy", "Piece", 10m, sku: "utang-nopolicy-1");
+        var customer = await CreateCustomerAsync(client, org, "Pending Policy Utang");
+
+        using var response = await PostCheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [new CheckoutSaleLineRequest(product.ProductId, 1m)],
+                PosSaleOptions.UtangPaymentMethod,
+                CustomerId: customer.CustomerId,
+                CreditEntryId: Guid.NewGuid()));
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.CustomerCreditNotApproved, await ReadErrorCodeAsync(response));
+    }
+
+    private static async Task ApproveCustomerCreditAsync(HttpClient client, Guid org, Guid customerId)
+    {
+        using var put = Scoped(HttpMethod.Put, $"{Customers}/{customerId:D}/credit-policy", org);
+        put.Content = JsonContent.Create(
+            new UpsertCustomerCreditPolicyRequest(100000m, 30, "test configure"),
+            options: JsonOptions);
+        using var putResponse = await client.SendAsync(put);
+        putResponse.EnsureSuccessStatusCode();
+
+        using var get = Scoped(HttpMethod.Get, $"{Customers}/{customerId:D}/credit-policy", org);
+        using var getResponse = await client.SendAsync(get);
+        getResponse.EnsureSuccessStatusCode();
+        var policy = await getResponse.Content.ReadFromJsonAsync<CustomerCreditPolicyReadDto>(JsonOptions);
+        Assert.NotNull(policy);
+        Assert.NotNull(policy!.ExpectedUpdatedAtUtc);
+
+        using var approve = Scoped(HttpMethod.Post, $"{Customers}/{customerId:D}/credit-policy/approve", org);
+        approve.Content = JsonContent.Create(
+            new ApproveCustomerCreditPolicyRequest("test approve", policy.ExpectedUpdatedAtUtc!.Value),
+            options: JsonOptions);
+        using var approveResponse = await client.SendAsync(approve);
+        approveResponse.EnsureSuccessStatusCode();
     }
 
     private static async Task<PosSaleDto> CheckoutAsync(HttpClient client, Guid org, CheckoutSaleRequest body)

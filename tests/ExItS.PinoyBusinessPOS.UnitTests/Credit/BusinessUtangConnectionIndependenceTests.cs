@@ -130,6 +130,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             var clock = new FixedClock(Now);
             var outstanding = new OutstandingBalanceService(entries, repayments, new InMemoryWriteOffRepository(), clock);
             var uow = new ImmediateUnitOfWork();
+            var policies = new InMemoryCustomerCreditPolicyRepository();
 
             var customer = POSCustomer.Create(
                 PosOrganizationId.From(OrgId),
@@ -139,15 +140,79 @@ public sealed class BusinessUtangConnectionIndependenceTests
                 linkedPersonalPublicUserId: "EX-1234-5678");
             await customers.AddAsync(customer);
 
+            var (policy, configureChange) = CustomerCreditPolicy.Configure(
+                customer.OrganizationId,
+                customer.Id,
+                creditLimit: 10_000m,
+                defaultTermDays: 30,
+                Actor,
+                reason: null,
+                Now);
+            await policies.AddAsync(policy);
+            await policies.AddChangeAsync(configureChange);
+            var approveChange = policy.Approve(Actor, "Approved for independence tests.", Now.AddSeconds(1));
+            await policies.UpdateAsync(policy);
+            await policies.AddChangeAsync(approveChange);
+
+            var authorization = new CustomerCreditAuthorizationService(policies, outstanding);
+
             return new Harness
             {
                 Customer = customer,
                 Customers = customers,
-                CreateCredit = new CreateCreditEntry(customers, entries, uow, clock),
+                CreateCredit = new CreateCreditEntry(customers, entries, authorization, uow, clock),
                 CreateRepayment = new CreateRepayment(customers, repayments, outstanding, uow, clock),
                 Outstanding = outstanding
             };
         }
+    }
+
+    private sealed class InMemoryCustomerCreditPolicyRepository : ICustomerCreditPolicyRepository
+    {
+        private readonly List<CustomerCreditPolicy> _policies = [];
+        private readonly List<CustomerCreditPolicyChange> _changes = [];
+
+        public Task<CustomerCreditPolicy?> GetByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_policies.FirstOrDefault(p =>
+                p.OrganizationId == organizationId && p.CustomerId == customerId));
+
+        public Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default)
+        {
+            _policies.Add(policy);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(CustomerCreditPolicyChange change, CancellationToken cancellationToken = default)
+        {
+            _changes.Add(change);
+            return Task.CompletedTask;
+        }
+
+        public Task<(IReadOnlyList<CustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _changes
+                .Where(c => c.OrganizationId == organizationId && c.CustomerId == customerId)
+                .OrderByDescending(c => c.ChangedAtUtc)
+                .ToList();
+            return Task.FromResult(((IReadOnlyList<CustomerCreditPolicyChange>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task AcquireCustomerCreditLockAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
@@ -224,7 +289,10 @@ public sealed class BusinessUtangConnectionIndependenceTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            int take,
+            IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
+            bool peopleOnly = false,
+            CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -236,7 +304,7 @@ public sealed class BusinessUtangConnectionIndependenceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, false, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,

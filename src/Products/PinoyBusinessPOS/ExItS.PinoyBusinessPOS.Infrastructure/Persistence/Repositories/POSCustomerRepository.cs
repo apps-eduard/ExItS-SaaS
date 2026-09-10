@@ -101,6 +101,7 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         int skip,
         int take,
         IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
+        bool peopleOnly = false,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Customers.AsNoTracking()
@@ -120,6 +121,17 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         {
             var statusName = status.Value.ToString();
             query = query.Where(c => c.Status == statusName);
+        }
+
+        if (peopleOnly)
+        {
+            // Match IsCheckoutBusinessParty inverse: Person rows without buyer-org link.
+            var person = nameof(CustomerPartyKind.Person);
+            var business = nameof(CustomerPartyKind.Business);
+            query = query.Where(c =>
+                c.LinkedBuyerOrganizationId == null
+                && c.PartyKind != business
+                && (c.PartyKind == null || c.PartyKind == "" || c.PartyKind == person));
         }
 
         if (!string.IsNullOrWhiteSpace(search))

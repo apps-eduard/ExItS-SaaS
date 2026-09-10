@@ -129,6 +129,11 @@ internal static class SaleEndpoints
                     return problem!;
                 }
 
+                var allowDueDateOverride = PosCommercialScope.TryAuthorize(
+                    access,
+                    UtangCapability.MutateDueDate,
+                    out _);
+
                 return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                         request,
                         organizationId,
@@ -156,6 +161,7 @@ internal static class SaleEndpoints
                             body.PriceOverrides,
                             allowUnlimited,
                             body.BuyerConnectionId,
+                            allowDueDateOverride,
                             ct2),
                         SaleQueryService.Map,
                         dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),
@@ -208,6 +214,7 @@ internal static class SaleEndpoints
                         body.PriceOverrides,
                         cashAllowUnlimited,
                         body.BuyerConnectionId,
+                        allowDueDateOverride: false,
                         ct2),
                     SaleQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/sales/{dto.SaleId:D}", dto),

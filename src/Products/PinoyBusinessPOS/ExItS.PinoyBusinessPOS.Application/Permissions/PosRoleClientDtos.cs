@@ -112,7 +112,9 @@ public static class PosRoleAssignmentMapping
         UtangCapability.CreateCustomer
             or UtangCapability.EditCustomer
             or UtangCapability.CreateCredit
-            or UtangCapability.MutateDueDate => [PosFeatureCodes.CustomerCreditCreate],
+            or UtangCapability.MutateDueDate
+            or UtangCapability.ManageCustomerCreditPolicy
+            or UtangCapability.ApproveCustomerCreditPolicy => [PosFeatureCodes.CustomerCreditCreate],
         _ => []
     };
 }

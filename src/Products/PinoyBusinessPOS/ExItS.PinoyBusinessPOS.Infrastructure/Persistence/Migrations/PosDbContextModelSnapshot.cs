@@ -2337,6 +2337,158 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTimeOffset>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<Guid>("CustomerCreditPolicyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_credit_policy_id");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<decimal?>("NewCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("new_credit_limit");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_status");
+
+                    b.Property<int?>("NewTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_term_days");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal?>("PreviousCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("previous_credit_limit");
+
+                    b.Property<int?>("PreviousStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_status");
+
+                    b.Property<int?>("PreviousTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_term_days");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerCreditPolicyId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "CustomerId", "ChangedAtUtc")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_customer_credit_policy_changes_org_customer_changed");
+
+                    b.ToTable("customer_credit_policy_changes", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at_utc");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by_user_id");
+
+                    b.Property<DateTimeOffset>("ConfiguredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("configured_at_utc");
+
+                    b.Property<Guid>("ConfiguredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configured_by_user_id");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("credit_limit");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<int>("DefaultTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_term_days");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_credit_policies_org_customer");
+
+                    b.ToTable("customer_credit_policies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_customer_credit_policies_credit_limit_non_negative", "credit_limit >= 0");
+
+                            t.HasCheckConstraint("ck_customer_credit_policies_status", "status BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("ck_customer_credit_policies_term_days", "default_term_days BETWEEN 1 AND 365");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering.CustomerOrderLineRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7868,6 +8020,33 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SourceSaleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_credit_entries_source_sale");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerCreditPolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policy_changes_policies");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policy_changes_customers");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policies_customers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering.CustomerOrderLineRecord", b =>

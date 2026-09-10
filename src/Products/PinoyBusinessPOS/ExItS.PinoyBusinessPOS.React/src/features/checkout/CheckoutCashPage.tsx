@@ -1,17 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
   canCreateCustomer,
   canCreateSale,
+  canMutateDueDate,
   canOverrideSalePrice,
   canViewCustomers,
 } from "@/access/pos-capabilities";
 import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
+import { getCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client";
 import { isPersonPosCustomer } from "@/features/customers/customer-business-list";
+import {
+  computeCreditPolicyDueDate,
+  creditPolicyCheckoutBlockMessageKey,
+  creditPolicyStatusLabelKey,
+  creditPolicyStatusTone,
+  resolveUtangCreditPolicyBlock,
+} from "@/features/customers/credit-policy";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
@@ -36,6 +45,7 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
@@ -178,6 +188,7 @@ export function CheckoutCashPage() {
   const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
   const allowCreateCustomer = canCreateCustomer(sessionGrant);
+  const allowMutateDueDate = canMutateDueDate(sessionGrant);
   /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
   const allowCheckoutCustomerSearch = allowSale;
   const moneyReady = sellReadiness.moneyPostReady === true;
@@ -298,6 +309,44 @@ export function CheckoutCashPage() {
 
   const utangBlockedZero = paymentChoice === "Utang" && zeroTotal;
   const b2bSelected = isCheckoutBusiness(selectedCustomer);
+  const personCustomerSelected =
+    selectedCustomer != null &&
+    selectedCustomer.kind === "Customer" &&
+    !b2bSelected;
+  const utangPersonCustomerId =
+    paymentChoice === "Utang" && personCustomerSelected
+      ? selectedCustomer!.customerId
+      : null;
+
+  const creditPolicyQuery = useQuery({
+    queryKey: [
+      "checkout",
+      "credit-policy",
+      workspaceScope?.organizationId,
+      utangPersonCustomerId,
+    ],
+    enabled: Boolean(workspaceScope && utangPersonCustomerId && online),
+    queryFn: ({ signal }) =>
+      getCustomerCreditPolicy(workspaceScope!, utangPersonCustomerId!, signal),
+  });
+
+  const creditPolicy = creditPolicyQuery.data;
+  const creditPolicyBlock = resolveUtangCreditPolicyBlock({
+    paymentIsUtang: paymentChoice === "Utang",
+    personCustomerSelected,
+    policy: creditPolicy,
+    policyLoading: Boolean(utangPersonCustomerId) && creditPolicyQuery.isLoading,
+    policyError: Boolean(utangPersonCustomerId) && creditPolicyQuery.isError,
+    thisSaleAmount: amountToPay,
+  });
+  const creditPolicyBlockMessageKey = creditPolicyCheckoutBlockMessageKey(creditPolicyBlock);
+  const policyDueDate =
+    creditPolicy?.status === "Approved" && creditPolicy.defaultTermDays != null
+      ? computeCreditPolicyDueDate(new Date(), creditPolicy.defaultTermDays)
+      : null;
+  const outstandingAfterSale =
+    creditPolicy != null ? creditPolicy.outstandingAmount + amountToPay : null;
+
   const utangB2bBlocked = paymentChoice === "Utang" && b2bSelected;
   const utangNeedsCustomerLookup =
     paymentChoice === "Utang" && !(allowCheckoutCustomerSearch && allowCreateCredit);
@@ -308,6 +357,7 @@ export function CheckoutCashPage() {
       selectedCustomer != null &&
       !b2bSelected);
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
+  const utangPolicyOk = creditPolicyBlock === null;
 
   useEffect(() => {
     if (!moneyReady || !deviceReady || !shiftGateReady) {
@@ -500,14 +550,9 @@ export function CheckoutCashPage() {
 
       let load: Promise<CheckoutCustomerOption[]>;
       if (isUtang) {
-        // Utang: people via checkout-search (works for Cashier without ViewCustomers).
-        load = allowViewCustomers
-          ? listCustomers(
-              workspaceScope,
-              { status: "Active", search: trimmed || undefined, pageSize: 20 },
-              controller.signal,
-            ).then(mapPeopleFromList)
-          : loadSearch("Customer");
+        // Always CreateSale checkout-search people browse — same capability as Cashier Utang.
+        // Do not use listCustomers here: first page can be filled with business-party rows.
+        load = loadSearch("Customer");
       } else if (allowViewCustomers && kindFilter !== "businesses") {
         const peoplePromise =
           kindFilter === "people" || trimmed || !wantBusinessDirectory
@@ -518,7 +563,7 @@ export function CheckoutCashPage() {
               ).then(mapPeopleFromList)
             : Promise.resolve([] as CheckoutCustomerOption[]);
         const businessPromise =
-          kindFilter === "all" || kindFilter === "businesses"
+          kindFilter === "all"
             ? loadSearch("Business")
             : Promise.resolve([] as CheckoutCustomerOption[]);
         load = Promise.all([peoplePromise, businessPromise]).then(([people, businesses]) => [
@@ -737,6 +782,10 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.utangCustomerRequired"));
       return;
     }
+    if (paymentChoice === "Utang" && creditPolicyBlockMessageKey) {
+      setSubmitError(t(creditPolicyBlockMessageKey));
+      return;
+    }
 
     submittingRef.current = true;
     setSaving(true);
@@ -825,8 +874,11 @@ export function CheckoutCashPage() {
               (paymentChoice === "Utang" || allowCheckoutCustomerSearch)
             ? {
                 customerId: selectedCustomer.customerId,
-                ...(paymentChoice === "Utang" && dueDate.trim()
-                  ? { dueDate: dueDate.trim() }
+                ...(paymentChoice === "Utang" &&
+                (dueDate.trim() || policyDueDate)
+                  ? {
+                      dueDate: dueDate.trim() || policyDueDate!,
+                    }
                   : {}),
               }
             : {}),
@@ -886,7 +938,8 @@ export function CheckoutCashPage() {
     utangB2bBlocked ||
     utangNeedsCustomerLookup ||
     !utangCustomerOk ||
-    !utangCreditOk;
+    !utangCreditOk ||
+    !utangPolicyOk;
 
   return (
     <div data-testid="checkout-cash-page" className="checkout-cash-page">
@@ -1475,24 +1528,121 @@ export function CheckoutCashPage() {
                   disabled={saving}
                   kindFilter="people"
                   includeWalkInsWhenIdle
+                  idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}
                   onSelect={setSelectedCustomer}
                 />
               ) : null}
-              <label
-                className="mt-2 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                htmlFor="checkout-utang-due-date"
-              >
-                {t("checkout.utangDueDate")}
-                <input
-                  id="checkout-utang-due-date"
-                  data-testid="checkout-utang-due-date"
-                  type="date"
-                  value={dueDate}
-                  disabled={saving}
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                  onChange={(event) => setDueDate(event.target.value)}
-                />
-              </label>
+              {personCustomerSelected && utangPersonCustomerId ? (
+                <div
+                  className="mt-3 rounded-[var(--exits-radius-md)] border border-border p-3"
+                  data-testid="checkout-credit-policy-panel"
+                >
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("checkout.creditPolicy.title")}
+                    </p>
+                    {creditPolicy ? (
+                      <StatusChip tone={creditPolicyStatusTone(creditPolicy.status)}>
+                        {t(creditPolicyStatusLabelKey(creditPolicy.status))}
+                      </StatusChip>
+                    ) : null}
+                  </div>
+                  {creditPolicyQuery.isLoading ? (
+                    <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("checkout.creditPolicy.loading")}
+                    </p>
+                  ) : null}
+                  {creditPolicyBlockMessageKey ? (
+                    <p
+                      className="mb-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                      data-testid="checkout-credit-policy-block"
+                    >
+                      {t(creditPolicyBlockMessageKey)}
+                    </p>
+                  ) : null}
+                  {creditPolicy ? (
+                    <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.limit")}</dt>
+                        <dd className="m-0 tabular-nums">
+                          {creditPolicy.creditLimit == null ? (
+                            "—"
+                          ) : (
+                            <MoneyDisplay amount={creditPolicy.creditLimit} />
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.outstanding")}</dt>
+                        <dd className="m-0 tabular-nums">
+                          <MoneyDisplay amount={creditPolicy.outstandingAmount} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.available")}</dt>
+                        <dd className="m-0 tabular-nums" data-testid="checkout-credit-available">
+                          <MoneyDisplay amount={creditPolicy.availableCredit} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.thisSale")}</dt>
+                        <dd className="m-0 tabular-nums">
+                          <MoneyDisplay amount={amountToPay} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.afterSale")}</dt>
+                        <dd className="m-0 tabular-nums">
+                          {outstandingAfterSale == null ? (
+                            "—"
+                          ) : (
+                            <MoneyDisplay amount={outstandingAfterSale} />
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted">{t("checkout.creditPolicy.due")}</dt>
+                        <dd className="m-0" data-testid="checkout-credit-policy-due">
+                          {policyDueDate ?? "—"}
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : null}
+                </div>
+              ) : null}
+              {policyDueDate && !allowMutateDueDate ? (
+                <p
+                  className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="checkout-utang-due-from-policy"
+                >
+                  {t("checkout.utangDueFromPolicy")}:{" "}
+                  <span className="font-semibold text-foreground">{policyDueDate}</span>
+                </p>
+              ) : null}
+              {allowMutateDueDate ? (
+                <label
+                  className="mt-2 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                  htmlFor="checkout-utang-due-date"
+                >
+                  {policyDueDate
+                    ? t("checkout.utangDueDateOverride")
+                    : t("checkout.utangDueDate")}
+                  <input
+                    id="checkout-utang-due-date"
+                    data-testid="checkout-utang-due-date"
+                    type="date"
+                    value={dueDate}
+                    disabled={saving}
+                    className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    onChange={(event) => setDueDate(event.target.value)}
+                  />
+                  {policyDueDate ? (
+                    <span className="text-[length:var(--exits-text-xs)] text-muted">
+                      {t("checkout.utangDueFromPolicy")}: {policyDueDate}
+                    </span>
+                  ) : null}
+                </label>
+              ) : null}
             </>
           )}
         </Card>

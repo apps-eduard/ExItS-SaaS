@@ -13,7 +13,7 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
-import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
+import { canEditCustomer, canManageCustomerCreditPolicy, canApproveCustomerCreditPolicy, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
 import {
   createCustomerLinkRequestForCustomer,
   getCustomerLinkStatus,
@@ -59,6 +59,7 @@ import {
   mapOrgLinkStatusToRelationship,
 } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
+import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -92,6 +93,8 @@ export function CustomerDetailPage() {
   const allowEdit = canEditCustomer(sessionGrant);
   const allowRepay = canRecordRepayment(sessionGrant);
   const allowStatement = canViewStatement(sessionGrant);
+  const allowManageCreditPolicy = canManageCustomerCreditPolicy(sessionGrant);
+  const allowApproveCreditPolicy = canApproveCustomerCreditPolicy(sessionGrant);
 
   const enabledOnline = Boolean(workspace) && Boolean(customerId) && online;
 
@@ -622,6 +625,16 @@ export function CustomerDetailPage() {
           ) : null}
         </div>
       </Card>
+
+      {workspace && customerId ? (
+        <CreditPolicySection
+          workspace={workspace}
+          customerId={customerId}
+          online={online}
+          canManage={allowManageCreditPolicy}
+          canApprove={allowApproveCreditPolicy}
+        />
+      ) : null}
 
       <section className="flex flex-col gap-2" data-testid="customer-credits-section">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">

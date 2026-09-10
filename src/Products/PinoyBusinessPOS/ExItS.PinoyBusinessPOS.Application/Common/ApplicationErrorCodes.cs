@@ -15,6 +15,13 @@ public static class ApplicationErrorCodes
     public const string SupplierBranchAccessForbidden = "pos.supplier.branch_access_forbidden";
     public const string PartyActingBranchRequired = "pos.party.acting_branch_required";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
+    public const string CustomerCreditPolicyNotFound = "pos.customer_credit_policy.not_found";
+    public const string CustomerCreditPolicyConcurrencyConflict =
+        "pos.customer_credit_policy.concurrency_conflict";
+    public const string CustomerCreditNotApproved = "pos.customer_credit.not_approved";
+    public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
+    public const string CustomerCreditDueDateOverrideDenied =
+        "pos.customer_credit.due_date_override_denied";
     public const string RepaymentNotFound = "pos.repayment.not_found";
     public const string WriteOffNotFound = "pos.write_off.not_found";
     public const string ActorRequired = "pos.actor.required";

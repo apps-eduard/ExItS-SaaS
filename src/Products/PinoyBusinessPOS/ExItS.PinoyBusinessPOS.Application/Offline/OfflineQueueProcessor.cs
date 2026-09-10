@@ -562,4 +562,13 @@ public static class OfflineOperationTypes
     /// dispatcher or queue handler. Names the idempotency scope so a retried payment replays.
     /// </summary>
     public const string SupplierPayablePayment = "supplier_payable.payment";
+
+    /// <summary>Server-side idempotency for customer credit policy upsert. Online-only.</summary>
+    public const string CustomerCreditPolicyUpsert = "customer_credit_policy.upsert";
+
+    /// <summary>Server-side idempotency for customer credit policy approve. Online-only.</summary>
+    public const string CustomerCreditPolicyApprove = "customer_credit_policy.approve";
+
+    /// <summary>Server-side idempotency for customer credit policy disable. Online-only.</summary>
+    public const string CustomerCreditPolicyDisable = "customer_credit_policy.disable";
 }

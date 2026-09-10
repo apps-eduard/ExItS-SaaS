@@ -168,7 +168,15 @@ public sealed class POSCustomerQueryService
             .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
             .ConfigureAwait(false);
         var (items, total) = await _customers
-            .ListAsync(PosOrganizationId.From(organizationId), status, search, skip, take, restrict, cancellationToken)
+            .ListAsync(
+                PosOrganizationId.From(organizationId),
+                status,
+                search,
+                skip,
+                take,
+                restrict,
+                peopleOnly: false,
+                cancellationToken)
             .ConfigureAwait(false);
 
         return new PagedResult<POSCustomerDto>(
@@ -182,7 +190,8 @@ public sealed class POSCustomerQueryService
     /// Narrow Active-only checkout counterparty search for CreateSale (pageSize capped at 20).
     /// Includes POS people and Active B2B Organization relationships (no ViewSuppliers required).
     /// <paramref name="kind"/>: All | Customer | Business (default All).
-    /// Blank search is allowed for Business (Active directory) and rejected for Customer/All.
+    /// Blank search is allowed for Business (Cash/GCash) and Customer (Utang people idle browse).
+    /// Kind=All still requires a non-blank search term.
     /// </summary>
     public async Task<ApplicationResult<CheckoutCustomerSearchResult>> SearchForCheckoutAsync(
         Guid organizationId,
@@ -220,7 +229,7 @@ public sealed class POSCustomerQueryService
             var restrict = await _branchAccess
                 .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
                 .ConfigureAwait(false);
-            // Fetch a page-sized window; merge with businesses then re-page.
+            // People-only SQL filter so B2B/business party rows cannot fill the page and hide people.
             var (items, total) = await _customers
                 .ListAsync(
                     PosOrganizationId.From(organizationId),
@@ -229,11 +238,11 @@ public sealed class POSCustomerQueryService
                     0,
                     take,
                     restrict,
+                    peopleOnly: true,
                     cancellationToken)
                 .ConfigureAwait(false);
             peopleTotal = total;
             merged.AddRange(items
-                .Where(c => !IsCheckoutBusinessParty(c))
                 .Select(c => new CheckoutCustomerSearchItemDto(
                     CheckoutCustomerSearchItemDto.KindCustomer,
                     c.DisplayName,
@@ -276,6 +285,7 @@ public sealed class POSCustomerQueryService
                     0,
                     200,
                     restrict,
+                    peopleOnly: false,
                     cancellationToken)
                 .ConfigureAwait(false);
             var posBusiness = posItems
@@ -568,7 +578,15 @@ public sealed class CreatePOSCustomer
 
                 var notesTag = "exits-id:" + customer.LinkedPersonalPublicUserId;
                 var (searchHits, _) = await _customers
-                    .ListAsync(orgId, CustomerStatus.Active, customer.LinkedPersonalPublicUserId, 0, 20, null, cancellationToken)
+                    .ListAsync(
+                        orgId,
+                        CustomerStatus.Active,
+                        customer.LinkedPersonalPublicUserId,
+                        0,
+                        20,
+                        null,
+                        peopleOnly: false,
+                        cancellationToken)
                     .ConfigureAwait(false);
                 if (searchHits.Any(c =>
                     string.Equals(

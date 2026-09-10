@@ -132,6 +132,7 @@ public sealed class CheckoutBusinessCustomerSearchTests
             int skip,
             int take,
             IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
+            bool peopleOnly = false,
             CancellationToken cancellationToken = default)
         {
             var query = _items.Where(c => c.OrganizationId == organizationId);

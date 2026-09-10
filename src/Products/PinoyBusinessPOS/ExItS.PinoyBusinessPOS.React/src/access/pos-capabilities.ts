@@ -289,6 +289,41 @@ export function canCreateCredit(grant: PosSessionGrantFacts | null | undefined):
 }
 
 /**
+ * ManageCustomerCreditPolicy UI gate — PosRoleMatrix Owner/Admin/StoreManager.
+ * Cashier DENY. Requires customer-credit-create feature when the grant emits feature codes.
+ * Server remains authoritative (UtangCapability.ManageCustomerCreditPolicy).
+ */
+export function canManageCustomerCreditPolicy(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_CUSTOMER_CREDIT_CREATE)) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * ApproveCustomerCreditPolicy UI gate — same matrix as Manage (Owner/Admin/StoreManager).
+ * Cashier DENY. Server remains authoritative (UtangCapability.ApproveCustomerCreditPolicy).
+ */
+export function canApproveCustomerCreditPolicy(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return canManageCustomerCreditPolicy(grant);
+}
+
+/**
+ * MutateDueDate UI gate — Owner/Admin/StoreManager. Cashier DENY.
+ * Optional Utang due-date override at checkout when policy term already supplies a due date.
+ */
+export function canMutateDueDate(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canManageCustomerCreditPolicy(grant);
+}
+
+/**
  * CreateCustomer UI gate — PosRoleMatrix Owner/Admin/StoreManager.
  * Cashier / ReportingUser DENY. Server remains authoritative.
  */

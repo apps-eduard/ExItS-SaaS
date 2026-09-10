@@ -23,6 +23,7 @@ public sealed class PosCreditApiTests(PosPostgreSqlFixture fixture)
 
     private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid OrgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static readonly Guid Actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
     [Fact]
     public async Task Credit_create_summary_reverse_and_org_isolation()
@@ -34,6 +35,7 @@ public sealed class PosCreditApiTests(PosPostgreSqlFixture fixture)
         createdCustomer.EnsureSuccessStatusCode();
         var customer = await createdCustomer.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
         Assert.NotNull(customer);
+        await ApproveCustomerCreditAsync(client, OrgA, customer!.CustomerId);
 
         using var createEntry = CreateScopedRequest(
             HttpMethod.Post,
@@ -132,6 +134,36 @@ public sealed class PosCreditApiTests(PosPostgreSqlFixture fixture)
         Assert.DoesNotContain("credit_limit", endpointSource, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static async Task ApproveCustomerCreditAsync(HttpClient client, Guid organizationId, Guid customerId)
+    {
+        using var put = CreateScopedRequest(
+            HttpMethod.Put,
+            $"/api/v1/pos/customers/{customerId:D}/credit-policy",
+            organizationId);
+        put.Content = JsonContent.Create(new UpsertCustomerCreditPolicyRequest(100000m, 30, "test configure"));
+        using var putResponse = await client.SendAsync(put);
+        putResponse.EnsureSuccessStatusCode();
+
+        using var get = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/{customerId:D}/credit-policy",
+            organizationId);
+        using var getResponse = await client.SendAsync(get);
+        getResponse.EnsureSuccessStatusCode();
+        var policy = await getResponse.Content.ReadFromJsonAsync<CustomerCreditPolicyReadDto>(JsonOptions);
+        Assert.NotNull(policy);
+        Assert.NotNull(policy!.ExpectedUpdatedAtUtc);
+
+        using var approve = CreateScopedRequest(
+            HttpMethod.Post,
+            $"/api/v1/pos/customers/{customerId:D}/credit-policy/approve",
+            organizationId);
+        approve.Content = JsonContent.Create(
+            new ApproveCustomerCreditPolicyRequest("test approve", policy.ExpectedUpdatedAtUtc!.Value));
+        using var approveResponse = await client.SendAsync(approve);
+        approveResponse.EnsureSuccessStatusCode();
+    }
+
     private static async Task<HttpResponseMessage> PostCustomerAsync(
         HttpClient client,
         Guid organizationId,
@@ -146,6 +178,7 @@ public sealed class PosCreditApiTests(PosPostgreSqlFixture fixture)
     {
         var request = new HttpRequestMessage(method, path);
         request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.OrganizationHeaderName, organizationId.ToString("D"));
+        request.Headers.TryAddWithoutValidation(PosOrganizationHeaders.ActorHeaderName, Actor.ToString("D"));
         return request;
     }
 

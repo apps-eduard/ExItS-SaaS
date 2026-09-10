@@ -277,7 +277,7 @@ public sealed class CreatePOSCustomerUseCaseTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, bool peopleOnly = false, CancellationToken cancellationToken = default)
         {
             var query = _items.Where(c => c.OrganizationId == organizationId);
             if (status is not null)

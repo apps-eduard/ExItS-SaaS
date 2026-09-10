@@ -46,6 +46,10 @@ export const OFFLINE_OPERATION_TYPES = {
   ExpenseCreate: "expense.create",
   /** Online-only supplier payable payment — mirrors OfflineOperationTypes.SupplierPayablePayment. */
   SupplierPayablePayment: "supplier_payable.payment",
+  /** Online-only customer credit policy mutations — mirrors OfflineOperationTypes.CustomerCreditPolicy*. */
+  CustomerCreditPolicyUpsert: "customer_credit_policy.upsert",
+  CustomerCreditPolicyApprove: "customer_credit_policy.approve",
+  CustomerCreditPolicyDisable: "customer_credit_policy.disable",
 } as const;
 
 function guidToN(guid: string): string {

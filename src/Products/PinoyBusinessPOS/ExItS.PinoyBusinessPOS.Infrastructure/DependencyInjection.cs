@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IPOSCustomerRepository, POSCustomerRepository>();
         services.AddScoped<ICreditEntryRepository, CreditEntryRepository>();
         services.AddScoped<ICreditDueDateChangeRepository, CreditDueDateChangeRepository>();
+        services.AddScoped<ICustomerCreditPolicyRepository, CustomerCreditPolicyRepository>();
         services.AddScoped<IRepaymentRepository, RepaymentRepository>();
         services.AddScoped<IWriteOffRepository, WriteOffRepository>();
         services.AddScoped<IPaymentAttemptRepository, PaymentAttemptRepository>();

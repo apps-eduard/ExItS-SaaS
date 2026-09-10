@@ -36,7 +36,8 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     expect(source).toContain('const kindFilter: KindFilter = isUtang ? "people" : customerKindFilter');
     expect(source).toContain('kindFilter="people"');
     expect(source).toContain("includeWalkInsWhenIdle");
-    expect(source).toMatch(/isUtang[\s\S]*?loadSearch\("Customer"\)/);
+    expect(source).toContain('idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}');
+    expect(source).toMatch(/if \(isUtang\) \{[\s\S]*?load = loadSearch\("Customer"\)/);
   });
 
   it("CheckoutCashPage toasts payment success before opening summary", () => {

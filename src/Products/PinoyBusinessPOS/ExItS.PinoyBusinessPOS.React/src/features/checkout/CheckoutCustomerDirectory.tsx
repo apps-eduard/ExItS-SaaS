@@ -67,6 +67,8 @@ type CheckoutCustomerDirectoryProps = {
   onKindFilterChange?: (kind: KindFilter) => void;
   /** When true, idle list keeps Local Validation walk-in seeds (Utang requires a person). */
   includeWalkInsWhenIdle?: boolean;
+  /** Override idle empty copy (e.g. Utang people-only explanation). */
+  idleEmptyMessage?: string;
 };
 
 export function CheckoutCustomerDirectory({
@@ -84,6 +86,7 @@ export function CheckoutCustomerDirectory({
   kindFilter = "all",
   onKindFilterChange,
   includeWalkInsWhenIdle = false,
+  idleEmptyMessage,
 }: CheckoutCustomerDirectoryProps) {
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
@@ -104,9 +107,10 @@ export function CheckoutCustomerDirectory({
         ? t("checkout.customerSearchHintPeople")
         : t("checkout.customerSearchHint");
   const emptyCopy = idle
-    ? kindFilter === "businesses"
-      ? t("checkout.customerIdleEmptyBusinesses")
-      : t("checkout.customerIdleEmpty")
+    ? idleEmptyMessage ??
+      (kindFilter === "businesses"
+        ? t("checkout.customerIdleEmptyBusinesses")
+        : t("checkout.customerIdleEmpty"))
     : kindFilter === "businesses"
       ? t("checkout.customerEmptyBusinesses")
       : t("checkout.customerEmpty");

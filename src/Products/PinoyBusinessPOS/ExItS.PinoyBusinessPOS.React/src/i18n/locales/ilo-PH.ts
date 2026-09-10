@@ -1308,6 +1308,30 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "checkout.confirming": "Gina-record ti sale?",
 
+  "checkout.creditPolicy.afterSale": "Kalpasan daytoy a sale",
+
+  "checkout.creditPolicy.available": "Available",
+
+  "checkout.creditPolicy.due": "Due",
+
+  "checkout.creditPolicy.limit": "Limit",
+
+  "checkout.creditPolicy.loadError": "Saan ma-load ti credit policy. Padasen manen.",
+
+  "checkout.creditPolicy.loading": "Ma-load ti credit policy...",
+
+  "checkout.creditPolicy.notApproved":
+    "Nablock ti Utang agingga Approved ti credit policy daytoy a customer.",
+
+  "checkout.creditPolicy.outstanding": "Outstanding",
+
+  "checkout.creditPolicy.overLimit":
+    "Lumabes daytoy a sale iti available credit ti customer.",
+
+  "checkout.creditPolicy.thisSale": "Daytoy a sale",
+
+  "checkout.creditPolicy.title": "Customer credit",
+
   "checkout.customerAlreadyInContacts": "Nainayonen ni {name} kadagiti contactsmo.",
 
   "checkout.customerClear": "Ikkaten ti customer",
@@ -1502,6 +1526,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.utangDebtHint": "Ti natala a utti pareho iti Amount to Pay.",
 
   "checkout.utangDueDate": "Due date (opsional)",
+
+  "checkout.utangCustomerIdleEmpty":
+    "Awan pay a person customers. Dagiti business iti Cash/GCash (kasla B2B orgs) saan a mabalin ti Utang — manginayon iti person wenno agbiruk babaen ti nagan/phone.",
+
+  "checkout.utangDueDateOverride": "Due date override (opsional)",
+
+  "checkout.utangDueFromPolicy": "Due manipud iti credit policy",
 
   "checkout.utangZeroBlocked": "Ti Utti masapul ti Amount to Pay a dakdakkel ngem zero.",
 
@@ -2018,6 +2049,74 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.createKindWalkIn": "Awan ExItS ID",
 
   "customers.createKindWalkInHint": "Nagan ken opsional a contact laeng. Awan Personal account link.",
+
+  "customers.creditPolicy.approve": "I-approve",
+
+  "customers.creditPolicy.approvedBy": "In-approve ni",
+
+  "customers.creditPolicy.available": "Available credit",
+
+  "customers.creditPolicy.cancel": "Cancel",
+
+  "customers.creditPolicy.concurrencyReload": "I-reload ti credit policy ken padasen manen.",
+
+  "customers.creditPolicy.configure": "I-configure",
+
+  "customers.creditPolicy.disable": "I-disable",
+
+  "customers.creditPolicy.edit": "I-edit",
+
+  "customers.creditPolicy.hideHistory": "Ilemmeng ti history",
+
+  "customers.creditPolicy.history": "History",
+
+  "customers.creditPolicy.historyAction": "Action",
+
+  "customers.creditPolicy.historyEmpty": "Awan pay a panagbaliw ti policy.",
+
+  "customers.creditPolicy.historyStatus": "Status",
+
+  "customers.creditPolicy.invalidLimit": "Isurat ti valid a credit limit (max 2 decimal places).",
+
+  "customers.creditPolicy.invalidTerm": "Ti term days ket nasken 1 agingga 365.",
+
+  "customers.creditPolicy.limit": "Credit limit",
+
+  "customers.creditPolicy.nextPage": "Sumaruno",
+
+  "customers.creditPolicy.offline": "Masapul ti online connection para iti credit policy.",
+
+  "customers.creditPolicy.outstanding": "Outstanding",
+
+  "customers.creditPolicy.outstandingOverLimitWarning":
+    "Nadadakkel ti outstanding ngem ti baro a limit. Zero ti available credit agingga bumaba ti balance.",
+
+  "customers.creditPolicy.prevPage": "Previous",
+
+  "customers.creditPolicy.reasonRequired": "Isurat ti reason.",
+
+  "customers.creditPolicy.reapprovalWarning":
+    "Masapul ti re-approval kalpasan ti panag-edit ti Approved policy sakbay a mapalubusan ti baro nga Utang.",
+
+  "customers.creditPolicy.save": "I-save",
+
+  "customers.creditPolicy.status.Approved": "Approved",
+
+  "customers.creditPolicy.status.Disabled": "Disabled",
+
+  "customers.creditPolicy.status.NotConfigured": "Saan pay a na-configure",
+
+  "customers.creditPolicy.status.PendingApproval": "Pending approval",
+
+  "customers.creditPolicy.term": "Default term",
+
+  "customers.creditPolicy.termAbout3Months": "agarup 3 a bulan",
+
+  "customers.creditPolicy.termCustom": "Custom",
+
+  "customers.creditPolicy.termDays": "{days} nga aldaw",
+
+  "customers.creditPolicy.title": "Credit policy",
 
   "customers.creditsEmpty": "Awan pay ti charges",
 

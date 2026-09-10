@@ -28,7 +28,11 @@ public sealed class CreditEntryUseCaseTests
         var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "Rosa", Now);
         await customers.AddAsync(customer);
 
-        var create = new CreateCreditEntry(customers, entries, new ImmediateUnitOfWork(), clock);
+        var policies = new InMemoryCustomerCreditPolicyRepository();
+        await SeedApprovedPolicyAsync(policies, customer, clock.UtcNow, creditLimit: 10_000m);
+        var authorization = new CustomerCreditAuthorizationService(policies, outstanding);
+
+        var create = new CreateCreditEntry(customers, entries, authorization, new ImmediateUnitOfWork(), clock);
         var first = await create.ExecuteAsync(OrgId, customer.Id.Value, 100m, "Goods", default);
         Assert.True(first.IsSuccess);
         var second = await create.ExecuteAsync(OrgId, customer.Id.Value, 40m, "More goods", default);
@@ -59,6 +63,56 @@ public sealed class CreditEntryUseCaseTests
         Assert.Equal(2, summary.TotalEntryCount);
     }
 
+    [Fact]
+    public async Task Create_requires_approved_customer_credit_policy()
+    {
+        var customers = new InMemoryCustomerRepository();
+        var entries = new InMemoryCreditRepository();
+        var repayments = new InMemoryRepaymentRepository();
+        var outstanding = new OutstandingBalanceService(entries, repayments, new InMemoryWriteOffRepository(), new FixedClock(Now));
+        var clock = new FixedClock(Now);
+        var customer = POSCustomer.Create(PosOrganizationId.From(OrgId), "No Policy", Now);
+        await customers.AddAsync(customer);
+
+        var policies = new InMemoryCustomerCreditPolicyRepository();
+        var authorization = new CustomerCreditAuthorizationService(policies, outstanding);
+        var create = new CreateCreditEntry(customers, entries, authorization, new ImmediateUnitOfWork(), clock);
+
+        var withoutPolicy = await create.ExecuteAsync(OrgId, customer.Id.Value, 25m, "Should fail", default);
+        Assert.False(withoutPolicy.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerCreditNotApproved, withoutPolicy.ErrorCode);
+
+        await SeedApprovedPolicyAsync(policies, customer, clock.UtcNow, creditLimit: 100m);
+        var ok = await create.ExecuteAsync(OrgId, customer.Id.Value, 25m, "Allowed", default);
+        Assert.True(ok.IsSuccess);
+
+        var overLimit = await create.ExecuteAsync(OrgId, customer.Id.Value, 90m, "Too much", default);
+        Assert.False(overLimit.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CustomerCreditLimitExceeded, overLimit.ErrorCode);
+    }
+
+    private static async Task SeedApprovedPolicyAsync(
+        InMemoryCustomerCreditPolicyRepository policies,
+        POSCustomer customer,
+        DateTimeOffset utcNow,
+        decimal creditLimit)
+    {
+        var actor = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        var (policy, configureChange) = CustomerCreditPolicy.Configure(
+            customer.OrganizationId,
+            customer.Id,
+            creditLimit,
+            defaultTermDays: 30,
+            actor,
+            reason: null,
+            utcNow);
+        await policies.AddAsync(policy);
+        await policies.AddChangeAsync(configureChange);
+        var approveChange = policy.Approve(actor, "Approved for tests.", utcNow.AddSeconds(1));
+        await policies.UpdateAsync(policy);
+        await policies.AddChangeAsync(approveChange);
+    }
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
@@ -72,6 +126,54 @@ public sealed class CreditEntryUseCaseTests
             Func<CancellationToken, Task<T>> action,
             CancellationToken cancellationToken = default) =>
             action(cancellationToken);
+    }
+
+    private sealed class InMemoryCustomerCreditPolicyRepository : ICustomerCreditPolicyRepository
+    {
+        private readonly List<CustomerCreditPolicy> _policies = [];
+        private readonly List<CustomerCreditPolicyChange> _changes = [];
+
+        public Task<CustomerCreditPolicy?> GetByCustomerAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_policies.FirstOrDefault(p =>
+                p.OrganizationId == organizationId && p.CustomerId == customerId));
+
+        public Task AddAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default)
+        {
+            _policies.Add(policy);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(CustomerCreditPolicy policy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(CustomerCreditPolicyChange change, CancellationToken cancellationToken = default)
+        {
+            _changes.Add(change);
+            return Task.CompletedTask;
+        }
+
+        public Task<(IReadOnlyList<CustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _changes
+                .Where(c => c.OrganizationId == organizationId && c.CustomerId == customerId)
+                .OrderByDescending(c => c.ChangedAtUtc)
+                .ToList();
+            return Task.FromResult(((IReadOnlyList<CustomerCreditPolicyChange>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task AcquireCustomerCreditLockAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class InMemoryCustomerRepository : IPOSCustomerRepository
@@ -122,7 +224,10 @@ public sealed class CreditEntryUseCaseTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            int take,
+            IReadOnlyCollection<Guid>? restrictToCustomerIds = null,
+            bool peopleOnly = false,
+            CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -134,7 +239,7 @@ public sealed class CreditEntryUseCaseTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, false, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,

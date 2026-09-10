@@ -55,6 +55,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<BranchSetupProgressRecord> BranchSetupProgress => Set<BranchSetupProgressRecord>();
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
+    internal DbSet<CustomerCreditPolicyRecord> CustomerCreditPolicies => Set<CustomerCreditPolicyRecord>();
+    internal DbSet<CustomerCreditPolicyChangeRecord> CustomerCreditPolicyChanges =>
+        Set<CustomerCreditPolicyChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
@@ -360,6 +363,100 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_credit_due_date_changes_customers");
+        });
+
+        modelBuilder.Entity<CustomerCreditPolicyRecord>(entity =>
+        {
+            entity.ToTable("customer_credit_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_customer_credit_policies_status",
+                    "status BETWEEN 1 AND 3");
+                tb.HasCheckConstraint(
+                    "ck_customer_credit_policies_term_days",
+                    "default_term_days BETWEEN 1 AND 365");
+                tb.HasCheckConstraint(
+                    "ck_customer_credit_policies_credit_limit_non_negative",
+                    "credit_limit >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").IsRequired();
+            entity.Property(e => e.CreditLimit)
+                .HasColumnName("credit_limit")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.DefaultTermDays).HasColumnName("default_term_days").IsRequired();
+            entity.Property(e => e.ConfiguredByUserId).HasColumnName("configured_by_user_id").IsRequired();
+            entity.Property(e => e.ConfiguredAtUtc).HasColumnName("configured_at_utc");
+            entity.Property(e => e.ApprovedByUserId).HasColumnName("approved_by_user_id");
+            entity.Property(e => e.ApprovedAtUtc).HasColumnName("approved_at_utc");
+            entity.Property(e => e.UpdatedByUserId).HasColumnName("updated_by_user_id").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CustomerId })
+                .IsUnique()
+                .HasDatabaseName("ux_customer_credit_policies_org_customer");
+
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_customer_credit_policies_customers");
+        });
+
+        modelBuilder.Entity<CustomerCreditPolicyChangeRecord>(entity =>
+        {
+            entity.ToTable("customer_credit_policy_changes");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+            entity.Property(e => e.CustomerCreditPolicyId)
+                .HasColumnName("customer_credit_policy_id")
+                .IsRequired();
+            entity.Property(e => e.Action).HasColumnName("action").IsRequired();
+            entity.Property(e => e.PreviousStatus).HasColumnName("previous_status");
+            entity.Property(e => e.NewStatus).HasColumnName("new_status").IsRequired();
+            entity.Property(e => e.PreviousCreditLimit)
+                .HasColumnName("previous_credit_limit")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.NewCreditLimit)
+                .HasColumnName("new_credit_limit")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.PreviousTermDays).HasColumnName("previous_term_days");
+            entity.Property(e => e.NewTermDays).HasColumnName("new_term_days");
+            entity.Property(e => e.ActorUserId).HasColumnName("actor_user_id").IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(CustomerCreditPolicy.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.ChangedAtUtc })
+                .IsDescending(false, false, true)
+                .HasDatabaseName("ix_customer_credit_policy_changes_org_customer_changed");
+
+            entity.HasOne<CustomerCreditPolicyRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerCreditPolicyId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_customer_credit_policy_changes_policies");
+
+            entity.HasOne<POSCustomerRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_customer_credit_policy_changes_customers");
         });
 
         modelBuilder.Entity<RepaymentRecord>(entity =>
