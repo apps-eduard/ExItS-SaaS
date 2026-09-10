@@ -1,5 +1,5 @@
 import { CheckoutCustomerIdentity } from "@/features/checkout/CheckoutCustomerIdentity";
-import type { CheckoutCustomerOption, CheckoutPersonOption } from "@/features/checkout/checkout-customer-option";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
   checkoutOptionKey,
   isCheckoutBusiness,
@@ -60,19 +60,49 @@ export function CheckoutCustomerSelectedCard({
 
 function directoryCreditStatus(customer: CheckoutCustomerOption): string | null {
   if (isCheckoutBusiness(customer)) {
-    return null;
+    return customer.creditStatus ?? "NotConfigured";
   }
   if (!isCheckoutPerson(customer)) {
     return "NotConfigured";
   }
+  // POS Business party rows are B2B-shaped but not connection Kind=Business — no people credit.
+  if (isCheckoutBusinessDirectoryRow(customer)) {
+    return null;
+  }
   return customer.creditStatus ?? "NotConfigured";
 }
 
-function directoryAvailableLabel(customer: CheckoutPersonOption): string {
-  if ((customer.creditStatus ?? "").trim() !== "Approved") {
+function directoryAvailableLabel(customer: CheckoutCustomerOption): string {
+  const status = isCheckoutBusiness(customer)
+    ? customer.creditStatus
+    : isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)
+      ? customer.creditStatus
+      : null;
+  if ((status ?? "").trim() !== "Approved") {
     return "—";
   }
-  return formatPeso(customer.availableCredit ?? 0);
+  const available = isCheckoutBusiness(customer)
+    ? customer.availableCredit
+    : isCheckoutPerson(customer)
+      ? customer.availableCredit
+      : 0;
+  return formatPeso(available ?? 0);
+}
+
+function directorySecondaryIdentity(customer: CheckoutCustomerOption): string | null {
+  if (isCheckoutBusiness(customer)) {
+    const orgId = customer.buyerPublicOrganizationId?.trim();
+    return orgId || null;
+  }
+  if (isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)) {
+    const exitsId = customer.linkedPersonalPublicUserId?.trim();
+    return exitsId || null;
+  }
+  if (isCheckoutPerson(customer) && isCheckoutBusinessDirectoryRow(customer)) {
+    const orgId = customer.linkedBuyerPublicOrganizationId?.trim();
+    return orgId || null;
+  }
+  return null;
 }
 
 type CheckoutCustomerDirectoryProps = {
@@ -245,10 +275,8 @@ export function CheckoutCustomerDirectory({
                 selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
               const isB2b = isCheckoutBusinessDirectoryRow(customer);
               const status = directoryCreditStatus(customer);
-              const available =
-                isCheckoutPerson(customer) && !isCheckoutBusiness(customer)
-                  ? directoryAvailableLabel(customer)
-                  : "—";
+              const available = directoryAvailableLabel(customer);
+              const secondary = directorySecondaryIdentity(customer);
               return (
                 <li key={key}>
                   <button
@@ -271,7 +299,17 @@ export function CheckoutCustomerDirectory({
                       className="checkout-credit-directory__name"
                       data-testid="checkout-credit-directory-name"
                     >
-                      {checkoutCustomerTitle(customer, walkInLabel)}
+                      <span className="checkout-credit-directory__name-primary">
+                        {checkoutCustomerTitle(customer, walkInLabel)}
+                      </span>
+                      {secondary ? (
+                        <span
+                          className="checkout-credit-directory__name-secondary"
+                          data-testid="checkout-credit-directory-secondary"
+                        >
+                          {secondary}
+                        </span>
+                      ) : null}
                     </span>
                     <span
                       className="checkout-credit-directory__type"
@@ -299,7 +337,9 @@ export function CheckoutCustomerDirectory({
                       className="checkout-credit-directory__available tabular-nums"
                       data-testid="checkout-credit-directory-available"
                     >
-                      {available}
+                      {available === "—"
+                        ? t("checkout.directoryCredit.availableEmDash")
+                        : available}
                     </span>
                   </button>
                 </li>

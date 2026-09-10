@@ -2669,12 +2669,25 @@ html:has(.admin-shell) #root {
 }
 
 .checkout-credit-directory__name {
+  display: flex;
   min-width: 0;
+  flex-direction: column;
+  gap: 0.05rem;
   font-size: var(--exits-text-sm);
   font-weight: var(--exits-font-weight-medium);
+}
+
+.checkout-credit-directory__name-primary,
+.checkout-credit-directory__name-secondary {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.checkout-credit-directory__name-secondary {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-normal);
+  color: var(--exits-text-muted);
 }
 
 .checkout-credit-directory__type,
@@ -8805,8 +8818,11 @@ a.dashboard-metric-card:focus-visible {
 }
 
 .exits-toast {
-  pointer-events: none;
-  padding: 0.75rem 1rem;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.65rem 0.75rem 1rem;
   border-radius: var(--exits-radius-md);
   border: 1px solid var(--exits-border);
   background: var(--exits-surface);
@@ -8817,12 +8833,44 @@ a.dashboard-metric-card:focus-visible {
   animation: exits-toast-in var(--exits-motion-fast) ease both;
 }
 
+.exits-toast__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.exits-toast__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.15rem -0.1rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--exits-radius-sm);
+  background: transparent;
+  color: var(--exits-text-muted, var(--exits-muted));
+  cursor: pointer;
+}
+
+.exits-toast__close:hover {
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, transparent);
+  color: var(--exits-text);
+}
+
+.exits-toast__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--exits-ring);
+}
+
 .exits-toast--interactive {
   pointer-events: auto;
 }
 
 .exits-toast__title {
   font-weight: 600;
+  padding-right: 0.15rem;
 }
 
 .exits-toast__description {

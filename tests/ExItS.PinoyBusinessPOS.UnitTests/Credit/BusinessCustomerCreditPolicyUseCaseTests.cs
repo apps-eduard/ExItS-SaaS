@@ -217,6 +217,17 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             Task.FromResult(Policies.FirstOrDefault(p =>
                 p.SellerOrganizationId == sellerOrganizationId && p.BuyerOrganizationId == buyerOrganizationId));
 
+        public Task<IReadOnlyList<BusinessCustomerCreditPolicy>> ListBySellerAndBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessCustomerCreditPolicy>>(
+                Policies
+                    .Where(p =>
+                        p.SellerOrganizationId == sellerOrganizationId
+                        && buyerOrganizationIds.Contains(p.BuyerOrganizationId.Value))
+                    .ToList());
+
         public Task AddAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default)
         {
             Policies.Add(policy);

@@ -47,12 +47,27 @@ export type UtangDirectorySelectBlockReason =
   | "disabled"
   | "over_limit";
 
+function normalizeCreditStatus(raw: string | null | undefined): string {
+  return (raw ?? "").trim();
+}
+
 export function resolveUtangDirectorySelectBlock(args: {
   customer: CheckoutCustomerOption;
   thisSaleAmount: number;
 }): { reason: UtangDirectorySelectBlockReason; availableCredit?: number } | null {
   if (isCheckoutBusiness(args.customer)) {
-    return { reason: "b2b_not_available" };
+    const status = normalizeCreditStatus(args.customer.creditStatus);
+    if (status === "PendingApproval") {
+      return { reason: "pending_approval" };
+    }
+    if (status === "Disabled") {
+      return { reason: "disabled" };
+    }
+    if (status === "Approved") {
+      // B2B Utang checkout is not implemented yet — keep Approved visible but block select.
+      return { reason: "b2b_not_available" };
+    }
+    return { reason: "not_configured" };
   }
   if (!isCheckoutPerson(args.customer)) {
     return { reason: "not_configured" };

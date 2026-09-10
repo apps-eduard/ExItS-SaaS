@@ -28,6 +28,25 @@ internal sealed class BusinessCustomerCreditPolicyRepository : IBusinessCustomer
         return record is null ? null : BusinessCustomerCreditPolicyEntityMapper.ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<BusinessCustomerCreditPolicy>> ListBySellerAndBuyerIdsAsync(
+        PosOrganizationId sellerOrganizationId,
+        IReadOnlyCollection<Guid> buyerOrganizationIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (buyerOrganizationIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = buyerOrganizationIds as IList<Guid> ?? buyerOrganizationIds.ToList();
+        var records = await _db.BusinessCustomerCreditPolicies.AsNoTracking()
+            .Where(p => p.SellerOrganizationId == sellerOrganizationId.Value
+                        && ids.Contains(p.BuyerOrganizationId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(BusinessCustomerCreditPolicyEntityMapper.ToDomain).ToList();
+    }
+
     public Task AddAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default)
     {
         _db.BusinessCustomerCreditPolicies.Add(BusinessCustomerCreditPolicyEntityMapper.ToRecord(policy));

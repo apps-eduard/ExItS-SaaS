@@ -76,7 +76,8 @@ public sealed class CheckoutBusinessCustomerSearchTests
         Assert.Equal(CheckoutCustomerSearchItemDto.KindBusiness, hit.Kind);
         Assert.Equal(connectionId, hit.ConnectionId);
         Assert.Equal(BuyerOrg, hit.BuyerOrganizationId);
-        Assert.Null(hit.CreditStatus);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.NotConfigured), hit.CreditStatus);
+        Assert.Equal(0m, hit.AvailableCredit);
     }
 
     [Fact]
@@ -169,11 +170,103 @@ public sealed class CheckoutBusinessCustomerSearchTests
         Assert.Null(hit.DefaultTermDays);
     }
 
+    [Fact]
+    public async Task Business_kind_projects_b2b_credit_statuses_and_available_for_approved()
+    {
+        var buyerPending = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1");
+        var buyerApproved = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2");
+        var buyerDisabled = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3");
+        var buyerNone = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4");
+
+        ConnectedSupplierRelationship Rel(Guid connectionId, Guid buyer, string name, string orgPublic) =>
+            ConnectedSupplierRelationship.Rehydrate(
+                ConnectedSupplierRelationshipId.From(connectionId),
+                PosOrganizationId.From(buyer),
+                PosOrganizationId.From(Org),
+                ConnectedSupplierRelationshipStatus.Active,
+                Utc,
+                null,
+                null,
+                null,
+                null,
+                Utc,
+                Utc,
+                name,
+                orgPublic,
+                "Seller Co",
+                "ORG000001");
+
+        var relationships = new FakeRelationships(
+            Rel(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), buyerPending, "Pending Co", "ORG100001"),
+            Rel(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), buyerApproved, "Approved Co", "ORG100002"),
+            Rel(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), buyerDisabled, "Paused Co", "ORG100003"),
+            Rel(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), buyerNone, "No Policy Co", "ORG100004"));
+
+        var businessPolicies = new InMemoryBusinessCreditPolicies();
+        async Task SeedAsync(Guid buyer, Guid connectionId, decimal limit, Action<BusinessCustomerCreditPolicy> mutate)
+        {
+            var (policy, change) = BusinessCustomerCreditPolicy.Configure(
+                PosOrganizationId.From(Org),
+                PosOrganizationId.From(buyer),
+                connectionId,
+                limit,
+                defaultTermDays: 30,
+                Actor,
+                reason: null,
+                Utc);
+            mutate(policy);
+            await businessPolicies.AddAsync(policy);
+            await businessPolicies.AddChangeAsync(change);
+        }
+
+        await SeedAsync(buyerPending, Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), 10_000m, _ => { });
+        await SeedAsync(buyerApproved, Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), 50_000m, p =>
+        {
+            _ = p.Approve(Actor, "ok", Utc.AddSeconds(1));
+        });
+        await SeedAsync(buyerDisabled, Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), 20_000m, p =>
+        {
+            _ = p.Approve(Actor, "ok", Utc.AddSeconds(1));
+            _ = p.Disable(Actor, "pause", Utc.AddSeconds(2));
+        });
+
+        var queries = CreateQueries(
+            new InMemoryCustomers(),
+            relationships,
+            businessPolicies: businessPolicies);
+
+        var result = await queries.SearchForCheckoutAsync(Org, search: null, page: 1, pageSize: 20, kind: "Business");
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(4, result.Value!.Items.Count);
+        Assert.Equal(1, businessPolicies.ListBySellerAndBuyerIdsCallCount);
+
+        var pending = Assert.Single(result.Value.Items, i => i.BuyerOrganizationId == buyerPending);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.PendingApproval), pending.CreditStatus);
+        Assert.Equal(0m, pending.AvailableCredit);
+
+        var approved = Assert.Single(result.Value.Items, i => i.BuyerOrganizationId == buyerApproved);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.Approved), approved.CreditStatus);
+        Assert.Equal(50_000m, approved.CreditLimit);
+        Assert.Equal(50_000m, approved.AvailableCredit);
+        Assert.Equal(0m, approved.OutstandingAmount);
+        Assert.Equal(30, approved.DefaultTermDays);
+
+        var disabled = Assert.Single(result.Value.Items, i => i.BuyerOrganizationId == buyerDisabled);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.Disabled), disabled.CreditStatus);
+        Assert.Equal(0m, disabled.AvailableCredit);
+
+        var none = Assert.Single(result.Value.Items, i => i.BuyerOrganizationId == buyerNone);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.NotConfigured), none.CreditStatus);
+        Assert.Equal(0m, none.AvailableCredit);
+    }
+
     private static POSCustomerQueryService CreateQueries(
         IPOSCustomerRepository customers,
         IConnectedSupplierRelationshipRepository? relationships = null,
         ICustomerCreditPolicyRepository? policies = null,
-        IOutstandingBalanceService? outstanding = null)
+        IOutstandingBalanceService? outstanding = null,
+        IBusinessCustomerCreditPolicyRepository? businessPolicies = null)
     {
         var (service, actor) = PartyBranchAccessTestSupport.Create();
         outstanding ??= new OutstandingBalanceService(
@@ -187,7 +280,8 @@ public sealed class CheckoutBusinessCustomerSearchTests
             actor,
             relationships ?? new EmptyRelationships(),
             policies ?? new InMemoryCreditPolicies(),
-            outstanding);
+            outstanding,
+            businessPolicies ?? new InMemoryBusinessCreditPolicies());
     }
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
@@ -352,6 +446,71 @@ public sealed class CheckoutBusinessCustomerSearchTests
         public Task AcquireCustomerCreditLockAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class InMemoryBusinessCreditPolicies : IBusinessCustomerCreditPolicyRepository
+    {
+        private readonly List<BusinessCustomerCreditPolicy> _policies = [];
+        private readonly List<BusinessCustomerCreditPolicyChange> _changes = [];
+
+        public int ListBySellerAndBuyerIdsCallCount { get; private set; }
+
+        public Task<BusinessCustomerCreditPolicy?> GetBySellerAndBuyerAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_policies.FirstOrDefault(p =>
+                p.SellerOrganizationId == sellerOrganizationId && p.BuyerOrganizationId == buyerOrganizationId));
+
+        public Task<IReadOnlyList<BusinessCustomerCreditPolicy>> ListBySellerAndBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default)
+        {
+            ListBySellerAndBuyerIdsCallCount++;
+            return Task.FromResult<IReadOnlyList<BusinessCustomerCreditPolicy>>(
+                _policies
+                    .Where(p =>
+                        p.SellerOrganizationId == sellerOrganizationId
+                        && buyerOrganizationIds.Contains(p.BuyerOrganizationId.Value))
+                    .ToList());
+        }
+
+        public Task AddAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default)
+        {
+            _policies.Add(policy);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(BusinessCustomerCreditPolicyChange change, CancellationToken cancellationToken = default)
+        {
+            _changes.Add(change);
+            return Task.CompletedTask;
+        }
+
+        public Task<(IReadOnlyList<BusinessCustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            var list = _changes
+                .Where(c => c.SellerOrganizationId == sellerOrganizationId
+                            && c.BuyerOrganizationId == buyerOrganizationId)
+                .OrderByDescending(c => c.ChangedAtUtc)
+                .ToList();
+            return Task.FromResult(((IReadOnlyList<BusinessCustomerCreditPolicyChange>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task AcquireBusinessCustomerCreditLockAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }

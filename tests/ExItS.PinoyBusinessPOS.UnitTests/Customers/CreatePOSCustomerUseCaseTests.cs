@@ -26,7 +26,8 @@ public sealed class CreatePOSCustomerUseCaseTests
             actor,
             new EmptyRelationships(),
             new EmptyCreditPolicies(),
-            new ZeroOutstanding());
+            new ZeroOutstanding(),
+            new EmptyBusinessCreditPolicies());
     }
 
     [Fact]
@@ -420,6 +421,52 @@ public sealed class CreatePOSCustomerUseCaseTests
         public Task AcquireCustomerCreditLockAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyBusinessCreditPolicies : ExItS.PinoyBusinessPOS.Application.Credit.IBusinessCustomerCreditPolicyRepository
+    {
+        public Task<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy?> GetBySellerAndBuyerAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy?>(null);
+
+        public Task<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy>> ListBySellerAndBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy>>([]);
+
+        public Task AddAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy policy,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicy policy,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddChangeAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicyChange change,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<(IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicyChange> Items, int TotalCount)> ListChangesAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(
+                ((IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicyChange>)
+                    Array.Empty<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicyChange>(), 0));
+
+        public Task AcquireBusinessCustomerCreditLockAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }

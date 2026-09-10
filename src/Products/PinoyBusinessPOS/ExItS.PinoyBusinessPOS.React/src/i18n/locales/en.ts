@@ -2237,7 +2237,7 @@ export const en = {
   "checkout.utangSelect.overLimit":
     "Credit limit exceeded. Available credit is {amount}.",
   "checkout.utangSelect.b2bNotAvailable":
-    "Business credit is configured, but Business Utang checkout is not available yet.",
+    "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",
   "checkout.utangDebtHint": "Debt recorded equals Amount to Pay.",
   "checkout.customerLoading": "Loading customers…",

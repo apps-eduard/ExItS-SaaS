@@ -219,6 +219,89 @@ describe("CheckoutCustomerDirectory", () => {
     expect(screen.getAllByTestId("checkout-customer-credit-line")).toHaveLength(4);
   });
 
+  it("shows B2B credit status and available from projected BusinessCustomerCreditPolicy", () => {
+    const approved: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222222",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+      buyerPublicOrganizationId: "ORG436352",
+      displayName: "Kizy Bakery",
+      status: "Active",
+      creditStatus: "Approved",
+      availableCredit: 50000,
+      creditLimit: 50000,
+    };
+    const pending: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222223",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333334",
+      buyerPublicOrganizationId: "ORG436353",
+      displayName: "Pending Bakery",
+      status: "Active",
+      creditStatus: "PendingApproval",
+    };
+    const paused: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222224",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333335",
+      buyerPublicOrganizationId: "ORG436354",
+      displayName: "Paused Bakery",
+      status: "Active",
+      creditStatus: "Disabled",
+    };
+    const notEnabled: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222225",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333336",
+      buyerPublicOrganizationId: "ORG436355",
+      displayName: "Plain Bakery",
+      status: "Active",
+      creditStatus: "NotConfigured",
+    };
+    const person: CheckoutCustomerOption = {
+      ...named,
+      creditStatus: "Approved",
+      availableCredit: 12500,
+      linkedPersonalPublicUserId: "EX-4827-1936",
+    };
+
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[approved, pending, paused, notEnabled, person]}
+          customersLoading={false}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+          includeWalkInsWhenIdle
+          showCreditStatus
+        />
+      </AppProviders>,
+    );
+
+    const bakery = screen.getByTestId(`checkout-business-${approved.connectionId}`);
+    expect(bakery).toHaveTextContent("Approved");
+    expect(bakery).toHaveTextContent("ORG436352");
+    expect(bakery.querySelector("[data-testid='checkout-credit-directory-available']")).toHaveTextContent(
+      "₱",
+    );
+    expect(screen.getByTestId(`checkout-business-${pending.connectionId}`)).toHaveTextContent(
+      "Pending approval",
+    );
+    expect(screen.getByTestId(`checkout-business-${paused.connectionId}`)).toHaveTextContent("Paused");
+    expect(screen.getByTestId(`checkout-business-${notEnabled.connectionId}`)).toHaveTextContent(
+      "Credit not enabled",
+    );
+    expect(screen.getByTestId(`checkout-customer-${person.customerId}`)).toHaveTextContent("Approved");
+    expect(screen.getByTestId(`checkout-customer-${person.customerId}`)).toHaveTextContent(
+      "EX-4827-1936",
+    );
+  });
+
   it("shows load error instead of empty when the directory request failed", () => {
     render(
       <AppProviders>

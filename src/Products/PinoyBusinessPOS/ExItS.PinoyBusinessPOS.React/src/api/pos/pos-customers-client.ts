@@ -319,12 +319,13 @@ export const checkoutCustomerSearchItemSchema = z.object({
   buyerPublicOrganizationId: z.string().nullable().optional(),
   partyKind: z.string().nullable().optional(),
   initiatedByParty: z.string().nullable().optional(),
-  /** Person rows only — NotConfigured | PendingApproval | Approved | Disabled */
+  /** Person or Business connection rows — NotConfigured | PendingApproval | Approved | Disabled */
   creditStatus: z.string().nullable().optional(),
   creditLimit: z.number().nullable().optional(),
   outstandingAmount: z.number().nullable().optional(),
   availableCredit: z.number().nullable().optional(),
   defaultTermDays: z.number().int().nullable().optional(),
+  linkedPersonalPublicUserId: z.string().nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({

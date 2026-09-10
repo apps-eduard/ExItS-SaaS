@@ -42,6 +42,7 @@ public sealed class POSCustomerQueryService
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly ICustomerCreditPolicyRepository _creditPolicies;
+    private readonly IBusinessCustomerCreditPolicyRepository _businessCreditPolicies;
     private readonly IOutstandingBalanceService _outstanding;
 
     public POSCustomerQueryService(
@@ -50,7 +51,8 @@ public sealed class POSCustomerQueryService
         IPartyBranchAccessActorAccessor actorAccessor,
         IConnectedSupplierRelationshipRepository relationships,
         ICustomerCreditPolicyRepository creditPolicies,
-        IOutstandingBalanceService outstanding)
+        IOutstandingBalanceService outstanding,
+        IBusinessCustomerCreditPolicyRepository businessCreditPolicies)
     {
         _customers = customers;
         _branchAccess = branchAccess;
@@ -58,6 +60,7 @@ public sealed class POSCustomerQueryService
         _relationships = relationships;
         _creditPolicies = creditPolicies;
         _outstanding = outstanding;
+        _businessCreditPolicies = businessCreditPolicies;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -161,7 +164,8 @@ public sealed class POSCustomerQueryService
             customer.DisplayName,
             customer.Status.ToString(),
             customer.Id.Value,
-            customer.MobileNumber);
+            customer.MobileNumber,
+            LinkedPersonalPublicUserId: customer.LinkedPersonalPublicUserId);
     }
 
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
@@ -249,7 +253,8 @@ public sealed class POSCustomerQueryService
                     c.DisplayName,
                     c.Status.ToString(),
                     c.Id.Value,
-                    c.MobileNumber)));
+                    c.MobileNumber,
+                    LinkedPersonalPublicUserId: c.LinkedPersonalPublicUserId)));
         }
 
         if (includeBusiness)
@@ -333,57 +338,109 @@ public sealed class POSCustomerQueryService
         List<CheckoutCustomerSearchItemDto> pageItems,
         CancellationToken cancellationToken)
     {
-        // Person rows only: Kind=Customer without Business PartyKind.
         var personCustomerIds = pageItems
             .Where(IsCheckoutPersonCustomerRow)
             .Select(i => i.CustomerId!.Value)
             .Distinct()
             .ToList();
-        if (personCustomerIds.Count == 0)
+        var businessBuyerIds = pageItems
+            .Where(IsCheckoutBusinessConnectionRow)
+            .Select(i => i.BuyerOrganizationId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (personCustomerIds.Count == 0 && businessBuyerIds.Count == 0)
         {
             return pageItems;
         }
 
-        var policies = await _creditPolicies
-            .ListByCustomerIdsAsync(organizationId, personCustomerIds, cancellationToken)
-            .ConfigureAwait(false);
-        var policyByCustomer = policies.ToDictionary(p => p.CustomerId.Value);
-        var outstandingByCustomer = await _outstanding
-            .GetOutstandingBatchAsync(organizationId, personCustomerIds, cancellationToken)
-            .ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, CustomerCreditPolicy> policyByCustomer =
+            new Dictionary<Guid, CustomerCreditPolicy>();
+        IReadOnlyDictionary<Guid, decimal> outstandingByCustomer =
+            new Dictionary<Guid, decimal>();
+        IReadOnlyDictionary<Guid, BusinessCustomerCreditPolicy> policyByBuyer =
+            new Dictionary<Guid, BusinessCustomerCreditPolicy>();
+
+        if (personCustomerIds.Count > 0)
+        {
+            var policies = await _creditPolicies
+                .ListByCustomerIdsAsync(organizationId, personCustomerIds, cancellationToken)
+                .ConfigureAwait(false);
+            policyByCustomer = policies.ToDictionary(p => p.CustomerId.Value);
+            outstandingByCustomer = await _outstanding
+                .GetOutstandingBatchAsync(organizationId, personCustomerIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (businessBuyerIds.Count > 0)
+        {
+            var businessPolicies = await _businessCreditPolicies
+                .ListBySellerAndBuyerIdsAsync(organizationId, businessBuyerIds, cancellationToken)
+                .ConfigureAwait(false);
+            policyByBuyer = businessPolicies.ToDictionary(p => p.BuyerOrganizationId.Value);
+        }
 
         return pageItems.Select(item =>
         {
-            if (!IsCheckoutPersonCustomerRow(item))
+            if (IsCheckoutPersonCustomerRow(item))
             {
-                return item;
-            }
+                var customerId = item.CustomerId!.Value;
+                outstandingByCustomer.TryGetValue(customerId, out var outstanding);
+                if (!policyByCustomer.TryGetValue(customerId, out var policy))
+                {
+                    return item with
+                    {
+                        CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
+                        CreditLimit = null,
+                        OutstandingAmount = outstanding,
+                        AvailableCredit = 0m,
+                        DefaultTermDays = null
+                    };
+                }
 
-            var customerId = item.CustomerId!.Value;
-            outstandingByCustomer.TryGetValue(customerId, out var outstanding);
-            if (!policyByCustomer.TryGetValue(customerId, out var policy))
-            {
                 return item with
                 {
-                    CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
-                    CreditLimit = null,
+                    CreditStatus = policy.Status.ToString(),
+                    CreditLimit = policy.CreditLimit,
                     OutstandingAmount = outstanding,
-                    AvailableCredit = 0m,
-                    DefaultTermDays = null
+                    AvailableCredit = CustomerCreditPolicy.AvailableCredit(
+                        policy.Status,
+                        policy.CreditLimit,
+                        outstanding),
+                    DefaultTermDays = policy.DefaultTermDays
                 };
             }
 
-            return item with
+            if (IsCheckoutBusinessConnectionRow(item))
             {
-                CreditStatus = policy.Status.ToString(),
-                CreditLimit = policy.CreditLimit,
-                OutstandingAmount = outstanding,
-                AvailableCredit = CustomerCreditPolicy.AvailableCredit(
-                    policy.Status,
-                    policy.CreditLimit,
-                    outstanding),
-                DefaultTermDays = policy.DefaultTermDays
-            };
+                var buyerId = item.BuyerOrganizationId!.Value;
+                if (!policyByBuyer.TryGetValue(buyerId, out var businessPolicy))
+                {
+                    return item with
+                    {
+                        CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
+                        CreditLimit = null,
+                        OutstandingAmount = 0m,
+                        AvailableCredit = 0m,
+                        DefaultTermDays = null
+                    };
+                }
+
+                // B2B outstanding is always 0 until a ledger exists.
+                return item with
+                {
+                    CreditStatus = businessPolicy.Status.ToString(),
+                    CreditLimit = businessPolicy.CreditLimit,
+                    OutstandingAmount = 0m,
+                    AvailableCredit = BusinessCustomerCreditPolicy.AvailableCredit(
+                        businessPolicy.Status,
+                        businessPolicy.CreditLimit,
+                        outstanding: 0m),
+                    DefaultTermDays = businessPolicy.DefaultTermDays
+                };
+            }
+
+            return item;
         }).ToList();
     }
 
@@ -392,6 +449,10 @@ public sealed class POSCustomerQueryService
         && item.CustomerId is not null
         && (item.PartyKind is null
             || item.PartyKind.Equals(nameof(CustomerPartyKind.Person), StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsCheckoutBusinessConnectionRow(CheckoutCustomerSearchItemDto item) =>
+        item.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+        && item.BuyerOrganizationId is not null;
 
     private static string NormalizeCheckoutSearchKind(string? kind)
     {

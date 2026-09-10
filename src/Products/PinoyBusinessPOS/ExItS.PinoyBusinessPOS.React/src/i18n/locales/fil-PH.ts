@@ -1357,7 +1357,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.utangSelect.notConfigured": "Credit is not enabled for this customer.",
   "checkout.utangSelect.disabled": "Customer credit is currently paused.",
   "checkout.utangSelect.overLimit": "Credit limit exceeded. Available credit is {amount}.",
-  "checkout.utangSelect.b2bNotAvailable": "Business credit is configured, but Business Utang checkout is not available yet.",
+  "checkout.utangSelect.b2bNotAvailable": "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colType": "Type",
   "checkout.directoryCredit.colStatus": "Credit status",
@@ -1504,7 +1504,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerKindBusinesses": "Businesses",
   "checkout.badge.b2b": "B2B",
   "checkout.b2bUtangBlocked":
-    "Business credit is configured, but Business Utang checkout is not available yet.",
+    "Business credit is approved, but Business Utang checkout is not available yet.",
 
   "checkout.orderPreview": "Preview ng sale",
 

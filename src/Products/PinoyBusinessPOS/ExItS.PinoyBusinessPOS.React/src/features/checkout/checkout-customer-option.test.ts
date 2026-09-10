@@ -31,9 +31,15 @@ describe("checkout-customer-option", () => {
       buyerPublicOrganizationId: "ORG123456",
       displayName: "ABC Trading",
       status: "Active",
+      creditStatus: "Approved",
+      availableCredit: 50000,
+      creditLimit: 50000,
+      defaultTermDays: 30,
     });
     expect(isCheckoutBusiness(business)).toBe(true);
     expect(business && checkoutOptionKey(business)).toBe("b:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
+    expect(business && business.kind === "Business" && business.creditStatus).toBe("Approved");
+    expect(business && business.kind === "Business" && business.availableCredit).toBe(50000);
   });
 
   it("drops incomplete Business rows", () => {

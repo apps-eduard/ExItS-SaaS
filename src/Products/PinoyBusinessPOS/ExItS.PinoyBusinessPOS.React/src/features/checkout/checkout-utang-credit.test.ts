@@ -64,8 +64,8 @@ describe("checkout-utang-credit helpers", () => {
       resolveUtangDirectorySelectBlock({ customer: over, thisSaleAmount: 77 }),
     ).toEqual({ reason: "over_limit", availableCredit: 50 });
 
-    const business: CheckoutCustomerOption = {
-      kind: "Business",
+    const businessBase = {
+      kind: "Business" as const,
       connectionId: "22222222-2222-2222-2222-222222222222",
       buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
       buyerPublicOrganizationId: "ORG123",
@@ -73,7 +73,28 @@ describe("checkout-utang-credit helpers", () => {
       status: "Active",
     };
     expect(
-      resolveUtangDirectorySelectBlock({ customer: business, thisSaleAmount: 10 })?.reason,
+      resolveUtangDirectorySelectBlock({
+        customer: { ...businessBase, creditStatus: "PendingApproval" },
+        thisSaleAmount: 10,
+      })?.reason,
+    ).toBe("pending_approval");
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: { ...businessBase, creditStatus: "NotConfigured" },
+        thisSaleAmount: 10,
+      })?.reason,
+    ).toBe("not_configured");
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: { ...businessBase, creditStatus: "Disabled" },
+        thisSaleAmount: 10,
+      })?.reason,
+    ).toBe("disabled");
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: { ...businessBase, creditStatus: "Approved", availableCredit: 50000 },
+        thisSaleAmount: 10,
+      })?.reason,
     ).toBe("b2b_not_available");
   });
 

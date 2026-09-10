@@ -41,6 +41,12 @@ export type CheckoutBusinessOption = {
   displayName: string;
   status: string;
   initiatedByParty?: string | null;
+  /** Batched B2B credit projection (BusinessCustomerCreditPolicy). */
+  creditStatus?: CheckoutCreditStatus | null;
+  creditLimit?: number | null;
+  outstandingAmount?: number | null;
+  availableCredit?: number | null;
+  defaultTermDays?: number | null;
 };
 
 export type CheckoutCustomerOption = CheckoutPersonOption | CheckoutBusinessOption;
@@ -119,6 +125,7 @@ export function mapCheckoutSearchItemToOption(item: {
     if (!item.connectionId || !item.buyerOrganizationId) {
       return null;
     }
+    const creditStatus = normalizeCheckoutCreditStatus(item.creditStatus);
     return {
       kind: "Business",
       connectionId: item.connectionId,
@@ -127,6 +134,11 @@ export function mapCheckoutSearchItemToOption(item: {
       displayName: item.displayName,
       status: item.status,
       initiatedByParty: item.initiatedByParty ?? null,
+      creditStatus,
+      creditLimit: item.creditLimit ?? null,
+      outstandingAmount: item.outstandingAmount ?? null,
+      availableCredit: item.availableCredit ?? null,
+      defaultTermDays: item.defaultTermDays ?? null,
     };
   }
 

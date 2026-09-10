@@ -10,6 +10,14 @@ public interface IBusinessCustomerCreditPolicyRepository
         PosOrganizationId buyerOrganizationId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch load seller-owned B2B credit policies for checkout directory projection (no N+1).
+    /// </summary>
+    Task<IReadOnlyList<BusinessCustomerCreditPolicy>> ListBySellerAndBuyerIdsAsync(
+        PosOrganizationId sellerOrganizationId,
+        IReadOnlyCollection<Guid> buyerOrganizationIds,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(BusinessCustomerCreditPolicy policy, CancellationToken cancellationToken = default);
