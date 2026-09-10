@@ -3792,6 +3792,16 @@ html:has(.admin-shell) #root {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.purchasing-direct-page__controls {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .purchasing-direct-page__filters {
+    max-width: 48rem;
+  }
+}
+
 .purchasing-hub-choices {
   display: grid;
   grid-template-columns: 1fr;

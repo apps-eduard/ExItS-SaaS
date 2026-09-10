@@ -123,4 +123,25 @@ describe("DirectPurchasesListPage", () => {
     await user.click(link);
     expect(await screen.findByText("b2b-detail")).toBeInTheDocument();
   });
+
+  it("shows a compact retryable error without empty table chrome", async () => {
+    const user = userEvent.setup();
+    listDirectPurchases.mockRejectedValueOnce(new Error("network down"));
+    listDirectPurchases.mockResolvedValueOnce({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId("direct-purchases-error")).toBeInTheDocument();
+    expect(screen.getByText("network down")).toBeInTheDocument();
+    expect(screen.queryByTestId("direct-purchases-table")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("direct-purchases-list")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("direct-purchases-retry"));
+    expect(await screen.findByText("purchasing.directEmpty")).toBeInTheDocument();
+  });
 });

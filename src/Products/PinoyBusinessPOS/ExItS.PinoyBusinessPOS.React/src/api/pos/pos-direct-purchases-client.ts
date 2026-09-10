@@ -90,7 +90,7 @@ function buildQuery(params: ListDirectPurchasesQuery): string {
   if (params.page != null) search.set("page", String(params.page));
   if (params.pageSize != null) search.set("pageSize", String(params.pageSize));
   const qs = search.toString();
-  return qs ? `${PATH}?${qs}` : `${PATH}/`;
+  return qs ? `${PATH}?${qs}` : PATH;
 }
 
 export async function listDirectPurchases(
@@ -98,7 +98,12 @@ export async function listDirectPurchases(
   params: ListDirectPurchasesQuery = {},
   signal?: AbortSignal,
 ): Promise<DirectPurchaseHistoryPaged> {
-  const raw = await posRequest<unknown>(workspace, buildQuery(params), { signal });
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: buildQuery(params),
+  });
   return directPurchaseHistoryPagedSchema.parse(raw);
 }
 
@@ -107,6 +112,11 @@ export async function getDirectPurchaseB2bDetail(
   saleId: string,
   signal?: AbortSignal,
 ): Promise<DirectPurchaseB2bDetail> {
-  const raw = await posRequest<unknown>(workspace, `${PATH}/b2b/${saleId}`, { signal });
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/b2b/${saleId}`,
+  });
   return directPurchaseB2bDetailSchema.parse(raw);
 }
