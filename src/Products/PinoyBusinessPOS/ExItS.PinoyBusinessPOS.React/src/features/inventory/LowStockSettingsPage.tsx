@@ -376,14 +376,18 @@ export function LowStockSettingsPage() {
         </section>
 
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4" data-testid="low-stock-filters">
-          <SearchField
-            label={t("lowStockSettings.search")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("lowStockSettings.search")}
-            data-testid="low-stock-search"
-          />
+          <div className="grid gap-1 text-[length:var(--exits-text-xs)]">
+            <span id="low-stock-search-label">{t("lowStockSettings.searchLabel")}</span>
+            <SearchField
+              label={t("lowStockSettings.search")}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch("")}
+              placeholder={t("lowStockSettings.search")}
+              data-testid="low-stock-search"
+              aria-labelledby="low-stock-search-label"
+            />
+          </div>
           <label className="grid gap-1 text-[length:var(--exits-text-xs)]">
             {t("lowStockSettings.category")}
             <select

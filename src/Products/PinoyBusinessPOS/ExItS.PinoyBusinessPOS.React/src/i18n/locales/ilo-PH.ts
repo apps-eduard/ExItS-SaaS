@@ -2885,6 +2885,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "lowStockSettings.rowSaved": "Low stock setting saved.",
   "lowStockSettings.bulkDone": "Updated {ok}, skipped {skip}, failed {fail}.",
   "lowStockSettings.search": "Search product / SKU / barcode",
+  "lowStockSettings.searchLabel": "Search",
   "lowStockSettings.category": "Category",
   "lowStockSettings.allCategories": "All categories",
   "lowStockSettings.stockStatus": "Stock status",
