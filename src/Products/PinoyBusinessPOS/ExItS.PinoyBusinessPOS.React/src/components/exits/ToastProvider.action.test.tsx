@@ -48,6 +48,23 @@ describe("ToastProvider action links", () => {
     expect(action).toHaveAttribute("href", "/org/branches");
     expect(action.tagName).toBe("A");
     expect(screen.getByTestId("exits-toast")).toHaveTextContent("No warehouse");
+    expect(screen.getByTestId("exits-toast-close")).toBeInTheDocument();
+  });
+
+  it("dismisses toast when close is clicked", async () => {
+    const user = userEvent.setup();
+    setToastNavigate(null);
+
+    render(
+      <ToastProvider>
+        <ToastActionProbe />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByTestId("show-action-toast"));
+    expect(await screen.findByTestId("exits-toast")).toBeInTheDocument();
+    await user.click(screen.getByTestId("exits-toast-close"));
+    expect(screen.queryByTestId("exits-toast")).not.toBeInTheDocument();
   });
 
   it("SPA-navigates toast action when ToastNavigateBridge is mounted", async () => {

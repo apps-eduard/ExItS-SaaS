@@ -22,6 +22,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
+import { UserRoundX } from "lucide-react";
 
 type CheckoutCustomerSelectedCardProps = {
   customer: CheckoutCustomerOption;
@@ -45,12 +46,13 @@ export function CheckoutCustomerSelectedCard({
         <CheckoutCustomerIdentity customer={customer} overlay={overlay} selected />
         <Button
           type="button"
-          variant="ghost"
-          className="min-h-9 shrink-0"
+          variant="outline"
+          className="checkout-customer-clear shrink-0"
           data-testid="checkout-customer-clear"
           disabled={disabled}
           onClick={onClear}
         >
+          <UserRoundX className="size-3.5 shrink-0" aria-hidden />
           {t("checkout.customerClear")}
         </Button>
       </div>
@@ -266,7 +268,9 @@ export function CheckoutCustomerDirectory({
             <span>{t("checkout.directoryCredit.colCustomer")}</span>
             <span>{t("checkout.directoryCredit.colType")}</span>
             <span>{t("checkout.directoryCredit.colStatus")}</span>
-            <span>{t("checkout.directoryCredit.colAvailable")}</span>
+            <span className="checkout-credit-directory__available-head">
+              {t("checkout.directoryCredit.colAvailable")}
+            </span>
           </div>
           <ul className="checkout-credit-directory__list" data-testid="checkout-customer-list">
             {visible.map((customer) => {

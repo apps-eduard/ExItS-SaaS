@@ -283,7 +283,7 @@ export type BulkShareMutationInput = {
 };
 
 export type BulkPricingInput = {
-  mode: "UseDefault" | "DiscountPercent" | "AdjustAmount" | "FixedPrice" | string;
+  mode: "UseDefault" | "DiscountPercent" | "AdjustAmount" | "FixedPrice" | "MarkupPercent" | string;
   productIds?: string[] | null;
   selectAllMatching?: boolean;
   query?: string | null;

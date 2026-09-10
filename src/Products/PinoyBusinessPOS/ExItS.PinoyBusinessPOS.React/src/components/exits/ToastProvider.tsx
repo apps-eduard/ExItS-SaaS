@@ -7,6 +7,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { X } from "lucide-react";
 import { getToastNavigate } from "@/components/exits/toast-navigation";
 import { cn } from "@/lib/cn";
 
@@ -87,6 +88,10 @@ function ToastActionLink({ href, label }: { href: string; label: string }) {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  const dismissToast = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
   const showToast = useCallback((messageOrPayload: string | ToastPayload, tone: ToastTone = "success") => {
     const id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -125,19 +130,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={cn(
               "exits-toast",
               toast.tone === "success" ? "exits-toast--success" : "exits-toast--error",
-              toast.action && "exits-toast--interactive",
             )}
             role="status"
             data-testid="exits-toast"
             data-tone={toast.tone}
           >
-            <div className="exits-toast__title">{toast.title}</div>
-            {toast.description ? (
-              <div className="exits-toast__description">{toast.description}</div>
-            ) : null}
-            {toast.action ? (
-              <ToastActionLink href={toast.action.href} label={toast.action.label} />
-            ) : null}
+            <div className="exits-toast__body">
+              <div className="exits-toast__title">{toast.title}</div>
+              {toast.description ? (
+                <div className="exits-toast__description">{toast.description}</div>
+              ) : null}
+              {toast.action ? (
+                <ToastActionLink href={toast.action.href} label={toast.action.label} />
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="exits-toast__close"
+              data-testid="exits-toast-close"
+              aria-label="Close"
+              onClick={() => dismissToast(toast.id)}
+            >
+              <X className="size-4" aria-hidden />
+            </button>
           </div>
         ))}
       </div>

@@ -1637,6 +1637,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.bulkShare": "Ibahagi ang napili",
 
   "connected.bulkUnshare": "Itigil ang pagbabahagi",
+  "connected.bulkSelectedCount": "{count} selected",
+  "connected.selectAllPage": "Select all ({count})",
+  "connected.deselectAllPage": "Deselect all",
 
   "connected.businessQrHint": "ORG###### o teksto ng Business QR",
 
@@ -1649,7 +1652,18 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.buyerNotFoundHelp": "Baka nadiskonekta na ang koneksyong ito.",
 
   "connected.buyerPrice": "Presyo para sa buyer",
-
+  "connected.buyerPriceSellingRef": "Selling {price}",
+  "connected.discountPercent": "Discount %",
+  "connected.discountPercentHelp": "Same % off each selected product’s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.applyDiscountPercent": "Apply discount",
+  "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
+  "connected.increasePercent": "Increase %",
+  "connected.increasePercentHelp": "Same % up each selected product’s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.applyIncreasePercent": "Apply increase",
+  "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
+  "connected.percentModeLabel": "Percent change type",
+  "connected.percentModeDiscount": "Discount",
+  "connected.percentModeIncrease": "Increase",
   "connected.buyerPriceInvalid": "Maglagay ng wastong buyer price.",
 
   "connected.buyersEmpty": "Wala pang konektadong buyer",
@@ -1911,6 +1925,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.listPrice": "Selling price",
 
   "connected.noListPrice": "No selling price",
+  "connected.colProduct": "Product",
+  "connected.colSku": "SKU",
+  "connected.colStatus": "Status",
 
   "connected.shared": "Naka-share",
 

@@ -22,7 +22,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
+import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, UserRoundX, WalletCards } from "lucide-react";
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
@@ -1347,12 +1347,13 @@ export function CheckoutCashPage() {
               selectedCustomer && !customerPanelOpen ? (
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="min-h-9"
+                  variant="outline"
+                  className="checkout-customer-clear"
                   data-testid="checkout-customer-clear"
                   disabled={saving}
                   onClick={() => setSelectedCustomer(null)}
                 >
+                  <UserRoundX className="size-3.5 shrink-0" aria-hidden />
                   {t("checkout.customerClear")}
                 </Button>
               ) : null
@@ -1476,12 +1477,13 @@ export function CheckoutCashPage() {
                     </div>
                     <Button
                       type="button"
-                      variant="ghost"
-                      className="min-h-9 shrink-0"
+                      variant="outline"
+                      className="checkout-customer-clear shrink-0"
                       data-testid="checkout-customer-clear"
                       disabled={saving}
                       onClick={() => setSelectedCustomer(null)}
                     >
+                      <UserRoundX className="size-3.5 shrink-0" aria-hidden />
                       {t("checkout.customerClear")}
                     </Button>
                   </div>

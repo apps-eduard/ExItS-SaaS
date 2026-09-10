@@ -2702,6 +2702,10 @@ html:has(.admin-shell) #root {
   font-weight: var(--exits-font-weight-medium);
 }
 
+.checkout-credit-directory__available-head {
+  text-align: right;
+}
+
 .checkout-utang-credit-summary {
   display: flex;
   flex-direction: column;
@@ -2719,6 +2723,24 @@ html:has(.admin-shell) #root {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+.checkout-customer-clear {
+  min-height: 2rem;
+  height: 2rem;
+  gap: 0.35rem;
+  padding-inline: 0.55rem;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  border-color: color-mix(in srgb, var(--exits-danger) 35%, var(--exits-border));
+  background: var(--exits-danger-soft);
+  color: var(--exits-danger);
+}
+
+.checkout-customer-clear:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-danger) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger-soft) 70%, var(--exits-surface));
+  color: var(--exits-danger);
 }
 
 .checkout-utang-credit-summary__name {
@@ -4164,6 +4186,302 @@ html:has(.admin-shell) #root {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.connected-share-table {
+  min-width: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  overflow: hidden;
+}
+
+.connected-share-table__head,
+.connected-share-table__row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(6.5rem, 0.7fr)
+    minmax(6.5rem, 0.75fr)
+    minmax(6.5rem, 0.75fr);
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.connected-share-table--selectable .connected-share-table__head,
+.connected-share-table--selectable .connected-share-table__row {
+  grid-template-columns:
+    2.25rem
+    minmax(0, 2fr)
+    minmax(6.5rem, 0.7fr)
+    minmax(6.5rem, 0.75fr)
+    minmax(6.5rem, 0.75fr);
+}
+
+.connected-share-table__head {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--exits-border);
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.connected-share-table__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.connected-share-table__row {
+  width: 100%;
+  margin: 0;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+  cursor: pointer;
+}
+
+.connected-share-table__list > li:last-child .connected-share-table__row {
+  border-bottom: 0;
+}
+
+.connected-share-table__row:hover {
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, transparent);
+}
+
+.connected-share-table__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.connected-share-table__product {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.connected-share-table__name {
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connected-share-table__sku {
+  min-width: 0;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connected-share-table__status {
+  min-width: 0;
+}
+
+.connected-share-table__price,
+.connected-share-table__price-head {
+  text-align: right;
+  font-size: var(--exits-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.connected-share-table__price-head {
+  font-size: inherit;
+}
+
+.connected-share-page {
+  padding-bottom: 0.25rem;
+}
+
+.connected-share-select-all-bar {
+  display: none;
+}
+
+.connected-share-bulk-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin-top: 0.25rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-surface) 92%, var(--exits-primary));
+  box-shadow: var(--exits-shadow-md, 0 -6px 20px color-mix(in srgb, #000 12%, transparent));
+  backdrop-filter: blur(8px);
+}
+
+.connected-share-bulk-bar__count {
+  margin-right: 0.15rem;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+  white-space: nowrap;
+}
+
+.connected-share-bulk-bar__selling-ref {
+  margin-left: 0.25rem;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--exits-text);
+  white-space: nowrap;
+}
+
+.connected-share-bulk-bar__price-label {
+  margin-left: 0.15rem;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+  white-space: nowrap;
+}
+
+.connected-share-bulk-bar__price-input {
+  width: 7.5rem;
+  min-height: var(--exits-control-height);
+  padding: 0 0.65rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: inherit;
+  font-size: var(--exits-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.connected-share-bulk-bar__price-input--percent {
+  width: 5.5rem;
+}
+
+.connected-share-bulk-bar__percent-mode {
+  display: inline-flex;
+  align-items: stretch;
+  margin-left: 0.15rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  overflow: hidden;
+  background: var(--exits-surface);
+}
+
+.connected-share-bulk-bar__mode-btn {
+  min-height: var(--exits-control-height);
+  padding: 0 0.7rem;
+  border: 0;
+  background: transparent;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  cursor: pointer;
+}
+
+.connected-share-bulk-bar__mode-btn + .connected-share-bulk-bar__mode-btn {
+  border-left: 1px solid var(--exits-border);
+}
+
+.connected-share-bulk-bar__mode-btn:hover {
+  color: var(--exits-text);
+  background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+}
+
+.connected-share-bulk-bar__mode-btn--active {
+  color: var(--exits-primary);
+  background: color-mix(in srgb, var(--exits-primary) 14%, transparent);
+}
+
+.connected-share-bulk-bar__price-input:focus {
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--exits-primary) 25%, transparent);
+}
+
+@media (max-width: 47.99rem) {
+  .connected-share-table {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .connected-share-table__head {
+    display: none;
+  }
+
+  .connected-share-table__list {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .connected-share-table__row,
+  .connected-share-table--selectable .connected-share-table__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+    padding: 0.75rem;
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md);
+    background: var(--exits-surface);
+  }
+
+  .connected-share-table__check {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    padding-top: 0.1rem;
+  }
+
+  .connected-share-table__product {
+    flex: 1 1 calc(100% - 2.75rem);
+  }
+
+  .connected-share-table:not(.connected-share-table--selectable) .connected-share-table__product {
+    flex-basis: 100%;
+  }
+
+  .connected-share-table__name {
+    white-space: normal;
+  }
+
+  .connected-share-table__status,
+  .connected-share-table__price {
+    flex: 0 1 auto;
+    text-align: left;
+  }
+
+  .connected-share-table__price[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--exits-text-muted);
+    font-weight: var(--exits-font-weight-normal);
+  }
+
+  .connected-share-select-all-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.15rem;
+  }
+
+  .connected-share-select-all-bar__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--exits-text-sm);
+    color: var(--exits-text-muted);
+    cursor: pointer;
+  }
+
+  .connected-share-bulk-bar {
+    bottom: 0.5rem;
+  }
+
+  .connected-share-bulk-bar__price-input {
+    flex: 0 1 6rem;
+  }
 }
 
 @media (max-width: 639px) {

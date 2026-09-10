@@ -24,6 +24,17 @@ public sealed class BuyerProductShareBulkPricingTests
     }
 
     [Fact]
+    public void MarkupPercent_increases_from_default_po()
+    {
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.MarkupPercent, 200m, 10m, null, null, out var apple, out _));
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.MarkupPercent, 80m, 10m, null, null, out var banana, out _));
+        Assert.Equal(220m, apple);
+        Assert.Equal(88m, banana);
+    }
+
+    [Fact]
     public void Discount_and_adjust_use_each_products_own_default_po()
     {
         Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(

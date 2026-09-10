@@ -1637,6 +1637,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.bulkShare": "Ibingay ti napili",
 
   "connected.bulkUnshare": "Isardeng ti panagbingay",
+  "connected.bulkSelectedCount": "{count} selected",
+  "connected.selectAllPage": "Select all ({count})",
+  "connected.deselectAllPage": "Deselect all",
 
   "connected.businessQrHint": "ORG###### wenno teksto ti Business QR",
 
@@ -1649,7 +1652,18 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.buyerNotFoundHelp": "Mabalin a nadiskonekta daytoy.",
 
   "connected.buyerPrice": "Presio para iti buyer",
-
+  "connected.buyerPriceSellingRef": "Selling {price}",
+  "connected.discountPercent": "Discount %",
+  "connected.discountPercentHelp": "Same % off each selected product’s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.applyDiscountPercent": "Apply discount",
+  "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
+  "connected.increasePercent": "Increase %",
+  "connected.increasePercentHelp": "Same % up each selected product’s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.applyIncreasePercent": "Apply increase",
+  "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
+  "connected.percentModeLabel": "Percent change type",
+  "connected.percentModeDiscount": "Discount",
+  "connected.percentModeIncrease": "Increase",
   "connected.buyerPriceInvalid": "Ikabil ti umiso a buyer price.",
 
   "connected.buyersEmpty": "Awan pay ti nakonekta a buyer",
@@ -1911,6 +1925,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.listPrice": "Selling price",
 
   "connected.noListPrice": "No selling price",
+  "connected.colProduct": "Product",
+  "connected.colSku": "SKU",
+  "connected.colStatus": "Status",
 
   "connected.shared": "Shared",
 
