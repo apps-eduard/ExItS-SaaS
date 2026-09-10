@@ -199,8 +199,9 @@ public sealed class POSCustomerQueryService
         var term = search?.Trim() ?? string.Empty;
         var hasTerm = term.Length > 0;
 
-        if (!hasTerm
-            && normalizedKind is CheckoutCustomerSearchItemDto.KindCustomer or "All")
+        // Idle browse is allowed for Business (Cash/GCash) and Customer (Utang people).
+        // Kind=All still requires a search term so optional Cash counterparty stays intentional.
+        if (!hasTerm && normalizedKind is "All")
         {
             return ApplicationResult<CheckoutCustomerSearchResult>.Failure(
                 ApplicationErrorCodes.CheckoutCustomerSearchRequired,
@@ -214,7 +215,7 @@ public sealed class POSCustomerQueryService
         var peopleTotal = 0;
         var businessTotal = 0;
 
-        if (includePeople && hasTerm)
+        if (includePeople && (hasTerm || normalizedKind == CheckoutCustomerSearchItemDto.KindCustomer))
         {
             var restrict = await _branchAccess
                 .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
@@ -224,7 +225,7 @@ public sealed class POSCustomerQueryService
                 .ListAsync(
                     PosOrganizationId.From(organizationId),
                     CustomerStatus.Active,
-                    term,
+                    hasTerm ? term : null,
                     0,
                     take,
                     restrict,
@@ -232,7 +233,7 @@ public sealed class POSCustomerQueryService
                 .ConfigureAwait(false);
             peopleTotal = total;
             merged.AddRange(items
-                .Where(c => !includeBusiness || !IsCheckoutBusinessParty(c))
+                .Where(c => !IsCheckoutBusinessParty(c))
                 .Select(c => new CheckoutCustomerSearchItemDto(
                     CheckoutCustomerSearchItemDto.KindCustomer,
                     c.DisplayName,

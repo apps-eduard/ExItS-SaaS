@@ -452,19 +452,12 @@ export function CheckoutCashPage() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       const trimmed = customerSearch.trim();
+      // Utang is people-only (no B2B). Cash/GCash keep All/People/Businesses tabs.
+      const kindFilter: KindFilter = isUtang ? "people" : customerKindFilter;
       const wantBusinessDirectory =
-        customerKindFilter === "businesses" || (customerKindFilter === "all" && !trimmed);
-      // Checkout-search requires non-blank search for people; Business kind may load Active B2B idle.
-      if (isUtang && !allowViewCustomers && !trimmed && customerKindFilter !== "businesses") {
-        setCustomers([]);
-        setCustomersLoading(false);
-        return;
-      }
-      if (!trimmed && customerKindFilter === "people" && !allowViewCustomers) {
-        setCustomers([]);
-        setCustomersLoading(false);
-        return;
-      }
+        kindFilter === "businesses" || (kindFilter === "all" && !trimmed);
+      // People idle browse uses checkout-search kind=Customer (CreateSale). Business idle uses kind=Business.
+      // Kind=All idle still skips people (optional Cash counterparty shows B2B first).
 
       setCustomersLoading(true);
 
@@ -506,9 +499,18 @@ export function CheckoutCashPage() {
         );
 
       let load: Promise<CheckoutCustomerOption[]>;
-      if (allowViewCustomers && customerKindFilter !== "businesses") {
+      if (isUtang) {
+        // Utang: people via checkout-search (works for Cashier without ViewCustomers).
+        load = allowViewCustomers
+          ? listCustomers(
+              workspaceScope,
+              { status: "Active", search: trimmed || undefined, pageSize: 20 },
+              controller.signal,
+            ).then(mapPeopleFromList)
+          : loadSearch("Customer");
+      } else if (allowViewCustomers && kindFilter !== "businesses") {
         const peoplePromise =
-          customerKindFilter === "people" || trimmed || !wantBusinessDirectory
+          kindFilter === "people" || trimmed || !wantBusinessDirectory
             ? listCustomers(
                 workspaceScope,
                 { status: "Active", search: trimmed || undefined, pageSize: 20 },
@@ -516,17 +518,17 @@ export function CheckoutCashPage() {
               ).then(mapPeopleFromList)
             : Promise.resolve([] as CheckoutCustomerOption[]);
         const businessPromise =
-          customerKindFilter === "all" || customerKindFilter === "businesses"
+          kindFilter === "all" || kindFilter === "businesses"
             ? loadSearch("Business")
             : Promise.resolve([] as CheckoutCustomerOption[]);
         load = Promise.all([peoplePromise, businessPromise]).then(([people, businesses]) => [
           ...people,
           ...businesses,
         ]);
-      } else if (customerKindFilter === "businesses") {
+      } else if (kindFilter === "businesses") {
         load = loadSearch("Business");
-      } else if (customerKindFilter === "people") {
-        load = trimmed ? loadSearch("Customer") : Promise.resolve([]);
+      } else if (kindFilter === "people") {
+        load = loadSearch("Customer");
       } else {
         load = trimmed ? loadSearch("All") : loadSearch("Business");
       }
@@ -1472,6 +1474,7 @@ export function CheckoutCashPage() {
                   overlay={customerLinkOverlay}
                   disabled={saving}
                   kindFilter="people"
+                  includeWalkInsWhenIdle
                   onSelect={setSelectedCustomer}
                 />
               ) : null}

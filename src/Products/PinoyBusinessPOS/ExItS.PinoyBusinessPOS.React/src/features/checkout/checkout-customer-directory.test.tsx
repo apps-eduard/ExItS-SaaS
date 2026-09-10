@@ -33,6 +33,7 @@ function renderDirectory(
     overlay?: CustomerListConnectionOverlay | null;
     onSelect?: (customer: CheckoutCustomerOption) => void;
     onSearchChange?: (value: string) => void;
+    includeWalkInsWhenIdle?: boolean;
   } = {},
 ) {
   const onSelect = options.onSelect ?? vi.fn();
@@ -50,6 +51,7 @@ function renderDirectory(
         selectedCustomer={options.selected ?? null}
         overlay={options.overlay ?? null}
         onSelect={onSelect}
+        includeWalkInsWhenIdle={options.includeWalkInsWhenIdle}
       />
     </AppProviders>,
   );
@@ -67,6 +69,15 @@ describe("CheckoutCustomerDirectory", () => {
       "09171234567",
     );
     expect(screen.queryByTestId(`checkout-customer-${walkIn.customerId}`)).not.toBeInTheDocument();
+  });
+
+  it("shows walk-in seeds when idle browse is required for Utang", () => {
+    renderDirectory([walkIn, named], { includeWalkInsWhenIdle: true });
+
+    expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).toHaveTextContent(
+      "Walk-in",
+    );
+    expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toBeInTheDocument();
   });
 
   it("shows walk-ins as Walk-in plus phone when searching", () => {

@@ -202,79 +202,118 @@ export function DirectPurchasesListPage() {
         />
 
         <div
-          className="purchasing-direct-page__filters flex min-w-0 flex-col gap-1.5"
+          className="purchasing-direct-page__filters min-w-0"
           data-testid="direct-filters"
         >
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("purchasing.directSourceFilter")}
-            testId="direct-source-filter"
-            items={[
-              {
-                key: "all",
-                label: t("purchasing.directSourceAll"),
-                state: sourceFilter === "All" ? "active" : "idle",
-                testId: "direct-source-all",
-                onSelect: () => setSourceFilter("All"),
-              },
-              {
-                key: "b2b",
-                label: t("purchasing.directSourceB2b"),
-                state: sourceFilter === "B2B" ? "active" : "idle",
-                testId: "direct-source-b2b",
-                onSelect: () => setSourceFilter("B2B"),
-              },
-              {
-                key: "local",
-                label: t("purchasing.directSourceLocal"),
-                state: sourceFilter === "Local" ? "active" : "idle",
-                testId: "direct-source-local",
-                onSelect: () => setSourceFilter("Local"),
-              },
-            ]}
-          />
+          <div className="purchasing-direct-page__filter-row">
+            <section
+              className="purchasing-direct-page__filter-group flex flex-col gap-1"
+              aria-labelledby="direct-filter-source-label"
+            >
+              <p
+                id="direct-filter-source-label"
+                className="catalog-page__filter-section-label m-0"
+              >
+                {t("purchasing.directSourceFilter")}
+              </p>
+              <ExitsChipBar
+                variant="filter"
+                ariaLabel={t("purchasing.directSourceFilter")}
+                testId="direct-source-filter"
+                items={[
+                  {
+                    key: "all",
+                    label: t("purchasing.directSourceAll"),
+                    state: sourceFilter === "All" ? "active" : "idle",
+                    testId: "direct-source-all",
+                    onSelect: () => setSourceFilter("All"),
+                  },
+                  {
+                    key: "b2b",
+                    label: t("purchasing.directSourceB2b"),
+                    state: sourceFilter === "B2B" ? "active" : "idle",
+                    testId: "direct-source-b2b",
+                    onSelect: () => setSourceFilter("B2B"),
+                  },
+                  {
+                    key: "local",
+                    label: t("purchasing.directSourceLocal"),
+                    state: sourceFilter === "Local" ? "active" : "idle",
+                    testId: "direct-source-local",
+                    onSelect: () => setSourceFilter("Local"),
+                  },
+                ]}
+              />
+            </section>
 
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("purchasing.directDateFilter")}
-            testId="direct-date-filter"
-            items={DATE_FILTERS.map((filter) => ({
-              key: filter.key,
-              label: t(filter.labelKey),
-              state: dateFilter === filter.value ? "active" : "idle",
-              testId: `direct-date-${filter.key}`,
-              onSelect: () => setDateFilter(filter.value),
-            }))}
-          />
+            <span className="purchasing-direct-page__filter-sep" aria-hidden />
 
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("purchasing.directStatusFilter")}
-            testId="direct-status-filter"
-            items={[
-              {
-                key: "all",
-                label: t("purchasing.directStatusAll"),
-                state: statusFilter === "All" ? "active" : "idle",
-                testId: "direct-status-all",
-                onSelect: () => setStatusFilter("All"),
-              },
-              {
-                key: "completed",
-                label: t("purchasing.directStatusCompleted"),
-                state: statusFilter === "Completed" ? "active" : "idle",
-                testId: "direct-status-completed",
-                onSelect: () => setStatusFilter("Completed"),
-              },
-              {
-                key: "voided",
-                label: t("purchasing.directStatusVoided"),
-                state: statusFilter === "Voided" ? "active" : "idle",
-                testId: "direct-status-voided",
-                onSelect: () => setStatusFilter("Voided"),
-              },
-            ]}
-          />
+            <section
+              className="purchasing-direct-page__filter-group flex flex-col gap-1"
+              aria-labelledby="direct-filter-date-label"
+            >
+              <p
+                id="direct-filter-date-label"
+                className="catalog-page__filter-section-label m-0"
+              >
+                {t("purchasing.directDateFilter")}
+              </p>
+              <ExitsChipBar
+                variant="filter"
+                ariaLabel={t("purchasing.directDateFilter")}
+                testId="direct-date-filter"
+                items={DATE_FILTERS.map((filter) => ({
+                  key: filter.key,
+                  label: t(filter.labelKey),
+                  state: dateFilter === filter.value ? "active" : "idle",
+                  testId: `direct-date-${filter.key}`,
+                  onSelect: () => setDateFilter(filter.value),
+                }))}
+              />
+            </section>
+
+            <span className="purchasing-direct-page__filter-sep" aria-hidden />
+
+            <section
+              className="purchasing-direct-page__filter-group flex flex-col gap-1"
+              aria-labelledby="direct-filter-status-label"
+            >
+              <p
+                id="direct-filter-status-label"
+                className="catalog-page__filter-section-label m-0"
+              >
+                {t("purchasing.directStatusFilter")}
+              </p>
+              <ExitsChipBar
+                variant="filter"
+                ariaLabel={t("purchasing.directStatusFilter")}
+                testId="direct-status-filter"
+                items={[
+                  {
+                    key: "all",
+                    label: t("purchasing.directStatusAll"),
+                    state: statusFilter === "All" ? "active" : "idle",
+                    testId: "direct-status-all",
+                    onSelect: () => setStatusFilter("All"),
+                  },
+                  {
+                    key: "completed",
+                    label: t("purchasing.directStatusCompleted"),
+                    state: statusFilter === "Completed" ? "active" : "idle",
+                    testId: "direct-status-completed",
+                    onSelect: () => setStatusFilter("Completed"),
+                  },
+                  {
+                    key: "voided",
+                    label: t("purchasing.directStatusVoided"),
+                    state: statusFilter === "Voided" ? "active" : "idle",
+                    testId: "direct-status-voided",
+                    onSelect: () => setStatusFilter("Voided"),
+                  },
+                ]}
+              />
+            </section>
+          </div>
         </div>
       </div>
 
@@ -346,13 +385,7 @@ export function DirectPurchasesListPage() {
                       className="border-b border-border/60 last:border-b-0 hover:bg-[color-mix(in_srgb,var(--exits-surface-muted)_45%,transparent)]"
                     >
                       <td className="whitespace-nowrap px-3 py-2.5">
-                        <Link
-                          to={rowHref(item)}
-                          className="text-foreground no-underline hover:underline"
-                          data-testid={`direct-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
-                        >
-                          {formatDisplayDate(item)}
-                        </Link>
+                        {formatDisplayDate(item)}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="font-medium">{item.sellerDisplayName}</div>
@@ -368,7 +401,14 @@ export function DirectPurchasesListPage() {
                         </StatusChip>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[length:var(--exits-text-xs)]">
-                        {item.referenceNumber}
+                        <Link
+                          to={rowHref(item)}
+                          className="font-mono font-semibold text-primary underline-offset-2 hover:underline"
+                          data-testid={`direct-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
+                          aria-label={`${t("purchasing.directColReference")}: ${item.referenceNumber}`}
+                        >
+                          {item.referenceNumber}
+                        </Link>
                       </td>
                       <td className="px-3 py-2.5">{item.lineCount}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 font-medium">

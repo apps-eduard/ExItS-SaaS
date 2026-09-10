@@ -68,9 +68,13 @@ export function shouldShowCheckoutCustomerWhenIdle(customer: CheckoutCustomerOpt
 export function visibleCheckoutCustomers(
   customers: CheckoutCustomerOption[],
   search: string,
+  options?: { includeWalkInsWhenIdle?: boolean },
 ): CheckoutCustomerOption[] {
   const trimmed = search.trim();
-  const source = trimmed ? customers : customers.filter(shouldShowCheckoutCustomerWhenIdle);
+  const source =
+    trimmed || options?.includeWalkInsWhenIdle
+      ? customers
+      : customers.filter(shouldShowCheckoutCustomerWhenIdle);
 
   return [...source].sort((a, b) => {
     const aLinked = a.kind === "Customer" && Boolean(a.linkedPersonalPublicUserId);

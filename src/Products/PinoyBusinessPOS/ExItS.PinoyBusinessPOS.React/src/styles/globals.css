@@ -3720,28 +3720,40 @@ html:has(.admin-shell) #root {
 .transfer-filters {
   display: flex;
   min-width: 0;
+  width: 100%;
+  max-width: none;
   flex-direction: column;
   gap: 0.55rem;
-  padding: 0.75rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  box-shadow: var(--exits-shadow-sm);
 }
 
 .transfer-filters__row {
-  min-width: 0;
-}
-
-.transfer-filters__row .catalog-page__filter-section-label {
-  flex: 0 0 4rem;
-  width: 4rem;
-}
-
-.transfer-filters__row .exits-chip-bar {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.transfer-filters__group {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.transfer-filters__sep {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .transfer-filters__sep {
+    display: block;
+    align-self: flex-end;
+    width: 1px;
+    height: 1.75rem;
+    margin-bottom: 0.35rem;
+    background: var(--exits-border, #e5e7eb);
+    flex-shrink: 0;
+  }
 }
 
 .transfer-results-panel {
@@ -3753,8 +3765,6 @@ html:has(.admin-shell) #root {
   box-shadow: var(--exits-shadow-sm);
 }
 
-:root:not([data-theme="dark"]) .transfer-filters,
-[data-theme="light"] .transfer-filters,
 :root:not([data-theme="dark"]) .transfer-results-panel,
 [data-theme="light"] .transfer-results-panel {
   background: #fff;
@@ -3796,9 +3806,37 @@ html:has(.admin-shell) #root {
   width: 100%;
 }
 
-@media (min-width: 1024px) {
-  .purchasing-direct-page__filters {
-    max-width: 48rem;
+.purchasing-direct-page__filters {
+  width: 100%;
+  max-width: none;
+}
+
+.purchasing-direct-page__filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.purchasing-direct-page__filter-group {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.purchasing-direct-page__filter-sep {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .purchasing-direct-page__filter-sep {
+    display: block;
+    align-self: flex-end;
+    width: 1px;
+    height: 1.75rem;
+    margin-bottom: 0.35rem;
+    background: var(--exits-border, #e5e7eb);
+    flex-shrink: 0;
   }
 }
 

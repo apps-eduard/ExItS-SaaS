@@ -31,6 +31,14 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     );
   });
 
+  it("CheckoutCashPage Utang loads people customers, not idle B2B-only", () => {
+    const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
+    expect(source).toContain('const kindFilter: KindFilter = isUtang ? "people" : customerKindFilter');
+    expect(source).toContain('kindFilter="people"');
+    expect(source).toContain("includeWalkInsWhenIdle");
+    expect(source).toMatch(/isUtang[\s\S]*?loadSearch\("Customer"\)/);
+  });
+
   it("CheckoutCashPage toasts payment success before opening summary", () => {
     const source = readFileSync(resolve(here, "CheckoutCashPage.tsx"), "utf8");
     expect(source).toMatch(/showToast\(t\("summary\.paidSuccess"\),\s*"success"\)/);

@@ -65,6 +65,8 @@ type CheckoutCustomerDirectoryProps = {
   disabled?: boolean;
   kindFilter?: KindFilter;
   onKindFilterChange?: (kind: KindFilter) => void;
+  /** When true, idle list keeps Local Validation walk-in seeds (Utang requires a person). */
+  includeWalkInsWhenIdle?: boolean;
 };
 
 export function CheckoutCustomerDirectory({
@@ -81,6 +83,7 @@ export function CheckoutCustomerDirectory({
   disabled,
   kindFilter = "all",
   onKindFilterChange,
+  includeWalkInsWhenIdle = false,
 }: CheckoutCustomerDirectoryProps) {
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
@@ -90,7 +93,9 @@ export function CheckoutCustomerDirectory({
       : kindFilter === "businesses"
         ? customers.filter((c) => isCheckoutBusinessDirectoryRow(c))
         : customers;
-  const visible = visibleCheckoutCustomers(kindFiltered, searchValue);
+  const visible = visibleCheckoutCustomers(kindFiltered, searchValue, {
+    includeWalkInsWhenIdle,
+  });
   const idle = searchValue.trim().length === 0;
   const searchHint =
     kindFilter === "businesses"

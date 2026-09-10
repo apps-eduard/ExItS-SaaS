@@ -114,14 +114,26 @@ describe("DirectPurchasesListPage", () => {
     );
   });
 
-  it("navigates B2B rows to buyer-safe detail", async () => {
+  it("navigates B2B summary from the reference link", async () => {
     const user = userEvent.setup();
     renderPage();
     const link = await screen.findByTestId(
       "direct-row-b2b-11111111-1111-1111-1111-111111111111",
     );
+    expect(link).toHaveTextContent("TXN-001245");
     await user.click(link);
     expect(await screen.findByText("b2b-detail")).toBeInTheDocument();
+  });
+
+  it("keeps source, date, and status filters in one labeled row", async () => {
+    renderPage();
+    expect(await screen.findByTestId("direct-filters")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-source-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-date-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-status-filter")).toBeInTheDocument();
+    expect(screen.getByText("purchasing.directSourceFilter")).toBeInTheDocument();
+    expect(screen.getByText("purchasing.directDateFilter")).toBeInTheDocument();
+    expect(screen.getByText("purchasing.directStatusFilter")).toBeInTheDocument();
   });
 
   it("shows a compact retryable error without empty table chrome", async () => {

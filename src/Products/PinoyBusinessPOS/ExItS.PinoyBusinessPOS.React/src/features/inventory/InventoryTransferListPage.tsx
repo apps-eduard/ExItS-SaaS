@@ -154,54 +154,72 @@ export function InventoryTransferListPage() {
       ) : null}
 
       <div className="transfer-filters" data-testid="transfer-filters">
-        <div className="transfer-filters__row transfer-filters__row--direction catalog-page__filter-inline">
-          <span className="catalog-page__filter-section-label">{t("transfer.filter.direction")}</span>
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("transfer.filter.direction")}
-            testId="transfer-direction-filters"
-            className="min-w-0 flex-1"
-            items={[
-              {
-                key: "all",
-                label: t("transfer.filter.all"),
-                state: direction === "" ? "active" : "idle",
-                onSelect: () => setDirection(""),
-                testId: "transfer-direction-all",
-              },
-              {
-                key: "outgoing",
-                label: t("transfer.filter.outgoing"),
-                state: direction === "outgoing" ? "active" : "idle",
-                onSelect: () => setDirection("outgoing"),
-                testId: "transfer-direction-outgoing",
-              },
-              {
-                key: "incoming",
-                label: t("transfer.filter.incoming"),
-                state: direction === "incoming" ? "active" : "idle",
-                onSelect: () => setDirection("incoming"),
-                testId: "transfer-direction-incoming",
-              },
-            ]}
-          />
-        </div>
+        <div className="transfer-filters__row">
+          <section
+            className="transfer-filters__group flex flex-col gap-1"
+            aria-labelledby="transfer-filter-direction-label"
+          >
+            <p
+              id="transfer-filter-direction-label"
+              className="catalog-page__filter-section-label m-0"
+            >
+              {t("transfer.filter.direction")}
+            </p>
+            <ExitsChipBar
+              variant="filter"
+              ariaLabel={t("transfer.filter.direction")}
+              testId="transfer-direction-filters"
+              items={[
+                {
+                  key: "all",
+                  label: t("transfer.filter.all"),
+                  state: direction === "" ? "active" : "idle",
+                  onSelect: () => setDirection(""),
+                  testId: "transfer-direction-all",
+                },
+                {
+                  key: "outgoing",
+                  label: t("transfer.filter.outgoing"),
+                  state: direction === "outgoing" ? "active" : "idle",
+                  onSelect: () => setDirection("outgoing"),
+                  testId: "transfer-direction-outgoing",
+                },
+                {
+                  key: "incoming",
+                  label: t("transfer.filter.incoming"),
+                  state: direction === "incoming" ? "active" : "idle",
+                  onSelect: () => setDirection("incoming"),
+                  testId: "transfer-direction-incoming",
+                },
+              ]}
+            />
+          </section>
 
-        <div className="transfer-filters__row transfer-filters__row--status catalog-page__filter-inline">
-          <span className="catalog-page__filter-section-label">{t("transfer.filter.status")}</span>
-          <ExitsChipBar
-            variant="filter"
-            ariaLabel={t("transfer.filter.status")}
-            testId="transfer-status-filters"
-            className="min-w-0 flex-1"
-            items={STATUS_FILTERS.map((filter) => ({
-              key: filter.value || "all-status",
-              label: t(filter.labelKey),
-              state: status === filter.value ? "active" : "idle",
-              onSelect: () => setStatus(filter.value),
-              testId: `transfer-status-${filter.value || "all"}`,
-            }))}
-          />
+          <span className="transfer-filters__sep" aria-hidden />
+
+          <section
+            className="transfer-filters__group flex flex-col gap-1"
+            aria-labelledby="transfer-filter-status-label"
+          >
+            <p
+              id="transfer-filter-status-label"
+              className="catalog-page__filter-section-label m-0"
+            >
+              {t("transfer.filter.status")}
+            </p>
+            <ExitsChipBar
+              variant="filter"
+              ariaLabel={t("transfer.filter.status")}
+              testId="transfer-status-filters"
+              items={STATUS_FILTERS.map((filter) => ({
+                key: filter.value || "all-status",
+                label: t(filter.labelKey),
+                state: status === filter.value ? "active" : "idle",
+                onSelect: () => setStatus(filter.value),
+                testId: `transfer-status-${filter.value || "all"}`,
+              }))}
+            />
+          </section>
         </div>
       </div>
 

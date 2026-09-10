@@ -72,6 +72,13 @@ describe("visibleCheckoutCustomers", () => {
     expect(visibleCheckoutCustomers([walkIn, named, linked], "")).toEqual([linked, named]);
   });
 
+  it("keeps seeded walk-ins when idle browse is required (Utang)", () => {
+    expect(visibleCheckoutCustomers([walkIn, named], "", { includeWalkInsWhenIdle: true })).toEqual([
+      named,
+      walkIn,
+    ]);
+  });
+
   it("shows walk-ins when the cashier searches", () => {
     expect(visibleCheckoutCustomers([walkIn, named], "0917")).toEqual([named, walkIn]);
   });

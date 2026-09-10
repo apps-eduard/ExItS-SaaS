@@ -334,7 +334,8 @@ export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearch
 /**
  * Narrow checkout counterparty search (people + Active/Pending B2B businesses).
  * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory / ViewSuppliers.
- * Search term must be non-blank unless kind=Business; pageSize capped at 20 server-side.
+ * Search term must be non-blank for kind=All; kind=Business and kind=Customer allow idle browse
+ * (pageSize capped at 20 server-side).
  * Pending businesses are visible but not selectable for CreateSale (server also guards Active-only).
  */
 export async function searchCheckoutCustomers(
@@ -349,7 +350,8 @@ export async function searchCheckoutCustomers(
 ): Promise<CheckoutCustomerSearchResult> {
   const search = options.search?.trim() ?? "";
   const kind = options.kind ?? "All";
-  if (!search && kind !== "Business") {
+  // Idle browse: Business (Cash/GCash) and Customer (Utang people). Kind=All still needs a term.
+  if (!search && kind === "All") {
     return { items: [], totalCount: 0, page: 1, pageSize: Math.min(options.pageSize ?? 20, 20) };
   }
 
