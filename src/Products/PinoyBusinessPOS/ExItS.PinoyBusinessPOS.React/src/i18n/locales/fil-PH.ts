@@ -1433,6 +1433,13 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.optionalCustomerHint": "Opsyonal ? maglagay ng customer sa Cash o GCash sale.",
 
   "checkout.optionalCustomerSearch": "Maghanap ng customers (opsyonal)",
+  "checkout.customerKindFilter": "Customer type",
+  "checkout.customerKindAll": "All",
+  "checkout.customerKindPeople": "People",
+  "checkout.customerKindBusinesses": "Businesses",
+  "checkout.badge.b2b": "B2B",
+  "checkout.b2bUtangBlocked":
+    "Direct credit is not configured for this business. Use Cash, GCash, or the Purchase Order payment terms.",
 
   "checkout.orderPreview": "Preview ng sale",
 
@@ -2065,6 +2072,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.badge.local": "Local",
   "customers.badge.connected": "Connected",
   "customers.badge.exitsOrganization": "ExItS Organization",
+  "customers.badge.b2b": "B2B",
   "customers.badge.alsoSupplier": "Also a supplier",
 
   "customers.peopleEmptyCompact": "No people customers yet.",

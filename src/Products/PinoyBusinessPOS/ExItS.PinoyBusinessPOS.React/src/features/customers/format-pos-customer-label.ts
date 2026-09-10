@@ -34,7 +34,7 @@ export function posCustomerDisplayName(
 }
 
 export function checkoutCustomerTitle(
-  customer: Pick<CheckoutCustomerOption, "displayName" | "resolvedPersonalDisplayName">,
+  customer: { displayName: string; resolvedPersonalDisplayName?: string | null },
   walkInLabel: string,
 ): string {
   const resolved = customer.resolvedPersonalDisplayName?.trim();
@@ -44,18 +44,17 @@ export function checkoutCustomerTitle(
   return posCustomerDisplayName(customer.displayName, walkInLabel);
 }
 
-export function checkoutCustomerHasExItsCorrelation(
-  customer: Pick<
-    CheckoutCustomerOption,
-    "linkedPersonalPublicUserId" | "resolvedPersonalDisplayName"
-  >,
-): boolean {
+export function checkoutCustomerHasExItsCorrelation(customer: CheckoutCustomerOption): boolean {
+  if (customer.kind === "Business") {
+    return Boolean(customer.buyerPublicOrganizationId);
+  }
   return Boolean(customer.linkedPersonalPublicUserId || customer.resolvedPersonalDisplayName);
 }
 
-export function shouldShowCheckoutCustomerWhenIdle(
-  customer: Pick<CheckoutCustomerOption, "displayName" | "linkedPersonalPublicUserId">,
-): boolean {
+export function shouldShowCheckoutCustomerWhenIdle(customer: CheckoutCustomerOption): boolean {
+  if (customer.kind === "Business") {
+    return true;
+  }
   if (customer.linkedPersonalPublicUserId) {
     return true;
   }
@@ -70,10 +69,15 @@ export function visibleCheckoutCustomers(
   const source = trimmed ? customers : customers.filter(shouldShowCheckoutCustomerWhenIdle);
 
   return [...source].sort((a, b) => {
-    const linkedDelta =
-      Number(Boolean(b.linkedPersonalPublicUserId)) - Number(Boolean(a.linkedPersonalPublicUserId));
+    const aLinked = a.kind === "Customer" && Boolean(a.linkedPersonalPublicUserId);
+    const bLinked = b.kind === "Customer" && Boolean(b.linkedPersonalPublicUserId);
+    const linkedDelta = Number(bLinked) - Number(aLinked);
     if (linkedDelta !== 0) {
       return linkedDelta;
+    }
+    // Businesses before walk-in people when idle.
+    if (a.kind !== b.kind) {
+      return a.kind === "Business" ? -1 : 1;
     }
     return (
       Number(isSeededWalkInCustomerName(a.displayName)) -

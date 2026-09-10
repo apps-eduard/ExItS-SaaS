@@ -309,10 +309,14 @@ export async function listCustomers(
 }
 
 export const checkoutCustomerSearchItemSchema = z.object({
-  customerId: guidSchema,
+  kind: z.enum(["Customer", "Business"]).default("Customer"),
   displayName: z.string(),
-  mobileNumber: z.string().nullable().optional(),
   status: z.string(),
+  customerId: guidSchema.nullable().optional(),
+  mobileNumber: z.string().nullable().optional(),
+  connectionId: guidSchema.nullable().optional(),
+  buyerOrganizationId: guidSchema.nullable().optional(),
+  buyerPublicOrganizationId: z.string().nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({
@@ -326,21 +330,23 @@ export type CheckoutCustomerSearchItem = z.infer<typeof checkoutCustomerSearchIt
 export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearchResultSchema>;
 
 /**
- * Narrow Active-only checkout customer search.
- * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory.
- * Search term must be non-blank; pageSize capped at 20 server-side.
+ * Narrow Active-only checkout counterparty search (people + Active B2B businesses).
+ * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory / ViewSuppliers.
+ * Search term must be non-blank unless kind=Business; pageSize capped at 20 server-side.
  */
 export async function searchCheckoutCustomers(
   workspace: PosWorkspaceScope,
   options: {
-    search: string;
+    search?: string;
+    kind?: "All" | "Customer" | "Business";
     page?: number;
     pageSize?: number;
   },
   signal?: AbortSignal,
 ): Promise<CheckoutCustomerSearchResult> {
-  const search = options.search.trim();
-  if (!search) {
+  const search = options.search?.trim() ?? "";
+  const kind = options.kind ?? "All";
+  if (!search && kind !== "Business") {
     return { items: [], totalCount: 0, page: 1, pageSize: Math.min(options.pageSize ?? 20, 20) };
   }
 
@@ -349,7 +355,8 @@ export async function searchCheckoutCustomers(
     workspace,
     signal,
     path: appendQuery(`${CUSTOMERS_PATH}/checkout-search`, {
-      search,
+      search: search || undefined,
+      kind,
       page: options.page ?? 1,
       pageSize: Math.min(options.pageSize ?? 20, 20),
     }),

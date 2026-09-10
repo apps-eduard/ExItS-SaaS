@@ -139,6 +139,11 @@ public sealed record CheckoutSaleRequest(
     string? BuyerPersonalPublicUserId = null,
     Guid? BuyerOrganizationId = null,
     string? BuyerPublicOrganizationId = null,
+    /// <summary>
+    /// Preferred B2B checkout key: Active ConnectedSupplierRelationship id (seller-side).
+    /// Server resolves canonical buyer Organization identity from the relationship.
+    /// </summary>
+    Guid? BuyerConnectionId = null,
     List<CommercialDiscountIntentRequest>? Discounts = null,
     List<SalePriceOverrideIntentRequest>? PriceOverrides = null);
 

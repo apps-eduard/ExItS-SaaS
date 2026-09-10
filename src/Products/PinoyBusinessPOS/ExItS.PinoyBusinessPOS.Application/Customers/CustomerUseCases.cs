@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 
@@ -35,15 +37,18 @@ public sealed class POSCustomerQueryService
     private readonly IPOSCustomerRepository _customers;
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
+    private readonly IConnectedSupplierRelationshipRepository? _relationships;
 
     public POSCustomerQueryService(
         IPOSCustomerRepository customers,
         PartyBranchAccessService branchAccess,
-        IPartyBranchAccessActorAccessor actorAccessor)
+        IPartyBranchAccessActorAccessor actorAccessor,
+        IConnectedSupplierRelationshipRepository? relationships = null)
     {
         _customers = customers;
         _branchAccess = branchAccess;
         _actorAccessor = actorAccessor;
+        _relationships = relationships;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -143,10 +148,11 @@ public sealed class POSCustomerQueryService
         }
 
         return new CheckoutCustomerSearchItemDto(
-            customer.Id.Value,
+            CheckoutCustomerSearchItemDto.KindCustomer,
             customer.DisplayName,
-            customer.MobileNumber,
-            customer.Status.ToString());
+            customer.Status.ToString(),
+            customer.Id.Value,
+            customer.MobileNumber);
     }
 
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
@@ -173,42 +179,141 @@ public sealed class POSCustomerQueryService
     }
 
     /// <summary>
-    /// Narrow Active-only customer search for checkout (CreateSale). pageSize capped at 20.
+    /// Narrow Active-only checkout counterparty search for CreateSale (pageSize capped at 20).
+    /// Includes POS people and Active B2B Organization relationships (no ViewSuppliers required).
+    /// <paramref name="kind"/>: All | Customer | Business (default All).
+    /// Blank search is allowed for Business (Active directory) and rejected for Customer/All.
     /// </summary>
-    public async Task<CheckoutCustomerSearchResult> SearchForCheckoutAsync(
+    public async Task<ApplicationResult<CheckoutCustomerSearchResult>> SearchForCheckoutAsync(
         Guid organizationId,
-        string search,
+        string? search,
         int? page,
         int? pageSize,
+        string? kind = null,
         CancellationToken cancellationToken = default)
     {
         var take = Math.Clamp(pageSize ?? 20, 1, 20);
         var pageNumber = Math.Max(page ?? 1, 1);
         var skip = (pageNumber - 1) * take;
-        var restrict = await _branchAccess
-            .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
-            .ConfigureAwait(false);
-        var (items, total) = await _customers
-            .ListAsync(
-                PosOrganizationId.From(organizationId),
-                CustomerStatus.Active,
-                search,
-                skip,
-                take,
-                restrict,
-                cancellationToken)
-            .ConfigureAwait(false);
+        var normalizedKind = NormalizeCheckoutSearchKind(kind);
+        var term = search?.Trim() ?? string.Empty;
+        var hasTerm = term.Length > 0;
 
-        return new CheckoutCustomerSearchResult(
-            items.Select(c => new CheckoutCustomerSearchItemDto(
-                c.Id.Value,
+        if (!hasTerm
+            && normalizedKind is CheckoutCustomerSearchItemDto.KindCustomer or "All")
+        {
+            return ApplicationResult<CheckoutCustomerSearchResult>.Failure(
+                ApplicationErrorCodes.CheckoutCustomerSearchRequired,
+                "Checkout customer search requires a non-blank search term.");
+        }
+
+        var includePeople = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindCustomer;
+        var includeBusiness = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindBusiness;
+
+        var merged = new List<CheckoutCustomerSearchItemDto>();
+        var peopleTotal = 0;
+        var businessTotal = 0;
+
+        if (includePeople && hasTerm)
+        {
+            var restrict = await _branchAccess
+                .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+                .ConfigureAwait(false);
+            // Fetch a page-sized window; merge with businesses then re-page.
+            var (items, total) = await _customers
+                .ListAsync(
+                    PosOrganizationId.From(organizationId),
+                    CustomerStatus.Active,
+                    term,
+                    0,
+                    take,
+                    restrict,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            peopleTotal = total;
+            merged.AddRange(items.Select(c => new CheckoutCustomerSearchItemDto(
+                CheckoutCustomerSearchItemDto.KindCustomer,
                 c.DisplayName,
-                c.MobileNumber,
-                c.Status.ToString())).ToList(),
-            total,
-            pageNumber,
-            take);
+                c.Status.ToString(),
+                c.Id.Value,
+                c.MobileNumber)));
+        }
+
+        if (includeBusiness && _relationships is not null)
+        {
+            var supplier = PosOrganizationId.From(organizationId);
+            var rows = await _relationships
+                .ListAsync(supplier, supplierView: true, cancellationToken)
+                .ConfigureAwait(false);
+            var businesses = rows
+                .Where(r => r.Status == ConnectedSupplierRelationshipStatus.Active)
+                .Where(r => !hasTerm || MatchesBusinessSearch(r, term))
+                .OrderBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            businessTotal = businesses.Count;
+            merged.AddRange(businesses.Select(MapBusinessCheckoutItem));
+        }
+
+        var ordered = merged
+            .OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var pageItems = ordered.Skip(skip).Take(take).ToList();
+        var totalCount = includePeople && includeBusiness
+            ? peopleTotal + businessTotal
+            : includePeople
+                ? peopleTotal
+                : businessTotal;
+
+        return ApplicationResult<CheckoutCustomerSearchResult>.Success(
+            new CheckoutCustomerSearchResult(pageItems, totalCount, pageNumber, take));
     }
+
+    private static string NormalizeCheckoutSearchKind(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind))
+        {
+            return "All";
+        }
+
+        var trimmed = kind.Trim();
+        if (trimmed.Equals(CheckoutCustomerSearchItemDto.KindCustomer, StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("People", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Person", StringComparison.OrdinalIgnoreCase))
+        {
+            return CheckoutCustomerSearchItemDto.KindCustomer;
+        }
+
+        if (trimmed.Equals(CheckoutCustomerSearchItemDto.KindBusiness, StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Businesses", StringComparison.OrdinalIgnoreCase))
+        {
+            return CheckoutCustomerSearchItemDto.KindBusiness;
+        }
+
+        return "All";
+    }
+
+    private static bool MatchesBusinessSearch(ConnectedSupplierRelationship r, string term)
+    {
+        var haystack = string.Join(
+            ' ',
+            r.BuyerDisplayNameSnapshot ?? string.Empty,
+            r.BuyerPublicOrganizationIdSnapshot ?? string.Empty);
+        return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static CheckoutCustomerSearchItemDto MapBusinessCheckoutItem(ConnectedSupplierRelationship r) =>
+        new(
+            CheckoutCustomerSearchItemDto.KindBusiness,
+            string.IsNullOrWhiteSpace(r.BuyerDisplayNameSnapshot)
+                ? (r.BuyerPublicOrganizationIdSnapshot ?? "Business")
+                : r.BuyerDisplayNameSnapshot!,
+            r.Status.ToString(),
+            CustomerId: null,
+            MobileNumber: null,
+            ConnectionId: r.Id.Value,
+            BuyerOrganizationId: r.BuyerOrganizationId.Value,
+            BuyerPublicOrganizationId: r.BuyerPublicOrganizationIdSnapshot);
 
     public async Task<CustomerSyncPageDto> ListForSyncAsync(
         Guid organizationId,

@@ -1,7 +1,7 @@
 import type { PosCustomerListItem } from "@/api/pos/pos-customers-client";
 import type { BusinessCustomer } from "@/api/pos/pos-connected-suppliers-client";
 
-export type BusinessListBadgeKind = "local" | "connected" | "exitsOrganization";
+export type BusinessListBadgeKind = "local" | "b2b";
 
 export type BusinessListRow =
   | {
@@ -59,7 +59,7 @@ export function buildBusinessListRows(input: {
       publicOrganizationId: connection.organizationPublicId ?? null,
       buyerOrganizationId: connection.buyerOrganizationId,
       href: `/customers/business/${connection.connectionId}`,
-      badges: ["connected", "exitsOrganization"],
+      badges: ["b2b"],
       alsoSupplier: input.activeSupplierOrganizationIds.has(buyerId),
       relationshipStatus: connection.relationshipStatus,
       connection,
@@ -79,7 +79,7 @@ export function buildBusinessListRows(input: {
       const buyerId = customer.linkedBuyerOrganizationId?.toLowerCase() ?? null;
       const badges: BusinessListBadgeKind[] = [];
       if (buyerId) {
-        badges.push("exitsOrganization");
+        badges.push("b2b");
       } else {
         badges.push("local");
       }

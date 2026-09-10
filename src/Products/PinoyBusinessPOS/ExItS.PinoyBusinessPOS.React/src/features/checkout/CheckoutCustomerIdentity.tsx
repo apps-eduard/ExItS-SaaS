@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import { isCheckoutBusiness } from "@/features/checkout/checkout-customer-option";
 import {
   checkoutCustomerHasExItsCorrelation,
   checkoutCustomerTitle,
@@ -32,6 +33,28 @@ export function CheckoutCustomerIdentity({
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
   const title = checkoutCustomerTitle(customer, walkInLabel);
+
+  if (isCheckoutBusiness(customer)) {
+    const orgId = customer.buyerPublicOrganizationId?.trim() || null;
+    return (
+      <span className={cn("checkout-customer-identity", className)} data-testid="checkout-b2b-identity">
+        <span className="checkout-customer-identity__avatar" aria-hidden>
+          {displayInitial(title)}
+        </span>
+        <span className="checkout-customer-identity__body">
+          <span className="checkout-customer-identity__name">{title}</span>
+          {orgId ? <span className="checkout-customer-identity__meta">{orgId}</span> : null}
+          <span className="checkout-customer-identity__chips">
+            <StatusChip tone="success">{t("checkout.badge.b2b")}</StatusChip>
+          </span>
+        </span>
+        {selected ? (
+          <Check className="checkout-customer-identity__check size-4 shrink-0" aria-hidden />
+        ) : null}
+      </span>
+    );
+  }
+
   const correlated = checkoutCustomerHasExItsCorrelation(customer);
   const walkIn = !correlated && isSeededWalkInCustomerName(customer.displayName);
   const phone = customer.mobileNumber?.trim() || null;

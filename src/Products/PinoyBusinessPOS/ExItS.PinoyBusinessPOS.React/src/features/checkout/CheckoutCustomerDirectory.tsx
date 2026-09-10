@@ -1,6 +1,11 @@
 import { CheckoutCustomerIdentity } from "@/features/checkout/CheckoutCustomerIdentity";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import {
+  checkoutOptionKey,
+  isCheckoutBusiness,
+} from "@/features/checkout/checkout-customer-option";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
+import type { KindFilter } from "@/features/customers/customers-kind";
 import {
   checkoutCustomerTitle,
   visibleCheckoutCustomers,
@@ -57,6 +62,8 @@ type CheckoutCustomerDirectoryProps = {
   overlay?: CustomerListConnectionOverlay | null;
   onSelect: (customer: CheckoutCustomerOption) => void;
   disabled?: boolean;
+  kindFilter?: KindFilter;
+  onKindFilterChange?: (kind: KindFilter) => void;
 };
 
 export function CheckoutCustomerDirectory({
@@ -71,14 +78,55 @@ export function CheckoutCustomerDirectory({
   overlay = null,
   onSelect,
   disabled,
+  kindFilter = "all",
+  onKindFilterChange,
 }: CheckoutCustomerDirectoryProps) {
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
-  const visible = visibleCheckoutCustomers(customers, searchValue);
+  const kindFiltered =
+    kindFilter === "people"
+      ? customers.filter((c) => c.kind === "Customer")
+      : kindFilter === "businesses"
+        ? customers.filter((c) => c.kind === "Business")
+        : customers;
+  const visible = visibleCheckoutCustomers(kindFiltered, searchValue);
   const idle = searchValue.trim().length === 0;
 
   return (
     <div className="checkout-customer-directory">
+      {onKindFilterChange ? (
+        <div
+          className="mb-2 flex flex-wrap gap-1.5"
+          role="tablist"
+          aria-label={t("checkout.customerKindFilter")}
+          data-testid="checkout-customer-kind-tabs"
+        >
+          {(
+            [
+              ["all", t("checkout.customerKindAll")],
+              ["people", t("checkout.customerKindPeople")],
+              ["businesses", t("checkout.customerKindBusinesses")],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={kindFilter === key}
+              className={cn(
+                "exits-chip exits-chip--sm",
+                kindFilter === key && "exits-chip--active",
+              )}
+              data-testid={`checkout-customer-kind-${key}`}
+              disabled={disabled}
+              onClick={() => onKindFilterChange(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <SearchField
         id={searchId}
         label={searchLabel}
@@ -106,16 +154,23 @@ export function CheckoutCustomerDirectory({
       ) : (
         <ul className="checkout-customer-list" data-testid="checkout-customer-list">
           {visible.map((customer) => {
-            const selected = selectedCustomer?.customerId === customer.customerId;
+            const key = checkoutOptionKey(customer);
+            const selected =
+              selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
             return (
-              <li key={customer.customerId}>
+              <li key={key}>
                 <button
                   type="button"
                   className={cn(
                     "checkout-customer-row",
                     selected && "checkout-customer-row--selected",
+                    isCheckoutBusiness(customer) && "checkout-customer-row--b2b",
                   )}
-                  data-testid={`checkout-customer-${customer.customerId}`}
+                  data-testid={
+                    isCheckoutBusiness(customer)
+                      ? `checkout-business-${customer.connectionId}`
+                      : `checkout-customer-${customer.customerId}`
+                  }
                   disabled={disabled}
                   aria-pressed={selected}
                   aria-label={checkoutCustomerTitle(customer, walkInLabel)}

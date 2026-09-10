@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -13,6 +14,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -294,6 +296,7 @@ public sealed class CheckoutSale
     private readonly IEffectivePriceResolver? _effectivePrices;
     private readonly PartyBranchAccessService? _branchAccess;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly IConnectedSupplierRelationshipRepository? _connectedRelationships;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -312,7 +315,8 @@ public sealed class CheckoutSale
         ICatalogProductAvailabilityResolver? availability = null,
         IEffectivePriceResolver? effectivePrices = null,
         PartyBranchAccessService? branchAccess = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IConnectedSupplierRelationshipRepository? connectedRelationships = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -331,6 +335,7 @@ public sealed class CheckoutSale
         _effectivePrices = effectivePrices;
         _branchAccess = branchAccess;
         _branches = branches;
+        _connectedRelationships = connectedRelationships;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -354,6 +359,7 @@ public sealed class CheckoutSale
         IReadOnlyList<CommercialDiscountIntentRequest>? discounts = null,
         IReadOnlyList<SalePriceOverrideIntentRequest>? priceOverrides = null,
         bool allowUnlimitedSalePriceOverride = false,
+        Guid? buyerConnectionId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -449,21 +455,80 @@ public sealed class CheckoutSale
                 }
             }
 
-            var buyerPartyResult = SaleBuyerPartyFactory.TryCreate(
-                buyerPartyKind,
-                buyerDisplayNameSnapshot,
-                buyerPersonalPublicUserId,
-                buyerOrganizationId,
-                buyerPublicOrganizationId,
-                loadedCustomer);
-            if (!buyerPartyResult.IsSuccess)
+            SaleBuyerParty resolvedBuyerParty;
+            if (buyerConnectionId is Guid connectionOnly && connectionOnly != Guid.Empty)
             {
-                return ApplicationResult<Sale>.Failure(
-                    buyerPartyResult.ErrorCode!,
-                    buyerPartyResult.ErrorMessage!);
+                if (_connectedRelationships is null)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        DomainErrorCodes.SaleB2bRelationshipRequired,
+                        "Active B2B relationship was not found.");
+                }
+
+                var b2b = await B2bCheckoutBuyerAuthorization.ResolveAsync(
+                        orgId,
+                        _connectedRelationships,
+                        connectionOnly,
+                        requestedBuyerOrganizationId: null,
+                        customerId,
+                        isUtang,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!b2b.IsSuccess || b2b.Value is null)
+                {
+                    return ApplicationResult<Sale>.Failure(b2b.ErrorCode!, b2b.ErrorMessage!);
+                }
+
+                resolvedBuyerParty = b2b.Value;
+                linkedCustomerId = null;
+                loadedCustomer = null;
+            }
+            else
+            {
+                var buyerPartyResult = SaleBuyerPartyFactory.TryCreate(
+                    buyerPartyKind,
+                    buyerDisplayNameSnapshot,
+                    buyerPersonalPublicUserId,
+                    buyerOrganizationId,
+                    buyerPublicOrganizationId,
+                    loadedCustomer);
+                if (!buyerPartyResult.IsSuccess)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        buyerPartyResult.ErrorCode!,
+                        buyerPartyResult.ErrorMessage!);
+                }
+
+                resolvedBuyerParty = buyerPartyResult.Value!;
+                if (resolvedBuyerParty.Kind == SaleBuyerPartyKind.Organization)
+                {
+                    if (_connectedRelationships is null)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            DomainErrorCodes.SaleB2bRelationshipRequired,
+                            "Active B2B relationship was not found.");
+                    }
+
+                    var b2b = await B2bCheckoutBuyerAuthorization.ResolveAsync(
+                            orgId,
+                            _connectedRelationships,
+                            buyerConnectionId: null,
+                            resolvedBuyerParty.BuyerOrganizationId ?? buyerOrganizationId,
+                            customerId,
+                            isUtang,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!b2b.IsSuccess || b2b.Value is null)
+                    {
+                        return ApplicationResult<Sale>.Failure(b2b.ErrorCode!, b2b.ErrorMessage!);
+                    }
+
+                    resolvedBuyerParty = b2b.Value;
+                    linkedCustomerId = null;
+                    loadedCustomer = null;
+                }
             }
 
-            var resolvedBuyerParty = buyerPartyResult.Value!;
             try
             {
                 resolvedBuyerParty.EnsureConsistentWith(linkedCustomerId);

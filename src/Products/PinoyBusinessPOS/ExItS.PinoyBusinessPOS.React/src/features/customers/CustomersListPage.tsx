@@ -501,19 +501,11 @@ export function CustomersListPage() {
                         {row.badges.map((badge) => (
                           <StatusChip
                             key={badge}
-                            tone={
-                              badge === "connected"
-                                ? "success"
-                                : badge === "local"
-                                  ? "neutral"
-                                  : "info"
-                            }
+                            tone={badge === "b2b" ? "success" : "neutral"}
                           >
                             {badge === "local"
                               ? t("customers.badge.local")
-                              : badge === "connected"
-                                ? t("customers.badge.connected")
-                                : t("customers.badge.exitsOrganization")}
+                              : t("customers.badge.b2b")}
                           </StatusChip>
                         ))}
                         {row.alsoSupplier ? (
@@ -522,6 +514,11 @@ export function CustomersListPage() {
                       </span>
                       {row.source === "connection" ? (
                         <span className="business-customer-row__facts">
+                          {row.publicOrganizationId ? (
+                            <span data-testid={`business-customer-org-${row.connection.connectionId}`}>
+                              {row.publicOrganizationId}
+                            </span>
+                          ) : null}
                           <span>
                             {t("customers.business.sharedCountShort").replace(
                               "{count}",

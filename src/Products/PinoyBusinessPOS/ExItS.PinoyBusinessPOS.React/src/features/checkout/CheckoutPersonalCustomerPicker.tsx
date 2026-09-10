@@ -33,7 +33,8 @@ function toCheckoutOption(
   },
 ): CheckoutCustomerOption {
   return {
-    customerId: item.customerId,
+    kind: "Customer",
+    customerId: item.customerId!,
     displayName: item.displayName,
     mobileNumber: item.mobileNumber,
     status: item.status,

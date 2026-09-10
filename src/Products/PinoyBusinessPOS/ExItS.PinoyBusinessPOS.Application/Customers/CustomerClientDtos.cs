@@ -56,12 +56,23 @@ public sealed record PosCustomerPagedResult(
     int Page,
     int PageSize);
 
-/// <summary>Narrow checkout customer row — no notes, address, balances, links, or history.</summary>
+/// <summary>
+/// Narrow checkout selection row for CreateSale.
+/// Kind=Customer: POS people. Kind=Business: Active B2B Organization counterparty (no POSCustomer).
+/// </summary>
 public sealed record CheckoutCustomerSearchItemDto(
-    Guid CustomerId,
+    string Kind,
     string DisplayName,
-    string? MobileNumber,
-    string Status);
+    string Status,
+    Guid? CustomerId = null,
+    string? MobileNumber = null,
+    Guid? ConnectionId = null,
+    Guid? BuyerOrganizationId = null,
+    string? BuyerPublicOrganizationId = null)
+{
+    public const string KindCustomer = "Customer";
+    public const string KindBusiness = "Business";
+}
 
 public sealed record CheckoutCustomerSearchResult(
     List<CheckoutCustomerSearchItemDto> Items,

@@ -101,7 +101,7 @@ describe("customer-business-list", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]?.source).toBe("connection");
     expect(rows[0]?.alsoSupplier).toBe(true);
-    expect(rows[0]?.badges).toEqual(["connected", "exitsOrganization"]);
+    expect(rows[0]?.badges).toEqual(["b2b"]);
     expect(rows[1]?.source).toBe("pos");
     expect(rows[1]?.badges).toEqual(["local"]);
     expect(rows[1]?.alsoSupplier).toBe(false);

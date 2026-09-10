@@ -88,6 +88,12 @@ export const checkoutSaleRequestSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  buyerPartyKind: z.enum(["WalkIn", "ExternalCustomer", "Personal", "Organization"]).optional(),
+  buyerDisplayNameSnapshot: z.string().max(128).optional(),
+  buyerPersonalPublicUserId: z.string().max(64).optional(),
+  buyerOrganizationId: guidSchema.optional(),
+  buyerPublicOrganizationId: z.string().max(9).optional(),
+  buyerConnectionId: guidSchema.optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
   priceOverrides: z.array(salePriceOverrideIntentRequestSchema).optional(),
 });
@@ -386,6 +392,24 @@ export function buildCheckoutSalePayload(body: CheckoutSaleRequest): Record<stri
   }
   if (validated.paymentMethod === "Utang" && validated.dueDate) {
     payload.dueDate = validated.dueDate;
+  }
+  if (validated.buyerPartyKind) {
+    payload.buyerPartyKind = validated.buyerPartyKind;
+  }
+  if (validated.buyerDisplayNameSnapshot) {
+    payload.buyerDisplayNameSnapshot = validated.buyerDisplayNameSnapshot;
+  }
+  if (validated.buyerPersonalPublicUserId) {
+    payload.buyerPersonalPublicUserId = validated.buyerPersonalPublicUserId;
+  }
+  if (validated.buyerOrganizationId) {
+    payload.buyerOrganizationId = validated.buyerOrganizationId;
+  }
+  if (validated.buyerPublicOrganizationId) {
+    payload.buyerPublicOrganizationId = validated.buyerPublicOrganizationId;
+  }
+  if (validated.buyerConnectionId) {
+    payload.buyerConnectionId = validated.buyerConnectionId;
   }
 
   const discounts = serializeDiscounts(validated.discounts);

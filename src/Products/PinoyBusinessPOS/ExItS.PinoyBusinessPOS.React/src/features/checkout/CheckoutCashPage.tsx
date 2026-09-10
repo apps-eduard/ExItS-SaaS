@@ -21,6 +21,12 @@ import {
   type PosSaleQuoteDto,
   type SalePriceOverrideIntentRequest,
 } from "@/api/pos/pos-sales-client";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import {
+  isCheckoutBusiness,
+  mapCheckoutSearchItemToOption,
+} from "@/features/checkout/checkout-customer-option";
+import type { KindFilter } from "@/features/customers/customers-kind";
 import { roundMoney } from "@/cart/sell-cart-helpers";
 import { lineAmount, useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
@@ -34,7 +40,6 @@ import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
-import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
   CheckoutCustomerDirectory,
   CheckoutCustomerSelectedCard,
@@ -129,6 +134,7 @@ export function CheckoutCashPage() {
   const [cashReceived, setCashReceived] = useState("");
   const [gcashReference, setGcashReference] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [customerKindFilter, setCustomerKindFilter] = useState<KindFilter>("all");
   const [customers, setCustomers] = useState<CheckoutCustomerOption[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
@@ -290,11 +296,16 @@ export function CheckoutCashPage() {
     (gcashRefTrimmed.length > 0 && gcashRefTrimmed.length <= GCASH_REFERENCE_MAX_LENGTH);
 
   const utangBlockedZero = paymentChoice === "Utang" && zeroTotal;
+  const b2bSelected = isCheckoutBusiness(selectedCustomer);
+  const utangB2bBlocked = paymentChoice === "Utang" && b2bSelected;
   const utangNeedsCustomerLookup =
     paymentChoice === "Utang" && !(allowCheckoutCustomerSearch && allowCreateCredit);
   const utangCustomerOk =
     paymentChoice !== "Utang" ||
-    (allowCheckoutCustomerSearch && allowCreateCredit && selectedCustomer != null);
+    (allowCheckoutCustomerSearch &&
+      allowCreateCredit &&
+      selectedCustomer != null &&
+      !b2bSelected);
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
 
   useEffect(() => {
@@ -424,8 +435,9 @@ export function CheckoutCashPage() {
       return;
     }
     const isUtang = paymentChoice === "Utang";
+    // Cash/GCash optional counterparty: CreateSale (cashier checkout-search) — not ViewCustomers.
     const isOptionalCashCustomer =
-      (paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers;
+      (paymentChoice === "Cash" || paymentChoice === "GCash") && allowCheckoutCustomerSearch;
     if (!isUtang && !isOptionalCashCustomer) {
       return;
     }
@@ -439,21 +451,27 @@ export function CheckoutCashPage() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       const trimmed = customerSearch.trim();
-      // Checkout-search requires non-blank search; Owner/Manager full list may load without search.
-      if (isUtang && !allowViewCustomers && !trimmed) {
+      const wantBusinessDirectory =
+        customerKindFilter === "businesses" || (customerKindFilter === "all" && !trimmed);
+      // Checkout-search requires non-blank search for people; Business kind may load Active B2B idle.
+      if (isUtang && !allowViewCustomers && !trimmed && customerKindFilter !== "businesses") {
+        setCustomers([]);
+        setCustomersLoading(false);
+        return;
+      }
+      if (!trimmed && customerKindFilter === "people" && !allowViewCustomers) {
         setCustomers([]);
         setCustomersLoading(false);
         return;
       }
 
       setCustomersLoading(true);
-      const load = allowViewCustomers
-        ? listCustomers(
-            workspaceScope,
-            { status: "Active", search: trimmed || undefined, pageSize: 20 },
-            controller.signal,
-          ).then((page) =>
-            page.items.map((c) => ({
+
+      const mapPeopleFromList = (page: Awaited<ReturnType<typeof listCustomers>>) =>
+        page.items
+          .map((c) =>
+            mapCheckoutSearchItemToOption({
+              kind: "Customer",
               customerId: c.customerId,
               displayName: c.displayName,
               mobileNumber: c.mobileNumber,
@@ -463,13 +481,50 @@ export function CheckoutCashPage() {
                 notes: c.notes,
               }),
               platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
-            })),
+            }),
           )
-        : searchCheckoutCustomers(
-            workspaceScope,
-            { search: trimmed, pageSize: 20 },
-            controller.signal,
-          ).then((page) => page.items);
+          .filter((x): x is CheckoutCustomerOption => x != null);
+
+      const loadSearch = (kind: "All" | "Customer" | "Business") =>
+        searchCheckoutCustomers(
+          workspaceScope,
+          {
+            search: trimmed || undefined,
+            kind,
+            pageSize: 20,
+          },
+          controller.signal,
+        ).then((page) =>
+          page.items
+            .map((item) => mapCheckoutSearchItemToOption(item))
+            .filter((x): x is CheckoutCustomerOption => x != null),
+        );
+
+      let load: Promise<CheckoutCustomerOption[]>;
+      if (allowViewCustomers && customerKindFilter !== "businesses") {
+        const peoplePromise =
+          customerKindFilter === "people" || trimmed || !wantBusinessDirectory
+            ? listCustomers(
+                workspaceScope,
+                { status: "Active", search: trimmed || undefined, pageSize: 20 },
+                controller.signal,
+              ).then(mapPeopleFromList)
+            : Promise.resolve([] as CheckoutCustomerOption[]);
+        const businessPromise =
+          customerKindFilter === "all" || customerKindFilter === "businesses"
+            ? loadSearch("Business")
+            : Promise.resolve([] as CheckoutCustomerOption[]);
+        load = Promise.all([peoplePromise, businessPromise]).then(([people, businesses]) => [
+          ...people,
+          ...businesses,
+        ]);
+      } else if (customerKindFilter === "businesses") {
+        load = loadSearch("Business");
+      } else if (customerKindFilter === "people") {
+        load = trimmed ? loadSearch("Customer") : Promise.resolve([]);
+      } else {
+        load = trimmed ? loadSearch("All") : loadSearch("Business");
+      }
 
       void load
         .then((items) => {
@@ -494,12 +549,25 @@ export function CheckoutCashPage() {
     allowCheckoutCustomerSearch,
     allowCreateCredit,
     allowViewCustomers,
+    customerKindFilter,
     customerSearch,
     online,
     paymentChoice,
     selectedCustomer,
     workspaceScope,
   ]);
+
+  useEffect(() => {
+    if (!online && isCheckoutBusiness(selectedCustomer)) {
+      setSelectedCustomer(null);
+    }
+  }, [online, selectedCustomer]);
+
+  useEffect(() => {
+    if (paymentChoice === "Utang" && isCheckoutBusiness(selectedCustomer)) {
+      setSelectedCustomer(null);
+    }
+  }, [paymentChoice, selectedCustomer]);
 
   function addDiscount() {
     setDiscountFormError(null);
@@ -650,6 +718,10 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.utangZeroBlocked"));
       return;
     }
+    if (utangB2bBlocked) {
+      setSubmitError(t("checkout.b2bUtangBlocked"));
+      return;
+    }
     if (utangNeedsCustomerLookup) {
       setSubmitError(t("checkout.utangCustomerDenied"));
       return;
@@ -732,12 +804,25 @@ export function CheckoutCashPage() {
         ...(paymentChoice === "GCash" && !zeroTotal && gcashRefTrimmed
           ? { gCashReference: gcashRefTrimmed.slice(0, GCASH_REFERENCE_MAX_LENGTH) }
           : {}),
-        ...(selectedCustomer && (paymentChoice === "Utang" || allowViewCustomers)
+        ...(selectedCustomer && isCheckoutBusiness(selectedCustomer) && online
           ? {
-              customerId: selectedCustomer.customerId,
-              ...(paymentChoice === "Utang" && dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
+              buyerPartyKind: "Organization" as const,
+              buyerConnectionId: selectedCustomer.connectionId,
+              buyerOrganizationId: selectedCustomer.buyerOrganizationId,
+              buyerPublicOrganizationId:
+                selectedCustomer.buyerPublicOrganizationId ?? undefined,
+              buyerDisplayNameSnapshot: selectedCustomer.displayName,
             }
-          : {}),
+          : selectedCustomer &&
+              selectedCustomer.kind === "Customer" &&
+              (paymentChoice === "Utang" || allowCheckoutCustomerSearch)
+            ? {
+                customerId: selectedCustomer.customerId,
+                ...(paymentChoice === "Utang" && dueDate.trim()
+                  ? { dueDate: dueDate.trim() }
+                  : {}),
+              }
+            : {}),
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
         priceOverrides:
           allowOverride && priceOverrideIntents.length > 0 ? priceOverrideIntents : undefined,
@@ -791,6 +876,7 @@ export function CheckoutCashPage() {
     !tenderOk ||
     !gcashRefOk ||
     utangBlockedZero ||
+    utangB2bBlocked ||
     utangNeedsCustomerLookup ||
     !utangCustomerOk ||
     !utangCreditOk;
@@ -1222,7 +1308,9 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
+      {(paymentChoice === "Cash" || paymentChoice === "GCash") &&
+      allowCheckoutCustomerSearch &&
+      online ? (
         <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">
           <CheckoutCollapsibleSection
             testId="checkout-optional-customer-collapse"
@@ -1289,6 +1377,8 @@ export function CheckoutCashPage() {
                 selectedCustomer={selectedCustomer}
                 overlay={customerLinkOverlay}
                 disabled={saving}
+                kindFilter={customerKindFilter}
+                onKindFilterChange={setCustomerKindFilter}
                 onSelect={(customer) => {
                   setSelectedCustomer(customer);
                   setCustomerPanelOpen(false);
@@ -1322,6 +1412,14 @@ export function CheckoutCashPage() {
             </p>
           ) : (
             <>
+              {utangB2bBlocked ? (
+                <p
+                  data-testid="checkout-utang-b2b-blocked"
+                  className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                >
+                  {t("checkout.b2bUtangBlocked")}
+                </p>
+              ) : null}
               {selectedCustomer ? (
                 <div className="mt-2">
                   <CheckoutCustomerSelectedCard
@@ -1348,11 +1446,12 @@ export function CheckoutCashPage() {
                   searchLabel={t("checkout.utangCustomerSearch")}
                   searchValue={customerSearch}
                   onSearchChange={setCustomerSearch}
-                  customers={customers}
+                  customers={customers.filter((c) => c.kind === "Customer")}
                   customersLoading={customersLoading}
                   selectedCustomer={selectedCustomer}
                   overlay={customerLinkOverlay}
                   disabled={saving}
+                  kindFilter="people"
                   onSelect={setSelectedCustomer}
                 />
               ) : null}

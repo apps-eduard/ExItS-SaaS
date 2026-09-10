@@ -10,6 +10,7 @@ import type { CheckoutCustomerOption } from "@/features/checkout/checkout-custom
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 
 const walkIn: CheckoutCustomerOption = {
+  kind: "Customer",
   customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   displayName: "Local Walkin 20260826230002",
   mobileNumber: "09171110001",
@@ -17,6 +18,7 @@ const walkIn: CheckoutCustomerOption = {
 };
 
 const named: CheckoutCustomerOption = {
+  kind: "Customer",
   customerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   displayName: "Juan Dela Cruz",
   mobileNumber: "09171234567",
@@ -84,6 +86,7 @@ describe("CheckoutCustomerDirectory", () => {
   it("shows No ExItS ID versus ExItS ID, and Connected only from the overlay", () => {
     const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const linked: CheckoutCustomerOption = {
+      kind: "Customer",
       customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
       displayName: "Rosa Santos",
       status: "Active",
@@ -123,6 +126,7 @@ describe("CheckoutCustomerDirectory", () => {
   it("shows Pending when the overlay lists a pending request", () => {
     const platformId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
     const linked: CheckoutCustomerOption = {
+      kind: "Customer",
       customerId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
       displayName: "Pending Person",
       status: "Active",

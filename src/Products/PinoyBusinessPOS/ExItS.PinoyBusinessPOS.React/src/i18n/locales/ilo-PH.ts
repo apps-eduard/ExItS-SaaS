@@ -1433,6 +1433,13 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.optionalCustomerHint": "Opsional ? i-attach ti customer iti daytoy a Cash wenno GCash sale.",
 
   "checkout.optionalCustomerSearch": "Pangita iti customers (opsional)",
+  "checkout.customerKindFilter": "Customer type",
+  "checkout.customerKindAll": "All",
+  "checkout.customerKindPeople": "People",
+  "checkout.customerKindBusinesses": "Businesses",
+  "checkout.badge.b2b": "B2B",
+  "checkout.b2bUtangBlocked":
+    "Direct credit is not configured for this business. Use Cash, GCash, or the Purchase Order payment terms.",
 
   "checkout.orderPreview": "Preview iti sale",
 
@@ -2065,6 +2072,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.badge.local": "Local",
   "customers.badge.connected": "Connected",
   "customers.badge.exitsOrganization": "ExItS Organization",
+  "customers.badge.b2b": "B2B",
   "customers.badge.alsoSupplier": "Also a supplier",
 
   "customers.peopleEmptyCompact": "No people customers yet.",

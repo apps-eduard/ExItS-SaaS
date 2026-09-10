@@ -169,6 +169,10 @@ public static class DomainErrorCodes
         "pos.sale.electronic.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
     public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
+    /// <summary>Direct B2B Organization checkout cannot use Product-Based Utang.</summary>
+    public const string SaleB2bUtangNotSupported = "pos.sale.b2b.utang_not_supported";
+    /// <summary>Organization buyer at checkout requires an Active seller-side B2B relationship.</summary>
+    public const string SaleB2bRelationshipRequired = "pos.sale.b2b.relationship_required";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
     public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
     public const string InvalidCustomerPartyKind = "pos.customer.party_kind.invalid";
