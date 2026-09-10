@@ -179,6 +179,7 @@ import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
 import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
 import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDetailPage";
+import { DirectPurchaseB2bDetailPage } from "@/features/purchasing/DirectPurchaseB2bDetailPage";
 import { OrgStaffAssignPage } from "@/features/staff/OrgStaffAssignPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { OrgStaffPage } from "@/features/staff/OrgStaffPage";
@@ -1043,6 +1044,14 @@ export const appRoutes = [
                 element: (
                   <RequireViewInventory>
                     <DirectPurchasesListPage />
+                  </RequireViewInventory>
+                ),
+              },
+              {
+                path: "direct-purchases/b2b/:saleId",
+                element: (
+                  <RequireViewInventory>
+                    <DirectPurchaseB2bDetailPage />
                   </RequireViewInventory>
                 ),
               },

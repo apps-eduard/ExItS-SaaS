@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryPhysicalAudit, InventoryPhysicalAuditService>();
         services.AddScoped<IInventoryTransferAlertSink, OrganizationBusinessInventoryTransferAlertSink>();
         services.AddScoped<IDirectPurchaseReceiptRepository, DirectPurchaseReceiptRepository>();
+        services.AddScoped<IDirectPurchaseHistoryQuery, DirectPurchaseHistoryQuery>();
         services.AddScoped<IStockUseRepository, StockUseRepository>();
         services.AddScoped<IWasteLossRepository, WasteLossRepository>();
         services.AddScoped<IProductionDefinitionRepository, ProductionDefinitionRepository>();

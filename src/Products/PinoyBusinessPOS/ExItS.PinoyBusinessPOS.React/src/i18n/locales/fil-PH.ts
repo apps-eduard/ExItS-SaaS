@@ -8051,7 +8051,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.directEmpty": "Wala pang direktang bili",
 
-  "purchasing.directEmptyDetail": "Tumanggap ng stock para gawin ang unang direct purchase receipt.",
+  "purchasing.directEmptyDetail": "ExItS B2B sales to your organization appear here automatically. Record a local direct purchase when you buy outside ExItS.",
 
   "purchasing.directNoMatch": "No matching receipts",
 
@@ -8062,6 +8062,30 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.directPurchases": "Mga direktang bili",
 
   "purchasing.directPurchasesLede": "Nakaraang direct purchase receipts na nagdagdag ng stock.",
+  "purchasing.recordDirectPurchase": "Record direct purchase",
+  "purchasing.directSourceFilter": "Source",
+  "purchasing.directSourceAll": "All",
+  "purchasing.directSourceB2b": "B2B",
+  "purchasing.directSourceLocal": "Local",
+  "purchasing.directStatusFilter": "Status",
+  "purchasing.directStatusAll": "All",
+  "purchasing.directStatusCompleted": "Completed",
+  "purchasing.directStatusVoided": "Voided",
+  "purchasing.directBadgeB2b": "B2B",
+  "purchasing.directBadgeLocal": "Local",
+  "purchasing.directColDate": "Date",
+  "purchasing.directColSeller": "Seller / Source",
+  "purchasing.directColType": "Type",
+  "purchasing.directColReference": "Reference",
+  "purchasing.directColItems": "Items",
+  "purchasing.directColTotal": "Total",
+  "purchasing.directColStatus": "Status",
+  "purchasing.b2bDetailTitle": "Transaction Summary",
+  "purchasing.b2bDetailMissing": "This B2B purchase was not found for your organization.",
+  "purchasing.b2bPurchasedFrom": "Purchased from",
+  "purchasing.b2bSellerOrgId": "Organization ID",
+  "purchasing.b2bSellerStore": "Seller store",
+  "purchasing.b2bDiscount": "Discount",
 
   "purchasing.directSaveFailed": "Hindi ma-save ang direktang bili.",
 

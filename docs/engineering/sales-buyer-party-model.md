@@ -57,22 +57,26 @@ Org switch continues to clear SaleCart and selling/device context so Org A buyer
 
 Historical sales keep `OrganizationId` and buyer snapshots. Buyer Organization identity stays on `BuyerOrganizationId` / public org id, not the current owner user.
 
-## Future — Linked ExItS buyer purchase projection (RMAP-B04 — NOT STARTED)
+## Linked ExItS buyer purchase projection
 
-Current backend reports already defer Personal purchase history of merchant sales and B2B buyer-organization views of seller sales.
+### Personal (RMAP-B04 — implemented)
 
-**Future rule (owner-confirmed intent; not implemented):**
+A Completed/Voided sale with Personal (`EX-…`) `SaleBuyerParty` may be projected **read-only** into the authenticated Personal linked-customer statement / receipt APIs (`/api/v1/pos/personal/linked-customers/...`). Seller `Sale` remains authoritative.
 
-A Completed sale with Personal (`EX-…`) or Organization (`ORG######`) `SaleBuyerParty` may be projected **read-only** into the authenticated buyer's purchase history.
+### Organization buyer Direct Purchases (POS-B2B-DIRECT-PURCHASE-HISTORY-01 — implemented)
+
+A sale with `BuyerPartyKind = Organization` and `BuyerOrganizationId =` the authenticated buyer organization is projected **read-only** into that organization's Direct Purchases history.
 
 | Rule | Requirement |
 |------|-------------|
-| Authority | Seller `Sale` remains authoritative; do not transfer transaction ownership |
-| Scope | Personal sees only purchases linked to that Personal identity; Organization sees only purchases linked to that Organization |
-| Privacy | Seller internal notes / private customer fields not exposed |
-| Status | Void/refund status reflected |
-| Isolation | No cross-org DB access shortcut; authorization enforced before projection |
-| Review | Privacy/retention review required before implementation |
-| Documents | Transaction Summary vs future tax document wording preserved |
+| Authority | Seller `Sale` remains authoritative; do not transfer ownership or duplicate as buyer `DirectPurchaseReceipt` |
+| Unified page | `/purchasing/direct-purchases` shows Local (`DirectPurchaseReceipt`) + B2B (projected Sale) |
+| APIs | `GET /api/v1/pos/purchasing/direct-purchases` and `GET .../b2b/{saleId}` |
+| Scope | Buyer sees only Sales where `BuyerOrganizationId` matches session organization |
+| Privacy | Seller cost / profit / margin / internal notes / actor ids not exposed |
+| Inventory | No automatic buyer inventory mutation, goods receipt, or product-id mapping |
+| Relationship | Current Active connection is **not** required for historical visibility |
+| Status | Voided Sales remain visible as Voided |
+| Isolation | No cross-org shortcut; authorization uses POS workspace organization |
 
-UI may later land in RMAP-13 / RMAP-22 / Organization purchase-history surfaces. Cashier customer selection remains optional; walk-in remains valid. Buyer identity never grants seller access to Personal private data, buyer Organization POS data, membership, role, or cross-org authorization.
+UI CTA **Record direct purchase** continues the existing local `DirectPurchaseReceipt` write flow. Purchase Orders remain a separate Purchasing module.

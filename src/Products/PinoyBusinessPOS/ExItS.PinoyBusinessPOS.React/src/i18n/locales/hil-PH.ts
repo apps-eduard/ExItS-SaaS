@@ -8053,7 +8053,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.directEmpty": "No direct purchases yet",
 
-  "purchasing.directEmptyDetail": "Receive stock to create the first direct purchase receipt.",
+  "purchasing.directEmptyDetail": "ExItS B2B sales to your organization appear here automatically. Record a local direct purchase when you buy outside ExItS.",
 
   "purchasing.directNoMatch": "Wala sang nagahisugtong nga resibo",
 
@@ -8064,6 +8064,30 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.directPurchases": "Direct purchases",
 
   "purchasing.directPurchasesLede": "Past direct purchase receipts that increased stock.",
+  "purchasing.recordDirectPurchase": "Record direct purchase",
+  "purchasing.directSourceFilter": "Source",
+  "purchasing.directSourceAll": "All",
+  "purchasing.directSourceB2b": "B2B",
+  "purchasing.directSourceLocal": "Local",
+  "purchasing.directStatusFilter": "Status",
+  "purchasing.directStatusAll": "All",
+  "purchasing.directStatusCompleted": "Completed",
+  "purchasing.directStatusVoided": "Voided",
+  "purchasing.directBadgeB2b": "B2B",
+  "purchasing.directBadgeLocal": "Local",
+  "purchasing.directColDate": "Date",
+  "purchasing.directColSeller": "Seller / Source",
+  "purchasing.directColType": "Type",
+  "purchasing.directColReference": "Reference",
+  "purchasing.directColItems": "Items",
+  "purchasing.directColTotal": "Total",
+  "purchasing.directColStatus": "Status",
+  "purchasing.b2bDetailTitle": "Transaction Summary",
+  "purchasing.b2bDetailMissing": "This B2B purchase was not found for your organization.",
+  "purchasing.b2bPurchasedFrom": "Purchased from",
+  "purchasing.b2bSellerOrgId": "Organization ID",
+  "purchasing.b2bSellerStore": "Seller store",
+  "purchasing.b2bDiscount": "Discount",
 
   "purchasing.directSaveFailed": "Could not save the direct purchase.",
 

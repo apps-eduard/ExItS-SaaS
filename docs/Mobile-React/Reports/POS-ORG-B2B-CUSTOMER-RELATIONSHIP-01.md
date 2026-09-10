@@ -66,3 +66,9 @@ Detail may refresh display name via Platform public organization resolve (snapsh
 - No separate Connected Buyers primary React directory
 - Customer code / internal notes / payment terms deferred
 - Future buyer-side read-only projection of seller Sales is out of scope here
+
+### Follow-up / supersession
+
+Organization buyer direct-sale history was implemented later by
+**POS-B2B-DIRECT-PURCHASE-HISTORY-01** (buyer Direct Purchases unified history; seller Sale remains authoritative).
+See [POS-B2B-DIRECT-PURCHASE-HISTORY-01.md](./POS-B2B-DIRECT-PURCHASE-HISTORY-01.md).

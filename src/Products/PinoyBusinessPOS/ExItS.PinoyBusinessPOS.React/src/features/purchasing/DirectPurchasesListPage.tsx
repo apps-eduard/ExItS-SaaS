@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, PackagePlus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
-  listDirectPurchaseReceipts,
-  type DirectPurchaseReceiptListItemDto,
-} from "@/api/pos/pos-direct-purchase-receipts-client";
+  listDirectPurchases,
+  type DirectPurchaseHistoryItem,
+  type DirectPurchaseHistorySourceType,
+} from "@/api/pos/pos-direct-purchases-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -24,6 +25,8 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 const PAGE_SIZE = 20;
 
 type DateFilter = "all" | "7" | "30" | "90";
+type SourceFilter = "All" | DirectPurchaseHistorySourceType;
+type StatusFilter = "All" | "Completed" | "Voided";
 
 const DATE_FILTERS: Array<{
   value: DateFilter;
@@ -40,35 +43,30 @@ const DATE_FILTERS: Array<{
   { value: "90", key: "90", labelKey: "purchasing.directDate90" },
 ];
 
-function dateRangeForFilter(filter: DateFilter): { fromPurchaseDate?: string; toPurchaseDate?: string } {
+function dateRangeForFilter(filter: DateFilter): { fromDate?: string; toDate?: string } {
   if (filter === "all") return {};
 
   const today = new Date();
-  const toPurchaseDate = today.toISOString().slice(0, 10);
+  const toDate = today.toISOString().slice(0, 10);
   const from = new Date(today);
   const days = filter === "7" ? 7 : filter === "30" ? 30 : 90;
   from.setDate(from.getDate() - days);
 
   return {
-    fromPurchaseDate: from.toISOString().slice(0, 10),
-    toPurchaseDate,
+    fromDate: from.toISOString().slice(0, 10),
+    toDate,
   };
 }
 
-function matchesDirectSearch(item: DirectPurchaseReceiptListItemDto, query: string): boolean {
-  if (!query) return true;
+function rowHref(item: DirectPurchaseHistoryItem): string {
+  return item.sourceType === "B2B"
+    ? `/purchasing/direct-purchases/b2b/${item.sourceId}`
+    : `/purchasing/direct-purchases/${item.sourceId}`;
+}
 
-  const haystack = [
-    item.receiptNumber,
-    item.sourceNameSnapshot,
-    item.referenceNumber,
-    item.purchaseDate,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(query.toLowerCase());
+function formatDisplayDate(item: DirectPurchaseHistoryItem): string {
+  if (item.purchaseDate) return item.purchaseDate;
+  return new Date(item.occurredAtUtc).toISOString().slice(0, 10);
 }
 
 export function DirectPurchasesListPage() {
@@ -79,6 +77,8 @@ export function DirectPurchasesListPage() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("All");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const allowManage = canManageInventory(sessionGrant);
 
   useEffect(() => {
@@ -88,12 +88,15 @@ export function DirectPurchasesListPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debounced, dateFilter]);
+  }, [debounced, dateFilter, sourceFilter, statusFilter]);
 
   const workspace = useMemo(
     () =>
-      boundWorkspace?.branchId
-        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
+      boundWorkspace?.organizationId
+        ? {
+            organizationId: boundWorkspace.organizationId,
+            branchId: boundWorkspace.branchId ?? undefined,
+          }
         : null,
     [boundWorkspace],
   );
@@ -102,20 +105,23 @@ export function DirectPurchasesListPage() {
 
   const query = useQuery({
     queryKey: [
-      "direct-purchases",
+      "direct-purchases-history",
       workspace?.organizationId,
-      workspace?.branchId,
       page,
       debounced,
       dateFilter,
+      sourceFilter,
+      statusFilter,
     ],
     enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
-      listDirectPurchaseReceipts(
+      listDirectPurchases(
         workspace!,
         {
           ...dateRange,
-          sourceSearch: debounced || undefined,
+          search: debounced || undefined,
+          sourceType: sourceFilter,
+          status: statusFilter,
           page,
           pageSize: PAGE_SIZE,
         },
@@ -123,21 +129,16 @@ export function DirectPurchasesListPage() {
       ),
   });
 
-  const items = useMemo(() => {
-    const rows = query.data?.items ?? [];
-    return rows.filter((item) => matchesDirectSearch(item, debounced));
-  }, [query.data?.items, debounced]);
-
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
+  const items = query.data?.items ?? [];
   const totalCount = query.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const canPrev = page > 1;
   const canNext = page < totalPages && totalCount > 0;
   const hasLoaded = query.isSuccess;
-  const showFilteredEmpty = hasLoaded && totalCount > 0 && items.length === 0;
   const showTrueEmpty = hasLoaded && totalCount === 0;
 
   return (
@@ -164,8 +165,8 @@ export function DirectPurchasesListPage() {
           className="exits-animate-toolbar"
           items={[
             {
-              key: "receive",
-              label: t("purchasing.receiveStock"),
+              key: "record",
+              label: t("purchasing.recordDirectPurchase"),
               icon: <PackagePlus />,
               href: online ? "/purchasing/receive-stock" : undefined,
               disabled: !online,
@@ -188,6 +189,35 @@ export function DirectPurchasesListPage() {
 
       <ExitsChipBar
         variant="filter"
+        ariaLabel={t("purchasing.directSourceFilter")}
+        testId="direct-source-filter"
+        items={[
+          {
+            key: "all",
+            label: t("purchasing.directSourceAll"),
+            state: sourceFilter === "All" ? "active" : "idle",
+            testId: "direct-source-all",
+            onSelect: () => setSourceFilter("All"),
+          },
+          {
+            key: "b2b",
+            label: t("purchasing.directSourceB2b"),
+            state: sourceFilter === "B2B" ? "active" : "idle",
+            testId: "direct-source-b2b",
+            onSelect: () => setSourceFilter("B2B"),
+          },
+          {
+            key: "local",
+            label: t("purchasing.directSourceLocal"),
+            state: sourceFilter === "Local" ? "active" : "idle",
+            testId: "direct-source-local",
+            onSelect: () => setSourceFilter("Local"),
+          },
+        ]}
+      />
+
+      <ExitsChipBar
+        variant="filter"
         ariaLabel={t("purchasing.directDateFilter")}
         testId="direct-date-filter"
         items={DATE_FILTERS.map((filter) => ({
@@ -199,6 +229,35 @@ export function DirectPurchasesListPage() {
         }))}
       />
 
+      <ExitsChipBar
+        variant="filter"
+        ariaLabel={t("purchasing.directStatusFilter")}
+        testId="direct-status-filter"
+        items={[
+          {
+            key: "all",
+            label: t("purchasing.directStatusAll"),
+            state: statusFilter === "All" ? "active" : "idle",
+            testId: "direct-status-all",
+            onSelect: () => setStatusFilter("All"),
+          },
+          {
+            key: "completed",
+            label: t("purchasing.directStatusCompleted"),
+            state: statusFilter === "Completed" ? "active" : "idle",
+            testId: "direct-status-completed",
+            onSelect: () => setStatusFilter("Completed"),
+          },
+          {
+            key: "voided",
+            label: t("purchasing.directStatusVoided"),
+            state: statusFilter === "Voided" ? "active" : "idle",
+            testId: "direct-status-voided",
+            onSelect: () => setStatusFilter("Voided"),
+          },
+        ]}
+      />
+
       {query.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
       {query.isError ? (
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />
@@ -206,46 +265,102 @@ export function DirectPurchasesListPage() {
       {showTrueEmpty ? (
         <EmptyState title={t("purchasing.directEmpty")} detail={t("purchasing.directEmptyDetail")} />
       ) : null}
-      {showFilteredEmpty ? (
-        <EmptyState
-          title={t("purchasing.directNoMatch")}
-          detail={t("purchasing.directNoMatchDetail")}
-        />
-      ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="direct-purchases-list">
+      <div className="hidden md:block overflow-x-auto" data-testid="direct-purchases-table">
+        <table className="w-full min-w-[44rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+          <thead>
+            <tr className="border-b border-border text-muted">
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColDate")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColSeller")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColType")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColReference")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColItems")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColTotal")}</th>
+              <th className="px-2 py-2 font-medium">{t("purchasing.directColStatus")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={`${item.sourceType}-${item.sourceId}`} className="border-b border-border/60">
+                <td className="px-2 py-2">
+                  <Link
+                    to={rowHref(item)}
+                    className="text-foreground no-underline hover:underline"
+                    data-testid={`direct-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
+                  >
+                    {formatDisplayDate(item)}
+                  </Link>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="font-medium">{item.sellerDisplayName}</div>
+                  {item.sellerPublicOrganizationId ? (
+                    <div className="text-muted">{item.sellerPublicOrganizationId}</div>
+                  ) : null}
+                </td>
+                <td className="px-2 py-2">
+                  <StatusChip tone={item.sourceType === "B2B" ? "info" : "neutral"}>
+                    {item.sourceType === "B2B"
+                      ? t("purchasing.directBadgeB2b")
+                      : t("purchasing.directBadgeLocal")}
+                  </StatusChip>
+                </td>
+                <td className="px-2 py-2">{item.referenceNumber}</td>
+                <td className="px-2 py-2">{item.lineCount}</td>
+                <td className="px-2 py-2 font-medium">{formatPeso(item.totalAmount)}</td>
+                <td className="px-2 py-2">
+                  <StatusChip tone={item.status === "Voided" ? "danger" : "success"}>
+                    {item.status === "Voided"
+                      ? t("purchasing.receiptStatus.voided")
+                      : t("purchasing.directStatusCompleted")}
+                  </StatusChip>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ul
+        className="exits-list m-0 grid list-none gap-2 p-0 md:hidden"
+        data-testid="direct-purchases-list"
+      >
         {items.map((item) => {
           const metaParts = [
-            item.purchaseDate,
-            item.sourceNameSnapshot ?? t("purchasing.sourceEmpty"),
+            formatDisplayDate(item),
+            item.sourceType === "B2B"
+              ? t("purchasing.directBadgeB2b")
+              : t("purchasing.directBadgeLocal"),
             t("purchasing.linesCount").replace("{count}", String(item.lineCount)),
+            item.referenceNumber,
           ];
-          if (item.referenceNumber) {
-            metaParts.push(item.referenceNumber);
+          if (item.sellerPublicOrganizationId) {
+            metaParts.splice(1, 0, item.sellerPublicOrganizationId);
           }
 
           return (
-            <li key={item.directPurchaseReceiptId}>
+            <li key={`${item.sourceType}-${item.sourceId}`}>
               <Link
-                to={`/purchasing/direct-purchases/${item.directPurchaseReceiptId}`}
+                to={rowHref(item)}
                 className="exits-list__card purchasing-row block min-w-0 text-foreground no-underline"
-                data-testid={`direct-row-${item.directPurchaseReceiptId}`}
+                data-testid={`direct-mobile-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
               >
                 <span className="purchasing-row__main min-w-0">
-                  <span className="exits-list__name block truncate font-semibold">{item.receiptNumber}</span>
+                  <span className="exits-list__name block truncate font-semibold">
+                    {item.sellerDisplayName}
+                  </span>
                   <span className="purchasing-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
                     {metaParts.join(" · ")}
                   </span>
                 </span>
                 <span className="purchasing-row__aside">
                   <span className="purchasing-row__qty">
-                    {formatPeso(item.totalCost)}
-                    <span className="purchasing-row__uom">{t("purchasing.totalCost")}</span>
+                    {formatPeso(item.totalAmount)}
+                    <span className="purchasing-row__uom">{t("purchasing.directColTotal")}</span>
                   </span>
                   <StatusChip tone={item.status === "Voided" ? "danger" : "success"}>
                     {item.status === "Voided"
                       ? t("purchasing.receiptStatus.voided")
-                      : t("purchasing.received")}
+                      : t("purchasing.directStatusCompleted")}
                   </StatusChip>
                   <ChevronRight className="purchasing-row__chevron size-4 shrink-0 text-muted" aria-hidden />
                 </span>

@@ -164,13 +164,13 @@ Legacy WP03/WP04 numbering is **not** reused. New IDs below.
 
 | Field     | Content                                                                                                               |
 | --------- | --------------------------------------------------------------------------------------------------------------------- |
-| Status    | **COMPLETE**                                                                                                          |
-| Report    | [POS-REACT-RMAP-B04-linked-buyer-purchase-history.md](../../Reports/POS-REACT-RMAP-B04-linked-buyer-purchase-history.md) |
-| Objective | Read-only projection of seller-owned Completed sales into authenticated Personal/Organization buyer purchase history  |
+| Status    | **COMPLETE** (Personal + Organization Direct Purchases history)                                                       |
+| Report    | [POS-REACT-RMAP-B04-linked-buyer-purchase-history.md](../../Reports/POS-REACT-RMAP-B04-linked-buyer-purchase-history.md) · [POS-B2B-DIRECT-PURCHASE-HISTORY-01.md](../../Reports/POS-B2B-DIRECT-PURCHASE-HISTORY-01.md) |
+| Objective | Read-only projection of seller-owned sales into authenticated Personal/Organization buyer purchase history  |
 | Blocking? | YES for buyer purchase-history UI                                                                                     |
 | Rules     | Seller Sale remains authoritative; no ownership transfer; no cross-org DB shortcut; privacy/retention review required |
-| Delivered | Personal linked-merchant statement + lazy receipt (Phase-24 APIs); Organization buyer **unsupported** (no API contract) |
-| Next      | RMAP-23 hardening                                                                                                     |
+| Delivered | Personal linked-merchant statement + lazy receipt (Phase-24 APIs); Organization buyer Direct Purchases unified history (`GET /api/v1/pos/purchasing/direct-purchases`) |
+| Next      | Optional future receive-into-inventory mapping for B2B (not authorized here)                                          |
 
 ---
 

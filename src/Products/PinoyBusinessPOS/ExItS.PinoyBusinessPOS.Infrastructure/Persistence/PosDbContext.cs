@@ -1292,6 +1292,11 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_sales_org_buyer_organization")
                 .HasFilter("buyer_organization_id IS NOT NULL");
 
+            // Buyer-side Direct Purchases history: filter by buyer org + party kind, sort by recorded_at.
+            entity.HasIndex(e => new { e.BuyerOrganizationId, e.BuyerPartyKind, e.RecordedAtUtc })
+                .HasDatabaseName("ix_sales_buyer_organization_party_recorded")
+                .HasFilter("buyer_organization_id IS NOT NULL");
+
             entity.HasIndex(e => e.CashierShiftId)
                 .HasDatabaseName("ix_sales_cashier_shift_id");
 

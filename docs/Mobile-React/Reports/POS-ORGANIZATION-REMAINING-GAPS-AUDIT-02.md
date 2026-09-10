@@ -307,3 +307,9 @@ Organization POS (React + POS API)
 ## APPLICATION_CODE_CHANGED
 
 **NO** — audit documentation only.
+
+### Follow-up / supersession
+
+Organization buyer direct-sale history was implemented later by
+**POS-B2B-DIRECT-PURCHASE-HISTORY-01**. Seller-operated Direct B2B Sell checkout was delivered earlier on `feat/organization`; this package adds buyer Direct Purchases read projection only.
+See [POS-B2B-DIRECT-PURCHASE-HISTORY-01.md](./POS-B2B-DIRECT-PURCHASE-HISTORY-01.md).
