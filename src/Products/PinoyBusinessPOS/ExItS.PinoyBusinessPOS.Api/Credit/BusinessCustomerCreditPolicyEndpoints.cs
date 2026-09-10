@@ -17,12 +17,10 @@ internal static class BusinessCustomerCreditPolicyEndpoints
         var group = app.MapGroup(
             "/api/v1/pos/connected-suppliers/business-customers/{connectionId:guid}/credit-policy");
 
-        // Map both "/" and "" so /credit-policy and /credit-policy/ resolve.
+        // Register each verb once. Mapping both "" and "/" collapses to the same template and
+        // throws AmbiguousMatchException (HTTP 500) on every GET/PUT to this leaf.
         group.MapGet("/", GetAsync);
-        group.MapGet("", GetAsync);
-
         group.MapPut("/", UpsertAsync);
-        group.MapPut("", UpsertAsync);
 
         group.MapPost("/approve", async (
             HttpRequest request,

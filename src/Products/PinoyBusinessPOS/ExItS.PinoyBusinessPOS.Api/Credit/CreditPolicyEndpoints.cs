@@ -16,12 +16,10 @@ internal static class CreditPolicyEndpoints
     {
         var group = app.MapGroup("/api/v1/pos/customers/{customerId:guid}/credit-policy");
 
-        // Map both "/" and "" so /credit-policy and /credit-policy/ resolve (trailing-slash hardening).
+        // Register each verb once. Mapping both "" and "/" collapses to the same template and
+        // throws AmbiguousMatchException (HTTP 500) on every GET/PUT to this leaf.
         group.MapGet("/", GetCreditPolicyAsync);
-        group.MapGet("", GetCreditPolicyAsync);
-
         group.MapPut("/", UpsertCreditPolicyAsync);
-        group.MapPut("", UpsertCreditPolicyAsync);
         group.MapPost("/approve", async (
             HttpRequest request,
             Guid customerId,

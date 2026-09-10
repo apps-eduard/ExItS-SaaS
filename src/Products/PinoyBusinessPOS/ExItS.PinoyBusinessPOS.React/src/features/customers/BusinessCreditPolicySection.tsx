@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveBusinessCustomerCreditPolicy,
@@ -8,7 +8,7 @@ import {
   upsertBusinessCustomerCreditPolicy,
   type PosBusinessCustomerCreditPolicy,
 } from "@/api/pos/pos-business-credit-policy-client";
-import type { PosWorkspaceScope } from "@/api/pos/pos-http";
+import { PosApiError, type PosWorkspaceScope } from "@/api/pos/pos-http";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
@@ -66,9 +66,10 @@ export function BusinessCreditPolicySection({
   const [formError, setFormError] = useState<string | null>(null);
 
   const useOverride = policyOverride !== undefined;
+  const hasConnectionId = Boolean(connectionId?.trim());
   const policyQuery = useQuery({
     queryKey: ["business-customers", "credit-policy", workspace.organizationId, connectionId],
-    enabled: online && !useOverride,
+    enabled: online && !useOverride && hasConnectionId && Boolean(workspace.organizationId),
     queryFn: ({ signal }) => getBusinessCustomerCreditPolicy(workspace, connectionId, signal),
   });
 
@@ -80,7 +81,7 @@ export function BusinessCreditPolicySection({
       connectionId,
       historyPage,
     ],
-    enabled: online && historyOpen && !useOverride,
+    enabled: online && historyOpen && !useOverride && hasConnectionId && Boolean(workspace.organizationId),
     queryFn: ({ signal }) =>
       listBusinessCustomerCreditPolicyHistory(
         workspace,
@@ -89,6 +90,24 @@ export function BusinessCreditPolicySection({
         signal,
       ),
   });
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !policyQuery.isError || !policyQuery.error) {
+      return;
+    }
+    const err = policyQuery.error;
+    if (err instanceof PosApiError) {
+      console.warn("[business-credit-policy] load failed", {
+        status: err.status,
+        errorCode: err.errorCode,
+        detail: err.problem.detail,
+        connectionId,
+        path: `/api/v1/pos/connected-suppliers/business-customers/${connectionId}/credit-policy`,
+      });
+    } else {
+      console.warn("[business-credit-policy] load failed", err);
+    }
+  }, [connectionId, policyQuery.error, policyQuery.isError]);
 
   const policy = useOverride ? policyOverride : policyQuery.data;
   const status = policy?.status ?? "NotConfigured";

@@ -1,6 +1,9 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import type { PosBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
+import * as businessCreditClient from "@/api/pos/pos-business-credit-policy-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -17,6 +20,10 @@ vi.mock("@/features/actors/useActorDirectory", () => ({
     isResolving: false,
   }),
 }));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const workspace = {
   organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -139,5 +146,53 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.queryByTestId("business-credit-policy-configure")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-disable")).not.toBeInTheDocument();
+  });
+
+  it("shows friendly error (not raw) for real load failure and Retry refetches", async () => {
+    const user = userEvent.setup();
+    const getSpy = vi
+      .spyOn(businessCreditClient, "getBusinessCustomerCreditPolicy")
+      .mockRejectedValueOnce(
+        new PosApiError(404, { status: 404, title: "Not Found", detail: "POS API request failed (404)" }),
+      )
+      .mockResolvedValueOnce(policy({ status: "NotConfigured" }));
+
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+      />,
+    );
+
+    expect(await screen.findByText("customers.creditPolicy.loadFailed")).toBeInTheDocument();
+    expect(screen.queryByText(/POS API request failed/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("business-credit-policy-retry"));
+    expect(await screen.findByTestId("business-credit-policy-configure")).toBeInTheDocument();
+    expect(getSpy).toHaveBeenCalledTimes(2);
+    getSpy.mockRestore();
+  });
+
+  it("shows friendly error for 403 and Retry is available", async () => {
+    vi.spyOn(businessCreditClient, "getBusinessCustomerCreditPolicy").mockRejectedValue(
+      new PosApiError(403, { status: 403, title: "Forbidden", detail: "denied", errorCode: "pos.forbidden" }),
+    );
+
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+      />,
+    );
+
+    expect(await screen.findByText("customers.creditPolicy.loadFailed")).toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-retry")).toBeInTheDocument();
+    expect(screen.queryByText("denied")).not.toBeInTheDocument();
   });
 });
