@@ -4,9 +4,9 @@
 
 STATUS=CODE_COMPLETE (targeted tests PASS; manual owner acceptance of MICA↔KIZY scenarios still recommended)
 
-START_SHA=595b2ffd1c0e6f8a0e (conversation start HEAD was `595b2ffd`; DP fix preserved as `6da698e8`)
+START_SHA=595b2ffd (package start; DP fix preserved as `6da698e8`)
 
-FINAL_SHA=(set at commit)
+FINAL_SHA=ba5234d6e284dd53ed649a75e0aef114b173bce6
 
 ## Decisions
 
