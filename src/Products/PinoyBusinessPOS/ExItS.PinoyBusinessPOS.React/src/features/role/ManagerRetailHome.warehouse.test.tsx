@@ -141,6 +141,15 @@ vi.mock("@/api/pos/pos-customer-orders-client", () => ({
   })),
 }));
 
+vi.mock("@/api/pos/pos-inventory-client", () => ({
+  listInventory: vi.fn(async () => ({
+    items: [],
+    page: 1,
+    pageSize: 1,
+    totalCount: 0,
+  })),
+}));
+
 vi.mock("@/api/pos/pos-inventory-transfer-client", () => ({
   listInventoryTransfers: vi.fn(async () => ({
     items: [],

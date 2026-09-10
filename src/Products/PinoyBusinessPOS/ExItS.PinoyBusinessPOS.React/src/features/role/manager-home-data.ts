@@ -46,7 +46,7 @@ export function buildManagerAttentionItems(
     items.push({
       kind: "lowStock",
       count: lowStock,
-      href: "/inventory",
+      href: "/inventory?lowStock=1",
       testId: "manager-attention-low-stock",
     });
   }
@@ -149,7 +149,7 @@ export function buildRetailSnapshotModules(input: {
   if (input.canInventory && (input.lowStock > 0 || input.expiry > 0)) {
     modules.push({
       key: "inventory",
-      href: "/inventory",
+      href: input.lowStock > 0 ? "/inventory?lowStock=1" : "/inventory/expiration",
       testId: "manager-snapshot-inventory",
       summaryKind: "inventory",
       lowStock: input.lowStock,
@@ -213,7 +213,7 @@ export function buildWarehouseSnapshotModules(input: {
   if (input.canInventory) {
     modules.push({
       key: "inventory",
-      href: "/inventory",
+      href: input.lowStock > 0 ? "/inventory?lowStock=1" : "/inventory",
       testId: "manager-snapshot-inventory",
       summaryKind: "inventory",
       lowStock: input.lowStock,

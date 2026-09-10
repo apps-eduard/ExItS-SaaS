@@ -18,6 +18,7 @@ import {
   canViewInventory,
   canViewPurchasing,
 } from "@/access/pos-capabilities";
+import { listInventory } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   isReceivablePurchaseOrderStatus,
@@ -122,6 +123,24 @@ export function ManagerWarehouseHome({
     queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
   });
 
+  /** Branch-scoped monitored low stock (same engine as Inventory / Low stock settings). */
+  const lowStockQuery = useQuery({
+    queryKey: [
+      "manager-home",
+      "warehouse-low-stock",
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
+    enabled: Boolean(isWarehouse && workspace && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listInventory(
+        workspace!,
+        { tracked: true, lowStock: true, page: 1, pageSize: 1 },
+        signal,
+      ),
+  });
+
   const incomingTransfersQuery = useQuery({
     queryKey: [
       "manager-home",
@@ -167,7 +186,7 @@ export function ManagerWarehouseHome({
   const receivablePos = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
     isReceivablePurchaseOrderStatus(po.status),
   );
-  const lowStock = overview?.lowStockProductCount ?? 0;
+  const lowStock = lowStockQuery.data?.totalCount ?? 0;
   const expiry = (overview?.expiredLotCount ?? 0) + (overview?.nearExpiryLotCount ?? 0);
 
   const attentionItems = buildManagerAttentionItems(

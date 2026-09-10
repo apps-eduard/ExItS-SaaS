@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
 import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
@@ -30,8 +30,16 @@ const TRACKING_FILTERS: Array<{
   { value: "untracked", key: "untracked", labelKey: "inventory.filterUntracked" },
 ];
 
+function parseLowStockFlag(value: string | null): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 export function InventoryListPage() {
   const { t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const lowStockOnly = parseLowStockFlag(searchParams.get("lowStock"));
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const allowView = canViewInventory(sessionGrant);
   const allowManage = canManageInventory(sessionGrant);
@@ -39,7 +47,9 @@ export function InventoryListPage() {
   const isWarehouse = isWarehouseBranch(boundWorkspace?.branchType);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>("all");
+  const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>(
+    lowStockOnly ? "tracked" : "all",
+  );
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -157,18 +167,34 @@ export function InventoryListPage() {
   }, [multiBranch, allowView, allowManage, isWarehouse, t]);
 
   const query = useQuery({
-    queryKey: ["inventory", workspace?.organizationId, workspace?.branchId, debounced],
+    queryKey: [
+      "inventory",
+      workspace?.organizationId,
+      workspace?.branchId,
+      debounced,
+      lowStockOnly,
+      trackingFilter,
+    ],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) =>
-      listInventory(workspace!, { search: debounced || undefined, pageSize: 50 }, signal),
+      listInventory(
+        workspace!,
+        {
+          search: debounced || undefined,
+          pageSize: 50,
+          tracked:
+            lowStockOnly || trackingFilter === "tracked"
+              ? true
+              : trackingFilter === "untracked"
+                ? false
+                : undefined,
+          lowStock: lowStockOnly ? true : undefined,
+        },
+        signal,
+      ),
   });
 
-  const items = useMemo(() => {
-    const all = query.data?.items ?? [];
-    if (trackingFilter === "tracked") return all.filter((item) => item.isTracked);
-    if (trackingFilter === "untracked") return all.filter((item) => !item.isTracked);
-    return all;
-  }, [query.data?.items, trackingFilter]);
+  const items = useMemo(() => query.data?.items ?? [], [query.data?.items]);
 
   if (!workspace) {
     return <BranchRequiredPanel title={t("inventory.title")} />;

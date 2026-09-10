@@ -39,6 +39,7 @@ describe("buildManagerAttentionItems", () => {
     ]);
     expect(items.find((i) => i.kind === "expiry")?.count).toBe(3);
     expect(items.find((i) => i.kind === "utang")?.amount).toBe(250.5);
+    expect(items.find((i) => i.kind === "lowStock")?.href).toBe("/inventory?lowStock=1");
   });
 
   it("omits orders when includeOrders is false", () => {

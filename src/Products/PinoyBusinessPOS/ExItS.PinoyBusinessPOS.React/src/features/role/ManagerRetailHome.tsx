@@ -30,6 +30,7 @@ import {
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
+import { listInventory } from "@/api/pos/pos-inventory-client";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import {
   isReceivablePurchaseOrderStatus,
@@ -216,6 +217,19 @@ export function ManagerRetailHome() {
     queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
   });
 
+  /** Branch-scoped monitored low stock (same engine as Inventory / Low stock settings). */
+  const lowStockQuery = useQuery({
+    queryKey: ["manager-home", "low-stock", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listInventory(
+        workspace!,
+        { tracked: true, lowStock: true, page: 1, pageSize: 1 },
+        signal,
+      ),
+  });
+
   const ordersQuery = useQuery({
     queryKey: ["manager-home", "orders-submitted", workspace?.organizationId, branchId],
     enabled: Boolean(workspace && branchId && canOrders),
@@ -257,7 +271,7 @@ export function ManagerRetailHome() {
     (item) => item.status === "InTransit" || item.status === "PartiallyReceived",
   ).length;
   const submittedOrders = ordersQuery.data?.totalCount ?? 0;
-  const lowStock = overview?.lowStockProductCount ?? dashboard?.lowStockProductCount ?? 0;
+  const lowStock = lowStockQuery.data?.totalCount ?? 0;
   const expiry =
     (overview?.expiredLotCount ?? 0) + (overview?.nearExpiryLotCount ?? 0);
   const overdueUtang = dashboard?.overdueUtangAmount ?? 0;
