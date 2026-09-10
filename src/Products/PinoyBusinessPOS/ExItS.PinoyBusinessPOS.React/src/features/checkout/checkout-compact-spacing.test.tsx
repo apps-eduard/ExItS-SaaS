@@ -41,6 +41,10 @@ describe("POS-CHECKOUT-COMPACT-SPACING-V1", () => {
     expect(source).not.toContain("listCustomers(");
     expect(source).not.toContain('isUtang ? "people"');
     expect(source).toContain("Keep selectedCustomer across Cash");
+    expect(source).toContain("checkout-utang-credit-summary");
+    expect(source).not.toContain('data-testid="checkout-utang-due-date"');
+    expect(source).toContain("resolveUtangDirectorySelectBlock");
+    expect(source).toContain("policyDueDate");
   });
 
   it("CheckoutCashPage toasts payment success before opening summary", () => {

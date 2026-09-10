@@ -2621,6 +2621,157 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
+.checkout-credit-directory {
+  margin-top: 0.35rem;
+  min-width: 0;
+}
+
+.checkout-credit-directory__head,
+.checkout-credit-directory__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(3.5rem, 0.45fr) minmax(7rem, 1fr) minmax(4.5rem, 0.7fr);
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+.checkout-credit-directory__head {
+  padding: 0 0.5rem 0.35rem;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+  border-bottom: 1px solid var(--exits-border);
+}
+
+.checkout-credit-directory__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checkout-credit-directory__row {
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkout-credit-directory__row:hover {
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, transparent);
+}
+
+.checkout-credit-directory__row--selected {
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+}
+
+.checkout-credit-directory__name {
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-credit-directory__type,
+.checkout-credit-directory__available {
+  font-size: var(--exits-text-xs);
+  color: var(--exits-text-muted);
+}
+
+.checkout-credit-directory__available {
+  text-align: right;
+  color: var(--exits-text);
+  font-weight: var(--exits-font-weight-medium);
+}
+
+.checkout-utang-credit-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
+}
+
+.checkout-utang-credit-summary__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.checkout-utang-credit-summary__name {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.checkout-utang-credit-summary__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  font-size: var(--exits-text-xs);
+}
+
+.checkout-utang-credit-summary__metrics div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.checkout-utang-credit-summary__metrics dt {
+  margin: 0;
+  color: var(--exits-text-muted);
+}
+
+.checkout-utang-credit-summary__metrics dd {
+  margin: 0;
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+@media (max-width: 40rem) {
+  .checkout-credit-directory__head {
+    display: none;
+  }
+
+  .checkout-credit-directory__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name status"
+      "type available";
+    row-gap: 0.2rem;
+  }
+
+  .checkout-credit-directory__name {
+    grid-area: name;
+  }
+
+  .checkout-credit-directory__type {
+    grid-area: type;
+  }
+
+  .checkout-credit-directory__status {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .checkout-credit-directory__available {
+    grid-area: available;
+    justify-self: end;
+  }
+}
+
 .checkout-customer-selected {
   display: flex;
   flex-direction: column;

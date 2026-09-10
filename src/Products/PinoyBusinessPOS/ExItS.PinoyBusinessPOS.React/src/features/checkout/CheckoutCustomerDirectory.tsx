@@ -6,6 +6,10 @@ import {
   isCheckoutBusinessDirectoryRow,
   isCheckoutPerson,
 } from "@/features/checkout/checkout-customer-option";
+import {
+  checkoutCreditStatusLabelKey,
+  checkoutCreditStatusTone,
+} from "@/features/checkout/checkout-utang-credit";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 import type { KindFilter } from "@/features/customers/customers-kind";
 import {
@@ -14,8 +18,8 @@ import {
 } from "@/features/customers/format-pos-customer-label";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
-import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 
@@ -54,27 +58,21 @@ export function CheckoutCustomerSelectedCard({
   );
 }
 
-function directoryCreditLine(
-  customer: CheckoutPersonOption,
-  t: (key: MessageKey) => string,
-): string {
-  if (isCheckoutBusinessDirectoryRow(customer)) {
-    return t("checkout.directoryCredit.b2bBlocked");
+function directoryCreditStatus(customer: CheckoutCustomerOption): string | null {
+  if (isCheckoutBusiness(customer)) {
+    return null;
   }
-  switch (customer.creditStatus) {
-    case "Approved":
-      return t("checkout.directoryCredit.approvedAvailable").replace(
-        "{amount}",
-        formatPeso(customer.availableCredit ?? 0),
-      );
-    case "PendingApproval":
-      return t("checkout.directoryCredit.pending");
-    case "Disabled":
-      return t("checkout.directoryCredit.disabled");
-    case "NotConfigured":
-    default:
-      return t("checkout.directoryCredit.notConfigured");
+  if (!isCheckoutPerson(customer)) {
+    return "NotConfigured";
   }
+  return customer.creditStatus ?? "NotConfigured";
+}
+
+function directoryAvailableLabel(customer: CheckoutPersonOption): string {
+  if ((customer.creditStatus ?? "").trim() !== "Approved") {
+    return "—";
+  }
+  return formatPeso(customer.availableCredit ?? 0);
 }
 
 type CheckoutCustomerDirectoryProps = {
@@ -97,7 +95,7 @@ type CheckoutCustomerDirectoryProps = {
   includeWalkInsWhenIdle?: boolean;
   /** Override idle empty copy (e.g. Utang people-only explanation). */
   idleEmptyMessage?: string;
-  /** Utang: compact credit status under person rows (does not hide ineligible customers). */
+  /** Utang: compact credit directory (does not hide ineligible customers). */
   showCreditStatus?: boolean;
 };
 
@@ -232,16 +230,89 @@ export function CheckoutCustomerDirectory({
         >
           {emptyCopy}
         </p>
+      ) : showCreditStatus ? (
+        <div className="checkout-credit-directory" data-testid="checkout-credit-directory">
+          <div className="checkout-credit-directory__head" aria-hidden>
+            <span>{t("checkout.directoryCredit.colCustomer")}</span>
+            <span>{t("checkout.directoryCredit.colType")}</span>
+            <span>{t("checkout.directoryCredit.colStatus")}</span>
+            <span>{t("checkout.directoryCredit.colAvailable")}</span>
+          </div>
+          <ul className="checkout-credit-directory__list" data-testid="checkout-customer-list">
+            {visible.map((customer) => {
+              const key = checkoutOptionKey(customer);
+              const selected =
+                selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
+              const isB2b = isCheckoutBusinessDirectoryRow(customer);
+              const status = directoryCreditStatus(customer);
+              const available =
+                isCheckoutPerson(customer) && !isCheckoutBusiness(customer)
+                  ? directoryAvailableLabel(customer)
+                  : "—";
+              return (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className={cn(
+                      "checkout-credit-directory__row",
+                      selected && "checkout-credit-directory__row--selected",
+                    )}
+                    data-testid={
+                      isCheckoutBusiness(customer)
+                        ? `checkout-business-${customer.connectionId}`
+                        : `checkout-customer-${customer.customerId}`
+                    }
+                    disabled={disabled}
+                    aria-pressed={selected}
+                    aria-label={checkoutCustomerTitle(customer, walkInLabel)}
+                    onClick={() => onSelect(customer)}
+                  >
+                    <span
+                      className="checkout-credit-directory__name"
+                      data-testid="checkout-credit-directory-name"
+                    >
+                      {checkoutCustomerTitle(customer, walkInLabel)}
+                    </span>
+                    <span
+                      className="checkout-credit-directory__type"
+                      data-testid="checkout-credit-directory-type"
+                    >
+                      {isB2b
+                        ? t("checkout.directoryCredit.typeB2b")
+                        : t("checkout.directoryCredit.typePerson")}
+                    </span>
+                    <span
+                      className="checkout-credit-directory__status"
+                      data-testid="checkout-customer-credit-line"
+                    >
+                      {status ? (
+                        <StatusChip tone={checkoutCreditStatusTone(status)}>
+                          {t(checkoutCreditStatusLabelKey(status))}
+                        </StatusChip>
+                      ) : (
+                        <span className="text-muted">
+                          {t("checkout.directoryCredit.availableEmDash")}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="checkout-credit-directory__available tabular-nums"
+                      data-testid="checkout-credit-directory-available"
+                    >
+                      {available}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : (
         <ul className="checkout-customer-list" data-testid="checkout-customer-list">
           {visible.map((customer) => {
             const key = checkoutOptionKey(customer);
             const selected =
               selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
-            const creditLine =
-              showCreditStatus && isCheckoutPerson(customer)
-                ? directoryCreditLine(customer, t)
-                : null;
             return (
               <li key={key}>
                 <button
@@ -266,14 +337,6 @@ export function CheckoutCustomerDirectory({
                     overlay={overlay}
                     selected={selected}
                   />
-                  {creditLine ? (
-                    <p
-                      className="checkout-customer-row__credit mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted"
-                      data-testid="checkout-customer-credit-line"
-                    >
-                      {creditLine}
-                    </p>
-                  ) : null}
                 </button>
               </li>
             );

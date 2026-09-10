@@ -1308,11 +1308,12 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "checkout.confirming": "Gina-record ang sale?",
 
-  "checkout.creditPolicy.afterSale": "Human niini nga sale",
+  "checkout.creditPolicy.afterSale": "After sale",
 
   "checkout.creditPolicy.available": "Available",
 
   "checkout.creditPolicy.due": "Due",
+  "checkout.creditPolicy.dueWithDate": "Due {date}",
 
   "checkout.creditPolicy.limit": "Limit",
 
@@ -1322,14 +1323,14 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "checkout.creditPolicy.notApproved":
     "Giblock ang Utang hangtod Approved ang credit policy niining customer.",
-  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval.",
-  "checkout.creditPolicy.notConfigured": "Utang is not approved for this customer.",
-  "checkout.creditPolicy.disabled": "Customer credit is disabled.",
+  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval. Utang cannot be used yet.",
+  "checkout.creditPolicy.notConfigured": "Credit is not enabled for this customer.",
+  "checkout.creditPolicy.disabled": "Customer credit is currently paused.",
 
   "checkout.creditPolicy.outstanding": "Outstanding",
 
   "checkout.creditPolicy.overLimit":
-    "Molapas kini nga sale sa available credit sa customer.",
+    "Credit limit exceeded. Available credit is {amount}.",
 
   "checkout.creditPolicy.thisSale": "Kini nga sale",
 
@@ -1478,7 +1479,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.customerKindBusinesses": "Businesses",
   "checkout.badge.b2b": "B2B",
   "checkout.b2bUtangBlocked":
-    "Direct credit is not configured for this business. Use Cash, GCash, or the Purchase Order payment terms.",
+    "Business credit is configured, but Business Utang checkout is not available yet.",
 
   "checkout.orderPreview": "Preview sa sale",
 
@@ -1536,9 +1537,26 @@ export const cebPH: Record<keyof typeof en, string> = {
     "No checkout customers yet. People and businesses share this directory — Utang requires an Approved person with available credit.",
   "checkout.directoryCredit.approvedAvailable": "Approved • Available {amount}",
   "checkout.directoryCredit.pending": "Pending approval",
-  "checkout.directoryCredit.notConfigured": "Utang not approved",
-  "checkout.directoryCredit.disabled": "Credit disabled",
+  "checkout.directoryCredit.notConfigured": "Credit not enabled",
+  "checkout.directoryCredit.disabled": "Paused",
   "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
+  "checkout.utangSelect.pendingApproval": "Customer credit is pending approval. Utang cannot be used yet.",
+  "checkout.utangSelect.notConfigured": "Credit is not enabled for this customer.",
+  "checkout.utangSelect.disabled": "Customer credit is currently paused.",
+  "checkout.utangSelect.overLimit": "Credit limit exceeded. Available credit is {amount}.",
+  "checkout.utangSelect.b2bNotAvailable": "Business credit is configured, but Business Utang checkout is not available yet.",
+  "checkout.directoryCredit.colCustomer": "Customer",
+  "checkout.directoryCredit.colType": "Type",
+  "checkout.directoryCredit.colStatus": "Credit status",
+  "checkout.directoryCredit.colAvailable": "Available",
+  "checkout.directoryCredit.typePerson": "Person",
+  "checkout.directoryCredit.typeB2b": "B2B",
+  "checkout.directoryCredit.status.Approved": "Approved",
+  "checkout.directoryCredit.status.PendingApproval": "Pending approval",
+  "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
+  "checkout.directoryCredit.status.Disabled": "Paused",
+  "checkout.directoryCredit.availableEmDash": "—",
+
 
   "checkout.utangDueDateOverride": "Due date override (opsyonal)",
 

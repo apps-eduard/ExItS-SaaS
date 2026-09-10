@@ -170,6 +170,20 @@ describe("CheckoutCustomerDirectory", () => {
       creditStatus: "Approved",
       availableCredit: 12500,
     };
+    const paused: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      displayName: "Ana Cruz",
+      status: "Active",
+      creditStatus: "Disabled",
+    };
+    const notEnabled: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      displayName: "Pedro Reyes",
+      status: "Active",
+      creditStatus: "NotConfigured",
+    };
 
     render(
       <AppProviders>
@@ -179,7 +193,7 @@ describe("CheckoutCustomerDirectory", () => {
           searchLabel="Search customers"
           searchValue=""
           onSearchChange={vi.fn()}
-          customers={[approved, pending]}
+          customers={[approved, pending, paused, notEnabled]}
           customersLoading={false}
           selectedCustomer={null}
           onSelect={vi.fn()}
@@ -189,13 +203,20 @@ describe("CheckoutCustomerDirectory", () => {
       </AppProviders>,
     );
 
+    expect(screen.getByTestId("checkout-credit-directory")).toBeInTheDocument();
     expect(screen.getByTestId(`checkout-customer-${approved.customerId}`)).toHaveTextContent(
       "Approved",
     );
     expect(screen.getByTestId(`checkout-customer-${pending.customerId}`)).toHaveTextContent(
       "Pending approval",
     );
-    expect(screen.getAllByTestId("checkout-customer-credit-line")).toHaveLength(2);
+    expect(screen.getByTestId(`checkout-customer-${paused.customerId}`)).toHaveTextContent(
+      "Paused",
+    );
+    expect(screen.getByTestId(`checkout-customer-${notEnabled.customerId}`)).toHaveTextContent(
+      "Credit not enabled",
+    );
+    expect(screen.getAllByTestId("checkout-customer-credit-line")).toHaveLength(4);
   });
 
   it("shows load error instead of empty when the directory request failed", () => {
