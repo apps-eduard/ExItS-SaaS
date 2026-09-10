@@ -1314,7 +1314,12 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "checkout.customerEmpty": "Awan ti nahaum a active customers.",
 
+  "checkout.customerEmptyBusinesses": "Awan ti nahaum a business. Padasen ti nagan wenno ORG######.",
+
   "checkout.customerIdleEmpty": "Agbirok babaen ti nagan wenno numero para iti walk-in, wenno i-scan ti ExItS ID.",
+
+  "checkout.customerIdleEmptyBusinesses":
+    "Awan pay business. Ti Active B2B connections ken ORG-linked business customers agparang ditoy.",
 
   "checkout.customerLoading": "Agkarkarga iti customers?",
 
@@ -1325,6 +1330,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.customerNotLinkedDenied": "Saan a naka-link daytoy a customer. Agkiddaw iti manager nga manginayon wenno mang-link iti customer.",
 
   "checkout.customerSearchHint": "Agbirok babaen ti nagan wenno numero. I-scan ti ExItS ID para iti naka-link a customer.",
+
+  "checkout.customerSearchHintBusinesses":
+    "Agbirok babaen ti nagan ti business wenno ORG######. Ti Active B2B connections para iti Direct Organization sales.",
+
+  "checkout.customerSearchHintPeople": "Agbirok babaen ti nagan wenno numero. I-scan ti ExItS ID para iti naka-link a customer.",
 
   "checkout.customerSection": "Customer",
 
@@ -2067,6 +2077,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
+
+  "customers.orgNeedsBuyerConnection":
+    "Masapul ti Active supplier connection para iti Direct B2B checkout. Bagaen daytoy nga organization nga ag-connect kenka iti Suppliers, ket awaten ti request. Kalpasanna, agparangda iti Customers → Businesses ken iti Sell checkout.",
+
+  "customers.orgNeedsConnectionAction": "Kasano ti ag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
   "customers.orgOpenExistingCustomer": "Open existing customer",
   "customers.badge.local": "Local",

@@ -11,6 +11,7 @@ import {
   canViewCustomers,
 } from "@/access/pos-capabilities";
 import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
+import { isPersonPosCustomer } from "@/features/customers/customer-business-list";
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
@@ -469,6 +470,7 @@ export function CheckoutCashPage() {
 
       const mapPeopleFromList = (page: Awaited<ReturnType<typeof listCustomers>>) =>
         page.items
+          .filter(isPersonPosCustomer)
           .map((c) =>
             mapCheckoutSearchItemToOption({
               kind: "Customer",
@@ -481,6 +483,9 @@ export function CheckoutCashPage() {
                 notes: c.notes,
               }),
               platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
+              buyerOrganizationId: c.linkedBuyerOrganizationId ?? null,
+              buyerPublicOrganizationId: c.linkedBuyerPublicOrganizationId ?? null,
+              partyKind: c.partyKind ?? null,
             }),
           )
           .filter((x): x is CheckoutCustomerOption => x != null);

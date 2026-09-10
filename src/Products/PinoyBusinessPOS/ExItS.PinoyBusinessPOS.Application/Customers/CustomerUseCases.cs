@@ -37,13 +37,13 @@ public sealed class POSCustomerQueryService
     private readonly IPOSCustomerRepository _customers;
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
-    private readonly IConnectedSupplierRelationshipRepository? _relationships;
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
 
     public POSCustomerQueryService(
         IPOSCustomerRepository customers,
         PartyBranchAccessService branchAccess,
         IPartyBranchAccessActorAccessor actorAccessor,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository relationships)
     {
         _customers = customers;
         _branchAccess = branchAccess;
@@ -231,15 +231,17 @@ public sealed class POSCustomerQueryService
                     cancellationToken)
                 .ConfigureAwait(false);
             peopleTotal = total;
-            merged.AddRange(items.Select(c => new CheckoutCustomerSearchItemDto(
-                CheckoutCustomerSearchItemDto.KindCustomer,
-                c.DisplayName,
-                c.Status.ToString(),
-                c.Id.Value,
-                c.MobileNumber)));
+            merged.AddRange(items
+                .Where(c => !includeBusiness || !IsCheckoutBusinessParty(c))
+                .Select(c => new CheckoutCustomerSearchItemDto(
+                    CheckoutCustomerSearchItemDto.KindCustomer,
+                    c.DisplayName,
+                    c.Status.ToString(),
+                    c.Id.Value,
+                    c.MobileNumber)));
         }
 
-        if (includeBusiness && _relationships is not null)
+        if (includeBusiness)
         {
             var supplier = PosOrganizationId.From(organizationId);
             var rows = await _relationships
@@ -251,8 +253,37 @@ public sealed class POSCustomerQueryService
                 .OrderBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
                     StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            businessTotal = businesses.Count;
+            var connectedBuyerIds = businesses
+                .Select(r => r.BuyerOrganizationId.Value)
+                .ToHashSet();
             merged.AddRange(businesses.Select(MapBusinessCheckoutItem));
+
+            // POS Business party rows (e.g. ORG-linked customers) so Cashiers can attach them on
+            // Cash/GCash even before / without an Active OrganizationConnection. Prefer the
+            // connection row when both exist for the same buyer org.
+            var restrict = await _branchAccess
+                .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+                .ConfigureAwait(false);
+            var (posItems, _) = await _customers
+                .ListAsync(
+                    supplier,
+                    CustomerStatus.Active,
+                    hasTerm ? term : null,
+                    0,
+                    200,
+                    restrict,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var posBusiness = posItems
+                .Where(IsCheckoutBusinessParty)
+                .Where(c =>
+                    c.LinkedBuyerOrganizationId is null
+                    || !connectedBuyerIds.Contains(c.LinkedBuyerOrganizationId.Value))
+                .Where(c => !hasTerm || MatchesPosBusinessSearch(c, term))
+                .OrderBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            businessTotal = businesses.Count + posBusiness.Count;
+            merged.AddRange(posBusiness.Select(MapPosBusinessCheckoutItem));
         }
 
         var ordered = merged
@@ -302,6 +333,20 @@ public sealed class POSCustomerQueryService
         return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsCheckoutBusinessParty(POSCustomer customer) =>
+        customer.PartyKind == CustomerPartyKind.Business
+        || customer.LinkedBuyerOrganizationId is not null;
+
+    private static bool MatchesPosBusinessSearch(POSCustomer customer, string term)
+    {
+        var haystack = string.Join(
+            ' ',
+            customer.DisplayName,
+            customer.LinkedBuyerPublicOrganizationId ?? string.Empty,
+            customer.MobileNumber ?? string.Empty);
+        return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static CheckoutCustomerSearchItemDto MapBusinessCheckoutItem(ConnectedSupplierRelationship r) =>
         new(
             CheckoutCustomerSearchItemDto.KindBusiness,
@@ -314,6 +359,22 @@ public sealed class POSCustomerQueryService
             ConnectionId: r.Id.Value,
             BuyerOrganizationId: r.BuyerOrganizationId.Value,
             BuyerPublicOrganizationId: r.BuyerPublicOrganizationIdSnapshot);
+
+    /// <summary>
+    /// POS Business party for checkout attach (Cash/GCash via customerId). Not Direct B2B Organization
+    /// party — that requires <see cref="MapBusinessCheckoutItem"/> (Active connection).
+    /// </summary>
+    private static CheckoutCustomerSearchItemDto MapPosBusinessCheckoutItem(POSCustomer customer) =>
+        new(
+            CheckoutCustomerSearchItemDto.KindCustomer,
+            customer.DisplayName,
+            customer.Status.ToString(),
+            customer.Id.Value,
+            customer.MobileNumber,
+            ConnectionId: null,
+            BuyerOrganizationId: customer.LinkedBuyerOrganizationId,
+            BuyerPublicOrganizationId: customer.LinkedBuyerPublicOrganizationId,
+            PartyKind: CustomerPartyKind.Business.ToString());
 
     public async Task<CustomerSyncPageDto> ListForSyncAsync(
         Guid organizationId,

@@ -48,7 +48,11 @@ export function checkoutCustomerHasExItsCorrelation(customer: CheckoutCustomerOp
   if (customer.kind === "Business") {
     return Boolean(customer.buyerPublicOrganizationId);
   }
-  return Boolean(customer.linkedPersonalPublicUserId || customer.resolvedPersonalDisplayName);
+  return Boolean(
+    customer.linkedPersonalPublicUserId ||
+      customer.resolvedPersonalDisplayName ||
+      customer.linkedBuyerPublicOrganizationId,
+  );
 }
 
 export function shouldShowCheckoutCustomerWhenIdle(customer: CheckoutCustomerOption): boolean {

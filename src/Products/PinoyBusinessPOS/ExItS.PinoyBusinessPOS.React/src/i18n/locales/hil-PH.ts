@@ -1314,7 +1314,12 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "checkout.customerEmpty": "Wala sing nahaum nga active customers.",
 
+  "checkout.customerEmptyBusinesses": "Wala sing nahaum nga business. Tilawi ang ngalan ukon ORG######.",
+
   "checkout.customerIdleEmpty": "Pangita sa ngalan ukon numero para sa walk-in, ukon i-scan ang ExItS ID.",
+
+  "checkout.customerIdleEmptyBusinesses":
+    "Wala pa business. Ang Active B2B connections kag ORG-linked business customers magapakita diri.",
 
   "checkout.customerLoading": "Nagakarga sang customers?",
 
@@ -1325,6 +1330,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.customerNotLinkedDenied": "Wala naka-link ini nga customer. Pangayo sa manager nga magdugang ukon mag-link sang customer.",
 
   "checkout.customerSearchHint": "Pangita sa ngalan ukon numero. I-scan ang ExItS ID para sa naka-link nga customer.",
+
+  "checkout.customerSearchHintBusinesses":
+    "Pangita sa ngalan sang business ukon ORG######. Ang Active B2B connections para sa Direct Organization sales.",
+
+  "checkout.customerSearchHintPeople": "Pangita sa ngalan ukon numero. I-scan ang ExItS ID para sa naka-link nga customer.",
 
   "checkout.customerSection": "Customer",
 
@@ -2067,6 +2077,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
+
+  "customers.orgNeedsBuyerConnection":
+    "Kinahanglan sang Active supplier connection para sa Direct B2B checkout. Sugua ini nga organization nga mag-connect sa imo sa Suppliers, dayon batuna ang request. Pagkatapos, magapakita sila sa Customers → Businesses kag sa Sell checkout.",
+
+  "customers.orgNeedsConnectionAction": "Paano magkonekta",
   "customers.orgOpenExistingConnection": "Open existing connection",
   "customers.orgOpenExistingCustomer": "Open existing customer",
   "customers.badge.local": "Local",

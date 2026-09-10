@@ -1314,7 +1314,12 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "checkout.customerEmpty": "Walang tumugmang active customer.",
 
+  "checkout.customerEmptyBusinesses": "Walang tumugmang business. Subukan ang pangalan o ORG######.",
+
   "checkout.customerIdleEmpty": "Maghanap sa pangalan o numero para sa walk-in, o i-scan ang ExItS ID.",
+
+  "checkout.customerIdleEmptyBusinesses":
+    "Wala pang business. Ang Active B2B connections at ORG-linked business customers ay lalabas dito.",
 
   "checkout.customerLoading": "Naglo-load ng customers?",
 
@@ -1325,6 +1330,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerNotLinkedDenied": "Hindi naka-link ang customer na ito. Hilingin sa manager na magdagdag o mag-link ng customer.",
 
   "checkout.customerSearchHint": "Maghanap sa pangalan o numero. I-scan ang ExItS ID para sa naka-link na customer.",
+
+  "checkout.customerSearchHintBusinesses":
+    "Maghanap sa pangalan ng business o ORG######. Ang Active B2B connections ay para sa Direct Organization sales.",
+
+  "checkout.customerSearchHintPeople": "Maghanap sa pangalan o numero. I-scan ang ExItS ID para sa naka-link na customer.",
 
   "checkout.customerSection": "Customer",
 
@@ -2067,6 +2077,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
+
+  "customers.orgNeedsBuyerConnection":
+    "Kailangan ng Active supplier connection para sa Direct B2B checkout. Sabihin sa organization na ito na mag-connect sa iyo sa Suppliers, tapos tanggapin ang request. Pagkatapos, lalabas sila sa Customers → Businesses at sa Sell checkout.",
+
+  "customers.orgNeedsConnectionAction": "Paano mag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
   "customers.orgOpenExistingCustomer": "Open existing customer",
   "customers.badge.local": "Local",

@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.UnitTests.Parties;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Customers;
 
@@ -15,7 +17,7 @@ public sealed class LinkedPersonalCustomerQueryTests
         var publicId = "EX-4827-1936";
         var repo = new LinkedPersonalInMemoryCustomerRepository();
         var (service, actor) = PartyBranchAccessTestSupport.Create();
-        var queries = new POSCustomerQueryService(repo, service, actor);
+        var queries = new POSCustomerQueryService(repo, service, actor, new EmptyRelationships());
 
         var now = DateTimeOffset.Parse("2026-08-01T00:00:00Z");
         var active = POSCustomer.Create(
@@ -130,6 +132,32 @@ public sealed class LinkedPersonalCustomerQueryTests
         }
 
         public Task UpdateAsync(POSCustomer customer, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyRelationships : IConnectedSupplierRelationshipRepository
+    {
+        public Task<ConnectedSupplierRelationship?> GetAsync(
+            ConnectedSupplierRelationshipId id,
+            CancellationToken ct = default) =>
+            Task.FromResult<ConnectedSupplierRelationship?>(null);
+
+        public Task<ConnectedSupplierRelationship?> FindOpenAsync(
+            PosOrganizationId buyer,
+            PosOrganizationId supplier,
+            CancellationToken ct = default) =>
+            Task.FromResult<ConnectedSupplierRelationship?>(null);
+
+        public Task<IReadOnlyList<ConnectedSupplierRelationship>> ListAsync(
+            PosOrganizationId organizationId,
+            bool supplierView,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedSupplierRelationship>>([]);
+
+        public Task AddAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
             Task.CompletedTask;
     }
 }

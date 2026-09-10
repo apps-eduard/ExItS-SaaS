@@ -48,16 +48,19 @@ describe("checkoutCustomerTitle", () => {
 
 describe("visibleCheckoutCustomers", () => {
   const walkIn = {
+    kind: "Customer" as const,
     customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     displayName: "Local Walkin 20260826230002",
     status: "Active",
   };
   const named = {
+    kind: "Customer" as const,
     customerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     displayName: "Juan Dela Cruz",
     status: "Active",
   };
   const linked = {
+    kind: "Customer" as const,
     customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     displayName: "Mica Linked 20260826230121",
     status: "Active",

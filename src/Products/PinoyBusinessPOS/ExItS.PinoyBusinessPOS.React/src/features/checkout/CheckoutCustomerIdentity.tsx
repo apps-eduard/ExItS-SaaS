@@ -1,6 +1,9 @@
 import { Check } from "lucide-react";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
-import { isCheckoutBusiness } from "@/features/checkout/checkout-customer-option";
+import {
+  isCheckoutBusiness,
+  isCheckoutBusinessDirectoryRow,
+} from "@/features/checkout/checkout-customer-option";
 import {
   checkoutCustomerHasExItsCorrelation,
   checkoutCustomerTitle,
@@ -34,10 +37,17 @@ export function CheckoutCustomerIdentity({
   const walkInLabel = t("checkout.walkInCustomer");
   const title = checkoutCustomerTitle(customer, walkInLabel);
 
-  if (isCheckoutBusiness(customer)) {
-    const orgId = customer.buyerPublicOrganizationId?.trim() || null;
+  if (isCheckoutBusiness(customer) || isCheckoutBusinessDirectoryRow(customer)) {
+    const orgId =
+      customer.kind === "Business"
+        ? customer.buyerPublicOrganizationId?.trim() || null
+        : customer.linkedBuyerPublicOrganizationId?.trim() || null;
+    const isDirectB2b = isCheckoutBusiness(customer);
     return (
-      <span className={cn("checkout-customer-identity", className)} data-testid="checkout-b2b-identity">
+      <span
+        className={cn("checkout-customer-identity", className)}
+        data-testid={isDirectB2b ? "checkout-b2b-identity" : "checkout-business-party-identity"}
+      >
         <span className="checkout-customer-identity__avatar" aria-hidden>
           {displayInitial(title)}
         </span>

@@ -13,6 +13,11 @@ export type CheckoutPersonOption = {
   platformBusinessCustomerId?: string | null;
   /** Personal display name from ExItS ID / QR resolve, when the cashier just looked them up. */
   resolvedPersonalDisplayName?: string | null;
+  /** Linked buyer Organization id when this POS row is an ORG-linked business customer. */
+  linkedBuyerOrganizationId?: string | null;
+  linkedBuyerPublicOrganizationId?: string | null;
+  /** Person (default) or Business party — Business rows appear under the Businesses filter. */
+  partyKind?: "Person" | "Business" | null;
 };
 
 /** Active B2B Organization counterparty — no POSCustomer row. */
@@ -39,6 +44,25 @@ export function isCheckoutPerson(
   return option?.kind === "Customer";
 }
 
+/** Active B2B connection or POS Business party (ORG-linked / partyKind Business). */
+export function isCheckoutBusinessDirectoryRow(
+  option: CheckoutCustomerOption | null | undefined,
+): boolean {
+  if (!option) {
+    return false;
+  }
+  if (option.kind === "Business") {
+    return true;
+  }
+  if (option.kind !== "Customer") {
+    return false;
+  }
+  if (option.linkedBuyerOrganizationId?.trim()) {
+    return true;
+  }
+  return (option.partyKind ?? "Person").trim().toLowerCase() === "business";
+}
+
 export function checkoutOptionKey(option: CheckoutCustomerOption): string {
   return option.kind === "Business" ? `b:${option.connectionId}` : `c:${option.customerId}`;
 }
@@ -56,6 +80,7 @@ export function mapCheckoutSearchItemToOption(item: {
   linkedPersonalPublicUserId?: string | null;
   platformBusinessCustomerId?: string | null;
   resolvedPersonalDisplayName?: string | null;
+  partyKind?: string | null;
 }): CheckoutCustomerOption | null {
   if (item.kind === "Business") {
     if (!item.connectionId || !item.buyerOrganizationId) {
@@ -75,6 +100,16 @@ export function mapCheckoutSearchItemToOption(item: {
     return null;
   }
 
+  const partyRaw = item.partyKind?.trim();
+  const partyKind =
+    partyRaw && partyRaw.toLowerCase() === "business"
+      ? ("Business" as const)
+      : partyRaw && partyRaw.toLowerCase() === "person"
+        ? ("Person" as const)
+        : item.buyerOrganizationId
+          ? ("Business" as const)
+          : null;
+
   return {
     kind: "Customer",
     customerId: item.customerId,
@@ -84,5 +119,8 @@ export function mapCheckoutSearchItemToOption(item: {
     linkedPersonalPublicUserId: item.linkedPersonalPublicUserId ?? null,
     platformBusinessCustomerId: item.platformBusinessCustomerId ?? null,
     resolvedPersonalDisplayName: item.resolvedPersonalDisplayName ?? null,
+    linkedBuyerOrganizationId: item.buyerOrganizationId ?? null,
+    linkedBuyerPublicOrganizationId: item.buyerPublicOrganizationId ?? null,
+    partyKind,
   };
 }

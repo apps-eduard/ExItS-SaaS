@@ -58,7 +58,9 @@ public sealed record PosCustomerPagedResult(
 
 /// <summary>
 /// Narrow checkout selection row for CreateSale.
-/// Kind=Customer: POS people. Kind=Business: Active B2B Organization counterparty (no POSCustomer).
+/// Kind=Customer: POS people or POS Business party (attach via customerId).
+/// Kind=Business: Active B2B Organization counterparty (no POSCustomer; BuyerConnectionId).
+/// PartyKind is set for POS Business party Customer rows so the Businesses filter can show them.
 /// </summary>
 public sealed record CheckoutCustomerSearchItemDto(
     string Kind,
@@ -68,7 +70,8 @@ public sealed record CheckoutCustomerSearchItemDto(
     string? MobileNumber = null,
     Guid? ConnectionId = null,
     Guid? BuyerOrganizationId = null,
-    string? BuyerPublicOrganizationId = null)
+    string? BuyerPublicOrganizationId = null,
+    string? PartyKind = null)
 {
     public const string KindCustomer = "Customer";
     public const string KindBusiness = "Business";

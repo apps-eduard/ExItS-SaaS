@@ -317,6 +317,7 @@ export const checkoutCustomerSearchItemSchema = z.object({
   connectionId: guidSchema.nullable().optional(),
   buyerOrganizationId: guidSchema.nullable().optional(),
   buyerPublicOrganizationId: z.string().nullable().optional(),
+  partyKind: z.string().nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({

@@ -2212,10 +2212,16 @@ export const en = {
   "checkout.utangDueDate": "Due date (optional)",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",
   "checkout.utangDebtHint": "Debt recorded equals Amount to Pay.",
-  "checkout.customerLoading": "Loading customers?",
+  "checkout.customerLoading": "Loading customers…",
   "checkout.customerEmpty": "No active customers matched.",
+  "checkout.customerEmptyBusinesses": "No businesses matched. Try the business name or ORG######.",
   "checkout.customerIdleEmpty": "Search by name or phone to find a walk-in, or scan an ExItS ID.",
+  "checkout.customerIdleEmptyBusinesses":
+    "No businesses yet. Active B2B connections and ORG-linked business customers appear here.",
   "checkout.customerSearchHint": "Search by name or phone. Scan ExItS ID for a linked customer.",
+  "checkout.customerSearchHintPeople": "Search by name or phone. Scan ExItS ID for a linked customer.",
+  "checkout.customerSearchHintBusinesses":
+    "Search by business name or ORG######. Active B2B connections support Direct Organization sales.",
   "checkout.customerSelected": "Selected customer",
   "checkout.customerClear": "Clear customer",
   "checkout.customerSection": "Customer",
@@ -4076,6 +4082,9 @@ export const en = {
   "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
+  "customers.orgNeedsConnectionAction": "How to connect",
+  "customers.orgNeedsBuyerConnection":
+    "Direct B2B checkout needs an Active supplier connection. Ask this organization to connect to you under Suppliers, then accept their request. After that they appear under Customers → Businesses and at Sell checkout.",
   "customers.orgOpenExistingConnection": "Open existing connection",
   "customers.orgOpenExistingCustomer": "Open existing customer",
   "customers.badge.local": "Local",

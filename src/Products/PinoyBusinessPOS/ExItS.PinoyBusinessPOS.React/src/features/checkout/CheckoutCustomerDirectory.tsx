@@ -3,6 +3,7 @@ import type { CheckoutCustomerOption } from "@/features/checkout/checkout-custom
 import {
   checkoutOptionKey,
   isCheckoutBusiness,
+  isCheckoutBusinessDirectoryRow,
 } from "@/features/checkout/checkout-customer-option";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 import type { KindFilter } from "@/features/customers/customers-kind";
@@ -85,12 +86,25 @@ export function CheckoutCustomerDirectory({
   const walkInLabel = t("checkout.walkInCustomer");
   const kindFiltered =
     kindFilter === "people"
-      ? customers.filter((c) => c.kind === "Customer")
+      ? customers.filter((c) => c.kind === "Customer" && !isCheckoutBusinessDirectoryRow(c))
       : kindFilter === "businesses"
-        ? customers.filter((c) => c.kind === "Business")
+        ? customers.filter((c) => isCheckoutBusinessDirectoryRow(c))
         : customers;
   const visible = visibleCheckoutCustomers(kindFiltered, searchValue);
   const idle = searchValue.trim().length === 0;
+  const searchHint =
+    kindFilter === "businesses"
+      ? t("checkout.customerSearchHintBusinesses")
+      : kindFilter === "people"
+        ? t("checkout.customerSearchHintPeople")
+        : t("checkout.customerSearchHint");
+  const emptyCopy = idle
+    ? kindFilter === "businesses"
+      ? t("checkout.customerIdleEmptyBusinesses")
+      : t("checkout.customerIdleEmpty")
+    : kindFilter === "businesses"
+      ? t("checkout.customerEmptyBusinesses")
+      : t("checkout.customerEmpty");
 
   return (
     <div className="checkout-customer-directory">
@@ -138,7 +152,7 @@ export function CheckoutCustomerDirectory({
         onChange={(event) => onSearchChange(event.target.value)}
         onClear={() => onSearchChange("")}
       />
-      <p className="checkout-customer-directory__hint">{t("checkout.customerSearchHint")}</p>
+      <p className="checkout-customer-directory__hint">{searchHint}</p>
 
       {customersLoading ? (
         <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
@@ -149,7 +163,7 @@ export function CheckoutCustomerDirectory({
           data-testid="checkout-customer-empty"
           className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
         >
-          {idle ? t("checkout.customerIdleEmpty") : t("checkout.customerEmpty")}
+          {emptyCopy}
         </p>
       ) : (
         <ul className="checkout-customer-list" data-testid="checkout-customer-list">
@@ -164,7 +178,7 @@ export function CheckoutCustomerDirectory({
                   className={cn(
                     "checkout-customer-row",
                     selected && "checkout-customer-row--selected",
-                    isCheckoutBusiness(customer) && "checkout-customer-row--b2b",
+                    isCheckoutBusinessDirectoryRow(customer) && "checkout-customer-row--b2b",
                   )}
                   data-testid={
                     isCheckoutBusiness(customer)

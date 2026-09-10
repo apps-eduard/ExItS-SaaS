@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CheckCircle2, Loader2, Send } from "lucide-react";
+import { Building2, CheckCircle2, Info } from "lucide-react";
 import {
   listBusinessCustomers,
   listRelationships,
 } from "@/api/pos/pos-connected-suppliers-client";
-import { createCustomer, listCustomers } from "@/api/pos/pos-customers-client";
+import { listCustomers } from "@/api/pos/pos-customers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { resolvePublicOrganizationId } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -41,7 +41,6 @@ export function CustomerBusinessOrgConnectPage() {
   const { boundWorkspace } = useWorkspace();
   const [error, setError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [resolved, setResolved] = useState<ResolvedBuyerOrg | null>(null);
 
   const workspace = useMemo(
@@ -145,34 +144,17 @@ export function CustomerBusinessOrgConnectPage() {
       return;
     }
 
-    setSaving(true);
-    setError(null);
-    try {
-      const created = await createCustomer(workspace, {
-        displayName: resolved.displayName,
-        partyKind: "Business",
-        linkedBuyerOrganizationId: resolved.organizationId,
-        linkedBuyerPublicOrganizationId: resolved.publicOrganizationId,
-      });
-      navigate(`/customers/${created.customerId}`, { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof PosApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : t("error.detail"),
-      );
-    } finally {
-      setSaving(false);
-    }
+    // Direct B2B Business Customers are Active OrganizationConnections only.
+    // Do not create a POSCustomer stub — it appears under Customers but not as a
+    // Direct Organization counterparty until the buyer connects via Suppliers.
+    setError(t("customers.orgNeedsBuyerConnection"));
   }
 
   const actionLabel = resolved?.existingConnectionId
     ? t("customers.orgOpenExistingConnection")
     : resolved?.existingCustomerId
       ? t("customers.orgOpenExistingCustomer")
-      : t("customers.orgConnectAsCustomer");
+      : t("customers.orgNeedsConnectionAction");
 
   return (
     <div
@@ -200,7 +182,7 @@ export function CustomerBusinessOrgConnectPage() {
 
       <QrScanOrEnter
         expectedPurpose="organization"
-        disabled={resolving || saving}
+        disabled={resolving}
         parseRawPayload={(raw) => {
           const parsed = parseConnectedSupplierScanPayload(raw);
           return parsed.publicOrganizationId;
@@ -249,15 +231,12 @@ export function CustomerBusinessOrgConnectPage() {
           <Button
             type="button"
             data-testid="customer-org-connect-submit"
-            disabled={saving}
             onClick={() => void connectOrOpen()}
           >
-            {saving ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : resolved.existingConnectionId || resolved.existingCustomerId ? (
+            {resolved.existingConnectionId || resolved.existingCustomerId ? (
               <CheckCircle2 className="size-4" aria-hidden />
             ) : (
-              <Send className="size-4" aria-hidden />
+              <Info className="size-4" aria-hidden />
             )}
             {actionLabel}
           </Button>

@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 
@@ -18,7 +20,7 @@ public sealed class CreatePOSCustomerUseCaseTests
     private static POSCustomerQueryService CreateQueries(InMemoryCustomerRepository repo)
     {
         var (service, actor) = PartyBranchAccessTestSupport.Create();
-        return new POSCustomerQueryService(repo, service, actor);
+        return new POSCustomerQueryService(repo, service, actor, new EmptyRelationships());
     }
 
     [Fact]
@@ -342,5 +344,31 @@ public sealed class CreatePOSCustomerUseCaseTests
 
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class EmptyRelationships : IConnectedSupplierRelationshipRepository
+    {
+        public Task<ConnectedSupplierRelationship?> GetAsync(
+            ConnectedSupplierRelationshipId id,
+            CancellationToken ct = default) =>
+            Task.FromResult<ConnectedSupplierRelationship?>(null);
+
+        public Task<ConnectedSupplierRelationship?> FindOpenAsync(
+            PosOrganizationId buyer,
+            PosOrganizationId supplier,
+            CancellationToken ct = default) =>
+            Task.FromResult<ConnectedSupplierRelationship?>(null);
+
+        public Task<IReadOnlyList<ConnectedSupplierRelationship>> ListAsync(
+            PosOrganizationId organizationId,
+            bool supplierView,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedSupplierRelationship>>([]);
+
+        public Task AddAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
+            Task.CompletedTask;
     }
 }

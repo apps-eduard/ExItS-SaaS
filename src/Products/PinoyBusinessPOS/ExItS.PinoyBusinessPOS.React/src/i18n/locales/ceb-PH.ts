@@ -1314,7 +1314,12 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "checkout.customerEmpty": "Walay nahaum nga active customers.",
 
+  "checkout.customerEmptyBusinesses": "Walay nahaum nga business. Sulayi ang ngalan o ORG######.",
+
   "checkout.customerIdleEmpty": "Pangita pinaagi sa ngalan o numero para sa walk-in, o i-scan ang ExItS ID.",
+
+  "checkout.customerIdleEmptyBusinesses":
+    "Wala pay business. Ang Active B2B connections ug ORG-linked business customers makita dinhi.",
 
   "checkout.customerLoading": "Nagkarga og customers?",
 
@@ -1325,6 +1330,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.customerNotLinkedDenied": "Wala naka-link kini nga customer. Pangayo sa manager nga magdugang o mag-link og customer.",
 
   "checkout.customerSearchHint": "Pangita pinaagi sa ngalan o numero. I-scan ang ExItS ID para sa naka-link nga customer.",
+
+  "checkout.customerSearchHintBusinesses":
+    "Pangita pinaagi sa ngalan sa business o ORG######. Ang Active B2B connections para sa Direct Organization sales.",
+
+  "checkout.customerSearchHintPeople": "Pangita pinaagi sa ngalan o numero. I-scan ang ExItS ID para sa naka-link nga customer.",
 
   "checkout.customerSection": "Customer",
 
@@ -2067,6 +2077,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
   "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
   "customers.orgConnectAsCustomer": "Add as business customer",
+
+  "customers.orgNeedsBuyerConnection":
+    "Kinahanglan ang Active supplier connection para sa Direct B2B checkout. Sultii kini nga organization nga mag-connect kanimo sa Suppliers, dayon dawata ang request. Human niini, makita sila sa Customers → Businesses ug sa Sell checkout.",
+
+  "customers.orgNeedsConnectionAction": "Unsaon pag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
   "customers.orgOpenExistingCustomer": "Open existing customer",
   "customers.badge.local": "Local",
