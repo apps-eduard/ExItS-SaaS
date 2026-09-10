@@ -1,7 +1,11 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PackageOpen } from "lucide-react";
-import { canManageSuppliers } from "@/access/pos-capabilities";
+import {
+  canApproveCustomerCreditPolicy,
+  canManageCustomerCreditPolicy,
+  canManageSuppliers,
+} from "@/access/pos-capabilities";
 import { getBusinessCustomer } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -11,9 +15,11 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { formatRelativeOrDate } from "@/features/devices/device-presentation";
+import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
@@ -34,7 +40,10 @@ export function BusinessCustomerDetailPage() {
   const { connectionId } = useParams<{ connectionId: string }>();
   const { sessionGrant } = useWorkspace();
   const workspace = usePosWorkspaceScope();
+  const online = useBrowserOnline();
   const allowManage = canManageSuppliers(sessionGrant);
+  const allowManageCredit = canManageCustomerCreditPolicy(sessionGrant);
+  const allowApproveCredit = canApproveCustomerCreditPolicy(sessionGrant);
 
   const detailQuery = useQuery({
     queryKey: ["business-customers", "detail", workspace?.organizationId, connectionId],
@@ -183,6 +192,16 @@ export function BusinessCustomerDetailPage() {
           </div>
         </dl>
       </section>
+
+      {workspace && connectionId ? (
+        <BusinessCreditPolicySection
+          workspace={workspace}
+          connectionId={connectionId}
+          online={online}
+          canManage={allowManageCredit}
+          canApprove={allowApproveCredit}
+        />
+      ) : null}
 
       {allowManage && isActive ? (
         <ExitsChipBar

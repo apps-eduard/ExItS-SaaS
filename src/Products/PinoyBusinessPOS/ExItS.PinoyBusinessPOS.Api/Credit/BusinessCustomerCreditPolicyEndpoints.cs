@@ -7,26 +7,28 @@ using ExItS.PinoyBusinessPOS.Application.Offline;
 namespace ExItS.PinoyBusinessPOS.Api.Credit;
 
 /// <summary>
-/// Customer credit policy configure / approve / disable / history endpoints.
-/// Outstanding remains ledger-derived; policy rows authorize NEW Utang only.
+/// B2B business-customer credit policy endpoints under connected-suppliers.
+/// Does not create POSCustomer stubs. Outstanding is always 0 until a B2B ledger exists.
 /// </summary>
-internal static class CreditPolicyEndpoints
+internal static class BusinessCustomerCreditPolicyEndpoints
 {
-    public static IEndpointRouteBuilder MapCustomerCreditPolicyEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapBusinessCustomerCreditPolicyEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/pos/customers/{customerId:guid}/credit-policy");
+        var group = app.MapGroup(
+            "/api/v1/pos/connected-suppliers/business-customers/{connectionId:guid}/credit-policy");
 
-        // Map both "/" and "" so /credit-policy and /credit-policy/ resolve (trailing-slash hardening).
-        group.MapGet("/", GetCreditPolicyAsync);
-        group.MapGet("", GetCreditPolicyAsync);
+        // Map both "/" and "" so /credit-policy and /credit-policy/ resolve.
+        group.MapGet("/", GetAsync);
+        group.MapGet("", GetAsync);
 
-        group.MapPut("/", UpsertCreditPolicyAsync);
-        group.MapPut("", UpsertCreditPolicyAsync);
+        group.MapPut("/", UpsertAsync);
+        group.MapPut("", UpsertAsync);
+
         group.MapPost("/approve", async (
             HttpRequest request,
-            Guid customerId,
-            ApproveCustomerCreditPolicyRequest body,
-            ApproveCustomerCreditPolicy useCase,
+            Guid connectionId,
+            ApproveBusinessCustomerCreditPolicyRequest body,
+            ApproveBusinessCustomerCreditPolicy useCase,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
@@ -49,11 +51,11 @@ internal static class CreditPolicyEndpoints
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
-                    OfflineOperationTypes.CustomerCreditPolicyApprove,
+                    OfflineOperationTypes.BusinessCustomerCreditPolicyApprove,
                     idempotency,
                     ct2 => useCase.ExecuteAsync(
                         organizationId,
-                        customerId,
+                        connectionId,
                         actorId,
                         body.Reason,
                         body.ExpectedUpdatedAtUtc,
@@ -66,9 +68,9 @@ internal static class CreditPolicyEndpoints
 
         group.MapPost("/disable", async (
             HttpRequest request,
-            Guid customerId,
-            DisableCustomerCreditPolicyRequest body,
-            DisableCustomerCreditPolicy useCase,
+            Guid connectionId,
+            DisableBusinessCustomerCreditPolicyRequest body,
+            DisableBusinessCustomerCreditPolicy useCase,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
@@ -91,11 +93,11 @@ internal static class CreditPolicyEndpoints
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
-                    OfflineOperationTypes.CustomerCreditPolicyDisable,
+                    OfflineOperationTypes.BusinessCustomerCreditPolicyDisable,
                     idempotency,
                     ct2 => useCase.ExecuteAsync(
                         organizationId,
-                        customerId,
+                        connectionId,
                         actorId,
                         body.Reason,
                         body.ExpectedUpdatedAtUtc,
@@ -108,10 +110,10 @@ internal static class CreditPolicyEndpoints
 
         group.MapGet("/history", async (
             HttpRequest request,
-            Guid customerId,
+            Guid connectionId,
             int? page,
             int? pageSize,
-            ListCustomerCreditPolicyHistory useCase,
+            ListBusinessCustomerCreditPolicyHistory useCase,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -120,13 +122,14 @@ internal static class CreditPolicyEndpoints
                 return problem!;
             }
 
-            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+            // Align with GetBusinessCustomer (ViewSuppliers).
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewSuppliers, out problem))
             {
                 return problem!;
             }
 
             var result = await useCase
-                .ExecuteAsync(organizationId, customerId, page, pageSize, ct)
+                .ExecuteAsync(organizationId, connectionId, page, pageSize, ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
@@ -134,10 +137,10 @@ internal static class CreditPolicyEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetCreditPolicyAsync(
+    private static async Task<IResult> GetAsync(
         HttpRequest request,
-        Guid customerId,
-        GetCustomerCreditPolicy useCase,
+        Guid connectionId,
+        GetBusinessCustomerCreditPolicy useCase,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
     {
@@ -146,22 +149,23 @@ internal static class CreditPolicyEndpoints
             return problem!;
         }
 
-        if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+        // Align with GetBusinessCustomer (ViewSuppliers).
+        if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewSuppliers, out problem))
         {
             return problem!;
         }
 
         var result = await useCase
-            .ExecuteAsync(organizationId, customerId, ct)
+            .ExecuteAsync(organizationId, connectionId, ct)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }
 
-    private static async Task<IResult> UpsertCreditPolicyAsync(
+    private static async Task<IResult> UpsertAsync(
         HttpRequest request,
-        Guid customerId,
-        UpsertCustomerCreditPolicyRequest body,
-        UpsertCustomerCreditPolicy useCase,
+        Guid connectionId,
+        UpsertBusinessCustomerCreditPolicyRequest body,
+        UpsertBusinessCustomerCreditPolicy useCase,
         IPosIdempotencyService idempotency,
         IPosCommercialAccessAccessor access,
         CancellationToken ct)
@@ -184,11 +188,11 @@ internal static class CreditPolicyEndpoints
         return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                 request,
                 organizationId,
-                OfflineOperationTypes.CustomerCreditPolicyUpsert,
+                OfflineOperationTypes.BusinessCustomerCreditPolicyUpsert,
                 idempotency,
                 ct2 => useCase.ExecuteAsync(
                     organizationId,
-                    customerId,
+                    connectionId,
                     body.CreditLimit,
                     body.DefaultTermDays,
                     actorId,

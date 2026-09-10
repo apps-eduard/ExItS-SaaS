@@ -4160,8 +4160,17 @@ export const en = {
   "customers.business.sharedCount": "{count} products shared",
   "customers.business.sharedCountShort": "{count} shared",
   "customers.business.manageCatalog": "Manage catalog & pricing",
+  "customers.business.creditPolicy.title": "Credit & payment terms",
+  "customers.business.creditPolicy.notApprovedHint":
+    "Utang is not approved for this business.",
+  "customers.business.creditPolicy.pendingHint":
+    "This business cannot use Utang until credit is approved.",
+  "customers.business.creditPolicy.disabledHint":
+    "New Utang is disabled. Existing balance remains payable.",
+  "customers.business.creditPolicy.checkoutNote":
+    "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
   "customers.business.identityNote":
-    "This is the buyer?s Organization identity. You manage relationship settings only ? not their business name or logo.",
+    "This is the buyer's Organization identity. You manage relationship settings only — not their business name or logo.",
   "customers.business.incomingRequests": "Incoming connection requests",
   "customers.business.empty": "No business customers yet",
   "customers.business.emptyHelp": "Add a local business or connect an ExItS Organization. Buyer connections also appear here.",
@@ -4275,6 +4284,13 @@ export const en = {
   "customers.creditsEmptyDetail": "Utang sales for this customer appear here.",
   "customers.creditPolicy.title": "Credit policy",
   "customers.creditPolicy.offline": "Credit policy requires an online connection.",
+  "customers.creditPolicy.loadFailed": "Credit policy could not be loaded.",
+  "customers.creditPolicy.retry": "Retry",
+  "customers.creditPolicy.notApprovedHint": "Utang is not approved for this customer.",
+  "customers.creditPolicy.pendingHint":
+    "Customer credit is pending approval. New Utang is blocked until approved.",
+  "customers.creditPolicy.disabledHint":
+    "Customer credit is disabled. Existing balance remains payable.",
   "customers.creditPolicy.limit": "Credit limit",
   "customers.creditPolicy.outstanding": "Outstanding",
   "customers.creditPolicy.available": "Available credit",

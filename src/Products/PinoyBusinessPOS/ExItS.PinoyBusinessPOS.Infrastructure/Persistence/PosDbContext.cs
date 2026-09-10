@@ -58,6 +58,10 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CustomerCreditPolicyRecord> CustomerCreditPolicies => Set<CustomerCreditPolicyRecord>();
     internal DbSet<CustomerCreditPolicyChangeRecord> CustomerCreditPolicyChanges =>
         Set<CustomerCreditPolicyChangeRecord>();
+    internal DbSet<BusinessCustomerCreditPolicyRecord> BusinessCustomerCreditPolicies =>
+        Set<BusinessCustomerCreditPolicyRecord>();
+    internal DbSet<BusinessCustomerCreditPolicyChangeRecord> BusinessCustomerCreditPolicyChanges =>
+        Set<BusinessCustomerCreditPolicyChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
@@ -457,6 +461,92 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_customer_credit_policy_changes_customers");
+        });
+
+        modelBuilder.Entity<BusinessCustomerCreditPolicyRecord>(entity =>
+        {
+            entity.ToTable("business_customer_credit_policies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_business_customer_credit_policies_status",
+                    "status BETWEEN 1 AND 3");
+                tb.HasCheckConstraint(
+                    "ck_business_customer_credit_policies_term_days",
+                    "default_term_days BETWEEN 1 AND 365");
+                tb.HasCheckConstraint(
+                    "ck_business_customer_credit_policies_credit_limit_non_negative",
+                    "credit_limit >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(e => e.ConnectionId).HasColumnName("connection_id");
+            entity.Property(e => e.Status).HasColumnName("status").IsRequired();
+            entity.Property(e => e.CreditLimit)
+                .HasColumnName("credit_limit")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.DefaultTermDays).HasColumnName("default_term_days").IsRequired();
+            entity.Property(e => e.ConfiguredByUserId).HasColumnName("configured_by_user_id").IsRequired();
+            entity.Property(e => e.ConfiguredAtUtc).HasColumnName("configured_at_utc");
+            entity.Property(e => e.ApprovedByUserId).HasColumnName("approved_by_user_id");
+            entity.Property(e => e.ApprovedAtUtc).HasColumnName("approved_at_utc");
+            entity.Property(e => e.UpdatedByUserId).HasColumnName("updated_by_user_id").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_business_customer_credit_policies_seller_buyer");
+
+            entity.HasIndex(e => e.ConnectionId)
+                .HasDatabaseName("ix_business_customer_credit_policies_connection_id");
+        });
+
+        modelBuilder.Entity<BusinessCustomerCreditPolicyChangeRecord>(entity =>
+        {
+            entity.ToTable("business_customer_credit_policy_changes");
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(e => e.BusinessCustomerCreditPolicyId)
+                .HasColumnName("business_customer_credit_policy_id")
+                .IsRequired();
+            entity.Property(e => e.Action).HasColumnName("action").IsRequired();
+            entity.Property(e => e.PreviousStatus).HasColumnName("previous_status");
+            entity.Property(e => e.NewStatus).HasColumnName("new_status").IsRequired();
+            entity.Property(e => e.PreviousCreditLimit)
+                .HasColumnName("previous_credit_limit")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.NewCreditLimit)
+                .HasColumnName("new_credit_limit")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.PreviousTermDays).HasColumnName("previous_term_days");
+            entity.Property(e => e.NewTermDays).HasColumnName("new_term_days");
+            entity.Property(e => e.ActorUserId).HasColumnName("actor_user_id").IsRequired();
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(CustomerCreditPolicy.ReasonMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId, e.ChangedAtUtc })
+                .IsDescending(false, false, true)
+                .HasDatabaseName("ix_business_customer_credit_policy_changes_seller_buyer_changed");
+
+            entity.HasOne<BusinessCustomerCreditPolicyRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessCustomerCreditPolicyId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_business_customer_credit_policy_changes_policies");
         });
 
         modelBuilder.Entity<RepaymentRecord>(entity =>

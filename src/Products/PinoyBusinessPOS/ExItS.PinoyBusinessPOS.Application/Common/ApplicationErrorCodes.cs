@@ -18,6 +18,10 @@ public static class ApplicationErrorCodes
     public const string CustomerCreditPolicyNotFound = "pos.customer_credit_policy.not_found";
     public const string CustomerCreditPolicyConcurrencyConflict =
         "pos.customer_credit_policy.concurrency_conflict";
+    public const string BusinessCustomerCreditPolicyNotFound =
+        "pos.business_customer_credit_policy.not_found";
+    public const string BusinessCustomerCreditPolicyConcurrencyConflict =
+        "pos.business_customer_credit_policy.concurrency_conflict";
     public const string CustomerCreditNotApproved = "pos.customer_credit.not_approved";
     public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
     public const string CustomerCreditDueDateOverrideDenied =

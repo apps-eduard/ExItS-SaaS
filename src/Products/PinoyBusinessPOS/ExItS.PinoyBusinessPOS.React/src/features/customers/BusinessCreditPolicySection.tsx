@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  approveCustomerCreditPolicy,
-  disableCustomerCreditPolicy,
-  getCustomerCreditPolicy,
-  listCustomerCreditPolicyHistory,
-  upsertCustomerCreditPolicy,
-  type PosCustomerCreditPolicy,
-} from "@/api/pos/pos-credit-policy-client";
+  approveBusinessCustomerCreditPolicy,
+  disableBusinessCustomerCreditPolicy,
+  getBusinessCustomerCreditPolicy,
+  listBusinessCustomerCreditPolicyHistory,
+  upsertBusinessCustomerCreditPolicy,
+  type PosBusinessCustomerCreditPolicy,
+} from "@/api/pos/pos-business-credit-policy-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -25,14 +25,14 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 
-export type CreditPolicySectionProps = {
+export type BusinessCreditPolicySectionProps = {
   workspace: PosWorkspaceScope;
-  customerId: string;
+  connectionId: string;
   online: boolean;
   canManage: boolean;
   canApprove: boolean;
   /** When set, skip fetch (used by unit tests). */
-  policyOverride?: PosCustomerCreditPolicy | null;
+  policyOverride?: PosBusinessCustomerCreditPolicy | null;
 };
 
 type DialogMode = "configure" | "approve" | "disable" | null;
@@ -46,14 +46,14 @@ function parseMoney(raw: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export function CreditPolicySection({
+export function BusinessCreditPolicySection({
   workspace,
-  customerId,
+  connectionId,
   online,
   canManage,
   canApprove,
   policyOverride,
-}: CreditPolicySectionProps) {
+}: BusinessCreditPolicySectionProps) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogMode>(null);
@@ -67,24 +67,24 @@ export function CreditPolicySection({
 
   const useOverride = policyOverride !== undefined;
   const policyQuery = useQuery({
-    queryKey: ["customers", "credit-policy", workspace.organizationId, customerId],
+    queryKey: ["business-customers", "credit-policy", workspace.organizationId, connectionId],
     enabled: online && !useOverride,
-    queryFn: ({ signal }) => getCustomerCreditPolicy(workspace, customerId, signal),
+    queryFn: ({ signal }) => getBusinessCustomerCreditPolicy(workspace, connectionId, signal),
   });
 
   const historyQuery = useQuery({
     queryKey: [
-      "customers",
+      "business-customers",
       "credit-policy-history",
       workspace.organizationId,
-      customerId,
+      connectionId,
       historyPage,
     ],
     enabled: online && historyOpen && !useOverride,
     queryFn: ({ signal }) =>
-      listCustomerCreditPolicyHistory(
+      listBusinessCustomerCreditPolicyHistory(
         workspace,
-        customerId,
+        connectionId,
         { page: historyPage, pageSize: 20 },
         signal,
       ),
@@ -111,13 +111,13 @@ export function CreditPolicySection({
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({
-      queryKey: ["customers", "credit-policy", workspace.organizationId, customerId],
+      queryKey: ["business-customers", "credit-policy", workspace.organizationId, connectionId],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["customers", "credit-policy-history", workspace.organizationId, customerId],
+      queryKey: ["business-customers", "credit-policy-history", workspace.organizationId, connectionId],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["customers", "credit-summary", workspace.organizationId, customerId],
+      queryKey: ["business-customers", "credit-policy"],
     });
   };
 
@@ -131,7 +131,7 @@ export function CreditPolicySection({
       if (!Number.isInteger(days) || days < 1 || days > 365) {
         throw new Error(t("customers.creditPolicy.invalidTerm"));
       }
-      return upsertCustomerCreditPolicy(workspace, customerId, {
+      return upsertBusinessCustomerCreditPolicy(workspace, connectionId, {
         creditLimit,
         defaultTermDays: days,
         reason: reason.trim() || null,
@@ -157,7 +157,7 @@ export function CreditPolicySection({
       if (!trimmed) {
         throw new Error(t("customers.creditPolicy.reasonRequired"));
       }
-      return approveCustomerCreditPolicy(workspace, customerId, {
+      return approveBusinessCustomerCreditPolicy(workspace, connectionId, {
         reason: trimmed,
         expectedUpdatedAtUtc: policy.expectedUpdatedAtUtc,
       });
@@ -181,7 +181,7 @@ export function CreditPolicySection({
       if (!trimmed) {
         throw new Error(t("customers.creditPolicy.reasonRequired"));
       }
-      return disableCustomerCreditPolicy(workspace, customerId, {
+      return disableBusinessCustomerCreditPolicy(workspace, connectionId, {
         reason: trimmed,
         expectedUpdatedAtUtc: policy.expectedUpdatedAtUtc,
       });
@@ -236,9 +236,9 @@ export function CreditPolicySection({
 
   if (!online && !useOverride) {
     return (
-      <Card data-testid="customer-credit-policy-section" className="flex flex-col gap-2 p-4">
+      <Card data-testid="business-credit-policy-section" className="flex flex-col gap-2 p-4">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditPolicy.title")}
+          {t("customers.business.creditPolicy.title")}
         </h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("customers.creditPolicy.offline")}
@@ -249,9 +249,9 @@ export function CreditPolicySection({
 
   if (!useOverride && policyQuery.isLoading) {
     return (
-      <Card data-testid="customer-credit-policy-section" className="flex flex-col gap-2 p-4">
+      <Card data-testid="business-credit-policy-section" className="flex flex-col gap-2 p-4">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditPolicy.title")}
+          {t("customers.business.creditPolicy.title")}
         </h2>
         <LoadingState label={t("loading.label")} />
       </Card>
@@ -260,9 +260,9 @@ export function CreditPolicySection({
 
   if (!useOverride && policyQuery.isError) {
     return (
-      <Card data-testid="customer-credit-policy-section" className="flex flex-col gap-2 p-4">
+      <Card data-testid="business-credit-policy-section" className="flex flex-col gap-2 p-4">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditPolicy.title")}
+          {t("customers.business.creditPolicy.title")}
         </h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
           {t("customers.creditPolicy.loadFailed")}
@@ -271,7 +271,7 @@ export function CreditPolicySection({
           type="button"
           variant="outline"
           className="self-start"
-          data-testid="customer-credit-policy-retry"
+          data-testid="business-credit-policy-retry"
           onClick={() => void policyQuery.refetch()}
         >
           {t("customers.creditPolicy.retry")}
@@ -281,12 +281,12 @@ export function CreditPolicySection({
   }
 
   return (
-    <Card data-testid="customer-credit-policy-section" className="flex flex-col gap-3 p-4">
+    <Card data-testid="business-credit-policy-section" className="flex flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditPolicy.title")}
+          {t("customers.business.creditPolicy.title")}
         </h2>
-        <span data-testid="customer-credit-policy-status">
+        <span data-testid="business-credit-policy-status">
           <StatusChip tone={creditPolicyStatusTone(status)}>
             {t(creditPolicyStatusLabelKey(status))}
           </StatusChip>
@@ -295,27 +295,32 @@ export function CreditPolicySection({
 
       {status === "NotConfigured" ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("customers.creditPolicy.notApprovedHint")}
+          {t("customers.business.creditPolicy.notApprovedHint")}
         </p>
       ) : null}
       {status === "PendingApproval" ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("customers.creditPolicy.pendingHint")}
+          {t("customers.business.creditPolicy.pendingHint")}
         </p>
       ) : null}
       {status === "Disabled" ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("customers.creditPolicy.disabledHint")}
+          {t("customers.business.creditPolicy.disabledHint")}
+        </p>
+      ) : null}
+      {status === "Approved" ? (
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+          {t("customers.business.creditPolicy.checkoutNote")}
         </p>
       ) : null}
 
       <dl
         className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
-        data-testid="customer-credit-policy-summary"
+        data-testid="business-credit-policy-summary"
       >
         <div>
           <dt className="text-muted">{t("customers.creditPolicy.limit")}</dt>
-          <dd className="m-0 font-semibold tabular-nums" data-testid="customer-credit-policy-limit">
+          <dd className="m-0 font-semibold tabular-nums" data-testid="business-credit-policy-limit">
             {limit == null ? "—" : <MoneyDisplay amount={limit} />}
           </dd>
         </div>
@@ -329,14 +334,14 @@ export function CreditPolicySection({
           <dt className="text-muted">{t("customers.creditPolicy.available")}</dt>
           <dd
             className="m-0 font-semibold tabular-nums"
-            data-testid="customer-credit-policy-available"
+            data-testid="business-credit-policy-available"
           >
             <MoneyDisplay amount={available} />
           </dd>
         </div>
         <div>
           <dt className="text-muted">{t("customers.creditPolicy.term")}</dt>
-          <dd className="m-0" data-testid="customer-credit-policy-term">
+          <dd className="m-0" data-testid="business-credit-policy-term">
             {term == null
               ? "—"
               : t("customers.creditPolicy.termDays").replace("{days}", String(term))}
@@ -356,7 +361,7 @@ export function CreditPolicySection({
                 resolved={actors.resolve(policy.approvedByUserId)}
                 isLoading={actors.isResolving}
                 className="min-h-0"
-                testId="customer-credit-policy-approved-by"
+                testId="business-credit-policy-approved-by"
               />
             </dd>
           </div>
@@ -368,7 +373,7 @@ export function CreditPolicySection({
           <Button
             type="button"
             variant="outline"
-            data-testid="customer-credit-policy-configure"
+            data-testid="business-credit-policy-configure"
             onClick={openConfigure}
           >
             {status === "NotConfigured"
@@ -380,7 +385,7 @@ export function CreditPolicySection({
           <Button
             type="button"
             variant="outline"
-            data-testid="customer-credit-policy-approve"
+            data-testid="business-credit-policy-approve"
             onClick={openApprove}
           >
             {t("customers.creditPolicy.approve")}
@@ -390,7 +395,7 @@ export function CreditPolicySection({
           <Button
             type="button"
             variant="outline"
-            data-testid="customer-credit-policy-disable"
+            data-testid="business-credit-policy-disable"
             onClick={openDisable}
           >
             {t("customers.creditPolicy.disable")}
@@ -399,7 +404,7 @@ export function CreditPolicySection({
         <Button
           type="button"
           variant="ghost"
-          data-testid="customer-credit-policy-history-toggle"
+          data-testid="business-credit-policy-history-toggle"
           onClick={() => {
             setHistoryOpen((open) => !open);
             setHistoryPage(1);
@@ -412,7 +417,7 @@ export function CreditPolicySection({
       </div>
 
       {historyOpen ? (
-        <div className="flex flex-col gap-2" data-testid="customer-credit-policy-history">
+        <div className="flex flex-col gap-2" data-testid="business-credit-policy-history">
           {historyQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
           {historyQuery.isSuccess && historyQuery.data.items.length === 0 ? (
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -503,12 +508,12 @@ export function CreditPolicySection({
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="customer-credit-policy-dialog-title"
-          data-testid={`customer-credit-policy-dialog-${dialog}`}
+          aria-labelledby="business-credit-policy-dialog-title"
+          data-testid={`business-credit-policy-dialog-${dialog}`}
         >
           <Card className="w-full max-w-md">
             <h2
-              id="customer-credit-policy-dialog-title"
+              id="business-credit-policy-dialog-title"
               className="m-0 mb-2 text-[length:var(--exits-text-base)] font-semibold"
             >
               {dialog === "configure"
@@ -525,7 +530,7 @@ export function CreditPolicySection({
                 {showReapprovalWarning ? (
                   <p
                     className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,var(--exits-danger))]"
-                    data-testid="customer-credit-policy-reapproval-warning"
+                    data-testid="business-credit-policy-reapproval-warning"
                   >
                     {t("customers.creditPolicy.reapprovalWarning")}
                   </p>
@@ -533,7 +538,7 @@ export function CreditPolicySection({
                 {showOutstandingWarning ? (
                   <p
                     className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-                    data-testid="customer-credit-policy-outstanding-warning"
+                    data-testid="business-credit-policy-outstanding-warning"
                   >
                     {t("customers.creditPolicy.outstandingOverLimitWarning")}
                   </p>
@@ -546,7 +551,7 @@ export function CreditPolicySection({
                     className="rounded-md border border-border bg-background px-3"
                     value={limitText}
                     onChange={(e) => setLimitText(e.target.value)}
-                    data-testid="customer-credit-policy-limit-input"
+                    data-testid="business-credit-policy-limit-input"
                   />
                 </label>
                 <fieldset className="m-0 border-0 p-0">
@@ -563,7 +568,7 @@ export function CreditPolicySection({
                           setTermCustom(false);
                           setTermDays(days);
                         }}
-                        data-testid={`customer-credit-policy-term-${days}`}
+                        data-testid={`business-credit-policy-term-${days}`}
                       >
                         {days === 90
                           ? `${days} (${t("customers.creditPolicy.termAbout3Months")})`
@@ -574,7 +579,7 @@ export function CreditPolicySection({
                       type="button"
                       variant={termCustom ? "default" : "outline"}
                       onClick={() => setTermCustom(true)}
-                      data-testid="customer-credit-policy-term-custom"
+                      data-testid="business-credit-policy-term-custom"
                     >
                       {t("customers.creditPolicy.termCustom")}
                     </Button>
@@ -587,7 +592,7 @@ export function CreditPolicySection({
                       className="mt-2 w-full rounded-md border border-border bg-background px-3"
                       value={termDays}
                       onChange={(e) => setTermDays(Number(e.target.value) || 1)}
-                      data-testid="customer-credit-policy-term-custom-input"
+                      data-testid="business-credit-policy-term-custom-input"
                     />
                   ) : null}
                   {termHelperKey ? (
@@ -603,7 +608,7 @@ export function CreditPolicySection({
                     value={reason}
                     maxLength={512}
                     onChange={(e) => setReason(e.target.value)}
-                    data-testid="customer-credit-policy-reason"
+                    data-testid="business-credit-policy-reason"
                   />
                 </label>
               </div>
@@ -615,7 +620,7 @@ export function CreditPolicySection({
                   value={reason}
                   maxLength={512}
                   onChange={(e) => setReason(e.target.value)}
-                  data-testid="customer-credit-policy-reason"
+                  data-testid="business-credit-policy-reason"
                 />
               </label>
             )}
@@ -632,14 +637,14 @@ export function CreditPolicySection({
                 variant="ghost"
                 disabled={busy}
                 onClick={() => setDialog(null)}
-                data-testid="customer-credit-policy-dialog-cancel"
+                data-testid="business-credit-policy-dialog-cancel"
               >
                 {t("customers.creditPolicy.cancel")}
               </Button>
               <Button
                 type="button"
                 disabled={busy}
-                data-testid="customer-credit-policy-dialog-submit"
+                data-testid="business-credit-policy-dialog-submit"
                 onClick={() => {
                   setFormError(null);
                   if (dialog === "configure") {

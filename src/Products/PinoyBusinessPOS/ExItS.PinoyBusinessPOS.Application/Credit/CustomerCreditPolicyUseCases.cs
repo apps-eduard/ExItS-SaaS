@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -57,15 +58,21 @@ public sealed class GetCustomerCreditPolicy
     private readonly IPOSCustomerRepository _customers;
     private readonly ICustomerCreditPolicyRepository _policies;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly PartyBranchAccessService _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor _actorAccessor;
 
     public GetCustomerCreditPolicy(
         IPOSCustomerRepository customers,
         ICustomerCreditPolicyRepository policies,
-        IOutstandingBalanceService outstanding)
+        IOutstandingBalanceService outstanding,
+        PartyBranchAccessService branchAccess,
+        IPartyBranchAccessActorAccessor actorAccessor)
     {
         _customers = customers;
         _policies = policies;
         _outstanding = outstanding;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<CustomerCreditPolicyReadDto>> ExecuteAsync(
@@ -83,6 +90,19 @@ public sealed class GetCustomerCreditPolicy
                 "Customer was not found.");
         }
 
+        // Fail closed for cross-branch: inaccessible customers look like NotFound (match detail page).
+        if (!await _branchAccess.EnsureCanViewCustomerOrNotFoundAsync(
+                organizationId,
+                customerId,
+                _actorAccessor.GetActor(),
+                cancellationToken)
+            .ConfigureAwait(false))
+        {
+            return ApplicationResult<CustomerCreditPolicyReadDto>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
         var outstanding = await _outstanding
             .GetOutstandingAsync(orgId, custId, cancellationToken)
             .ConfigureAwait(false);
@@ -93,6 +113,7 @@ public sealed class GetCustomerCreditPolicy
 
         if (policy is null)
         {
+            // Missing policy is a successful NotConfigured read — never CustomerCreditPolicyNotFound on GET.
             return ApplicationResult<CustomerCreditPolicyReadDto>.Success(
                 new CustomerCreditPolicyReadDto(
                     customerId,

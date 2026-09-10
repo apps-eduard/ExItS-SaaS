@@ -2095,6 +2095,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.nextPage": "Susunod",
 
   "customers.creditPolicy.offline": "Kailangan ng online connection para sa credit policy.",
+  "customers.creditPolicy.loadFailed": "Credit policy could not be loaded.",
+  "customers.creditPolicy.retry": "Retry",
+  "customers.creditPolicy.notApprovedHint": "Utang is not approved for this customer.",
+  "customers.creditPolicy.pendingHint": "Customer credit is pending approval. New Utang is blocked until approved.",
+  "customers.creditPolicy.disabledHint": "Customer credit is disabled. Existing balance remains payable.",
 
   "customers.creditPolicy.outstanding": "Outstanding",
 
@@ -2242,6 +2247,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.business.sharedCount": "{count} products shared",
 
   "customers.business.manageCatalog": "Manage catalog & pricing",
+  "customers.business.creditPolicy.title": "Credit & payment terms",
+  "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
+  "customers.business.creditPolicy.pendingHint": "This business cannot use Utang until credit is approved.",
+  "customers.business.creditPolicy.disabledHint": "New Utang is disabled. Existing balance remains payable.",
+  "customers.business.creditPolicy.checkoutNote": "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
 
   "customers.business.identityNote": "This is the buyer's Organization identity. You manage relationship settings only ? not their business name or logo.",
 

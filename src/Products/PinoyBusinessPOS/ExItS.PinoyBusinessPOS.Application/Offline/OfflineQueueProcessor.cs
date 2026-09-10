@@ -571,4 +571,13 @@ public static class OfflineOperationTypes
 
     /// <summary>Server-side idempotency for customer credit policy disable. Online-only.</summary>
     public const string CustomerCreditPolicyDisable = "customer_credit_policy.disable";
+
+    /// <summary>Server-side idempotency for business customer credit policy upsert. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyUpsert = "business_customer_credit_policy.upsert";
+
+    /// <summary>Server-side idempotency for business customer credit policy approve. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyApprove = "business_customer_credit_policy.approve";
+
+    /// <summary>Server-side idempotency for business customer credit policy disable. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyDisable = "business_customer_credit_policy.disable";
 }

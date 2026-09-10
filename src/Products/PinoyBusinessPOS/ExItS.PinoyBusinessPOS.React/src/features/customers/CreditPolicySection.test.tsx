@@ -67,6 +67,7 @@ describe("CreditPolicySection", () => {
     expect(screen.getByTestId("customer-credit-policy-configure")).toHaveTextContent(
       "customers.creditPolicy.configure",
     );
+    expect(screen.getByText("customers.creditPolicy.notApprovedHint")).toBeInTheDocument();
   });
 
   it("renders PendingApproval with Approve action", () => {

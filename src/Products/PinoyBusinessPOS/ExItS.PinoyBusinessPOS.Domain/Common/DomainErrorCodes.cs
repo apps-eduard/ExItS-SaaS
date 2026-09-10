@@ -559,4 +559,9 @@ public static class DomainErrorCodes
     public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
     public const string CustomerCreditDueDateOverrideDenied =
         "pos.customer_credit.due_date_override_denied";
+
+    public const string InvalidBusinessCustomerCreditPolicyId =
+        "pos.business_customer_credit_policy.id.invalid";
+    public const string InvalidBusinessCustomerCreditPolicyChangeId =
+        "pos.business_customer_credit_policy_change.id.invalid";
 }

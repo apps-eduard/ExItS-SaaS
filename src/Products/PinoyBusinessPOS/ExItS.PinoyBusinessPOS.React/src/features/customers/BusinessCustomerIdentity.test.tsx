@@ -58,6 +58,35 @@ vi.mock("@/features/customers/use-organization-customer-link-overlay", () => ({
   }),
 }));
 
+vi.mock("@/api/pos/pos-business-credit-policy-client", () => ({
+  getBusinessCustomerCreditPolicy: vi.fn(async () => ({
+    connectionId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    sellerOrganizationId: "11111111-1111-1111-1111-111111111111",
+    buyerOrganizationId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    status: "NotConfigured",
+    creditLimit: null,
+    defaultTermDays: null,
+    outstandingAmount: 0,
+    availableCredit: 0,
+    configuredByUserId: null,
+    configuredAtUtc: null,
+    approvedByUserId: null,
+    approvedAtUtc: null,
+    updatedByUserId: null,
+    updatedAtUtc: null,
+    expectedUpdatedAtUtc: null,
+  })),
+  listBusinessCustomerCreditPolicyHistory: vi.fn(async () => ({
+    items: [],
+    totalCount: 0,
+    page: 1,
+    pageSize: 20,
+  })),
+  upsertBusinessCustomerCreditPolicy: vi.fn(),
+  approveBusinessCustomerCreditPolicy: vi.fn(),
+  disableBusinessCustomerCreditPolicy: vi.fn(),
+}));
+
 function businessCustomer(
   overrides: Partial<connectedClient.BusinessCustomer> = {},
 ): connectedClient.BusinessCustomer {
@@ -122,6 +151,10 @@ describe("Business Customer identity display", () => {
       "Kizy Mini Store",
     );
     expect(screen.getByTestId("business-customer-public-id")).toHaveTextContent("ORGKIZY01");
+    expect(await screen.findByTestId("business-credit-policy-section")).toBeInTheDocument();
+    expect(await screen.findByTestId("business-credit-policy-status")).toHaveTextContent(
+      "Not configured",
+    );
     expect(screen.getByTestId("page-header-back-customers")).toHaveAttribute(
       "href",
       "/customers?kind=businesses",
