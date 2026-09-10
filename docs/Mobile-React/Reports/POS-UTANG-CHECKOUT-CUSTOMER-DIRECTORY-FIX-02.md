@@ -7,7 +7,7 @@ POS-UTANG-CHECKOUT-CUSTOMER-DIRECTORY-FIX-02 — Unify Sell → Checkout custome
 `0aa702cd4aabfa4a7b9820865514ca3459db1e4c`
 
 ## FINAL_SHA
-_(recorded after commit)_
+`511b6802b8bd63bdccb00627c4fccab28f9584cd`
 
 ## BRANCH
 `feat/organization`
