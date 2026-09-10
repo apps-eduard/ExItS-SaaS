@@ -17,12 +17,20 @@ internal sealed class InventoryBranchReorderDefaultRepository : IInventoryBranch
         PosBranchId branchId,
         CancellationToken cancellationToken = default)
     {
-        var record = await _db.InventoryBranchReorderDefaults
-            .FirstOrDefaultAsync(
-                r => r.OrganizationId == organizationId.Value && r.BranchId == branchId.Value,
-                cancellationToken)
-            .ConfigureAwait(false);
-        return record is null ? null : InventoryTransferEntityMapper.ToDomain(record);
+        try
+        {
+            var record = await _db.InventoryBranchReorderDefaults
+                .FirstOrDefaultAsync(
+                    r => r.OrganizationId == organizationId.Value && r.BranchId == branchId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return record is null ? null : InventoryTransferEntityMapper.ToDomain(record);
+        }
+        catch (Exception ex) when (IsMissingRelation(ex))
+        {
+            // Migration not applied yet — treat as no branch default.
+            return null;
+        }
     }
 
     public async Task UpsertAsync(InventoryBranchReorderDefault setting, CancellationToken cancellationToken = default)
@@ -46,5 +54,26 @@ internal sealed class InventoryBranchReorderDefaultRepository : IInventoryBranch
         record.ReorderQuantity = setting.ReorderQuantity;
         record.UpdatedAtUtc = setting.UpdatedAtUtc;
         record.UpdatedBy = setting.UpdatedBy;
+    }
+
+    private static bool IsMissingRelation(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException!)
+        {
+            var typeName = current.GetType().FullName ?? current.GetType().Name;
+            if (typeName.Contains("PostgresException", StringComparison.Ordinal)
+                && current.Message.Contains("inventory_branch_reorder_defaults", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (current.Message.Contains("42P01", StringComparison.Ordinal)
+                && current.Message.Contains("inventory_branch_reorder_defaults", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

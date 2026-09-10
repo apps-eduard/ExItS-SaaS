@@ -255,10 +255,13 @@ export function InventoryListPage() {
             hasData={Boolean(query.data)}
             onRetry={() => void query.refetch()}
           >
-            {query.isError && query.data ? (
-              <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
+            {query.isError ? (
+              <ErrorState
+                title={t("error.title")}
+                detail={(query.error as Error).message}
+              />
             ) : null}
-            {query.isSuccess && items.length === 0 ? (
+            {!query.isError && query.isSuccess && items.length === 0 ? (
               <EmptyState
                 title={t("inventory.empty")}
                 detail={t("inventory.emptyDetail")}
@@ -276,6 +279,7 @@ export function InventoryListPage() {
               />
             ) : null}
 
+            {!query.isError ? (
             <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
               {items.map((item) => {
                 const tracked = item.isTracked;
@@ -353,6 +357,7 @@ export function InventoryListPage() {
                 );
               })}
             </ul>
+            ) : null}
           </OrganizationQueryGate>
         </div>
       </div>

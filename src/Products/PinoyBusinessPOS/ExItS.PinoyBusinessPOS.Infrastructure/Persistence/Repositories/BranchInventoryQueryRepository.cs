@@ -124,14 +124,11 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         var primaryBranchId = context.PrimaryBranchId;
         var localScope = CatalogProductScopes.ToCode(CatalogProductScope.BranchLocal);
 
-        var branchDefault = await _db.InventoryBranchReorderDefaults.AsNoTracking()
-            .FirstOrDefaultAsync(
-                d => d.OrganizationId == orgId && d.BranchId == branchId,
+        var (defaultLevel, defaultQuantity, hasBranchDefault) = await TryLoadBranchDefaultAsync(
+                orgId,
+                branchId,
                 cancellationToken)
             .ConfigureAwait(false);
-        var defaultLevel = branchDefault?.ReorderLevel;
-        var defaultQuantity = branchDefault?.ReorderQuantity;
-        var hasBranchDefault = defaultLevel is not null || defaultQuantity is not null;
 
         var products = _db.CatalogProducts.AsNoTracking()
             .Where(p => p.OrganizationId == orgId);
@@ -168,6 +165,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         var branchReorder = _db.InventoryBranchReorderSettings.AsNoTracking()
             .Where(r => r.OrganizationId == orgId && r.BranchId == branchId);
 
+        // Anonymous projection keeps EF Core translation reliable (same pattern as pre-low-stock list).
         var query =
             from p in products
             join a in _db.InventoryAccounts.AsNoTracking()
@@ -199,33 +197,39 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 ? reorder.ReorderLevel
                 : (hasBranchDefault
                     ? defaultLevel
-                    : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderLevel : null))
+                    : (primaryBranchId != null && primaryBranchId == branchId
+                        ? (a != null ? a.ReorderLevel : null)
+                        : null))
             let reorderQuantity = reorder != null
                 ? reorder.ReorderQuantity
                 : (hasBranchDefault
                     ? defaultQuantity
-                    : (primaryBranchId != null && primaryBranchId == branchId ? a.ReorderQuantity : null))
+                    : (primaryBranchId != null && primaryBranchId == branchId
+                        ? (a != null ? a.ReorderQuantity : null)
+                        : null))
             let isTracked = a != null && a.IsTracked
-            select new BranchInventoryListQueryRow(
-                p.Id,
-                p.OrganizationId,
-                p.Name,
-                p.UnitOfMeasure,
-                p.Status,
-                isTracked,
-                branchOnHand,
-                orgOnHand,
-                reorderLevel,
-                reorderQuantity,
-                a != null ? a.CreatedAtUtc : p.CreatedAtUtc,
-                a != null ? a.UpdatedAtUtc : p.UpdatedAtUtc,
-                p.TracksExpiration,
-                p.ExpirationWarningDays,
-                p.Sku,
-                p.Barcode,
-                p.CategoryId,
-                cat != null ? cat.Name : null,
-                monitoringMode);
+            select new BranchInventoryListQueryRow
+            {
+                ProductId = p.Id,
+                OrganizationId = p.OrganizationId,
+                Name = p.Name,
+                UnitOfMeasure = p.UnitOfMeasure,
+                ProductStatus = p.Status,
+                IsTracked = isTracked,
+                BranchOnHand = branchOnHand,
+                OrgOnHand = orgOnHand,
+                ReorderLevel = reorderLevel,
+                ReorderQuantity = reorderQuantity,
+                CreatedAtUtc = a != null ? a.CreatedAtUtc : p.CreatedAtUtc,
+                UpdatedAtUtc = a != null ? a.UpdatedAtUtc : p.UpdatedAtUtc,
+                TracksExpiration = p.TracksExpiration,
+                ExpirationWarningDays = p.ExpirationWarningDays,
+                Sku = p.Sku,
+                Barcode = p.Barcode,
+                CategoryId = p.CategoryId,
+                CategoryName = cat != null ? cat.Name : null,
+                MonitoringMode = monitoringMode,
+            };
 
         if (filter.TrackedOnly == true)
         {
@@ -298,26 +302,73 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         return (query, total);
     }
 
-    private sealed record BranchInventoryListQueryRow(
-        Guid ProductId,
-        Guid OrganizationId,
-        string Name,
-        string UnitOfMeasure,
-        string ProductStatus,
-        bool IsTracked,
-        decimal BranchOnHand,
-        decimal OrgOnHand,
-        decimal? ReorderLevel,
-        decimal? ReorderQuantity,
-        DateTimeOffset CreatedAtUtc,
-        DateTimeOffset UpdatedAtUtc,
-        bool TracksExpiration,
-        int? ExpirationWarningDays,
-        string? Sku,
-        string? Barcode,
-        Guid? CategoryId,
-        string? CategoryName,
-        string MonitoringMode);
+    private async Task<(decimal? Level, decimal? Quantity, bool HasDefault)> TryLoadBranchDefaultAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var branchDefault = await _db.InventoryBranchReorderDefaults.AsNoTracking()
+                .FirstOrDefaultAsync(
+                    d => d.OrganizationId == organizationId && d.BranchId == branchId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var defaultLevel = branchDefault?.ReorderLevel;
+            var defaultQuantity = branchDefault?.ReorderQuantity;
+            var hasBranchDefault = defaultLevel is not null || defaultQuantity is not null;
+            return (defaultLevel, defaultQuantity, hasBranchDefault);
+        }
+        catch (Exception ex) when (IsMissingRelation(ex))
+        {
+            // Migration not applied yet — inventory list must still load with legacy fallback.
+            return (null, null, false);
+        }
+    }
+
+    private static bool IsMissingRelation(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException!)
+        {
+            var typeName = current.GetType().FullName ?? current.GetType().Name;
+            if (typeName.Contains("PostgresException", StringComparison.Ordinal)
+                && current.Message.Contains("inventory_branch_reorder_defaults", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (current.Message.Contains("42P01", StringComparison.Ordinal)
+                && current.Message.Contains("inventory_branch_reorder_defaults", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private sealed class BranchInventoryListQueryRow
+    {
+        public Guid ProductId { get; set; }
+        public Guid OrganizationId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string UnitOfMeasure { get; set; } = string.Empty;
+        public string ProductStatus { get; set; } = string.Empty;
+        public bool IsTracked { get; set; }
+        public decimal BranchOnHand { get; set; }
+        public decimal OrgOnHand { get; set; }
+        public decimal? ReorderLevel { get; set; }
+        public decimal? ReorderQuantity { get; set; }
+        public DateTimeOffset CreatedAtUtc { get; set; }
+        public DateTimeOffset UpdatedAtUtc { get; set; }
+        public bool TracksExpiration { get; set; }
+        public int? ExpirationWarningDays { get; set; }
+        public string? Sku { get; set; }
+        public string? Barcode { get; set; }
+        public Guid? CategoryId { get; set; }
+        public string? CategoryName { get; set; }
+        public string MonitoringMode { get; set; } = InventoryReorderMonitoringModes.BranchDefault;
+    }
 
     private async Task<Dictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> LoadMovementSummariesAsync(
         Guid organizationId,
