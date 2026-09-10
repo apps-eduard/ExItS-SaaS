@@ -150,50 +150,57 @@ export function CheckoutCustomerDirectory({
 
   return (
     <div className="checkout-customer-directory">
-      {onKindFilterChange ? (
-        <div
-          className="mb-2 flex flex-wrap gap-1.5"
-          role="tablist"
-          aria-label={t("checkout.customerKindFilter")}
-          data-testid="checkout-customer-kind-tabs"
-        >
-          {(
-            [
-              ["all", t("checkout.customerKindAll")],
-              ["people", t("checkout.customerKindPeople")],
-              ["businesses", t("checkout.customerKindBusinesses")],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={kindFilter === key}
-              className={cn(
-                "exits-chip exits-chip--sm",
-                kindFilter === key && "exits-chip--active",
-              )}
-              data-testid={`checkout-customer-kind-${key}`}
-              disabled={disabled}
-              onClick={() => onKindFilterChange(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div
+        className={cn(
+          "mb-2 flex min-w-0 flex-wrap items-center gap-1.5",
+          !onKindFilterChange && "mb-0",
+        )}
+      >
+        {onKindFilterChange ? (
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="tablist"
+            aria-label={t("checkout.customerKindFilter")}
+            data-testid="checkout-customer-kind-tabs"
+          >
+            {(
+              [
+                ["all", t("checkout.customerKindAll")],
+                ["people", t("checkout.customerKindPeople")],
+                ["businesses", t("checkout.customerKindBusinesses")],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={kindFilter === key}
+                className={cn(
+                  "exits-chip exits-chip--sm",
+                  kindFilter === key && "exits-chip--active",
+                )}
+                data-testid={`checkout-customer-kind-${key}`}
+                disabled={disabled}
+                onClick={() => onKindFilterChange(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
-      <SearchField
-        id={searchId}
-        label={searchLabel}
-        placeholder={searchLabel}
-        value={searchValue}
-        disabled={disabled}
-        data-testid={searchTestId}
-        containerClassName="checkout-customer-directory__search"
-        onChange={(event) => onSearchChange(event.target.value)}
-        onClear={() => onSearchChange("")}
-      />
+        <SearchField
+          id={searchId}
+          label={searchLabel}
+          placeholder={searchLabel}
+          value={searchValue}
+          disabled={disabled}
+          data-testid={searchTestId}
+          containerClassName="checkout-customer-directory__search min-w-[10rem] flex-1"
+          onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange("")}
+        />
+      </div>
       <p className="checkout-customer-directory__hint">{searchHint}</p>
 
       {customersLoading ? (

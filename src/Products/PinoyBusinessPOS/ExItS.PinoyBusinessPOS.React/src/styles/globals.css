@@ -2611,6 +2611,8 @@ html:has(.admin-shell) #root {
 
 .checkout-customer-directory__search {
   margin: 0;
+  flex: 1 1 10rem;
+  min-width: 10rem;
 }
 
 .checkout-customer-directory__hint {
