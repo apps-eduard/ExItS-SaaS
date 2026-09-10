@@ -2629,9 +2629,14 @@ html:has(.admin-shell) #root {
 .checkout-credit-directory__head,
 .checkout-credit-directory__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(3.5rem, 0.45fr) minmax(7rem, 1fr) minmax(4.5rem, 0.7fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(6rem, 0.9fr) minmax(3.5rem, 0.4fr) minmax(7rem, 1fr) minmax(4.5rem, 0.7fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
+}
+
+.checkout-credit-directory--simple .checkout-credit-directory__head,
+.checkout-credit-directory--simple .checkout-credit-directory__row {
+  grid-template-columns: minmax(0, 1fr) minmax(6rem, 0.85fr) minmax(4rem, 0.35fr);
 }
 
 .checkout-credit-directory__head {
@@ -2677,16 +2682,17 @@ html:has(.admin-shell) #root {
   font-weight: var(--exits-font-weight-medium);
 }
 
-.checkout-credit-directory__name-primary,
-.checkout-credit-directory__name-secondary {
+.checkout-credit-directory__name-primary {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.checkout-credit-directory__name-secondary {
+.checkout-credit-directory__exits-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--exits-text-xs);
-  font-weight: var(--exits-font-weight-normal);
   color: var(--exits-text-muted);
 }
 
@@ -2784,12 +2790,24 @@ html:has(.admin-shell) #root {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "name status"
-      "type available";
+      "exitsId available"
+      "type type";
     row-gap: 0.2rem;
+  }
+
+  .checkout-credit-directory--simple .checkout-credit-directory__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name type"
+      "exitsId exitsId";
   }
 
   .checkout-credit-directory__name {
     grid-area: name;
+  }
+
+  .checkout-credit-directory__exits-id {
+    grid-area: exitsId;
   }
 
   .checkout-credit-directory__type {

@@ -1546,6 +1546,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.utangSelect.overLimit": "Credit limit exceeded. Available credit is {amount}.",
   "checkout.utangSelect.b2bNotAvailable": "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.directoryCredit.colCustomer": "Customer",
+  "checkout.directoryCredit.colExItsId": "ExItS ID#",
   "checkout.directoryCredit.colType": "Type",
   "checkout.directoryCredit.colStatus": "Credit status",
   "checkout.directoryCredit.colAvailable": "Available",

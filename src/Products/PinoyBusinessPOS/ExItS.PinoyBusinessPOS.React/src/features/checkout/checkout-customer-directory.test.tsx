@@ -62,11 +62,14 @@ describe("CheckoutCustomerDirectory", () => {
   it("hides Local Validation walk-in seeds until the cashier searches", () => {
     renderDirectory([walkIn, named]);
 
+    expect(screen.getByTestId("checkout-credit-directory")).toHaveClass(
+      "checkout-credit-directory--simple",
+    );
     expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toHaveTextContent(
       "Juan Dela Cruz",
     );
     expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toHaveTextContent(
-      "09171234567",
+      "Person",
     );
     expect(screen.queryByTestId(`checkout-customer-${walkIn.customerId}`)).not.toBeInTheDocument();
   });
@@ -80,21 +83,18 @@ describe("CheckoutCustomerDirectory", () => {
     expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toBeInTheDocument();
   });
 
-  it("shows walk-ins as Walk-in plus phone when searching", () => {
+  it("shows walk-ins as Walk-in when searching", () => {
     renderDirectory([walkIn, named], { search: "0917" });
 
     expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).toHaveTextContent(
       "Walk-in",
-    );
-    expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).toHaveTextContent(
-      "09171110001",
     );
     expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).not.toHaveTextContent(
       "20260826230002",
     );
   });
 
-  it("shows No ExItS ID versus ExItS ID, and Connected only from the overlay", () => {
+  it("shows ExItS ID# column for people and ORG ids for B2B", () => {
     const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const linked: CheckoutCustomerOption = {
       kind: "Customer",
@@ -104,37 +104,45 @@ describe("CheckoutCustomerDirectory", () => {
       linkedPersonalPublicUserId: "EX-4827-1936",
       platformBusinessCustomerId: platformId,
     };
+    const business: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222222",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+      buyerPublicOrganizationId: "ORG436352",
+      displayName: "Kizy Bakery",
+      status: "Active",
+    };
     const overlay: CustomerListConnectionOverlay = {
       connectedBusinessCustomerIds: new Set([platformId]),
       pendingBusinessCustomerIds: new Set(),
       loaded: true,
     };
 
-    renderDirectory([named, linked], { overlay });
+    renderDirectory([named, linked, business], { overlay });
 
-    expect(
-      screen.getByTestId(`checkout-customer-${named.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-no-exits']",
-      ),
-    ).toHaveTextContent("No ExItS ID");
-    expect(
-      screen.getByTestId(`checkout-customer-${linked.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-exits-id']",
-      ),
-    ).toHaveTextContent("ExItS ID");
-    expect(
-      screen.getByTestId(`checkout-customer-${linked.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-connected']",
-      ),
-    ).toHaveTextContent("Connected");
-    expect(
-      screen.queryByTestId(`checkout-customer-${named.customerId}`)?.querySelector(
-        "[data-testid='customer-list-badge-connected']",
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText("ExItS ID#")).toBeInTheDocument();
+
+    const linkedRow = screen.getByTestId(`checkout-customer-${linked.customerId}`);
+    expect(linkedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "EX-4827-1936",
+    );
+    expect(linkedRow.querySelector("[data-testid='customer-list-badge-exits-id']")).not.toBeInTheDocument();
+
+    const businessRow = screen.getByTestId(`checkout-business-${business.connectionId}`);
+    expect(businessRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "ORG436352",
+    );
+    expect(businessRow.querySelector("[data-testid='checkout-credit-directory-type']")).toHaveTextContent(
+      "B2B",
+    );
+
+    const namedRow = screen.getByTestId(`checkout-customer-${named.customerId}`);
+    expect(namedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "—",
+    );
   });
 
-  it("shows Pending when the overlay lists a pending request", () => {
+  it("keeps connection badges on the selected customer card only", () => {
     const platformId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
     const linked: CheckoutCustomerOption = {
       kind: "Customer",
@@ -145,13 +153,19 @@ describe("CheckoutCustomerDirectory", () => {
       platformBusinessCustomerId: platformId,
     };
 
-    renderDirectory([linked], {
-      overlay: {
-        connectedBusinessCustomerIds: new Set(),
-        pendingBusinessCustomerIds: new Set([platformId]),
-        loaded: true,
-      },
-    });
+    render(
+      <AppProviders>
+        <CheckoutCustomerSelectedCard
+          customer={linked}
+          overlay={{
+            connectedBusinessCustomerIds: new Set(),
+            pendingBusinessCustomerIds: new Set([platformId]),
+            loaded: true,
+          }}
+          onClear={vi.fn()}
+        />
+      </AppProviders>,
+    );
 
     expect(screen.getByTestId("customer-list-badge-pending")).toHaveTextContent("Pending");
     expect(screen.queryByTestId("customer-list-badge-connected")).not.toBeInTheDocument();

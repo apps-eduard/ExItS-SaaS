@@ -2254,6 +2254,7 @@ export const en = {
   "checkout.directoryCredit.disabled": "Paused",
   "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
   "checkout.directoryCredit.colCustomer": "Customer",
+  "checkout.directoryCredit.colExItsId": "ExItS ID#",
   "checkout.directoryCredit.colType": "Type",
   "checkout.directoryCredit.colStatus": "Credit status",
   "checkout.directoryCredit.colAvailable": "Available",

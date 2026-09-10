@@ -91,18 +91,16 @@ function directoryAvailableLabel(customer: CheckoutCustomerOption): string {
   return formatPeso(available ?? 0);
 }
 
-function directorySecondaryIdentity(customer: CheckoutCustomerOption): string | null {
+function directoryExItsId(customer: CheckoutCustomerOption): string | null {
   if (isCheckoutBusiness(customer)) {
     const orgId = customer.buyerPublicOrganizationId?.trim();
     return orgId || null;
   }
   if (isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)) {
-    const exitsId = customer.linkedPersonalPublicUserId?.trim();
-    return exitsId || null;
+    return customer.linkedPersonalPublicUserId?.trim() || null;
   }
   if (isCheckoutPerson(customer) && isCheckoutBusinessDirectoryRow(customer)) {
-    const orgId = customer.linkedBuyerPublicOrganizationId?.trim();
-    return orgId || null;
+    return customer.linkedBuyerPublicOrganizationId?.trim() || null;
   }
   return null;
 }
@@ -262,15 +260,26 @@ export function CheckoutCustomerDirectory({
         >
           {emptyCopy}
         </p>
-      ) : showCreditStatus ? (
-        <div className="checkout-credit-directory" data-testid="checkout-credit-directory">
+      ) : (
+        <div
+          className={cn(
+            "checkout-credit-directory",
+            !showCreditStatus && "checkout-credit-directory--simple",
+          )}
+          data-testid="checkout-credit-directory"
+        >
           <div className="checkout-credit-directory__head" aria-hidden>
             <span>{t("checkout.directoryCredit.colCustomer")}</span>
+            <span>{t("checkout.directoryCredit.colExItsId")}</span>
             <span>{t("checkout.directoryCredit.colType")}</span>
-            <span>{t("checkout.directoryCredit.colStatus")}</span>
-            <span className="checkout-credit-directory__available-head">
-              {t("checkout.directoryCredit.colAvailable")}
-            </span>
+            {showCreditStatus ? (
+              <>
+                <span>{t("checkout.directoryCredit.colStatus")}</span>
+                <span className="checkout-credit-directory__available-head">
+                  {t("checkout.directoryCredit.colAvailable")}
+                </span>
+              </>
+            ) : null}
           </div>
           <ul className="checkout-credit-directory__list" data-testid="checkout-customer-list">
             {visible.map((customer) => {
@@ -278,9 +287,9 @@ export function CheckoutCustomerDirectory({
               const selected =
                 selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
               const isB2b = isCheckoutBusinessDirectoryRow(customer);
-              const status = directoryCreditStatus(customer);
-              const available = directoryAvailableLabel(customer);
-              const secondary = directorySecondaryIdentity(customer);
+              const status = showCreditStatus ? directoryCreditStatus(customer) : null;
+              const available = showCreditStatus ? directoryAvailableLabel(customer) : null;
+              const exitsId = directoryExItsId(customer);
               return (
                 <li key={key}>
                   <button
@@ -306,14 +315,12 @@ export function CheckoutCustomerDirectory({
                       <span className="checkout-credit-directory__name-primary">
                         {checkoutCustomerTitle(customer, walkInLabel)}
                       </span>
-                      {secondary ? (
-                        <span
-                          className="checkout-credit-directory__name-secondary"
-                          data-testid="checkout-credit-directory-secondary"
-                        >
-                          {secondary}
-                        </span>
-                      ) : null}
+                    </span>
+                    <span
+                      className="checkout-credit-directory__exits-id tabular-nums"
+                      data-testid="checkout-credit-directory-secondary"
+                    >
+                      {exitsId ?? t("checkout.directoryCredit.availableEmDash")}
                     </span>
                     <span
                       className="checkout-credit-directory__type"
@@ -323,69 +330,38 @@ export function CheckoutCustomerDirectory({
                         ? t("checkout.directoryCredit.typeB2b")
                         : t("checkout.directoryCredit.typePerson")}
                     </span>
-                    <span
-                      className="checkout-credit-directory__status"
-                      data-testid="checkout-customer-credit-line"
-                    >
-                      {status ? (
-                        <StatusChip tone={checkoutCreditStatusTone(status)}>
-                          {t(checkoutCreditStatusLabelKey(status))}
-                        </StatusChip>
-                      ) : (
-                        <span className="text-muted">
-                          {t("checkout.directoryCredit.availableEmDash")}
+                    {showCreditStatus ? (
+                      <>
+                        <span
+                          className="checkout-credit-directory__status"
+                          data-testid="checkout-customer-credit-line"
+                        >
+                          {status ? (
+                            <StatusChip tone={checkoutCreditStatusTone(status)}>
+                              {t(checkoutCreditStatusLabelKey(status))}
+                            </StatusChip>
+                          ) : (
+                            <span className="text-muted">
+                              {t("checkout.directoryCredit.availableEmDash")}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <span
-                      className="checkout-credit-directory__available tabular-nums"
-                      data-testid="checkout-credit-directory-available"
-                    >
-                      {available === "—"
-                        ? t("checkout.directoryCredit.availableEmDash")
-                        : available}
-                    </span>
+                        <span
+                          className="checkout-credit-directory__available tabular-nums"
+                          data-testid="checkout-credit-directory-available"
+                        >
+                          {available === "—"
+                            ? t("checkout.directoryCredit.availableEmDash")
+                            : available}
+                        </span>
+                      </>
+                    ) : null}
                   </button>
                 </li>
               );
             })}
           </ul>
         </div>
-      ) : (
-        <ul className="checkout-customer-list" data-testid="checkout-customer-list">
-          {visible.map((customer) => {
-            const key = checkoutOptionKey(customer);
-            const selected =
-              selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
-            return (
-              <li key={key}>
-                <button
-                  type="button"
-                  className={cn(
-                    "checkout-customer-row",
-                    selected && "checkout-customer-row--selected",
-                    isCheckoutBusinessDirectoryRow(customer) && "checkout-customer-row--b2b",
-                  )}
-                  data-testid={
-                    isCheckoutBusiness(customer)
-                      ? `checkout-business-${customer.connectionId}`
-                      : `checkout-customer-${customer.customerId}`
-                  }
-                  disabled={disabled}
-                  aria-pressed={selected}
-                  aria-label={checkoutCustomerTitle(customer, walkInLabel)}
-                  onClick={() => onSelect(customer)}
-                >
-                  <CheckoutCustomerIdentity
-                    customer={customer}
-                    overlay={overlay}
-                    selected={selected}
-                  />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
       )}
     </div>
   );
