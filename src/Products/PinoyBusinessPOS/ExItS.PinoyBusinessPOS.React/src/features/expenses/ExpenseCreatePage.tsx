@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, Loader2, Receipt, Smartphone } from "lucide-react";
+import { ArrowLeft, Banknote, Eye, Loader2, Plus, Receipt, Smartphone } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   EXPENSE_DESCRIPTION_MAX,
@@ -205,21 +205,28 @@ export function ExpenseCreatePage() {
           backTo="/expenses"
           backLabel={t("expense.backList")}
         />
-        <Card className="flex flex-col gap-2 p-4">
-          <p className="m-0 font-semibold" data-testid="expense-recorded-number">
+        <Card className="expense-record-success-card flex flex-col gap-1.5 p-4 sm:p-5">
+          <p className="m-0 font-semibold tabular-nums" data-testid="expense-recorded-number">
             {recordedNumber}
           </p>
-          <p className="m-0" data-testid="expense-recorded-amount">
+          <p
+            className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums"
+            data-testid="expense-recorded-amount"
+          >
             <MoneyDisplay amount={recordedAmount} />
           </p>
         </Card>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild data-testid="expense-view-recorded">
-            <Link to={`/expenses/${recordedId}`}>{t("expense.viewExpense")}</Link>
+        <div className="expense-record-success-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button asChild className="w-full sm:w-fit" data-testid="expense-view-recorded">
+            <Link to={`/expenses/${recordedId}`}>
+              <Eye className="size-4 shrink-0" aria-hidden />
+              {t("expense.viewExpense")}
+            </Link>
           </Button>
           <Button
             type="button"
             variant="outline"
+            className="supplier-form-cancel-btn w-full sm:w-fit"
             data-testid="expense-record-another"
             onClick={() => {
               setRecordedId(null);
@@ -232,10 +239,14 @@ export function ExpenseCreatePage() {
               setExpenseDate(todayExpenseDateInput());
             }}
           >
+            <Plus className="size-4 shrink-0" aria-hidden />
             {t("expense.recordAnother")}
           </Button>
-          <Button asChild variant="ghost">
-            <Link to="/expenses">{t("expense.backList")}</Link>
+          <Button asChild variant="ghost" className="w-full sm:w-fit" data-testid="expense-back-list">
+            <Link to="/expenses">
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              {t("expense.backList")}
+            </Link>
           </Button>
         </div>
       </div>

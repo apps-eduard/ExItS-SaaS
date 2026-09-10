@@ -415,11 +415,18 @@ export function ManagerRetailHome() {
 
   const registerName = currentShift?.registerName?.trim() || undefined;
   const registerCode = currentShift?.registerCode?.trim() || undefined;
+  const registerId = currentShift?.registerId?.trim() || undefined;
   const shiftNumber = currentShift?.shiftNumber?.trim() || undefined;
   const registerLabel =
     registerCode && registerName
       ? `${registerCode} — ${registerName}`
       : registerCode || registerName || t("managerHome.register.none");
+  const shiftMetricTo = hasOpenShift && currentShift?.shiftId
+    ? `/shifts/${currentShift.shiftId}`
+    : canOpenShift
+      ? "/shifts/open"
+      : "/shifts";
+  const registerMetricTo = registerId ? `/registers/${registerId}/history` : undefined;
 
   return (
     <div
@@ -478,6 +485,7 @@ export function ManagerRetailHome() {
                   }
                   valueScale="restrained"
                   testId="manager-today-shift"
+                  to={shiftMetricTo}
                 />
               ) : null}
               {canShifts && hasOpenShift ? (
@@ -486,6 +494,7 @@ export function ManagerRetailHome() {
                   value={registerLabel}
                   valueScale="restrained"
                   testId="manager-today-register"
+                  to={registerMetricTo}
                 />
               ) : null}
             </ManagerMetricStrip>

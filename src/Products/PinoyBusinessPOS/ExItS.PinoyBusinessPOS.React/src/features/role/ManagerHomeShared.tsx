@@ -32,6 +32,7 @@ export function ManagerMetricCard({
   testId,
   tone,
   valueScale = "kpi",
+  to,
 }: {
   label: string;
   value?: ReactNode;
@@ -42,17 +43,18 @@ export function ManagerMetricCard({
   tone?: "default" | "attention" | "success";
   /** `kpi` = sales-scale; `restrained` = Shift/Register (~text-xl, weight 600). */
   valueScale?: "kpi" | "restrained";
+  /** When set, the metric cell is a navigable link. */
+  to?: string;
 }) {
-  return (
-    <div
-      className={cn(
-        "manager-metric-cell flex min-w-0 flex-col gap-0.5 px-3 py-2",
-        tone === "attention" && "manager-metric-cell--attention",
-        tone === "success" && "manager-metric-cell--success",
-      )}
-      data-testid={testId}
-      data-value-scale={valueScale}
-    >
+  const classes = cn(
+    "manager-metric-cell flex min-w-0 flex-col gap-0.5 px-3 py-2",
+    tone === "attention" && "manager-metric-cell--attention",
+    tone === "success" && "manager-metric-cell--success",
+    to && "manager-metric-cell--clickable no-underline text-inherit",
+  );
+
+  const content = (
+    <>
       <div className="flex min-w-0 items-start justify-between gap-2">
         <span className="exits-type-label m-0 min-w-0 text-muted">{label}</span>
         {badge ? <span className="shrink-0">{badge}</span> : null}
@@ -72,6 +74,20 @@ export function ManagerMetricCard({
       {hint ? (
         <span className="m-0 text-[length:var(--exits-text-xs)] font-normal text-muted">{hint}</span>
       ) : null}
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className={classes} data-testid={testId} data-value-scale={valueScale}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={classes} data-testid={testId} data-value-scale={valueScale}>
+      {content}
     </div>
   );
 }

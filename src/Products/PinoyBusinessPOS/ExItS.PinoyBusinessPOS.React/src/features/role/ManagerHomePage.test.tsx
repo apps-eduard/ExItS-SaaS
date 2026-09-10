@@ -340,6 +340,7 @@ describe("ManagerHomePage", () => {
     workspaceState.currentShift = {
       shiftId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
       shiftNumber: "SHIFT-20260901-000001",
+      registerId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       registerCode: "REG-000001",
       registerName: "PWA-0001",
     };
@@ -356,6 +357,7 @@ describe("ManagerHomePage", () => {
 
     const shiftMetric = screen.getByTestId("manager-today-shift");
     expect(shiftMetric).toHaveAttribute("data-value-scale", "restrained");
+    expect(shiftMetric).toHaveAttribute("href", "/shifts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     expect(shiftMetric.className).not.toMatch(/exits-alert-surface/);
     expect(shiftMetric).toHaveTextContent("SHIFT-20260901-000001");
     expect(shiftMetric.querySelector(".exits-type-kpi")).toBeNull();
@@ -363,6 +365,10 @@ describe("ManagerHomePage", () => {
     expect(screen.getByTestId("manager-today-register")).toHaveAttribute(
       "data-value-scale",
       "restrained",
+    );
+    expect(screen.getByTestId("manager-today-register")).toHaveAttribute(
+      "href",
+      "/registers/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/history",
     );
     expect(screen.getByTestId("manager-today-register")).toHaveTextContent(
       "REG-000001 — PWA-0001",
