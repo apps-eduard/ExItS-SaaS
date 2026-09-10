@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -8,6 +10,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations;
 /// Adds InitiatedByParty so seller-initiated Business Customer invitations can be distinguished
 /// from classic buyer→supplier requests. Existing rows backfill as Buyer (0).
 /// </summary>
+[DbContext(typeof(PosDbContext))]
+[Migration("20260910140000_AddConnectedSupplierInitiatedByParty")]
 public partial class AddConnectedSupplierInitiatedByParty : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
