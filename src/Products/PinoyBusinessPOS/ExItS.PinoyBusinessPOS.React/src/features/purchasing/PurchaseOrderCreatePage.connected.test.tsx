@@ -56,6 +56,8 @@ const classifyCatalogReadiness = vi.fn();
 const getConnectedOrderStock = vi.fn();
 const createPurchaseOrder = vi.fn();
 const listCatalogProducts = vi.fn();
+const createBuyerProductAndLink = vi.fn();
+const linkProduct = vi.fn();
 
 vi.mock("@/api/pos/pos-suppliers-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/pos/pos-suppliers-client")>();
@@ -73,6 +75,8 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", async (importOriginal) => {
     searchExposedCatalog: (...args: unknown[]) => searchExposedCatalog(...args),
     classifyCatalogReadiness: (...args: unknown[]) => classifyCatalogReadiness(...args),
     getConnectedOrderStock: (...args: unknown[]) => getConnectedOrderStock(...args),
+    createBuyerProductAndLink: (...args: unknown[]) => createBuyerProductAndLink(...args),
+    linkProduct: (...args: unknown[]) => linkProduct(...args),
   };
 });
 
@@ -289,6 +293,8 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     getConnectedOrderStock.mockReset();
     createPurchaseOrder.mockReset();
     listCatalogProducts.mockReset();
+    createBuyerProductAndLink.mockReset();
+    linkProduct.mockReset();
     listSuppliers.mockResolvedValue(linkedSupplier());
     listLinks.mockResolvedValue(readyLinkPayload());
     searchExposedCatalog.mockResolvedValue(readyCatalogPayload());
@@ -307,6 +313,12 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     });
     createPurchaseOrder.mockResolvedValue({ purchaseOrderId: "po-1" });
     listCatalogProducts.mockResolvedValue({ items: [], totalCount: 0 });
+    createBuyerProductAndLink.mockResolvedValue({
+      buyerProductId: buyerProductId2,
+      createdNewProduct: true,
+      alreadyLinked: false,
+    });
+    linkProduct.mockResolvedValue({ linkId: "l-new" });
   });
 
   it("loads linked shared orderable products without requiring search", async () => {
@@ -327,7 +339,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.getByTestId("po-ready-newProduct")).toHaveTextContent("New products (1)");
   });
 
-  it("lets setup tabs open shared catalog for connecting", async () => {
+  it("lets setup tabs connect a specific product or open shared catalog", async () => {
     const user = userEvent.setup();
     renderPage();
     await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
@@ -336,9 +348,42 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await user.click(screen.getByTestId("po-ready-newProduct"));
     await waitFor(() => screen.getByTestId(`po-setup-product-${exposureId2}`));
     expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
-    expect(screen.getByTestId(`po-connect-${exposureId2}`)).toHaveAttribute(
+    expect(screen.getByTestId(`po-create-link-${exposureId2}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`po-open-catalog-${exposureId2}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-open-shared-catalog-setup-bar")).toHaveAttribute(
       "href",
       `/suppliers/${supplierId}/connected-catalog?setup=newProduct`,
+    );
+
+    await user.click(screen.getByTestId(`po-create-link-${exposureId2}`));
+    await waitFor(() =>
+      expect(createBuyerProductAndLink).toHaveBeenCalledWith(
+        expect.anything(),
+        relationshipId,
+        expect.objectContaining({ exposureId: exposureId2, name: "Snack Mix" }),
+      ),
+    );
+  });
+
+  it("bulk-adds selected setup products while keeping per-row connect", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await waitFor(() => screen.getByTestId("po-ready-newProduct"));
+    await user.click(screen.getByTestId("po-ready-newProduct"));
+    await waitFor(() => screen.getByTestId(`po-setup-select-${exposureId2}`));
+
+    expect(screen.getByTestId(`po-create-link-${exposureId2}`)).toBeInTheDocument();
+    await user.click(screen.getByTestId(`po-setup-select-${exposureId2}`));
+    await waitFor(() => screen.getByTestId("po-setup-bulk-bar"));
+    await user.click(screen.getByTestId("po-bulk-add-as-new"));
+    await waitFor(() =>
+      expect(createBuyerProductAndLink).toHaveBeenCalledWith(
+        expect.anything(),
+        relationshipId,
+        expect.objectContaining({ exposureId: exposureId2 }),
+      ),
     );
   });
 

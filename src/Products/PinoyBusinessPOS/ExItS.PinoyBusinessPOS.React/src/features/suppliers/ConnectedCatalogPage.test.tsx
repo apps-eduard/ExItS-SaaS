@@ -266,4 +266,24 @@ describe("ConnectedCatalogPage readiness UX", () => {
     );
     expect(classifyCatalogReadiness.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("keeps per-row connect and supports bulk add for selected New products", async () => {
+    const user = userEvent.setup();
+    await renderPage();
+    await waitFor(() => screen.getByTestId(`connected-create-link-${exposureNew}`));
+
+    expect(screen.getByTestId(`connected-create-link-${exposureNew}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`connected-confirm-match-${exposureReview}`)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId(`connected-catalog-select-${exposureNew}`));
+    await waitFor(() => screen.getByTestId("connected-catalog-bulk-bar"));
+    await user.click(screen.getByTestId("connected-bulk-add-as-new"));
+    await waitFor(() =>
+      expect(createBuyerProductAndLink).toHaveBeenCalledWith(
+        expect.anything(),
+        relationshipId,
+        expect.objectContaining({ exposureId: exposureNew }),
+      ),
+    );
+  });
 });

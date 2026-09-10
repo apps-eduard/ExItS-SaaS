@@ -12,6 +12,8 @@ import {
   CONNECTED_PO_CATEGORY_OTHER,
   filterConnectedReadyProducts,
   formatLineMath,
+  formatUnitOfMeasureLabel,
+  formatUnitPriceLabel,
   lineTotal,
   maxOrderablePurchaseQty,
   mergeConnectedStock,
@@ -285,5 +287,10 @@ describe("purchase-order-create-connected", () => {
       },
     ];
     expect(retainCompatibleDraftLines(lines, kept)).toEqual([lines[0]]);
+  });
+
+  it("abbreviates Kilogram to Kg in unit and price labels", () => {
+    expect(formatUnitOfMeasureLabel("Kilogram")).toBe("Kg");
+    expect(formatUnitPriceLabel(180, "Kilogram")).toBe("₱180 / Kg");
   });
 });

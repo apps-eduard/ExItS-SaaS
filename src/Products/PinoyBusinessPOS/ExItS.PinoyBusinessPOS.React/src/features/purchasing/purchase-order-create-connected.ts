@@ -314,8 +314,42 @@ export function retainCompatibleDraftLines(
   return lines.filter((line) => allowed.has(line.productId));
 }
 
+export function formatUnitOfMeasureLabel(unitOfMeasure: string): string {
+  const unit = unitOfMeasure.trim();
+  if (!unit) {
+    return "pc";
+  }
+  switch (unit.toLowerCase()) {
+    case "kilogram":
+    case "kilograms":
+    case "kg":
+      return "Kg";
+    case "gram":
+    case "grams":
+      return "g";
+    case "liter":
+    case "litre":
+    case "liters":
+    case "litres":
+      return "L";
+    case "milliliter":
+    case "millilitre":
+    case "milliliters":
+    case "millilitres":
+    case "ml":
+      return "mL";
+    case "piece":
+    case "pieces":
+    case "pc":
+    case "pcs":
+      return "pc";
+    default:
+      return unit;
+  }
+}
+
 export function formatUnitPriceLabel(unitPurchaseCost: number, unitOfMeasure: string): string {
-  const unit = unitOfMeasure.trim() || "pc";
+  const unit = formatUnitOfMeasureLabel(unitOfMeasure);
   return `${formatCompactPeso(unitPurchaseCost)} / ${unit}`;
 }
 

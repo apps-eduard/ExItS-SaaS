@@ -1641,6 +1641,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.bulkSelectedCount": "{count} selected",
   "connected.selectAllPage": "Select all ({count})",
   "connected.deselectAllPage": "Deselect all",
+  "connected.bulkSelectHint": "Select products to connect several at once. You can still connect one product with its own buttons.",
+  "connected.bulkConfirmMatches": "Confirm matches ({count})",
+  "connected.bulkAddAsNew": "Add selected as new ({count})",
+  "connected.bulkConfirmResult": "Confirmed {ok} match(es). {failed} failed.",
+  "connected.bulkAddAsNewResult": "Added {ok} as new. {failed} failed.",
 
   "connected.businessQrHint": "ORG###### o teksto sa Business QR",
 
@@ -8163,6 +8168,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.openSharedCatalog": "Ablihi ang shared catalog",
 
   "purchasing.supplierSku": "SKU sa supplier",
+  "purchasing.colProduct": "Product",
+  "purchasing.colSku": "SKU",
+  "purchasing.colUnit": "Unit",
+  "purchasing.colPrice": "Price",
+  "purchasing.colStock": "Stock",
+  "purchasing.colQty": "Qty",
+  "purchasing.colAction": "Action",
 
   "purchasing.supplierOutOfStock": "Out of stock",
 

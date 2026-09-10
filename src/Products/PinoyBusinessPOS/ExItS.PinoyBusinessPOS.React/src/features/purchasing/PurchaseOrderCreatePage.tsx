@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { canManagePurchasing } from "@/access/pos-capabilities";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Check, Plus } from "lucide-react";
+import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   classifyCatalogReadiness,
+  createBuyerProductAndLink,
   getConnectedOrderStock,
+  linkProduct,
   listLinks,
   searchExposedCatalog,
+  type CatalogProductReadinessItem,
   type SupplierProductExposure,
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
@@ -37,6 +41,7 @@ import {
   connectedLinesViolateStock,
   filterConnectedReadyProducts,
   formatLineMath,
+  formatUnitOfMeasureLabel,
   formatUnitPriceLabel,
   maxOrderablePurchaseQty,
   mergeConnectedStock,
@@ -48,8 +53,13 @@ import {
   type ConnectedPoReadyProduct,
 } from "@/features/purchasing/purchase-order-create-connected";
 import {
+  isBulkConnectSelectable,
+  partitionBulkConnectSelection,
+} from "@/features/suppliers/connected-catalog-bulk";
+import {
   countByUserState,
   filterReadinessItems,
+  mapBackendStatusToUserState,
   type CatalogReadinessFilter,
 } from "@/features/suppliers/connected-catalog-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -68,13 +78,6 @@ type ExternalDraftLine = {
 
 /** PO ordering tabs — Shared Catalog readiness without All; default Linked. */
 type PoCatalogSetupFilter = Exclude<CatalogReadinessFilter, "all">;
-
-function formatCompactPoPrice(amount: number): string {
-  return `₱${amount.toLocaleString("en-PH", {
-    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function todayIsoDate(): string {
   const d = new Date();
@@ -115,8 +118,10 @@ export function PurchaseOrderCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const online = useBrowserOnline();
+  const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManagePurchasing(sessionGrant);
+  const allowCreate = allowManage && canManageCatalog(sessionGrant);
 
   const [supplierId, setSupplierId] = useState("");
   const [orderDate, setOrderDate] = useState(todayIsoDate);
@@ -132,12 +137,19 @@ export function PurchaseOrderCreatePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
+  const [setupSelected, setSetupSelected] = useState<Set<string>>(() => new Set());
+  const [setupBusyKey, setSetupBusyKey] = useState<string | null>(null);
+  const [setupBulkBusy, setSetupBulkBusy] = useState(false);
   const purchaseOrderIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
     return () => window.clearTimeout(handle);
   }, [search]);
+
+  useEffect(() => {
+    setSetupSelected(new Set());
+  }, [debounced, readinessFilter, supplierId]);
 
   const workspace = useMemo(
     () =>
@@ -253,6 +265,18 @@ export function PurchaseOrderCreatePage() {
     return filterReadinessItems(readinessQuery.data.items, readinessFilter, debounced);
   }, [debounced, readinessFilter, readinessQuery.data]);
 
+  const selectableSetupItems = useMemo(
+    () => setupItems.filter(isBulkConnectSelectable),
+    [setupItems],
+  );
+  const allSetupSelectableSelected =
+    selectableSetupItems.length > 0
+    && selectableSetupItems.every((item) => setupSelected.has(item.exposureId));
+  const setupBulkPartition = useMemo(
+    () => partitionBulkConnectSelection(setupItems, setupSelected),
+    [setupItems, setupSelected],
+  );
+
   const qtyByProductId = useMemo(() => {
     const map = new Map<string, number>();
     for (const line of connectedLines) {
@@ -316,6 +340,7 @@ export function PurchaseOrderCreatePage() {
     setError(null);
     setConnectedLines([]);
     setExternalLines([]);
+    setSetupSelected(new Set());
   }
 
   const sharedCatalogHref = `/suppliers/${supplierId}/connected-catalog`;
@@ -323,6 +348,173 @@ export function PurchaseOrderCreatePage() {
   const showLinkedOrdering = readinessFilter === "linked";
   const connectedLoading =
     linkedProductsQuery.isLoading || readinessQuery.isLoading || orderStockQuery.isLoading;
+  const setupActionBusy = setupBusyKey != null || setupBulkBusy;
+
+  function toggleSetupSelected(exposureId: string) {
+    setSetupSelected((current) => {
+      const next = new Set(current);
+      if (next.has(exposureId)) {
+        next.delete(exposureId);
+      } else {
+        next.add(exposureId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllSetup() {
+    setSetupSelected((current) => {
+      const next = new Set(current);
+      if (allSetupSelectableSelected) {
+        for (const item of selectableSetupItems) {
+          next.delete(item.exposureId);
+        }
+      } else {
+        for (const item of selectableSetupItems) {
+          next.add(item.exposureId);
+        }
+      }
+      return next;
+    });
+  }
+
+  async function refreshAfterSetupConnect() {
+    await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+  }
+
+  async function doSetupLink(exposureId: string, buyerProductId: string) {
+    if (!workspace || !relationshipId || !allowManage) {
+      return;
+    }
+    setSetupBusyKey(exposureId);
+    setError(null);
+    try {
+      await linkProduct(workspace, relationshipId, { exposureId, buyerProductId });
+      setSetupSelected((current) => {
+        const next = new Set(current);
+        next.delete(exposureId);
+        return next;
+      });
+      await refreshAfterSetupConnect();
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : t("connected.linkFailed"),
+      );
+    } finally {
+      setSetupBusyKey(null);
+    }
+  }
+
+  async function doSetupCreateAndLink(item: CatalogProductReadinessItem) {
+    if (!workspace || !relationshipId || !allowCreate) {
+      return;
+    }
+    setSetupBusyKey(`create-${item.exposureId}`);
+    setError(null);
+    try {
+      await createBuyerProductAndLink(workspace, relationshipId, {
+        exposureId: item.exposureId,
+        name: item.supplierName,
+        unitOfMeasure: item.unitOfMeasureCode,
+        sellingPrice: 0,
+        businessUsage: "Resale",
+      });
+      setSetupSelected((current) => {
+        const next = new Set(current);
+        next.delete(item.exposureId);
+        return next;
+      });
+      await refreshAfterSetupConnect();
+    } catch (err) {
+      setError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? err.message)
+          : t("connected.createAndLinkFailed"),
+      );
+    } finally {
+      setSetupBusyKey(null);
+    }
+  }
+
+  async function runSetupBulkConfirmMatches() {
+    if (!workspace || !relationshipId || !allowManage || setupBulkBusy) {
+      return;
+    }
+    const targets = setupBulkPartition.confirmMatch;
+    if (targets.length === 0) {
+      return;
+    }
+    setSetupBulkBusy(true);
+    setError(null);
+    let ok = 0;
+    let failed = 0;
+    for (const item of targets) {
+      const buyerProductId = item.candidateBuyerProductId;
+      if (!buyerProductId) {
+        failed += 1;
+        continue;
+      }
+      try {
+        await linkProduct(workspace, relationshipId, {
+          exposureId: item.exposureId,
+          buyerProductId,
+        });
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setSetupSelected(new Set());
+    setError(
+      failed > 0
+        ? t("connected.bulkConfirmResult")
+            .replace("{ok}", String(ok))
+            .replace("{failed}", String(failed))
+        : null,
+    );
+    await refreshAfterSetupConnect();
+    setSetupBulkBusy(false);
+  }
+
+  async function runSetupBulkAddAsNew() {
+    if (!workspace || !relationshipId || !allowCreate || setupBulkBusy) {
+      return;
+    }
+    const targets = setupBulkPartition.addAsNew;
+    if (targets.length === 0) {
+      return;
+    }
+    setSetupBulkBusy(true);
+    setError(null);
+    let ok = 0;
+    let failed = 0;
+    for (const item of targets) {
+      try {
+        await createBuyerProductAndLink(workspace, relationshipId, {
+          exposureId: item.exposureId,
+          name: item.supplierName,
+          unitOfMeasure: item.unitOfMeasureCode,
+          sellingPrice: 0,
+          businessUsage: "Resale",
+        });
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setSetupSelected(new Set());
+    setError(
+      failed > 0
+        ? t("connected.bulkAddAsNewResult")
+            .replace("{ok}", String(ok))
+            .replace("{failed}", String(failed))
+        : null,
+    );
+    await refreshAfterSetupConnect();
+    setSetupBulkBusy(false);
+  }
 
   function setConnectedQty(product: ConnectedPoReadyProduct, nextQty: number) {
     const current = qtyByProductId.get(product.buyerProductId) ?? 0;
@@ -489,16 +681,13 @@ export function PurchaseOrderCreatePage() {
         </Card>
       ) : null}
 
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+      <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-branch">
         {t("purchasing.receivingBranch")}
-        <input
-          className="rounded-md border border-border bg-muted px-3"
-          value={boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? ""}
-          readOnly
-          data-testid="po-branch"
-        />
-        <span className="text-muted">{t("purchasing.receivingBranchHelp")}</span>
-      </label>
+        {": "}
+        <span className="font-medium text-foreground">
+          {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
+        </span>
+      </p>
 
       <div className="po-create-meta grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start">
         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
@@ -543,46 +732,58 @@ export function PurchaseOrderCreatePage() {
       </label>
 
       {supplierId && connected ? (
-        <section className="flex flex-col gap-3" aria-labelledby="po-products-heading">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
-              {t("purchasing.orderProducts")}
-            </h2>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {showLinkedOrdering
-                ? t("purchasing.connectedOrderingHelp")
-                : t("purchasing.setupTabHelp")}
-            </p>
-          </div>
-          <SearchField
-            label={t("purchasing.productSearch")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("purchasing.productSearch")}
-            data-testid="po-product-search"
-          />
-          {readinessQuery.isSuccess || linkedProductsQuery.isSuccess ? (
-            <UnderlineTabBar
-              className="exits-chip-bar--scroll"
-              ariaLabel={t("connected.readinessFilters")}
-              testId="po-readiness-filters"
-              activeKey={readinessFilter}
-              onChange={(key) => setReadinessFilter(key as PoCatalogSetupFilter)}
-              items={(
-                [
-                  ["newProduct", readinessCounts.newProduct, "connected.filterNewProducts"],
-                  ["checkMatch", readinessCounts.checkMatch, "connected.filterCheckMatch"],
-                  ["attention", readinessCounts.attention, "connected.filterAttention"],
-                  ["linked", readinessCounts.linked, "connected.filterLinked"],
-                ] as const
-              ).map(([value, count, key]) => ({
-                key: value,
-                label: t(key).replace("{count}", String(count)),
-                testId: `po-ready-${value}`,
-              }))}
+        <section
+          className="flex flex-col gap-3"
+          aria-label={t("purchasing.orderProducts")}
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {showLinkedOrdering
+              ? t("purchasing.connectedOrderingHelp")
+              : t("purchasing.setupTabHelp")}
+          </p>
+          <div className="po-setup-filter-row">
+            {readinessQuery.isSuccess || linkedProductsQuery.isSuccess ? (
+              <UnderlineTabBar
+                className="po-setup-filter-tabs"
+                ariaLabel={t("connected.readinessFilters")}
+                testId="po-readiness-filters"
+                activeKey={readinessFilter}
+                onChange={(key) => setReadinessFilter(key as PoCatalogSetupFilter)}
+                items={(
+                  [
+                    ["newProduct", readinessCounts.newProduct, "connected.filterNewProducts"],
+                    ["checkMatch", readinessCounts.checkMatch, "connected.filterCheckMatch"],
+                    ["attention", readinessCounts.attention, "connected.filterAttention"],
+                    ["linked", readinessCounts.linked, "connected.filterLinked"],
+                  ] as const
+                ).map(([value, count, key]) => ({
+                  key: value,
+                  label: t(key).replace("{count}", String(count)),
+                  testId: `po-ready-${value}`,
+                }))}
+              />
+            ) : null}
+            <SearchField
+              label={t("purchasing.productSearch")}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch("")}
+              placeholder={t("purchasing.productSearch")}
+              data-testid="po-product-search"
+              containerClassName="po-setup-filter-search"
             />
-          ) : null}
+            <Button
+              asChild
+              variant="outline"
+              className="po-open-shared-catalog-btn shrink-0"
+              data-testid="po-open-shared-catalog-setup-bar"
+            >
+              <Link to={showLinkedOrdering ? sharedCatalogHref : sharedCatalogSetupHref}>
+                <BookOpen className="size-4 shrink-0" aria-hidden />
+                {t("purchasing.openSharedCatalog")}
+              </Link>
+            </Button>
+          </div>
           {connectedLoading ? <LoadingState label={t("loading.label")} /> : null}
 
           {showLinkedOrdering ? (
@@ -607,131 +808,340 @@ export function PurchaseOrderCreatePage() {
                   detail={t("purchasing.noProductsDetail")}
                 />
               ) : null}
-              <ul className="m-0 grid list-none gap-2 p-0" data-testid="po-connected-product-list">
-                {filteredConnected.map((product) => {
-                  const qty = qtyByProductId.get(product.buyerProductId) ?? 0;
-                  const availability = resolveSupplierAvailability(product);
-                  const maxQty = maxOrderablePurchaseQty(product);
-                  const atMax = maxQty != null && qty >= maxQty;
-                  const cannotAdd =
-                    availability.kind === "out_of_stock" || (maxQty != null && maxQty <= 0);
-                  return (
-                    <li key={product.buyerProductId}>
-                      <Card
-                        as="article"
-                        className="grid gap-2 p-3"
-                        data-testid={`po-connected-product-${product.buyerProductId}`}
-                      >
-                        <div className="flex min-w-0 items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="m-0 font-semibold leading-snug">{product.productName}</p>
-                            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                              {t("purchasing.supplierSku")}:{" "}
-                              {product.supplierSku ?? t("connected.noSku")}
-                              {product.packageLabel ? ` · ${product.packageLabel}` : ""}
-                            </p>
-                            <p
-                              className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
-                              data-testid={`po-stock-${product.buyerProductId}`}
-                            >
-                              {availability.kind === "out_of_stock"
-                                ? t("purchasing.supplierOutOfStock")
-                                : null}
-                              {availability.kind === "available"
-                                ? t("purchasing.supplierStockAvailable").replace(
-                                    "{n}",
-                                    String(availability.quantity),
-                                  )
-                                : null}
-                              {availability.kind === "untracked"
-                                ? t("purchasing.stockNotTracked")
-                                : null}
-                            </p>
-                          </div>
-                          <p className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-semibold tabular-nums">
+              <div className="po-order-table po-order-table--linked" data-testid="po-connected-product-list">
+                <div className="po-order-table__head" aria-hidden>
+                  <span>{t("purchasing.colProduct")}</span>
+                  <span>{t("purchasing.colSku")}</span>
+                  <span>{t("purchasing.colUnit")}</span>
+                  <span>{t("purchasing.colStock")}</span>
+                  <span className="po-order-table__price-head">{t("purchasing.colPrice")}</span>
+                  <span className="po-order-table__action-head">{t("purchasing.colQty")}</span>
+                </div>
+                <ul className="po-order-table__list">
+                  {filteredConnected.map((product) => {
+                    const qty = qtyByProductId.get(product.buyerProductId) ?? 0;
+                    const availability = resolveSupplierAvailability(product);
+                    const maxQty = maxOrderablePurchaseQty(product);
+                    const atMax = maxQty != null && qty >= maxQty;
+                    const cannotAdd =
+                      availability.kind === "out_of_stock" || (maxQty != null && maxQty <= 0);
+                    return (
+                      <li key={product.buyerProductId}>
+                        <div
+                          className="po-order-table__row"
+                          data-testid={`po-connected-product-${product.buyerProductId}`}
+                        >
+                          <span className="po-order-table__product">
+                            <span className="po-order-table__name">{product.productName}</span>
+                          </span>
+                          <span className="po-order-table__sku">
+                            {product.supplierSku ?? t("connected.noSku")}
+                          </span>
+                          <span className="po-order-table__unit">
+                            {product.packageLabel || product.unitOfMeasure
+                              ? formatUnitOfMeasureLabel(
+                                  product.packageLabel || product.unitOfMeasure || "",
+                                )
+                              : "—"}
+                          </span>
+                          <span
+                            className="po-order-table__stock"
+                            data-testid={`po-stock-${product.buyerProductId}`}
+                          >
+                            {availability.kind === "out_of_stock"
+                              ? t("purchasing.supplierOutOfStock")
+                              : null}
+                            {availability.kind === "available"
+                              ? t("purchasing.supplierStockAvailable").replace(
+                                  "{n}",
+                                  String(availability.quantity),
+                                )
+                              : null}
+                            {availability.kind === "untracked"
+                              ? t("purchasing.stockNotTracked")
+                              : null}
+                          </span>
+                          <span className="po-order-table__price tabular-nums">
                             {formatUnitPriceLabel(product.unitPurchaseCost, product.unitOfMeasure)}
-                          </p>
+                          </span>
+                          <span className="po-order-table__action">
+                            {qty <= 0 ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="po-linked-add-btn"
+                                data-testid={`po-add-${product.buyerProductId}`}
+                                disabled={!allowManage || !online || saving || cannotAdd}
+                                aria-label={t("purchasing.addProduct")}
+                                onClick={() => setConnectedQty(product, 1)}
+                              >
+                                <Plus className="size-4" aria-hidden />
+                              </Button>
+                            ) : (
+                              <span className="po-order-table__qty-wrap">
+                                <span
+                                  className="po-order-table__line-math tabular-nums"
+                                  data-testid={`po-line-math-${product.buyerProductId}`}
+                                >
+                                  {formatLineMath(qty, product.unitPurchaseCost)}
+                                </span>
+                                <QuantityStepper
+                                  compact
+                                  value={qty}
+                                  valueTestId={`po-qty-${product.buyerProductId}`}
+                                  increaseLabel={t("purchasing.increaseQty")}
+                                  decreaseLabel={t("purchasing.decreaseQty")}
+                                  incrementDisabled={
+                                    !allowManage || !online || saving || atMax
+                                  }
+                                  onIncrement={() => setConnectedQty(product, qty + 1)}
+                                  onDecrement={() => setConnectedQty(product, qty - 1)}
+                                />
+                              </span>
+                            )}
+                          </span>
                         </div>
-                        {qty <= 0 ? (
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              data-testid={`po-add-${product.buyerProductId}`}
-                              disabled={!allowManage || !online || saving || cannotAdd}
-                              onClick={() => setConnectedQty(product, 1)}
-                            >
-                              {t("purchasing.addProduct")}
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                            <p
-                              className="m-0 text-[length:var(--exits-text-sm)] font-medium tabular-nums"
-                              data-testid={`po-line-math-${product.buyerProductId}`}
-                            >
-                              {formatLineMath(qty, product.unitPurchaseCost)}
-                            </p>
-                            <QuantityStepper
-                              compact
-                              value={qty}
-                              valueTestId={`po-qty-${product.buyerProductId}`}
-                              increaseLabel={t("purchasing.increaseQty")}
-                              decreaseLabel={t("purchasing.decreaseQty")}
-                              incrementDisabled={
-                                !allowManage || !online || saving || atMax
-                              }
-                              onIncrement={() => setConnectedQty(product, qty + 1)}
-                              onDecrement={() => setConnectedQty(product, qty - 1)}
-                            />
-                          </div>
-                        )}
-                      </Card>
-                    </li>
-                  );
-                })}
-              </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </>
           ) : (
             <>
               {readinessQuery.isSuccess && setupItems.length === 0 ? (
                 <EmptyState
+                  align="center"
                   title={t("purchasing.noSetupProducts")}
                   detail={t("purchasing.noSetupProductsHelp")}
                   action={
-                    <Button asChild data-testid="po-open-shared-catalog-setup">
-                      <Link to={sharedCatalogSetupHref}>{t("purchasing.openSharedCatalog")}</Link>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="po-open-shared-catalog-btn"
+                      data-testid="po-open-shared-catalog-setup"
+                    >
+                      <Link to={sharedCatalogSetupHref}>
+                        <BookOpen className="size-4 shrink-0" aria-hidden />
+                        {t("purchasing.openSharedCatalog")}
+                      </Link>
                     </Button>
                   }
                 />
               ) : null}
-              <ul className="m-0 grid list-none gap-2 p-0" data-testid="po-setup-product-list">
-                {setupItems.map((item) => (
-                  <li key={item.exposureId}>
-                    <Card
-                      as="article"
-                      className="grid gap-2 p-3"
-                      data-testid={`po-setup-product-${item.exposureId}`}
-                    >
-                      <div className="flex min-w-0 items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="m-0 font-semibold leading-snug">{item.supplierName}</p>
-                          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                            {t("purchasing.supplierSku")}: {item.supplierSku ?? t("connected.noSku")}
-                            {" · "}
-                            {item.unitOfMeasureCode}
-                          </p>
+              {selectableSetupItems.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    className="po-setup-select-all-mobile inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]"
+                    data-testid="po-setup-select-bar"
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={allSetupSelectableSelected}
+                      disabled={setupBulkBusy}
+                      data-testid="po-setup-select-all-mobile"
+                      onChange={toggleSelectAllSetup}
+                    />
+                    {allSetupSelectableSelected
+                      ? t("connected.deselectAllPage")
+                      : t("connected.selectAllPage").replace(
+                          "{count}",
+                          String(selectableSetupItems.length),
+                        )}
+                  </label>
+                </div>
+              ) : null}
+              <div
+                className={
+                  readinessFilter === "checkMatch" || readinessFilter === "attention"
+                    ? "po-order-table po-order-table--setup po-order-table--setup-pair"
+                    : "po-order-table po-order-table--setup"
+                }
+                data-testid="po-setup-product-list"
+              >
+                <div className="po-order-table__head">
+                  <span className="po-order-table__check-head">
+                    {selectableSetupItems.length > 0 ? (
+                      <input
+                        type="checkbox"
+                        className="size-4"
+                        checked={allSetupSelectableSelected}
+                        disabled={setupBulkBusy}
+                        aria-label={
+                          allSetupSelectableSelected
+                            ? t("connected.deselectAllPage")
+                            : t("connected.selectAllPage").replace(
+                                "{count}",
+                                String(selectableSetupItems.length),
+                              )
+                        }
+                        data-testid="po-setup-select-all"
+                        onChange={toggleSelectAllSetup}
+                      />
+                    ) : null}
+                  </span>
+                  <span>{t("purchasing.colProduct")}</span>
+                  <span>{t("purchasing.colSku")}</span>
+                  <span>{t("purchasing.colUnit")}</span>
+                  <span className="po-order-table__price-head">{t("purchasing.colPrice")}</span>
+                  <span className="po-order-table__action-head">{t("purchasing.colAction")}</span>
+                </div>
+                <ul className="po-order-table__list">
+                  {setupItems.map((item) => {
+                    const state = mapBackendStatusToUserState(item.status);
+                    const canSelect = isBulkConnectSelectable(item);
+                    const isSelected = setupSelected.has(item.exposureId);
+                    return (
+                      <li key={item.exposureId}>
+                        <div
+                          className="po-order-table__row"
+                          data-testid={`po-setup-product-${item.exposureId}`}
+                        >
+                          <span className="po-order-table__check">
+                            {canSelect ? (
+                              <input
+                                type="checkbox"
+                                className="size-4"
+                                checked={isSelected}
+                                disabled={setupBulkBusy}
+                                aria-label={item.supplierName}
+                                data-testid={`po-setup-select-${item.exposureId}`}
+                                onChange={() => toggleSetupSelected(item.exposureId)}
+                              />
+                            ) : null}
+                          </span>
+                          <span className="po-order-table__product">
+                            <span className="po-order-table__name">{item.supplierName}</span>
+                          </span>
+                          <span className="po-order-table__sku">
+                            {item.supplierSku ?? t("connected.noSku")}
+                          </span>
+                          <span className="po-order-table__unit">
+                            {formatUnitOfMeasureLabel(item.unitOfMeasureCode)}
+                          </span>
+                          <span className="po-order-table__price tabular-nums">
+                            {formatPeso(item.poPrice)}
+                          </span>
+                          <span
+                            className={
+                              state === "checkMatch"
+                                ? "po-order-table__action po-order-table__action--pair"
+                                : "po-order-table__action po-order-table__action--stack"
+                            }
+                          >
+                            {state === "newProduct" && allowCreate ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="po-setup-connect-btn po-setup-connect-btn--add"
+                                data-testid={`po-create-link-${item.exposureId}`}
+                                disabled={setupActionBusy}
+                                onClick={() => void doSetupCreateAndLink(item)}
+                              >
+                                <Plus className="size-3.5 shrink-0" aria-hidden />
+                                {t("connected.createAndLink")}
+                              </Button>
+                            ) : null}
+                            {state === "checkMatch" && allowManage && item.candidateBuyerProductId ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="po-setup-connect-btn po-setup-connect-btn--confirm"
+                                data-testid={`po-confirm-match-${item.exposureId}`}
+                                disabled={setupActionBusy}
+                                onClick={() =>
+                                  void doSetupLink(item.exposureId, item.candidateBuyerProductId!)
+                                }
+                              >
+                                <Check className="size-3.5 shrink-0" aria-hidden />
+                                {t("connected.confirmMatch")}
+                              </Button>
+                            ) : null}
+                            {state === "checkMatch" && allowCreate ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="po-setup-connect-btn po-setup-connect-btn--new"
+                                data-testid={`po-add-as-new-${item.exposureId}`}
+                                disabled={setupActionBusy}
+                                onClick={() => void doSetupCreateAndLink(item)}
+                              >
+                                <Plus className="size-3.5 shrink-0" aria-hidden />
+                                {t("connected.addAsNew")}
+                              </Button>
+                            ) : null}
+                            {state === "attention" ? (
+                              <Button
+                                asChild
+                                variant="outline"
+                                className="po-setup-connect-btn"
+                                data-testid={`po-connect-${item.exposureId}`}
+                              >
+                                <Link to={sharedCatalogSetupHref}>
+                                  {t("purchasing.connectInSharedCatalog")}
+                                </Link>
+                              </Button>
+                            ) : null}
+                          </span>
                         </div>
-                        <p className="m-0 shrink-0 text-[length:var(--exits-text-sm)] font-semibold tabular-nums">
-                          {formatCompactPoPrice(item.poPrice)}
-                        </p>
-                      </div>
-                      <Button asChild className="w-full" data-testid={`po-connect-${item.exposureId}`}>
-                        <Link to={sharedCatalogSetupHref}>{t("purchasing.connectInSharedCatalog")}</Link>
-                      </Button>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              {setupSelected.size > 0 ? (
+                <div className="connected-share-bulk-bar" data-testid="po-setup-bulk-bar">
+                  <span className="connected-share-bulk-bar__count">
+                    {t("connected.bulkSelectedCount").replace(
+                      "{count}",
+                      String(setupSelected.size),
+                    )}
+                  </span>
+                  {allowManage && setupBulkPartition.confirmMatch.length > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="po-setup-connect-btn po-setup-connect-btn--confirm po-setup-bulk-btn"
+                      disabled={setupBulkBusy}
+                      data-testid="po-bulk-confirm-matches"
+                      onClick={() => void runSetupBulkConfirmMatches()}
+                    >
+                      <Check className="size-3.5 shrink-0" aria-hidden />
+                      {t("connected.bulkConfirmMatches").replace(
+                        "{count}",
+                        String(setupBulkPartition.confirmMatch.length),
+                      )}
+                    </Button>
+                  ) : null}
+                  {allowCreate && setupBulkPartition.addAsNew.length > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="po-setup-connect-btn po-setup-connect-btn--new po-setup-bulk-btn"
+                      disabled={setupBulkBusy}
+                      data-testid="po-bulk-add-as-new"
+                      onClick={() => void runSetupBulkAddAsNew()}
+                    >
+                      <Plus className="size-3.5 shrink-0" aria-hidden />
+                      {t("connected.bulkAddAsNew").replace(
+                        "{count}",
+                        String(setupBulkPartition.addAsNew.length),
+                      )}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={setupBulkBusy}
+                    data-testid="po-bulk-clear"
+                    onClick={() => setSetupSelected(new Set())}
+                  >
+                    {t("connected.deselectAllPage")}
+                  </Button>
+                </div>
+              ) : null}
             </>
           )}
         </section>

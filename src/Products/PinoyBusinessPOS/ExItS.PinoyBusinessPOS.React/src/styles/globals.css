@@ -4263,6 +4263,429 @@ html:has(.admin-shell) #root {
   border-bottom: 0;
 }
 
+.po-order-table {
+  min-width: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  overflow: hidden;
+}
+
+.po-order-table__head,
+.po-order-table__row {
+  display: grid;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+}
+
+.po-order-table--setup .po-order-table__head,
+.po-order-table--setup .po-order-table__row {
+  grid-template-columns:
+    1.75rem
+    minmax(0, 1fr)
+    11rem
+    4rem
+    6.25rem
+    9.75rem;
+  column-gap: 0.55rem;
+}
+
+.po-order-table--setup {
+  overflow: visible;
+}
+
+.po-order-table--setup.po-order-table--setup-pair .po-order-table__head,
+.po-order-table--setup.po-order-table--setup-pair .po-order-table__row {
+  grid-template-columns:
+    1.75rem
+    minmax(0, 1fr)
+    10rem
+    3.5rem
+    6.25rem
+    16rem;
+}
+
+.po-order-table--catalog.po-order-table--setup .po-order-table__head,
+.po-order-table--catalog.po-order-table--setup .po-order-table__row {
+  grid-template-columns:
+    1.75rem
+    minmax(0, 1.2fr)
+    9rem
+    3.25rem
+    5.5rem
+    minmax(5.5rem, max-content)
+    9.75rem;
+}
+
+.po-order-table--catalog.po-order-table--setup.po-order-table--setup-pair .po-order-table__head,
+.po-order-table--catalog.po-order-table--setup.po-order-table--setup-pair .po-order-table__row {
+  grid-template-columns:
+    1.75rem
+    minmax(0, 1.2fr)
+    9rem
+    3.25rem
+    5.5rem
+    minmax(5.5rem, max-content)
+    16rem;
+}
+
+.po-order-table--catalog .po-order-table__status {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.po-order-table--setup .po-order-table__action,
+.po-order-table--setup .po-order-table__action-head {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding-left: 0.75rem;
+  border-left: 0;
+  overflow: visible;
+}
+
+.po-order-table--setup .po-order-table__action--pair {
+  flex-wrap: nowrap;
+}
+
+.po-order-table--setup .po-setup-connect-btn {
+  flex: 0 0 auto;
+}
+
+.po-order-table--setup .po-order-table__price,
+.po-order-table--setup .po-order-table__price-head {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 0.65rem;
+}
+
+.po-order-table--setup .po-order-table__sku {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.po-order-table--setup .po-order-table__action-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.po-order-table--setup .po-order-table__check-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.po-setup-select-all-mobile {
+  display: none;
+}
+
+.po-setup-filter-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.po-setup-filter-tabs.exits-chip-bar {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+}
+
+.po-setup-filter-search {
+  flex: 0 0 auto;
+  width: 22rem;
+  max-width: min(22rem, 42vw);
+  min-width: 16rem;
+}
+
+.po-setup-bulk-btn {
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  padding-inline: 0.75rem;
+  font-size: var(--exits-text-sm);
+}
+
+.po-open-shared-catalog-btn {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: var(--exits-primary-soft);
+  color: var(--exits-primary);
+}
+
+.po-open-shared-catalog-btn:hover {
+  border-color: color-mix(in srgb, var(--exits-primary) 60%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary-soft) 70%, var(--exits-surface));
+  color: var(--exits-primary-hover);
+}
+
+.po-linked-add-btn {
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
+  background: var(--exits-primary-soft);
+  color: var(--exits-primary);
+}
+
+.po-linked-add-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-primary) 60%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary-soft) 70%, var(--exits-surface));
+  color: var(--exits-primary-hover);
+}
+
+.po-order-table__check,
+.po-order-table__check-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.po-setup-connect-btn {
+  width: auto;
+  max-width: 100%;
+  flex: 0 0 auto;
+  height: 1.875rem;
+  min-height: 1.875rem;
+  padding-inline: 0.45rem;
+  font-size: var(--exits-text-xs);
+  white-space: nowrap;
+}
+
+.po-setup-connect-btn--confirm {
+  border-color: color-mix(in srgb, var(--exits-success) 45%, var(--exits-border));
+  background: var(--exits-success-soft);
+  color: var(--exits-success);
+}
+
+.po-setup-connect-btn--confirm:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-success) 65%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-success-soft) 70%, var(--exits-surface));
+  color: var(--exits-success);
+}
+
+.po-setup-connect-btn--new,
+.po-setup-connect-btn--add {
+  border-color: color-mix(in srgb, var(--exits-info) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
+  color: var(--exits-info);
+}
+
+.po-setup-connect-btn--new:hover:not(:disabled),
+.po-setup-connect-btn--add:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-info) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 14%, var(--exits-surface));
+  color: var(--exits-info);
+}
+
+.po-order-table--linked .po-order-table__head,
+.po-order-table--linked .po-order-table__row {
+  grid-template-columns:
+    minmax(0, 1.3fr)
+    minmax(6rem, 0.8fr)
+    minmax(3rem, 0.35fr)
+    minmax(5rem, 0.65fr)
+    minmax(7rem, 0.75fr)
+    minmax(9.5rem, 1fr);
+}
+
+.po-order-table--linked .po-order-table__price,
+.po-order-table--linked .po-order-table__price-head {
+  white-space: nowrap;
+}
+
+.po-order-table__head {
+  border-bottom: 1px solid var(--exits-border);
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, var(--exits-surface));
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.po-order-table__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.po-order-table__row {
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 70%, transparent);
+}
+
+.po-order-table__list > li:last-child .po-order-table__row {
+  border-bottom: 0;
+}
+
+.po-order-table__product {
+  min-width: 0;
+}
+
+.po-order-table__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+}
+
+.po-order-table__sku,
+.po-order-table__unit,
+.po-order-table__stock {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--exits-text-xs);
+  color: var(--exits-text-muted);
+}
+
+.po-order-table__price {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+  text-align: right;
+}
+
+.po-order-table__price-head,
+.po-order-table__action-head {
+  text-align: right;
+}
+
+.po-order-table__action {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.po-order-table__action.po-order-table__action--pair {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.po-order-table__action.po-order-table__action--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.po-order-table__action--pair .po-setup-connect-btn--new {
+  margin-left: 0;
+}
+
+.po-order-table__qty-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.po-order-table__line-math {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+}
+
+@media (max-width: 47.99rem) {
+  .po-order-table__head {
+    display: none;
+  }
+
+  .po-setup-select-all-mobile {
+    display: inline-flex;
+  }
+
+  .po-order-table--setup .po-order-table__row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check product price"
+      "check sku unit"
+      "action action action";
+  }
+
+  .po-order-table--linked .po-order-table__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "product price"
+      "sku unit"
+      "stock stock"
+      "action action";
+  }
+
+  .po-order-table__product {
+    grid-area: product;
+  }
+
+  .po-order-table__check {
+    grid-area: check;
+    align-self: start;
+    padding-top: 0.15rem;
+  }
+
+  .po-order-table__sku {
+    grid-area: sku;
+  }
+
+  .po-order-table__unit {
+    grid-area: unit;
+    justify-self: end;
+  }
+
+  .po-order-table__stock {
+    grid-area: stock;
+  }
+
+  .po-order-table__price {
+    grid-area: price;
+  }
+
+  .po-order-table__action {
+    grid-area: action;
+    justify-content: stretch;
+  }
+
+  .po-order-table__action .exits-btn,
+  .po-order-table__action a {
+    width: 100%;
+  }
+
+  .po-order-table--setup .po-order-table__action {
+    justify-content: flex-end;
+    width: auto;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .po-order-table--setup .po-order-table__action.po-order-table__action--pair {
+    justify-content: flex-start;
+    width: 100%;
+    gap: 0.25rem;
+  }
+
+  .po-order-table--setup .po-setup-connect-btn {
+    width: auto;
+  }
+
+  .po-order-table__qty-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 .connected-share-table__row:hover {
   background: color-mix(in srgb, var(--exits-surface-muted) 55%, transparent);
 }
