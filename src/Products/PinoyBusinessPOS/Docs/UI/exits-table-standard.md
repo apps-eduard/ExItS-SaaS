@@ -1,9 +1,9 @@
 # ExItS Table Standard (PinoyBusinessPOS React)
 
-**Status:** Authoritative UI contract  
-**Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`  
-**Implementation authority:** `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`  
-**Approved visual reference:** Incoming Order detail table  
+**Status:** Authoritative UI contract
+**Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`
+**Implementation authority:** `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`
+**Approved visual reference:** Incoming Order detail table
 (`ExItS.PinoyBusinessPOS.React/src/features/purchasing/IncomingOrderDetailPage.tsx`)
 
 The approved Incoming Order / PO table implementation is the **canonical visual reference**.
@@ -157,8 +157,8 @@ Authoritative density names (root preference system):
 - `balance`
 - `comfort`
 
-Use existing `--exits-table-*` CSS variables.  
-Do **not** introduce alternate table density names.  
+Use existing `--exits-table-*` CSS variables.
+Do **not** introduce alternate table density names.
 Table controls inherit density from the existing root preference system.
 
 ---
@@ -170,7 +170,7 @@ Table controls inherit density from the existing root preference system.
 | Desktop / tablet | Normal aligned `ExitsTable` |
 | Mobile | Existing `ExitsTableMobile` presentation |
 
-Do **not** force unreadable desktop columns onto phone width.  
+Do **not** force unreadable desktop columns onto phone width.
 Do **not** invent a second mobile table design.
 
 Typical mobile row:
@@ -181,7 +181,7 @@ PH-FRU-APPLE
 5 kg × ₱180.00
 ```
 
-Toolbar controls may stack.  
+Toolbar controls may stack.
 Output Actions collapse to a single **Export & Print** menu that calls the **same** handlers as the desktop icons.
 
 ---
@@ -194,10 +194,10 @@ Terms below are exact. Explicit task ON/OFF instructions override `FULL TABLE` /
 
 Use the canonical existing ExitsTable foundation and approved visual style.
 
-Does **not** automatically enable every optional feature.  
+Does **not** automatically enable every optional feature.
 Never create a new table visual language when this phrase is used.
 
-### FULL TABLE  
+### FULL TABLE
 ### FULLY IMPLEMENT THE TABLE
 
 Enable all **applicable** standard capabilities:
@@ -218,8 +218,8 @@ Enable all **applicable** standard capabilities:
 - Responsive / mobile
 - Density / theme support
 
-Footer / summary is enabled when the domain/page has a meaningful summary.  
-Sticky header may be enabled when useful for long tables.  
+Footer / summary is enabled when the domain/page has a meaningful summary.
+Sticky header may be enabled when useful for long tables.
 **Inline edit is NOT automatically enabled** (page/domain behavior).
 
 Explicit ON/OFF overrides `FULL TABLE` defaults.
@@ -242,18 +242,18 @@ Optional footer when requested.
 
 ### SEARCH ON / OFF
 
-**ON:** Standard toolbar Search (LEFT).  
-Server-side search preferred for pageable / large datasets; client-side acceptable for small bounded / detail datasets.  
+**ON:** Standard toolbar Search (LEFT).
+Server-side search preferred for pageable / large datasets; client-side acceptable for small bounded / detail datasets.
 **OFF:** Do not render Search.
 
 ### FILTER ON / OFF
 
-**ON:** Standard Filter position beside Search (MIDDLE). Filters must reflect real page/domain data — do not invent meaningless filters.  
+**ON:** Standard Filter position beside Search (MIDDLE). Filters must reflect real page/domain data — do not invent meaningless filters.
 **OFF:** Do not render Filter.
 
 ### SORT ON / OFF
 
-**ON:** Canonical sortable `ExitsTableHead`. Cycle: **none → ascending → descending → none**. Subtle sort icons. Page/query owns sort logic.  
+**ON:** Canonical sortable `ExitsTableHead`. Cycle: **none → ascending → descending → none**. Subtle sort icons. Page/query owns sort logic.
 **OFF:** Non-sortable headers.
 
 ### MULTI SELECT ON
@@ -294,8 +294,8 @@ Use `ExitsTableOutputActions` on the toolbar **RIGHT**.
 | PDF | `ExitsFileFormatIcon` `pdf` | Export PDF |
 | Print | Lucide `Printer` | Print |
 
-Desktop: four compact individual icons.  
-Mobile: single **Export & Print** menu (same handlers).  
+Desktop: four compact individual icons.
+Mobile: single **Export & Print** menu (same handlers).
 Do **not** create alternate output button designs.
 
 ### OUTPUT ICONS OFF
@@ -304,20 +304,20 @@ Do not render `ExitsTableOutputActions`.
 
 ### PAGE SIZE ON
 
-Canonical options: **10 / 25 / 50 / 100**  
-Default: **25**  
+Canonical options: **10 / 25 / 50 / 100**
+Default: **25**
 Maximum standard: **100**
 
 Do **not** add `All`, `200`, `250`, or `500` unless explicitly authorized for a specific workflow.
 
 ### PAGE SIZE OFF
 
-Hide the rows-per-page selector.  
+Hide the rows-per-page selector.
 Does **not** automatically disable pagination unless also requested.
 
 ### PAGINATION ON
 
-Use `ExitsTablePagination`: result range, page navigation, and page-size selector if `PAGE SIZE ON`.  
+Use `ExitsTablePagination`: result range, page navigation, and page-size selector if `PAGE SIZE ON`.
 Prefer server-side pagination for large / pageable datasets.
 
 ### PAGINATION OFF
@@ -326,19 +326,19 @@ No pagination controls. Render the bounded dataset supplied by the page.
 
 ### FOOTER ON / OFF
 
-**ON:** Use `ExitsTableFooter` for meaningful totals/summary. Do not create a separate Total card when the total naturally belongs to the table.  
+**ON:** Use `ExitsTableFooter` for meaningful totals/summary. Do not create a separate Total card when the total naturally belongs to the table.
 **OFF:** No table footer summary.
 
 ### INLINE EDIT ON / OFF
 
-**ON:** Use existing ExitsTable row/cell presentation. Page owns edit state, inputs, validation, Save/Cancel, and API mutation. Do **not** create a separate editable-table design.  
+**ON:** Use existing ExitsTable row/cell presentation. Page owns edit state, inputs, validation, Save/Cancel, and API mutation. Do **not** create a separate editable-table design.
 **OFF:** Read-only cells (default unless requested).
 
 ---
 
 ## Output action semantics (locked)
 
-Canonical component name: **`ExitsTableOutputActions`**  
+Canonical component name: **`ExitsTableOutputActions`**
 User shorthand: **Output icons**
 
 Formats: **CSV / XLSX / PDF / Print**
@@ -350,7 +350,7 @@ Formats: **CSV / XLSX / PDF / Print**
 | **None** | Full matching filtered/sorted result set — **not** only the current pagination page |
 | **One or more** | Selected matching records only |
 
-For server-side datasets: do **not** fetch huge datasets into React merely for export; use a suitable server-side export/query strategy.  
+For server-side datasets: do **not** fetch huge datasets into React merely for export; use a suitable server-side export/query strategy.
 Page/domain controls permissions and data exposure.
 
 Authoritative business totals (e.g. PO `order.totalAmount`) must **not** be replaced by filtered or selected line sums. When exporting a selection, label any selection sum separately (e.g. “Selected lines total”).
