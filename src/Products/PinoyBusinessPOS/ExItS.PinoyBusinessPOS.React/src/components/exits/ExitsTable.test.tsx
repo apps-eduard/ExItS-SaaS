@@ -1,16 +1,21 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import {
+  cycleExitsTableSort,
   ExitsTable,
   ExitsTableBody,
   ExitsTableCell,
+  ExitsTableCheckbox,
   ExitsTableContainer,
   ExitsTableFooter,
   ExitsTableHead,
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
+  ExitsTablePagination,
   ExitsTableRow,
+  ExitsTableToolbar,
 } from "@/components/exits/ExitsTable";
 
 describe("ExitsTable foundation", () => {
@@ -61,5 +66,82 @@ describe("ExitsTable foundation", () => {
     expect(screen.getByTestId("sample-row")).toBeInTheDocument();
     expect(screen.getByText("Total")).toBeInTheDocument();
     expect(screen.getByTestId("sample-mobile")).toHaveClass("exits-table-mobile");
+  });
+
+  it("supports toolbar, sortable head, selection, and pagination controls", async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
+
+    render(
+      <ExitsTableContainer>
+        <ExitsTableToolbar search={<input aria-label="Search products" />} selection="2 selected" />
+        <ExitsTable>
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead cellAlign="center">
+                <ExitsTableCheckbox aria-label="Select all" />
+              </ExitsTableHead>
+              <ExitsTableHead
+                sortable
+                sortDirection={null}
+                onSort={onSort}
+                data-testid="sort-product"
+              >
+                Product
+              </ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            <ExitsTableRow selected interactive data-testid="selected-row">
+              <ExitsTableCell cellAlign="center">
+                <ExitsTableCheckbox aria-label="Select row" defaultChecked />
+              </ExitsTableCell>
+              <ExitsTableCell>Apple</ExitsTableCell>
+            </ExitsTableRow>
+          </ExitsTableBody>
+        </ExitsTable>
+        <ExitsTablePagination
+          page={1}
+          pageSize={25}
+          total={2}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          rowsPerPageLabel="Rows per page"
+          previousLabel="Previous"
+          nextLabel="Next"
+          rangeLabel="{from}–{to} of {total}"
+        />
+      </ExitsTableContainer>,
+    );
+
+    expect(screen.getByTestId("exits-table-toolbar")).toBeInTheDocument();
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+    expect(screen.getByTestId("selected-row")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–2 of 2");
+    expect(screen.getByTestId("exits-table-prev")).toBeDisabled();
+    expect(screen.getByTestId("exits-table-next")).toBeDisabled();
+
+    await user.click(screen.getByTestId("sort-product-sort"));
+    expect(onSort).toHaveBeenCalledTimes(1);
+
+    await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
+    expect(onPageSizeChange).toHaveBeenCalledWith(10);
+  });
+
+  it("cycles sort none → asc → desc → none", () => {
+    expect(cycleExitsTableSort(null, null, "product")).toEqual({
+      key: "product",
+      direction: "asc",
+    });
+    expect(cycleExitsTableSort("product", "asc", "product")).toEqual({
+      key: "product",
+      direction: "desc",
+    });
+    expect(cycleExitsTableSort("product", "desc", "product")).toEqual({
+      key: null,
+      direction: null,
+    });
   });
 });

@@ -2949,6 +2949,19 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "error.detail": "I-reload ti page. Awan ti business data a naidulin iti daytoy a foundation.",
 
+  "exitsTable.clearSelection": "Clear selection",
+  "exitsTable.filter": "Filter",
+  "exitsTable.filterAll": "All items",
+  "exitsTable.filterHasSku": "Has SKU",
+  "exitsTable.filterNoSku": "No SKU",
+  "exitsTable.next": "Next",
+  "exitsTable.previous": "Previous",
+  "exitsTable.range": "{from}–{to} of {total}",
+  "exitsTable.rowsPerPage": "Rows per page",
+  "exitsTable.searchProducts": "Search products",
+  "exitsTable.selectAll": "Select all visible rows",
+  "exitsTable.selectRow": "Select row",
+  "exitsTable.selectedCount": "{count} selected",
   "error.title": "Adda ti napasamak a biddut",
 
   "experience.chooserLabel": "Owner experience",
@@ -4560,6 +4573,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "incomingOrders.notFound": "Saan a nabirukan ti incoming order.",
 
   "incomingOrders.orderDate": "Petsa ti order",
+  "incomingOrders.orderTotal": "Order total",
 
   "incomingOrders.review": "Kitaen ti order",
 

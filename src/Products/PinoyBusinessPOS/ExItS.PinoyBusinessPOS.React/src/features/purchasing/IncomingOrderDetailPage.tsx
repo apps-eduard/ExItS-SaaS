@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
@@ -9,6 +9,7 @@ import {
   fulfillIncomingOrder,
   getIncomingOrder,
   prepareIncomingOrder,
+  type ConnectedPurchaseOrderLine,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
@@ -16,20 +17,26 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import {
+  cycleExitsTableSort,
   ExitsTable,
   ExitsTableBody,
   ExitsTableCell,
+  ExitsTableCheckbox,
   ExitsTableContainer,
   ExitsTableFooter,
   ExitsTableHead,
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
+  ExitsTablePagination,
   ExitsTableRow,
+  ExitsTableToolbar,
+  type ExitsTableSortDirection,
 } from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { incomingOrderStatusTone } from "@/features/purchasing/incoming-orders-helpers";
@@ -38,6 +45,16 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+type LineSkuFilter = "all" | "hasSku" | "noSku";
+type LineSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
+function lineQtyLabel(line: ConnectedPurchaseOrderLine): string {
+  const uom = line.unitOfMeasureCode ? formatUnitOfMeasureLabel(line.unitOfMeasureCode) : "";
+  return uom ? `${line.qty} ${uom}` : String(line.qty);
+}
 
 const DECLINE_REASONS = [
   "OutOfStock",
@@ -95,6 +112,23 @@ export function IncomingOrderDetailPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [declineNote, setDeclineNote] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [skuFilter, setSkuFilter] = useState<LineSkuFilter>("all");
+  const [sortKey, setSortKey] = useState<LineSortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 200);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, skuFilter, sortKey, sortDirection, pageSize]);
 
   const workspace = useMemo(
     () =>
@@ -175,6 +209,96 @@ export function IncomingOrderDetailPage() {
     declineMutation.isPending ||
     prepareMutation.isPending ||
     fulfillMutation.isPending;
+
+  const orderLines = query.data?.lines ?? [];
+
+  const filteredSortedLines = useMemo(() => {
+    const queryText = debouncedSearch.toLowerCase();
+    let rows = orderLines.filter((line) => {
+      const sku = line.skuSnapshot?.trim() ?? "";
+      if (skuFilter === "hasSku" && !sku) {
+        return false;
+      }
+      if (skuFilter === "noSku" && sku) {
+        return false;
+      }
+      if (!queryText) {
+        return true;
+      }
+      return (
+        line.nameSnapshot.toLowerCase().includes(queryText) ||
+        sku.toLowerCase().includes(queryText)
+      );
+    });
+
+    if (sortKey && sortDirection) {
+      const dir = sortDirection === "asc" ? 1 : -1;
+      rows = [...rows].sort((a, b) => {
+        switch (sortKey) {
+          case "product":
+            return a.nameSnapshot.localeCompare(b.nameSnapshot) * dir;
+          case "sku":
+            return (a.skuSnapshot ?? "").localeCompare(b.skuSnapshot ?? "") * dir;
+          case "quantity":
+            return (a.qty - b.qty) * dir;
+          case "unitCost":
+            return (a.unitPriceSnapshot - b.unitPriceSnapshot) * dir;
+          case "lineTotal":
+            return (a.lineTotal - b.lineTotal) * dir;
+          default:
+            return 0;
+        }
+      });
+    }
+
+    return rows;
+  }, [orderLines, debouncedSearch, skuFilter, sortKey, sortDirection]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredSortedLines.length / pageSize) || 1);
+  const safePage = Math.min(page, pageCount);
+  const pagedLines = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredSortedLines.slice(start, start + pageSize);
+  }, [filteredSortedLines, safePage, pageSize]);
+
+  const visibleIds = pagedLines.map((line) => line.productId);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someVisibleSelected = visibleIds.some((id) => selectedIds.has(id));
+
+  function toggleSort(key: LineSortKey) {
+    const next = cycleExitsTableSort(sortKey, sortDirection, key);
+    setSortKey(next.key as LineSortKey | null);
+    setSortDirection(next.direction);
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) {
+          next.delete(id);
+        }
+      } else {
+        for (const id of visibleIds) {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectOne(productId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -266,34 +390,137 @@ export function IncomingOrderDetailPage() {
         <EmptyState title={t("purchasing.linesEmpty")} detail={t("purchasing.linesRequired")} />
       ) : (
         <ExitsTableContainer data-testid="incoming-order-lines">
+          <ExitsTableToolbar
+            search={
+              <SearchField
+                label={t("exitsTable.searchProducts")}
+                value={searchInput}
+                placeholder={t("exitsTable.searchProducts")}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onClear={() => setSearchInput("")}
+                data-testid="incoming-order-lines-search"
+              />
+            }
+            filter={
+              <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                <span className="sr-only">{t("exitsTable.filter")}</span>
+                <select
+                  className="exits-select"
+                  value={skuFilter}
+                  onChange={(e) => setSkuFilter(e.target.value as LineSkuFilter)}
+                  data-testid="incoming-order-lines-filter"
+                  aria-label={t("exitsTable.filter")}
+                >
+                  <option value="all">{t("exitsTable.filterAll")}</option>
+                  <option value="hasSku">{t("exitsTable.filterHasSku")}</option>
+                  <option value="noSku">{t("exitsTable.filterNoSku")}</option>
+                </select>
+              </label>
+            }
+            selection={
+              selectedIds.size > 0 ? (
+                <>
+                  <span data-testid="incoming-order-selected-count">
+                    {t("exitsTable.selectedCount").replace("{count}", String(selectedIds.size))}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-8 px-2"
+                    data-testid="incoming-order-clear-selection"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    {t("exitsTable.clearSelection")}
+                  </Button>
+                </>
+              ) : null
+            }
+          />
+
           <ExitsTable>
             <ExitsTableHeader>
               <ExitsTableRow>
-                <ExitsTableHead cellAlign="text">{t("purchasing.colProduct")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="text">{t("catalog.sku")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric">{t("purchasing.qty")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="money">{t("purchasing.unitCost")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="money">{t("purchasing.lineTotal")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="center">
+                  <ExitsTableCheckbox
+                    checked={allVisibleSelected}
+                    indeterminate={someVisibleSelected && !allVisibleSelected}
+                    onChange={() => toggleSelectAllVisible()}
+                    aria-label={t("exitsTable.selectAll")}
+                    data-testid="incoming-order-select-all"
+                  />
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="text"
+                  sortable
+                  sortDirection={sortKey === "product" ? sortDirection : null}
+                  onSort={() => toggleSort("product")}
+                  data-testid="incoming-order-sort-product"
+                >
+                  {t("purchasing.colProduct")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="text"
+                  sortable
+                  sortDirection={sortKey === "sku" ? sortDirection : null}
+                  onSort={() => toggleSort("sku")}
+                  data-testid="incoming-order-sort-sku"
+                >
+                  {t("catalog.sku")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="numeric"
+                  sortable
+                  sortDirection={sortKey === "quantity" ? sortDirection : null}
+                  onSort={() => toggleSort("quantity")}
+                  data-testid="incoming-order-sort-quantity"
+                >
+                  {t("purchasing.qty")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  sortable
+                  sortDirection={sortKey === "unitCost" ? sortDirection : null}
+                  onSort={() => toggleSort("unitCost")}
+                  data-testid="incoming-order-sort-unit-cost"
+                >
+                  {t("purchasing.unitCost")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  sortable
+                  sortDirection={sortKey === "lineTotal" ? sortDirection : null}
+                  onSort={() => toggleSort("lineTotal")}
+                  data-testid="incoming-order-sort-line-total"
+                >
+                  {t("purchasing.lineTotal")}
+                </ExitsTableHead>
               </ExitsTableRow>
             </ExitsTableHeader>
             <ExitsTableBody>
-              {order.lines.map((line) => {
-                const uom = line.unitOfMeasureCode
-                  ? formatUnitOfMeasureLabel(line.unitOfMeasureCode)
-                  : "";
-                const qtyLabel = uom ? `${line.qty} ${uom}` : String(line.qty);
+              {pagedLines.map((line) => {
+                const selected = selectedIds.has(line.productId);
                 return (
                   <ExitsTableRow
                     key={line.productId}
+                    selected={selected}
+                    interactive
                     data-testid={`incoming-order-line-${line.productId}`}
                   >
+                    <ExitsTableCell cellAlign="center">
+                      <ExitsTableCheckbox
+                        checked={selected}
+                        onChange={() => toggleSelectOne(line.productId)}
+                        aria-label={t("exitsTable.selectRow")}
+                        data-testid={`incoming-order-select-${line.productId}`}
+                      />
+                    </ExitsTableCell>
                     <ExitsTableCell cellAlign="text" className="font-medium">
                       {line.nameSnapshot}
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text" className="text-muted">
                       {line.skuSnapshot?.trim() || "—"}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric">{qtyLabel}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric">{lineQtyLabel(line)}</ExitsTableCell>
                     <ExitsTableCell cellAlign="money">
                       <MoneyDisplay amount={line.unitPriceSnapshot} />
                     </ExitsTableCell>
@@ -309,8 +536,8 @@ export function IncomingOrderDetailPage() {
             </ExitsTableBody>
             <ExitsTableFooter data-testid="incoming-order-total">
               <ExitsTableRow>
-                <ExitsTableCell cellAlign="actions" colSpan={4} emphasis="bold">
-                  {t("incomingOrders.total")}
+                <ExitsTableCell cellAlign="actions" colSpan={5} emphasis="bold">
+                  {t("incomingOrders.orderTotal")}
                 </ExitsTableCell>
                 <ExitsTableCell cellAlign="money" emphasis="bold">
                   <MoneyDisplay amount={order.totalAmount} testId="incoming-order-total-amount" />
@@ -320,34 +547,57 @@ export function IncomingOrderDetailPage() {
           </ExitsTable>
 
           <ExitsTableMobile data-testid="incoming-order-lines-mobile">
-            {order.lines.map((line) => {
-              const uom = line.unitOfMeasureCode
-                ? formatUnitOfMeasureLabel(line.unitOfMeasureCode)
-                : "";
-              const qtyLabel = uom ? `${line.qty} ${uom}` : String(line.qty);
+            {pagedLines.map((line) => {
+              const selected = selectedIds.has(line.productId);
               return (
                 <ExitsTableMobileRow
                   key={line.productId}
+                  selected={selected}
                   data-testid={`incoming-order-line-mobile-${line.productId}`}
                 >
-                  <div className="exits-table-mobile__title-row">
-                    <p className="exits-table-mobile__title">{line.nameSnapshot}</p>
-                    <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                  <div className="exits-table-mobile__lead">
+                    <ExitsTableCheckbox
+                      checked={selected}
+                      onChange={() => toggleSelectOne(line.productId)}
+                      aria-label={t("exitsTable.selectRow")}
+                    />
+                    <div className="exits-table-mobile__lead-body">
+                      <div className="exits-table-mobile__title-row">
+                        <p className="exits-table-mobile__title">{line.nameSnapshot}</p>
+                        <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                      </div>
+                      {line.skuSnapshot?.trim() ? (
+                        <p className="exits-table-mobile__meta">{line.skuSnapshot.trim()}</p>
+                      ) : null}
+                      <p className="exits-table-mobile__math">
+                        {lineQtyLabel(line)} × {formatPeso(line.unitPriceSnapshot)}
+                      </p>
+                    </div>
                   </div>
-                  {line.skuSnapshot?.trim() ? (
-                    <p className="exits-table-mobile__meta">{line.skuSnapshot.trim()}</p>
-                  ) : null}
-                  <p className="exits-table-mobile__math">
-                    {qtyLabel} × {formatPeso(line.unitPriceSnapshot)}
-                  </p>
                 </ExitsTableMobileRow>
               );
             })}
             <li className="exits-table-mobile__footer" data-testid="incoming-order-total-mobile">
-              <span>{t("incomingOrders.total")}</span>
+              <span>{t("incomingOrders.orderTotal")}</span>
               <MoneyDisplay amount={order.totalAmount} />
             </li>
           </ExitsTableMobile>
+
+          <ExitsTablePagination
+            page={safePage}
+            pageSize={pageSize}
+            total={filteredSortedLines.length}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+            previousLabel={t("exitsTable.previous")}
+            nextLabel={t("exitsTable.next")}
+            rangeLabel={t("exitsTable.range")}
+          />
         </ExitsTableContainer>
       )}
 

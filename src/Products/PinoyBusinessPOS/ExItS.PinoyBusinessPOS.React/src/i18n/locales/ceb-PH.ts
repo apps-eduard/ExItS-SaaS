@@ -2949,6 +2949,19 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "error.detail": "I-reload ang page. Walay business data nga gitipigan niining foundation.",
 
+  "exitsTable.clearSelection": "Clear selection",
+  "exitsTable.filter": "Filter",
+  "exitsTable.filterAll": "All items",
+  "exitsTable.filterHasSku": "Has SKU",
+  "exitsTable.filterNoSku": "No SKU",
+  "exitsTable.next": "Next",
+  "exitsTable.previous": "Previous",
+  "exitsTable.range": "{from}–{to} of {total}",
+  "exitsTable.rowsPerPage": "Rows per page",
+  "exitsTable.searchProducts": "Search products",
+  "exitsTable.selectAll": "Select all visible rows",
+  "exitsTable.selectRow": "Select row",
+  "exitsTable.selectedCount": "{count} selected",
   "error.title": "Adunay nahitabo nga sayop",
 
   "experience.chooserLabel": "Owner experience",
@@ -4560,6 +4573,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.notFound": "Wala makita ang incoming order.",
 
   "incomingOrders.orderDate": "Petsa sa order",
+  "incomingOrders.orderTotal": "Order total",
 
   "incomingOrders.review": "Susiha ang order",
 

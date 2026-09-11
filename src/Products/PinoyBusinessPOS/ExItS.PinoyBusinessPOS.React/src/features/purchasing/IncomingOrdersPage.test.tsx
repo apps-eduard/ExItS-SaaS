@@ -11,6 +11,7 @@ const orgId = "22222222-2222-4222-8222-222222222222";
 const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const cpoId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const productId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const productIdBanana = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 
 const workspaceMock = {
   boundWorkspace: {
@@ -62,37 +63,66 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", async (importOriginal) => {
   };
 });
 
-function pendingOrder(status = "New") {
+function pendingOrder(status = "New", lines?: Array<Record<string, unknown>>) {
+  const defaultLines = [
+    {
+      productId,
+      nameSnapshot: "Bottled Water 500ml",
+      skuSnapshot: "PH-BEV-WATER-500",
+      qty: 20,
+      unitPriceSnapshot: 12,
+      lineTotal: 240,
+      unitOfMeasureCode: "Piece",
+    },
+  ];
+  const resolvedLines = lines ?? defaultLines;
+  const totalAmount = resolvedLines.reduce(
+    (sum, line) => sum + Number(line.lineTotal ?? 0),
+    0,
+  );
   return {
     connectedPurchaseOrderId: cpoId,
     relationshipId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
     buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
     supplierOrganizationId: orgId,
-    buyerPurchaseOrderId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    buyerPurchaseOrderId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
     buyerPoNumber: "PO-000123",
     orderDate: "2026-09-04",
     notes: null,
     status,
-    totalAmount: 240,
+    totalAmount,
     createdAtUtc: "2026-09-04T00:00:00Z",
     updatedAtUtc: "2026-09-04T00:00:00Z",
-    lines: [
-      {
-        productId,
-        nameSnapshot: "Bottled Water 500ml",
-        skuSnapshot: "PH-BEV-WATER-500",
-        qty: 20,
-        unitPriceSnapshot: 12,
-        lineTotal: 240,
-        unitOfMeasureCode: "Piece",
-      },
-    ],
+    lines: resolvedLines,
     displayStatus: status,
     buyerDisplayName: "Paul Store",
     supplierBranchName: "Iloilo",
     paymentTerm: "Cash",
     paymentTermLabel: "Cash",
   };
+}
+
+function twoLineOrder(status = "New") {
+  return pendingOrder(status, [
+    {
+      productId,
+      nameSnapshot: "Apple",
+      skuSnapshot: "PH-FRU-APPLE",
+      qty: 5,
+      unitPriceSnapshot: 180,
+      lineTotal: 900,
+      unitOfMeasureCode: "Kilogram",
+    },
+    {
+      productId: productIdBanana,
+      nameSnapshot: "Banana Lakatan",
+      skuSnapshot: "PH-FRU-BANANA",
+      qty: 5,
+      unitPriceSnapshot: 76,
+      lineTotal: 380,
+      unitOfMeasureCode: "Kilogram",
+    },
+  ]);
 }
 
 function renderList() {
@@ -218,5 +248,47 @@ describe("IncomingOrders React flow", () => {
     await user.click(screen.getByTestId("incoming-order-fulfill"));
     await waitFor(() => expect(fulfillIncomingOrder).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByTestId("incoming-order-fulfill")).not.toBeInTheDocument());
+  });
+
+  it("supports search, sort, selection, and pagination without changing order total", async () => {
+    const user = userEvent.setup();
+    getIncomingOrder.mockResolvedValue(twoLineOrder("New"));
+    renderDetail();
+
+    await waitFor(() => screen.getByTestId("incoming-order-lines"));
+    expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
+    expect(screen.getAllByText("Order total").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–2 of 2");
+    expect(screen.getByTestId("exits-table-prev")).toBeDisabled();
+    expect(screen.getByTestId("exits-table-next")).toBeDisabled();
+
+    await user.type(screen.getByTestId("incoming-order-lines-search"), "Banana");
+    await waitFor(() => {
+      expect(screen.queryByTestId(`incoming-order-line-${productId}`)).not.toBeInTheDocument();
+      expect(screen.getByTestId(`incoming-order-line-${productIdBanana}`)).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
+
+    await user.clear(screen.getByTestId("incoming-order-lines-search"));
+    await waitFor(() => screen.getByTestId(`incoming-order-line-${productId}`));
+
+    await user.click(screen.getByTestId("incoming-order-sort-line-total-sort"));
+    const rows = screen
+      .getAllByTestId(/incoming-order-line-/)
+      .filter((el) => /^incoming-order-line-[0-9a-f-]+$/i.test(el.getAttribute("data-testid") ?? ""));
+    expect(rows[0]).toHaveAttribute("data-testid", `incoming-order-line-${productIdBanana}`);
+    expect(rows[1]).toHaveAttribute("data-testid", `incoming-order-line-${productId}`);
+
+    await user.click(screen.getByTestId(`incoming-order-select-${productId}`));
+    await user.click(screen.getByTestId(`incoming-order-select-${productIdBanana}`));
+    expect(screen.getByTestId("incoming-order-selected-count")).toHaveTextContent("2 selected");
+    expect(screen.getByTestId(`incoming-order-line-${productId}`)).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+
+    await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
+    expect(screen.getByTestId("exits-table-page-size")).toHaveValue("10");
+    expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
   });
 });
