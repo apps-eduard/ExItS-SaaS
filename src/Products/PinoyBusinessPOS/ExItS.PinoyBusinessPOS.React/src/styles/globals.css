@@ -1225,6 +1225,12 @@ html:has(.admin-shell) #root {
   background: color-mix(in srgb, var(--exits-surface-muted) 35%, transparent);
 }
 
+.exits-status-chip--primary {
+  color: var(--exits-primary);
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, transparent);
+  background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+}
+
 /*
  * Reusable management entity / list card foundation.
  * Content-driven height; density tokens own padding/gaps.

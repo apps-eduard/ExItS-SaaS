@@ -5,6 +5,7 @@ import {
   setTabDisclosure,
   writeUiStandardsDisclosure,
   type UiStandardsDisclosureState,
+  type UiStandardsTab,
 } from "@/features/ui-standards/ui-standards-disclosure";
 
 export function useUiStandardsDisclosure() {
@@ -35,11 +36,11 @@ export function useUiStandardsDisclosure() {
     });
   }, []);
 
-  const expandAll = useCallback((tab: "tables" | "buttons") => {
+  const expandAll = useCallback((tab: UiStandardsTab) => {
     setOpenMap((prev) => setTabDisclosure(prev, tab, true));
   }, []);
 
-  const collapseAll = useCallback((tab: "tables" | "buttons") => {
+  const collapseAll = useCallback((tab: UiStandardsTab) => {
     setOpenMap((prev) => setTabDisclosure(prev, tab, false));
   }, []);
 

@@ -1,7 +1,14 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export type StatusChipTone = "info" | "success" | "warning" | "danger" | "neutral";
+export type StatusChipTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "danger"
+  | "neutral"
+  /** Brand / selected emphasis — uses --exits-primary (Preferences-ready). */
+  | "primary";
 
 export function StatusChip({
   children,

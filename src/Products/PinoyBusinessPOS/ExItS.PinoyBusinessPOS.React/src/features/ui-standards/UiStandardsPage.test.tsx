@@ -101,6 +101,14 @@ describe("UiStandardsPage", () => {
     const samples = within(screen.getByTestId("ui-standards-button-showcase"));
     expect(samples.getByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(samples.getByRole("button", { name: "Approve" })).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-tab-chips"));
+    expect(screen.getByTestId("ui-standards-chips-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-status")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-filter")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-tags")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
+    expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("STATUS CHIP");
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

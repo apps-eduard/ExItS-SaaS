@@ -22,9 +22,22 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "buttons.samples.warning": false,
   "buttons.samples.danger": false,
   "buttons.samples.danger-strong": false,
+
+  "chips.status": true,
+  "chips.filter": true,
+  "chips.tags": true,
+  "chips.status-icons": false,
+  "chips.filter-modes": false,
+  "chips.removable": false,
+  "chips.count": false,
+  "chips.count-badge": false,
+  "chips.real-world": false,
+  "chips.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
+
+export type UiStandardsTab = "tables" | "buttons" | "chips";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };
@@ -61,14 +74,14 @@ export function writeUiStandardsDisclosure(state: UiStandardsDisclosureState): v
   }
 }
 
-export function keysForTab(tab: "tables" | "buttons", state: UiStandardsDisclosureState): string[] {
+export function keysForTab(tab: UiStandardsTab, state: UiStandardsDisclosureState): string[] {
   const prefix = `${tab}.`;
   return Object.keys(state).filter((key) => key.startsWith(prefix));
 }
 
 export function setTabDisclosure(
   state: UiStandardsDisclosureState,
-  tab: "tables" | "buttons",
+  tab: UiStandardsTab,
   open: boolean,
 ): UiStandardsDisclosureState {
   const next = { ...state };

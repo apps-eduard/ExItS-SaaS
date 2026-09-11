@@ -51,7 +51,7 @@ describe("slim global status chips", () => {
   });
 
   it("renders outlined tones and StatusPill alias", () => {
-    for (const tone of ["success", "warning", "info", "danger", "neutral"] as const) {
+    for (const tone of ["success", "warning", "info", "danger", "neutral", "primary"] as const) {
       const { unmount } = render(
         createElement(StatusChip, { tone, children: tone.toUpperCase() }),
       );
