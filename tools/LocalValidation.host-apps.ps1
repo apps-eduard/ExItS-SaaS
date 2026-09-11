@@ -296,7 +296,9 @@ function Start-LocalValidationSupervisorHost {
         $null = Stop-LocalValidationSupervisorHost -RepoRoot $RepoRoot -Port $Port
     }
     elseif (Test-LocalValidationHttpReady -Uri $healthUrl -TimeoutSec 2) {
-        if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 5) {
+        # /health/services shells out to Invoke-LocalValidationControl (cold PowerShell),
+        # which commonly takes 4–8s — do not use the default 3s probe timeout.
+        if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 20) {
             Write-Host ("[local-validation] Local Validation Supervisor :{0} UP (already running)" -f $Port) -ForegroundColor Green
             return $null
         }
@@ -338,10 +340,10 @@ function Start-LocalValidationSupervisorHost {
             -TimeoutSeconds $WaitSeconds `
             -WindowProcessId $launch.WindowProcessId `
             -ExitMarkerPath $launch.ExitMarkerPath
-        $deadline = (Get-Date).AddSeconds([Math]::Max(15, [Math]::Min(60, $WaitSeconds)))
+        $deadline = (Get-Date).AddSeconds([Math]::Max(30, [Math]::Min(90, $WaitSeconds)))
         $servicesReady = $false
         while ((Get-Date) -lt $deadline) {
-            if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 3) {
+            if (Test-LocalValidationHttpReady -Uri $servicesUrl -TimeoutSec 20) {
                 $servicesReady = $true
                 break
             }
