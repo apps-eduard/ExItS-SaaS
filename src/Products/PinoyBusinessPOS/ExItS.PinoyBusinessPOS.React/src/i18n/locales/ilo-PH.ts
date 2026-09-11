@@ -2964,7 +2964,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
   "uiStandards.buttonMotionTitle": "Button motion",
   "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
-  "uiStandards.cancelIconPilotNote": "CircleX — general Cancel / dismiss. CornerUpLeft — Cancel and return / abandon edit. X — Close-only (dialogs/icon-only). ArrowLeft — Back/navigation, not automatically Cancel. PILOT / NOT LOCKED.",
+  "uiStandards.cancelIconPilotNote": "3 Cancel icon candidates (PILOT / NOT LOCKED): CircleX — general Cancel / dismiss. CornerUpLeft — Cancel and return / abandon edit. X — minimal Cancel (also used for Close-only). ArrowLeft stays Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",

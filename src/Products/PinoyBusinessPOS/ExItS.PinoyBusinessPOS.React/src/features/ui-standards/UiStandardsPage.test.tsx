@@ -87,6 +87,10 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-btn-group-muted")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-cancel-circlex")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-cancel-corner-up-left")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cancel-x")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-cancel-circlex")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-cancel-corner-up-left")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-cancel-x")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("CANCEL ICONS");
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("ICON ONLY ROUND");
 

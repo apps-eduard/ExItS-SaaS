@@ -41,7 +41,7 @@ export const en = {
   "uiStandards.buttonPilotBadge": "BUTTON STANDARD — PILOT / NOT YET LOCKED",
   "uiStandards.buttonPilotLede": "Candidate semantic intents for visual approval. Reuses the shared ExItS Button component and design tokens.",
   "uiStandards.buttonPilotTitle": "Button samples",
-  "uiStandards.cancelIconPilotNote": "CircleX — general Cancel / dismiss. CornerUpLeft — Cancel and return / abandon edit. X — Close-only (dialogs/icon-only). ArrowLeft — Back/navigation, not automatically Cancel. PILOT / NOT LOCKED.",
+  "uiStandards.cancelIconPilotNote": "3 Cancel icon candidates (PILOT / NOT LOCKED): CircleX — general Cancel / dismiss. CornerUpLeft — Cancel and return / abandon edit. X — minimal Cancel (also used for Close-only). ArrowLeft stays Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",

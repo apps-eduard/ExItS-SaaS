@@ -198,15 +198,6 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                 </Button>
               ),
             },
-            {
-              label: "MUTED / Cancel",
-              render: (shape: "standard" | "soft" | "pill") => (
-                <Button type="button" variant="secondary" shape={shape}>
-                  <CircleX className="size-4" aria-hidden />
-                  Cancel
-                </Button>
-              ),
-            },
           ] as const
         ).map((row) => (
           <div key={row.label} className="grid gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
@@ -227,6 +218,41 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             </div>
           </div>
         ))}
+
+        <div
+          className="grid gap-2 border-t border-border pt-3"
+          data-testid="ui-standards-cancel-icon-shape-row"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
+            MUTED / Cancel · icon options (PILOT)
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                { id: "circlex", label: "CircleX", Icon: CircleX },
+                { id: "corner-up-left", label: "CornerUpLeft", Icon: CornerUpLeft },
+                { id: "x", label: "X", Icon: X },
+              ] as const
+            ).map((opt) => (
+              <div
+                key={opt.id}
+                className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
+                data-testid={`ui-standards-shape-cancel-${opt.id}`}
+              >
+                <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
+                  {opt.label}
+                </span>
+                <Button type="button" variant="secondary" shape="soft">
+                  <opt.Icon className="size-4" aria-hidden />
+                  Cancel
+                </Button>
+              </div>
+            ))}
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {t("uiStandards.cancelIconPilotNote")}
+          </p>
+        </div>
       </UiStandardsSection>
 
       <UiStandardsSection
@@ -347,16 +373,22 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                 <>
                   <div className="grid gap-2 sm:col-span-2 lg:col-span-3" data-testid="ui-standards-cancel-icon-comparison">
                     <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">CANCEL</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-3">
                       <SampleCard label="CircleX" testId="ui-standards-cancel-circlex">
-                        <Button type="button" variant="secondary">
+                        <Button type="button" variant="secondary" shape="soft">
                           <CircleX className="size-4" aria-hidden />
                           Cancel
                         </Button>
                       </SampleCard>
                       <SampleCard label="Corner up left" testId="ui-standards-cancel-corner-up-left">
-                        <Button type="button" variant="secondary">
+                        <Button type="button" variant="secondary" shape="soft">
                           <CornerUpLeft className="size-4" aria-hidden />
+                          Cancel
+                        </Button>
+                      </SampleCard>
+                      <SampleCard label="X" testId="ui-standards-cancel-x">
+                        <Button type="button" variant="secondary" shape="soft">
+                          <X className="size-4" aria-hidden />
                           Cancel
                         </Button>
                       </SampleCard>
@@ -365,8 +397,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                       {t("uiStandards.cancelIconPilotNote")}
                     </p>
                   </div>
-                  <SampleCard label="Close">
-                    <Button type="button" variant="secondary">
+                  <SampleCard label="Close (X)">
+                    <Button type="button" variant="secondary" shape="soft">
                       <X className="size-4" aria-hidden />
                       Close
                     </Button>
