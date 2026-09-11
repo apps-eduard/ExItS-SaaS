@@ -35,11 +35,19 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "chips.count-badge": false,
   "chips.real-world": false,
   "chips.cheatsheet": false,
+
+  "tabs.variants": true,
+  "tabs.counts": true,
+  "tabs.real-world": true,
+  "tabs.icons": false,
+  "tabs.states": false,
+  "tabs.mobile": false,
+  "tabs.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
 
-export type UiStandardsTab = "tables" | "buttons" | "chips";
+export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };

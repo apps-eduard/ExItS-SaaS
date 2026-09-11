@@ -29,6 +29,7 @@ import { formatPeso } from "@/lib/format-money";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 import { UiStandardsButtonsPanel } from "@/features/ui-standards/UiStandardsButtonsPanel";
 import { UiStandardsChipsPanel } from "@/features/ui-standards/UiStandardsChipsPanel";
+import { UiStandardsTabsPanel } from "@/features/ui-standards/UiStandardsTabsPanel";
 import { UiStandardsDisclosureToolbar } from "@/features/ui-standards/UiStandardsDisclosureToolbar";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
@@ -198,6 +199,7 @@ export function UiStandardsPage() {
             { key: "tables", label: t("uiStandards.tabTables"), testId: "ui-standards-tab-tables" },
             { key: "buttons", label: t("uiStandards.tabButtons"), testId: "ui-standards-tab-buttons" },
             { key: "chips", label: t("uiStandards.tabChips"), testId: "ui-standards-tab-chips" },
+            { key: "tabs", label: t("uiStandards.tabTabs"), testId: "ui-standards-tab-tabs" },
           ]}
         />
         <UiStandardsDisclosureToolbar
@@ -473,6 +475,7 @@ OUTPUT ICONS ON.`}
 
       {tab === "buttons" ? <UiStandardsButtonsPanel isOpen={isOpen} setOpen={setOpen} /> : null}
       {tab === "chips" ? <UiStandardsChipsPanel isOpen={isOpen} setOpen={setOpen} /> : null}
+      {tab === "tabs" ? <UiStandardsTabsPanel isOpen={isOpen} setOpen={setOpen} /> : null}
     </div>
   );
 }

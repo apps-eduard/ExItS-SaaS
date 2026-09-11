@@ -113,6 +113,13 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("STATUS CHIP");
     expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("SQUARE");
     expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("TAG → SQUARE");
+
+    await user.click(screen.getByTestId("ui-standards-tab-tabs"));
+    expect(screen.getByTestId("ui-standards-tabs-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-variants")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-counts")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
+    expect(screen.getByTestId("ui-standards-tabs-demo-underline")).toBeInTheDocument();
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

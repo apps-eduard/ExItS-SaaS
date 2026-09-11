@@ -68,7 +68,8 @@ export function CountChip({
 
 export type CountBadgeProps = {
   count: ReactNode;
-  tone?: Extract<ChipTone, "neutral" | "primary" | "danger">;
+  /** Neutral / primary / danger / warning — warning for semantic tab counts when meaning requires it. */
+  tone?: Extract<ChipTone, "neutral" | "primary" | "danger" | "warning">;
   className?: string;
 };
 
@@ -89,6 +90,8 @@ export function CountBadge({ count, tone = "neutral", className }: CountBadgePro
           "border-[color-mix(in_srgb,var(--exits-primary)_35%,transparent)] bg-[color-mix(in_srgb,var(--exits-primary)_14%,transparent)] text-[var(--exits-primary)]",
         tone === "danger" &&
           "border-[color-mix(in_srgb,var(--exits-danger)_35%,transparent)] bg-[color-mix(in_srgb,var(--exits-danger)_12%,transparent)] text-[var(--exits-danger)]",
+        tone === "warning" &&
+          "border-[color-mix(in_srgb,var(--exits-warning)_35%,transparent)] bg-[color-mix(in_srgb,var(--exits-warning)_12%,transparent)] text-[var(--exits-warning)]",
         className,
       )}
       data-tone={tone}
