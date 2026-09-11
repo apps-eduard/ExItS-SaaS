@@ -1,0 +1,23 @@
+---
+description: PinoyBusinessPOS React ExItS Button standard — reuse shared Button; follow Docs/UI/exits-button-standard.md
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Button Standard
+
+For PinoyBusinessPOS React button / CTA / icon-control work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-button-standard.md` (authoritative contract).
+2. Reuse the shared ExItS `Button` in `ExItS.PinoyBusinessPOS.React/src/components/ui/button.tsx`.
+3. Do **not** invent local visual button systems or third-party visual button skins when shared `Button` can express the action.
+4. Use Cursor shorthand mapped to the real API (`PRIMARY` → `variant="default"`, `MUTED` → `secondary`, `DANGER` → `destructive`, etc.).
+5. Style through ExItS semantic tokens — not hardcoded brand greens or page-local palettes.
+6. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort).
+7. Icon-only controls need `size="icon"`, `aria-label`, and `title`/tooltip; `shape="round"` is for circular icon-only.
+8. Respect `prefers-reduced-motion` (no unnecessary lift / scale / rotate).
+9. Cancel → `CircleX`; Cancel & return → `CornerUpLeft`; Close-only → `X`; Back → `ArrowLeft`.
+10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+Keep detailed rules in the markdown standard — do not invent conflicting variants, motion APIs, or colors here.
+Visual reference: `/ui-standards` → Buttons.

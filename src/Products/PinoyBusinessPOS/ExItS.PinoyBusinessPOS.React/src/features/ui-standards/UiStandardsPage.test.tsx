@@ -92,7 +92,11 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-shape-cancel-corner-up-left")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-shape-cancel-x")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("CANCEL ICONS");
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("APPROVED / LOCKED");
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("ICON ONLY ROUND");
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent(
+      "Cancel → CircleX",
+    );
 
     const samples = within(screen.getByTestId("ui-standards-button-showcase"));
     expect(samples.getByRole("button", { name: "Save" })).toBeInTheDocument();

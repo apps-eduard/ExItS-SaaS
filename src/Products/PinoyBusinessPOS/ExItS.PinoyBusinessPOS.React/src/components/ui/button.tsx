@@ -4,10 +4,10 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Shared Button — shape/treatment/motion are opt-in pilots.
- * Defaults (standard + flat) preserve existing visual appearance.
- * Contextual icon motion: put `group/button` (already on Button) +
- * `buttonIconMotion.*` classes on Lucide children.
+ * Shared ExItS Button — canonical control (APPROVED / LOCKED).
+ * See `Docs/UI/exits-button-standard.md` and `/ui-standards` → Buttons.
+ * Defaults (standard + flat) preserve historical appearance.
+ * Contextual icon motion: `group/button` (on Button) + `buttonIconMotion.*` on Lucide children.
  */
 export const buttonVariants = cva(
   [
@@ -28,16 +28,13 @@ export const buttonVariants = cva(
           "border border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)] hover:border-[var(--exits-border-strong)]",
         destructive:
           "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
-        /** Pilot semantic — not locked as product standard yet. */
         success:
           "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
-        /** Pilot semantic — not locked as product standard yet. */
         info:
           "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
-        /** Pilot semantic — not locked as product standard yet. */
         warning:
           "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
-        /** Pilot strong danger — confirmation-only; not locked yet. */
+        /** High-risk destructive confirmation only. */
         dangerStrong:
           "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
       },
@@ -51,7 +48,7 @@ export const buttonVariants = cva(
         large:
           "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
-      /** Pilot — default matches historical ExItS button radius. */
+      /** Default matches historical ExItS button radius. */
       shape: {
         standard: "rounded-[var(--exits-radius-md)]",
         soft: "rounded-[var(--exits-radius-soft)]",
@@ -59,7 +56,7 @@ export const buttonVariants = cva(
         /** Circular icon-only control (pair with size="icon"). */
         round: "rounded-full",
       },
-      /** Pilot — default flat preserves historical treatment. */
+      /** Default flat preserves historical treatment. */
       treatment: {
         flat: "",
         elevated:

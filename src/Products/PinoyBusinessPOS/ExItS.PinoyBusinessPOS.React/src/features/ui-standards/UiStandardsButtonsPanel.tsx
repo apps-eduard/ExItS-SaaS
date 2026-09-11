@@ -224,7 +224,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
           data-testid="ui-standards-cancel-icon-shape-row"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">
-            MUTED / Cancel · icon options (PILOT)
+            MUTED / Cancel · icon options (APPROVED)
           </p>
           <div className="grid gap-2 sm:grid-cols-3">
             {(
@@ -368,7 +368,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             {
               id: "buttons.samples.muted",
               title: "MUTED",
-              summary: "Cancel icon comparison · PILOT",
+              summary: "Cancel icon comparison · APPROVED",
               body: (
                 <>
                   <div className="grid gap-2 sm:col-span-2 lg:col-span-3" data-testid="ui-standards-cancel-icon-comparison">
@@ -888,23 +888,24 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         id="buttons.cheatsheet"
         title={t("uiStandards.buttonCheatTitle")}
         description={t("uiStandards.buttonPilotBadge")}
-        summary="PILOT / NOT LOCKED"
+        summary="APPROVED / LOCKED"
         open={isOpen("buttons.cheatsheet")}
         onOpenChange={(open) => setOpen("buttons.cheatsheet", open)}
         testId="ui-standards-button-cheatsheet"
       >
         <pre className="m-0 overflow-x-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] leading-relaxed">
-{`BUTTON STANDARD — PILOT / NOT LOCKED
+{`BUTTON STANDARD — APPROVED / LOCKED
+See Docs/UI/exits-button-standard.md
 
 INTENT:
-PRIMARY
+PRIMARY (= variant default)
 SUCCESS
-MUTED
+MUTED (= secondary)
 OUTLINE
 GHOST
 INFO
 WARNING
-DANGER
+DANGER (= destructive)
 DANGER STRONG
 
 SHAPE:
@@ -921,7 +922,7 @@ GRADIENT
 MOTION (conceptual — not Button API variants):
 NONE
 STANDARD (= transition + press)
-CONTEXTUAL ICON (= specific icons only)
+CONTEXTUAL ICON (= buttonIconMotion.*)
 
 OTHER:
 WITH ICON
@@ -929,9 +930,9 @@ NO ICON
 ICON ONLY
 ICON ONLY ROUND
 
-CANCEL ICONS (PILOT / NOT LOCKED):
-Cancel → CircleX (candidate)
-Cancel & return → CornerUpLeft (candidate)
+CANCEL ICONS (LOCKED):
+Cancel → CircleX
+Cancel & return → CornerUpLeft
 Close → X
 Back → ArrowLeft
 
@@ -943,8 +944,8 @@ Delete: ICON ONLY ROUND DANGER
 Continue: PRIMARY + SOFT + WITH ICON + DIRECTIONAL ICON
 Main CTA: PRIMARY + SOFT + ELEVATED + WITH ICON
 Save: PRIMARY + SOFT + ELEVATED + WITH ICON
-Cancel: MUTED + CircleX (pilot)
-Cancel & return: MUTED + CornerUpLeft (pilot)
+Cancel: MUTED + CircleX
+Cancel & return: MUTED + CornerUpLeft
 Approve: SUCCESS + SOFT + WITH ICON
 Deactivate: WARNING + STANDARD + WITH ICON
 Delete (text): DANGER + STANDARD + WITH ICON

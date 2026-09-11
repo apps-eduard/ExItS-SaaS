@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Button, buttonIconMotion, buttonVariants } from "@/components/ui/button";
 
-describe("Button shape and treatment pilots", () => {
+describe("Button shape and treatment (locked standard)", () => {
   it("keeps default API visually equivalent to standard + flat", () => {
     const { rerender } = render(<Button type="button">Save</Button>);
     const plain = screen.getByRole("button", { name: "Save" }).className;
