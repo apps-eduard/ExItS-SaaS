@@ -29,7 +29,8 @@ export const exitsCardVariants = cva(
     variants: {
       treatment: {
         surface: "border border-transparent bg-surface shadow-none",
-        bordered: "border border-border bg-surface shadow-none",
+        bordered:
+          "border border-border bg-surface shadow-none disabled:cursor-not-allowed disabled:opacity-60",
         elevated:
           "border border-border bg-[var(--exits-surface-elevated)] shadow-[var(--exits-shadow-sm)]",
         interactive: [
@@ -45,6 +46,7 @@ export const exitsCardVariants = cva(
           "border border-[color-mix(in_srgb,var(--exits-primary)_55%,var(--exits-border))]",
           "bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))]",
           "shadow-none",
+          "disabled:cursor-not-allowed disabled:opacity-60",
         ].join(" "),
         accent: "border border-border bg-surface shadow-none",
       },

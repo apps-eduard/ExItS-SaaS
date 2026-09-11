@@ -141,6 +141,11 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-card-kpi-sales")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-card-interactive")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-card-selectable-main")).toBeInTheDocument();
+    const warehouseGroup = screen.getByRole("radiogroup", { name: "Warehouse" });
+    expect(within(warehouseGroup).getByRole("radio", { name: /Main Branch/i })).toBeInTheDocument();
+    expect(within(warehouseGroup).getByRole("radio", { name: /Kalibo Warehouse/i })).toBeDisabled();
+    expect(screen.getByText("Mica Trading")).toBeInTheDocument();
+    expect(screen.getByText("Supplier · Cebu")).toBeInTheDocument();
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

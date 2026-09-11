@@ -46,11 +46,11 @@ function SampleFrame({
   className?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5" data-testid={testId}>
+    <div className={cn("flex min-w-0 flex-col gap-1.5", className)} data-testid={testId}>
       <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
         {label}
       </span>
-      <div className={cn("min-w-0", className)}>{children}</div>
+      <div className="min-w-0">{children}</div>
       {hint ? (
         <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span>
       ) : null}
@@ -80,18 +80,113 @@ type DisclosureProps = {
 };
 
 const WAREHOUSE_OPTIONS = [
-  { key: "main", label: "Main Branch", meta: "Iloilo · 124 products", disabled: false },
-  { key: "iloilo", label: "Iloilo Warehouse", meta: "Secondary · 86 products", disabled: false },
-  { key: "kalibo", label: "Kalibo Warehouse", meta: "Unavailable", disabled: true },
+  {
+    key: "main",
+    label: "Main Branch",
+    subtitle: "Iloilo",
+    detail: "124 products",
+    disabled: false,
+  },
+  {
+    key: "iloilo",
+    label: "Iloilo Warehouse",
+    subtitle: "Secondary",
+    detail: "86 products",
+    disabled: false,
+  },
+  {
+    key: "kalibo",
+    label: "Kalibo Warehouse",
+    subtitle: "Unavailable",
+    detail: null,
+    disabled: true,
+  },
 ] as const;
+
+type SelectableIndicator = "radio" | "check" | "none";
+
+function SelectableCardBody({
+  title,
+  subtitle,
+  detail,
+  selected,
+  disabled,
+  indicator,
+}: {
+  title: string;
+  subtitle: string;
+  detail?: string | null;
+  selected?: boolean;
+  disabled?: boolean;
+  indicator: SelectableIndicator;
+}) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 text-start">
+        <CardTitle
+          as="h4"
+          className={cn(
+            "text-[length:var(--exits-text-sm)]",
+            disabled && "text-muted",
+          )}
+        >
+          {title}
+        </CardTitle>
+        <CardDescription className={cn(disabled && "opacity-90")}>{subtitle}</CardDescription>
+        {detail ? (
+          <p
+            className={cn(
+              "m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted",
+              disabled && "opacity-90",
+            )}
+          >
+            {detail}
+          </p>
+        ) : null}
+      </div>
+      {indicator === "none" ? (
+        <span className="size-4 shrink-0" aria-hidden />
+      ) : indicator === "check" ? (
+        <CircleCheck
+          className={cn(
+            "mt-0.5 size-4 shrink-0",
+            selected ? "text-[var(--exits-primary)]" : "text-muted opacity-45",
+            disabled && "opacity-50",
+          )}
+          aria-hidden
+        />
+      ) : (
+        <Circle
+          className={cn(
+            "mt-0.5 size-4 shrink-0",
+            selected ? "text-[var(--exits-primary)]" : "text-muted opacity-55",
+            disabled && "opacity-50",
+          )}
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
 
 function EntityAvatar({ initials }: { initials: string }) {
   return (
     <span
       aria-hidden
-      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-[length:var(--exits-text-sm)] font-semibold text-foreground"
     >
       {initials}
+    </span>
+  );
+}
+
+function EntityLeadingIcon() {
+  return (
+    <span
+      aria-hidden
+      className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)] text-muted"
+    >
+      <Building2 className="size-4" aria-hidden />
     </span>
   );
 }
@@ -604,46 +699,46 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <StaticSampleGroup title="ENTITY CARD">
           <SampleFrame label="WITH AVATAR / INITIALS">
-            <Card treatment="bordered" layout="horizontal">
-              <EntityAvatar initials="KF" />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <CardHeader className="flex-col items-start gap-1">
+            <Card treatment="bordered" className="flex h-full min-h-[11.5rem] flex-col gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <EntityAvatar initials="KF" />
+                <div className="min-w-0 flex-1">
                   <CardTitle>Kizy Fruits</CardTitle>
                   <CardDescription>Main Branch · Iloilo</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex flex-wrap gap-1.5">
-                    <TagChip tone="info">B2B</TagChip>
-                    <StatusChip tone="success">Active</StatusChip>
-                  </div>
-                  <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                    Last order: Sep 11
-                  </p>
-                </CardContent>
-                <CardFooter className="justify-end border-t-0 pt-0">
-                  <Button type="button" variant="outline" shape="soft">
-                    View details
-                  </Button>
-                </CardFooter>
+                </div>
               </div>
+              <CardContent className="flex flex-1 flex-col gap-2 pt-0">
+                <div className="flex flex-wrap gap-1.5">
+                  <TagChip tone="info">B2B</TagChip>
+                  <StatusChip tone="success">Active</StatusChip>
+                </div>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  Last order: Sep 11
+                </p>
+              </CardContent>
+              <CardFooter className="mt-auto justify-end border-t-0 pt-0">
+                <Button type="button" variant="outline" shape="soft">
+                  View details
+                </Button>
+              </CardFooter>
             </Card>
           </SampleFrame>
           <SampleFrame label="WITHOUT AVATAR">
-            <Card treatment="bordered">
-              <CardHeader>
-                <Building2 className="size-4 shrink-0 text-muted" aria-hidden />
-                <div className="min-w-0">
+            <Card treatment="bordered" className="flex h-full min-h-[11.5rem] flex-col gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <EntityLeadingIcon />
+                <div className="min-w-0 flex-1">
                   <CardTitle>Mica Trading</CardTitle>
                   <CardDescription>Supplier · Cebu</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <CardContent className="flex flex-1 flex-col gap-2 pt-0">
                 <div className="flex flex-wrap gap-1.5">
                   <StatusChip tone="success">Active</StatusChip>
                   <TagChip tone="primary">Preferred</TagChip>
                 </div>
               </CardContent>
-              <CardFooter className="justify-end border-t-0 pt-0">
+              <CardFooter className="mt-auto justify-end border-t-0 pt-0">
                 <Button type="button" variant="outline" shape="soft">
                   View details
                 </Button>
@@ -741,7 +836,11 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               className="sm:col-span-2 lg:col-span-3"
               testId="ui-standards-card-selectable-main"
             >
-              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Warehouse">
+              <div
+                className="grid grid-cols-1 gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,13.75rem),1fr))]"
+                role="radiogroup"
+                aria-label="Warehouse"
+              >
                 {WAREHOUSE_OPTIONS.map((option) => {
                   const selected = selectedWarehouse === option.key;
                   return (
@@ -751,28 +850,26 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                       type="button"
                       role="radio"
                       aria-checked={selected}
-                      aria-disabled={option.disabled}
+                      aria-disabled={option.disabled || undefined}
                       disabled={option.disabled}
                       treatment={selected ? "selected" : "bordered"}
                       selected={selected}
-                      className="text-start"
+                      className={cn(
+                        "h-full min-h-[5.75rem] text-start disabled:cursor-not-allowed disabled:opacity-60",
+                        option.disabled && "hover:translate-y-0 hover:shadow-none",
+                      )}
                       onClick={() => {
                         if (!option.disabled) setSelectedWarehouse(option.key);
                       }}
                     >
-                      <CardHeader className="items-center gap-2">
-                        <CircleCheck
-                          className={cn(
-                            "size-4 shrink-0",
-                            selected ? "text-[var(--exits-primary)]" : "text-muted opacity-40",
-                          )}
-                          aria-hidden
-                        />
-                        <div className="min-w-0">
-                          <CardTitle as="h4">{option.label}</CardTitle>
-                          <CardDescription>{option.meta}</CardDescription>
-                        </div>
-                      </CardHeader>
+                      <SelectableCardBody
+                        title={option.label}
+                        subtitle={option.subtitle}
+                        detail={option.detail}
+                        selected={selected}
+                        disabled={option.disabled}
+                        indicator="check"
+                      />
                     </Card>
                   );
                 })}
@@ -781,26 +878,34 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="INDICATOR CANDIDATES — CANDIDATE / NOT LOCKED">
-            <SampleFrame label="A · RADIO · Circle">
-              <Card treatment="bordered" as="div" role="radio" aria-checked={false} tabIndex={0}>
-                <CardHeader className="items-center gap-2">
-                  <Circle className="size-4 shrink-0 text-muted" aria-hidden />
-                  <CardTitle as="h4">Main Branch</CardTitle>
-                </CardHeader>
+            <SampleFrame label="A · RADIO / CIRCLE">
+              <Card treatment="bordered" className="min-h-[5.75rem]" aria-hidden>
+                <SelectableCardBody
+                  title="Main Branch"
+                  subtitle="Selected warehouse"
+                  selected={false}
+                  indicator="radio"
+                />
               </Card>
             </SampleFrame>
-            <SampleFrame label="B · CircleCheck">
-              <Card treatment="selected" selected as="div" role="radio" aria-checked tabIndex={0}>
-                <CardHeader className="items-center gap-2">
-                  <CircleCheck className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
-                  <CardTitle as="h4">Main Branch</CardTitle>
-                </CardHeader>
+            <SampleFrame label="B · CIRCLECHECK">
+              <Card treatment="selected" selected className="min-h-[5.75rem]" aria-hidden>
+                <SelectableCardBody
+                  title="Main Branch"
+                  subtitle="Selected warehouse"
+                  selected
+                  indicator="check"
+                />
               </Card>
             </SampleFrame>
             <SampleFrame label="C · BORDER ONLY">
-              <Card treatment="selected" selected as="div" role="radio" aria-checked tabIndex={0}>
-                <CardTitle as="h4">Main Branch</CardTitle>
-                <CardDescription>Selected border + background only</CardDescription>
+              <Card treatment="selected" selected className="min-h-[5.75rem]" aria-hidden>
+                <SelectableCardBody
+                  title="Main Branch"
+                  subtitle="Selected warehouse"
+                  selected
+                  indicator="none"
+                />
               </Card>
             </SampleFrame>
           </StaticSampleGroup>
@@ -989,21 +1094,21 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             <StatusChip tone="warning">Needs attention</StatusChip>
           </Card>
 
-          <Card treatment="bordered">
-            <CardHeader>
+          <Card treatment="bordered" className="flex h-full flex-col gap-3">
+            <div className="flex min-w-0 items-start gap-2.5">
               <EntityAvatar initials="KF" />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <CardTitle>Kizy Fruits</CardTitle>
                 <CardDescription>Main Branch</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <CardContent className="flex flex-1 flex-col gap-2 pt-0">
               <div className="flex flex-wrap gap-1.5">
                 <TagChip tone="info">B2B</TagChip>
                 <StatusChip tone="success">Active</StatusChip>
               </div>
             </CardContent>
-            <CardFooter className="justify-end border-t-0 pt-0">
+            <CardFooter className="mt-auto justify-end border-t-0 pt-0">
               <Button type="button" variant="outline" shape="soft">
                 View details
               </Button>
@@ -1025,19 +1130,24 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             </div>
           </Card>
 
-          <Card treatment="bordered">
-            <CardHeader>
-              <Warehouse className="size-4 text-muted" aria-hidden />
-              <div className="min-w-0">
+          <Card treatment="bordered" className="flex h-full flex-col gap-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span
+                aria-hidden
+                className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)] text-muted"
+              >
+                <Warehouse className="size-4" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
                 <CardTitle>Main Warehouse</CardTitle>
+                <CardDescription>124 products</CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <CardContent className="pt-0">
               <div className="flex flex-wrap gap-1.5">
                 <StatusChip tone="success">Active</StatusChip>
                 <TagChip tone="primary">Preferred</TagChip>
               </div>
-              <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">124 products</p>
             </CardContent>
           </Card>
 

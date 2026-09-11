@@ -124,7 +124,11 @@ function ControlledSelectable() {
   const [value, setValue] = useState("main");
   return createElement(
     "div",
-    { role: "radiogroup", "aria-label": "Warehouse" },
+    {
+      role: "radiogroup",
+      "aria-label": "Warehouse",
+      className: "grid grid-cols-1 gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,13.75rem),1fr))]",
+    },
     (["main", "iloilo"] as const).map((key) =>
       createElement(
         Card,
@@ -136,8 +140,18 @@ function ControlledSelectable() {
           selected: value === key,
           onClick: () => setValue(key),
           "data-testid": `sel-${key}`,
+          className: "text-start",
         },
-        key,
+        createElement(
+          "div",
+          { className: "flex min-w-0 items-start justify-between gap-3" },
+          createElement(
+            "div",
+            { className: "min-w-0 flex-1 text-start" },
+            createElement(CardTitle, { as: "h4" }, key === "main" ? "Main Branch" : "Iloilo Warehouse"),
+            createElement(CardDescription, null, key === "main" ? "Iloilo" : "Secondary"),
+          ),
+        ),
       ),
     ),
   );
