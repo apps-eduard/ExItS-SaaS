@@ -24,13 +24,16 @@ export function ManagerHomeSection({
   );
 }
 
+export type ManagerMetricTone = "default" | "attention" | "success" | "info" | "warning";
+
 export function ManagerMetricCard({
   label,
   value,
   hint,
   badge,
+  icon: Icon,
   testId,
-  tone,
+  tone = "default",
   valueScale = "kpi",
   to,
 }: {
@@ -39,30 +42,36 @@ export function ManagerMetricCard({
   hint?: string;
   /** Optional top-right status (e.g. Open chip on Shift). */
   badge?: ReactNode;
+  icon?: LucideIcon;
   testId?: string;
-  tone?: "default" | "attention" | "success";
+  tone?: ManagerMetricTone;
   /** `kpi` = sales-scale; `restrained` = Shift/Register (~text-xl, weight 600). */
   valueScale?: "kpi" | "restrained";
   /** When set, the metric cell is a navigable link. */
   to?: string;
 }) {
   const classes = cn(
-    "manager-metric-cell flex min-w-0 flex-col gap-0.5 px-3 py-2",
+    "manager-metric-cell",
     tone === "attention" && "manager-metric-cell--attention",
     tone === "success" && "manager-metric-cell--success",
+    tone === "info" && "manager-metric-cell--info",
+    tone === "warning" && "manager-metric-cell--warning",
     to && "manager-metric-cell--clickable no-underline text-inherit",
   );
 
   const content = (
     <>
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <span className="exits-type-label m-0 min-w-0 text-muted">{label}</span>
-        {badge ? <span className="shrink-0">{badge}</span> : null}
+      <div className="manager-metric-cell__top">
+        <span className="manager-metric-cell__label">
+          {Icon ? <Icon className="manager-metric-cell__icon" aria-hidden /> : null}
+          {label}
+        </span>
+        {badge ? <span className="manager-metric-cell__badge shrink-0">{badge}</span> : null}
       </div>
       {value != null && value !== "" ? (
         <span
           className={cn(
-            "m-0 text-foreground",
+            "manager-metric-cell__value m-0 text-foreground",
             valueScale === "restrained"
               ? "manager-metric-value--restrained"
               : "exits-type-kpi manager-metric-value--kpi",
@@ -72,7 +81,9 @@ export function ManagerMetricCard({
         </span>
       ) : null}
       {hint ? (
-        <span className="m-0 text-[length:var(--exits-text-xs)] font-normal text-muted">{hint}</span>
+        <span className="manager-metric-cell__hint m-0 text-[length:var(--exits-text-xs)] font-normal text-muted">
+          {hint}
+        </span>
       ) : null}
     </>
   );
@@ -94,7 +105,7 @@ export function ManagerMetricCard({
 
 export function ManagerMetricStrip({ children }: { children: ReactNode }) {
   return (
-    <div className="manager-metric-strip min-w-0 overflow-hidden" role="group">
+    <div className="manager-metric-strip min-w-0" role="group">
       {children}
     </div>
   );

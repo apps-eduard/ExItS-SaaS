@@ -10615,6 +10615,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "suppliers.deactivate": "I-deactivate",
 
   "suppliers.detailLede": "Contact details ug status sa supplier.",
+  "suppliers.detailsHeading": "Supplier details",
+  "suppliers.localDetails": "Local details",
+  "suppliers.noLocalDetails": "No local contact or address details saved.",
 
   "suppliers.edit": "Usba",
 

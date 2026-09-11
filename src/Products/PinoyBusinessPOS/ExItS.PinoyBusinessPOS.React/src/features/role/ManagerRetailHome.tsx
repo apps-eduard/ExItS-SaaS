@@ -4,12 +4,14 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   BarChart3,
+  CircleDollarSign,
   ClipboardList,
   Clock3,
   FileBarChart,
   PackagePlus,
   Receipt,
   ShoppingCart,
+  Store,
   Warehouse,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -477,16 +479,22 @@ export function ManagerRetailHome() {
                 label={t("managerHome.today.sales")}
                 value={formatPeso(salesTotal)}
                 hint={salesTotal <= 0 ? t("managerHome.today.noSales") : undefined}
+                icon={CircleDollarSign}
+                tone="success"
                 testId="manager-today-sales"
               />
               <ManagerMetricCard
                 label={t("managerHome.today.transactions")}
                 value={saleCount}
+                icon={Receipt}
+                tone="info"
                 testId="manager-today-transactions"
               />
               {canShifts ? (
                 <ManagerMetricCard
                   label={t("managerHome.today.shift")}
+                  icon={Clock3}
+                  tone={hasOpenShift ? "success" : "warning"}
                   badge={
                     hasOpenShift ? (
                       <StatusChip tone="success">{t("managerHome.shift.open")}</StatusChip>
@@ -506,6 +514,8 @@ export function ManagerRetailHome() {
                 <ManagerMetricCard
                   label={t("managerHome.today.register")}
                   value={registerLabel}
+                  icon={Store}
+                  tone="info"
                   valueScale="restrained"
                   testId="manager-today-register"
                   to={registerMetricTo}

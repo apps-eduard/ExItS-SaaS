@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDollarSign,
+  ClipboardList,
+  Eye,
+  FileText,
+  Wallet,
+  X,
+} from "lucide-react";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -200,13 +210,20 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
 
   return (
     <div className="flex min-w-0 flex-col gap-3" data-testid="supplier-credit-section">
-      <Card>
-        <h2 className="m-0 mb-2 text-[length:var(--exits-text-base)] font-semibold">
-          {t("supplierPayables.title")}
-        </h2>
-        <p className="m-0 mb-3 text-[length:var(--exits-text-sm)] text-muted">
-          {t("supplierPayables.summaryLede")}
-        </p>
+      <Card className="supplier-credit-card">
+        <div className="supplier-credit-card__header">
+          <span className="supplier-credit-card__header-icon" aria-hidden>
+            <Wallet className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
+              {t("supplierPayables.title")}
+            </h2>
+            <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+              {t("supplierPayables.summaryLede")}
+            </p>
+          </div>
+        </div>
         {summaryQuery.isLoading || listQuery.isLoading ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("loading.label")}</p>
         ) : summaryQuery.isError || listQuery.isError ? (
@@ -214,28 +231,40 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
             {t("supplierPayables.loadFailed")}
           </p>
         ) : (
-          <dl className="m-0 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 text-[length:var(--exits-text-sm)]">
-            <div>
-              <dt className="text-muted">{t("supplierPayables.outstanding")}</dt>
-              <dd className="m-0" data-testid="supplier-credit-outstanding">
+          <dl className="supplier-credit-stats m-0">
+            <div className="supplier-credit-stat supplier-credit-stat--outstanding">
+              <dt>
+                <CircleDollarSign className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.outstanding")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-outstanding">
                 <MoneyDisplay amount={summary?.outstandingTotal ?? 0} />
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("supplierPayables.overdue")}</dt>
-              <dd className="m-0" data-testid="supplier-credit-overdue">
+            <div className="supplier-credit-stat supplier-credit-stat--overdue">
+              <dt>
+                <AlertTriangle className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.overdue")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-overdue">
                 <MoneyDisplay amount={summary?.overdueTotal ?? 0} />
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("supplierPayables.openCount")}</dt>
-              <dd className="m-0" data-testid="supplier-credit-open-count">
+            <div className="supplier-credit-stat supplier-credit-stat--open">
+              <dt>
+                <ClipboardList className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.openCount")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-open-count">
                 {summary?.openCount ?? 0}
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("supplierPayables.paidCount")}</dt>
-              <dd className="m-0" data-testid="supplier-credit-paid-count">
+            <div className="supplier-credit-stat supplier-credit-stat--paid">
+              <dt>
+                <CheckCircle2 className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.paidCount")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-paid-count">
                 {paidCount}
               </dd>
             </div>
@@ -243,10 +272,15 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
         )}
       </Card>
 
-      <Card>
-        <h3 className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("supplierPayables.listTitle")}
-        </h3>
+      <Card className="supplier-credit-card">
+        <div className="supplier-credit-card__header">
+          <span className="supplier-credit-card__header-icon" aria-hidden>
+            <FileText className="size-4" />
+          </span>
+          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("supplierPayables.listTitle")}
+          </h3>
+        </div>
         {payables.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="supplier-credit-empty">
             {t("supplierPayables.empty")}
@@ -259,7 +293,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               return (
                 <li
                   key={payable.payableId}
-                  className="rounded-md border border-border p-3"
+                  className="supplier-payable-item"
                   data-testid={`supplier-payable-${payable.payableId}`}
                   data-status={payable.status}
                 >
@@ -280,31 +314,31 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                   <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                       <dt className="text-muted">{t("supplierPayables.originalAmount")}</dt>
-                      <dd className="m-0">
+                      <dd className="m-0 tabular-nums">
                         <MoneyDisplay amount={payable.originalAmount} />
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted">{t("supplierPayables.paidAtReceipt")}</dt>
-                      <dd className="m-0">
+                      <dd className="m-0 tabular-nums">
                         <MoneyDisplay amount={payable.paidAtReceiptAmount} />
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted">{t("supplierPayables.laterPayments")}</dt>
-                      <dd className="m-0">
+                      <dd className="m-0 tabular-nums">
                         <MoneyDisplay amount={later} />
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted">{t("supplierPayables.totalPaid")}</dt>
-                      <dd className="m-0">
+                      <dd className="m-0 tabular-nums">
                         <MoneyDisplay amount={payable.paidAmount} />
                       </dd>
                     </div>
                     <div>
                       <dt className="text-muted">{t("supplierPayables.balance")}</dt>
-                      <dd className="m-0">
+                      <dd className="m-0 font-semibold tabular-nums">
                         <MoneyDisplay amount={payable.balance} />
                       </dd>
                     </div>
@@ -317,18 +351,22 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                     {showPay ? (
                       <Button
                         type="button"
+                        className="supplier-detail-action-btn"
                         data-testid={`supplier-payable-record-${payable.payableId}`}
                         onClick={() => setPaymentTarget(payable)}
                       >
+                        <Wallet className="size-4 shrink-0" aria-hidden />
                         {t("supplierPayables.recordPayment")}
                       </Button>
                     ) : null}
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
+                      className="supplier-detail-action-btn"
                       data-testid={`supplier-payable-detail-${payable.payableId}`}
                       onClick={() => setDetailTarget(payable)}
                     >
+                      <Eye className="size-4 shrink-0" aria-hidden />
                       {t("supplierPayables.viewDetails")}
                     </Button>
                   </div>
@@ -443,6 +481,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                 onClick={() => setPaymentTarget(null)}
                 data-testid="supplier-payment-cancel"
               >
+                <X className="size-4 shrink-0" aria-hidden />
                 {t("supplierPayables.cancel")}
               </Button>
               <Button
@@ -451,6 +490,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                 onClick={() => void onRecordPayment()}
                 data-testid="supplier-payment-confirm"
               >
+                <Wallet className="size-4 shrink-0" aria-hidden />
                 {recording
                   ? t("supplierPayables.recording")
                   : t("supplierPayables.confirmPayment")}
@@ -578,12 +618,14 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
               {allowManage && online && canRecordPayment(detailTarget) ? (
                 <Button
                   type="button"
+                  className="supplier-detail-action-btn"
                   data-testid="supplier-payable-detail-record"
                   onClick={() => {
                     setPaymentTarget(detailTarget);
                     setDetailTarget(null);
                   }}
                 >
+                  <Wallet className="size-4 shrink-0" aria-hidden />
                   {t("supplierPayables.recordPayment")}
                 </Button>
               ) : null}
@@ -593,6 +635,7 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
                 onClick={() => setDetailTarget(null)}
                 data-testid="supplier-payable-detail-close"
               >
+                <X className="size-4 shrink-0" aria-hidden />
                 {t("supplierPayables.cancel")}
               </Button>
             </div>

@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Ban,
+  BookOpen,
+  Check,
+  Link2,
+  MapPinned,
+  Pencil,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { canManageSuppliers, canViewPurchasing } from "@/access/pos-capabilities";
 import {
   isRelationshipActive,
@@ -35,6 +45,43 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 function displayValue(value: string | null | undefined): string {
   const trimmed = value?.trim();
   return trimmed ? trimmed : "—";
+}
+
+function hasValue(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+type DetailField = {
+  label: string;
+  value: string | null | undefined;
+  testId?: string;
+  preWrap?: boolean;
+};
+
+function DetailFields({ fields }: { fields: ReadonlyArray<DetailField> }) {
+  const visible = fields.filter((field) => hasValue(field.value));
+  if (visible.length === 0) {
+    return null;
+  }
+  return (
+    <dl className="supplier-detail-fields m-0">
+      {visible.map((field) => (
+        <div key={field.label} className="supplier-detail-fields__item">
+          <dt className="supplier-detail-fields__label">{field.label}</dt>
+          <dd
+            className={
+              field.preWrap
+                ? "supplier-detail-fields__value whitespace-pre-wrap"
+                : "supplier-detail-fields__value"
+            }
+            data-testid={field.testId}
+          >
+            {displayValue(field.value)}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 export function SupplierDetailPage() {
@@ -247,6 +294,31 @@ export function SupplierDetailPage() {
     }
   }
 
+  const localDetailFields: DetailField[] = [
+    { label: t("suppliers.code"), value: supplier.supplierCode, testId: "supplier-code" },
+    { label: t("suppliers.contactPerson"), value: supplier.contactPerson },
+    { label: t("suppliers.mobile"), value: supplier.mobileNumber },
+    { label: t("suppliers.telephone"), value: supplier.telephoneNumber },
+    { label: t("suppliers.email"), value: supplier.email },
+    { label: t("suppliers.addressLine1"), value: supplier.addressLine1 },
+    { label: t("suppliers.addressLine2"), value: supplier.addressLine2 },
+    { label: t("suppliers.city"), value: supplier.cityMunicipality },
+    { label: t("suppliers.province"), value: supplier.province },
+    { label: t("suppliers.postalCode"), value: supplier.postalCode },
+    { label: t("suppliers.taxNumber"), value: supplier.taxOrRegistrationNumber },
+  ];
+  const notesDistinctFromOrgId =
+    hasValue(supplier.notes)
+    && supplier.notes?.trim() !== connectedBusinessLabel?.trim();
+  if (!connected || notesDistinctFromOrgId) {
+    localDetailFields.push({
+      label: t("suppliers.notes"),
+      value: supplier.notes,
+      preWrap: true,
+    });
+  }
+  const visibleLocalFields = localDetailFields.filter((field) => hasValue(field.value));
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="supplier-detail-page">
       <PageHeader
@@ -255,11 +327,13 @@ export function SupplierDetailPage() {
         backTo={pageBackNav.suppliers.to}
         backLabel={t(pageBackNav.suppliers.labelKey)}
         backTestId="page-header-back-suppliers"
+        trailing={
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
+            <StatusChip tone={connectionChipTone}>{connectionChipLabel}</StatusChip>
+          </div>
+        }
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
-        <StatusChip tone={connectionChipTone}>{connectionChipLabel}</StatusChip>
-      </div>
 
       {actionError ? (
         <Card data-testid="supplier-action-error">
@@ -270,38 +344,69 @@ export function SupplierDetailPage() {
       ) : null}
 
       {connected ? (
-        <Card data-testid="supplier-connected-location">
-          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
+        <Card data-testid="supplier-connected-location" className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <dt className="text-muted">{t("connected.connectedBusiness")}</dt>
-              <dd className="m-0" data-testid="supplier-connected-business-id">
+              <p className="m-0 text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
+                {t("connected.connectedBusiness")}
+              </p>
+              <p
+                className="m-0 mt-1 text-[length:var(--exits-text-md)] font-semibold"
+                data-testid="supplier-connected-business-id"
+              >
                 {displayValue(connectedBusinessLabel)}
-              </dd>
+              </p>
             </div>
             <div>
-              <dt className="text-muted">{t("connected.supplierLocation")}</dt>
-              <dd className="m-0" data-testid="supplier-connected-location-name">
+              <p className="m-0 text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
+                {t("connected.supplierLocation")}
+              </p>
+              <p
+                className="m-0 mt-1 text-[length:var(--exits-text-md)] font-semibold"
+                data-testid="supplier-connected-location-name"
+              >
                 {displayValue(supplierLocationLabel)}
-              </dd>
+              </p>
             </div>
-          </dl>
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
+                {t("suppliers.code")}
+              </p>
+              <p
+                className="m-0 mt-1 text-[length:var(--exits-text-md)] font-semibold"
+                data-testid="supplier-code"
+              >
+                {displayValue(supplier.supplierCode)}
+              </p>
+            </div>
+          </div>
+
+          {visibleLocalFields.some((field) => field.testId !== "supplier-code") ? (
+            <div className="border-t border-border pt-3">
+              <DetailFields
+                fields={localDetailFields.filter((field) => field.testId !== "supplier-code")}
+              />
+            </div>
+          ) : null}
 
           {canChangeLocation && !changingLocation ? (
-            <div className="mt-3">
+            <div>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
+                className="supplier-detail-action-btn"
                 data-testid="supplier-change-location"
                 disabled={locationLoading || locationSaving}
                 onClick={() => void startChangeLocation()}
               >
+                <MapPinned className="size-4 shrink-0" aria-hidden />
                 {t("connected.changeSupplierLocation")}
               </Button>
             </div>
           ) : null}
 
           {canChangeLocation && changingLocation ? (
-            <div className="mt-3 flex flex-col gap-3" data-testid="supplier-location-picker">
+            <div className="flex flex-col gap-3" data-testid="supplier-location-picker">
               {locationLoading ? (
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("loading.label")}
@@ -337,6 +442,7 @@ export function SupplierDetailPage() {
                   disabled={locationLoading || locationSaving || !selectedBranchId}
                   onClick={() => void saveSupplierLocation()}
                 >
+                  <Check className="size-4 shrink-0" aria-hidden />
                   {t("suppliers.save")}
                 </Button>
                 <Button
@@ -346,126 +452,94 @@ export function SupplierDetailPage() {
                   disabled={locationSaving}
                   onClick={() => resetLocationEditor()}
                 >
+                  <X className="size-4 shrink-0" aria-hidden />
                   {t("connected.cancel")}
                 </Button>
               </div>
             </div>
           ) : null}
-        </Card>
-      ) : null}
 
-      <Card>
-        <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-          <div>
-            <dt className="text-muted">{t("suppliers.code")}</dt>
-            <dd className="m-0" data-testid="supplier-code">
-              {supplier.supplierCode}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.contactPerson")}</dt>
-            <dd className="m-0">{displayValue(supplier.contactPerson)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.mobile")}</dt>
-            <dd className="m-0">{displayValue(supplier.mobileNumber)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.telephone")}</dt>
-            <dd className="m-0">{displayValue(supplier.telephoneNumber)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.email")}</dt>
-            <dd className="m-0">{displayValue(supplier.email)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.addressLine1")}</dt>
-            <dd className="m-0">{displayValue(supplier.addressLine1)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.addressLine2")}</dt>
-            <dd className="m-0">{displayValue(supplier.addressLine2)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.city")}</dt>
-            <dd className="m-0">{displayValue(supplier.cityMunicipality)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.province")}</dt>
-            <dd className="m-0">{displayValue(supplier.province)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.postalCode")}</dt>
-            <dd className="m-0">{displayValue(supplier.postalCode)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.taxNumber")}</dt>
-            <dd className="m-0">{displayValue(supplier.taxOrRegistrationNumber)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("suppliers.notes")}</dt>
-            <dd className="m-0 whitespace-pre-wrap">{displayValue(supplier.notes)}</dd>
-          </div>
-        </dl>
-      </Card>
-
-      {connected && relationshipPending ? (
-        <Card data-testid="supplier-connected-pending">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{t("connected.requestPending")}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              data-testid="supplier-cancel-request"
-              disabled={acting}
-              onClick={() => void cancelPendingRequest()}
+          {relationshipPending ? (
+            <div
+              className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3"
+              data-testid="supplier-connected-pending"
             >
-              {t("connected.cancelRequest")}
-            </Button>
-          </div>
-        </Card>
-      ) : null}
+              <p className="m-0 text-[length:var(--exits-text-sm)]">{t("connected.requestPending")}</p>
+              <Button
+                type="button"
+                variant="destructive"
+                data-testid="supplier-cancel-request"
+                disabled={acting}
+                onClick={() => void cancelPendingRequest()}
+              >
+                <Ban className="size-4 shrink-0" aria-hidden />
+                {t("connected.cancelRequest")}
+              </Button>
+            </div>
+          ) : null}
 
-      {connected && relationshipActive && allowViewPurchasing ? (
-        <div
-          className="flex flex-wrap gap-2"
-          role="group"
-          aria-label={t("connected.browseProducts")}
-          data-testid="supplier-connected-actions"
-        >
-          <Button asChild data-testid="supplier-browse-catalog">
-            <Link to={`/suppliers/${supplierId}/connected-catalog`}>
-              {t("connected.browseProducts")}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            data-testid="supplier-linked-products"
-          >
-            <Link to={`/suppliers/${supplierId}/linked-products`}>
-              {t("connected.linkedTitle")}
-            </Link>
-          </Button>
-        </div>
-      ) : null}
+          {relationshipActive && allowViewPurchasing ? (
+            <div
+              className="supplier-detail-actions flex flex-wrap gap-2 border-t border-border pt-3"
+              role="group"
+              aria-label={t("connected.browseProducts")}
+              data-testid="supplier-connected-actions"
+            >
+              <Button asChild className="supplier-detail-action-btn" data-testid="supplier-browse-catalog">
+                <Link to={`/suppliers/${supplierId}/connected-catalog`}>
+                  <BookOpen className="size-4 shrink-0" aria-hidden />
+                  {t("connected.browseProducts")}
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="supplier-detail-action-btn" data-testid="supplier-linked-products">
+                <Link to={`/suppliers/${supplierId}/linked-products`}>
+                  <Link2 className="size-4 shrink-0" aria-hidden />
+                  {t("connected.linkedTitle")}
+                </Link>
+              </Button>
+            </div>
+          ) : null}
+        </Card>
+      ) : (
+        <Card>
+          <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("suppliers.detailsHeading")}
+          </h2>
+          {visibleLocalFields.length > 0 ? (
+            <DetailFields fields={localDetailFields} />
+          ) : (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("suppliers.noLocalDetails")}
+            </p>
+          )}
+        </Card>
+      )}
 
       <SupplierCreditSection supplierId={supplierId} />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="supplier-detail-actions flex flex-wrap gap-2">
         {allowManage ? (
-          <Button asChild data-testid="supplier-edit">
-            <Link to={`/suppliers/${supplierId}/edit`}>{t("suppliers.edit")}</Link>
+          <Button asChild variant="outline" className="supplier-detail-action-btn" data-testid="supplier-edit">
+            <Link to={`/suppliers/${supplierId}/edit`}>
+              <Pencil className="size-4 shrink-0" aria-hidden />
+              {t("suppliers.edit")}
+            </Link>
           </Button>
         ) : null}
         {allowManage ? (
           <Button
             type="button"
-            variant="ghost"
+            variant={isActive ? "destructive" : "outline"}
+            className="supplier-detail-action-btn"
             data-testid="supplier-toggle-status"
             disabled={acting}
             onClick={() => void toggleStatus()}
           >
+            {isActive ? (
+              <Ban className="size-4 shrink-0" aria-hidden />
+            ) : (
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+            )}
             {isActive ? t("suppliers.deactivate") : t("suppliers.activate")}
           </Button>
         ) : null}

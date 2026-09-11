@@ -1,7 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
-import { Clock3, Store } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Ban,
+  Banknote,
+  BarChart3,
+  CalendarDays,
+  CircleDollarSign,
+  Clock3,
+  Package,
+  Receipt,
+  Smartphone,
+  Store,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import {
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
@@ -58,16 +72,20 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const BRANCH_RANK_LIMIT = 8;
 
+type DashboardKpiTone = "default" | "emphasis" | "attention" | "success" | "info" | "warning";
+
 function KpiStripItem({
   label,
   children,
   tone = "default",
+  icon: Icon,
   testId,
   metricScope,
 }: {
   label: string;
   children: React.ReactNode;
-  tone?: "default" | "emphasis" | "attention";
+  tone?: DashboardKpiTone;
+  icon?: LucideIcon;
   testId: string;
   metricScope?: "branch" | "organization";
 }) {
@@ -77,12 +95,18 @@ function KpiStripItem({
         "dashboard-kpi-chip",
         tone === "emphasis" && "dashboard-kpi-chip--emphasis",
         tone === "attention" && "dashboard-kpi-chip--attention",
+        tone === "success" && "dashboard-kpi-chip--success",
+        tone === "info" && "dashboard-kpi-chip--info",
+        tone === "warning" && "dashboard-kpi-chip--warning",
       )}
       data-testid={testId}
       data-metric-scope={metricScope}
       role="listitem"
     >
-      <span className="dashboard-kpi-chip__label">{label}</span>
+      <span className="dashboard-kpi-chip__label">
+        {Icon ? <Icon className="dashboard-kpi-chip__icon" aria-hidden /> : null}
+        {label}
+      </span>
       <span className="dashboard-kpi-chip__value">{children}</span>
     </div>
   );
@@ -393,7 +417,7 @@ export function ManagementDashboardPage() {
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
           <section
-            className="dashboard-sales-block"
+            className="dashboard-sales-block dashboard-panel"
             data-testid="dashboard-branch-performance"
             data-metric-scope="branch"
           >
@@ -409,6 +433,7 @@ export function ManagementDashboardPage() {
               </span>
             </div>
 
+            <div className="dashboard-sales-block__body">
             <article
               className="dashboard-hero"
               data-testid="kpi-period-sales"
@@ -450,6 +475,8 @@ export function ManagementDashboardPage() {
             <div className="dashboard-kpi-strip" role="list" data-testid="dashboard-kpi-strip">
               <KpiStripItem
                 label={t("dashboard.transactions")}
+                icon={Receipt}
+                tone="info"
                 testId="kpi-period-txns"
                 metricScope="branch"
               >
@@ -457,6 +484,7 @@ export function ManagementDashboardPage() {
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.avgSale")}
+                icon={TrendingUp}
                 testId="kpi-period-avg-sale"
                 metricScope="branch"
                 tone="emphasis"
@@ -465,28 +493,34 @@ export function ManagementDashboardPage() {
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.cashSales")}
+                icon={Banknote}
                 testId="kpi-period-cash"
                 metricScope="branch"
-                tone="emphasis"
+                tone="success"
               >
                 <MoneyDisplay amount={dashboard.cashSalesTotal} />
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.gcashSales")}
+                icon={Smartphone}
                 testId="kpi-period-gcash"
                 metricScope="branch"
+                tone="info"
               >
                 <MoneyDisplay amount={dashboard.manualGCashSalesTotal} />
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.utangSales")}
+                icon={Wallet}
                 testId="kpi-period-utang"
                 metricScope="branch"
+                tone="warning"
               >
                 <MoneyDisplay amount={dashboard.utangSalesTotal} />
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.voidedSales")}
+                icon={Ban}
                 testId="kpi-period-voids"
                 metricScope="branch"
                 tone={dashboard.voidedSaleCount > 0 ? "attention" : "default"}
@@ -495,8 +529,10 @@ export function ManagementDashboardPage() {
               </KpiStripItem>
               <KpiStripItem
                 label={t("dashboard.expenses")}
+                icon={CircleDollarSign}
                 testId="kpi-period-expenses"
                 metricScope="organization"
+                tone="warning"
               >
                 <span data-testid="scope-period-expenses" className="sr-only">
                   {organizationScopeLabel}
@@ -504,10 +540,11 @@ export function ManagementDashboardPage() {
                 <MoneyDisplay amount={dashboard.recordedExpenseTotal} />
               </KpiStripItem>
             </div>
+            </div>
 
             <DashboardPanel
               title={t("dashboard.salesTrend")}
-              className="dashboard-panel--trend"
+              className="dashboard-panel--trend dashboard-panel--nested"
               testId="dashboard-sales-trend-panel"
             >
               <SalesTrendAreaChart
@@ -556,18 +593,29 @@ export function ManagementDashboardPage() {
               dashboard.utangSalesTotal > 0 ||
               (utangReportQuery.data?.repaymentsRecordedInPeriod ?? 0) > 0 ? (
                 <div className="dashboard-mini-facts" role="list">
-                  <KpiStripItem label={t("dashboard.utangSales")} testId="kpi-utang-period-sales-fact">
+                  <KpiStripItem
+                    label={t("dashboard.utangSales")}
+                    icon={Wallet}
+                    tone="warning"
+                    testId="kpi-utang-period-sales-fact"
+                  >
                     <MoneyDisplay amount={dashboard.utangSalesTotal} />
                   </KpiStripItem>
                   {utangReportQuery.data ? (
-                    <KpiStripItem label={t("dashboard.repayments")} testId="kpi-utang-repayments">
+                    <KpiStripItem
+                      label={t("dashboard.repayments")}
+                      icon={Banknote}
+                      tone="success"
+                      testId="kpi-utang-repayments"
+                    >
                       <MoneyDisplay amount={utangReportQuery.data.repaymentsRecordedInPeriod} />
                     </KpiStripItem>
                   ) : null}
                   <KpiStripItem
                     label={t("dashboard.overdueUtang")}
+                    icon={Ban}
                     testId="kpi-period-overdue-utang"
-                    tone={dashboard.overdueUtangAmount > 0 ? "attention" : "default"}
+                    tone={dashboard.overdueUtangAmount > 0 ? "attention" : "success"}
                   >
                     <MoneyDisplay amount={dashboard.overdueUtangAmount} />
                   </KpiStripItem>
@@ -654,6 +702,7 @@ export function ManagementDashboardPage() {
                         data-testid="dashboard-compare-branches"
                         onClick={onCompareBranches}
                       >
+                        <BarChart3 className="size-4 shrink-0" aria-hidden />
                         {t("dashboard.compareBranches")}
                       </button>
                     ) : null
@@ -724,40 +773,50 @@ export function ManagementDashboardPage() {
             <div className="dashboard-kpi-strip dashboard-kpi-strip--ops" role="list">
               {overview ? (
                 <>
-                  <KpiStripItem label={t("dashboard.businessDate")} testId="kpi-business-date">
+                  <KpiStripItem
+                    label={t("dashboard.businessDate")}
+                    icon={CalendarDays}
+                    tone="info"
+                    testId="kpi-business-date"
+                  >
                     {overview.businessDate}
                   </KpiStripItem>
                   <KpiStripItem
                     label={t("dashboard.openUtang")}
+                    icon={Wallet}
                     testId="kpi-open-utang"
-                    tone={overview.openUtangOutstanding > 0 ? "attention" : "default"}
+                    tone={overview.openUtangOutstanding > 0 ? "attention" : "success"}
                   >
                     <MoneyDisplay amount={overview.openUtangOutstanding} />
                   </KpiStripItem>
                   <KpiStripItem
                     label={t("dashboard.lowStock")}
+                    icon={Package}
                     testId="kpi-low-stock"
-                    tone={overview.lowStockProductCount > 0 ? "attention" : "default"}
+                    tone={overview.lowStockProductCount > 0 ? "attention" : "success"}
                   >
                     {overview.lowStockProductCount}
                   </KpiStripItem>
                   <KpiStripItem
                     label={t("dashboard.openShifts")}
+                    icon={Clock3}
+                    tone="emphasis"
                     testId="kpi-open-shifts"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      <Clock3 className="size-3.5 opacity-60" aria-hidden />
-                      {overview.openShiftCount}
-                    </span>
+                    {overview.openShiftCount}
                   </KpiStripItem>
                   <KpiStripItem
                     label={t("dashboard.activeRegisters")}
+                    icon={Store}
+                    tone="info"
                     testId="kpi-active-registers"
                   >
                     {overview.activeRegisterCount}
                   </KpiStripItem>
                   <KpiStripItem
                     label={t("dashboard.todaySales")}
+                    icon={CircleDollarSign}
+                    tone="success"
                     testId="kpi-today-sales"
                     metricScope="organization"
                   >
@@ -770,6 +829,8 @@ export function ManagementDashboardPage() {
               ) : (
                 <KpiStripItem
                   label={t("dashboard.lowStock")}
+                  icon={Package}
+                  tone={dashboard.lowStockProductCount > 0 ? "attention" : "default"}
                   testId="kpi-period-low-stock"
                 >
                   {dashboard.lowStockProductCount}

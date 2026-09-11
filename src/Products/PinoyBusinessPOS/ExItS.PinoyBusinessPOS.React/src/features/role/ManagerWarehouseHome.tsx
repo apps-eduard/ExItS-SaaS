@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   BarChart3,
   Boxes,
@@ -304,6 +305,8 @@ export function ManagerWarehouseHome({
                     ? t("managerHome.warehouse.noIncoming")
                     : undefined
                 }
+                icon={ArrowLeftRight}
+                tone="info"
                 testId="manager-today-transfers"
               />
               <ManagerMetricCard
@@ -314,6 +317,8 @@ export function ManagerWarehouseHome({
                     ? t("managerHome.warehouse.noReceivable")
                     : undefined
                 }
+                icon={PackagePlus}
+                tone="warning"
                 testId="manager-today-receiving"
               />
               <ManagerMetricCard
@@ -326,7 +331,8 @@ export function ManagerWarehouseHome({
                         .replace("{low}", String(lowStock))
                         .replace("{expiry}", String(expiry))
                 }
-                tone={lowStock + expiry > 0 ? "attention" : "default"}
+                icon={AlertTriangle}
+                tone={lowStock + expiry > 0 ? "attention" : "success"}
                 testId="manager-today-stock-alerts"
               />
             </ManagerMetricStrip>

@@ -10615,6 +10615,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "suppliers.deactivate": "I-deactivate",
 
   "suppliers.detailLede": "Contact details kag status sang supplier.",
+  "suppliers.detailsHeading": "Supplier details",
+  "suppliers.localDetails": "Local details",
+  "suppliers.noLocalDetails": "No local contact or address details saved.",
 
   "suppliers.edit": "Islan",
 
