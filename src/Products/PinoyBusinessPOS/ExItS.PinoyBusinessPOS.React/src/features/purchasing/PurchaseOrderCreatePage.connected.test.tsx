@@ -265,7 +265,7 @@ function readinessPayload() {
   };
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/purchasing/new") {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, networkMode: "always" },
@@ -274,7 +274,7 @@ function renderPage() {
   });
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/purchasing/new"]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/purchasing/new" element={<PurchaseOrderCreatePage />} />
           <Route path="/suppliers/:supplierId/connected-catalog" element={<div>catalog</div>} />
@@ -337,6 +337,14 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.getByTestId("po-ready-linked")).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByTestId("po-ready-all")).not.toBeInTheDocument();
     expect(screen.getByTestId("po-ready-newProduct")).toHaveTextContent("New products (1)");
+  });
+
+  it("preselects supplier from supplierId query when opening new purchase order", async () => {
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+    await waitFor(() => expect(screen.getByTestId("po-supplier")).toHaveValue(supplierId));
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
+    );
   });
 
   it("lets setup tabs connect a specific product or open shared catalog", async () => {

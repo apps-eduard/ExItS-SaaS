@@ -254,7 +254,7 @@ describe("IncomingOrders React flow", () => {
     await waitFor(() => expect(screen.queryByTestId("incoming-order-fulfill")).not.toBeInTheDocument());
   });
 
-  it("supports search, sort, selection, and pagination without changing order total", async () => {
+  it("supports search, sort, and pagination without changing order total", async () => {
     const user = userEvent.setup();
     getIncomingOrder.mockResolvedValue(twoLineOrder("New"));
     renderDetail();
@@ -277,6 +277,8 @@ describe("IncomingOrders React flow", () => {
       "aria-label",
       "Export & Print",
     );
+    expect(screen.queryByTestId("incoming-order-select-all")).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`incoming-order-select-${productId}`)).not.toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-print-root")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-print-root").querySelector("input")).toBeNull();
     expect(screen.getByTestId("incoming-order-print-root")).not.toHaveTextContent("Accept order");
@@ -305,14 +307,6 @@ describe("IncomingOrders React flow", () => {
       .filter((el) => /^incoming-order-line-[0-9a-f-]+$/i.test(el.getAttribute("data-testid") ?? ""));
     expect(rows[0]).toHaveAttribute("data-testid", `incoming-order-line-${productIdBanana}`);
     expect(rows[1]).toHaveAttribute("data-testid", `incoming-order-line-${productId}`);
-
-    await user.click(screen.getByTestId(`incoming-order-select-${productId}`));
-    await user.click(screen.getByTestId(`incoming-order-select-${productIdBanana}`));
-    expect(screen.getByTestId("incoming-order-selected-count")).toHaveTextContent("2 selected");
-    expect(screen.getByTestId(`incoming-order-line-${productId}`)).toHaveAttribute(
-      "data-selected",
-      "true",
-    );
 
     await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
     expect(screen.getByTestId("exits-table-page-size")).toHaveValue("10");

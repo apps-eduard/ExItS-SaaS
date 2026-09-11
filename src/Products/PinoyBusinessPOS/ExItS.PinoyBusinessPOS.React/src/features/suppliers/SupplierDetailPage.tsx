@@ -5,13 +5,18 @@ import {
   Ban,
   BookOpen,
   Check,
+  ClipboardList,
   Link2,
   MapPinned,
   Pencil,
   RotateCcw,
   X,
 } from "lucide-react";
-import { canManageSuppliers, canViewPurchasing } from "@/access/pos-capabilities";
+import {
+  canManagePurchasing,
+  canManageSuppliers,
+  canViewPurchasing,
+} from "@/access/pos-capabilities";
 import {
   isRelationshipActive,
   cancelConnectionRequest,
@@ -107,6 +112,7 @@ export function SupplierDetailPage() {
 
   const allowManage = canManageSuppliers(sessionGrant);
   const allowViewPurchasing = canViewPurchasing(sessionGrant);
+  const allowCreatePurchaseOrder = canManagePurchasing(sessionGrant);
 
   const supplierQuery = useQuery({
     queryKey: ["suppliers", "detail", workspace?.organizationId, supplierId],
@@ -497,6 +503,19 @@ export function SupplierDetailPage() {
                   {t("connected.linkedTitle")}
                 </Link>
               </Button>
+              {allowCreatePurchaseOrder ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="supplier-detail-action-btn"
+                  data-testid="supplier-create-purchase-order"
+                >
+                  <Link to={`/purchasing/new?supplierId=${encodeURIComponent(supplierId)}`}>
+                    <ClipboardList className="size-4 shrink-0" aria-hidden />
+                    {t("connected.createPurchaseOrder")}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </Card>

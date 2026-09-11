@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Check, Plus } from "lucide-react";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
@@ -117,13 +117,16 @@ async function loadAllExposedCatalog(
 export function PurchaseOrderCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManagePurchasing(sessionGrant);
   const allowCreate = allowManage && canManageCatalog(sessionGrant);
 
-  const [supplierId, setSupplierId] = useState("");
+  const [supplierId, setSupplierId] = useState(
+    () => searchParams.get("supplierId")?.trim() ?? "",
+  );
   const [orderDate, setOrderDate] = useState(todayIsoDate);
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");

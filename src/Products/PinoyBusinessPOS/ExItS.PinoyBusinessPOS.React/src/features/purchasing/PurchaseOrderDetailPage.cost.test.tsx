@@ -160,6 +160,11 @@ describe("PurchaseOrderDetailPage cost and receipt history", () => {
     });
 
     expect(screen.getByTestId("po-order-total")).toHaveTextContent(formatPeso(480));
+    expect(screen.getByTestId("po-lines-table")).toBeInTheDocument();
+    expect(screen.getByTestId("po-line-eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee")).toBeInTheDocument();
+    expect(screen.getByTestId("po-line-total-eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee")).toHaveTextContent(
+      formatPeso(480),
+    );
     expect(screen.getAllByText(formatPeso(240)).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId("po-receipt-GRN-000051")).toBeInTheDocument();
     expect(screen.getByTestId("po-receipt-GRN-000052")).toBeInTheDocument();

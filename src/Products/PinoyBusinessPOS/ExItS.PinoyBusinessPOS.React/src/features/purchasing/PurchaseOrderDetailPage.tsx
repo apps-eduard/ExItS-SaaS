@@ -553,51 +553,72 @@ export function PurchaseOrderDetailPage() {
         <h2 id="po-lines" className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium">
           {t("purchasing.lines")}
         </h2>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {po.lines.map((line) => {
-            const uom = line.uomSnapshot ?? "";
-            return (
-              <li key={line.lineId}>
-                <Card className="flex flex-col gap-2 p-3" data-testid={`po-line-${line.lineId}`}>
-                  <p className="m-0 font-medium">{line.nameSnapshot ?? line.productId}</p>
-                  <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)]">
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.ordered")}</dt>
-                      <dd className="m-0">
+        <div
+          className="overflow-hidden rounded-[var(--exits-radius-md)] border border-border"
+          data-testid="po-lines-table"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[44rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
+              <thead>
+                <tr className="border-b border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_70%,transparent)] text-muted">
+                  <th className="min-w-[10rem] px-3 py-2.5 font-medium">
+                    {t("purchasing.colProduct")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">
+                    {t("purchasing.ordered")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">
+                    {t("purchasing.unitPurchaseCost")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">
+                    {t("purchasing.orderedValue")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">
+                    {t("purchasing.received")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-medium">
+                    {t("purchasing.outstanding")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {po.lines.map((line) => {
+                  const uom = line.uomSnapshot ?? "";
+                  return (
+                    <tr
+                      key={line.lineId}
+                      className="border-b border-border/60 last:border-b-0"
+                      data-testid={`po-line-${line.lineId}`}
+                    >
+                      <td className="px-3 py-2.5 font-medium">
+                        {line.nameSnapshot ?? line.productId}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
                         {line.orderedQty} {uom}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.unitPurchaseCost")}</dt>
-                      <dd className="m-0">
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
                         <MoneyDisplay amount={line.unitPurchaseCost} />
                         {uom ? <span className="text-muted"> / {uom}</span> : null}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.orderedValue")}</dt>
-                      <dd className="m-0">
-                        <MoneyDisplay amount={line.lineTotal} />
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.received")}</dt>
-                      <dd className="m-0">
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
+                        <MoneyDisplay
+                          amount={line.lineTotal}
+                          testId={`po-line-total-${line.lineId}`}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
                         {line.receivedQty} {uom}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.outstanding")}</dt>
-                      <dd className="m-0">
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
                         {line.outstandingQty} {uom}
-                      </dd>
-                    </div>
-                  </dl>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section aria-labelledby="po-receipt-history" data-testid="po-receipt-history">
