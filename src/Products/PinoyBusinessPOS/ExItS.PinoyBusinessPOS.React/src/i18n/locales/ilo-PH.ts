@@ -2949,6 +2949,13 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "error.detail": "I-reload ti page. Awan ti business data a naidulin iti daytoy a foundation.",
 
+  "exitsTable.exportCsv": "Export CSV",
+  "exitsTable.exportExcel": "Export Excel",
+  "exitsTable.exportPdf": "Export PDF",
+  "exitsTable.exportPrintMenu": "Export & Print",
+  "exitsTable.outputFailed": "Could not generate table output.",
+  "exitsTable.print": "Print",
+  "exitsTable.selectedLinesTotal": "Selected lines total",
   "exitsTable.clearSelection": "Clear selection",
   "exitsTable.filter": "Filter",
   "exitsTable.filterAll": "All items",

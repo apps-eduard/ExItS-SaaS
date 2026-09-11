@@ -13,6 +13,7 @@ import {
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
+  ExitsTableOutputActions,
   ExitsTablePagination,
   ExitsTableRow,
   ExitsTableToolbar,
@@ -143,5 +144,46 @@ describe("ExitsTable foundation", () => {
       key: null,
       direction: null,
     });
+  });
+
+  it("renders Output Actions in the toolbar right slot with accessible labels", () => {
+    const onCsv = vi.fn();
+    const onXlsx = vi.fn();
+    const onPdf = vi.fn();
+    const onPrint = vi.fn();
+
+    render(
+      <ExitsTableToolbar
+        search={<input aria-label="Search products" />}
+        output={
+          <ExitsTableOutputActions
+            csvLabel="Export CSV"
+            xlsxLabel="Export Excel"
+            pdfLabel="Export PDF"
+            printLabel="Print"
+            menuLabel="Export & Print"
+            onCsv={onCsv}
+            onXlsx={onXlsx}
+            onPdf={onPdf}
+            onPrint={onPrint}
+          />
+        }
+      />,
+    );
+
+    expect(screen.getByTestId("exits-table-toolbar-output")).toContainElement(
+      screen.getByTestId("exits-table-output-actions"),
+    );
+    expect(screen.getByTestId("exits-table-output-csv")).toHaveAttribute("aria-label", "Export CSV");
+    expect(screen.getByTestId("exits-table-output-xlsx")).toHaveAttribute(
+      "aria-label",
+      "Export Excel",
+    );
+    expect(screen.getByTestId("exits-table-output-pdf")).toHaveAttribute("aria-label", "Export PDF");
+    expect(screen.getByTestId("exits-table-output-print")).toHaveAttribute("aria-label", "Print");
+    expect(screen.getByTestId("exits-table-output-menu")).toHaveAttribute(
+      "aria-label",
+      "Export & Print",
+    );
   });
 });

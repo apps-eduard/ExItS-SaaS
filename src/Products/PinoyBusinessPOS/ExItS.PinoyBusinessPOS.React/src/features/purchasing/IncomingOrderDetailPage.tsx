@@ -28,6 +28,7 @@ import {
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
+  ExitsTableOutputActions,
   ExitsTablePagination,
   ExitsTableRow,
   ExitsTableToolbar,
@@ -38,8 +39,16 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { incomingOrderStatusTone } from "@/features/purchasing/incoming-orders-helpers";
+import {
+  buildIncomingOrderExportModel,
+  downloadIncomingOrderCsv,
+  downloadIncomingOrderPdf,
+  downloadIncomingOrderXlsx,
+  printIncomingOrderDocument,
+} from "@/features/purchasing/incoming-order-table-output";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -104,6 +113,7 @@ function declineReasonLabel(t: (key: MessageKey) => string, reason: string): str
 
 export function IncomingOrderDetailPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
   const { connectedPurchaseOrderId } = useParams<{ connectedPurchaseOrderId: string }>();
@@ -300,6 +310,37 @@ export function IncomingOrderDetailPage() {
     });
   }
 
+  function buildExportModel() {
+    if (!query.data) {
+      throw new Error("Order is not loaded");
+    }
+    return buildIncomingOrderExportModel(query.data, filteredSortedLines, selectedIds);
+  }
+
+  async function runOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    try {
+      const model = buildExportModel();
+      if (action === "csv") {
+        downloadIncomingOrderCsv(model);
+        return;
+      }
+      if (action === "xlsx") {
+        downloadIncomingOrderXlsx(model);
+        return;
+      }
+      if (action === "pdf") {
+        downloadIncomingOrderPdf(model);
+        return;
+      }
+      printIncomingOrderDocument();
+    } catch {
+      showToast({
+        title: t("exitsTable.outputFailed"),
+        tone: "error",
+      });
+    }
+  }
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -333,12 +374,52 @@ export function IncomingOrderDetailPage() {
   const isAccepted = order.status === "Accepted";
   const isPreparing = order.status === "Preparing";
   const canAct = allowManage && online && !busy;
+  const printModel = buildIncomingOrderExportModel(order, filteredSortedLines, selectedIds);
 
   return (
     <div
       className="incoming-order-detail-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="incoming-order-detail-page"
     >
+      <div className="incoming-order-print-root" data-testid="incoming-order-print-root" aria-hidden>
+        <h1>{printModel.poNumber}</h1>
+        <p>Buyer: {printModel.buyer}</p>
+        {printModel.branch ? <p>Fulfill from: {printModel.branch}</p> : null}
+        <p>Order date: {printModel.orderDate}</p>
+        {printModel.paymentTerm ? <p>Payment term: {printModel.paymentTerm}</p> : null}
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Quantity</th>
+              <th>Unit cost</th>
+              <th>Line total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {printModel.lines.map((line) => (
+              <tr key={line.productId}>
+                <td>{line.product}</td>
+                <td>{line.sku || "—"}</td>
+                <td>
+                  {line.unit ? `${line.quantity} ${line.unit}` : line.quantity}
+                </td>
+                <td>{formatPeso(line.unitCost)}</td>
+                <td>{formatPeso(line.lineTotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p>
+          <strong>{t("incomingOrders.orderTotal")}</strong> {formatPeso(printModel.orderTotal)}
+        </p>
+        {printModel.scope === "selected" ? (
+          <p>
+            {t("exitsTable.selectedLinesTotal")} {formatPeso(printModel.selectedLinesTotal)}
+          </p>
+        ) : null}
+      </div>
       <PageHeader
         title={order.buyerPoNumber ?? t("incomingOrders.unnamedPo")}
         description={t("incomingOrders.detailLede")}
@@ -434,6 +515,19 @@ export function IncomingOrderDetailPage() {
                   </Button>
                 </>
               ) : null
+            }
+            output={
+              <ExitsTableOutputActions
+                csvLabel={t("exitsTable.exportCsv")}
+                xlsxLabel={t("exitsTable.exportExcel")}
+                pdfLabel={t("exitsTable.exportPdf")}
+                printLabel={t("exitsTable.print")}
+                menuLabel={t("exitsTable.exportPrintMenu")}
+                onCsv={() => runOutput("csv")}
+                onXlsx={() => runOutput("xlsx")}
+                onPdf={() => runOutput("pdf")}
+                onPrint={() => runOutput("print")}
+              />
             }
           />
 

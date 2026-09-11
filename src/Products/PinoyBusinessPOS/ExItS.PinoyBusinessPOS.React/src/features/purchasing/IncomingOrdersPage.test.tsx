@@ -43,6 +43,10 @@ vi.mock("@/i18n/I18nProvider", () => ({
   }),
 }));
 
+vi.mock("@/components/exits/ToastProvider", () => ({
+  useToast: () => ({ showToast: vi.fn() }),
+}));
+
 const listIncomingOrders = vi.fn();
 const getIncomingOrder = vi.fn();
 const acceptIncomingOrder = vi.fn();
@@ -261,6 +265,21 @@ describe("IncomingOrders React flow", () => {
     expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–2 of 2");
     expect(screen.getByTestId("exits-table-prev")).toBeDisabled();
     expect(screen.getByTestId("exits-table-next")).toBeDisabled();
+    expect(screen.getByTestId("exits-table-toolbar-output")).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-output-csv")).toHaveAttribute("aria-label", "Export CSV");
+    expect(screen.getByTestId("exits-table-output-xlsx")).toHaveAttribute(
+      "aria-label",
+      "Export Excel",
+    );
+    expect(screen.getByTestId("exits-table-output-pdf")).toHaveAttribute("aria-label", "Export PDF");
+    expect(screen.getByTestId("exits-table-output-print")).toHaveAttribute("aria-label", "Print");
+    expect(screen.getByTestId("exits-table-output-menu")).toHaveAttribute(
+      "aria-label",
+      "Export & Print",
+    );
+    expect(screen.getByTestId("incoming-order-print-root")).toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-print-root").querySelector("input")).toBeNull();
+    expect(screen.getByTestId("incoming-order-print-root")).not.toHaveTextContent("Accept order");
 
     await user.type(screen.getByTestId("incoming-order-lines-search"), "Banana");
     await waitFor(() => {

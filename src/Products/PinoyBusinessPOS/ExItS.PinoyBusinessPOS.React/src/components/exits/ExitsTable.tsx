@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type InputHTMLAttributes,
@@ -7,7 +8,8 @@ import {
   type TdHTMLAttributes,
   type ThHTMLAttributes,
 } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
 
 /** Semantic cell alignment for ExitsTable (pages should prefer this over raw Tailwind). */
@@ -36,14 +38,17 @@ export type ExitsTableToolbarProps = HTMLAttributes<HTMLDivElement> & {
   search?: ReactNode;
   filter?: ReactNode;
   selection?: ReactNode;
+  /** Canonical right-side Output Actions slot (CSV / XLSX / PDF / Print). */
+  output?: ReactNode;
 };
 
-/** Optional toolbar above the table (search / filter / selection summary). */
+/** Optional toolbar above the table (search / filter / selection / output). */
 export function ExitsTableToolbar({
   className,
   search,
   filter,
   selection,
+  output,
   children,
   ...props
 }: ExitsTableToolbarProps) {
@@ -54,7 +59,200 @@ export function ExitsTableToolbar({
         {filter ? <div className="exits-table-toolbar__filter">{filter}</div> : null}
         {children}
       </div>
-      {selection ? <div className="exits-table-toolbar__selection">{selection}</div> : null}
+      {selection || output ? (
+        <div className="exits-table-toolbar__end">
+          {selection ? (
+            <div className="exits-table-toolbar__selection" data-testid="exits-table-toolbar-selection">
+              {selection}
+            </div>
+          ) : null}
+          {output ? (
+            <div className="exits-table-toolbar__output" data-testid="exits-table-toolbar-output">
+              {output}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export type ExitsFileFormat = "csv" | "xlsx" | "pdf";
+
+/** Compact document icon with a format badge (CSV / XLS / PDF). */
+export function ExitsFileFormatIcon({
+  format,
+  className,
+}: {
+  format: ExitsFileFormat;
+  className?: string;
+}) {
+  const label = format === "xlsx" ? "XLS" : format.toUpperCase();
+  return (
+    <span className={cn("exits-file-format-icon", `exits-file-format-icon--${format}`, className)} aria-hidden>
+      <svg viewBox="0 0 24 24" className="exits-file-format-icon__doc" fill="none">
+        <path
+          d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-6Z"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinejoin="round"
+        />
+        <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+        {format === "xlsx" ? (
+          <>
+            <path d="M8 13h8M8 16h8M11 11v7M14 11v7" stroke="currentColor" strokeWidth="1.35" />
+          </>
+        ) : (
+          <path d="M8 13h8M8 16.5h5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        )}
+      </svg>
+      <span className="exits-file-format-icon__badge">{label}</span>
+    </span>
+  );
+}
+
+export type ExitsTableOutputAction = "csv" | "xlsx" | "pdf" | "print";
+
+export type ExitsTableOutputActionsProps = {
+  onCsv?: () => void | Promise<void>;
+  onXlsx?: () => void | Promise<void>;
+  onPdf?: () => void | Promise<void>;
+  onPrint?: () => void | Promise<void>;
+  busy?: ExitsTableOutputAction | null;
+  disabled?: boolean;
+  csvLabel: string;
+  xlsxLabel: string;
+  pdfLabel: string;
+  printLabel: string;
+  menuLabel: string;
+};
+
+/** Canonical table Output Actions: CSV, XLSX, PDF, Print. */
+export function ExitsTableOutputActions({
+  onCsv,
+  onXlsx,
+  onPdf,
+  onPrint,
+  busy = null,
+  disabled = false,
+  csvLabel,
+  xlsxLabel,
+  pdfLabel,
+  printLabel,
+  menuLabel,
+}: ExitsTableOutputActionsProps) {
+  const menu = useDismissibleOpen(false);
+  const [localBusy, setLocalBusy] = useState<ExitsTableOutputAction | null>(null);
+  const activeBusy = busy ?? localBusy;
+
+  async function run(action: ExitsTableOutputAction, handler?: () => void | Promise<void>) {
+    if (!handler || disabled || activeBusy) {
+      return;
+    }
+    setLocalBusy(action);
+    try {
+      await handler();
+    } finally {
+      setLocalBusy(null);
+    }
+  }
+
+  const actions: Array<{
+    id: ExitsTableOutputAction;
+    label: string;
+    onClick?: () => void | Promise<void>;
+    icon: ReactNode;
+  }> = [
+    {
+      id: "csv",
+      label: csvLabel,
+      onClick: onCsv,
+      icon: <ExitsFileFormatIcon format="csv" />,
+    },
+    {
+      id: "xlsx",
+      label: xlsxLabel,
+      onClick: onXlsx,
+      icon: <ExitsFileFormatIcon format="xlsx" />,
+    },
+    {
+      id: "pdf",
+      label: pdfLabel,
+      onClick: onPdf,
+      icon: <ExitsFileFormatIcon format="pdf" />,
+    },
+    {
+      id: "print",
+      label: printLabel,
+      onClick: onPrint,
+      icon: <Printer className="size-4" aria-hidden />,
+    },
+  ];
+
+  return (
+    <div className="exits-table-output" data-testid="exits-table-output-actions">
+      <div className="exits-table-output__desktop" data-testid="exits-table-output-desktop">
+        {actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            className={cn(
+              "exits-table-output__btn",
+              activeBusy === action.id && "exits-table-output__btn--busy",
+            )}
+            title={action.label}
+            aria-label={action.label}
+            disabled={disabled || Boolean(activeBusy) || !action.onClick}
+            data-testid={`exits-table-output-${action.id}`}
+            onClick={() => void run(action.id, action.onClick)}
+          >
+            {action.icon}
+          </button>
+        ))}
+      </div>
+
+      <div className="exits-table-output__mobile" data-testid="exits-table-output-mobile">
+        <DropdownMenu
+          align="end"
+          open={menu.open}
+          onOpenChange={menu.setOpen}
+          menuLabel={menuLabel}
+          trigger={(triggerProps) => (
+            <button
+              type="button"
+              id={triggerProps.id}
+              className="exits-table-output__menu-trigger"
+              aria-haspopup="menu"
+              aria-expanded={triggerProps.expanded}
+              aria-controls={triggerProps.controls}
+              aria-label={menuLabel}
+              title={menuLabel}
+              disabled={disabled || Boolean(activeBusy)}
+              data-testid="exits-table-output-menu"
+              onClick={triggerProps.onClick}
+              onKeyDown={triggerProps.onKeyDown}
+            >
+              <span>{menuLabel}</span>
+              <ChevronDown className="size-4" aria-hidden />
+            </button>
+          )}
+        >
+          {actions.map((action) => (
+            <MenuItem
+              key={action.id}
+              disabled={disabled || Boolean(activeBusy) || !action.onClick}
+              data-testid={`exits-table-output-menu-${action.id}`}
+              onSelect={() => {
+                menu.close();
+                void run(action.id, action.onClick);
+              }}
+            >
+              <span className="exits-table-output__menu-icon">{action.icon}</span>
+              {action.label}
+            </MenuItem>
+          ))}
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
