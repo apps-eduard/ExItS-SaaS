@@ -163,6 +163,10 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-card-media-zoom").querySelector("[data-zoom=true]")).not.toBeNull();
     expect(screen.getByTestId("ui-standards-card-hover-reveal")).toHaveAttribute("data-reveal", "true");
     expect(screen.getByTestId("ui-standards-card-pricing")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-cheatsheet")).toHaveTextContent("APPROVED / LOCKED");
+    expect(screen.getByTestId("ui-standards-cards-cheatsheet-body")).toHaveTextContent(
+      "Docs/UI/exits-card-standard.md",
+    );
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

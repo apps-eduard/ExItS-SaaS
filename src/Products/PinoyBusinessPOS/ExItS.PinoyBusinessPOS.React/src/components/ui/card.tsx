@@ -36,10 +36,10 @@ export type CardProps = {
   className?: string;
   children?: ReactNode;
   as?: CardElement;
-  /** Visual treatment — PILOT / NOT LOCKED. Default matches legacy bordered surface. */
+  /** Visual treatment — APPROVED / LOCKED. Default matches bordered surface. */
   treatment?: ExitsCardTreatment;
   /**
-   * Hover motion candidate — PILOT / NOT LOCKED.
+   * Hover motion — APPROVED / LOCKED.
    * When `interactive` and unset, defaults to `lift`.
    */
   motion?: ExitsCardMotion;
@@ -69,8 +69,9 @@ export type CardProps = {
 } & Omit<HTMLAttributes<HTMLElement>, "as" | "type" | "disabled">;
 
 /**
- * ExItS Card foundation (PILOT / NOT LOCKED).
+ * ExItS Card foundation (APPROVED / LOCKED).
  * Anatomy helpers: CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardMedia, CardReveal.
+ * @see Docs/UI/exits-card-standard.md
  */
 export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   {

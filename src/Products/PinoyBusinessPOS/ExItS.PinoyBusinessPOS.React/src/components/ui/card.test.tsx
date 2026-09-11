@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
 
-describe("ExItS Card visual pilot foundation", () => {
+describe("ExItS Card foundation (APPROVED / LOCKED)", () => {
   it("keeps bordered surface defaults compatible with legacy Card usage", () => {
     render(createElement(Card, { "data-testid": "card-basic" }, "Hello"));
     const card = screen.getByTestId("card-basic");
@@ -152,7 +152,7 @@ describe("ExItS Card visual pilot foundation", () => {
     expect(screen.getByTestId("card-reveal-slot")).toBeInTheDocument();
   });
 
-  it("UI Standards cards disclosure defaults match pilot map", () => {
+  it("UI Standards cards disclosure defaults match locked map", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.treatments"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.kpi"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.entity"]).toBe(true);

@@ -231,7 +231,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="cards.treatments"
         title={t("uiStandards.cardsTreatmentsTitle")}
-        description="Independent treatments, radius, and shadow — type/purpose is separate from appearance. PILOT / NOT LOCKED."
+        description="Independent treatments, radius, and shadow — type/purpose is separate from appearance. APPROVED / LOCKED."
         summary="SURFACE · BORDERED · ELEVATED · INTERACTIVE"
         open={isOpen("cards.treatments")}
         onOpenChange={(open) => setOpen("cards.treatments", open)}
@@ -248,8 +248,8 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleFrame>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="DEFAULT RECOMMENDATION CANDIDATES — CANDIDATE / NOT LOCKED">
-            <SampleFrame label="CANDIDATE / NOT LOCKED" className="sm:col-span-2 lg:col-span-3">
+          <StaticSampleGroup title="DEFAULT USAGE RECOMMENDATIONS — APPROVED / LOCKED">
+            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3">
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>NORMAL CONTENT → BORDERED / SURFACE</div>
                 <div>DASHBOARD METRIC → KPI CARD</div>
@@ -880,7 +880,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleFrame>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="INDICATOR CANDIDATES — CANDIDATE / NOT LOCKED">
+          <StaticSampleGroup title="SELECTABLE INDICATORS — APPROVED / LOCKED">
             <SampleFrame label="A · RADIO / CIRCLE">
               <Card treatment="bordered" className="min-h-[5.75rem]" aria-hidden>
                 <SelectableCardBody
@@ -966,7 +966,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleFrame>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="ACCENT POSITION CANDIDATES — CANDIDATE / NOT LOCKED">
+          <StaticSampleGroup title="ACCENT POSITIONS — APPROVED / LOCKED (default START)">
             <SampleFrame label="TOP · warning">
               <Card treatment="accent" accentTone="warning" accentPosition="top">
                 <CardTitle as="h4">Top accent</CardTitle>
@@ -979,10 +979,10 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 <CardDescription>Subtle semantic background fill.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="START · locked candidate">
+            <SampleFrame label="START · canonical default">
               <Card treatment="accent" accentTone="warning" accentPosition="start">
                 <CardTitle as="h4">Start accent</CardTitle>
-                <CardDescription>Inline-start — default candidate.</CardDescription>
+                <CardDescription>Inline-start — canonical default.</CardDescription>
               </Card>
             </SampleFrame>
           </StaticSampleGroup>
@@ -1174,15 +1174,15 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="cards.motion"
         title={t("uiStandards.cardsMotionTitle")}
-        description="Hover micro-interactions use transform/opacity only — no layout shift. PILOT / NOT LOCKED."
+        description="Hover micro-interactions use transform/opacity only — no layout shift. APPROVED / LOCKED."
         summary="STATIC · LIFT · EXPAND · ACCENT"
         open={isOpen("cards.motion")}
         onOpenChange={(open) => setOpen("cards.motion", open)}
         testId="ui-standards-cards-motion"
       >
         <div className="grid gap-3">
-          <StaticSampleGroup title="MOTION RECOMMENDATIONS — CANDIDATE / NOT LOCKED">
-            <SampleFrame label="CANDIDATE" className="sm:col-span-2 lg:col-span-3">
+          <StaticSampleGroup title="MOTION RECOMMENDATIONS — APPROVED / LOCKED">
+            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3">
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>NORMAL INFORMATION CARD → STATIC</div>
                 <div>CLICKABLE ENTITY → LIFT</div>
@@ -1239,7 +1239,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleFrame>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="EXPAND INTENSITY — CANDIDATE / NOT LOCKED">
+          <StaticSampleGroup title="EXPAND INTENSITY — APPROVED / LOCKED (default STANDARD ~1.02)">
             {(
               [
                 { label: "SUBTLE · ~1.01", scale: "subtle" as const },
@@ -1300,7 +1300,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="cards.featured-effects"
         title={t("uiStandards.cardsFeaturedEffectsTitle")}
-        description="Special-use treatments — not default business cards. SPECIAL USE · PILOT."
+        description="Special-use treatments — not default business cards. SPECIAL USE · APPROVED / LOCKED."
         summary="FEATURED · MEDIA ZOOM · PRICING · REVEAL"
         open={isOpen("cards.featured-effects")}
         onOpenChange={(open) => setOpen("cards.featured-effects", open)}
@@ -1524,7 +1524,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         id="cards.cheatsheet"
         title={t("uiStandards.cardsCheatTitle")}
         description={t("uiStandards.cardsCheatLede")}
-        summary="PILOT · NOT LOCKED"
+        summary="APPROVED · LOCKED"
         open={isOpen("cards.cheatsheet")}
         onOpenChange={(open) => setOpen("cards.cheatsheet", open)}
         testId="ui-standards-cards-cheatsheet"
@@ -1537,10 +1537,10 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
             {t("uiStandards.cardsPilotBadge")}
           </p>
           <pre className="m-0 whitespace-pre-wrap">{`CARD STANDARD
-PILOT / NOT LOCKED
+APPROVED / LOCKED
 
 TYPES
-  BASIC · SUMMARY · KPI · ACTION · ENTITY · PRODUCT · SELECTABLE · STATUS · COMPACT
+  BASIC · SUMMARY · KPI · ACTION · ENTITY · PRODUCT · SELECTABLE · STATUS · COMPACT · FEATURED
 
 TREATMENTS
   SURFACE · BORDERED · ELEVATED · INTERACTIVE · SELECTED · ACCENT · FEATURED
@@ -1548,7 +1548,7 @@ TREATMENTS
 MOTION
   STATIC · LIFT · EXPAND · ACCENT · MEDIA ZOOM · HOVER REVEAL
 
-EXPAND SCALE (CANDIDATE)
+EXPAND SCALE (LOCKED DEFAULT STANDARD)
   SUBTLE ~1.01 · STANDARD ~1.02 · STRONG ~1.03
 
 LAYOUT
@@ -1567,7 +1567,7 @@ EXAMPLES
   Selectable warehouse → SELECTABLE CARD (no strong expand)
   Promo strip → COMPACT CARD + ACCENT
 
-MOTION DEFAULTS (CANDIDATE / NOT LOCKED)
+MOTION DEFAULTS (APPROVED / LOCKED)
   NORMAL INFORMATION → STATIC
   CLICKABLE ENTITY → LIFT
   PROMINENT CLICKABLE → EXPAND
@@ -1581,7 +1581,7 @@ BOUNDARY
   Pages own routes / APIs / permissions
 
 STATUS
-  PILOT / NOT LOCKED — inspect /ui-standards`}</pre>
+  APPROVED / LOCKED — Docs/UI/exits-card-standard.md`}</pre>
         </div>
       </UiStandardsSection>
     </div>

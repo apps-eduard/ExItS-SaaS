@@ -1,8 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
 /**
- * ExItS Card visual foundation (PILOT / NOT LOCKED).
+ * ExItS Card visual foundation (APPROVED / LOCKED).
  * Treatment / motion / radius / padding / accent are independent of usage patterns.
+ * @see Docs/UI/exits-card-standard.md
  */
 export type ExitsCardTreatment =
   | "surface"
@@ -13,7 +14,7 @@ export type ExitsCardTreatment =
   | "accent"
   | "featured";
 
-/** Hover / micro-interaction candidates — default none (STATIC). */
+/** Hover / micro-interaction vocabulary — default none (STATIC). */
 export type ExitsCardMotion =
   | "none"
   | "lift"
@@ -21,7 +22,7 @@ export type ExitsCardMotion =
   | "accent"
   | "featured";
 
-/** Expand intensity candidates (NOT LOCKED). Standard ≈ 1.02 recommended. */
+/** Expand intensity — default standard ≈ 1.02 (APPROVED / LOCKED). */
 export type ExitsCardExpandScale = "subtle" | "standard" | "strong";
 
 export type ExitsCardRadius = "standard" | "soft";
