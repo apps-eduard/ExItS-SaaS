@@ -66,6 +66,91 @@ public sealed class CreateBuyerProductAndLinkTests
     }
 
     [Fact]
+    public async Task Create_and_link_creates_org_owned_manual_product_without_platform_global_linkage()
+    {
+        var supplierPlatformGlobalId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var supplierProduct = CatalogProduct.CreateImportedSnapshot(
+            Supplier,
+            "Apple",
+            UnitOfMeasure.Kilogram,
+            40m,
+            supplierPlatformGlobalId,
+            CatalogSource.GlobalSearch,
+            Now,
+            sku: "SUP-APPLE");
+        var harness = CreateHarness(supplierProductId: supplierProduct.Id);
+        harness.Products.Seed(supplierProduct);
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure, name: "Apple", sellingPrice: 55m));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.True(result.Value!.CreatedNewProduct);
+
+        var buyerProduct = Assert.Single(harness.Products.Items, p => p.OrganizationId == Buyer);
+        Assert.Equal(Buyer, buyerProduct.OrganizationId);
+        Assert.Equal(CatalogProductScope.OrganizationStandard, buyerProduct.Scope);
+        Assert.Equal(CatalogSource.Manual, buyerProduct.CatalogSource);
+        Assert.Null(buyerProduct.PlatformGlobalProductId);
+        Assert.Null(buyerProduct.PlatformTemplateId);
+        Assert.NotEqual(supplierProduct.Id, buyerProduct.Id);
+
+        var unchangedSupplier = Assert.Single(harness.Products.Items, p => p.OrganizationId == Supplier);
+        Assert.Equal(supplierProduct.Id, unchangedSupplier.Id);
+        Assert.Equal(supplierPlatformGlobalId, unchangedSupplier.PlatformGlobalProductId);
+        Assert.Equal(CatalogSource.GlobalSearch, unchangedSupplier.CatalogSource);
+
+        var link = Assert.Single(harness.Links.Items);
+        Assert.Equal(buyerProduct.Id, link.BuyerProductId);
+        Assert.Equal(supplierProduct.Id, link.SupplierProductId);
+        Assert.Equal(Buyer, link.BuyerOrganizationId);
+        Assert.Equal(Supplier, link.SupplierOrganizationId);
+    }
+
+    [Fact]
+    public void Create_and_link_source_does_not_call_platform_global_catalog_writes()
+    {
+        var path = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "ConnectedSuppliers",
+            "CreateBuyerProductAndLinkUseCases.cs");
+        var source = File.ReadAllText(path);
+        var start = source.IndexOf("public sealed class CreateBuyerProductAndLink", StringComparison.Ordinal);
+        Assert.True(start >= 0);
+        var body = source[start..];
+
+        Assert.DoesNotContain("CreateImportedSnapshot", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateGlobalProduct", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("IPlatformMerchantCatalogClient", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("IGlobalProductRepository", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("PlatformGlobalProductId =", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Local_validation_transactional_purge_does_not_touch_platform_global_products()
+    {
+        var path = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Platform",
+            "ExItS.Platform.Infrastructure",
+            "LocalValidation",
+            "LocalValidationBaselinePurge.cs");
+        var source = File.ReadAllText(path);
+
+        Assert.Contains("PurgeTransactionalDataAsync", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("global_products", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("GlobalProduct", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateGlobalProduct", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task PNAME_PATH_04_Create_and_link_blocks_exact_normalized_name_duplicate()
     {
         var harness = CreateHarness();
@@ -305,7 +390,9 @@ public sealed class CreateBuyerProductAndLinkTests
         decimal supplierOrderPrice = 45m,
         decimal? buyerSpecificPoPrice = null,
         PosOrganizationId? exposureSupplier = null,
-        string exposureUom = "Kilogram")
+        string exposureUom = "Kilogram",
+        CatalogProductId? supplierProductId = null,
+        InMemoryProducts? products = null)
     {
         var relationships = new InMemoryRelationships();
         var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
@@ -316,9 +403,10 @@ public sealed class CreateBuyerProductAndLinkTests
         relationships.Seed(relationship);
 
         var supplierForExposure = exposureSupplier ?? Supplier;
+        var exposureProductId = supplierProductId ?? CatalogProductId.New();
         var exposure = SupplierProductExposure.Expose(
             supplierForExposure,
-            CatalogProductId.New(),
+            exposureProductId,
             "Premium Rice",
             exposureUom,
             supplierOrderPrice,
@@ -350,7 +438,7 @@ public sealed class CreateBuyerProductAndLinkTests
             exposures,
             shares,
             new InMemoryLinks(),
-            new InMemoryProducts(),
+            products ?? new InMemoryProducts(),
             new InMemoryUnits(),
             new InMemoryCategories(),
             new InMemoryBrands(),

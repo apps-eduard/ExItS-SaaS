@@ -254,6 +254,14 @@ public sealed class SuggestBuyerProductMatches
     }
 }
 
+/// <summary>
+/// Creates a buyer-organization POS <see cref="CatalogProduct"/> and a
+/// <see cref="BuyerSupplierProductLink"/> from a shared supplier exposure.
+/// Ownership boundary: this is never a Platform Global Catalog import —
+/// local Manual products only (<c>PlatformGlobalProductId</c> /
+/// <c>PlatformTemplateId</c> must stay null). Do not copy the supplier
+/// product's platform ids; supplier and buyer products remain separate.
+/// </summary>
 public sealed class CreateBuyerProductAndLink
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
@@ -419,6 +427,7 @@ public sealed class CreateBuyerProductAndLink
         }
 
         // Buyer SellingPrice is independent of supplier PO price. Never equate them here.
+        // Local POS create only — never Platform Global Catalog import or write.
         var staged = await CatalogProductCreateCore.StageAsync(
             _products,
             _units,
@@ -456,6 +465,16 @@ public sealed class CreateBuyerProductAndLink
         }
 
         var product = staged.Value!;
+        if (product.OrganizationId != buyer
+            || product.PlatformGlobalProductId is not null
+            || product.PlatformTemplateId is not null
+            || product.CatalogSource != CatalogSource.Manual)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
+                ApplicationErrorCodes.CatalogBulkValidation,
+                "Connected supplier add-as-new must create an organization-owned Manual catalog product without Platform Global Catalog linkage.");
+        }
+
         if (product.CanExposeToConnectedBuyers)
         {
             return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
