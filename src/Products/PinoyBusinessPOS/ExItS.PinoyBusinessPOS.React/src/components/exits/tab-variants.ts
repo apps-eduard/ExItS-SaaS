@@ -4,13 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
  * ExItS Tabs visual foundation (PILOT / NOT LOCKED).
  * Variant / orientation / icon / count are independent dimensions.
  */
-export type ExitsTabsVariant = "underline" | "soft" | "segmented" | "enclosed" | "vertical";
+export type ExitsTabsVariant =
+  | "underline"
+  | "soft"
+  | "pill"
+  | "segmented"
+  | "enclosed"
+  | "vertical";
 
 export const exitsTabsListVariants = cva("exits-tabs__list flex", {
   variants: {
     variant: {
       underline: "relative gap-1 border-b border-border",
       soft: "gap-1 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/35 p-1",
+      /** Independent rounded items with gaps — NOT a shared segmented container. */
+      pill: "flex-wrap gap-2",
       segmented:
         "gap-0.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-0.5",
       enclosed: "gap-0 border-b border-border",
@@ -30,6 +38,11 @@ export const exitsTabsListVariants = cva("exits-tabs__list flex", {
     },
     {
       variant: "soft",
+      scrollable: true,
+      class: "flex-nowrap whitespace-nowrap",
+    },
+    {
+      variant: "pill",
       scrollable: true,
       class: "flex-nowrap whitespace-nowrap",
     },
@@ -64,6 +77,15 @@ export const exitsTabTriggerVariants = cva(
           "rounded-[var(--exits-radius-sm)] text-muted",
           "hover:bg-[color-mix(in_srgb,var(--exits-surface)_70%,transparent)] hover:text-foreground",
           "data-[selected=true]:bg-[color-mix(in_srgb,var(--exits-primary)_12%,var(--exits-surface))]",
+          "data-[selected=true]:text-[var(--exits-primary)]",
+          "data-[selected=true]:shadow-sm",
+        ].join(" "),
+        pill: [
+          "rounded-full border border-transparent text-muted",
+          "bg-[color-mix(in_srgb,var(--exits-surface-muted)_40%,transparent)]",
+          "hover:bg-[var(--exits-surface-muted)] hover:text-foreground",
+          "data-[selected=true]:border-[color-mix(in_srgb,var(--exits-primary)_45%,var(--exits-border))]",
+          "data-[selected=true]:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))]",
           "data-[selected=true]:text-[var(--exits-primary)]",
           "data-[selected=true]:shadow-sm",
         ].join(" "),
@@ -109,6 +131,7 @@ export const exitsTabsPanelVariants = cva(
       variant: {
         underline: "pt-3",
         soft: "pt-3",
+        pill: "pt-3",
         segmented: "pt-3",
         enclosed:
           "rounded-b-[var(--exits-radius-md)] rounded-se-[var(--exits-radius-md)] border border-t-0 border-border bg-surface p-3",

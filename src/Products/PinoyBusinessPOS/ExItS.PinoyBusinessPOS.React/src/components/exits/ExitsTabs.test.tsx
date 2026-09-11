@@ -10,7 +10,7 @@ function ControlledTabs({
   items,
   initial = "a",
 }: {
-  variant?: "underline" | "soft" | "segmented" | "enclosed" | "vertical";
+  variant?: "underline" | "soft" | "pill" | "segmented" | "enclosed" | "vertical";
   items: Parameters<typeof ExitsTabs>[0]["items"];
   initial?: string;
 }) {
@@ -27,8 +27,15 @@ function ControlledTabs({
 }
 
 describe("ExitsTabs visual pilot", () => {
-  it("renders all five variants", () => {
-    for (const variant of ["underline", "soft", "segmented", "enclosed", "vertical"] as const) {
+  it("renders all six variants including pill", () => {
+    for (const variant of [
+      "underline",
+      "soft",
+      "pill",
+      "segmented",
+      "enclosed",
+      "vertical",
+    ] as const) {
       const { unmount } = render(
         createElement(ControlledTabs, {
           variant,
@@ -41,6 +48,49 @@ describe("ExitsTabs visual pilot", () => {
       expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", variant);
       unmount();
     }
+  });
+
+  it("pill is independent of segmented (gaps vs shared container)", () => {
+    const { rerender } = render(
+      createElement(ControlledTabs, {
+        variant: "pill",
+        items: [
+          { key: "a", label: "All", count: 24 },
+          { key: "b", label: "Pending", count: 6 },
+        ],
+      }),
+    );
+    const pillList = screen.getByRole("tablist");
+    expect(pillList).toHaveAttribute("data-variant", "pill");
+    expect(pillList.className).toMatch(/gap-2/);
+    expect(pillList.className).not.toMatch(/border-border bg-\[var\(--exits-surface-muted\)\]/);
+
+    rerender(
+      createElement(ControlledTabs, {
+        variant: "segmented",
+        items: [
+          { key: "a", label: "All" },
+          { key: "b", label: "Pending" },
+        ],
+      }),
+    );
+    const segList = screen.getByRole("tablist");
+    expect(segList).toHaveAttribute("data-variant", "segmented");
+    expect(segList.className).toMatch(/p-0\.5/);
+  });
+
+  it("pill supports icon + count composition", () => {
+    render(
+      createElement(ControlledTabs, {
+        variant: "pill",
+        items: [
+          { key: "a", label: "Products", count: 24, countTone: "neutral" },
+          { key: "b", label: "Orders", count: 6, countTone: "neutral" },
+        ],
+      }),
+    );
+    expect(screen.getByText("24")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Products/i }).className).toMatch(/rounded-full/);
   });
 
   it("selects tabs, updates aria-selected, and shows panel", async () => {
@@ -102,6 +152,7 @@ describe("ExitsTabs visual pilot", () => {
   it("UI Standards tabs disclosure defaults match pilot map", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.variants"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.counts"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.icon-options"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.real-world"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.cheatsheet"]).toBe(false);
   });

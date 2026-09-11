@@ -58,6 +58,7 @@ export const en = {
   "uiStandards.tabsVariantsTitle": "Tab variants",
   "uiStandards.tabsCountsTitle": "Tabs with counts",
   "uiStandards.tabsIconsTitle": "Icons",
+  "uiStandards.tabsIconOptionsTitle": "Tab icon options",
   "uiStandards.tabsStatesTitle": "States",
   "uiStandards.tabsMobileTitle": "Mobile / overflow",
   "uiStandards.tabsRealWorldTitle": "Real-world examples",

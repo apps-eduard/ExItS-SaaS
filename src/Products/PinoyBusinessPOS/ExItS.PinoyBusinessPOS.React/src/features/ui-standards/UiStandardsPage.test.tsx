@@ -120,6 +120,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-tabs-counts")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
     expect(screen.getByTestId("ui-standards-tabs-demo-underline")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-demo-pill")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-icon-options")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("PILL TABS");
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

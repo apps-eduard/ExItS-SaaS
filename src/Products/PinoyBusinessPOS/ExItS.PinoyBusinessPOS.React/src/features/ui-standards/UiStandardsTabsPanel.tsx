@@ -75,6 +75,18 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
   const { t } = useI18n();
   const [underline, setUnderline] = useState("overview");
   const [soft, setSoft] = useState("overview");
+  const [pill, setPill] = useState("overview");
+  const [pillCounts, setPillCounts] = useState("all");
+  const [pillActiveCounts, setPillActiveCounts] = useState("all");
+  const [pillSemantic, setPillSemantic] = useState("low");
+  const [pillIcons, setPillIcons] = useState("products");
+  const [pillIconCount, setPillIconCount] = useState("products");
+  const [pillOrders, setPillOrders] = useState("all");
+  const [pillCatalog, setPillCatalog] = useState("all");
+  const [pillInventory, setPillInventory] = useState("all");
+  const [iconOptUnderline, setIconOptUnderline] = useState("products");
+  const [iconOptSoft, setIconOptSoft] = useState("products");
+  const [iconOptPill, setIconOptPill] = useState("products");
   const [segmented, setSegmented] = useState("list");
   const [enclosed, setEnclosed] = useState("overview");
   const [vertical, setVertical] = useState("general");
@@ -108,8 +120,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tabs.variants"
         title={t("uiStandards.tabsVariantsTitle")}
-        description="Five visual candidates. Family ≠ one style — pick by purpose. PILOT / NOT LOCKED."
-        summary="UNDERLINE · SOFT · SEGMENTED · ENCLOSED · VERTICAL"
+        description="Six visual candidates. Family ≠ one style — pick by purpose. PILOT / NOT LOCKED."
+        summary="UNDERLINE · SOFT · PILL · SEGMENTED · ENCLOSED · VERTICAL"
         open={isOpen("tabs.variants")}
         onOpenChange={(open) => setOpen("tabs.variants", open)}
         testId="ui-standards-tabs-variants"
@@ -120,6 +132,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>PAGE / MODULE NAVIGATION → UNDERLINE</div>
                 <div>NORMAL CONTENT TABS → SOFT</div>
+                <div>COMPACT CATEGORY / STATUS TABS → PILL</div>
                 <div>VIEW SWITCHER → SEGMENTED</div>
                 <div>DETAIL PANEL → ENCLOSED</div>
                 <div>SETTINGS / ADMIN → VERTICAL</div>
@@ -169,8 +182,147 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleCard>
           </StaticSampleGroup>
 
+          <StaticSampleGroup title="PILL">
+            <SampleCard
+              label="Independent pills · gaps · not segmented"
+              hint="Selected uses Primary tokens — not a giant Primary Button"
+            >
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill demo"
+                testId="ui-standards-tabs-demo-pill"
+                value={pill}
+                onValueChange={setPill}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "products", label: "Products" },
+                  { key: "orders", label: "Orders" },
+                ]}
+                panels={{
+                  overview: <DemoPanel title="Overview" />,
+                  products: <DemoPanel title="Products" />,
+                  orders: <DemoPanel title="Orders" />,
+                }}
+              />
+            </SampleCard>
+            <SampleCard label="Pill + counts (neutral)">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill counts neutral"
+                value={pillCounts}
+                onValueChange={setPillCounts}
+                items={[
+                  { key: "all", label: "All", count: 24, countTone: "neutral" },
+                  { key: "pending", label: "Pending", count: 6, countTone: "neutral" },
+                  { key: "completed", label: "Completed", count: 16, countTone: "neutral" },
+                  { key: "cancelled", label: "Cancelled", count: 2, countTone: "neutral" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="Pill + active-aware Primary count">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill counts active-aware"
+                value={pillActiveCounts}
+                onValueChange={setPillActiveCounts}
+                items={[
+                  {
+                    key: "all",
+                    label: "All",
+                    count: 24,
+                    countTone: pillActiveCounts === "all" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "pending",
+                    label: "Pending",
+                    count: 6,
+                    countTone: pillActiveCounts === "pending" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "completed",
+                    label: "Completed",
+                    count: 16,
+                    countTone: pillActiveCounts === "completed" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "cancelled",
+                    label: "Cancelled",
+                    count: 2,
+                    countTone: pillActiveCounts === "cancelled" ? "primary" : "neutral",
+                  },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="Pill + semantic warning/danger count">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill semantic counts"
+                value={pillSemantic}
+                onValueChange={setPillSemantic}
+                items={[
+                  { key: "all", label: "All", count: 40, countTone: "neutral" },
+                  { key: "low", label: "Low stock", count: 12, countTone: "warning" },
+                  { key: "overdue", label: "Overdue", count: 5, countTone: "danger" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="Pill + icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill with icons"
+                value={pillIcons}
+                onValueChange={setPillIcons}
+                items={[
+                  { key: "products", label: "Products", icon: Package },
+                  { key: "inventory", label: "Inventory", icon: Boxes },
+                  { key: "orders", label: "Orders", icon: ClipboardList },
+                  { key: "customers", label: "Customers", icon: Users },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="Pill + icon + count">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Pill icon count"
+                testId="ui-standards-tabs-demo-pill-icon-count"
+                value={pillIconCount}
+                onValueChange={setPillIconCount}
+                items={[
+                  {
+                    key: "products",
+                    label: "Products",
+                    icon: Package,
+                    count: 24,
+                    countTone: "neutral",
+                  },
+                  {
+                    key: "orders",
+                    label: "Orders",
+                    icon: ClipboardList,
+                    count: 6,
+                    countTone: "neutral",
+                  },
+                  {
+                    key: "low",
+                    label: "Low stock",
+                    icon: TriangleAlert,
+                    count: 12,
+                    countTone: "warning",
+                  },
+                  {
+                    key: "customers",
+                    label: "Customers",
+                    icon: Users,
+                    count: 38,
+                    countTone: "neutral",
+                  },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
           <StaticSampleGroup title="SEGMENTED">
-            <SampleCard label="View switcher" hint="Connected segments · compact">
+            <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps">
               <ExitsTabs
                 variant="segmented"
                 ariaLabel="Segmented demo"
@@ -314,6 +466,99 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
               />
             </SampleCard>
           </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tabs.icon-options"
+        title={t("uiStandards.tabsIconOptionsTitle")}
+        description="Icon and count are independent of variant. Structure: [ICON] Label [COUNT]. Compare UNDERLINE · SOFT · PILL."
+        summary="TEXT · ICON · COUNT"
+        open={isOpen("tabs.icon-options")}
+        onOpenChange={(open) => setOpen("tabs.icon-options", open)}
+        testId="ui-standards-tabs-icon-options"
+      >
+        <div className="grid gap-3">
+          {(
+            [
+              ["UNDERLINE", "underline", iconOptUnderline, setIconOptUnderline],
+              ["SOFT", "soft", iconOptSoft, setIconOptSoft],
+              ["PILL", "pill", iconOptPill, setIconOptPill],
+            ] as const
+          ).map(([label, variant, value, setValue]) => (
+            <StaticSampleGroup key={variant} title={label}>
+              <SampleCard label="TEXT ONLY">
+                <ExitsTabs
+                  variant={variant}
+                  ariaLabel={`${label} text only`}
+                  value={value}
+                  onValueChange={setValue}
+                  items={[
+                    { key: "products", label: "Products" },
+                    { key: "orders", label: "Orders" },
+                    { key: "customers", label: "Customers" },
+                  ]}
+                />
+              </SampleCard>
+              <SampleCard label="ICON + TEXT">
+                <ExitsTabs
+                  variant={variant}
+                  ariaLabel={`${label} icon text`}
+                  value={value}
+                  onValueChange={setValue}
+                  items={[
+                    { key: "products", label: "Products", icon: Package },
+                    { key: "orders", label: "Orders", icon: ClipboardList },
+                    { key: "customers", label: "Customers", icon: Users },
+                  ]}
+                />
+              </SampleCard>
+              <SampleCard label="TEXT + COUNT">
+                <ExitsTabs
+                  variant={variant}
+                  ariaLabel={`${label} text count`}
+                  value={value}
+                  onValueChange={setValue}
+                  items={[
+                    { key: "products", label: "Products", count: 24, countTone: "neutral" },
+                    { key: "orders", label: "Orders", count: 6, countTone: "neutral" },
+                    { key: "customers", label: "Customers", count: 38, countTone: "neutral" },
+                  ]}
+                />
+              </SampleCard>
+              <SampleCard label="ICON + TEXT + COUNT">
+                <ExitsTabs
+                  variant={variant}
+                  ariaLabel={`${label} icon text count`}
+                  value={value}
+                  onValueChange={setValue}
+                  items={[
+                    {
+                      key: "products",
+                      label: "Products",
+                      icon: Package,
+                      count: 24,
+                      countTone: "neutral",
+                    },
+                    {
+                      key: "orders",
+                      label: "Orders",
+                      icon: ClipboardList,
+                      count: 6,
+                      countTone: "neutral",
+                    },
+                    {
+                      key: "customers",
+                      label: "Customers",
+                      icon: Users,
+                      count: 38,
+                      countTone: "neutral",
+                    },
+                  ]}
+                />
+              </SampleCard>
+            </StaticSampleGroup>
+          ))}
         </div>
       </UiStandardsSection>
 
@@ -528,6 +773,103 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-tabs-real-world"
       >
         <div className="grid gap-3">
+          <StaticSampleGroup title="ORDER STATUS — PILL + COUNT">
+            <SampleCard label="Without icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Order status pill"
+                value={pillOrders}
+                onValueChange={setPillOrders}
+                items={[
+                  { key: "all", label: "All", count: 24, countTone: "neutral" },
+                  { key: "pending", label: "Pending", count: 6, countTone: "neutral" },
+                  { key: "completed", label: "Completed", count: 16, countTone: "neutral" },
+                  { key: "cancelled", label: "Cancelled", count: 2, countTone: "neutral" },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="CATALOG — PILL">
+            <SampleCard label="Without icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Catalog pill"
+                value={pillCatalog}
+                onValueChange={setPillCatalog}
+                items={[
+                  { key: "all", label: "All" },
+                  { key: "products", label: "Products" },
+                  { key: "services", label: "Services" },
+                  { key: "bundles", label: "Bundles" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="With icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Catalog pill icons"
+                value={pillCatalog}
+                onValueChange={setPillCatalog}
+                items={[
+                  { key: "all", label: "All", icon: LayoutGrid },
+                  { key: "products", label: "Products", icon: Package },
+                  { key: "services", label: "Services", icon: Settings },
+                  { key: "bundles", label: "Bundles", icon: Boxes },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="INVENTORY — PILL + SEMANTIC COUNTS">
+            <SampleCard label="Without icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Inventory pill"
+                value={pillInventory}
+                onValueChange={setPillInventory}
+                items={[
+                  { key: "all", label: "All" },
+                  { key: "low", label: "Low stock", count: 12, countTone: "warning" },
+                  { key: "expiring", label: "Expiring", count: 4, countTone: "warning" },
+                  { key: "out", label: "Out of stock", count: 3, countTone: "danger" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="With icons">
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Inventory pill icons"
+                value={pillInventory}
+                onValueChange={setPillInventory}
+                items={[
+                  { key: "all", label: "All", icon: Boxes },
+                  {
+                    key: "low",
+                    label: "Low stock",
+                    icon: TriangleAlert,
+                    count: 12,
+                    countTone: "warning",
+                  },
+                  {
+                    key: "expiring",
+                    label: "Expiring",
+                    icon: History,
+                    count: 4,
+                    countTone: "warning",
+                  },
+                  {
+                    key: "out",
+                    label: "Out of stock",
+                    icon: Package,
+                    count: 3,
+                    countTone: "danger",
+                  },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
           <StaticSampleGroup title="PRODUCTS">
             <SampleCard label="Underline + counts">
               <ExitsTabs
@@ -646,7 +988,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             {t("uiStandards.tabsPilotBadge")}
           </p>
           <pre className="m-0 whitespace-pre-wrap">{`VARIANTS
-  UNDERLINE TABS · SOFT TABS · SEGMENTED TABS · ENCLOSED TABS · VERTICAL TABS
+  UNDERLINE TABS · SOFT TABS · PILL TABS · SEGMENTED TABS · ENCLOSED TABS · VERTICAL TABS
 
 OPTIONS
   WITH ICON · NO ICON · WITH COUNT · NO COUNT · SCROLLABLE · DISABLED
@@ -655,20 +997,24 @@ COUNT
   NEUTRAL COUNT · PRIMARY COUNT · SEMANTIC COUNT
 
 EXAMPLES
-  Products / Inventory / Orders → UNDERLINE TABS
-  Order status                  → SOFT TABS + WITH COUNT
+  Products / Inventory / Orders → UNDERLINE TABS + WITH ICON + WITH COUNT
+  Order status                  → PILL TABS + WITH COUNT
+  Catalog categories            → PILL TABS
   List / Grid                   → SEGMENTED TABS + WITH ICON
-  Settings                      → VERTICAL TABS
-  Orders                        → WITH COUNT
+  Settings                      → VERTICAL TABS + WITH ICON
   Low stock                     → WITH COUNT WARNING
   Mobile module navigation      → UNDERLINE TABS + SCROLLABLE
 
 CANDIDATE DEFAULTS (NOT LOCKED)
   PAGE / MODULE → UNDERLINE
   CONTENT → SOFT
+  COMPACT CATEGORY / STATUS → PILL
   VIEW SWITCHER → SEGMENTED
   DETAIL PANEL → ENCLOSED
   SETTINGS → VERTICAL
+
+ICON STRUCTURE
+  [ICON] Label [COUNT]
 
 BOUNDARY
   Tabs own visuals / a11y presentation

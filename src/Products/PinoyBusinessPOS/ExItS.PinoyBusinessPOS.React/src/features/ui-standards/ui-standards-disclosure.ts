@@ -40,6 +40,7 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tabs.counts": true,
   "tabs.real-world": true,
   "tabs.icons": false,
+  "tabs.icon-options": true,
   "tabs.states": false,
   "tabs.mobile": false,
   "tabs.cheatsheet": false,
