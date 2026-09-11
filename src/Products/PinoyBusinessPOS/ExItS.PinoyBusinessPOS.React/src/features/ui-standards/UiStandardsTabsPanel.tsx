@@ -136,22 +136,22 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tabs.variants"
         title={t("uiStandards.tabsVariantsTitle")}
-        description="Seven visual candidates. Family ≠ one style — pick by purpose. PILOT / NOT LOCKED."
+        description="Seven locked visual variants. Family ≠ one style — pick by purpose. APPROVED / LOCKED."
         summary="UNDERLINE · SOFT · PILL · PILL BAR · SEGMENTED · ENCLOSED · VERTICAL"
         open={isOpen("tabs.variants")}
         onOpenChange={(open) => setOpen("tabs.variants", open)}
         testId="ui-standards-tabs-variants"
       >
         <div className="grid gap-3">
-          <StaticSampleGroup title="DEFAULT CANDIDATES — NOT LOCKED">
-            <SampleCard label="CANDIDATE" hint="Display only — do not enforce globally yet">
+          <StaticSampleGroup title="DEFAULT RECOMMENDATIONS — APPROVED / LOCKED">
+            <SampleCard label="APPROVED / LOCKED" hint="Defaults for Cursor shorthand — explicit tasks may override">
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>PAGE / MODULE NAVIGATION → UNDERLINE</div>
                 <div>NORMAL CONTENT TABS → SOFT</div>
-                <div>SEPARATE COMPACT TABS → PILL</div>
+                <div>COMPACT CATEGORY / STATUS → PILL</div>
                 <div>PROMINENT COMPACT TAB BAR → PILL BAR</div>
                 <div>VIEW SWITCHER → SEGMENTED</div>
-                <div>DETAIL PANEL → ENCLOSED</div>
+                <div>DETAIL / RECORD PANEL → ENCLOSED</div>
                 <div>SETTINGS / ADMIN → VERTICAL</div>
                 <div>COUNTS → neutral by default · semantic only when meaning requires it</div>
               </div>
@@ -341,7 +341,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           <StaticSampleGroup title="PILL BAR">
             <SampleCard
               label="Continuous outer bar · inner active pill"
-              hint="Distinct from PILL (gaps) and SEGMENTED (segment control) — PILOT"
+              hint="Distinct from PILL (gaps) and SEGMENTED (segment control) — APPROVED"
             >
               <ExitsTabs
                 variant="pillBar"
@@ -441,7 +441,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tabs.pill-bar"
         title={t("uiStandards.tabsPillBarTitle")}
-        description="One continuous pill bar; selected tab is a filled inner pill. PILOT / NOT LOCKED — distinct from PILL and SEGMENTED."
+        description="One continuous pill bar; selected tab is a filled inner pill. APPROVED / LOCKED — distinct from PILL and SEGMENTED."
         summary="OUTER BAR · INNER PILL · layout · treatments"
         open={isOpen("tabs.pill-bar")}
         onOpenChange={(open) => setOpen("tabs.pill-bar", open)}
@@ -521,7 +521,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PILL BAR — ICON + TEXT + COUNT">
-            <SampleCard label="Full candidate composition">
+            <SampleCard label="Full composition">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -598,8 +598,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleCard>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="ACTIVE TREATMENT CANDIDATES — NOT LOCKED">
-            <SampleCard label="A — SOLID PRIMARY" hint="Preferred candidate for this style">
+          <StaticSampleGroup title="ACTIVE TREATMENTS — APPROVED (default SOLID)">
+            <SampleCard label="A — SOLID PRIMARY" hint="Default for Pill Bar">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -725,8 +725,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tabs.counts"
         title={t("uiStandards.tabsCountsTitle")}
-        description="CountBadge reused. Label then count. Three count-tone approaches — CANDIDATES / NOT LOCKED."
-        summary="COUNTS · candidates"
+        description="CountBadge reused. Label then count. Three count-tone approaches — APPROVED / LOCKED."
+        summary="COUNTS · locked policy"
         open={isOpen("tabs.counts")}
         onOpenChange={(open) => setOpen("tabs.counts", open)}
         testId="ui-standards-tabs-counts"
@@ -1304,7 +1304,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tabs.cheatsheet"
         title={t("uiStandards.tabsCheatTitle")}
         description={t("uiStandards.tabsCheatLede")}
-        summary="PILOT · NOT LOCKED"
+        summary="APPROVED / LOCKED"
         open={isOpen("tabs.cheatsheet")}
         onOpenChange={(open) => setOpen("tabs.cheatsheet", open)}
         testId="ui-standards-tabs-cheatsheet"
@@ -1339,13 +1339,13 @@ EXAMPLES
   Mobile module navigation      → UNDERLINE TABS + SCROLLABLE
   Mobile pill bar               → PILL BAR TABS + SCROLLABLE
 
-CANDIDATE DEFAULTS (NOT LOCKED)
+LOCKED DEFAULTS
   PAGE / MODULE → UNDERLINE
   CONTENT → SOFT
-  SEPARATE COMPACT → PILL
+  COMPACT CATEGORY / STATUS → PILL
   PROMINENT COMPACT TAB BAR → PILL BAR
   VIEW SWITCHER → SEGMENTED
-  DETAIL PANEL → ENCLOSED
+  DETAIL / RECORD PANEL → ENCLOSED
   SETTINGS → VERTICAL
 
 ICON STRUCTURE
@@ -1356,7 +1356,7 @@ BOUNDARY
   Pages own routes / APIs / permissions / counts source
 
 STATUS
-  PILOT / NOT LOCKED — inspect /ui-standards before locking`}</pre>
+  APPROVED / LOCKED — Docs/UI/exits-tabs-standard.md`}</pre>
         </div>
       </UiStandardsSection>
     </div>

@@ -50,7 +50,7 @@ export type ExitsTabsProps = {
   iconOnly?: boolean;
   /** Equal shares width vs content-sized (esp. pillBar). */
   layout?: ExitsTabsLayout;
-  /** Pill-bar active pill treatment candidate — PILOT / NOT LOCKED. */
+  /** Pill-bar active pill treatment (default solid). */
   activeTreatment?: ExitsTabsActiveTreatment;
   className?: string;
   listClassName?: string;
@@ -61,8 +61,9 @@ export type ExitsTabsProps = {
 };
 
 /**
- * ExItS Tabs visual pilot foundation (PILOT / NOT LOCKED).
+ * ExItS Tabs foundation (APPROVED / LOCKED).
  * Owns presentation + local keyboard/ARIA. Pages own routing and data.
+ * See Docs/UI/exits-tabs-standard.md.
  */
 export function ExitsTabs({
   variant = "underline",

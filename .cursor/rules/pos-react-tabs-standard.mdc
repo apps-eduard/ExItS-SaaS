@@ -1,0 +1,23 @@
+---
+description: PinoyBusinessPOS React ExItS Tabs standard — reuse ExitsTabs; follow Docs/UI/exits-tabs-standard.md
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Tabs Standard
+
+For PinoyBusinessPOS React tab / section-navigation work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-tabs-standard.md` (authoritative contract).
+2. Reuse `ExitsTabs` + `tab-variants.ts`. Do **not** invent page-local visual tab systems when the shared foundation can express the need.
+3. Locked variants: `underline` · `soft` · `pill` · `pillBar` · `segmented` · `enclosed` · `vertical`. Defaults: page/module → UNDERLINE; content → SOFT; compact category/status → PILL; prominent compact bar → PILL BAR; view switcher → SEGMENTED; detail panel → ENCLOSED; settings/admin → VERTICAL.
+4. Keep `variant` + icon + count independent. Pill Bar layouts: `equal` / `content`. Pill Bar ≠ Pill ≠ Segmented.
+5. Counts reuse locked `CountBadge`. Policy: normal → NEUTRAL; semantic WARNING/DANGER only when meaning requires it.
+6. Style selected states through ExItS Primary tokens — **PRIMARY is not hardcoded green**. SUCCESS/WARNING/DANGER/INFO counts stay semantic.
+7. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort). Respect `prefers-reduced-motion`.
+8. Preserve tablist/tab/tabpanel semantics, keyboard (arrows / Home / End), RTL, and scrollable overflow for many tabs.
+9. Pages own routing, APIs, permissions, and count sources — not the Tabs foundation.
+10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+Keep detailed rules in the markdown standard. Visual reference: `/ui-standards` → Tabs.
+Do not modify the locked Button or Chip standards except reusing CountBadge.

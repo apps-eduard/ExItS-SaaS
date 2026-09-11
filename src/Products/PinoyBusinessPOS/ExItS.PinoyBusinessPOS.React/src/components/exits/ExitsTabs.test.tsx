@@ -36,7 +36,7 @@ function ControlledTabs({
   });
 }
 
-describe("ExitsTabs visual pilot", () => {
+describe("ExitsTabs visual foundation", () => {
   it("renders all seven variants including pillBar", () => {
     for (const variant of [
       "underline",

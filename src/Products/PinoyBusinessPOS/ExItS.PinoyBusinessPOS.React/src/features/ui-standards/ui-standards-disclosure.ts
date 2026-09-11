@@ -1,6 +1,6 @@
 export const UI_STANDARDS_SECTIONS_STORAGE_KEY = "exits.uiStandards.sections.v1";
 
-/** Recommended first-load open/closed map (PILOT). */
+/** Recommended first-load open/closed map (UI Standards). */
 export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tables.demo": true,
   "tables.cheatsheet": false,

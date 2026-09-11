@@ -1,8 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
 /**
- * ExItS Tabs visual foundation (PILOT / NOT LOCKED).
+ * ExItS Tabs visual foundation (APPROVED / LOCKED).
  * Variant / orientation / icon / count / layout are independent dimensions.
+ * See Docs/UI/exits-tabs-standard.md and /ui-standards → Tabs.
  */
 export type ExitsTabsVariant =
   | "underline"
@@ -16,7 +17,7 @@ export type ExitsTabsVariant =
 /** Equal shares available width; content sizes to label. */
 export type ExitsTabsLayout = "equal" | "content";
 
-/** Pill-bar active inner pill treatment candidates (NOT LOCKED). */
+/** Pill-bar active inner pill treatment (default: solid). */
 export type ExitsTabsActiveTreatment = "solid" | "accent";
 
 export const exitsTabsListVariants = cva("exits-tabs__list flex", {

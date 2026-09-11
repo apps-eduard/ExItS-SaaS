@@ -118,7 +118,7 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-tabs-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-variants")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-counts")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-tabs-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet")).toHaveTextContent("APPROVED / LOCKED");
     expect(screen.getByTestId("ui-standards-tabs-demo-underline")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-demo-pill")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-pill-bar")).toBeInTheDocument();
@@ -126,6 +126,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-tabs-icon-options")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("PILL BAR TABS");
     expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("EQUAL WIDTH");
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent(
+      "Docs/UI/exits-tabs-standard.md",
+    );
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {
