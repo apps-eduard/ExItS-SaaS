@@ -8,6 +8,8 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
+  CardMedia,
+  CardReveal,
   CardTitle,
 } from "@/components/ui/card";
 import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
@@ -109,12 +111,55 @@ describe("ExItS Card visual pilot foundation", () => {
     expect(card.className).toMatch(/shadow-\[var\(--exits-shadow-sm\)\]/);
   });
 
+  it("supports expand motion via transform scale classes", () => {
+    render(
+      createElement(
+        Card,
+        {
+          interactive: true,
+          motion: "expand",
+          expandScale: "standard",
+          "data-testid": "card-expand",
+        },
+        "Expand",
+      ),
+    );
+    const card = screen.getByTestId("card-expand");
+    expect(card).toHaveAttribute("data-motion", "expand");
+    expect(card).toHaveAttribute("data-expand-scale", "standard");
+    expect(card.className).toMatch(/hover:scale-\[1\.02\]/);
+    expect(card.className).not.toMatch(/hover:w-/);
+  });
+
+  it("defaults interactive cards to lift motion", () => {
+    render(
+      createElement(Card, { interactive: true, "data-testid": "card-lift-default" }, "Lift"),
+    );
+    expect(screen.getByTestId("card-lift-default")).toHaveAttribute("data-motion", "lift");
+  });
+
+  it("supports media zoom and reveal helpers", () => {
+    render(
+      createElement(
+        Card,
+        { reveal: true, interactive: true, "data-testid": "card-reveal" },
+        createElement(CardMedia, { zoom: true, "data-testid": "card-media" }, "img"),
+        createElement(CardReveal, { "data-testid": "card-reveal-slot" }, "Action"),
+      ),
+    );
+    expect(screen.getByTestId("card-reveal")).toHaveAttribute("data-reveal", "true");
+    expect(screen.getByTestId("card-media")).toHaveAttribute("data-zoom", "true");
+    expect(screen.getByTestId("card-reveal-slot")).toBeInTheDocument();
+  });
+
   it("UI Standards cards disclosure defaults match pilot map", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.treatments"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.kpi"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.entity"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.selectable"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.real-world"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["cards.motion"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["cards.featured-effects"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.basic"]).toBe(false);
     expect(UI_STANDARDS_DEFAULT_OPEN["cards.cheatsheet"]).toBe(false);
   });

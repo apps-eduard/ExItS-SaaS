@@ -146,6 +146,23 @@ describe("UiStandardsPage", () => {
     expect(within(warehouseGroup).getByRole("radio", { name: /Kalibo Warehouse/i })).toBeDisabled();
     expect(screen.getByText("Mica Trading")).toBeInTheDocument();
     expect(screen.getByText("Supplier · Cebu")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-motion")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-featured-effects")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-card-motion-expand")).toHaveAttribute(
+      "data-motion",
+      "expand",
+    );
+    expect(screen.getByTestId("ui-standards-card-expand-standard")).toHaveAttribute(
+      "data-expand-scale",
+      "standard",
+    );
+    expect(screen.getByTestId("ui-standards-card-featured")).toHaveAttribute(
+      "data-treatment",
+      "featured",
+    );
+    expect(screen.getByTestId("ui-standards-card-media-zoom").querySelector("[data-zoom=true]")).not.toBeNull();
+    expect(screen.getByTestId("ui-standards-card-hover-reveal")).toHaveAttribute("data-reveal", "true");
+    expect(screen.getByTestId("ui-standards-card-pricing")).toBeInTheDocument();
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

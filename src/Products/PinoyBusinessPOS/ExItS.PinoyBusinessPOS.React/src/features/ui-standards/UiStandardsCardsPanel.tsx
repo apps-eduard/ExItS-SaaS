@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from "react";
 import {
   Building2,
+  Check,
   Circle,
   CircleCheck,
   ClipboardList,
+  Clock3,
   Coins,
   MoreHorizontal,
   Package,
@@ -21,6 +23,7 @@ import {
   CardFooter,
   CardHeader,
   CardMedia,
+  CardReveal,
   CardTitle,
 } from "@/components/ui/card";
 import { CountBadge } from "@/components/exits/CountChip";
@@ -1169,6 +1172,355 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       </UiStandardsSection>
 
       <UiStandardsSection
+        id="cards.motion"
+        title={t("uiStandards.cardsMotionTitle")}
+        description="Hover micro-interactions use transform/opacity only — no layout shift. PILOT / NOT LOCKED."
+        summary="STATIC · LIFT · EXPAND · ACCENT"
+        open={isOpen("cards.motion")}
+        onOpenChange={(open) => setOpen("cards.motion", open)}
+        testId="ui-standards-cards-motion"
+      >
+        <div className="grid gap-3">
+          <StaticSampleGroup title="MOTION RECOMMENDATIONS — CANDIDATE / NOT LOCKED">
+            <SampleFrame label="CANDIDATE" className="sm:col-span-2 lg:col-span-3">
+              <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
+                <div>NORMAL INFORMATION CARD → STATIC</div>
+                <div>CLICKABLE ENTITY → LIFT</div>
+                <div>PROMINENT CLICKABLE CARD → EXPAND</div>
+                <div>FEATURED / RECOMMENDED → ACCENT + EXPAND</div>
+                <div>PRODUCT / MEDIA → MEDIA ZOOM · optional LIFT</div>
+                <div>SELECTABLE → selection transition only (no strong expand)</div>
+                <div>KPI → STATIC · LIFT only if clickable</div>
+              </div>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="CARD MOTION — HOVER TO COMPARE">
+            <SampleFrame label="STATIC" className="sm:col-span-2 lg:col-span-3">
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr))]">
+                {(
+                  [
+                    { label: "STATIC", motion: "none" as const, extraLift: false },
+                    { label: "LIFT", motion: "lift" as const, extraLift: false },
+                    { label: "EXPAND", motion: "expand" as const, extraLift: false },
+                    { label: "ACCENT", motion: "accent" as const, extraLift: false },
+                    { label: "LIFT + ACCENT", motion: "accent" as const, extraLift: true },
+                  ] as const
+                ).map((item) => (
+                  <Card
+                    key={item.label}
+                    treatment="bordered"
+                    interactive
+                    motion={item.extraLift ? "lift" : item.motion}
+                    className={cn(
+                      item.extraLift &&
+                        "hover:border-[var(--exits-primary)] hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_22%,transparent),var(--exits-shadow-md)]",
+                    )}
+                    data-testid={
+                      item.motion === "expand"
+                        ? "ui-standards-card-motion-expand"
+                        : item.motion === "lift" && !item.extraLift
+                          ? "ui-standards-card-motion-lift"
+                          : undefined
+                    }
+                  >
+                    <CardTitle as="h4">Kizy Fruits</CardTitle>
+                    <CardDescription>Main Branch · Iloilo</CardDescription>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <TagChip tone="info">B2B</TagChip>
+                      <StatusChip tone="success">Active</StatusChip>
+                    </div>
+                    <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                      {item.label}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="EXPAND INTENSITY — CANDIDATE / NOT LOCKED">
+            {(
+              [
+                { label: "SUBTLE · ~1.01", scale: "subtle" as const },
+                { label: "STANDARD · ~1.02", scale: "standard" as const },
+                { label: "STRONG · ~1.03", scale: "strong" as const },
+              ] as const
+            ).map((item) => (
+              <SampleFrame key={item.scale} label={item.label}>
+                <Card
+                  treatment="bordered"
+                  interactive
+                  motion="expand"
+                  expandScale={item.scale}
+                  data-testid={`ui-standards-card-expand-${item.scale}`}
+                >
+                  <CardTitle as="h4">Warehouse</CardTitle>
+                  <CardDescription>Hover to compare expand intensity.</CardDescription>
+                </Card>
+              </SampleFrame>
+            ))}
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="ENTITY · LIFT VS EXPAND">
+            <SampleFrame label="LIFT">
+              <Card treatment="bordered" interactive motion="lift">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <EntityAvatar initials="KF" />
+                  <div className="min-w-0">
+                    <CardTitle as="h4">Kizy Fruits</CardTitle>
+                    <CardDescription>Main Branch</CardDescription>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <TagChip tone="info">B2B</TagChip>
+                  <StatusChip tone="success">Active</StatusChip>
+                </div>
+              </Card>
+            </SampleFrame>
+            <SampleFrame label="EXPAND">
+              <Card treatment="bordered" interactive motion="expand">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <EntityAvatar initials="KF" />
+                  <div className="min-w-0">
+                    <CardTitle as="h4">Kizy Fruits</CardTitle>
+                    <CardDescription>Main Branch</CardDescription>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <TagChip tone="info">B2B</TagChip>
+                  <StatusChip tone="success">Active</StatusChip>
+                </div>
+              </Card>
+            </SampleFrame>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="cards.featured-effects"
+        title={t("uiStandards.cardsFeaturedEffectsTitle")}
+        description="Special-use treatments — not default business cards. SPECIAL USE · PILOT."
+        summary="FEATURED · MEDIA ZOOM · PRICING · REVEAL"
+        open={isOpen("cards.featured-effects")}
+        onOpenChange={(open) => setOpen("cards.featured-effects", open)}
+        testId="ui-standards-cards-featured-effects"
+      >
+        <div className="grid gap-3">
+          <StaticSampleGroup title="PRICING / PLAN CARD — SPECIAL USE">
+            <SampleFrame label="PLANS" className="sm:col-span-2 lg:col-span-3">
+              <div
+                className="grid items-stretch gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr))]"
+                data-testid="ui-standards-card-pricing"
+              >
+                <Card treatment="bordered" motion="lift" className="h-full">
+                  <CardTitle as="h4">Starter</CardTitle>
+                  <CardDescription>For a single branch.</CardDescription>
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                    {formatPeso(499)}
+                    <span className="text-[length:var(--exits-text-sm)] font-normal text-muted">
+                      {" "}
+                      / month
+                    </span>
+                  </p>
+                  <ul className="m-0 mt-3 list-none space-y-1.5 p-0 text-[length:var(--exits-text-sm)] text-muted">
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      1 branch
+                    </li>
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Basic reports
+                    </li>
+                  </ul>
+                  <CardFooter className="mt-4 justify-stretch border-t-0 pt-0">
+                    <Button type="button" variant="outline" shape="soft" className="w-full">
+                      Choose plan
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card
+                  treatment="featured"
+                  motion="featured"
+                  className="relative h-full"
+                  data-testid="ui-standards-card-featured"
+                >
+                  <div className="absolute -top-2 end-3">
+                    <StatusChip tone="primary">Recommended</StatusChip>
+                  </div>
+                  <CardTitle as="h4">Growth</CardTitle>
+                  <CardDescription>Most shops start here.</CardDescription>
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                    {formatPeso(999)}
+                    <span className="text-[length:var(--exits-text-sm)] font-normal text-muted">
+                      {" "}
+                      / month
+                    </span>
+                  </p>
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted line-through">
+                    {formatPeso(1299)}
+                  </p>
+                  <ul className="m-0 mt-3 list-none space-y-1.5 p-0 text-[length:var(--exits-text-sm)] text-muted">
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Multi-branch
+                    </li>
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Inventory alerts
+                    </li>
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Supplier links
+                    </li>
+                  </ul>
+                  <CardFooter className="mt-4 justify-stretch border-t-0 pt-0">
+                    <Button type="button" variant="default" shape="soft" className="w-full">
+                      Choose plan
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card treatment="bordered" motion="lift" className="h-full">
+                  <CardTitle as="h4">Pro Plus</CardTitle>
+                  <CardDescription>For multi-org operations.</CardDescription>
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                    {formatPeso(1999)}
+                    <span className="text-[length:var(--exits-text-sm)] font-normal text-muted">
+                      {" "}
+                      / month
+                    </span>
+                  </p>
+                  <ul className="m-0 mt-3 list-none space-y-1.5 p-0 text-[length:var(--exits-text-sm)] text-muted">
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Everything in Growth
+                    </li>
+                    <li className="flex gap-2">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      Priority support
+                    </li>
+                  </ul>
+                  <CardFooter className="mt-4 justify-stretch border-t-0 pt-0">
+                    <Button type="button" variant="outline" shape="soft" className="w-full">
+                      Choose plan
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="GRADIENT BORDER — SPECIAL / FEATURED USE">
+            <SampleFrame label="SHOWCASE ONLY" className="sm:col-span-2 lg:col-span-3">
+              <div
+                className="rounded-[calc(var(--exits-radius-md)+1px)] bg-gradient-to-br from-[var(--exits-primary)] to-[var(--exits-info)] p-px"
+                data-testid="ui-standards-card-gradient-border"
+              >
+                <Card treatment="surface" className="border-0 shadow-none">
+                  <CardTitle as="h4">Featured media slot</CardTitle>
+                  <CardDescription>
+                    Thin Primary → Info edge only. Not a default treatment — showcase candidate.
+                  </CardDescription>
+                </Card>
+              </div>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="MEDIA ZOOM">
+            <SampleFrame label="ZOOM ONLY">
+              <Card treatment="bordered" interactive motion="none" data-testid="ui-standards-card-media-zoom">
+                <CardMedia zoom className="aspect-[4/3] w-full">
+                  <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
+                </CardMedia>
+                <CardTitle as="h4" className="mt-2">
+                  Apple
+                </CardTitle>
+                <CardDescription>{formatPeso(120)} / kg</CardDescription>
+              </Card>
+            </SampleFrame>
+            <SampleFrame label="LIFT + MEDIA ZOOM">
+              <Card treatment="bordered" interactive motion="lift">
+                <CardMedia zoom className="aspect-[4/3] w-full">
+                  <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
+                </CardMedia>
+                <CardTitle as="h4" className="mt-2">
+                  Apple
+                </CardTitle>
+                <CardDescription>{formatPeso(120)} / kg</CardDescription>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <TagChip tone="neutral">Weighted</TagChip>
+                  <StatusChip tone="warning">Low stock</StatusChip>
+                </div>
+              </Card>
+            </SampleFrame>
+            <SampleFrame label="NO IMAGE · NO ZOOM">
+              <Card treatment="bordered" interactive motion="lift">
+                <CardMedia className="aspect-[4/3] w-full">
+                  <ProductImagePlaceholder label="No product image" />
+                </CardMedia>
+                <CardTitle as="h4" className="mt-2">
+                  Banana
+                </CardTitle>
+                <CardDescription>Fallback stays calm — no fake zoom.</CardDescription>
+              </Card>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="HOVER REVEAL — SPECIAL USE">
+            <SampleFrame label="ACTIONS ON HOVER / FOCUS" className="sm:col-span-2">
+              <Card
+                treatment="bordered"
+                motion="lift"
+                reveal
+                className="relative"
+                data-testid="ui-standards-card-hover-reveal"
+              >
+                <CardTitle as="h4">Kizy Fruits</CardTitle>
+                <CardDescription>Customer</CardDescription>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <TagChip tone="info">B2B</TagChip>
+                  <StatusChip tone="success">Active</StatusChip>
+                </div>
+                <CardReveal>
+                  <Button type="button" variant="outline" shape="soft">
+                    View details
+                  </Button>
+                </CardReveal>
+              </Card>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="COUNTDOWN / INFO STRIP">
+            <SampleFrame label="COMPACT HORIZONTAL · ACCENT" className="sm:col-span-2 lg:col-span-3">
+              <Card
+                treatment="accent"
+                accentTone="primary"
+                accentPosition="start"
+                layout="horizontal"
+                padding="compact"
+                className="items-center"
+                data-testid="ui-standards-card-countdown"
+              >
+                <Clock3 className="size-5 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
+                    Promo ends in
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-3 text-[length:var(--exits-text-sm)] font-semibold tabular-nums">
+                    <span>2 Days</span>
+                    <span>04 Hours</span>
+                    <span>18 Minutes</span>
+                  </div>
+                </div>
+              </Card>
+            </SampleFrame>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
         id="cards.cheatsheet"
         title={t("uiStandards.cardsCheatTitle")}
         description={t("uiStandards.cardsCheatLede")}
@@ -1187,95 +1539,49 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           <pre className="m-0 whitespace-pre-wrap">{`CARD STANDARD
 PILOT / NOT LOCKED
 
-TYPES:
+TYPES
+  BASIC · SUMMARY · KPI · ACTION · ENTITY · PRODUCT · SELECTABLE · STATUS · COMPACT
 
-BASIC CARD
-SUMMARY CARD
-KPI CARD
-ACTION CARD
-ENTITY CARD
-PRODUCT CARD
-SELECTABLE CARD
-STATUS CARD
-COMPACT CARD
+TREATMENTS
+  SURFACE · BORDERED · ELEVATED · INTERACTIVE · SELECTED · ACCENT · FEATURED
 
-TREATMENTS:
+MOTION
+  STATIC · LIFT · EXPAND · ACCENT · MEDIA ZOOM · HOVER REVEAL
 
-SURFACE
-BORDERED
-ELEVATED
-INTERACTIVE
-SELECTED
-ACCENT
+EXPAND SCALE (CANDIDATE)
+  SUBTLE ~1.01 · STANDARD ~1.02 · STRONG ~1.03
 
-LAYOUT:
+LAYOUT
+  VERTICAL · HORIZONTAL
 
-VERTICAL
-HORIZONTAL
+OPTIONS
+  WITH ICON · WITH CHIP · WITH COUNT · WITH IMAGE · WITH FOOTER · WITH ACTIONS
 
-OPTIONS:
+EXAMPLES
+  Customer → ENTITY CARD + INTERACTIVE + LIFT
+  Featured customer → ENTITY CARD + ACCENT + EXPAND
+  Product → PRODUCT CARD + MEDIA ZOOM
+  Interactive product → PRODUCT CARD + LIFT + MEDIA ZOOM
+  Quick action → ACTION CARD + EXPAND
+  Recommended plan → FEATURED CARD + ACCENT + EXPAND
+  Selectable warehouse → SELECTABLE CARD (no strong expand)
+  Promo strip → COMPACT CARD + ACCENT
 
-WITH ICON
-WITH CHIP
-WITH COUNT
-WITH IMAGE
-WITH FOOTER
-WITH ACTIONS
+MOTION DEFAULTS (CANDIDATE / NOT LOCKED)
+  NORMAL INFORMATION → STATIC
+  CLICKABLE ENTITY → LIFT
+  PROMINENT CLICKABLE → EXPAND
+  FEATURED / RECOMMENDED → ACCENT + EXPAND
+  PRODUCT / MEDIA → MEDIA ZOOM · optional LIFT
+  SELECTABLE → selection only
+  KPI → STATIC · LIFT if clickable
 
-Examples:
-
-Today's sales
-KPI CARD
-
-Customer
-ENTITY CARD + WITH CHIP + WITH ACTIONS
-
-Product
-PRODUCT CARD + WITH IMAGE + WITH CHIP
-
-Warehouse selector
-SELECTABLE CARD
-
-Quick action
-ACTION CARD + BORDERED
-
-Low stock warning
-STATUS CARD WARNING
-
-Dense warehouse summary
-COMPACT CARD
-
-Clickable customer
-ENTITY CARD + INTERACTIVE
-
-DEFAULT RECOMMENDATION CANDIDATES — CANDIDATE / NOT LOCKED
-
-NORMAL CONTENT
-→ BORDERED / SURFACE
-
-DASHBOARD METRIC
-→ KPI CARD
-
-BUSINESS ENTITY
-→ ENTITY CARD
-
-PRODUCT
-→ PRODUCT CARD
-
-QUICK ACTION
-→ ACTION CARD
-
-SELECTION
-→ SELECTABLE CARD
-
-WARNING / ERROR SUMMARY
-→ STATUS CARD
-
-DENSE BUSINESS INFO
-→ COMPACT CARD
+BOUNDARY
+  Cards own presentation / motion
+  Pages own routes / APIs / permissions
 
 STATUS
-PILOT / NOT LOCKED`}</pre>
+  PILOT / NOT LOCKED — inspect /ui-standards`}</pre>
         </div>
       </UiStandardsSection>
     </div>

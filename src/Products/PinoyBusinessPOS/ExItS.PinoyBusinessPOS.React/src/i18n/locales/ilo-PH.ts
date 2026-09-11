@@ -3006,6 +3006,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "uiStandards.cardsStatusTitle": "Status / accent cards",
   "uiStandards.cardsCompactTitle": "Compact cards",
   "uiStandards.cardsStatesTitle": "States",
+  "uiStandards.cardsMotionTitle": "Card motion",
+  "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
   "uiStandards.cardsCheatLede": "Candidate vocabulary para iti Cursor tasks. PILOT — saan pay locked.",

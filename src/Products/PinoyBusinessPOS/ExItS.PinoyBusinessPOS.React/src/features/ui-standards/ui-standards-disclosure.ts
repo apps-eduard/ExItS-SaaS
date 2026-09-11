@@ -57,6 +57,8 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "cards.status": false,
   "cards.compact": false,
   "cards.states": false,
+  "cards.motion": true,
+  "cards.featured-effects": true,
   "cards.cheatsheet": false,
 };
 

@@ -7,10 +7,13 @@ import {
 } from "react";
 import { cn } from "@/lib/cn";
 import {
+  exitsCardMediaVariants,
   exitsCardVariants,
   type ExitsCardAccentPosition,
   type ExitsCardAccentTone,
+  type ExitsCardExpandScale,
   type ExitsCardLayout,
+  type ExitsCardMotion,
   type ExitsCardPadding,
   type ExitsCardRadius,
   type ExitsCardTreatment,
@@ -18,6 +21,8 @@ import {
 
 export type {
   ExitsCardTreatment,
+  ExitsCardMotion,
+  ExitsCardExpandScale,
   ExitsCardRadius,
   ExitsCardPadding,
   ExitsCardLayout,
@@ -29,10 +34,17 @@ type CardElement = "section" | "div" | "article" | "button" | "label";
 
 export type CardProps = {
   className?: string;
-  children: ReactNode;
+  children?: ReactNode;
   as?: CardElement;
   /** Visual treatment — PILOT / NOT LOCKED. Default matches legacy bordered surface. */
   treatment?: ExitsCardTreatment;
+  /**
+   * Hover motion candidate — PILOT / NOT LOCKED.
+   * When `interactive` and unset, defaults to `lift`.
+   */
+  motion?: ExitsCardMotion;
+  /** Expand intensity when motion="expand". Default standard (~1.02). */
+  expandScale?: ExitsCardExpandScale;
   radius?: ExitsCardRadius;
   padding?: ExitsCardPadding;
   layout?: ExitsCardLayout;
@@ -46,13 +58,19 @@ export type CardProps = {
   interactive?: boolean;
   /** Marks selected appearance (also use treatment="selected" when preferred). */
   selected?: boolean;
+  /** Reserve footer band for CardReveal (no height jump on hover). */
+  reveal?: boolean;
+  /** Native button/disabled when rendered as `button` (e.g. selectable options). */
+  disabled?: boolean;
   /** Native button type when rendered as `button`. */
   type?: "button" | "submit" | "reset";
-} & Omit<HTMLAttributes<HTMLElement>, "as" | "type">;
+  /** Testing / query attribute (explicit for createElement consumers). */
+  "data-testid"?: string;
+} & Omit<HTMLAttributes<HTMLElement>, "as" | "type" | "disabled">;
 
 /**
  * ExItS Card foundation (PILOT / NOT LOCKED).
- * Anatomy helpers: CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardMedia.
+ * Anatomy helpers: CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardMedia, CardReveal.
  */
 export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   {
@@ -60,6 +78,8 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     children,
     as,
     treatment = "bordered",
+    motion,
+    expandScale = "standard",
     radius = "standard",
     padding = "default",
     layout = "vertical",
@@ -67,6 +87,8 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     accentPosition = "start",
     interactive = false,
     selected = false,
+    reveal = false,
+    disabled,
     type,
     onClick,
     onKeyDown,
@@ -75,7 +97,10 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   ref,
 ) {
   const resolvedTreatment: ExitsCardTreatment =
-    selected && treatment !== "accent" ? "selected" : treatment;
+    selected && treatment !== "accent" && treatment !== "featured"
+      ? "selected"
+      : treatment;
+  const resolvedMotion: ExitsCardMotion = motion ?? (interactive ? "lift" : "none");
   const Comp: CardElement = as ?? (interactive ? "button" : "section");
 
   function handleKeyDown(e: KeyboardEvent<HTMLElement>) {
@@ -94,9 +119,13 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
       ...props,
       ref,
       type: Comp === "button" ? (type ?? "button") : undefined,
+      disabled: Comp === "button" ? disabled : undefined,
       "data-treatment": resolvedTreatment,
+      "data-motion": resolvedMotion,
+      "data-expand-scale": resolvedMotion === "expand" ? expandScale : undefined,
       "data-selected": selected ? "true" : undefined,
       "data-interactive": interactive ? "true" : undefined,
+      "data-reveal": reveal ? "true" : undefined,
       tabIndex: interactive && Comp !== "button" ? (props.tabIndex ?? 0) : props.tabIndex,
       role:
         props.role ??
@@ -106,11 +135,14 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
       className: cn(
         exitsCardVariants({
           treatment: resolvedTreatment,
+          motion: resolvedMotion,
+          expandScale: resolvedMotion === "expand" ? expandScale : "standard",
           radius,
           padding,
           layout,
           accentTone: resolvedTreatment === "accent" ? accentTone : "neutral",
           accentPosition: resolvedTreatment === "accent" ? accentPosition : "start",
+          reveal,
         }),
         className,
       ),
@@ -201,12 +233,38 @@ export function CardFooter({
 export function CardMedia({
   className,
   children,
+  zoom = false,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement> & { zoom?: boolean; "data-testid"?: string }) {
+  return (
+    <div
+      data-zoom={zoom ? "true" : undefined}
+      className={cn(exitsCardMediaVariants({ zoom }), className)}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Overlay actions revealed on card hover / focus-within.
+ * Pair with Card `reveal` so reserved space prevents height jump.
+ * Always visible under prefers-reduced-motion and focus-within (touch/keyboard safe).
+ */
+export function CardReveal({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { "data-testid"?: string }) {
   return (
     <div
       className={cn(
-        "exits-card__media shrink-0 overflow-hidden rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)]",
+        "pointer-events-none absolute inset-x-0 bottom-0 z-[1] flex justify-end gap-2 p-3",
+        "translate-y-1 opacity-0 transition-[opacity,transform] duration-[180ms] ease-[var(--exits-ease-standard)]",
+        "group-hover/card:pointer-events-auto group-hover/card:translate-y-0 group-hover/card:opacity-100",
+        "group-focus-within/card:pointer-events-auto group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100",
+        "motion-reduce:pointer-events-auto motion-reduce:translate-y-0 motion-reduce:opacity-100",
         className,
       )}
       {...props}

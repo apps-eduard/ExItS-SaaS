@@ -78,6 +78,8 @@ export const en = {
   "uiStandards.cardsStatusTitle": "Status / accent cards",
   "uiStandards.cardsCompactTitle": "Compact cards",
   "uiStandards.cardsStatesTitle": "States",
+  "uiStandards.cardsMotionTitle": "Card motion",
+  "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
   "uiStandards.cardsCheatLede": "Candidate vocabulary for Cursor tasks. PILOT — not locked.",
