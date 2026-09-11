@@ -36,6 +36,7 @@ function SampleCard({
   hint,
   command,
   commandContext,
+  explanatory,
 }: {
   label: string;
   children: ReactNode;
@@ -43,6 +44,7 @@ function SampleCard({
   hint?: string;
   command?: string;
   commandContext?: string;
+  explanatory?: boolean;
 }) {
   return (
     <UiStandardsSampleCard
@@ -53,6 +55,7 @@ function SampleCard({
       standard="Button"
       command={command}
       commandContext={commandContext}
+      explanatory={explanatory}
     >
       {children}
     </UiStandardsSampleCard>
@@ -170,6 +173,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
           [
             {
               label: "PRIMARY / Save",
+              intent: "PRIMARY",
+              iconContext: "ICON: Save",
               render: (shape: "standard" | "soft" | "pill") => (
                 <Button type="button" shape={shape}>
                   <Save className="size-4" aria-hidden />
@@ -179,6 +184,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             },
             {
               label: "SUCCESS / Approve",
+              intent: "SUCCESS",
+              iconContext: "ICON: Check",
               render: (shape: "standard" | "soft" | "pill") => (
                 <Button type="button" variant="success" shape={shape}>
                   <Check className="size-4" aria-hidden />
@@ -188,6 +195,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             },
             {
               label: "WARNING / Deactivate",
+              intent: "WARNING",
+              iconContext: "ICON: Power",
               render: (shape: "standard" | "soft" | "pill") => (
                 <Button type="button" variant="warning" shape={shape}>
                   <Power className="size-4" aria-hidden />
@@ -197,6 +206,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             },
             {
               label: "DANGER / Delete",
+              intent: "DANGER",
+              iconContext: "ICON: Trash2",
               render: (shape: "standard" | "soft" | "pill") => (
                 <Button type="button" variant="destructive" shape={shape}>
                   <Trash2 className="size-4" aria-hidden />
@@ -210,16 +221,15 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">{row.label}</p>
             <div className="grid gap-2 sm:grid-cols-3">
               {(["standard", "soft", "pill"] as const).map((shape) => (
-                <div
+                <SampleCard
                   key={shape}
-                  className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-                  data-testid={`ui-standards-shape-${row.label.split(" / ")[0]?.toLowerCase()}-${shape}`}
+                  label={shape}
+                  testId={`ui-standards-shape-${row.label.split(" / ")[0]?.toLowerCase()}-${shape}`}
+                  command={`${row.intent} + ${shape.toUpperCase()} + WITH ICON`}
+                  commandContext={row.iconContext}
                 >
-                  <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-                    {shape}
-                  </span>
                   {row.render(shape)}
-                </div>
+                </SampleCard>
               ))}
             </div>
           </div>
@@ -240,19 +250,18 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                 { id: "x", label: "X", Icon: X },
               ] as const
             ).map((opt) => (
-              <div
+              <SampleCard
                 key={opt.id}
-                className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-                data-testid={`ui-standards-shape-cancel-${opt.id}`}
+                label={opt.label}
+                testId={`ui-standards-shape-cancel-${opt.id}`}
+                command="MUTED + SOFT + WITH ICON"
+                commandContext={`ICON: ${opt.label}`}
               >
-                <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-                  {opt.label}
-                </span>
                 <Button type="button" variant="secondary" shape="soft">
                   <opt.Icon className="size-4" aria-hidden />
                   Cancel
                 </Button>
-              </div>
+              </SampleCard>
             ))}
           </div>
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
@@ -272,36 +281,34 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
       >
         <div className="grid gap-2 sm:grid-cols-3">
           {(["flat", "elevated", "gradient"] as const).map((treatment) => (
-            <div
+            <SampleCard
               key={treatment}
-              className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-              data-testid={`ui-standards-treatment-primary-${treatment}`}
+              label={treatment}
+              testId={`ui-standards-treatment-primary-${treatment}`}
+              command={`PRIMARY + SOFT + ${treatment.toUpperCase()} + WITH ICON`}
+              commandContext="ICON: Save"
             >
-              <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-                {treatment}
-              </span>
               <Button type="button" shape="soft" treatment={treatment}>
                 <Save className="size-4" aria-hidden />
                 Save
               </Button>
-            </div>
+            </SampleCard>
           ))}
         </div>
         <div className="grid gap-2 border-t border-border pt-3 sm:grid-cols-3">
           {(["flat", "elevated", "gradient"] as const).map((treatment) => (
-            <div
+            <SampleCard
               key={treatment}
-              className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-              data-testid={`ui-standards-treatment-danger-strong-${treatment}`}
+              label={`DANGER STRONG · ${treatment}`}
+              testId={`ui-standards-treatment-danger-strong-${treatment}`}
+              command={`DANGER STRONG + SOFT + ${treatment.toUpperCase()} + WITH ICON`}
+              commandContext="ICON: Trash2"
             >
-              <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-                DANGER STRONG · {treatment}
-              </span>
               <Button type="button" variant="dangerStrong" shape="soft" treatment={treatment}>
                 <Trash2 className="size-4" aria-hidden />
                 Delete permanently
               </Button>
-            </div>
+            </SampleCard>
           ))}
         </div>
       </UiStandardsSection>
@@ -323,19 +330,23 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Save" command="PRIMARY + SOFT + WITH ICON">
+                  <SampleCard label="Save" command="PRIMARY + SOFT + WITH ICON" commandContext="ICON: Save">
                     <Button type="button" shape="soft">
                       <Save className="size-4" aria-hidden />
                       Save
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Add product">
+                  <SampleCard label="Add product" command="PRIMARY + SOFT + WITH ICON" commandContext="ICON: Plus">
                     <Button type="button" shape="soft">
                       <Plus className="size-4" aria-hidden />
                       Add product
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Continue">
+                  <SampleCard
+                    label="Continue"
+                    command="PRIMARY + SOFT + WITH ICON"
+                    commandContext={"ICON: ArrowRight\nICON POSITION: RIGHT"}
+                  >
                     <Button type="button" shape="soft">
                       Continue
                       <ArrowRight className="size-4" aria-hidden />
@@ -350,19 +361,19 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Approve" command="SUCCESS + WITH ICON">
+                  <SampleCard label="Approve" command="SUCCESS + WITH ICON" commandContext="ICON: Check">
                     <Button type="button" variant="success" shape="soft">
                       <Check className="size-4" aria-hidden />
                       Approve
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Accept order">
+                  <SampleCard label="Accept order" command="SUCCESS + WITH ICON" commandContext="ICON: Check">
                     <Button type="button" variant="success" shape="soft">
                       <Check className="size-4" aria-hidden />
                       Accept order
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Mark paid">
+                  <SampleCard label="Mark paid" command="SUCCESS + WITH ICON" commandContext="ICON: CheckCircle2">
                     <Button type="button" variant="success" shape="soft">
                       <CheckCircle2 className="size-4" aria-hidden />
                       Mark paid
@@ -386,13 +397,18 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                           Cancel
                         </Button>
                       </SampleCard>
-                      <SampleCard label="Corner up left" testId="ui-standards-cancel-corner-up-left">
+                      <SampleCard
+                        label="Corner up left"
+                        testId="ui-standards-cancel-corner-up-left"
+                        command="MUTED + WITH ICON"
+                        commandContext="ICON: CornerUpLeft"
+                      >
                         <Button type="button" variant="secondary" shape="soft">
                           <CornerUpLeft className="size-4" aria-hidden />
                           Cancel
                         </Button>
                       </SampleCard>
-                      <SampleCard label="X" testId="ui-standards-cancel-x">
+                      <SampleCard label="X" testId="ui-standards-cancel-x" command="MUTED + WITH ICON" commandContext="ICON: X">
                         <Button type="button" variant="secondary" shape="soft">
                           <X className="size-4" aria-hidden />
                           Cancel
@@ -403,7 +419,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                       {t("uiStandards.cancelIconPilotNote")}
                     </p>
                   </div>
-                  <SampleCard label="Close (X)">
+                  <SampleCard label="Close (X)" command="MUTED + WITH ICON" commandContext="ICON: X">
                     <Button type="button" variant="secondary" shape="soft">
                       <X className="size-4" aria-hidden />
                       Close
@@ -418,12 +434,12 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "2 examples",
               body: (
                 <>
-                  <SampleCard label="Change branch">
+                  <SampleCard label="Change branch" command="OUTLINE">
                     <Button type="button" variant="outline">
                       Change branch
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Download">
+                  <SampleCard label="Download" command="OUTLINE">
                     <Button type="button" variant="outline">
                       Download
                     </Button>
@@ -437,13 +453,13 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "2 examples",
               body: (
                 <>
-                  <SampleCard label="Back">
+                  <SampleCard label="Back" command="GHOST + WITH ICON" commandContext="ICON: ArrowLeft">
                     <Button type="button" variant="ghost">
                       <ArrowLeft className="size-4" aria-hidden />
                       Back
                     </Button>
                   </SampleCard>
-                  <SampleCard label="More">
+                  <SampleCard label="More" command="GHOST + WITH ICON" commandContext="ICON: MoreHorizontal">
                     <Button type="button" variant="ghost">
                       <MoreHorizontal className="size-4" aria-hidden />
                       More
@@ -458,13 +474,17 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "2 examples",
               body: (
                 <>
-                  <SampleCard label="View details">
+                  <SampleCard label="View details" command="INFO + WITH ICON" commandContext="ICON: Eye">
                     <Button type="button" variant="info">
                       <Eye className="size-4" aria-hidden />
                       View details
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Preview">
+                  <SampleCard
+                    label="Preview"
+                    command="INFO + WITH ICON"
+                    commandContext={"ICON: ExternalLink\nICON POSITION: RIGHT"}
+                  >
                     <Button type="button" variant="info">
                       Preview
                       <ExternalLink className="size-4" aria-hidden />
@@ -479,13 +499,13 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Deactivate">
+                  <SampleCard label="Deactivate" command="WARNING + WITH ICON" commandContext="ICON: Power">
                     <Button type="button" variant="warning">
                       <Power className="size-4" aria-hidden />
                       Deactivate
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Pause">
+                  <SampleCard label="Pause" command="WARNING + WITH ICON" commandContext="ICON: Pause">
                     <Button type="button" variant="warning">
                       <Pause className="size-4" aria-hidden />
                       Pause
@@ -506,19 +526,19 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Decline">
+                  <SampleCard label="Decline" command="DANGER + WITH ICON" commandContext="ICON: XCircle">
                     <Button type="button" variant="destructive">
                       <XCircle className="size-4" aria-hidden />
                       Decline
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Delete" command="DANGER + WITH ICON">
+                  <SampleCard label="Delete" command="DANGER + WITH ICON" commandContext="ICON: Trash2">
                     <Button type="button" variant="destructive">
                       <Trash2 className="size-4" aria-hidden />
                       Delete
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Void">
+                  <SampleCard label="Void" command="DANGER + WITH ICON" commandContext="ICON: Ban">
                     <Button type="button" variant="destructive">
                       <Ban className="size-4" aria-hidden />
                       Void
@@ -532,7 +552,11 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               title: "DANGER STRONG",
               summary: "1 example",
               body: (
-                <SampleCard label="Delete permanently" command="DANGER STRONG + WITH ICON">
+                <SampleCard
+                  label="Delete permanently"
+                  command="DANGER STRONG + WITH ICON"
+                  commandContext="ICON: Trash2"
+                >
                   <Button type="button" variant="dangerStrong" shape="soft">
                     <Trash2 className="size-4" aria-hidden />
                     Delete permanently
@@ -575,11 +599,11 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         <StaticSampleGroup title="ICON ONLY">
           {(
             [
-              { action: "Edit", variant: "outline" as const, icon: Pencil },
-              { action: "Refresh", variant: "outline" as const, icon: RefreshCw },
-              { action: "Print", variant: "outline" as const, icon: Printer },
-              { action: "Delete", variant: "destructive" as const, icon: Trash2 },
-              { action: "More", variant: "ghost" as const, icon: MoreHorizontal },
+              { action: "Edit", variant: "outline" as const, intent: "OUTLINE", icon: Pencil, iconName: "Pencil" },
+              { action: "Refresh", variant: "outline" as const, intent: "OUTLINE", icon: RefreshCw, iconName: "RefreshCw" },
+              { action: "Print", variant: "outline" as const, intent: "OUTLINE", icon: Printer, iconName: "Printer" },
+              { action: "Delete", variant: "destructive" as const, intent: "DANGER", icon: Trash2, iconName: "Trash2" },
+              { action: "More", variant: "ghost" as const, intent: "GHOST", icon: MoreHorizontal, iconName: "MoreHorizontal" },
             ] as const
           ).map((row) => (
             <div
@@ -596,6 +620,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                     key={shape}
                     label={shape}
                     testId={`ui-standards-icon-${row.action.toLowerCase()}-${shape}`}
+                    command={`ICON ONLY + ${row.intent} + ${shape.toUpperCase()}`}
+                    commandContext={`ICON: ${row.iconName}`}
                   >
                     <Button
                       type="button"
@@ -615,7 +641,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="ICON ONLY ROUND · INTENTS">
-          <SampleCard label="ROUND GHOST · More" testId="ui-standards-round-ghost" command="ICON ONLY ROUND GHOST">
+          <SampleCard label="ROUND GHOST · More" testId="ui-standards-round-ghost" command="ICON ONLY ROUND GHOST" commandContext="ICON: MoreHorizontal">
             <Button type="button" variant="ghost" size="icon" shape="round" title="More" aria-label="More">
               <MoreHorizontal className="size-4" aria-hidden />
             </Button>
@@ -625,7 +651,12 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               <Pencil className="size-4" aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="ROUND MUTED · Refresh" testId="ui-standards-round-muted">
+          <SampleCard
+            label="ROUND MUTED · Refresh"
+            testId="ui-standards-round-muted"
+            command="ICON ONLY ROUND MUTED"
+            commandContext="ICON: RefreshCw"
+          >
             <Button
               type="button"
               variant="secondary"
@@ -637,22 +668,42 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               <RefreshCw className="size-4" aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="ROUND PRIMARY · Add" testId="ui-standards-round-primary">
+          <SampleCard
+            label="ROUND PRIMARY · Add"
+            testId="ui-standards-round-primary"
+            command="ICON ONLY ROUND PRIMARY"
+            commandContext="ICON: Plus"
+          >
             <Button type="button" size="icon" shape="round" title="Add" aria-label="Add">
               <Plus className="size-4" aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="ROUND INFO · View" testId="ui-standards-round-info">
+          <SampleCard
+            label="ROUND INFO · View"
+            testId="ui-standards-round-info"
+            command="ICON ONLY ROUND INFO"
+            commandContext="ICON: Eye"
+          >
             <Button type="button" variant="info" size="icon" shape="round" title="View" aria-label="View">
               <Eye className="size-4" aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="ROUND WARNING · Pause" testId="ui-standards-round-warning">
+          <SampleCard
+            label="ROUND WARNING · Pause"
+            testId="ui-standards-round-warning"
+            command="ICON ONLY ROUND WARNING"
+            commandContext="ICON: Pause"
+          >
             <Button type="button" variant="warning" size="icon" shape="round" title="Pause" aria-label="Pause">
               <Pause className="size-4" aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="ROUND DANGER · Delete" testId="ui-standards-round-danger">
+          <SampleCard
+            label="ROUND DANGER · Delete"
+            testId="ui-standards-round-danger"
+            command="ICON ONLY ROUND DANGER"
+            commandContext="ICON: Trash2"
+          >
             <Button
               type="button"
               variant="destructive"
@@ -677,29 +728,37 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         testId="ui-standards-button-states"
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-testid="ui-standards-btn-group-states">
-          <SampleCard label="Normal">
+          <SampleCard
+            label="Normal"
+            command="PRIMARY + SOFT + WITH ICON + STANDARD MOTION"
+            commandContext="ICON: Save"
+          >
             <Button type="button" shape="soft">
               <Save className="size-4" aria-hidden />
               Normal
             </Button>
           </SampleCard>
-          <SampleCard label="Hover / lift">
+          <SampleCard
+            label="Hover / lift"
+            command="PRIMARY + SOFT + ELEVATED + WITH ICON + ELEVATED LIFT"
+            commandContext="ICON: Save"
+          >
             <Button type="button" shape="soft" treatment="elevated">
               <Save className="size-4" aria-hidden />
               Hover / lift
             </Button>
           </SampleCard>
-          <SampleCard label="Pressed (try)">
+          <SampleCard label="Pressed (try)" command="PRIMARY + SOFT + ELEVATED + PRESS FEEDBACK">
             <Button type="button" shape="soft" treatment="elevated">
               Pressed (try)
             </Button>
           </SampleCard>
-          <SampleCard label="Disabled">
+          <SampleCard label="Disabled" command="PRIMARY + SOFT + DISABLED">
             <Button type="button" shape="soft" disabled>
               Disabled
             </Button>
           </SampleCard>
-          <SampleCard label="Loading">
+          <SampleCard label="Loading" command="PRIMARY + SOFT + LOADING SPINNER">
             <Button type="button" shape="soft" disabled aria-busy="true">
               <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
               Saving...
@@ -718,19 +777,34 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         testId="ui-standards-button-motion"
       >
         <StaticSampleGroup title="STANDARD MOTION">
-          <SampleCard label="Primary" hint="Color + press">
+          <SampleCard
+            label="Primary"
+            hint="Color + press"
+            command="PRIMARY + SOFT + WITH ICON + STANDARD MOTION"
+            commandContext="ICON: Save"
+          >
             <Button type="button" shape="soft">
               <Save className="size-4" aria-hidden />
               Save
             </Button>
           </SampleCard>
-          <SampleCard label="Muted" hint="Quieter surface">
+          <SampleCard
+            label="Muted"
+            hint="Quieter surface"
+            command="MUTED + SOFT + WITH ICON + STANDARD MOTION"
+            commandContext="ICON: CircleX"
+          >
             <Button type="button" variant="secondary" shape="soft">
               <CircleX className="size-4" aria-hidden />
               Cancel
             </Button>
           </SampleCard>
-          <SampleCard label="Ghost" hint="Background fade only">
+          <SampleCard
+            label="Ghost"
+            hint="Background fade only"
+            command="GHOST + WITH ICON + STANDARD MOTION"
+            commandContext="ICON: MoreHorizontal"
+          >
             <Button type="button" variant="ghost">
               <MoreHorizontal className="size-4" aria-hidden />
               More
@@ -739,13 +813,23 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="PRESS FEEDBACK">
-          <SampleCard label="Save" hint="Click to preview">
+          <SampleCard
+            label="Save"
+            hint="Click to preview"
+            command="PRIMARY + SOFT + WITH ICON + PRESS FEEDBACK"
+            commandContext="ICON: Save"
+          >
             <Button type="button" shape="soft">
               <Save className="size-4" aria-hidden />
               Save
             </Button>
           </SampleCard>
-          <SampleCard label="Delete" hint="Calm press — no shake">
+          <SampleCard
+            label="Delete"
+            hint="Calm press — no shake"
+            command="DANGER + SOFT + WITH ICON + PRESS FEEDBACK + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Trash2"
+          >
             <Button type="button" variant="destructive" shape="soft">
               <Trash2 className={cn("size-4", buttonIconMotion.delete)} aria-hidden />
               Delete
@@ -754,13 +838,23 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="ELEVATED LIFT">
-          <SampleCard label="Add" hint="Hover to preview">
+          <SampleCard
+            label="Add"
+            hint="Hover to preview"
+            command="PRIMARY + SOFT + ELEVATED + WITH ICON + ELEVATED LIFT + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Plus"
+          >
             <Button type="button" shape="soft" treatment="elevated">
               <Plus className={cn("size-4", buttonIconMotion.add)} aria-hidden />
               Add
             </Button>
           </SampleCard>
-          <SampleCard label="Main CTA" hint="Elevated + soft">
+          <SampleCard
+            label="Main CTA"
+            hint="Elevated + soft"
+            command="PRIMARY + SOFT + ELEVATED + WITH ICON + ELEVATED LIFT"
+            commandContext="ICON: Save"
+          >
             <Button type="button" shape="soft" treatment="elevated">
               <Save className="size-4" aria-hidden />
               Save
@@ -769,25 +863,45 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="ICON MOTION">
-          <SampleCard label="Add" hint="Hover: slight scale">
+          <SampleCard
+            label="Add"
+            hint="Hover: slight scale"
+            command="PRIMARY + SOFT + WITH ICON + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Plus"
+          >
             <Button type="button" shape="soft">
               <Plus className={cn("size-4", buttonIconMotion.add)} aria-hidden />
               Add
             </Button>
           </SampleCard>
-          <SampleCard label="View" hint="Hover: slight scale">
+          <SampleCard
+            label="View"
+            hint="Hover: slight scale"
+            command="INFO + SOFT + WITH ICON + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Eye"
+          >
             <Button type="button" variant="info" shape="soft">
               <Eye className={cn("size-4", buttonIconMotion.view)} aria-hidden />
               View
             </Button>
           </SampleCard>
-          <SampleCard label="Delete" hint="Subtle lift only">
+          <SampleCard
+            label="Delete"
+            hint="Subtle lift only"
+            command="DANGER + SOFT + WITH ICON + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Trash2"
+          >
             <Button type="button" variant="destructive" shape="soft">
               <Trash2 className={cn("size-4", buttonIconMotion.delete)} aria-hidden />
               Delete
             </Button>
           </SampleCard>
-          <SampleCard label="Warning" hint="Subtle only">
+          <SampleCard
+            label="Warning"
+            hint="Subtle only"
+            command="WARNING + SOFT + WITH ICON + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Power"
+          >
             <Button type="button" variant="warning" shape="soft">
               <Power className={cn("size-4", buttonIconMotion.warning)} aria-hidden />
               Deactivate
@@ -796,19 +910,34 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="DIRECTIONAL MOTION">
-          <SampleCard label="Continue" hint="Hover to preview">
+          <SampleCard
+            label="Continue"
+            hint="Hover to preview"
+            command="PRIMARY + SOFT + WITH ICON + DIRECTIONAL ICON MOTION"
+            commandContext={"ICON: ArrowRight\nICON POSITION: RIGHT"}
+          >
             <Button type="button" shape="soft">
               Continue
               <ArrowRight className={cn("size-4", buttonIconMotion.continue)} aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="Back" hint="Hover to preview">
+          <SampleCard
+            label="Back"
+            hint="Hover to preview"
+            command="GHOST + WITH ICON + DIRECTIONAL ICON MOTION"
+            commandContext="ICON: ArrowLeft"
+          >
             <Button type="button" variant="ghost">
               <ArrowLeft className={cn("size-4", buttonIconMotion.back)} aria-hidden />
               Back
             </Button>
           </SampleCard>
-          <SampleCard label="Open" hint="Hover to preview">
+          <SampleCard
+            label="Open"
+            hint="Hover to preview"
+            command="INFO + SOFT + WITH ICON + DIRECTIONAL ICON MOTION"
+            commandContext={"ICON: ExternalLink\nICON POSITION: RIGHT"}
+          >
             <Button type="button" variant="info" shape="soft">
               Open
               <ExternalLink className={cn("size-4", buttonIconMotion.open)} aria-hidden />
@@ -817,20 +946,41 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="ROUND ICON MOTION">
-          <SampleCard label="Refresh" hint="Hover / click once" testId="ui-standards-motion-round-refresh">
+          <SampleCard
+            label="Refresh"
+            hint="Hover / click once"
+            testId="ui-standards-motion-round-refresh"
+            command="ICON ONLY ROUND MUTED + CONTEXTUAL ICON MOTION"
+            commandContext={`ICON: RefreshCw\nUse the approved "Refresh" sample from /ui-standards → Buttons.`}
+          >
             <RefreshRoundDemo />
           </SampleCard>
-          <SampleCard label="Add" hint="Hover: slight scale">
+          <SampleCard
+            label="Add"
+            hint="Hover: slight scale"
+            command="ICON ONLY ROUND PRIMARY + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Plus"
+          >
             <Button type="button" size="icon" shape="round" title="Add" aria-label="Add">
               <Plus className={cn("size-4", buttonIconMotion.add)} aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="Next" hint="Hover: directional">
+          <SampleCard
+            label="Next"
+            hint="Hover: directional"
+            command="ICON ONLY ROUND PRIMARY + DIRECTIONAL ICON MOTION"
+            commandContext="ICON: ArrowRight"
+          >
             <Button type="button" size="icon" shape="round" title="Next" aria-label="Next">
               <ArrowRight className={cn("size-4", buttonIconMotion.continue)} aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="Delete" hint="Subtle lift only">
+          <SampleCard
+            label="Delete"
+            hint="Subtle lift only"
+            command="ICON ONLY ROUND DANGER + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: Trash2"
+          >
             <Button
               type="button"
               variant="destructive"
@@ -842,7 +992,12 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               <Trash2 className={cn("size-4", buttonIconMotion.delete)} aria-hidden />
             </Button>
           </SampleCard>
-          <SampleCard label="More" hint="Very subtle">
+          <SampleCard
+            label="More"
+            hint="Very subtle"
+            command="ICON ONLY ROUND GHOST + CONTEXTUAL ICON MOTION"
+            commandContext="ICON: MoreHorizontal"
+          >
             <Button type="button" variant="ghost" size="icon" shape="round" title="More" aria-label="More">
               <MoreHorizontal className={cn("size-4", buttonIconMotion.more)} aria-hidden />
             </Button>
@@ -850,13 +1005,13 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="LOADING MOTION">
-          <SampleCard label="PRIMARY loading">
+          <SampleCard label="PRIMARY loading" command="PRIMARY + SOFT + LOADING SPINNER">
             <Button type="button" shape="soft" disabled aria-busy="true" className="min-w-[8.5rem]">
               <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
               Saving...
             </Button>
           </SampleCard>
-          <SampleCard label="SUCCESS loading">
+          <SampleCard label="SUCCESS loading" command="SUCCESS + SOFT + LOADING SPINNER">
             <Button
               type="button"
               variant="success"
@@ -869,7 +1024,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               Processing...
             </Button>
           </SampleCard>
-          <SampleCard label="ICON ONLY ROUND loading">
+          <SampleCard label="ICON ONLY ROUND loading" command="ICON ONLY ROUND + LOADING SPINNER">
             <Button
               type="button"
               size="icon"
@@ -889,6 +1044,8 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
             label="Save → Saved"
             hint="Showcase only — click once"
             testId="ui-standards-motion-success-demo"
+            command="PRIMARY + SOFT + WITH ICON + LOADING SPINNER"
+            commandContext={`ICON: Save\nUse the approved "Save → Saved" sample from /ui-standards → Buttons.`}
           >
             <SaveSuccessDemo />
           </SampleCard>

@@ -47,7 +47,10 @@ import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-c
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
-import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
+import {
+  UiStandardsCopyCommand,
+  type UiStandardsStandardName,
+} from "@/features/ui-standards/UiStandardsCopyCommand";
 import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
 
 type DemoSkuFilter = "all" | "hasSku" | "noSku";
@@ -129,6 +132,8 @@ function SampleFrame({
   className,
   command,
   commandContext,
+  explanatory,
+  standard = "Table",
 }: {
   label: string;
   children: ReactNode;
@@ -137,6 +142,8 @@ function SampleFrame({
   className?: string;
   command?: string;
   commandContext?: string;
+  explanatory?: boolean;
+  standard?: UiStandardsStandardName | UiStandardsStandardName[];
 }) {
   return (
     <UiStandardsSampleCard
@@ -145,9 +152,10 @@ function SampleFrame({
       hint={hint}
       className={className}
       bordered={false}
-      standard="Table"
+      standard={standard}
       command={command}
       commandContext={commandContext}
+      explanatory={explanatory}
     >
       {children}
     </UiStandardsSampleCard>
@@ -1157,7 +1165,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-table-alignment"
       >
         <StaticSampleGroup title="ALIGNMENT MATRIX — APPROVED / LOCKED">
-          <SampleFrame label="REFERENCE" className="sm:col-span-2" testId="ui-standards-table-align-matrix">
+          <SampleFrame label="REFERENCE" className="sm:col-span-2" testId="ui-standards-table-align-matrix" command="EXITS TABLE" commandContext="Alignment matrix — header and value alignment must match. APPROVED / LOCKED.">
             <ExitsTableContainer>
               <ExitsTable>
                 <ExitsTableHeader>
@@ -1241,7 +1249,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="B · MULTIPLE ICON ACTIONS">
-            <SampleFrame label="EYE · PENCIL · MORE">
+            <SampleFrame label="EYE · PENCIL · MORE" command="EXITS TABLE + ACTIONS ON" commandContext="Sample B — Eye · Pencil · More from /ui-standards → Tables.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1272,7 +1280,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="C · PRIMARY + MORE">
-            <SampleFrame label="EDIT + MORE">
+            <SampleFrame label="EDIT + MORE" command="EXITS TABLE + ACTIONS ON" commandContext="Sample C — Edit + More from /ui-standards → Tables.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1300,7 +1308,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="D · DESTRUCTIVE">
-            <SampleFrame label="EDIT + DELETE">
+            <SampleFrame label="EDIT + DELETE" command="EXITS TABLE + ACTIONS ON" commandContext="Sample D — Edit + Delete from /ui-standards → Tables.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1407,7 +1415,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="B · EDIT FIELD MENU">
-            <SampleFrame label="PENCIL DROPDOWN" testId="ui-standards-inline-sample-menu" hint="Open Pencil in the main demo for the live menu.">
+            <SampleFrame label="PENCIL DROPDOWN" testId="ui-standards-inline-sample-menu" hint="Open Pencil in the main demo for the live menu." command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Edit field menu (Pencil dropdown).">
               <ExitsTableActions>
                 <ExitsTableEditMenu
                   fields={DEMO_EDITABLE_FIELDS}
@@ -1418,7 +1426,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                 />
               </ExitsTableActions>
             </SampleFrame>
-            <SampleFrame label="LABELED TRIGGER (LESS DENSE — OPTIONAL)">
+            <SampleFrame label="LABELED TRIGGER (LESS DENSE — OPTIONAL)" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Labeled Edit trigger (less dense — optional).">
               <ExitsTableEditMenu
                 fields={DEMO_EDITABLE_FIELDS}
                 ariaLabel="Edit with label"
@@ -1430,7 +1438,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="C · EDIT SKU ONLY">
-            <SampleFrame label="STEALTH SKU" testId="ui-standards-inline-sample-sku" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON">
+            <SampleFrame label="STEALTH SKU" testId="ui-standards-inline-sample-sku" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="EDITABLE: SKU">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1474,7 +1482,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="D · EDIT QUANTITY ONLY">
-            <SampleFrame label="[2] Kg" testId="ui-standards-inline-sample-qty">
+            <SampleFrame label="[2] Kg" testId="ui-standards-inline-sample-qty" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="EDITABLE: QUANTITY">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1523,10 +1531,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           <StaticSampleGroup title="E · EDIT UNIT COST ONLY">
             <SampleFrame
               label="₱ [180.00]"
-              testId="ui-standards-inline-sample-unit-cost"
-              command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON"
-              commandContext="EDITABLE: UNIT COST"
-            >
+              testId="ui-standards-inline-sample-unit-cost" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="EDITABLE: UNIT COST">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1577,10 +1582,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           <StaticSampleGroup title="F · EDIT ALL">
             <SampleFrame
               label="ALL EDITABLE FIELDS"
-              testId="ui-standards-inline-sample-edit-all"
-              command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON"
-              commandContext="EDITABLE: SKU, QUANTITY, UNIT COST"
-            >
+              testId="ui-standards-inline-sample-edit-all" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="EDITABLE: SKU, QUANTITY, UNIT COST">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1636,7 +1638,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="G · VALIDATION ERROR">
-            <SampleFrame label="DANGER BORDER + ROW MESSAGE" testId="ui-standards-inline-sample-validation">
+            <SampleFrame label="DANGER BORDER + ROW MESSAGE" testId="ui-standards-inline-sample-validation" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Validation — danger border + row message.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1693,8 +1695,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           <StaticSampleGroup title="SINGLE-FIELD SHORTCUT — CANDIDATE">
             <SampleFrame
               label="CANDIDATE (NOT DEFAULT)"
-              hint="If exactly one field is editable, Pencil may later open that field directly. Locked default remains the field-menu architecture."
-            >
+              hint="If exactly one field is editable, Pencil may later open that field directly. Locked default remains the field-menu architecture." explanatory={true}>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 Candidate only — field menu remains the locked default Edit path.
               </p>
@@ -1702,7 +1703,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="TEXT SAVE / RESET (LESS DENSE)">
-            <SampleFrame label="LABELED ACTIONS">
+            <SampleFrame label="LABELED ACTIONS" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Labeled Save / Reset (less dense).">
               <ExitsTableActions>
                 <Button type="button" variant="success" shape="soft">
                   <Check className="size-4" aria-hidden />
@@ -1727,48 +1728,55 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tables.inline-cell-edit", open)}
         testId="ui-standards-table-inline-cell-edit"
       >
-        <ExitsTableContainer>
-          <ExitsTable>
-            <ExitsTableHeader>
-              <ExitsTableRow>
-                <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
-                <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
-              </ExitsTableRow>
-            </ExitsTableHeader>
-            <ExitsTableBody>
-              <ExitsTableRow editing={cellEditing}>
-                <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
-                <ExitsTableCell
-                  cellAlign="money"
-                  onDoubleClick={() => setCellEditing(true)}
-                  data-testid="ui-standards-table-cell-edit"
-                >
-                  {cellEditing ? (
-                    <ExitsTableInlineEditor>
-                      <MoneyInput
-                        label="Unit cost for Apple"
-                        value={cellEditValue}
-                        onChange={(e) => setCellEditValue(e.target.value)}
-                        onBlur={() => setCellEditing(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === "Escape") setCellEditing(false);
-                        }}
-                      />
-                    </ExitsTableInlineEditor>
-                  ) : (
-                    <button
-                      type="button"
-                      className="tabular-nums text-end underline-offset-2 hover:underline"
-                      onClick={() => setCellEditing(true)}
-                    >
-                      {formatPeso(Number(cellEditValue) || 0)}
-                    </button>
-                  )}
-                </ExitsTableCell>
-              </ExitsTableRow>
-            </ExitsTableBody>
-          </ExitsTable>
-        </ExitsTableContainer>
+        <SampleFrame
+          label="CELL EDIT"
+          testId="ui-standards-table-cell-edit-sample"
+          command="EXITS TABLE + INLINE EDIT ON"
+          commandContext="CELL EDIT — special dense/data-management use. Prefer ROW EDIT for general cases. EDITABLE: UNIT COST"
+        >
+          <ExitsTableContainer>
+            <ExitsTable>
+              <ExitsTableHeader>
+                <ExitsTableRow>
+                  <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                  <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+                </ExitsTableRow>
+              </ExitsTableHeader>
+              <ExitsTableBody>
+                <ExitsTableRow editing={cellEditing}>
+                  <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="money"
+                    onDoubleClick={() => setCellEditing(true)}
+                    data-testid="ui-standards-table-cell-edit"
+                  >
+                    {cellEditing ? (
+                      <ExitsTableInlineEditor>
+                        <MoneyInput
+                          label="Unit cost for Apple"
+                          value={cellEditValue}
+                          onChange={(e) => setCellEditValue(e.target.value)}
+                          onBlur={() => setCellEditing(false)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "Escape") setCellEditing(false);
+                          }}
+                        />
+                      </ExitsTableInlineEditor>
+                    ) : (
+                      <button
+                        type="button"
+                        className="tabular-nums text-end underline-offset-2 hover:underline"
+                        onClick={() => setCellEditing(true)}
+                      >
+                        {formatPeso(Number(cellEditValue) || 0)}
+                      </button>
+                    )}
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              </ExitsTableBody>
+            </ExitsTable>
+          </ExitsTableContainer>
+        </SampleFrame>
       </UiStandardsSection>
 
       <UiStandardsSection
@@ -1782,7 +1790,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-4">
           <StaticSampleGroup title="INLINE EDIT — VALIDATION ERROR">
-            <SampleFrame label="QUANTITY ERROR" testId="ui-standards-table-validation-qty">
+            <SampleFrame label="QUANTITY ERROR" testId="ui-standards-table-validation-qty" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Validation — quantity error.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1831,7 +1839,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ROW-LEVEL ERROR">
-            <SampleFrame label="SAVE FAILED" testId="ui-standards-table-row-error">
+            <SampleFrame label="SAVE FAILED" testId="ui-standards-table-row-error" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Row-level save failed.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1857,7 +1865,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SAVING">
-            <SampleFrame label="DISABLED EDITORS" testId="ui-standards-table-saving">
+            <SampleFrame label="DISABLED EDITORS" testId="ui-standards-table-saving" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON" commandContext="Saving — editors disabled.">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1907,46 +1915,52 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tables.sticky-actions", open)}
         testId="ui-standards-table-sticky-actions"
       >
-        <ExitsTableContainer>
-          <ExitsTable className="min-w-[56rem]">
-            <ExitsTableHeader>
-              <ExitsTableRow>
-                <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
-                <ExitsTableHead cellAlign="text">SKU</ExitsTableHead>
-                <ExitsTableHead cellAlign="text">Warehouse note</ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
-                <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
-                <ExitsTableHead cellAlign="money">Line total</ExitsTableHead>
-                <ExitsTableHead cellAlign="actions" stickyEnd>
-                  Actions
-                </ExitsTableHead>
-              </ExitsTableRow>
-            </ExitsTableHeader>
-            <ExitsTableBody>
-              <ExitsTableRow>
-                <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
-                <ExitsTableCell cellAlign="text">PH-FRU-APPLE</ExitsTableCell>
-                <ExitsTableCell cellAlign="text">
-                  Preferred cold-room bin A12 · supplier lot verified
-                </ExitsTableCell>
-                <ExitsTableCell cellAlign="numeric">2 Kg</ExitsTableCell>
-                <ExitsTableCell cellAlign="money">
-                  <MoneyDisplay amount={180} />
-                </ExitsTableCell>
-                <ExitsTableCell cellAlign="money" emphasis="semibold">
-                  <MoneyDisplay amount={360} />
-                </ExitsTableCell>
-                <ExitsTableCell cellAlign="actions" stickyEnd>
-                  <ExitsTableActions>
-                    <IconAction label="Edit Apple">
-                      <Pencil className="size-4" aria-hidden />
-                    </IconAction>
-                  </ExitsTableActions>
-                </ExitsTableCell>
-              </ExitsTableRow>
-            </ExitsTableBody>
-          </ExitsTable>
-        </ExitsTableContainer>
+        <SampleFrame
+          label="STICKY ACTIONS"
+          command="EXITS TABLE + ACTIONS ON + STICKY ACTIONS"
+          commandContext="SPECIAL USE / CANDIDATE — sticky Actions at inline-end for wide tables. Not default."
+        >
+          <ExitsTableContainer>
+            <ExitsTable className="min-w-[56rem]">
+              <ExitsTableHeader>
+                <ExitsTableRow>
+                  <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">SKU</ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">Warehouse note</ExitsTableHead>
+                  <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
+                  <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+                  <ExitsTableHead cellAlign="money">Line total</ExitsTableHead>
+                  <ExitsTableHead cellAlign="actions" stickyEnd>
+                    Actions
+                  </ExitsTableHead>
+                </ExitsTableRow>
+              </ExitsTableHeader>
+              <ExitsTableBody>
+                <ExitsTableRow>
+                  <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                  <ExitsTableCell cellAlign="text">PH-FRU-APPLE</ExitsTableCell>
+                  <ExitsTableCell cellAlign="text">
+                    Preferred cold-room bin A12 · supplier lot verified
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="numeric">2 Kg</ExitsTableCell>
+                  <ExitsTableCell cellAlign="money">
+                    <MoneyDisplay amount={180} />
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" emphasis="semibold">
+                    <MoneyDisplay amount={360} />
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="actions" stickyEnd>
+                    <ExitsTableActions>
+                      <IconAction label="Edit Apple">
+                        <Pencil className="size-4" aria-hidden />
+                      </IconAction>
+                    </ExitsTableActions>
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              </ExitsTableBody>
+            </ExitsTable>
+          </ExitsTableContainer>
+        </SampleFrame>
       </UiStandardsSection>
 
       <UiStandardsSection
@@ -1958,6 +1972,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tables.mobile-edit", open)}
         testId="ui-standards-table-mobile-edit"
       >
+        <SampleFrame
+          label="MOBILE EDIT"
+          command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON"
+          commandContext="Mobile stacked edit form — same Edit field menu; EDITABLE: SKU, QUANTITY, UNIT COST"
+        >
         <ExitsTableContainer>
           <ExitsTableMobile className="!flex md:!flex">
             {(() => {
@@ -2076,6 +2095,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             })()}
           </ExitsTableMobile>
         </ExitsTableContainer>
+        </SampleFrame>
       </UiStandardsSection>
 
       <UiStandardsSection
@@ -2087,6 +2107,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tables.cheatsheet", open)}
         testId="ui-standards-table-cheatsheet"
       >
+        <SampleFrame label="CHEATSHEET" explanatory>
         <pre className="m-0 overflow-x-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] leading-relaxed">
 {`EXITS TABLE
 FULL TABLE
@@ -2143,6 +2164,7 @@ TABLE STANDARD
 APPROVED / LOCKED
 Docs/UI/exits-table-standard.md`}
         </pre>
+        </SampleFrame>
       </UiStandardsSection>
     </div>
   );

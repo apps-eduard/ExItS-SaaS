@@ -31,12 +31,16 @@ function SampleCard({
   testId,
   hint,
   command,
+  commandContext,
+  explanatory,
 }: {
   label: string;
   children: ReactNode;
   testId?: string;
   hint?: string;
   command?: string;
+  commandContext?: string;
+  explanatory?: boolean;
 }) {
   return (
     <UiStandardsSampleCard
@@ -46,6 +50,8 @@ function SampleCard({
       contentClassName="flex flex-wrap items-center justify-start gap-1.5"
       standard="Chip"
       command={command}
+      commandContext={commandContext}
+      explanatory={explanatory}
     >
       {children}
     </UiStandardsSampleCard>
@@ -137,17 +143,17 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="STATUS / PUBLISHED">
-            <SampleCard label="PILL">
+            <SampleCard label="PILL" command="STATUS CHIP SUCCESS PILL">
               <StatusChip tone="success" shape="pill">
                 Published
               </StatusChip>
             </SampleCard>
-            <SampleCard label="SOFT">
+            <SampleCard label="SOFT" command="STATUS CHIP SUCCESS SOFT">
               <StatusChip tone="success" shape="soft">
                 Published
               </StatusChip>
             </SampleCard>
-            <SampleCard label="SQUARE">
+            <SampleCard label="SQUARE" command="STATUS CHIP SUCCESS SQUARE">
               <StatusChip tone="success" shape="square">
                 Published
               </StatusChip>
@@ -155,12 +161,12 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="TAG / BETA">
-            <SampleCard label="PILL">
+            <SampleCard label="PILL" command="TAG CHIP INFO PILL">
               <TagChip tone="info" shape="pill">
                 Beta
               </TagChip>
             </SampleCard>
-            <SampleCard label="SOFT">
+            <SampleCard label="SOFT" command="TAG CHIP INFO SOFT">
               <TagChip tone="info" shape="soft">
                 Beta
               </TagChip>
@@ -173,12 +179,12 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="B2B">
-            <SampleCard label="PILL">
+            <SampleCard label="PILL" command="TAG CHIP INFO PILL">
               <TagChip tone="info" shape="pill">
                 B2B
               </TagChip>
             </SampleCard>
-            <SampleCard label="SOFT">
+            <SampleCard label="SOFT" command="TAG CHIP INFO SOFT">
               <TagChip tone="info" shape="soft">
                 B2B
               </TagChip>
@@ -191,7 +197,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="LOCKED DEFAULT SHAPES">
-            <SampleCard label="APPROVED / LOCKED" hint="Explicit shape overrides remain allowed">
+            <SampleCard label="APPROVED / LOCKED" hint="Explicit shape overrides remain allowed" explanatory>
               <div className="grid w-full gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>STATUS CHIP → PILL</div>
                 <div>FILTER CHIP → PILL</div>
@@ -216,7 +222,13 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="COMPACT TAGS">
-            <SampleCard label="Row">
+            <SampleCard
+              label="Row"
+              command="TAG CHIP SQUARE"
+              commandContext={
+                "Beta = TAG CHIP INFO; New = TAG CHIP PRIMARY; B2B = TAG CHIP INFO; Weighted = TAG CHIP NEUTRAL; SKU = TAG CHIP NEUTRAL; PO = TAG CHIP NEUTRAL; Direct = TAG CHIP NEUTRAL; Synced = TAG CHIP SUCCESS"
+              }
+            >
               <div className="flex flex-wrap gap-1">
                 <TagChip tone="info" shape="square">
                   Beta
@@ -247,32 +259,32 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SEMANTIC TONES">
-            <SampleCard label="NEUTRAL">
+            <SampleCard label="NEUTRAL" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral" shape="square">
                 Draft
               </TagChip>
             </SampleCard>
-            <SampleCard label="PRIMARY">
+            <SampleCard label="PRIMARY" command="TAG CHIP PRIMARY">
               <TagChip tone="primary" shape="square">
                 Preferred
               </TagChip>
             </SampleCard>
-            <SampleCard label="INFO">
+            <SampleCard label="INFO" command="TAG CHIP INFO">
               <TagChip tone="info" shape="square">
                 B2B
               </TagChip>
             </SampleCard>
-            <SampleCard label="SUCCESS">
+            <SampleCard label="SUCCESS" command="TAG CHIP SUCCESS">
               <TagChip tone="success" shape="square">
                 Synced
               </TagChip>
             </SampleCard>
-            <SampleCard label="WARNING">
+            <SampleCard label="WARNING" command="TAG CHIP WARNING">
               <TagChip tone="warning" shape="square">
                 Review
               </TagChip>
             </SampleCard>
-            <SampleCard label="DANGER">
+            <SampleCard label="DANGER" command="TAG CHIP DANGER">
               <TagChip tone="danger" shape="square">
                 Failed
               </TagChip>
@@ -280,17 +292,17 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ICONS (optional)">
-            <SampleCard label="No icon">
+            <SampleCard label="No icon" command="TAG CHIP INFO + NO ICON">
               <TagChip tone="info" shape="square">
                 Beta
               </TagChip>
             </SampleCard>
-            <SampleCard label="Synced">
+            <SampleCard label="Synced" command="TAG CHIP SUCCESS + WITH ICON" commandContext="ICON: CheckCircle2">
               <TagChip tone="success" shape="square" icon={<CheckCircle2 aria-hidden />}>
                 Synced
               </TagChip>
             </SampleCard>
-            <SampleCard label="Review">
+            <SampleCard label="Review" command="TAG CHIP WARNING + WITH ICON" commandContext="ICON: TriangleAlert">
               <TagChip tone="warning" shape="square" icon={<TriangleAlert aria-hidden />}>
                 Review
               </TagChip>
@@ -310,40 +322,40 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="NEUTRAL">
-            <SampleCard label="Draft">
+            <SampleCard label="Draft" command="STATUS CHIP NEUTRAL">
               <StatusChip tone="neutral">Draft</StatusChip>
             </SampleCard>
-            <SampleCard label="Inactive">
+            <SampleCard label="Inactive" command="STATUS CHIP NEUTRAL">
               <StatusChip tone="neutral">Inactive</StatusChip>
             </SampleCard>
-            <SampleCard label="Not configured">
+            <SampleCard label="Not configured" command="STATUS CHIP NEUTRAL">
               <StatusChip tone="neutral">Not configured</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="INFO">
-            <SampleCard label="B2B">
+            <SampleCard label="B2B" command="STATUS CHIP INFO">
               <StatusChip tone="info">B2B</StatusChip>
             </SampleCard>
-            <SampleCard label="In progress">
+            <SampleCard label="In progress" command="STATUS CHIP INFO">
               <StatusChip tone="info">In progress</StatusChip>
             </SampleCard>
-            <SampleCard label="Linked">
+            <SampleCard label="Linked" command="STATUS CHIP INFO">
               <StatusChip tone="info">Linked</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SUCCESS">
-            <SampleCard label="Active">
+            <SampleCard label="Active" command="STATUS CHIP SUCCESS">
               <StatusChip tone="success">Active</StatusChip>
             </SampleCard>
             <SampleCard label="Approved" command="STATUS CHIP SUCCESS">
               <StatusChip tone="success">Approved</StatusChip>
             </SampleCard>
-            <SampleCard label="Paid">
+            <SampleCard label="Paid" command="STATUS CHIP SUCCESS">
               <StatusChip tone="success">Paid</StatusChip>
             </SampleCard>
-            <SampleCard label="Completed">
+            <SampleCard label="Completed" command="STATUS CHIP SUCCESS">
               <StatusChip tone="success">Completed</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
@@ -352,40 +364,40 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard label="Pending" command="STATUS CHIP WARNING">
               <StatusChip tone="warning">Pending</StatusChip>
             </SampleCard>
-            <SampleCard label="Low stock">
+            <SampleCard label="Low stock" command="STATUS CHIP WARNING">
               <StatusChip tone="warning">Low stock</StatusChip>
             </SampleCard>
-            <SampleCard label="Paused">
+            <SampleCard label="Paused" command="STATUS CHIP WARNING">
               <StatusChip tone="warning">Paused</StatusChip>
             </SampleCard>
-            <SampleCard label="Due soon">
+            <SampleCard label="Due soon" command="STATUS CHIP WARNING">
               <StatusChip tone="warning">Due soon</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="DANGER">
-            <SampleCard label="Overdue">
+            <SampleCard label="Overdue" command="STATUS CHIP DANGER">
               <StatusChip tone="danger">Overdue</StatusChip>
             </SampleCard>
-            <SampleCard label="Declined">
+            <SampleCard label="Declined" command="STATUS CHIP DANGER">
               <StatusChip tone="danger">Declined</StatusChip>
             </SampleCard>
-            <SampleCard label="Failed">
+            <SampleCard label="Failed" command="STATUS CHIP DANGER">
               <StatusChip tone="danger">Failed</StatusChip>
             </SampleCard>
-            <SampleCard label="Void">
+            <SampleCard label="Void" command="STATUS CHIP DANGER">
               <StatusChip tone="danger">Void</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PRIMARY (brand)">
-            <SampleCard label="Preferred" hint="Uses --exits-primary">
+            <SampleCard label="Preferred" hint="Uses --exits-primary" command="STATUS CHIP PRIMARY">
               <StatusChip tone="primary">Preferred</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="LONG LABEL">
-            <SampleCard label="Truncation candidate" hint="title on wrapper when truncated">
+            <SampleCard label="Truncation candidate" hint="title on wrapper when truncated" command="STATUS CHIP INFO">
               <span title={longTitle} className="inline-flex max-w-[12rem]">
                 <StatusChip tone="info" className="max-w-full overflow-hidden text-ellipsis">
                   {longTitle}
@@ -407,85 +419,85 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="TEXT ONLY">
-            <SampleCard label="Approved">
+            <SampleCard label="Approved" command="STATUS CHIP SUCCESS + NO ICON">
               <StatusChip tone="success">Approved</StatusChip>
             </SampleCard>
-            <SampleCard label="Active">
+            <SampleCard label="Active" command="STATUS CHIP SUCCESS + NO ICON">
               <StatusChip tone="success">Active</StatusChip>
             </SampleCard>
-            <SampleCard label="Paid">
+            <SampleCard label="Paid" command="STATUS CHIP SUCCESS + NO ICON">
               <StatusChip tone="success">Paid</StatusChip>
             </SampleCard>
-            <SampleCard label="Pending">
+            <SampleCard label="Pending" command="STATUS CHIP WARNING + NO ICON">
               <StatusChip tone="warning">Pending</StatusChip>
             </SampleCard>
-            <SampleCard label="Low stock">
+            <SampleCard label="Low stock" command="STATUS CHIP WARNING + NO ICON">
               <StatusChip tone="warning">Low stock</StatusChip>
             </SampleCard>
-            <SampleCard label="Paused">
+            <SampleCard label="Paused" command="STATUS CHIP WARNING + NO ICON">
               <StatusChip tone="warning">Paused</StatusChip>
             </SampleCard>
-            <SampleCard label="Overdue">
+            <SampleCard label="Overdue" command="STATUS CHIP DANGER + NO ICON">
               <StatusChip tone="danger">Overdue</StatusChip>
             </SampleCard>
-            <SampleCard label="Failed">
+            <SampleCard label="Failed" command="STATUS CHIP DANGER + NO ICON">
               <StatusChip tone="danger">Failed</StatusChip>
             </SampleCard>
-            <SampleCard label="Declined">
+            <SampleCard label="Declined" command="STATUS CHIP DANGER + NO ICON">
               <StatusChip tone="danger">Declined</StatusChip>
             </SampleCard>
-            <SampleCard label="Void">
+            <SampleCard label="Void" command="STATUS CHIP DANGER + NO ICON">
               <StatusChip tone="danger">Void</StatusChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="WITH ICON">
-            <SampleCard label="Approved">
+            <SampleCard label="Approved" command="STATUS CHIP SUCCESS + WITH ICON" commandContext="ICON: CheckCircle2">
               <StatusChip tone="success" icon={<CheckCircle2 aria-hidden />}>
                 Approved
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Active">
+            <SampleCard label="Active" command="STATUS CHIP SUCCESS + WITH ICON" commandContext="ICON: CheckCircle2">
               <StatusChip tone="success" icon={<CheckCircle2 aria-hidden />}>
                 Active
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Paid">
+            <SampleCard label="Paid" command="STATUS CHIP SUCCESS + WITH ICON" commandContext="ICON: CircleCheck">
               <StatusChip tone="success" icon={<CircleCheck aria-hidden />}>
                 Paid
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Pending">
+            <SampleCard label="Pending" command="STATUS CHIP WARNING + WITH ICON" commandContext="ICON: Clock3">
               <StatusChip tone="warning" icon={<Clock3 aria-hidden />}>
                 Pending
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Low stock">
+            <SampleCard label="Low stock" command="STATUS CHIP WARNING + WITH ICON" commandContext="ICON: TriangleAlert">
               <StatusChip tone="warning" icon={<TriangleAlert aria-hidden />}>
                 Low stock
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Paused">
+            <SampleCard label="Paused" command="STATUS CHIP WARNING + WITH ICON" commandContext="ICON: Pause">
               <StatusChip tone="warning" icon={<Pause aria-hidden />}>
                 Paused
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Overdue">
+            <SampleCard label="Overdue" command="STATUS CHIP DANGER + WITH ICON" commandContext="ICON: CircleAlert">
               <StatusChip tone="danger" icon={<CircleAlert aria-hidden />}>
                 Overdue
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Failed">
+            <SampleCard label="Failed" command="STATUS CHIP DANGER + WITH ICON" commandContext="ICON: CircleX">
               <StatusChip tone="danger" icon={<CircleX aria-hidden />}>
                 Failed
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Declined">
+            <SampleCard label="Declined" command="STATUS CHIP DANGER + WITH ICON" commandContext="ICON: Ban">
               <StatusChip tone="danger" icon={<Ban aria-hidden />}>
                 Declined
               </StatusChip>
             </SampleCard>
-            <SampleCard label="Void">
+            <SampleCard label="Void" command="STATUS CHIP DANGER + WITH ICON" commandContext="ICON: Ban">
               <StatusChip tone="danger" icon={<Ban aria-hidden />}>
                 Void
               </StatusChip>
@@ -505,7 +517,12 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="INTERACTIVE SAMPLE">
-            <SampleCard label="Click to select" hint={`Selected: ${FILTER_LABELS[singleFilter]}`}>
+            <SampleCard
+              label="Click to select"
+              hint={`Selected: ${FILTER_LABELS[singleFilter]}`}
+              command="FILTER CHIP"
+              commandContext="SINGLE SELECT · interactive"
+            >
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter sample">
                 {FILTER_KEYS.map((key) => (
                   <FilterChip
@@ -521,16 +538,16 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="STATES">
-            <SampleCard label="Unselected">
+            <SampleCard label="Unselected" command="FILTER CHIP">
               <FilterChip selected={false}>Inactive</FilterChip>
             </SampleCard>
             <SampleCard label="Selected" command="FILTER CHIP PRIMARY SELECTED">
               <FilterChip selected>Active</FilterChip>
             </SampleCard>
-            <SampleCard label="Disabled">
+            <SampleCard label="Disabled" command="FILTER CHIP + DISABLED">
               <FilterChip disabled>Needs attention</FilterChip>
             </SampleCard>
-            <SampleCard label="Disabled selected">
+            <SampleCard label="Disabled selected" command="FILTER CHIP PRIMARY SELECTED + DISABLED">
               <FilterChip selected disabled>
                 All
               </FilterChip>
@@ -550,7 +567,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="SINGLE SELECT">
-            <SampleCard label="One selected">
+            <SampleCard label="One selected" command="FILTER CHIP" commandContext="SINGLE SELECT">
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Single select filters">
                 {(["all", "active", "inactive"] as const).map((key) => (
                   <FilterChip
@@ -566,7 +583,12 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="MULTI SELECT">
-            <SampleCard label="Checks when selected" hint="Check only where it clarifies multi-select">
+            <SampleCard
+              label="Checks when selected"
+              hint="Check only where it clarifies multi-select"
+              command="FILTER CHIP"
+              commandContext="MULTI SELECT · showCheck"
+            >
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Multi select filters">
                 {MULTI_KEYS.map((key) => (
                   <FilterChip
@@ -595,54 +617,54 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="TAGS">
-            <SampleCard label="B2B">
+            <SampleCard label="B2B" command="TAG CHIP INFO">
               <TagChip tone="info">B2B</TagChip>
             </SampleCard>
             <SampleCard label="Weighted" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral">Weighted</TagChip>
             </SampleCard>
-            <SampleCard label="Tracked">
+            <SampleCard label="Tracked" command="TAG CHIP INFO">
               <TagChip tone="info">Tracked</TagChip>
             </SampleCard>
-            <SampleCard label="Preferred">
+            <SampleCard label="Preferred" command="TAG CHIP PRIMARY">
               <TagChip tone="primary">Preferred</TagChip>
             </SampleCard>
-            <SampleCard label="Warehouse">
+            <SampleCard label="Warehouse" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral">Warehouse</TagChip>
             </SampleCard>
-            <SampleCard label="Main branch">
+            <SampleCard label="Main branch" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral">Main branch</TagChip>
             </SampleCard>
-            <SampleCard label="Organization">
+            <SampleCard label="Organization" command="TAG CHIP INFO">
               <TagChip tone="info">Organization</TagChip>
             </SampleCard>
-            <SampleCard label="Personal">
+            <SampleCard label="Personal" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral">Personal</TagChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="WITH ICON (optional)">
-            <SampleCard label="B2B">
+            <SampleCard label="B2B" command="TAG CHIP INFO + WITH ICON" commandContext="ICON: Building2">
               <TagChip tone="info" icon={<Building2 aria-hidden />}>
                 B2B
               </TagChip>
             </SampleCard>
-            <SampleCard label="Warehouse">
+            <SampleCard label="Warehouse" command="TAG CHIP NEUTRAL + WITH ICON" commandContext="ICON: Warehouse">
               <TagChip tone="neutral" icon={<Warehouse aria-hidden />}>
                 Warehouse
               </TagChip>
             </SampleCard>
-            <SampleCard label="Main branch">
+            <SampleCard label="Main branch" command="TAG CHIP NEUTRAL + WITH ICON" commandContext="ICON: MapPin">
               <TagChip tone="neutral" icon={<MapPin aria-hidden />}>
                 Main branch
               </TagChip>
             </SampleCard>
-            <SampleCard label="Weighted">
+            <SampleCard label="Weighted" command="TAG CHIP NEUTRAL + WITH ICON" commandContext="ICON: Scale">
               <TagChip tone="neutral" icon={<Scale aria-hidden />}>
                 Weighted
               </TagChip>
             </SampleCard>
-            <SampleCard label="Preferred">
+            <SampleCard label="Preferred" command="TAG CHIP PRIMARY + WITH ICON" commandContext="ICON: Star">
               <TagChip tone="primary" icon={<Star aria-hidden />}>
                 Preferred
               </TagChip>
@@ -681,7 +703,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
                 )}
               </div>
             </SampleCard>
-            <SampleCard label="Reset">
+            <SampleCard label="Reset" explanatory>
               <Button type="button" variant="secondary" shape="soft" onClick={() => setRemovable([...DEFAULT_REMOVABLE])}>
                 Reset sample
               </Button>
@@ -701,16 +723,16 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="CANONICAL — INLINE [ Pending 3 ]">
-            <SampleCard label="NEUTRAL">
+            <SampleCard label="NEUTRAL" command="COUNT CHIP NEUTRAL">
               <CountChip layout="inline" tone="neutral" label="Orders" count={24} />
             </SampleCard>
-            <SampleCard label="INFO">
+            <SampleCard label="INFO" command="COUNT CHIP INFO">
               <CountChip layout="inline" tone="info" label="Pending" count={3} />
             </SampleCard>
-            <SampleCard label="SUCCESS">
+            <SampleCard label="SUCCESS" command="COUNT CHIP SUCCESS">
               <CountChip layout="inline" tone="success" label="Ready" count={8} />
             </SampleCard>
-            <SampleCard label="WARNING">
+            <SampleCard label="WARNING" command="COUNT CHIP WARNING">
               <CountChip layout="inline" tone="warning" label="Low stock" count={12} />
             </SampleCard>
             <SampleCard label="DANGER" command="COUNT CHIP DANGER">
@@ -719,19 +741,19 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="REFERENCE ONLY — SPLIT Pending [ 3 ]">
-            <SampleCard label="NEUTRAL">
+            <SampleCard label="NEUTRAL" command="COUNT CHIP NEUTRAL" commandContext="LAYOUT: SPLIT">
               <CountChip layout="split" tone="neutral" label="Orders" count={24} />
             </SampleCard>
-            <SampleCard label="INFO">
+            <SampleCard label="INFO" command="COUNT CHIP INFO" commandContext="LAYOUT: SPLIT">
               <CountChip layout="split" tone="info" label="Pending" count={3} />
             </SampleCard>
-            <SampleCard label="SUCCESS">
+            <SampleCard label="SUCCESS" command="COUNT CHIP SUCCESS" commandContext="LAYOUT: SPLIT">
               <CountChip layout="split" tone="success" label="Ready" count={8} />
             </SampleCard>
-            <SampleCard label="WARNING">
+            <SampleCard label="WARNING" command="COUNT CHIP WARNING" commandContext="LAYOUT: SPLIT">
               <CountChip layout="split" tone="warning" label="Low stock" count={12} />
             </SampleCard>
-            <SampleCard label="DANGER">
+            <SampleCard label="DANGER" command="COUNT CHIP DANGER" commandContext="LAYOUT: SPLIT">
               <CountChip layout="split" tone="danger" label="Overdue" count={5} />
             </SampleCard>
           </StaticSampleGroup>
@@ -748,13 +770,13 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-chips-count-badge"
       >
         <StaticSampleGroup title="COUNT BADGE">
-          <SampleCard label="Neutral 3">
+          <SampleCard label="Neutral 3" command="COUNT BADGE NEUTRAL">
             <CountBadge tone="neutral" count={3} />
           </SampleCard>
-          <SampleCard label="Primary 12">
+          <SampleCard label="Primary 12" command="COUNT BADGE PRIMARY">
             <CountBadge tone="primary" count={12} />
           </SampleCard>
-          <SampleCard label="Danger 99+">
+          <SampleCard label="Danger 99+" command="COUNT BADGE DANGER">
             <CountBadge tone="danger" count="99+" />
           </SampleCard>
         </StaticSampleGroup>
@@ -771,29 +793,45 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="ENTITY CARDS">
-            <SampleCard label="CUSTOMER · Kizy Fruits">
+            <SampleCard
+              label="CUSTOMER · Kizy Fruits"
+              command="TAG CHIP INFO"
+              commandContext="B2B = TAG CHIP INFO; Active = STATUS CHIP SUCCESS; Approved credit = STATUS CHIP SUCCESS"
+            >
               <TagChip tone="info">B2B</TagChip>
               <StatusChip tone="success">Active</StatusChip>
               <StatusChip tone="success">Approved credit</StatusChip>
             </SampleCard>
-            <SampleCard label="PRODUCT · Apple">
+            <SampleCard
+              label="PRODUCT · Apple"
+              command="TAG CHIP NEUTRAL"
+              commandContext="Weighted = TAG CHIP NEUTRAL; Tracked = TAG CHIP INFO; Low stock = STATUS CHIP WARNING"
+            >
               <TagChip tone="neutral">Weighted</TagChip>
               <TagChip tone="info">Tracked</TagChip>
               <StatusChip tone="warning">Low stock</StatusChip>
             </SampleCard>
-            <SampleCard label="WAREHOUSE · Main Warehouse">
+            <SampleCard
+              label="WAREHOUSE · Main Warehouse"
+              command="TAG CHIP NEUTRAL"
+              commandContext="Warehouse = TAG CHIP NEUTRAL; Active = STATUS CHIP SUCCESS; Preferred = TAG CHIP PRIMARY"
+            >
               <TagChip tone="neutral">Warehouse</TagChip>
               <StatusChip tone="success">Active</StatusChip>
               <TagChip tone="primary">Preferred</TagChip>
             </SampleCard>
-            <SampleCard label="ORDER · PO-20260911-000001">
+            <SampleCard
+              label="ORDER · PO-20260911-000001"
+              command="STATUS CHIP WARNING"
+              commandContext="Pending = STATUS CHIP WARNING; B2B = TAG CHIP INFO"
+            >
               <StatusChip tone="warning">Pending</StatusChip>
               <TagChip tone="info">B2B</TagChip>
             </SampleCard>
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PRODUCT FILTERS">
-            <SampleCard label="Filter bar">
+            <SampleCard label="Filter bar" command="FILTER CHIP" commandContext="PRODUCT FILTERS · single select">
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Product filters">
                 {(["all", "active", "lowStock", "needsAttention"] as const).map((key) => (
                   <FilterChip
@@ -806,7 +844,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ))}
               </div>
             </SampleCard>
-            <SampleCard label="ACTIVE FILTERS">
+            <SampleCard label="ACTIVE FILTERS" command="REMOVABLE CHIP">
               <div className="flex flex-wrap gap-1.5">
                 {activeFilters.length === 0 ? (
                   <span className="text-[length:var(--exits-text-sm)] text-muted">None</span>
@@ -825,7 +863,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
                 )}
               </div>
             </SampleCard>
-            <SampleCard label="Reset active filters">
+            <SampleCard label="Reset active filters" explanatory>
               <Button
                 type="button"
                 variant="secondary"

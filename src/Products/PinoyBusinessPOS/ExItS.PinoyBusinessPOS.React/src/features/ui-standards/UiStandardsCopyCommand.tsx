@@ -6,29 +6,61 @@ import { cn } from "@/lib/cn";
 export type UiStandardsStandardName = "Table" | "Button" | "Chip" | "Tabs" | "Card" | (string & {});
 
 export type UiStandardsCopyCommandProps = {
-  /** Locked standard name, e.g. "Tabs". */
-  standard: UiStandardsStandardName;
+  /** Locked standard name(s), e.g. "Tabs" or ["Card", "Chip"]. */
+  standard: UiStandardsStandardName | UiStandardsStandardName[];
   /** Compact semantic shorthand shown in the UI and used in Apply:. */
   command: string;
   className?: string;
-  /** Optional context line (future standards). */
+  /**
+   * Optional context (icon names, sample references, chip mappings).
+   * Shown compactly under the command; included in clipboard as Context: …
+   */
   context?: string;
 };
 
-/** Full clipboard text — compact UI shows only `command`. */
+function formatStandardLine(standard: UiStandardsStandardName | UiStandardsStandardName[]): string {
+  const standards = (Array.isArray(standard) ? standard : [standard]).map((s) => s.trim()).filter(Boolean);
+  if (standards.length === 0) {
+    return "Use the locked ExItS Standard.";
+  }
+  if (standards.length === 1) {
+    return `Use the locked ExItS ${standards[0]} Standard.`;
+  }
+  if (standards.length === 2) {
+    return `Use the locked ExItS ${standards[0]} Standard and ExItS ${standards[1]} Standard.`;
+  }
+  const head = standards.slice(0, -1).map((s) => `ExItS ${s}`).join(", ");
+  return `Use the locked ${head}, and ExItS ${standards[standards.length - 1]} Standard.`;
+}
+
+function formatContextBlock(context: string): string {
+  const trimmed = context.trim();
+  if (!trimmed) return "";
+  if (/^context\s*:/i.test(trimmed)) {
+    return trimmed;
+  }
+  // Multiline context → keep lines; single line → prefix Context:
+  if (trimmed.includes("\n")) {
+    return `Context:\n${trimmed}`;
+  }
+  return `Context: ${trimmed}`;
+}
+
+/** Full clipboard text — compact UI shows command (+ optional short context). */
 export function formatUiStandardsCursorClipboard(
-  standard: UiStandardsStandardName,
+  standard: UiStandardsStandardName | UiStandardsStandardName[],
   command: string,
   context?: string,
 ): string {
   const apply = command.trim().replace(/\s+/g, " ");
   const lines = [
-    `Use the locked ExItS ${standard} Standard.`,
+    formatStandardLine(standard),
     `Apply: ${apply}.`,
     "Preserve existing business behavior, domain rules, permissions, data flow, and API behavior unless explicitly instructed otherwise.",
   ];
-  if (context?.trim()) {
-    lines.splice(2, 0, context.trim());
+  const ctx = context?.trim() ? formatContextBlock(context) : "";
+  if (ctx) {
+    lines.splice(2, 0, ctx);
   }
   return lines.join("\n");
 }
@@ -75,6 +107,7 @@ export function UiStandardsCopyCommand({
   const resetTimer = useRef<number | null>(null);
   const detailsId = useId();
   const fullText = formatUiStandardsCursorClipboard(standard, command, context);
+  const standardAttr = Array.isArray(standard) ? standard.join("+") : standard;
 
   useEffect(() => {
     return () => {
@@ -107,12 +140,9 @@ export function UiStandardsCopyCommand({
 
   return (
     <div
-      className={cn(
-        "mt-1.5 border-t border-border pt-1.5",
-        className,
-      )}
+      className={cn("mt-1.5 border-t border-border pt-1.5", className)}
       data-testid="ui-standards-copy-command"
-      data-standard={standard}
+      data-standard={standardAttr}
       data-command={command}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
@@ -126,6 +156,11 @@ export function UiStandardsCopyCommand({
           <code className="mt-0.5 block break-words font-mono text-[length:var(--exits-text-xs)] leading-snug text-foreground">
             {command}
           </code>
+          {context?.trim() ? (
+            <code className="mt-0.5 block whitespace-pre-wrap break-words font-mono text-[length:var(--exits-text-xs)] leading-snug text-muted">
+              {context.trim()}
+            </code>
+          ) : null}
           {status === "failed" ? (
             <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]" role="status">
               Could not copy — select the command and copy manually.
@@ -201,7 +236,7 @@ export function UiStandardsCopyCommand({
 
 /** Optional wrapper props for sample cards that declare an explicit Cursor command. */
 export type UiStandardsSampleCommandProps = {
-  standard?: UiStandardsStandardName;
+  standard?: UiStandardsStandardName | UiStandardsStandardName[];
   command?: string;
   commandContext?: string;
 };

@@ -25,12 +25,16 @@ function SampleCard({
   testId,
   hint,
   command,
+  commandContext,
+  explanatory,
 }: {
   label: string;
   children: ReactNode;
   testId?: string;
   hint?: string;
   command?: string;
+  commandContext?: string;
+  explanatory?: boolean;
 }) {
   return (
     <UiStandardsSampleCard
@@ -39,6 +43,8 @@ function SampleCard({
       hint={hint}
       standard="Tabs"
       command={command}
+      commandContext={commandContext}
+      explanatory={explanatory}
     >
       {children}
     </UiStandardsSampleCard>
@@ -146,7 +152,11 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="DEFAULT RECOMMENDATIONS — APPROVED / LOCKED">
-            <SampleCard label="APPROVED / LOCKED" hint="Defaults for Cursor shorthand — explicit tasks may override">
+            <SampleCard
+              label="APPROVED / LOCKED"
+              hint="Defaults for Cursor shorthand — explicit tasks may override"
+              explanatory
+            >
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>PAGE / MODULE NAVIGATION → UNDERLINE</div>
                 <div>NORMAL CONTENT TABS → SOFT</div>
@@ -239,7 +249,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="Pill + active-aware Primary count">
+            <SampleCard label="Pill + active-aware Primary count" command="PILL TABS + WITH COUNT + PRIMARY COUNT">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Pill counts active-aware"
@@ -286,7 +296,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="Pill + icons">
+            <SampleCard label="Pill + icons" command="PILL TABS + WITH ICON">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Pill with icons"
@@ -371,7 +381,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SEGMENTED">
-            <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps" command="SEGMENTED TABS">
+            <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps" command="SEGMENTED TABS + WITH ICON">
               <ExitsTabs
                 variant="segmented"
                 ariaLabel="Segmented demo"
@@ -393,7 +403,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ENCLOSED">
-            <SampleCard label="Detail panel" hint="Selected tab connects to content border" command="ENCLOSED TABS">
+            <SampleCard label="Detail panel" hint="Selected tab connects to content border" command="ENCLOSED TABS + WITH COUNT">
               <ExitsTabs
                 variant="enclosed"
                 ariaLabel="Enclosed demo"
@@ -415,7 +425,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="VERTICAL">
-            <SampleCard label="Settings / admin" hint="Side indicator + soft selected surface" command="VERTICAL TABS">
+            <SampleCard label="Settings / admin" hint="Side indicator + soft selected surface" command="VERTICAL TABS + WITH COUNT">
               <ExitsTabs
                 variant="vertical"
                 ariaLabel="Vertical demo"
@@ -453,7 +463,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="PILL BAR — TEXT">
-            <SampleCard label="Text only" hint="Equal width showcase">
+            <SampleCard label="Text only" hint="Equal width showcase" command="PILL BAR TABS + EQUAL WIDTH + NO ICON">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -472,7 +482,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PILL BAR — ICON + TEXT">
-            <SampleCard label="Restrained Lucide icons">
+            <SampleCard label="Restrained Lucide icons" command="PILL BAR TABS + CONTENT WIDTH + WITH ICON">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -568,7 +578,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="EQUAL WIDTH · CONTENT WIDTH">
-            <SampleCard label="layout=equal" hint="Shares available width">
+            <SampleCard label="layout=equal" hint="Shares available width" command="PILL BAR TABS + EQUAL WIDTH">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -584,7 +594,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="layout=content" hint="Width follows label">
+            <SampleCard label="layout=content" hint="Width follows label" command="PILL BAR TABS + CONTENT WIDTH">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -619,7 +629,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="B — PRIMARY ACCENT" hint="Soft fill · stronger Primary text">
+            <SampleCard label="B — PRIMARY ACCENT" hint="Soft fill · stronger Primary text" command="PILL BAR TABS + EQUAL WIDTH + WITH COUNT + PRIMARY ACCENT ACTIVE">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -638,7 +648,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="MOBILE / MANY TABS">
-            <SampleCard label="Horizontal scroll when needed" hint="Do not shrink labels / wrap rows">
+            <SampleCard label="Horizontal scroll when needed" hint="Do not shrink labels / wrap rows" command="PILL BAR TABS + CONTENT WIDTH + SCROLLABLE">
               <div className="max-w-[22rem]">
                 <ExitsTabs
                   variant="pillBar"
@@ -662,7 +672,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="REAL-WORLD — PILL BAR">
-            <SampleCard label="ORDER STATUS">
+            <SampleCard label="ORDER STATUS" command="PILL BAR TABS + EQUAL WIDTH + WITH COUNT + NEUTRAL COUNT">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -677,7 +687,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="PRODUCT TYPE">
+            <SampleCard label="PRODUCT TYPE" command="PILL BAR TABS + CONTENT WIDTH + NO ICON">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -692,7 +702,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="INVENTORY">
+            <SampleCard label="INVENTORY" command="PILL BAR TABS + CONTENT WIDTH + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -707,7 +717,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="USER TYPE">
+            <SampleCard label="USER TYPE" command="PILL BAR TABS + EQUAL WIDTH + NO ICON">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -737,7 +747,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="A — NEUTRAL COUNT ALWAYS">
-            <SampleCard label="Quiet counts">
+            <SampleCard label="Quiet counts" command="SOFT TABS + WITH COUNT + NEUTRAL COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Neutral counts"
@@ -753,7 +763,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="B — ACTIVE-AWARE COUNT">
-            <SampleCard label="Selected → Primary badge">
+            <SampleCard label="Selected → Primary badge" command="SOFT TABS + WITH COUNT + PRIMARY COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Active-aware counts"
@@ -784,7 +794,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="C — SEMANTIC COUNT WHEN MEANING MATTERS">
-            <SampleCard label="Warning / danger only for state">
+            <SampleCard label="Warning / danger only for state" command="SOFT TABS + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Semantic counts"
@@ -818,9 +828,12 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
               ["SOFT", "soft", iconOptSoft, setIconOptSoft],
               ["PILL", "pill", iconOptPill, setIconOptPill],
             ] as const
-          ).map(([label, variant, value, setValue]) => (
+          ).map(([label, variant, value, setValue]) => {
+            const base =
+              variant === "underline" ? "UNDERLINE TABS" : variant === "soft" ? "SOFT TABS" : "PILL TABS";
+            return (
             <StaticSampleGroup key={variant} title={label}>
-              <SampleCard label="TEXT ONLY">
+              <SampleCard label="TEXT ONLY" command={`${base} + NO ICON + NO COUNT`}>
                 <ExitsTabs
                   variant={variant}
                   ariaLabel={`${label} text only`}
@@ -833,7 +846,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                   ]}
                 />
               </SampleCard>
-              <SampleCard label="ICON + TEXT">
+              <SampleCard label="ICON + TEXT" command={`${base} + WITH ICON`}>
                 <ExitsTabs
                   variant={variant}
                   ariaLabel={`${label} icon text`}
@@ -846,7 +859,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                   ]}
                 />
               </SampleCard>
-              <SampleCard label="TEXT + COUNT">
+              <SampleCard label="TEXT + COUNT" command={`${base} + WITH COUNT + NEUTRAL COUNT`}>
                 <ExitsTabs
                   variant={variant}
                   ariaLabel={`${label} text count`}
@@ -859,7 +872,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                   ]}
                 />
               </SampleCard>
-              <SampleCard label="ICON + TEXT + COUNT">
+              <SampleCard label="ICON + TEXT + COUNT" command={`${base} + WITH ICON + WITH COUNT`}>
                 <ExitsTabs
                   variant={variant}
                   ariaLabel={`${label} icon text count`}
@@ -891,7 +904,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 />
               </SampleCard>
             </StaticSampleGroup>
-          ))}
+            );
+          })}
         </div>
       </UiStandardsSection>
 
@@ -906,7 +920,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="WITH ICON">
-            <SampleCard label="Icon + text">
+            <SampleCard label="Icon + text" command="UNDERLINE TABS + WITH ICON">
               <ExitsTabs
                 variant="underline"
                 ariaLabel="Icon tabs"
@@ -926,7 +940,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ICON + TEXT + COUNT">
-            <SampleCard label="Common POS pattern">
+            <SampleCard label="Common POS pattern" command="SOFT TABS + WITH ICON + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Icon count tabs"
@@ -960,7 +974,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ICON ONLY — SPECIAL USE">
-            <SampleCard label="Tool views" hint="aria-label + title required">
+            <SampleCard label="Tool views" hint="aria-label + title required" command="SEGMENTED TABS + ICON ONLY">
               <ExitsTabs
                 variant="segmented"
                 iconOnly
@@ -989,7 +1003,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="DISABLED">
-            <SampleCard label="Reports disabled">
+            <SampleCard label="Reports disabled" command="UNDERLINE TABS + DISABLED">
               <ExitsTabs
                 variant="underline"
                 ariaLabel="Disabled demo"
@@ -1005,7 +1019,11 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="LOADING COUNT">
-            <SampleCard label="Quiet placeholder">
+            <SampleCard
+              label="Quiet placeholder"
+              command="SOFT TABS + WITH COUNT"
+              commandContext="LOADING COUNT"
+            >
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Loading count demo"
@@ -1020,7 +1038,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="LONG LABELS">
-            <SampleCard label="Truncation + title">
+            <SampleCard label="Truncation + title" command="UNDERLINE TABS" commandContext="LONG LABELS">
               <ExitsTabs
                 variant="underline"
                 ariaLabel="Long labels"
@@ -1047,6 +1065,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard
               label="Boundary"
               hint="Visual standard is shared; routing stays page-owned"
+              explanatory
             >
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>
@@ -1072,7 +1091,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tabs.mobile", open)}
         testId="ui-standards-tabs-mobile"
       >
-        <SampleCard label="Module navigation · scrollable" hint="Resize / narrow the pane to scroll">
+        <SampleCard label="Module navigation · scrollable" hint="Resize / narrow the pane to scroll" command="UNDERLINE TABS + SCROLLABLE">
           <div className="max-w-full sm:max-w-md">
             <ExitsTabs
               variant="underline"
@@ -1107,7 +1126,11 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="ORDER STATUS — PILL + COUNT">
-            <SampleCard label="Without icons">
+            <SampleCard
+              label="Without icons"
+              testId="ui-standards-tabs-rw-order-status"
+              command="PILL TABS + WITH COUNT"
+            >
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Order status pill"
@@ -1124,7 +1147,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="CATALOG — PILL">
-            <SampleCard label="Without icons">
+            <SampleCard label="Without icons" command="PILL TABS + NO ICON">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Catalog pill"
@@ -1138,7 +1161,11 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="With icons">
+            <SampleCard
+              label="With icons"
+              testId="ui-standards-tabs-rw-catalog-icons"
+              command="PILL TABS + WITH ICON"
+            >
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Catalog pill icons"
@@ -1155,7 +1182,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="INVENTORY — PILL + SEMANTIC COUNTS">
-            <SampleCard label="Without icons">
+            <SampleCard label="Without icons" command="PILL TABS + WITH COUNT + SEMANTIC COUNT + NO ICON">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Inventory pill"
@@ -1169,7 +1196,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="With icons">
+            <SampleCard label="With icons" command="PILL TABS + WITH ICON + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Inventory pill icons"
@@ -1204,7 +1231,11 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PRODUCTS">
-            <SampleCard label="Underline + counts">
+            <SampleCard
+              label="Underline + counts"
+              testId="ui-standards-tabs-rw-products-underline"
+              command="UNDERLINE TABS + WITH COUNT"
+            >
               <ExitsTabs
                 variant="underline"
                 ariaLabel="Products tabs"
@@ -1221,7 +1252,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ORDERS">
-            <SampleCard label="Soft + counts">
+            <SampleCard label="Soft + counts" command="SOFT TABS + WITH COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Orders tabs"
@@ -1238,7 +1269,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="INVENTORY">
-            <SampleCard label="Semantic low-stock / expiring">
+            <SampleCard label="Semantic low-stock / expiring" command="SOFT TABS + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Inventory tabs"
@@ -1255,7 +1286,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="CUSTOMER DETAIL">
-            <SampleCard label="Enclosed detail">
+            <SampleCard label="Enclosed detail" command="ENCLOSED TABS">
               <ExitsTabs
                 variant="enclosed"
                 ariaLabel="Customer detail tabs"
@@ -1278,7 +1309,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SETTINGS — VERTICAL">
-            <SampleCard label="Admin sections">
+            <SampleCard label="Admin sections" command="VERTICAL TABS + WITH COUNT">
               <ExitsTabs
                 variant="vertical"
                 ariaLabel="Settings vertical"

@@ -36,6 +36,7 @@ import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
 
 import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
+import type { UiStandardsStandardName } from "@/features/ui-standards/UiStandardsCopyCommand";
 
 function SampleFrame({
   label,
@@ -44,6 +45,9 @@ function SampleFrame({
   testId,
   className,
   command,
+  commandContext,
+  explanatory,
+  standard = "Card",
 }: {
   label: string;
   children: ReactNode;
@@ -51,6 +55,9 @@ function SampleFrame({
   testId?: string;
   className?: string;
   command?: string;
+  commandContext?: string;
+  explanatory?: boolean;
+  standard?: UiStandardsStandardName | UiStandardsStandardName[];
 }) {
   return (
     <UiStandardsSampleCard
@@ -59,8 +66,10 @@ function SampleFrame({
       hint={hint}
       className={className}
       bordered={false}
-      standard="Card"
+      standard={standard}
       command={command}
+      commandContext={commandContext}
+      explanatory={explanatory}
     >
       {children}
     </UiStandardsSampleCard>
@@ -245,7 +254,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="NOT EVERYTHING NEEDS A CARD">
-            <SampleFrame label="Guidance" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="Guidance" className="sm:col-span-2 lg:col-span-3" explanatory={true}>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 Use Card when grouping related information provides meaningful structure. Avoid card
                 inside card, every field in a card, or excessive dashboard boxes — prefer whitespace
@@ -255,7 +264,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="DEFAULT USAGE RECOMMENDATIONS — APPROVED / LOCKED">
-            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3" explanatory={true}>
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>NORMAL CONTENT → BORDERED / SURFACE</div>
                 <div>DASHBOARD METRIC → KPI CARD</div>
@@ -270,19 +279,19 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="TREATMENTS">
-            <SampleFrame label="SURFACE">
+            <SampleFrame label="SURFACE" command="BASIC CARD + SURFACE">
               <Card treatment="surface">
                 <CardTitle as="h4">Surface</CardTitle>
                 <CardDescription>Minimal weight — forms, content sections.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="BORDERED" testId="ui-standards-card-treatment-bordered">
+            <SampleFrame label="BORDERED" testId="ui-standards-card-treatment-bordered" command="BASIC CARD + BORDERED">
               <Card treatment="bordered">
                 <CardTitle as="h4">Bordered</CardTitle>
                 <CardDescription>Most common POS card — subtle 1px border.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="ELEVATED">
+            <SampleFrame label="ELEVATED" command="BASIC CARD + ELEVATED">
               <Card treatment="elevated">
                 <CardTitle as="h4">Elevated</CardTitle>
                 <CardDescription>Restrained shadow — important summaries.</CardDescription>
@@ -292,6 +301,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               label="INTERACTIVE"
               testId="ui-standards-card-interactive"
               hint={interactiveClicked ? "Clicked — local demo state" : "Click to toggle demo state"}
+              command="BASIC CARD + INTERACTIVE"
             >
               <Card
                 treatment="interactive"
@@ -306,13 +316,13 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="SELECTED">
+            <SampleFrame label="SELECTED" command="BASIC CARD + SELECTED">
               <Card treatment="selected" selected>
                 <CardTitle as="h4">Selected</CardTitle>
                 <CardDescription>Primary border + soft fill — chosen option.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="ACCENT · start · warning">
+            <SampleFrame label="ACCENT · start · warning" command="STATUS CARD WARNING">
               <Card treatment="accent" accentTone="warning" accentPosition="start">
                 <CardTitle as="h4">Accent</CardTitle>
                 <CardDescription>Semantic inline-start accent — restrained.</CardDescription>
@@ -321,13 +331,13 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="RADIUS">
-            <SampleFrame label="STANDARD">
+            <SampleFrame label="STANDARD" command="BASIC CARD + BORDERED" commandContext="RADIUS: STANDARD">
               <Card treatment="bordered" radius="standard">
                 <CardTitle as="h4">Standard radius</CardTitle>
                 <CardDescription>Default medium radius token.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="SOFT">
+            <SampleFrame label="SOFT" command="BASIC CARD + BORDERED" commandContext="RADIUS: SOFT — candidate">
               <Card treatment="bordered" radius="soft">
                 <CardTitle as="h4">Soft radius</CardTitle>
                 <CardDescription>Slightly larger modern radius — candidate.</CardDescription>
@@ -336,13 +346,13 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SHADOW">
-            <SampleFrame label="NO SHADOW · bordered">
+            <SampleFrame label="NO SHADOW · bordered" command="BASIC CARD + BORDERED">
               <Card treatment="bordered">
                 <CardTitle as="h4">No shadow</CardTitle>
                 <CardDescription>Border + surface — preferred default.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="SUBTLE SHADOW · elevated">
+            <SampleFrame label="SUBTLE SHADOW · elevated" command="BASIC CARD + ELEVATED">
               <Card treatment="elevated">
                 <CardTitle as="h4">Subtle shadow</CardTitle>
                 <CardDescription>Elevated treatment only — not floating.</CardDescription>
@@ -363,7 +373,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="BASIC CONTENT">
-            <SampleFrame label="STORE INFORMATION">
+            <SampleFrame label="STORE INFORMATION" command="BASIC CARD + BORDERED + WITH FOOTER">
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -388,7 +398,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SUMMARY">
-            <SampleFrame label="ORDER SUMMARY">
+            <SampleFrame label="ORDER SUMMARY" command="SUMMARY CARD + BORDERED + WITH CHIP" commandContext="Pending = STATUS CHIP WARNING" standard={["Card", "Chip"]}>
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -422,7 +432,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="FOOTERS">
-            <SampleFrame label="A · ACTION FOOTER">
+            <SampleFrame label="A · ACTION FOOTER" command="BASIC CARD + WITH FOOTER" commandContext="Use the approved Action Footer sample from /ui-standards → Cards.">
               <Card treatment="bordered">
                 <CardContent>
                   <p className="m-0 text-muted">Unsaved branch settings.</p>
@@ -437,7 +447,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardFooter>
               </Card>
             </SampleFrame>
-            <SampleFrame label="B · METADATA FOOTER">
+            <SampleFrame label="B · METADATA FOOTER" command="BASIC CARD + WITH FOOTER" commandContext="Use the approved Metadata Footer sample from /ui-standards → Cards.">
               <Card treatment="bordered">
                 <CardContent>
                   <p className="m-0">Inventory snapshot for Main Warehouse.</p>
@@ -447,7 +457,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardFooter>
               </Card>
             </SampleFrame>
-            <SampleFrame label="C · SPLIT FOOTER">
+            <SampleFrame label="C · SPLIT FOOTER" command="BASIC CARD + WITH FOOTER" commandContext="Use the approved Split Footer sample from /ui-standards → Cards.">
               <Card treatment="bordered">
                 <CardContent>
                   <p className="m-0">Customer credit limit review.</p>
@@ -465,7 +475,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="HEADER ACTIONS">
-            <SampleFrame label="ICON ONLY · ROUND · GHOST">
+            <SampleFrame label="ICON ONLY · ROUND · GHOST" command="BASIC CARD + WITH ACTIONS" commandContext="HEADER ACTION: ICON ONLY ROUND GHOST / MoreHorizontal">
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -486,7 +496,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardHeader>
               </Card>
             </SampleFrame>
-            <SampleFrame label="REFRESH">
+            <SampleFrame label="REFRESH" command="BASIC CARD + WITH ACTIONS" commandContext="HEADER ACTION: ICON ONLY ROUND GHOST / RefreshCw">
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -508,7 +518,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="WITH CHIPS">
-            <SampleFrame label="ACCOUNT DETAILS">
+            <SampleFrame label="ACCOUNT DETAILS" command="BASIC CARD + WITH CHIP" commandContext="B2B = TAG CHIP INFO; Active = STATUS CHIP SUCCESS" standard={["Card", "Chip"]}>
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -527,7 +537,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="WITH TABS">
-            <SampleFrame label="SOFT TABS IN CARD" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="SOFT TABS IN CARD" className="sm:col-span-2 lg:col-span-3" command="BASIC CARD + BORDERED" commandContext="SOFT TABS inside Card — use locked Tabs Standard." standard={["Card", "Tabs"]}>
               <Card treatment="bordered">
                 <CardHeader>
                   <div className="min-w-0">
@@ -590,7 +600,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                   </p>
                 </Card>
               </SampleFrame>
-              <SampleFrame label="B · ICON KPI">
+              <SampleFrame label="B · ICON KPI" command="KPI CARD + WITH ICON">
                 <Card treatment="bordered">
                   <CardHeader className="items-center gap-2">
                     <Coins className="size-4 shrink-0 text-muted" aria-hidden />
@@ -606,14 +616,14 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                   </CardContent>
                 </Card>
               </SampleFrame>
-              <SampleFrame label="C · KPI + CHIP">
+              <SampleFrame label="C · KPI + CHIP" command="KPI CARD + WITH CHIP" commandContext="Needs attention = STATUS CHIP WARNING" standard={["Card", "Chip"]}>
                 <Card treatment="bordered">
                   <CardDescription className="uppercase tracking-wide">Low stock</CardDescription>
                   <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">18</p>
                   <StatusChip tone="warning">Needs attention</StatusChip>
                 </Card>
               </SampleFrame>
-              <SampleFrame label="D · KPI + SUBMETRIC">
+              <SampleFrame label="D · KPI + SUBMETRIC" command="KPI CARD + WITH COUNT">
                 <Card treatment="bordered">
                   <CardDescription className="uppercase tracking-wide">Orders</CardDescription>
                   <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">126</p>
@@ -626,7 +636,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="KPI COLOR RULE">
-            <SampleFrame label="NEUTRAL DEFAULT" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="NEUTRAL DEFAULT" className="sm:col-span-2 lg:col-span-3" explanatory={true}>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 Normal KPI cards use neutral surface. Primary only for intentionally emphasized
                 metrics; success / warning / danger via small accents — not rainbow dashboards.
@@ -646,7 +656,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-action"
       >
         <StaticSampleGroup title="ACTION CARDS">
-          <SampleFrame label="NEW SALE">
+          <SampleFrame label="NEW SALE" command="ACTION CARD + BORDERED">
             <Card treatment="bordered">
               <CardHeader>
                 <ShoppingCart className="size-4 text-[var(--exits-primary)]" aria-hidden />
@@ -678,7 +688,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardFooter>
             </Card>
           </SampleFrame>
-          <SampleFrame label="ADD PRODUCT">
+          <SampleFrame label="ADD PRODUCT" command="ACTION CARD + BORDERED">
             <Card treatment="bordered">
               <CardHeader>
                 <Package className="size-4 text-muted" aria-hidden />
@@ -732,7 +742,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardFooter>
             </Card>
           </SampleFrame>
-          <SampleFrame label="WITHOUT AVATAR">
+          <SampleFrame label="WITHOUT AVATAR" command="ENTITY CARD + WITH CHIP + WITH ACTIONS">
             <Card treatment="bordered" className="flex h-full min-h-[11.5rem] flex-col gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
                 <EntityLeadingIcon />
@@ -787,7 +797,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardContent>
             </Card>
           </SampleFrame>
-          <SampleFrame label="VERTICAL · MISSING IMAGE">
+          <SampleFrame label="VERTICAL · MISSING IMAGE" command="PRODUCT CARD + WITH IMAGE + WITH CHIP" commandContext="Missing image fallback — no fake zoom.">
             <Card treatment="bordered">
               <CardMedia className="aspect-[4/3] w-full">
                 <ProductImagePlaceholder label="No product image" />
@@ -804,7 +814,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardContent>
             </Card>
           </SampleFrame>
-          <SampleFrame label="HORIZONTAL" className="sm:col-span-2 lg:col-span-3">
+          <SampleFrame label="HORIZONTAL" className="sm:col-span-2 lg:col-span-3" command="PRODUCT CARD + HORIZONTAL + WITH IMAGE + WITH CHIP">
             <Card treatment="bordered" layout="horizontal">
               <CardMedia className="size-20 shrink-0">
                 <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
@@ -888,7 +898,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SELECTABLE INDICATORS — APPROVED / LOCKED">
-            <SampleFrame label="A · RADIO / CIRCLE">
+            <SampleFrame label="A · RADIO / CIRCLE" command="SELECTABLE CARD" commandContext="Indicator: Radio / Circle — candidate comparison from /ui-standards → Cards · Selectable.">
               <Card treatment="bordered" className="min-h-[5.75rem]" aria-hidden>
                 <SelectableCardBody
                   title="Main Branch"
@@ -898,7 +908,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 />
               </Card>
             </SampleFrame>
-            <SampleFrame label="B · CIRCLECHECK">
+            <SampleFrame label="B · CIRCLECHECK" command="SELECTABLE CARD + SELECTED" commandContext="Indicator: CircleCheck — candidate comparison from /ui-standards → Cards · Selectable.">
               <Card treatment="selected" selected className="min-h-[5.75rem]" aria-hidden>
                 <SelectableCardBody
                   title="Main Branch"
@@ -908,7 +918,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 />
               </Card>
             </SampleFrame>
-            <SampleFrame label="C · BORDER ONLY">
+            <SampleFrame label="C · BORDER ONLY" command="SELECTABLE CARD + SELECTED" commandContext="Indicator: Border only — candidate comparison from /ui-standards → Cards · Selectable.">
               <Card treatment="selected" selected className="min-h-[5.75rem]" aria-hidden>
                 <SelectableCardBody
                   title="Main Branch"
@@ -921,7 +931,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="MULTI SELECT NOTE">
-            <SampleFrame label="CHECKBOX WHERE VALID" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="CHECKBOX WHERE VALID" className="sm:col-span-2 lg:col-span-3" explanatory={true}>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 Single-select uses radio semantics. Multi-select (e.g. filters) may use checkbox
                 patterns — do not mix navigate/interactive with selection semantics on the same
@@ -943,7 +953,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="ACCENT · START">
-            <SampleFrame label="WARNING">
+            <SampleFrame label="WARNING" command="STATUS CARD WARNING">
               <Card treatment="accent" accentTone="warning" accentPosition="start">
                 <CardTitle as="h4">Low stock</CardTitle>
                 <CardDescription>18 products need attention.</CardDescription>
@@ -954,7 +964,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardFooter>
               </Card>
             </SampleFrame>
-            <SampleFrame label="DANGER">
+            <SampleFrame label="DANGER" command="STATUS CARD DANGER">
               <Card treatment="accent" accentTone="danger" accentPosition="start">
                 <CardTitle as="h4">Payment failed</CardTitle>
                 <CardDescription>GCash payment requires review.</CardDescription>
@@ -965,7 +975,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </CardFooter>
               </Card>
             </SampleFrame>
-            <SampleFrame label="SUCCESS">
+            <SampleFrame label="SUCCESS" command="STATUS CARD SUCCESS">
               <Card treatment="accent" accentTone="success" accentPosition="start">
                 <CardTitle as="h4">Order completed</CardTitle>
                 <CardDescription>Order #SO12345 completed.</CardDescription>
@@ -974,19 +984,19 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ACCENT POSITIONS — APPROVED / LOCKED (default START)">
-            <SampleFrame label="TOP · warning">
+            <SampleFrame label="TOP · warning" command="STATUS CARD WARNING" commandContext="ACCENT POSITION: TOP">
               <Card treatment="accent" accentTone="warning" accentPosition="top">
                 <CardTitle as="h4">Top accent</CardTitle>
                 <CardDescription>Block-start border accent.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="TINT · warning">
+            <SampleFrame label="TINT · warning" command="STATUS CARD WARNING" commandContext="ACCENT POSITION: TINT">
               <Card treatment="accent" accentTone="warning" accentPosition="tint">
                 <CardTitle as="h4">Soft tint</CardTitle>
                 <CardDescription>Subtle semantic background fill.</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="START · canonical default">
+            <SampleFrame label="START · canonical default" command="STATUS CARD WARNING" commandContext="ACCENT POSITION: START — canonical default">
               <Card treatment="accent" accentTone="warning" accentPosition="start">
                 <CardTitle as="h4">Start accent</CardTitle>
                 <CardDescription>Inline-start — canonical default.</CardDescription>
@@ -1006,7 +1016,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-compact"
       >
         <StaticSampleGroup title="COMPACT CARD">
-          <SampleFrame label="MAIN WAREHOUSE · padding=compact">
+          <SampleFrame label="MAIN WAREHOUSE · padding=compact" command="COMPACT CARD + WITH CHIP" commandContext="Active = STATUS CHIP SUCCESS" standard={["Card", "Chip"]}>
             <Card treatment="bordered" padding="compact">
               <CardHeader className="items-center gap-2">
                 <Warehouse className="size-4 shrink-0 text-muted" aria-hidden />
@@ -1035,7 +1045,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-states"
       >
         <StaticSampleGroup title="CARD STATES">
-          <SampleFrame label="LOADING">
+          <SampleFrame label="LOADING" command="BASIC CARD" commandContext="STATE: LOADING">
             <Card treatment="bordered" aria-busy="true" aria-label="Loading">
               <div className="grid gap-2">
                 <div className="h-4 w-2/5 animate-pulse rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)]" />
@@ -1045,7 +1055,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </div>
             </Card>
           </SampleFrame>
-          <SampleFrame label="EMPTY">
+          <SampleFrame label="EMPTY" command="BASIC CARD" commandContext="STATE: EMPTY">
             <Card treatment="bordered">
               <CardContent className="flex flex-col items-center gap-2 py-2 text-center">
                 <ClipboardList className="size-6 text-muted" aria-hidden />
@@ -1057,7 +1067,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardContent>
             </Card>
           </SampleFrame>
-          <SampleFrame label="ERROR">
+          <SampleFrame label="ERROR" command="BASIC CARD" commandContext="STATE: ERROR">
             <Card treatment="bordered">
               <CardContent className="grid gap-2">
                 <div className="flex items-start gap-2">
@@ -1088,93 +1098,110 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-real-world"
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <Card treatment="elevated">
-            <CardDescription className="uppercase tracking-wide">Today&apos;s sales</CardDescription>
-            <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
-              {formatPeso(24850)}
-            </p>
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-success)]">
-              +8.4% from yesterday
-            </p>
-          </Card>
+          <SampleFrame label="TODAY'S SALES" command="KPI CARD + ELEVATED">
+            <Card treatment="elevated">
+              <CardDescription className="uppercase tracking-wide">Today&apos;s sales</CardDescription>
+              <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                {formatPeso(24850)}
+              </p>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-success)]">
+                +8.4% from yesterday
+              </p>
+            </Card>
+          </SampleFrame>
 
-          <Card treatment="accent" accentTone="warning" accentPosition="start">
-            <CardTitle as="h4">Low stock</CardTitle>
-            <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">18 products</p>
-            <StatusChip tone="warning">Needs attention</StatusChip>
-          </Card>
+          <SampleFrame
+            label="LOW STOCK"
+            command="STATUS CARD WARNING + WITH CHIP"
+            commandContext="Needs attention = STATUS CHIP WARNING"
+            standard={["Card", "Chip"]}
+          >
+            <Card treatment="accent" accentTone="warning" accentPosition="start">
+              <CardTitle as="h4">Low stock</CardTitle>
+              <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">18 products</p>
+              <StatusChip tone="warning">Needs attention</StatusChip>
+            </Card>
+          </SampleFrame>
 
-          <Card treatment="bordered" className="flex h-full flex-col gap-3">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <EntityAvatar initials="KF" />
-              <div className="min-w-0 flex-1">
-                <CardTitle>Kizy Fruits</CardTitle>
-                <CardDescription>Main Branch</CardDescription>
+          <SampleFrame label="KIZY FRUITS" command="ENTITY CARD + WITH CHIP + WITH ACTIONS">
+            <Card treatment="bordered" className="flex h-full flex-col gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <EntityAvatar initials="KF" />
+                <div className="min-w-0 flex-1">
+                  <CardTitle>Kizy Fruits</CardTitle>
+                  <CardDescription>Main Branch</CardDescription>
+                </div>
               </div>
-            </div>
-            <CardContent className="flex flex-1 flex-col gap-2 pt-0">
-              <div className="flex flex-wrap gap-1.5">
-                <TagChip tone="info">B2B</TagChip>
-                <StatusChip tone="success">Active</StatusChip>
-              </div>
-            </CardContent>
-            <CardFooter className="mt-auto justify-end border-t-0 pt-0">
-              <Button type="button" variant="outline" shape="soft">
-                View details
-              </Button>
-            </CardFooter>
-          </Card>
+              <CardContent className="flex flex-1 flex-col gap-2 pt-0">
+                <div className="flex flex-wrap gap-1.5">
+                  <TagChip tone="info">B2B</TagChip>
+                  <StatusChip tone="success">Active</StatusChip>
+                </div>
+              </CardContent>
+              <CardFooter className="mt-auto justify-end border-t-0 pt-0">
+                <Button type="button" variant="outline" shape="soft">
+                  View details
+                </Button>
+              </CardFooter>
+            </Card>
+          </SampleFrame>
 
-          <Card treatment="bordered" layout="horizontal">
-            <CardMedia className="size-16 shrink-0">
-              <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
-            </CardMedia>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <CardTitle as="h4">Apple</CardTitle>
-              <CardDescription>{formatPeso(120)}/kg</CardDescription>
-              <div className="flex flex-wrap gap-1">
-                <TagChip tone="neutral">Weighted</TagChip>
-                <StatusChip tone="warning">Low stock</StatusChip>
+          <SampleFrame label="APPLE · HORIZONTAL" command="PRODUCT CARD + HORIZONTAL + WITH IMAGE + WITH CHIP">
+            <Card treatment="bordered" layout="horizontal">
+              <CardMedia className="size-16 shrink-0">
+                <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
+              </CardMedia>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <CardTitle as="h4">Apple</CardTitle>
+                <CardDescription>{formatPeso(120)}/kg</CardDescription>
+                <div className="flex flex-wrap gap-1">
+                  <TagChip tone="neutral">Weighted</TagChip>
+                  <StatusChip tone="warning">Low stock</StatusChip>
+                </div>
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Stock 8.5 kg</p>
               </div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Stock 8.5 kg</p>
-            </div>
-          </Card>
+            </Card>
+          </SampleFrame>
 
-          <Card treatment="bordered" className="flex h-full flex-col gap-3">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <span
-                aria-hidden
-                className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)] text-muted"
-              >
-                <Warehouse className="size-4" aria-hidden />
-              </span>
-              <div className="min-w-0 flex-1">
-                <CardTitle>Main Warehouse</CardTitle>
-                <CardDescription>124 products</CardDescription>
+          <SampleFrame label="MAIN WAREHOUSE" command="ENTITY CARD + WITH CHIP">
+            <Card treatment="bordered" className="flex h-full flex-col gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span
+                  aria-hidden
+                  className="flex size-9 shrink-0 items-center justify-center rounded-[var(--exits-radius-sm)] bg-[var(--exits-surface-muted)] text-muted"
+                >
+                  <Warehouse className="size-4" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <CardTitle>Main Warehouse</CardTitle>
+                  <CardDescription>124 products</CardDescription>
+                </div>
               </div>
-            </div>
-            <CardContent className="pt-0">
-              <div className="flex flex-wrap gap-1.5">
-                <StatusChip tone="success">Active</StatusChip>
-                <TagChip tone="primary">Preferred</TagChip>
-              </div>
-            </CardContent>
-          </Card>
+              <CardContent className="pt-0">
+                <div className="flex flex-wrap gap-1.5">
+                  <StatusChip tone="success">Active</StatusChip>
+                  <TagChip tone="primary">Preferred</TagChip>
+                </div>
+              </CardContent>
+            </Card>
+          </SampleFrame>
 
-          <Card treatment="bordered">
-            <CardHeader>
-              <PackagePlus className="size-4 text-muted" aria-hidden />
-              <div className="min-w-0">
-                <CardTitle>Request stock</CardTitle>
-                <CardDescription>Move inventory from a connected warehouse.</CardDescription>
-              </div>
-            </CardHeader>
-            <CardFooter className="justify-end border-t-0 pt-0">
-              <Button type="button" variant="default">
-                Request stock
-              </Button>
-            </CardFooter>
-          </Card>
+          <SampleFrame label="REQUEST STOCK · REAL WORLD" command="ACTION CARD + BORDERED">
+            <Card treatment="bordered">
+              <CardHeader>
+                <PackagePlus className="size-4 text-muted" aria-hidden />
+                <div className="min-w-0">
+                  <CardTitle>Request stock</CardTitle>
+                  <CardDescription>Move inventory from a connected warehouse.</CardDescription>
+                </div>
+              </CardHeader>
+              <CardFooter className="justify-end border-t-0 pt-0">
+                <Button type="button" variant="default">
+                  Request stock
+                </Button>
+              </CardFooter>
+            </Card>
+          </SampleFrame>
         </div>
       </UiStandardsSection>
 
@@ -1189,7 +1216,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="MOTION RECOMMENDATIONS — APPROVED / LOCKED">
-            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="APPROVED / LOCKED" className="sm:col-span-2 lg:col-span-3" explanatory={true}>
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>NORMAL INFORMATION CARD → STATIC</div>
                 <div>CLICKABLE ENTITY → LIFT</div>
@@ -1203,58 +1230,85 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="CARD MOTION — HOVER TO COMPARE">
-            <SampleFrame label="STATIC" className="sm:col-span-2 lg:col-span-3">
-              <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr))]">
-                {(
-                  [
-                    { label: "STATIC", motion: "none" as const, extraLift: false },
-                    { label: "LIFT", motion: "lift" as const, extraLift: false },
-                    { label: "EXPAND", motion: "expand" as const, extraLift: false },
-                    { label: "ACCENT", motion: "accent" as const, extraLift: false },
-                    { label: "LIFT + ACCENT", motion: "accent" as const, extraLift: true },
-                  ] as const
-                ).map((item) => (
-                  <Card
-                    key={item.label}
-                    treatment="bordered"
-                    interactive
-                    motion={item.extraLift ? "lift" : item.motion}
-                    className={cn(
-                      item.extraLift &&
-                        "hover:border-[var(--exits-primary)] hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_22%,transparent),var(--exits-shadow-md)]",
-                    )}
-                    data-testid={
-                      item.motion === "expand"
-                        ? "ui-standards-card-motion-expand"
-                        : item.motion === "lift" && !item.extraLift
-                          ? "ui-standards-card-motion-lift"
-                          : undefined
-                    }
-                  >
-                    <CardTitle as="h4">Kizy Fruits</CardTitle>
-                    <CardDescription>Main Branch · Iloilo</CardDescription>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <TagChip tone="info">B2B</TagChip>
-                      <StatusChip tone="success">Active</StatusChip>
-                    </div>
-                    <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                      {item.label}
-                    </p>
-                  </Card>
-                ))}
-              </div>
-            </SampleFrame>
+            {(
+              [
+                {
+                  label: "STATIC",
+                  motion: "none" as const,
+                  extraLift: false,
+                  command: "ENTITY CARD + STATIC",
+                },
+                {
+                  label: "LIFT",
+                  motion: "lift" as const,
+                  extraLift: false,
+                  command: "ENTITY CARD + INTERACTIVE + LIFT",
+                },
+                {
+                  label: "EXPAND",
+                  motion: "expand" as const,
+                  extraLift: false,
+                  command: "ENTITY CARD + INTERACTIVE + EXPAND",
+                },
+                {
+                  label: "ACCENT",
+                  motion: "accent" as const,
+                  extraLift: false,
+                  command: "ENTITY CARD + ACCENT",
+                },
+                {
+                  label: "LIFT + ACCENT",
+                  motion: "accent" as const,
+                  extraLift: true,
+                  command: "ENTITY CARD + ACCENT + LIFT",
+                },
+              ] as const
+            ).map((item) => (
+              <SampleFrame key={item.label} label={item.label} command={item.command}>
+                <Card
+                  treatment="bordered"
+                  interactive
+                  motion={item.extraLift ? "lift" : item.motion}
+                  className={cn(
+                    item.extraLift &&
+                      "hover:border-[var(--exits-primary)] hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_22%,transparent),var(--exits-shadow-md)]",
+                  )}
+                  data-testid={
+                    item.motion === "expand"
+                      ? "ui-standards-card-motion-expand"
+                      : item.motion === "lift" && !item.extraLift
+                        ? "ui-standards-card-motion-lift"
+                        : undefined
+                  }
+                >
+                  <CardTitle as="h4">Kizy Fruits</CardTitle>
+                  <CardDescription>Main Branch · Iloilo</CardDescription>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <TagChip tone="info">B2B</TagChip>
+                    <StatusChip tone="success">Active</StatusChip>
+                  </div>
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+                    {item.label}
+                  </p>
+                </Card>
+              </SampleFrame>
+            ))}
           </StaticSampleGroup>
 
           <StaticSampleGroup title="EXPAND INTENSITY — APPROVED / LOCKED (default STANDARD ~1.02)">
             {(
               [
-                { label: "SUBTLE · ~1.01", scale: "subtle" as const },
-                { label: "STANDARD · ~1.02", scale: "standard" as const },
-                { label: "STRONG · ~1.03", scale: "strong" as const },
+                { label: "SUBTLE · ~1.01", scale: "subtle" as const, scaleLabel: "SUBTLE" },
+                { label: "STANDARD · ~1.02", scale: "standard" as const, scaleLabel: "STANDARD" },
+                { label: "STRONG · ~1.03", scale: "strong" as const, scaleLabel: "STRONG" },
               ] as const
             ).map((item) => (
-              <SampleFrame key={item.scale} label={item.label}>
+              <SampleFrame
+                key={item.scale}
+                label={item.label}
+                command="ENTITY CARD + INTERACTIVE + EXPAND"
+                commandContext={`EXPAND SCALE: ${item.scaleLabel}`}
+              >
                 <Card
                   treatment="bordered"
                   interactive
@@ -1315,7 +1369,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="PRICING / PLAN CARD — SPECIAL USE">
-            <SampleFrame label="PLANS" className="sm:col-span-2 lg:col-span-3" command="FEATURED CARD">
+            <SampleFrame label="PLANS" className="sm:col-span-2 lg:col-span-3" command="FEATURED CARD + ACCENT + EXPAND" commandContext="Pricing / plan cards — special use. Recommended plan uses FEATURED treatment.">
               <div
                 className="grid items-stretch gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr))]"
                 data-testid="ui-standards-card-pricing"
@@ -1420,7 +1474,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="GRADIENT BORDER — SPECIAL / FEATURED USE">
-            <SampleFrame label="SHOWCASE ONLY" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="SHOWCASE ONLY" className="sm:col-span-2 lg:col-span-3" command="FEATURED CARD" commandContext="Gradient border — special / featured use only; not a default treatment.">
               <div
                 className="rounded-[calc(var(--exits-radius-md)+1px)] bg-gradient-to-br from-[var(--exits-primary)] to-[var(--exits-info)] p-px"
                 data-testid="ui-standards-card-gradient-border"
@@ -1436,7 +1490,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="MEDIA ZOOM">
-            <SampleFrame label="ZOOM ONLY">
+            <SampleFrame label="ZOOM ONLY" command="PRODUCT CARD + MEDIA ZOOM">
               <Card treatment="bordered" interactive motion="none" data-testid="ui-standards-card-media-zoom">
                 <CardMedia zoom className="aspect-[4/3] w-full">
                   <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
@@ -1462,7 +1516,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </div>
               </Card>
             </SampleFrame>
-            <SampleFrame label="NO IMAGE · NO ZOOM">
+            <SampleFrame label="NO IMAGE · NO ZOOM" command="PRODUCT CARD + LIFT" commandContext="Missing image — no media zoom.">
               <Card treatment="bordered" interactive motion="lift">
                 <CardMedia className="aspect-[4/3] w-full">
                   <ProductImagePlaceholder label="No product image" />
@@ -1476,7 +1530,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="HOVER REVEAL — SPECIAL USE">
-            <SampleFrame label="ACTIONS ON HOVER / FOCUS" className="sm:col-span-2">
+            <SampleFrame label="ACTIONS ON HOVER / FOCUS" className="sm:col-span-2" command="ENTITY CARD + LIFT + HOVER REVEAL + WITH ACTIONS">
               <Card
                 treatment="bordered"
                 motion="lift"
@@ -1500,7 +1554,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="COUNTDOWN / INFO STRIP">
-            <SampleFrame label="COMPACT HORIZONTAL · ACCENT" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="COMPACT HORIZONTAL · ACCENT" className="sm:col-span-2 lg:col-span-3" command="COMPACT CARD + ACCENT + HORIZONTAL">
               <Card
                 treatment="accent"
                 accentTone="primary"
@@ -1536,14 +1590,15 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("cards.cheatsheet", open)}
         testId="ui-standards-cards-cheatsheet"
       >
-        <div
-          className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/30 p-3 font-mono text-[length:var(--exits-text-xs)] leading-relaxed text-foreground"
-          data-testid="ui-standards-cards-cheatsheet-body"
-        >
-          <p className="m-0 mb-2 font-sans text-[length:var(--exits-text-sm)] font-semibold tracking-wide text-muted">
-            {t("uiStandards.cardsPilotBadge")}
-          </p>
-          <pre className="m-0 whitespace-pre-wrap">{`CARD STANDARD
+        <SampleFrame label="CHEATSHEET" explanatory>
+          <div
+            className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/30 p-3 font-mono text-[length:var(--exits-text-xs)] leading-relaxed text-foreground"
+            data-testid="ui-standards-cards-cheatsheet-body"
+          >
+            <p className="m-0 mb-2 font-sans text-[length:var(--exits-text-sm)] font-semibold tracking-wide text-muted">
+              {t("uiStandards.cardsPilotBadge")}
+            </p>
+            <pre className="m-0 whitespace-pre-wrap">{`CARD STANDARD
 APPROVED / LOCKED
 
 TYPES
@@ -1589,7 +1644,8 @@ BOUNDARY
 
 STATUS
   APPROVED / LOCKED — Docs/UI/exits-card-standard.md`}</pre>
-        </div>
+          </div>
+        </SampleFrame>
       </UiStandardsSection>
     </div>
   );

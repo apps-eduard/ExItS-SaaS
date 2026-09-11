@@ -15,10 +15,15 @@ export type UiStandardsSampleCardProps = {
   contentClassName?: string;
   /** When false, omit the bordered muted sample chrome (tables/cards frames). */
   bordered?: boolean;
-  standard?: UiStandardsStandardName;
+  standard?: UiStandardsStandardName | UiStandardsStandardName[];
   /** Explicit semantic Cursor shorthand for this sample. */
   command?: string;
   commandContext?: string;
+  /**
+   * Explanatory / non-implementable chrome (notes, legends).
+   * Excluded from coverage audits when true.
+   */
+  explanatory?: boolean;
 };
 
 /**
@@ -35,7 +40,9 @@ export function UiStandardsSampleCard({
   standard,
   command,
   commandContext,
+  explanatory = false,
 }: UiStandardsSampleCardProps) {
+  const hasCopy = Boolean(standard && command?.trim());
   return (
     <div
       className={cn(
@@ -45,6 +52,8 @@ export function UiStandardsSampleCard({
         className,
       )}
       data-testid={testId}
+      data-ui-standards-sample={explanatory ? "explanatory" : "implementable"}
+      data-has-copy={hasCopy ? "true" : "false"}
     >
       <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
       <div className={cn("min-w-0", contentClassName)}>{children}</div>
