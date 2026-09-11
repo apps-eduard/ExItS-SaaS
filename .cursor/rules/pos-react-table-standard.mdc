@@ -1,0 +1,29 @@
+---
+description: PinoyBusinessPOS React ExitsTable standard — reuse foundation; follow Docs/UI/exits-table-standard.md vocabulary
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Table Standard
+
+For PinoyBusinessPOS React table / list work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-table-standard.md` (authoritative contract).
+2. Reuse the existing ExitsTable component family in `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`.
+3. Do **not** invent another table design or component family unless the task explicitly authorizes an exception.
+4. Recognize the documented shorthand vocabulary:
+   - `EXITS TABLE`
+   - `FULL TABLE` / `FULLY IMPLEMENT THE TABLE`
+   - `SIMPLE TABLE`
+   - `SEARCH ON` / `SEARCH OFF`
+   - `FILTER ON` / `FILTER OFF`
+   - `SORT ON` / `SORT OFF`
+   - `MULTI SELECT ON` / `MULTI SELECT OFF`
+   - `OUTPUT ICONS ON` / `OUTPUT ICONS OFF`
+   - `PAGE SIZE ON` / `PAGE SIZE OFF`
+   - `PAGINATION ON` / `PAGINATION OFF`
+   - `FOOTER ON` / `FOOTER OFF`
+   - `INLINE EDIT ON` / `INLINE EDIT OFF`
+5. Explicit task overrides take precedence over standard defaults.
+
+Keep detailed rules in the markdown standard — do not invent conflicting placement, page sizes, or output designs here.
