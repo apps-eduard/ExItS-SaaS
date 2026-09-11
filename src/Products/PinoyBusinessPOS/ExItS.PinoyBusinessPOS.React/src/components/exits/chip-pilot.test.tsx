@@ -108,6 +108,17 @@ describe("ExItS chip visual pilot primitives", () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
+  it("TagChip defaults to square; StatusChip defaults to pill", () => {
+    const { unmount } = render(createElement(TagChip, { tone: "info", children: "B2B" }));
+    expect(screen.getByText("B2B").closest("[data-shape]")?.getAttribute("data-shape")).toBe(
+      "square",
+    );
+    unmount();
+
+    render(createElement(StatusChip, { tone: "success", children: "Active" }));
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("pill");
+  });
+
   it("UI Standards chip disclosure defaults match pilot open/closed map", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.status"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.filter"]).toBe(true);

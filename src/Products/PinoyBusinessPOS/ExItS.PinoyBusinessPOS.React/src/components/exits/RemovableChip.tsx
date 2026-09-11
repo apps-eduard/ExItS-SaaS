@@ -19,7 +19,7 @@ export type RemovableChipProps = {
 };
 
 /**
- * Selected value / active filter chip with trailing remove (PILOT).
+ * Selected value / active filter chip with trailing remove (APPROVED / LOCKED).
  * Default shape remains pill for touch clarity.
  */
 export function RemovableChip({

@@ -13,13 +13,14 @@ export type CountChipProps = {
   count: ReactNode;
   tone?: ChipTone;
   shape?: ChipShape;
-  /** `inline` = [ Pending 3 ] · `split` = Pending [ 3 ] (both candidates). */
+  /** Canonical layout: `inline` = [ Pending 3 ]. `split` kept for reference only. */
   layout?: CountChipLayout;
   className?: string;
 };
 
 /**
- * Compact label + count chip (PILOT — layout/shape not locked).
+ * Compact label + count chip (APPROVED / LOCKED).
+ * Default shape: soft. Canonical layout: inline integrated label + count.
  */
 export function CountChip({
   label,
@@ -72,8 +73,8 @@ export type CountBadgeProps = {
 };
 
 /**
- * Tiny count-only badge candidate (menu / notification / tab counts) — PILOT.
- * Remains round/pill by design (not square).
+ * Tiny count-only badge (menu / notification / tab counts) — APPROVED / LOCKED.
+ * Remains round/pill by design (not square). Separate from CountChip.
  */
 export function CountBadge({ count, tone = "neutral", className }: CountBadgeProps) {
   return (

@@ -1,0 +1,24 @@
+---
+description: PinoyBusinessPOS React ExItS Chip standard — reuse shared chip families; follow Docs/UI/exits-chip-standard.md
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Chip Standard
+
+For PinoyBusinessPOS React chip / badge / filter / tag / count work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-chip-standard.md` (authoritative contract).
+2. Reuse the shared ExItS chip system: `chip-variants.ts`, `StatusChip`, `FilterChip`, `TagChip`, `RemovableChip`, `CountChip` / `CountBadge`.
+3. Do **not** invent page-local chip / pill / badge visual systems when the shared foundation can express the need.
+4. Use locked families + tones + shapes (`family` / `tone` / `shape`) — no `SquareTagChip`-style explosion.
+5. Default shapes: STATUS/FILTER/REMOVABLE → **PILL**; TAG → **SQUARE**; COUNT → **SOFT**; COUNT BADGE → **PILL**.
+6. Style through ExItS semantic tokens — **PRIMARY is not hardcoded green** (`--exits-primary`); SUCCESS/WARNING/DANGER/INFO stay semantic.
+7. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort), including `--exits-chip-square-*`.
+8. Read-only chips (Status / Tag / Count) must not imitate buttons; Filter / Removable need keyboard, focus, and correct ARIA.
+9. Respect `prefers-reduced-motion` on interactive chips.
+10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+Keep detailed rules in the markdown standard — do not invent conflicting variants or colors here.
+Visual reference: `/ui-standards` → Chips.
+Chip shapes are independent from the locked Button Standard shapes.

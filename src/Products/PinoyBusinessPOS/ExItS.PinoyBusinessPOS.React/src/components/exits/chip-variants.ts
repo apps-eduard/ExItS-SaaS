@@ -1,8 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
 /**
- * Shared ExItS chip visual foundation (PILOT / NOT LOCKED).
+ * Shared ExItS chip visual foundation (APPROVED / LOCKED).
  * Family + tone + shape are independent; components choose HTML roles.
+ * See Docs/UI/exits-chip-standard.md.
  */
 export const chipToneClasses = {
   neutral:
@@ -20,7 +21,7 @@ export const chipToneClasses = {
 
 export type ChipTone = keyof typeof chipToneClasses;
 
-/** Chip shape candidates — independent from Button shapes. */
+/** Chip shapes — independent from Button shapes. See exits-chip-standard.md. */
 export type ChipShape = "pill" | "soft" | "square";
 
 export const chipShapeClasses = {
@@ -71,7 +72,7 @@ export const chipSurfaceVariants = cva(
   },
 );
 
-/** Interactive filter density — pilot default remains pill. */
+/** Interactive filter density — default shape remains pill. */
 export const filterChipVariants = cva(
   [
     "group/filter-chip inline-flex max-w-full shrink-0 items-center justify-center gap-[var(--exits-chip-gap)]",

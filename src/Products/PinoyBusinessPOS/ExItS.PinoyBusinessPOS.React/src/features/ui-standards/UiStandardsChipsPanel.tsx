@@ -186,14 +186,14 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleCard>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="SHAPE RECOMMENDATIONS — CANDIDATE ONLY">
-            <SampleCard label="NOT LOCKED" hint="Defaults are pilot suggestions only">
+          <StaticSampleGroup title="LOCKED DEFAULT SHAPES">
+            <SampleCard label="APPROVED / LOCKED" hint="Explicit shape overrides remain allowed">
               <div className="grid w-full gap-1 text-[length:var(--exits-text-xs)] text-muted">
-                <div>STATUS CHIP → PILL or SOFT</div>
+                <div>STATUS CHIP → PILL</div>
                 <div>FILTER CHIP → PILL</div>
-                <div>TAG CHIP → SQUARE / SOFT</div>
+                <div>TAG CHIP → SQUARE</div>
                 <div>REMOVABLE CHIP → PILL</div>
-                <div>COUNT CHIP → SOFT / SQUARE</div>
+                <div>COUNT CHIP → SOFT</div>
                 <div>COUNT BADGE → PILL / ROUND</div>
               </div>
             </SampleCard>
@@ -204,8 +204,8 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="chips.compact-tags"
         title={t("uiStandards.chipCompactTagsTitle")}
-        description="Square compact metadata labels — tiny padding, ~4px radius, read-only. Not filter buttons."
-        summary="SQUARE · compact"
+        description="Square compact metadata labels — tiny padding, ~4px radius, read-only. Tag default shape."
+        summary="SQUARE · locked default"
         open={isOpen("chips.compact-tags")}
         onOpenChange={(open) => setOpen("chips.compact-tags", open)}
         testId="ui-standards-chips-compact-tags"
@@ -689,14 +689,14 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="chips.count"
         title={t("uiStandards.chipCountTitle")}
-        description="Two count layout candidates — do not lock yet. Tabular nums for counts."
-        summary="COUNT · A/B"
+        description="Integrated label + count is canonical. Tabular nums for counts. Default shape: SOFT."
+        summary="COUNT · SOFT"
         open={isOpen("chips.count")}
         onOpenChange={(open) => setOpen("chips.count", open)}
         testId="ui-standards-chips-count"
       >
         <div className="grid gap-3">
-          <StaticSampleGroup title="OPTION A — INLINE [ Pending 3 ]">
+          <StaticSampleGroup title="CANONICAL — INLINE [ Pending 3 ]">
             <SampleCard label="NEUTRAL">
               <CountChip layout="inline" tone="neutral" label="Orders" count={24} />
             </SampleCard>
@@ -714,7 +714,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleCard>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="OPTION B — SPLIT Pending [ 3 ]">
+          <StaticSampleGroup title="REFERENCE ONLY — SPLIT Pending [ 3 ]">
             <SampleCard label="NEUTRAL">
               <CountChip layout="split" tone="neutral" label="Orders" count={24} />
             </SampleCard>
@@ -737,13 +737,13 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="chips.count-badge"
         title={t("uiStandards.chipCountBadgeTitle")}
-        description="Tiny count-only candidate for menus, notifications, and tabs."
-        summary="BADGE · candidate"
+        description="Tiny count-only indicator for menus, notifications, and tabs. Separate from CountChip."
+        summary="BADGE · PILL"
         open={isOpen("chips.count-badge")}
         onOpenChange={(open) => setOpen("chips.count-badge", open)}
         testId="ui-standards-chips-count-badge"
       >
-        <StaticSampleGroup title="COUNT BADGE — CANDIDATE">
+        <StaticSampleGroup title="COUNT BADGE">
           <SampleCard label="Neutral 3">
             <CountBadge tone="neutral" count={3} />
           </SampleCard>
@@ -843,7 +843,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
         id="chips.cheatsheet"
         title={t("uiStandards.chipCheatTitle")}
         description={t("uiStandards.chipCheatLede")}
-        summary="PILOT · NOT LOCKED"
+        summary="APPROVED · LOCKED"
         open={isOpen("chips.cheatsheet")}
         onOpenChange={(open) => setOpen("chips.cheatsheet", open)}
         testId="ui-standards-chips-cheatsheet"
@@ -869,25 +869,31 @@ OPTIONS
 
 EXAMPLES
   Published         → STATUS CHIP SUCCESS PILL
-  Pending           → STATUS CHIP WARNING SOFT
+  Pending           → STATUS CHIP WARNING
   Beta              → TAG CHIP INFO SQUARE
-  B2B               → TAG CHIP INFO SQUARE
-  Weighted          → TAG CHIP NEUTRAL SQUARE
+  B2B               → TAG CHIP INFO
+  Weighted          → TAG CHIP NEUTRAL
   Selected filter   → FILTER CHIP PRIMARY PILL SELECTED
   Branch: Main      → REMOVABLE CHIP PILL
   Overdue 5         → COUNT CHIP DANGER SOFT
   Notifications 12  → COUNT BADGE PRIMARY
 
-CANDIDATE DEFAULTS (NOT LOCKED)
-  STATUS → PILL or SOFT
+LOCKED DEFAULTS
+  STATUS → PILL
   FILTER → PILL
-  TAG → SQUARE / SOFT
+  TAG → SQUARE
   REMOVABLE → PILL
-  COUNT → SOFT / SQUARE
-  COUNT BADGE → PILL / ROUND
+  COUNT → SOFT
+  COUNT BADGE → PILL
+
+EQUIVALENCE
+  TAG CHIP INFO ≡ TAG CHIP INFO SQUARE
+  STATUS CHIP SUCCESS ≡ STATUS CHIP SUCCESS PILL
+  COUNT CHIP WARNING ≡ COUNT CHIP WARNING SOFT
+  FILTER CHIP SELECTED ≡ FILTER CHIP PRIMARY PILL SELECTED
 
 STATUS
-  PILOT / NOT LOCKED — inspect /ui-standards before locking`}</pre>
+  APPROVED / LOCKED — Docs/UI/exits-chip-standard.md`}</pre>
         </div>
       </UiStandardsSection>
     </div>

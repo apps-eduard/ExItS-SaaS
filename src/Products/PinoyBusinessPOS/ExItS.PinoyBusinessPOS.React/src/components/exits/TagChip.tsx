@@ -16,13 +16,13 @@ export type TagChipProps = {
 };
 
 /**
- * Read-only descriptive attribute chip (PILOT).
- * Not a status and not interactive. Square is the compact metadata candidate.
+ * Read-only descriptive attribute chip (APPROVED / LOCKED).
+ * Not a status and not interactive. Default shape is square (compact metadata).
  */
 export function TagChip({
   children,
   tone = "neutral",
-  shape = "pill",
+  shape = "square",
   className,
   icon,
   title,

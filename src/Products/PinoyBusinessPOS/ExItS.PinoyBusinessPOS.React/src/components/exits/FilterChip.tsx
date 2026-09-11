@@ -6,7 +6,7 @@ import { filterChipVariants, type ChipShape } from "@/components/exits/chip-vari
 export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   children: ReactNode;
   selected?: boolean;
-  /** Pilot default remains pill — easier to distinguish from compact tags. */
+  /** Default remains pill — easier to distinguish from compact tags. */
   shape?: ChipShape;
   /** Show a check when selected (multi-select clarity). */
   showCheck?: boolean;
@@ -14,8 +14,8 @@ export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 };
 
 /**
- * Interactive filter / selection chip (PILOT).
- * Button semantics — not a StatusChip.
+ * Interactive filter / selection chip (APPROVED / LOCKED).
+ * Button semantics — not a StatusChip. Default shape: pill.
  */
 export function FilterChip({
   children,
