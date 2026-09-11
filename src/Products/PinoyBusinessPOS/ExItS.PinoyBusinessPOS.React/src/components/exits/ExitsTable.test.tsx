@@ -352,7 +352,7 @@ describe("ExitsTable foundation", () => {
     expect(screen.getByRole("menuitem", { name: /Edit all/i })).toBeInTheDocument();
   });
 
-  it("keeps stealth editor groups and quiet danger cancel class for alignment cues", () => {
+  it("keeps stealth editor groups and quiet reset class for alignment cues", () => {
     render(
       <ExitsTableContainer>
         <ExitsTable>
@@ -376,8 +376,8 @@ describe("ExitsTable foundation", () => {
               </ExitsTableCell>
               <ExitsTableCell cellAlign="actions" colSize="actions">
                 <ExitsTableActions>
-                  <button type="button" className="exits-table__action-cancel" aria-label="Cancel Apple editing">
-                    Cancel
+                  <button type="button" className="exits-table__action-reset" aria-label="Reset Apple to original">
+                    Reset
                   </button>
                 </ExitsTableActions>
               </ExitsTableCell>
@@ -389,8 +389,8 @@ describe("ExitsTable foundation", () => {
 
     expect(screen.getByTestId("qty-edit-group")).toHaveClass("exits-table__qty-edit");
     expect(screen.getByTestId("money-edit-group")).toHaveClass("exits-table__money-edit");
-    expect(screen.getByRole("button", { name: "Cancel Apple editing" })).toHaveClass(
-      "exits-table__action-cancel",
+    expect(screen.getByRole("button", { name: "Reset Apple to original" })).toHaveClass(
+      "exits-table__action-reset",
     );
   });
 });

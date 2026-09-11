@@ -658,6 +658,20 @@ html {
   min-height: var(--exits-table-action-size);
 }
 
+/* Quiet reset — ghost surface + muted icon (discards draft / returns to original). */
+.exits-table__action-reset {
+  color: var(--exits-muted, #5b6b60);
+}
+
+.exits-table__action-reset:hover {
+  color: var(--exits-foreground, inherit);
+  background: color-mix(in srgb, var(--exits-surface-muted, #eef2ef) 85%, transparent);
+}
+
+.exits-table__action-reset:focus-visible {
+  color: var(--exits-foreground, inherit);
+}
+
 /* Quiet discard/cancel — ghost surface + Danger icon (not solid danger). */
 .exits-table__action-cancel {
   color: var(--exits-danger);

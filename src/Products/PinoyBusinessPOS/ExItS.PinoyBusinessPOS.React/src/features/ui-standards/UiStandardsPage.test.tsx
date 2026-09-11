@@ -110,16 +110,37 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-edit-qty-apple")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-edit-unit-cost-apple")).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
-        name: "Cancel Apple editing",
-      }),
-    ).toHaveClass("exits-table__action-cancel");
+    const resetBtn = within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+      name: "Reset Apple to original",
+    });
+    expect(resetBtn).toHaveClass("exits-table__action-reset");
+    // Unchanged draft → Reset exits edit mode.
+    await user.click(resetBtn);
+    expect(screen.getByTestId("ui-standards-main-row-apple")).not.toHaveAttribute("data-editing");
+
     await user.click(
       within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
-        name: "Cancel Apple editing",
+        name: "Edit Apple",
       }),
     );
+    await user.click(screen.getByRole("menuitem", { name: "SKU" }));
+    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
+    await user.clear(screen.getByTestId("ui-standards-edit-sku-apple"));
+    await user.type(screen.getByTestId("ui-standards-edit-sku-apple"), "CHANGED-SKU");
+    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toHaveValue("CHANGED-SKU");
+    await user.click(
+      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+        name: "Reset Apple to original",
+      }),
+    );
+    expect(screen.getByTestId("ui-standards-main-row-apple")).toHaveAttribute("data-editing", "true");
+    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toHaveValue("PH-FRU-APPLE");
+    await user.click(
+      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+        name: "Reset Apple to original",
+      }),
+    );
+    expect(screen.getByTestId("ui-standards-main-row-apple")).not.toHaveAttribute("data-editing");
 
     await user.click(screen.getByTestId("ui-standards-tab-buttons"));
     expect(screen.getByTestId("ui-standards-buttons-section")).toBeInTheDocument();

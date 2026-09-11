@@ -6,6 +6,7 @@ import {
   LoaderCircle,
   MoreHorizontal,
   Pencil,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { Button, buttonIconMotion } from "@/components/ui/button";
@@ -106,6 +107,12 @@ type EditErrors = {
   sku?: string;
   qty?: string;
   unitCost?: string;
+};
+
+type EditBaseline = {
+  sku: string;
+  qty: string;
+  unitCost: string;
 };
 
 function qtyLabel(line: DemoLine): string {
@@ -248,6 +255,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   const [editQty, setEditQty] = useState("2");
   const [editUnitCost, setEditUnitCost] = useState("180.00");
   const [editErrors, setEditErrors] = useState<EditErrors>({});
+  const [editBaseline, setEditBaseline] = useState<EditBaseline | null>(null);
   const [cellEditValue, setCellEditValue] = useState("180.00");
   const [cellEditing, setCellEditing] = useState(false);
   const [mobileEditingId, setMobileEditingId] = useState<string | null>(null);
@@ -343,6 +351,25 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [editingId, mobileEditingId]);
 
+  useEffect(() => {
+    if (!editingId) return;
+    const activeId = editingId;
+    const focusTestId = editingFields.has("sku")
+      ? `ui-standards-edit-sku-${activeId}`
+      : editingFields.has("quantity")
+        ? `ui-standards-edit-qty-${activeId}`
+        : editingFields.has("unitCost")
+          ? `ui-standards-edit-unit-cost-${activeId}`
+          : null;
+    if (!focusTestId) return;
+    const timer = window.setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>(`[data-testid="${focusTestId}"]`);
+      el?.focus();
+      el?.select?.();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [editingId, editingFields]);
+
   function toggleSort(key: DemoSortKey) {
     const next = cycleExitsTableSort(sortKey, sortDirection, key);
     setSortKey(next.key as DemoSortKey | null);
@@ -372,9 +399,15 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   }
 
   function loadEditDraft(line: DemoLine) {
-    setEditSku(line.sku);
-    setEditQty(String(line.qty));
-    setEditUnitCost(line.unitCost.toFixed(2));
+    const baseline: EditBaseline = {
+      sku: line.sku,
+      qty: String(line.qty),
+      unitCost: line.unitCost.toFixed(2),
+    };
+    setEditBaseline(baseline);
+    setEditSku(baseline.sku);
+    setEditQty(baseline.qty);
+    setEditUnitCost(baseline.unitCost);
     setEditErrors({});
   }
 
@@ -399,12 +432,56 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   function cancelRowEdit() {
     setEditingId(null);
     setEditingFields(new Set());
+    setEditBaseline(null);
+    setEditErrors({});
+  }
+
+  /**
+   * Reset: put draft values back to the originals from when edit started.
+   * If already at originals, exit edit mode (mouse-friendly leave without Save).
+   */
+  function resetRowEdit() {
+    if (!editBaseline) {
+      cancelRowEdit();
+      return;
+    }
+    const alreadyOriginal =
+      editSku === editBaseline.sku &&
+      editQty === editBaseline.qty &&
+      editUnitCost === editBaseline.unitCost;
+    if (alreadyOriginal) {
+      cancelRowEdit();
+      return;
+    }
+    setEditSku(editBaseline.sku);
+    setEditQty(editBaseline.qty);
+    setEditUnitCost(editBaseline.unitCost);
     setEditErrors({});
   }
 
   function cancelMobileEdit() {
     setMobileEditingId(null);
     setMobileEditingFields(new Set());
+    setEditBaseline(null);
+    setEditErrors({});
+  }
+
+  function resetMobileEdit() {
+    if (!editBaseline) {
+      cancelMobileEdit();
+      return;
+    }
+    const alreadyOriginal =
+      editSku === editBaseline.sku &&
+      editQty === editBaseline.qty &&
+      editUnitCost === editBaseline.unitCost;
+    if (alreadyOriginal) {
+      cancelMobileEdit();
+      return;
+    }
+    setEditSku(editBaseline.sku);
+    setEditQty(editBaseline.qty);
+    setEditUnitCost(editBaseline.unitCost);
     setEditErrors({});
   }
 
@@ -802,12 +879,12 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                                 <Check className="size-4" aria-hidden />
                               </IconAction>
                               <IconAction
-                                label={`Cancel ${line.name} editing`}
-                                title="Cancel editing"
-                                className="exits-table__action-cancel"
-                                onClick={() => cancelRowEdit()}
+                                label={`Reset ${line.name} to original`}
+                                title="Reset"
+                                className="exits-table__action-reset"
+                                onClick={() => resetRowEdit()}
                               >
-                                <CircleX className="size-4" aria-hidden />
+                                <RotateCcw className="size-4" aria-hidden />
                               </IconAction>
                             </>
                           ) : DEMO_EDITABLE_FIELDS.length > 0 ? (
@@ -1004,11 +1081,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                               type="button"
                               variant="ghost"
                               shape="soft"
-                              className="exits-table__action-cancel"
-                              onClick={() => cancelMobileEdit()}
+                              className="exits-table__action-reset"
+                              onClick={() => resetMobileEdit()}
                             >
-                              <CircleX className="size-4" aria-hidden />
-                              Cancel
+                              <RotateCcw className="size-4" aria-hidden />
+                              Reset
                             </Button>
                             <Button
                               type="button"
@@ -1051,9 +1128,10 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         </ExitsTableContainer>
         <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
           Pencil opens the Edit field menu from page-configured editable columns. Choose one field or
-          Edit all. Stealth editors keep table typography; Product and Line Total stay read-only;
-          Line Total previews draft totals when Quantity or Unit cost is active. Quantity here is
-          sample data — real inventory stock changes use audited movements, not free overwrite.
+          Edit all — the chosen editor focuses automatically. Reset restores the original values; if
+          already original, Reset exits edit mode. Escape also exits without saving. Product and Line
+          Total stay read-only. Quantity here is sample data — real inventory stock changes use
+          audited movements, not free overwrite.
         </p>
       </UiStandardsSection>
 
@@ -1368,11 +1446,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1415,11 +1493,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1464,11 +1542,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1520,11 +1598,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1564,11 +1642,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1601,16 +1679,16 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleFrame>
           </StaticSampleGroup>
 
-          <StaticSampleGroup title="TEXT SAVE / CANCEL (LESS DENSE)">
+          <StaticSampleGroup title="TEXT SAVE / RESET (LESS DENSE)">
             <SampleFrame label="LABELED ACTIONS">
               <ExitsTableActions>
                 <Button type="button" variant="success" shape="soft">
                   <Check className="size-4" aria-hidden />
                   Save
                 </Button>
-                <Button type="button" variant="ghost" shape="soft" className="exits-table__action-cancel">
-                  <CircleX className="size-4" aria-hidden />
-                  Cancel
+                <Button type="button" variant="ghost" shape="soft" className="exits-table__action-reset">
+                  <RotateCcw className="size-4" aria-hidden />
+                  Reset
                 </Button>
               </ExitsTableActions>
             </SampleFrame>
@@ -1715,11 +1793,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                             <Check className="size-4" aria-hidden />
                           </IconAction>
                           <IconAction
-                            label="Cancel Apple editing"
-                            title="Cancel editing"
-                            className="exits-table__action-cancel"
+                            label="Reset Apple to original"
+                            title="Reset"
+                            className="exits-table__action-reset"
                           >
-                            <CircleX className="size-4" aria-hidden />
+                            <RotateCcw className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -1852,7 +1930,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tables.mobile-edit"
         title={t("uiStandards.tablesMobileEditTitle")}
-        description="Mobile uses the same Edit field menu. Chosen fields become a compact stacked form with labeled Cancel/Save."
+        description="Mobile uses the same Edit field menu. Chosen fields become a compact stacked form with labeled Reset/Save."
         summary="MOBILE · FIELD MENU · PILOT"
         open={isOpen("tables.mobile-edit")}
         onOpenChange={(open) => setOpen("tables.mobile-edit", open)}
@@ -1953,11 +2031,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           type="button"
                           variant="ghost"
                           shape="soft"
-                          className="exits-table__action-cancel"
-                          onClick={() => cancelMobileEdit()}
+                          className="exits-table__action-reset"
+                          onClick={() => resetMobileEdit()}
                         >
-                          <CircleX className="size-4" aria-hidden />
-                          Cancel
+                          <RotateCcw className="size-4" aria-hidden />
+                          Reset
                         </Button>
                         <Button
                           type="button"
